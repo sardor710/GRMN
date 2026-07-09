@@ -7,12 +7,15 @@ interface CartItem {
   name: string;
   price: number;
   qty: number;
+  image?: string;
 }
 
 interface CartContextValue {
   items: CartItem[];
   count: number;
+  subtotal: number;
   add: (item: Omit<CartItem, "qty">, qty?: number) => void;
+  setQty: (id: string, qty: number) => void;
   remove: (id: string) => void;
   clear: () => void;
 }
@@ -51,6 +54,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   }, []);
 
+  const setQty = useCallback((id: string, qty: number) => {
+    setItems((prev) =>
+      qty <= 0
+        ? prev.filter((i) => i.id !== id)
+        : prev.map((i) => (i.id === id ? { ...i, qty } : i)),
+    );
+  }, []);
+
   const remove = useCallback((id: string) => {
     setItems((prev) => prev.filter((i) => i.id !== id));
   }, []);
@@ -58,9 +69,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const clear = useCallback(() => setItems([]), []);
 
   const count = items.reduce((n, i) => n + i.qty, 0);
+  const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
 
   return (
-    <CartContext.Provider value={{ items, count, add, remove, clear }}>
+    <CartContext.Provider value={{ items, count, subtotal, add, setQty, remove, clear }}>
       {children}
     </CartContext.Provider>
   );

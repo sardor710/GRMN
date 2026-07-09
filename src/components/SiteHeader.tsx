@@ -90,15 +90,15 @@ export function SiteHeader() {
           <button aria-label="Search" className="text-black transition-colors hover:text-[#007cc3]">
             <SearchIcon className="h-5 w-5" />
           </button>
-          <button aria-label="Account" className="text-black transition-colors hover:text-[#007cc3]">
+          <Link href="/account" aria-label="Account" className="text-black transition-colors hover:text-[#007cc3]">
             <AccountIcon className="h-5 w-5" />
-          </button>
-          <button aria-label="Cart" className="relative text-black transition-colors hover:text-[#007cc3]">
+          </Link>
+          <Link href="/cart" aria-label="Cart" className="relative text-black transition-colors hover:text-[#007cc3]">
             <CartIcon className="h-5 w-5" />
             <span className="absolute -right-2 -top-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-black px-1 text-[10px] font-medium leading-none text-white">
               {count}
             </span>
-          </button>
+          </Link>
           {/* Mobile hamburger */}
           <button
             aria-label="Menu"

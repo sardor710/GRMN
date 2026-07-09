@@ -1,15 +1,25 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { ChevronRightIcon } from "@/components/icons";
 
 export function EmailSignup() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+
   return (
     <section className="bg-white py-12">
       <div className="mx-auto max-w-[560px] px-4 text-center">
         <h2 className="g-heading text-[26px] tracking-[0.04em] text-black">Sign Up for News</h2>
         <form
           className="mt-6 flex items-stretch justify-center"
-          onSubmit={(e) => e.preventDefault()}
+          onSubmit={(e) => {
+            e.preventDefault();
+            const q = email ? `?email=${encodeURIComponent(email)}` : "";
+            router.push(`/newsletter${q}`);
+          }}
         >
           <label htmlFor="email-signup" className="sr-only">
             Email address
@@ -17,6 +27,8 @@ export function EmailSignup() {
           <input
             id="email-signup"
             type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
             placeholder="john@example.com"
             className="h-11 w-full max-w-[320px] border border-neutral-300 border-r-0 px-3 text-[15px] text-black outline-none placeholder:text-neutral-400 focus:border-neutral-500"
           />
@@ -31,9 +43,9 @@ export function EmailSignup() {
         <p className="mt-4 text-[13px] text-[#5b5b5b]">
           Get product news and promotions based on your preferences, devices and services.
         </p>
-        <a href="#" className="mt-1 inline-block text-[13px] text-[#5b5b5b] underline">
+        <Link href="/newsletter" className="mt-1 inline-block text-[13px] text-[#5b5b5b] underline">
           Learn about email privacy.
-        </a>
+        </Link>
       </div>
     </section>
   );

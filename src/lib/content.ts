@@ -17,21 +17,21 @@ export const topNav: NavItem[] = [
         heading: "Shop",
         links: [
           { label: "All Smartwatches", href: "/c/wearables-smartwatches" },
+          { label: "Compare Smartwatches", href: "/compare" },
           { label: "Health & Fitness Tracking", href: "/c/wearables-smartwatches" },
           { label: "Design Your Own Watch", href: "#" },
           { label: "Watches for Women", href: "#" },
-          { label: "Fashion & Hybrid Smartwatches", href: "#" },
           { label: "MARQ Luxury Watch Collection", href: "#" },
         ],
       },
       {
-        heading: "Activities",
+        heading: "Activities & Features",
         links: [
-          { label: "Running", href: "#" },
+          { label: "Running", href: "/c/sports-fitness/running-smartwatches" },
           { label: "Multisport & Triathlete", href: "#" },
           { label: "Adventure", href: "#" },
           { label: "Swimming", href: "#" },
-          { label: "Diving", href: "#" },
+          { label: "Garmin Pay", href: "/garmin-pay" },
           { label: "Golf", href: "#" },
         ],
       },
@@ -44,7 +44,7 @@ export const topNav: NavItem[] = [
       {
         heading: "Shop",
         links: [
-          { label: "Running", href: "#" },
+          { label: "Running Smartwatches", href: "/c/sports-fitness/running-smartwatches" },
           { label: "Cycling", href: "#" },
           { label: "Golf", href: "#" },
           { label: "Swimming", href: "#" },
@@ -313,7 +313,7 @@ export const footerColumns: FooterColumn[] = [
     heading: "COMPANY",
     links: [
       { label: "About Us", href: "#" },
-      { label: "Blog", href: "#" },
+      { label: "Blog", href: "/blog" },
       { label: "Investors", href: "#" },
       { label: "Newsroom", href: "#" },
       { label: "Retail Store", href: "#" },

@@ -16,7 +16,12 @@ export function ProductTop({ product }: { product: ProductDetail }) {
   const { add } = useCart();
 
   const handleAdd = () => {
-    add({ id: product.id, name: product.title, price: product.price });
+    add({
+      id: product.id,
+      name: product.title,
+      price: product.price,
+      image: product.gallery[0]?.src,
+    });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };

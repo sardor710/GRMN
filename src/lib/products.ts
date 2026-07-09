@@ -36,9 +36,49 @@ export const caseSizeFilters: { label: string; value: Product["caseSize"] }[] = 
   { label: "Large (≥ 50 mm)", value: "Large" },
 ];
 
-export const catalogueMeta: Record<string, { title: string; heading: string }> = {
-  "wearables-smartwatches": { title: "Smartwatches", heading: "ALL SMARTWATCHES" },
-};
+export interface CatalogueDef {
+  slug: string;
+  title: string;
+  heading: string;
+  showFamilies: boolean;
+  hero?: { image: string; label: string; blurb: string };
+  filter: (p: Product) => boolean;
+}
+
+export const catalogues: CatalogueDef[] = [
+  {
+    slug: "wearables-smartwatches",
+    title: "Smartwatches",
+    heading: "ALL SMARTWATCHES",
+    showFamilies: true,
+    filter: () => true,
+  },
+  {
+    slug: "sports-fitness/running-smartwatches",
+    title: "GPS Running Watches",
+    heading: "ALL RUNNING SMARTWATCHES",
+    showFamilies: false,
+    hero: {
+      image: "/images/74662-sports-and-fitness-pod.jpg",
+      label: "SPORTS & FITNESS",
+      blurb: "Running Smartwatches",
+    },
+    filter: (p) => p.activities.includes("Running"),
+  },
+];
+
+export function getCatalogue(slug: string): CatalogueDef | undefined {
+  return catalogues.find((c) => c.slug === slug);
+}
+
+export function catalogueProducts(def: CatalogueDef): Product[] {
+  return products.filter(def.filter);
+}
+
+// Back-compat: simple metadata lookup keyed by slug.
+export const catalogueMeta: Record<string, { title: string; heading: string }> = Object.fromEntries(
+  catalogues.map((c) => [c.slug, { title: c.title, heading: c.heading }]),
+);
 
 export function getProduct(id: string): Product | undefined {
   return products.find((p) => p.id === id);
