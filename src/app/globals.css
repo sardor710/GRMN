@@ -63,6 +63,12 @@
   --muted-foreground: oklch(0.45 0 0);
   --garmin-blue: #007cc3;
   --garmin-text-muted: #5b5b5b;
+  /* MARQ minisite tokens */
+  --marq-bg: #000000;
+  --marq-nav: #141414;
+  --marq-red: #e2231a; /* Damascus Steel Edition accent */
+  --marq-green: #89c541; /* Carbon Edition accent */
+  --marq-gold: #c8a95a; /* Titanium Edition accent */
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
@@ -207,4 +213,32 @@
 @keyframes g-progress-ring {
   from { stroke-dashoffset: 100; }
   to { stroke-dashoffset: 0; }
+}
+
+/* ---- MARQ minisite utilities ---- */
+/* Scroll-into-view fade-up (toggled via .is-visible from IntersectionObserver) */
+.marq-reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.marq-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Big MARQ display heading: Oswald, uppercase, wide */
+.marq-display {
+  font-family: var(--font-heading);
+  font-weight: 400;
+  text-transform: uppercase;
+  line-height: 1.2;
+  letter-spacing: 0.01em;
+  color: #fff;
+}
+
+/* Lifestyle carousel progress-bar fill animation */
+@keyframes marq-progress-fill {
+  from { width: 0%; }
+  to { width: 100%; }
 }
