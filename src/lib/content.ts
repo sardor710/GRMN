@@ -21,7 +21,9 @@ export const topNav: NavItem[] = [
           { label: "Health & Fitness Tracking", href: "/c/wearables-smartwatches" },
           { label: "Design Your Own Watch", href: "#" },
           { label: "Watches for Women", href: "#" },
-          { label: "MARQ Luxury Watch Collection", href: "#" },
+          { label: "MARQ Luxury Watch Collection", href: "/minisite/marq" },
+          { label: "fēnix 8 Series", href: "/minisite/fenix-8" },
+          { label: "Why Garmin Watches?", href: "/minisite/why-garmin" },
         ],
       },
       {
