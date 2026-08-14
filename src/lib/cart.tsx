@@ -25,16 +25,15 @@ const CartContext = createContext<CartContextValue | null>(null);
 const STORAGE_KEY = "garmin-clone-cart";
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
-
-  useEffect(() => {
+  const [items, setItems] = useState<CartItem[]>(() => {
+    if (typeof window === "undefined") return [];
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) setItems(JSON.parse(raw));
+      return raw ? (JSON.parse(raw) as CartItem[]) : [];
     } catch {
-      /* ignore */
+      return [];
     }
-  }, []);
+  });
 
   useEffect(() => {
     try {
