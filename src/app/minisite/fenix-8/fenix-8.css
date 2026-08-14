@@ -7526,3 +7526,33 @@
 
 /* Flashlight glow (JS fades it in). */
 .f8-root #flashlight .light { opacity: .7 !important; }
+
+/* Global Typography: Knockout for titles/headlines, Roboto for body text */
+.f8-root {
+  font-family: var(--font-sans, "Roboto", sans-serif);
+}
+.f8-root h1,
+.f8-root h2,
+.f8-root h3,
+.f8-root h4,
+.f8-root h5,
+.f8-root h6,
+.f8-root .h1,
+.f8-root .h2,
+.f8-root .h3,
+.f8-root .h4,
+.f8-root .h5,
+.f8-root .h6,
+.f8-root .g-heading,
+.f8-root [class*="heading"],
+.f8-root [class*="title"] {
+  font-family: var(--font-heading, "Knockout", "Oswald", sans-serif);
+}
+.f8-root p,
+.f8-root span:not([class*="heading"]):not([class*="title"]),
+.f8-root a,
+.f8-root li,
+.f8-root small,
+.f8-root button {
+  font-family: var(--font-sans, "Roboto", sans-serif);
+}

@@ -73,3 +73,34 @@
 .wg-root .wg-modal-content h3{color:#000 !important}
 .wg-root .wg-modal-content p{color:#555 !important}
 .wg-root .wg-modal-content small{color:#999 !important}
+
+/* Global Typography: Knockout for titles/headlines, Roboto for body text */
+.wg-root {
+  font-family: var(--font-sans, "Roboto", sans-serif);
+}
+.wg-root h1,
+.wg-root h2,
+.wg-root h3,
+.wg-root h4,
+.wg-root h5,
+.wg-root h6,
+.wg-root .h1,
+.wg-root .h2,
+.wg-root .h3,
+.wg-root .h4,
+.wg-root .h5,
+.wg-root .h6,
+.wg-root .g-heading,
+.wg-root [class*="heading"],
+.wg-root [class*="title"] {
+  font-family: var(--font-heading, "Knockout", "Oswald", sans-serif);
+}
+.wg-root p,
+.wg-root span:not([class*="heading"]):not([class*="title"]),
+.wg-root a,
+.wg-root li,
+.wg-root small,
+.wg-root button {
+  font-family: var(--font-sans, "Roboto", sans-serif);
+}
+

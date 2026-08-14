@@ -743,3 +743,34 @@
     height: 50px;
   }
 }
+
+/* Global Typography: Knockout for titles/headlines, Roboto for body text */
+.gp-root {
+  font-family: var(--font-sans, "Roboto", sans-serif);
+}
+.gp-root h1,
+.gp-root h2,
+.gp-root h3,
+.gp-root h4,
+.gp-root h5,
+.gp-root h6,
+.gp-root .h1,
+.gp-root .h2,
+.gp-root .h3,
+.gp-root .h4,
+.gp-root .h5,
+.gp-root .h6,
+.gp-root .g-heading,
+.gp-root [class*="heading"],
+.gp-root [class*="title"] {
+  font-family: var(--font-heading, "Knockout", "Oswald", sans-serif);
+}
+.gp-root p,
+.gp-root span:not([class*="heading"]):not([class*="title"]),
+.gp-root a,
+.gp-root li,
+.gp-root small,
+.gp-root button {
+  font-family: var(--font-sans, "Roboto", sans-serif);
+}
+
