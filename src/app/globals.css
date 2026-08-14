@@ -135,18 +135,20 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html,
   body {
     @apply bg-white text-black;
     font-family: var(--font-sans);
   }
-  html {
-    font-family: var(--font-sans);
-  }
-  h1, h2, h3, h4, h5, h6 {
+  h1, h2, h3, h4, h5, h6,
+  .h1, .h2, .h3, .h4, .h5, .h6,
+  .g-heading,
+  .marq-display,
+  [role="heading"] {
     font-family: var(--font-heading);
   }
-  p, span, a, button, input, textarea, select, label, li, td, th, div {
-    font-family: inherit;
+  p, span, a, button, input, textarea, select, label, li, td, th, table, small, blockquote {
+    font-family: var(--font-sans);
   }
 }
 
@@ -160,6 +162,7 @@
     letter-spacing: 0.02em;
     line-height: 1.1;
   }
+
 
   /* Base square button */
   .g-btn {
