@@ -105,12 +105,12 @@ function DefaultOverview({ product }: { product: ProductDetail }) {
 function Specs({ product }: { product: ProductDetail }) {
   return (
     <div>
-      <h2 className="g-heading text-[26px] text-black">Specifications</h2>
+      <h2 className="g-heading text-[32px] md:text-[38px] uppercase tracking-wide text-black">Specifications</h2>
       <dl className="mt-6 divide-y divide-neutral-200 border-t border-neutral-200">
         {product.specs.map((s) => (
           <div key={s.label} className="grid grid-cols-1 gap-1 py-4 sm:grid-cols-3">
-            <dt className="text-[15px] font-medium text-black sm:col-span-1">{s.label}</dt>
-            <dd className="text-[15px] text-neutral-700 sm:col-span-2">{s.value}</dd>
+            <dt className="text-[16px] font-semibold text-black sm:col-span-1">{s.label}</dt>
+            <dd className="text-[16px] leading-relaxed text-neutral-700 sm:col-span-2">{s.value}</dd>
           </div>
         ))}
       </dl>
@@ -121,7 +121,7 @@ function Specs({ product }: { product: ProductDetail }) {
 function InTheBox({ product }: { product: ProductDetail }) {
   return (
     <div>
-      <h2 className="g-heading text-[26px] text-black">In the Box</h2>
+      <h2 className="g-heading text-[32px] md:text-[38px] uppercase tracking-wide text-black">In the Box</h2>
       <ul className="mt-6 space-y-3">
         {product.inTheBox.map((item) => (
           <li key={item} className="flex items-center gap-3 text-[16px] text-neutral-700">

@@ -654,19 +654,19 @@ export function ProductOverview({ product: _product }: { product?: ProductDetail
             </p>
           </div>
 
-          <div className="space-y-20">
+          <div className="space-y-24">
             {FEATURE_CATEGORIES.map((cat) => (
-              <div key={cat.category} className="space-y-8">
+              <div key={cat.category} className="space-y-10">
                 {/* Category Header with Divider Rule */}
                 <div>
-                  <h3 className="g-heading text-[22px] font-bold uppercase tracking-wider text-black md:text-[26px]">
+                  <h3 className="g-heading text-[28px] sm:text-[34px] md:text-[38px] lg:text-[42px] font-bold uppercase tracking-[0.02em] text-black leading-tight">
                     {cat.category}
                   </h3>
-                  <div className="mt-3 h-[1px] w-full bg-neutral-300" />
+                  <div className="mt-4 mb-8 h-[1px] w-full bg-neutral-300" />
                 </div>
 
                 {/* 5-Column Grid on Desktop, 2-3 on Mobile/Tablet */}
-                <div className="grid grid-cols-2 gap-x-6 gap-y-12 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-14 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
                   {cat.items.map((item) => (
                     <div
                       key={item.title}
@@ -674,27 +674,27 @@ export function ProductOverview({ product: _product }: { product?: ProductDetail
                     >
                       {/* SVG Line Icon */}
                       {item.icon ? (
-                        <div className="relative mb-4 flex h-14 w-14 items-center justify-center">
+                        <div className="relative mb-3.5 flex h-16 w-16 items-center justify-center">
                           <Image
                             src={item.icon}
                             alt={item.title}
-                            width={52}
-                            height={52}
-                            className="h-12 w-12 object-contain"
+                            width={56}
+                            height={56}
+                            className="h-14 w-14 object-contain"
                           />
                         </div>
                       ) : (
-                        <div className="mb-4 h-14 w-14" />
+                        <div className="mb-3.5 h-16 w-16" />
                       )}
 
                       {/* Feature Title */}
-                      <h4 className="text-[13px] font-bold uppercase tracking-[0.05em] text-black leading-tight">
+                      <h4 className="g-heading text-[16px] sm:text-[17px] md:text-[18px] font-bold uppercase tracking-[0.03em] text-black leading-snug">
                         {item.title}
                       </h4>
 
                       {/* Feature Description */}
                       {item.description && (
-                        <p className="mt-2 text-[13px] leading-relaxed text-neutral-600">
+                        <p className="mt-2.5 text-[14px] leading-relaxed text-neutral-600">
                           {item.description}
                         </p>
                       )}
