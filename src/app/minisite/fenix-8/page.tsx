@@ -12,9 +12,9 @@ export const metadata: Metadata = {
 
 export default function Fenix8Page() {
   return (
-    <div className="f8-root flex min-h-screen flex-col bg-black">
+    <div className="flex min-h-screen flex-col bg-white">
       <SiteHeader />
-      <main className="flex-1">
+      <main className="f8-root flex-1 bg-black">
         <Fenix8Client />
       </main>
       <SiteFooter />

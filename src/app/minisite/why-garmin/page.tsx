@@ -19,10 +19,10 @@ const BUY_NOW = "/c/wearables-smartwatches";
 
 export default function WhyGarminPage() {
   return (
-    <div className="wg-root flex min-h-screen flex-col bg-white">
+    <div className="flex min-h-screen flex-col bg-white">
       <SiteHeader />
 
-      <main className="flex-1">
+      <main className="wg-root flex-1">
         <WhyGarminHero />
         <CommentsCarousel />
 
@@ -55,8 +55,6 @@ export default function WhyGarminPage() {
             </a>
           </div>
         </section>
-
-        <footer>© Garmin Ltd. or its subsidiaries. All rights reserved.</footer>
       </main>
 
       <SiteFooter />

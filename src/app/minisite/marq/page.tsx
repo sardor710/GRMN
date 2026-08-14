@@ -24,10 +24,10 @@ export const metadata: Metadata = {
 
 export default function MarqMinisitePage() {
   return (
-    <div className="flex min-h-screen flex-col bg-black">
+    <div className="flex min-h-screen flex-col bg-white">
       <SiteHeader />
-      <MarqSubNav />
       <main className="flex-1 bg-black">
+        <MarqSubNav />
         <MarqHero />
         <MarqTextIntro />
         <MarqScrollVideo src="/marq/video/fire.mp4" />
@@ -38,7 +38,7 @@ export default function MarqMinisitePage() {
         <MarqScrollVideo
           src="/marq/video/damascus.mp4"
           title="Extraordinary Craftsmanship"
-          subtitle="Tried and tested - The recreation of medieval briliance"
+          subtitle="Tried and tested - The recreation of medieval brilliance"
           ctaLabel="Watch Now"
         />
         <MarqMaterials />
