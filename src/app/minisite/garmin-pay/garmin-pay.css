@@ -1,0 +1,745 @@
+/* ==========================================================================
+   Garmin Pay Minisite Styles (Scoped to .gp-root)
+   ========================================================================== */
+
+.gp-root a,
+.gp-root abbr,
+.gp-root acronym,
+.gp-root address,
+.gp-root applet,
+.gp-root article,
+.gp-root aside,
+.gp-root audio,
+.gp-root b,
+.gp-root big,
+.gp-root blockquote,
+.gp-root,
+.gp-root canvas,
+.gp-root caption,
+.gp-root center,
+.gp-root cite,
+.gp-root code,
+.gp-root dd,
+.gp-root del,
+.gp-root details,
+.gp-root dfn,
+.gp-root div,
+.gp-root dl,
+.gp-root dt,
+.gp-root em,
+.gp-root embed,
+.gp-root fieldset,
+.gp-root figcaption,
+.gp-root figure,
+.gp-root footer,
+.gp-root form,
+.gp-root h1,
+.gp-root h2,
+.gp-root h3,
+.gp-root h4,
+.gp-root h5,
+.gp-root h6,
+.gp-root header,
+.gp-root hgroup,
+.gp-root i,
+.gp-root iframe,
+.gp-root img,
+.gp-root ins,
+.gp-root kbd,
+.gp-root label,
+.gp-root legend,
+.gp-root li,
+.gp-root mark,
+.gp-root menu,
+.gp-root nav,
+.gp-root object,
+.gp-root ol,
+.gp-root output,
+.gp-root p,
+.gp-root pre,
+.gp-root q,
+.gp-root ruby,
+.gp-root s,
+.gp-root samp,
+.gp-root section,
+.gp-root small,
+.gp-root span,
+.gp-root strike,
+.gp-root strong,
+.gp-root sub,
+.gp-root summary,
+.gp-root sup,
+.gp-root table,
+.gp-root tbody,
+.gp-root td,
+.gp-root tfoot,
+.gp-root th,
+.gp-root thead,
+.gp-root time,
+.gp-root tr,
+.gp-root tt,
+.gp-root u,
+.gp-root ul,
+.gp-root var,
+.gp-root video {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline;
+}
+
+.gp-root article,
+.gp-root aside,
+.gp-root details,
+.gp-root figcaption,
+.gp-root figure,
+.gp-root footer,
+.gp-root header,
+.gp-root hgroup,
+.gp-root menu,
+.gp-root nav,
+.gp-root section {
+  display: block;
+}
+
+.gp-root {
+  line-height: 1;
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0);
+  overflow-x: hidden;
+  font-family: var(--font-roboto, 'Roboto', 'Helvetica Neue', HelveticaNeue, Helvetica, Arial, sans-serif);
+  background-color: #fff;
+}
+
+.gp-root ol,
+.gp-root ul {
+  list-style: none;
+}
+
+.gp-root blockquote,
+.gp-root q {
+  quotes: none;
+}
+
+.gp-root blockquote:after,
+.gp-root blockquote:before,
+.gp-root q:after,
+.gp-root q:before {
+  content: '';
+  content: none;
+}
+
+.gp-root table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.gp-root section h1,
+.gp-root section h2,
+.gp-root section h3,
+.gp-root section h4,
+.gp-root section h5,
+.gp-root section h6,
+.gp-root section sup {
+  color: #000;
+  line-height: 1.8;
+}
+
+.gp-root .video {
+  background-color: #eee;
+}
+
+.gp-root .app__video__player {
+  position: relative;
+  width: 100%;
+  height: 50vw;
+  max-height: 450px;
+  background-size: cover;
+  background-position: center center;
+}
+
+.gp-root .app__video__player__play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: inline-block;
+  width: 70px;
+  height: 70px;
+  -webkit-transform: translate(-50%, -50%);
+  -ms-transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);
+  z-index: 10;
+}
+
+.gp-root .app__video__player__play span {
+  display: none;
+}
+
+.gp-root .app__video__player__play svg {
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.gp-root .app__video__player__play circle {
+  -webkit-transition: all .2s;
+  -o-transition: all .2s;
+  transition: all .2s;
+}
+
+.gp-root .app__video__player__play:hover circle {
+  fill: #fff;
+}
+
+.gp-root .app__video__player__play:hover path {
+  fill: #000;
+}
+
+.gp-root .app__video__player__stop {
+  font-size: 40px;
+  font-weight: 300;
+  position: absolute;
+  z-index: 20;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  -webkit-transition: opacity .2s;
+  -o-transition: opacity .2s;
+  transition: opacity .2s;
+  opacity: 1;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 50%;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.gp-root .app__video__player__stop:hover {
+  opacity: .7;
+}
+
+.gp-root .app__video__player__iframe {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.gp-root .app__video__copy {
+  padding-top: 4em;
+  padding-bottom: 4em;
+  position: relative;
+  float: left;
+  width: 100%;
+  min-height: 1px;
+  padding-right: 15px;
+  padding-left: 15px;
+}
+
+.gp-root .flex-box {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: normal;
+  -ms-flex-flow: row wrap;
+  flex-flow: row wrap;
+  -webkit-box-align: stretch;
+  -ms-flex-align: stretch;
+  align-items: stretch;
+}
+
+.gp-root .flex-box > * {
+  -webkit-box-flex: 1;
+  -ms-flex: 1;
+  flex: 1;
+  width: 50%;
+}
+
+.gp-root .flex-box.row-reverse {
+  -webkit-box-orient: horizontal;
+  -webkit-box-direction: reverse;
+  -ms-flex-direction: row-reverse;
+  flex-direction: row-reverse;
+}
+
+.gp-root .p-sticky {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.gp-root .sticking {
+  position: fixed;
+  top: 0;
+  overflow-x: hidden;
+  overflow-y: scroll;
+  -webkit-overflow-scrolling: touch;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  z-index: 100;
+}
+
+.gp-root .sticking-dummy {
+  display: none;
+}
+
+.gp-root .sticking + .sticking-dummy {
+  display: block;
+}
+
+.gp-root #content {
+  min-height: auto;
+}
+
+.gp-root .light-gray {
+  background-color: #fafafa;
+}
+
+.gp-root sup {
+  vertical-align: super;
+  font-size: 0.65em;
+}
+
+.gp-root section * {
+  -webkit-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+.gp-root section .wrapper {
+  width: 100%;
+}
+
+.gp-root section .container {
+  width: 90%;
+  max-width: 1170px;
+  padding: 75px 0;
+  text-align: center;
+  margin: 0 auto;
+}
+
+.gp-root section .btn-size-default {
+  border-width: 2px;
+  margin-top: 10px;
+}
+
+.gp-root section h1,
+.gp-root section h2 {
+  text-transform: uppercase;
+  font-size: 50px;
+  line-height: 1.2;
+  margin-bottom: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.gp-root section p {
+  font-size: 17px;
+  line-height: 1.6;
+  color: #333;
+}
+
+.gp-root section img {
+  width: 90%;
+  max-width: 500px;
+  margin: 0 auto;
+  display: block;
+}
+
+.gp-root section img.icon {
+  width: 120px;
+  margin: 0 auto 2em;
+}
+
+.gp-root section .bg-image {
+  background-size: cover;
+  background-position: center;
+  min-height: 500px;
+}
+
+.gp-root section .text-con {
+  padding: 5vw;
+  max-width: 50%;
+  -ms-flex-item-align: center;
+  -ms-grid-row-align: center;
+  align-self: center;
+  text-align: left;
+}
+
+.gp-root section.hero {
+  text-align: center;
+  position: relative;
+  background-size: cover;
+  background-position: center;
+  height: 50vw;
+  max-height: 60vh;
+  min-height: 380px;
+}
+
+.gp-root section.hero .flex-box {
+  position: relative;
+  z-index: 1;
+  height: calc(100vh - 100px * 2);
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.gp-root section.hero .flex-box .text {
+  max-width: inherit;
+}
+
+.gp-root section.hero .flex-box .text svg {
+  width: 100px;
+}
+
+.gp-root section.hero .flex-box .text svg path {
+  fill: #fff;
+}
+
+.gp-root section.hero .flex-box .text h1,
+.gp-root section.hero .flex-box .text h2 {
+  color: #fff;
+}
+
+.gp-root section.hero .flex-box .text h1 span,
+.gp-root section.hero .flex-box .text h2 span {
+  color: #fff;
+}
+
+.gp-root section.hero .flex-box .text h1 {
+  display: inline-block;
+  text-transform: uppercase;
+  margin-left: 20px;
+}
+
+.gp-root section.hero .bg-image {
+  position: absolute;
+  width: 100%;
+  height: 100% !important;
+  opacity: 0.5;
+  top: 0;
+  background-size: cover;
+  background-position: center;
+  max-height: initial;
+}
+
+.gp-root section#intro {
+  background-color: #fff;
+}
+
+.gp-root section#intro p {
+  max-width: 800px;
+  margin: 0 auto 20px auto;
+}
+
+.gp-root section#intro p span {
+  display: block;
+}
+
+.gp-root section#intro img {
+  margin: 30px auto 10px auto;
+  max-width: 750px;
+}
+
+.gp-root section#intro .btn-con .btn-size-default {
+  margin: 5px;
+}
+
+.gp-root section.purchases,
+.gp-root section.rabbitcard {
+  background-color: #eee;
+}
+
+.gp-root section.purchases img.logo,
+.gp-root section.rabbitcard img.logo {
+  width: 100px;
+}
+
+.gp-root section.purchases .flex-box > *,
+.gp-root section.rabbitcard .flex-box > * {
+  min-width: 50%;
+}
+
+.gp-root section.bank {
+  background-color: #fafafa;
+}
+
+.gp-root section.bank ul.flex-box {
+  padding: 0;
+  margin: 30px 0;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+}
+
+.gp-root section.bank ul.flex-box li {
+  list-style: none;
+  padding: 10px 0;
+  -webkit-box-flex: inherit;
+  -ms-flex: inherit;
+  flex: inherit;
+  width: auto;
+  max-width: inherit;
+  min-height: auto;
+  padding: 10px 30px;
+}
+
+.gp-root section.bank ul.flex-box li img {
+  width: auto;
+  height: 70px;
+}
+
+.gp-root section.transit {
+  background-color: #fafafa;
+  border-top: 1px solid #eaeaea;
+}
+
+.gp-root section.transit .container {
+  padding: 60px 0 80px 0;
+}
+
+.gp-root section.transit p,
+.gp-root section.bank p,
+.gp-root section.privacy p,
+.gp-root section.connect-iq p {
+  max-width: 800px;
+  margin: 0 auto 20px auto;
+}
+
+.gp-root section.quick-and-easy {
+  background-color: #fff;
+}
+
+.gp-root section.quick-and-easy .container {
+  padding: 80px 0;
+}
+
+.gp-root section.quick-and-easy .flex-box {
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+}
+
+.gp-root section.quick-and-easy .text-con {
+  -webkit-box-flex: 1.5;
+  -ms-flex: 1.5;
+  flex: 1.5;
+  max-width: inherit;
+  padding: 0 0 0 40px;
+}
+
+.gp-root section.privacy {
+  background-color: #fafafa;
+}
+
+.gp-root section.video .text-con {
+  padding: 5vw;
+}
+
+.gp-root section.retailers-tips {
+  background-color: #fff;
+}
+
+.gp-root section.retailers-tips .flex-box {
+  -webkit-box-align: stretch;
+  -ms-flex-align: stretch;
+  align-items: stretch;
+}
+
+.gp-root section.retailers-tips .flex-box .bg-image {
+  height: auto;
+  min-height: 500px;
+  max-height: inherit;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.gp-root section.retailers-tips .text-con {
+  padding: 5vw;
+}
+
+.gp-root section.retailers-tips .text-con p {
+  margin-bottom: 1.2em;
+}
+
+.gp-root section.retailers-tips .text-con p.question {
+  font-weight: 700;
+  color: #000;
+  margin-bottom: 0.4em;
+  margin-top: 1.2em;
+}
+
+.gp-root section.retailers-tips .text-con p.question:first-of-type {
+  margin-top: 0;
+}
+
+.gp-root section.connect-iq {
+  background-color: #eee;
+}
+
+.gp-root section.disclaimers {
+  background-color: #e3e3e3;
+}
+
+.gp-root section.disclaimers .container {
+  padding: 50px 0;
+}
+
+.gp-root section.disclaimers .container p {
+  font-size: 13px;
+  color: #666;
+  line-height: 1.6;
+  margin-bottom: 8px;
+}
+
+.gp-root section.disclaimers .container p a {
+  color: #007cc3;
+  text-decoration: underline;
+}
+
+/* Button classes */
+.gp-root .btn-black-fill,
+.gp-root .btn-black-border,
+.gp-root .btn-white-fill,
+.gp-root .btn-black-empty {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: .05em;
+  border-radius: 2px;
+  line-height: 1.2;
+  border: 2px solid #000;
+  transition: all .2s ease;
+  text-transform: uppercase;
+}
+
+.gp-root .btn-size-default {
+  padding: 13px 30px;
+}
+
+.gp-root .btn-size-small {
+  padding: 8px 16px;
+  font-size: 12px;
+}
+
+.gp-root .btn-black-fill {
+  background: #000;
+  color: #fff;
+}
+
+.gp-root .btn-black-fill:hover {
+  background: #333;
+  border-color: #333;
+  color: #fff;
+}
+
+.gp-root .btn-black-border {
+  background: transparent;
+  color: #000;
+}
+
+.gp-root .btn-black-border:hover {
+  background: #000;
+  color: #fff;
+}
+
+/* Responsive Media Queries */
+@media screen and (min-width: 480px) {
+  .gp-root .app__video__player__stop {
+    font-size: 48px;
+    width: 46px;
+    height: 46px;
+  }
+}
+
+@media screen and (min-width: 768px) {
+  .gp-root .app__video__player {
+    padding-bottom: 0;
+  }
+}
+
+@media (max-width: 1024px) {
+  .gp-root section .bg-image {
+    height: 60vw !important;
+    min-width: 100%;
+    max-height: 550px !important;
+  }
+  .gp-root section .text-con {
+    min-width: 90% !important;
+    text-align: center;
+    margin: 0 auto;
+    padding: 75px 0;
+  }
+  .gp-root section.quick-and-easy .text-con {
+    text-align: center;
+    padding: 40px 0 0 0;
+  }
+  .gp-root section.retailers-tips .text-con {
+    text-align: left;
+    padding: 50px 20px;
+  }
+  .gp-root section.video .flex-box {
+    display: block;
+  }
+  .gp-root section.video .flex-box > * {
+    width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .gp-root section .container,
+  .gp-root section .text-con {
+    padding: 50px 0;
+  }
+  .gp-root section h1,
+  .gp-root section h2 {
+    font-size: 7vw;
+  }
+  .gp-root section p {
+    font-size: 16px;
+  }
+  .gp-root section.hero {
+    height: 80vw;
+    min-height: 240px;
+  }
+  .gp-root section#intro p span {
+    display: inline;
+  }
+  .gp-root section#intro .btn-con .btn-size-default {
+    padding: 0.8em 0;
+    width: 80%;
+    max-width: 260px;
+  }
+}
+
+@media (max-width: 500px) {
+  .gp-root section h1,
+  .gp-root section h2 {
+    font-size: 8vw;
+  }
+}
+
+@media (max-width: 320px) {
+  .gp-root section.bank ul.flex-box li img {
+    height: 50px;
+  }
+}

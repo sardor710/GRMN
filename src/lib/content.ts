@@ -33,7 +33,7 @@ export const topNav: NavItem[] = [
           { label: "Multisport & Triathlete", href: "#" },
           { label: "Adventure", href: "#" },
           { label: "Swimming", href: "#" },
-          { label: "Garmin Pay", href: "/garmin-pay" },
+          { label: "Garmin Pay", href: "/minisite/garmin-pay" },
           { label: "Golf", href: "#" },
         ],
       },
