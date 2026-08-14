@@ -1,4 +1,4 @@
-import type { Product, WatchFamily, ProductDetail } from "@/types";
+import type { Product, WatchFamily, ProductDetail, AccessoryItem } from "@/types";
 
 export const watchFamilies: WatchFamily[] = [
   { name: "fēnix®", tagline: "Push the limits of multisport performance.", image: "/images/families/fenix.png" },
@@ -84,6 +84,75 @@ export function getProduct(id: string): Product | undefined {
   return products.find((p) => p.id === id);
 }
 
+export const fenix8Accessories: AccessoryItem[] = [
+  {
+    id: "acc-hrm-pro-plus",
+    name: "HRM-Pro™ Plus",
+    category: "Heart Rate & Sensors",
+    price: 129.99,
+    image: "/images/accessories/hrm-pro-plus.jpg",
+    partNumber: "010-13118-05",
+    description: "Premium chest strap transmitter with running dynamics, dual transmission (ANT+ & BLE) and tool-free battery door.",
+    badge: "POPULAR",
+  },
+  {
+    id: "acc-hrm-dual",
+    name: "HRM-Dual™",
+    category: "Heart Rate & Sensors",
+    price: 69.99,
+    image: "/images/accessories/hrm-dual.jpg",
+    partNumber: "010-12845-00",
+    description: "Transmits real-time heart rate data over ANT+ connectivity and BLUETOOTH Low Energy technology.",
+  },
+  {
+    id: "acc-speed-cadence",
+    name: "Speed Sensor 2 and Cadence Sensor 2 Bundle",
+    category: "Heart Rate & Sensors",
+    price: 69.99,
+    image: "/images/accessories/speed-cadence-bundle.jpg",
+    partNumber: "010-12843-00",
+    description: "Monitor your pedaling cadence and wheel speed as you ride with easy-to-install wireless sensors.",
+  },
+  {
+    id: "acc-qf22-silicone-black",
+    name: "QuickFit® 22 Watch Band (Silicone Black)",
+    category: "Bands & Straps",
+    price: 49.99,
+    image: "/images/accessories/quickfit-22-silicone.jpg",
+    partNumber: "010-13392-10",
+    description: "Stay stylish and sport-ready with this 22 mm silicone band for compatible Garmin watches.",
+    badge: "INCLUDED SIZE",
+  },
+  {
+    id: "acc-qf26-silicone-graphite",
+    name: "QuickFit® 26 Watch Band (Silicone Graphite/Black)",
+    category: "Bands & Straps",
+    price: 49.99,
+    image: "/images/accessories/quickfit-26-silicone.jpg",
+    partNumber: "010-13393-00",
+    description: "Interchangeable 26 mm silicone band for 51 mm fēnix models. Quick snap on and off mechanism.",
+  },
+  {
+    id: "acc-charging-cable",
+    name: "Garmin Charging / Data Cable",
+    category: "Cables & Power",
+    price: 24.99,
+    image: "/images/accessories/charging-cable.jpg",
+    partNumber: "010-12496-00",
+    description: "Complete 2 tasks with 1 cable: connect to USB to recharge your device and transfer data.",
+  },
+  {
+    id: "acc-inreach-mini2",
+    name: "inReach® Mini 2",
+    category: "Satellite & Navigation",
+    price: 399.99,
+    image: "/images/accessories/inreach-mini-2.jpg",
+    partNumber: "010-02602-00",
+    description: "Compact satellite communicator with two-way messaging and interactive SOS capabilities.",
+    badge: "SAFETY ESSENTIAL",
+  },
+];
+
 // ---- Detailed product page data (fēnix 8, id 1228429) ----
 export const fenix8Detail: ProductDetail = {
   id: "1228429",
@@ -93,8 +162,8 @@ export const fenix8Detail: ProductDetail = {
   price: 1099.99,
   badge: "CUSTOMIZABLE",
   breadcrumb: [
-    { label: "OUTDOOR RECREATION", href: "/en-US/c/wearables-smartwatches" },
-    { label: "ADVENTURE WATCHES", href: "/en-US/c/wearables-smartwatches" },
+    { label: "OUTDOOR RECREATION", href: "/c/wearables-smartwatches" },
+    { label: "ADVENTURE WATCHES", href: "/c/wearables-smartwatches" },
   ],
   gallery: [
     { view: "Front", src: "/images/products/fenix8-cf.jpg" },
@@ -141,7 +210,7 @@ export const fenix8Detail: ProductDetail = {
     { label: "Battery type", value: "Lithium ion" },
     { label: "Charging method", value: "Garmin proprietary plug charger" },
     { label: "Memory/History", value: "32 GB" },
-    { label: "Water rating", value: "10 ATM" },
+    { label: "Water rating", value: "10 ATM (Dive rated 40m)" },
     { label: "Physical size", value: "47 x 47 x 13.8 mm" },
     { label: "Weight", value: "Titanium: 73 g (case only: 52 g)" },
     { label: "Lens material", value: "Corning® Gorilla® Glass or sapphire crystal" },
@@ -156,6 +225,7 @@ export const fenix8Detail: ProductDetail = {
     "Charging/data cable",
     "Documentation",
   ],
+  accessories: fenix8Accessories,
   related: ["1462801", "1316397", "1828641", "851039"],
 };
 

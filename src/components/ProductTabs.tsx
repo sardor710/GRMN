@@ -3,12 +3,16 @@
 import { useState } from "react";
 import Image from "next/image";
 import type { ProductDetail } from "@/types";
+import { ProductOverview } from "@/components/product/ProductOverview";
+import { ProductAccessories } from "@/components/product/ProductAccessories";
 
-const TABS = ["Overview", "Specs", "In the Box", "Maps", "Compatible Devices"] as const;
+const TABS = ["Overview", "Specs", "In the Box", "Accessories", "Maps", "Compatible Devices"] as const;
 type Tab = (typeof TABS)[number];
 
 export function ProductTabs({ product }: { product: ProductDetail }) {
   const [tab, setTab] = useState<Tab>("Overview");
+
+  const isRichOverview = tab === "Overview" && product.id === "1228429";
 
   return (
     <section className="mt-8">
@@ -30,22 +34,48 @@ export function ProductTabs({ product }: { product: ProductDetail }) {
         </div>
       </div>
 
-      <div className="mx-auto max-w-[1080px] px-4 py-12">
-        {tab === "Overview" && <Overview product={product} />}
-        {tab === "Specs" && <Specs product={product} />}
-        {tab === "In the Box" && <InTheBox product={product} />}
+      {/* Tab Content */}
+      <div className={isRichOverview ? "w-full" : "mx-auto max-w-[1280px] px-4 py-12"}>
+        {tab === "Overview" && (
+          product.id === "1228429" ? (
+            <ProductOverview product={product} />
+          ) : (
+            <div className="mx-auto max-w-[1080px] py-8">
+              <DefaultOverview product={product} />
+            </div>
+          )
+        )}
+        {tab === "Specs" && (
+          <div className="mx-auto max-w-[1080px]">
+            <Specs product={product} />
+          </div>
+        )}
+        {tab === "In the Box" && (
+          <div className="mx-auto max-w-[1080px]">
+            <InTheBox product={product} />
+          </div>
+        )}
+        {tab === "Accessories" && (
+          <div className="mx-auto max-w-[1280px]">
+            <ProductAccessories accessories={product.accessories} />
+          </div>
+        )}
         {tab === "Maps" && (
-          <Placeholder text="Preloaded TopoActive maps plus support for downloadable outdoor, cycling and ski maps." />
+          <div className="mx-auto max-w-[1080px]">
+            <Placeholder text="Preloaded TopoActive maps plus support for downloadable outdoor, cycling and ski maps." />
+          </div>
         )}
         {tab === "Compatible Devices" && (
-          <Placeholder text="Compatible with the Garmin Connect™ app and Connect IQ™ store on iPhone® and Android™ devices." />
+          <div className="mx-auto max-w-[1080px]">
+            <Placeholder text="Compatible with the Garmin Connect™ app and Connect IQ™ store on iPhone® and Android™ devices." />
+          </div>
         )}
       </div>
     </section>
   );
 }
 
-function Overview({ product }: { product: ProductDetail }) {
+function DefaultOverview({ product }: { product: ProductDetail }) {
   return (
     <div className="space-y-16">
       {product.features.map((f, i) => (

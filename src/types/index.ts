@@ -72,6 +72,17 @@ export interface WatchFamily {
   image: string;
 }
 
+export interface AccessoryItem {
+  id: string;
+  name: string;
+  category: "Bands & Straps" | "Heart Rate & Sensors" | "Cables & Power" | "Mounts & Protection" | "Satellite & Navigation";
+  price: number;
+  image: string;
+  partNumber: string;
+  description?: string;
+  badge?: string;
+}
+
 export interface ProductDetail {
   id: string;
   title: string;
@@ -89,5 +100,7 @@ export interface ProductDetail {
   features: { title: string; body: string; image?: string }[];
   specs: { label: string; value: string }[];
   inTheBox: string[];
+  accessories?: AccessoryItem[];
   related: string[]; // product ids
 }
+
