@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 50 50" width="50" height="50" style="enable-background:new 0 0 50 50;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:none;stroke:#9C509F;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st1{fill:none;stroke:#231F20;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st2{fill:none;stroke:#9C509F;stroke-miterlimit:10;}
+	.st3{fill:none;stroke:#EE1C4E;stroke-miterlimit:10;}
+	.st4{fill:none;stroke:#EE1C4E;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st5{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	
+		.st6{fill-rule:evenodd;clip-rule:evenodd;fill:none;stroke:#231F20;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st7{fill:none;stroke:#231F20;stroke-linecap:round;stroke-linejoin:round;}
+</style>
+<g>
+	<g>
+		<polyline class="st1" points="20.8584633,7.1264601 25.8283081,7.1264601 20.8584633,12.0963049 25.8283081,12.0963049 		"/>
+		<polyline class="st1" points="12.575388,12.0963049 15.8886175,12.0963049 12.575388,15.4095354 15.8886175,15.4095354 		"/>
+		<polyline class="st1" points="30.7981529,0.5 37.424614,0.5 30.7981529,7.1264601 37.424614,7.1264601 		"/>
+	</g>
+	<path class="st1" d="M40.7378426,33.7621574C40.7378426,42.4552727,33.6895599,49.5,25,49.5
+		c-8.6931152,0-15.7378426-7.0447273-15.7378426-15.7378426S16.3068848,18.0243168,25,18.0243168
+		C33.6895599,18.0243168,40.7378426,25.0690441,40.7378426,33.7621574z"/>
+	<polyline class="st1" points="17.9222412,29.6690388 25.0117302,33.7621574 35.5365486,27.7407379 	"/>
+</g>
+</svg>

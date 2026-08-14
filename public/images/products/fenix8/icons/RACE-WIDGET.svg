@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 50 50" width="50" height="50" style="enable-background:new 0 0 50 50;" xml:space="preserve">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: none;
+        stroke: #000;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    </style>
+  </defs>
+  <g id="Race_Predictor" data-name="Race Predictor">
+    <g id="Race_Activity_App_Race_Widget" data-name="Race Activity App, Race Widget">
+      <path class="cls-1" d="M45.2457274,28.2553587V6.2371662s-18.1141281,4.9158678-18.1141281-1.4759503c0-6.3918219-18.1161123,0-18.1161123,0v25.5653011s8.5626877-3.0211325,13.9143717-2.8323139M4.7542726.5v49"/>
+    </g>
+  </g>
+  <g id="Fitness_Training" data-name="Fitness Training">
+    <path class="cls-1" d="M30.3570535,24.5166373h-2.9011998v14.6136896h13.5351813v-14.6136896h-2.8995911M36.1578463,21.5945424c0-1.0752934-.8663418-1.9480633-1.9335977-1.9480633s-1.9335977.8727698-1.9335977,1.9480633h-1.9335973v3.8961265h7.7343905v-3.8961265h-1.9335977ZM38.091444,22.568574h4.8331888v19.4838477h-17.4023766v-19.4838477h4.8347973M27.4558537,33.2845291h1.9335973l1.4497967-1.9480633,1.9335973,2.9220956,2.4173984-4.8701581,1.9335977,6.818221,1.4514035-2.9220953h2.4157904"/>
+  </g>
+</svg>

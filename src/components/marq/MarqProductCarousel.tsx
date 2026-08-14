@@ -66,7 +66,7 @@ export function MarqProductCarousel() {
                   alt={`MARQ ${card.model} — ${card.edition}`}
                   width={420}
                   height={520}
-                  className="mx-auto h-auto w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+                  className="mx-auto h-auto w-full object-contain"
                 />
               </div>
               <p className="mt-2 text-[11px] font-light uppercase tracking-[0.12em] text-white/55">

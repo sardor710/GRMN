@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 50 50" width="50" height="50" style="enable-background:new 0 0 50 50;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:none;stroke:#231F20;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st1{fill:none;stroke:#ED1C24;stroke-miterlimit:10;}
+	.st2{fill:none;stroke:#010101;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st3{fill:none;stroke:#010101;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;}
+	
+		.st4{fill:none;stroke:#010101;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:11.6930418,11.6930418;}
+	.st5{fill:none;stroke:#010101;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st6{fill:none;stroke:#010101;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:6,3;}
+	.st7{fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st8{fill:none;stroke:#000000;stroke-width:0.618;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st9{fill:none;stroke:#000000;stroke-width:0.5;stroke-miterlimit:10;}
+	.st10{fill:none;stroke:#EC008C;stroke-width:0.5;stroke-miterlimit:10;}
+	.st11{fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-miterlimit:10;}
+	.st12{fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-miterlimit:10;stroke-dasharray:1.145,2.1670001;}
+	.st13{fill:none;stroke:#231F20;stroke-linecap:round;stroke-linejoin:round;}
+	.st14{fill:none;stroke:#231F20;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:3.0666666,3.0666666;}
+</style>
+<g>
+	<g>
+		<polyline class="st0" points="49.5,43.8050385 0.5,43.8050385 0.5,6.1949606 		"/>
+	</g>
+	<g>
+		<polyline class="st0" points="49.5,6.1949606 32.5781555,24.6629677 16.8381634,19.5838013 0.5,32.8093338 		"/>
+		<polyline class="st0" points="38.9396744,6.1949606 49.5,6.1949606 49.5,16.654789 		"/>
+	</g>
+</g>
+</svg>

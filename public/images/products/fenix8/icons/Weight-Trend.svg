@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 50 50" width="50" height="50" style="enable-background:new 0 0 50 50;" xml:space="preserve">
+  <!-- Generator: Adobe Illustrator 29.1.0, SVG Export Plug-In . SVG Version: 2.1.0 Build 142)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: none;
+        stroke: #000;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    </style>
+  </defs>
+  <path class="st0" d="M49.5,43.1v6.4H.5v-6.4l7.2-25.1c.8-2.8,3.3-4.7,6.2-4.7h22.2c2.9,0,5.4,1.9,6.2,4.7l7.2,25.1Z"/>
+  <path class="st0" d="M25,.5c-3.5,0-6.4,2.9-6.4,6.4s2.9,6.4,6.4,6.4,6.4-2.9,6.4-6.4S28.5.5,25,.5Z"/>
+  <g>
+    <path class="st0" d="M31,35.7c0,1.2-.9,2.1-2.1,2.1s-2.1-.9-2.1-2.1.9-2.1,2.1-2.1,2.1.9,2.1,2.1Z"/>
+    <path class="st0" d="M21.1,29.6c-1.2,0-2.1.9-2.1,2.1s.9,2.1,2.1,2.1,2.1-.9,2.1-2.1-.9-2.1-2.1-2.1Z"/>
+    <path class="st0" d="M36.6,25.7c-1.2,0-2.1.9-2.1,2.1s.9,2.1,2.1,2.1,2.1-.9,2.1-2.1-.9-2.1-2.1-2.1Z"/>
+    <path class="st0" d="M15.5,39.3c0,1.2-.9,2.1-2.1,2.1s-2.1-.9-2.1-2.1.9-2.1,2.1-2.1,2.1.9,2.1,2.1Z"/>
+    <line class="st0" x1="30.3" y1="34.2" x2="35.2" y2="29.3"/>
+    <line class="st0" x1="23" y1="32.6" x2="27" y2="34.8"/>
+    <line class="st0" x1="14.9" y1="37.8" x2="19.6" y2="33.1"/>
+  </g>
+</svg>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 50 50" width="50" height="50" style="enable-background:new 0 0 50 50;" xml:space="preserve">
+<style type="text/css">
+	.st0{fill:none;stroke:#231F20;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st1{fill:none;stroke:#ED1C24;stroke-miterlimit:10;}
+	.st2{fill:none;stroke:#010101;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st3{fill:none;stroke:#010101;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;}
+	
+		.st4{fill:none;stroke:#010101;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:11.6930418,11.6930418;}
+	.st5{fill:none;stroke:#010101;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st6{fill:none;stroke:#010101;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:6,3;}
+	.st7{fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st8{fill:none;stroke:#000000;stroke-width:0.618;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st9{fill:none;stroke:#000000;stroke-width:0.5;stroke-miterlimit:10;}
+	.st10{fill:none;stroke:#EC008C;stroke-width:0.5;stroke-miterlimit:10;}
+	.st11{fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-miterlimit:10;}
+	.st12{fill:none;stroke:#000000;stroke-width:0.5;stroke-linecap:round;stroke-miterlimit:10;stroke-dasharray:1.145,2.1670001;}
+	.st13{fill:none;stroke:#231F20;stroke-linecap:round;stroke-linejoin:round;}
+	.st14{fill:none;stroke:#231F20;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:3.0666666,3.0666666;}
+	.st15{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st16{fill:#FFFFFF;}
+	.st17{fill:none;stroke:#231F20;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2.0658545,2.0658545;}
+	
+		.st18{clip-path:url(#SVGID_00000098211342155072775590000006536186646560185472_);fill:none;stroke:#020202;stroke-width:2.017854;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	
+		.st19{clip-path:url(#SVGID_00000098211342155072775590000006536186646560185472_);fill:none;stroke:#020202;stroke-width:2.017854;stroke-linecap:round;stroke-linejoin:round;}
+	
+		.st20{clip-path:url(#SVGID_00000098211342155072775590000006536186646560185472_);fill:none;stroke:#020202;stroke-width:2.017854;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2.0541754,6.1645441;}
+	
+		.st21{fill-rule:evenodd;clip-rule:evenodd;fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st22{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;}
+	.st23{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2.0316622,3.0474932;}
+	.st24{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:2.0197263,3.0295897;}
+	
+		.st25{clip-path:url(#SVGID_00000017506348186440931950000016889287060675737266_);fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;}
+	.st26{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1.5628287,3.1256573;}
+	.st27{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1.0133867,3.0401602;}
+	.st28{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:1,3;}
+	.st29{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1.0368598,3.1105795;}
+	.st30{fill:none;stroke:#000000;stroke-linecap:round;stroke-dasharray:1,3;}
+	.st31{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:0.985316,2.9559479;}
+	.st32{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:0.9730836,2.9192507;}
+	.st33{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1.0340089,3.1020267;}
+	.st34{fill:none;stroke:#000000;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:1,2;}
+	.st35{clip-path:url(#SVGID_00000140730807871886327730000015228540772035878312_);}
+</style>
+<g id="Download_Garmin_Connect_App_00000163049594677685525380000007197063673324513169_">
+	<g>
+		<g>
+			<path class="st15" d="M32.1510468,29.6466293c-1.5257149,2.0904655-3.9976082,3.4032898-6.7149181,3.4032898
+				c-3.7521935,0-6.9544201-2.5310307-7.7911968-6.1590385l-0.0709629-0.5233555 M32.426033,20.53965
+				c-1.4429264-2.196909-3.9384747-3.5895691-6.7356186-3.5895691c-3.7640209,0-7.0460796,2.5399017-7.9893036,6.1886082
+				l-0.1212292,0.6209297"/>
+		</g>
+	</g>
+</g>
+<g>
+	<g>
+		<g>
+			<g>
+				<path class="st15" d="M37.1752014,5.090632c0-1.5967419-0.1996918-2.5947051-1.1976547-3.5926685S33.5824318,0.5,33.0834503,0.5
+					H16.9164467c-0.4989815,0-1.8961306,0-2.8940935,0.9979634S12.8247967,3.49389,12.8247967,5.090632v39.818737
+					c0,1.5967407,0.1995926,2.5947037,1.1975565,3.5926666S16.4174652,49.5,16.9164467,49.5h16.1670036
+					c0.4989815,0,1.8961334,0,2.8940964-0.997963s1.1976547-1.9959259,1.1976547-3.5926666V5.090632L37.1752014,5.090632z"/>
+				<path class="st15" d="M30.3889523,0.5c-0.0997963,0-0.1994934,0.0997967-0.1994934,0.2993892
+					c0,0.2993892-0.0000992,1.2973526-0.2994881,1.596741c-0.1995926,0.1995933-0.4988823,0.2993891-0.6984749,0.2993891
+					c-0.5987778,0-7.5846214,0-8.1833992,0c-0.2993889,0-0.4989815-0.0997958-0.698576-0.2993891
+					c-0.299387-0.2993884-0.299387-1.2973517-0.299387-1.596741c0-0.1995925-0.0997982-0.1995925-0.1995945-0.2993892"/>
+				<path class="st15" d="M29.8899708,47.5040741c-0.6985741,0-9.181263,0-9.879837,0"/>
+			</g>
+		</g>
+	</g>
+</g>
+</svg>

@@ -27,7 +27,7 @@ export function ProductCard({ product }: { product: Product }) {
           alt={product.name}
           fill
           sizes="(max-width: 768px) 100vw, 340px"
-          className="object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+          className="object-contain"
         />
       </div>
 

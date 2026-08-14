@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" version="1.1" viewBox="0 0 50 50" width="50" height="50" style="enable-background:new 0 0 50 50;" xml:space="preserve">
+  <!-- Generator: Adobe Illustrator 29.3.0, SVG Export Plug-In . SVG Version: 2.1.0 Build 146)  -->
+  <defs>
+    <style>
+      .st0 {
+        fill: none;
+        stroke: #000;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+    </style>
+  </defs>
+  <g>
+    <path class="st0" d="M16.4631114,32.4890995h13.3733006"/>
+    <path class="st0" d="M16.4631114,28.2096004h17.0109005"/>
+    <path class="st0" d="M16.4631114,23.9300995h17.0109005"/>
+    <path class="st0" d="M16.4631114,19.6506004h17.0109005"/>
+    <path class="st0" d="M14.2162614,9.05896h-4.0654302v36.161541h20.2046502"/>
+    <path class="st0" d="M39.7862105,26.8349885V9.05896h-4.1724987"/>
+    <path class="st0" d="M29.1944117,4.77948c0-2.3537199-1.9257011-4.27948-4.279501-4.27948-2.3536987,0-4.2793999,1.92576-4.2793999,4.27948h-6.4192495v6.41922h21.1834497v-6.41922h-6.2052994Z"/>
+    <path class="st0" d="M39.7861113,4.77948h4.2793999v21.9904645"/>
+    <path class="st0" d="M31.7341593,49.5H5.8712902V4.77948h4.2794709"/>
+  </g>
+  <path class="st0" d="M44.1287098,49.0924569c-5.475356,1.4463222-10.847405-2.3760975-11.6738732-8.0580715-.8264682-5.6819741,3.3058766-10.8475094,8.8845436-10.9508185-6.7150602,4.7521969-5.0621239,16.4261745,2.7893296,19.00889h0Z"/>
+</svg>

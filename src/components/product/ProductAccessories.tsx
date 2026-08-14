@@ -87,7 +87,7 @@ export function ProductAccessories({ accessories = [] }: { accessories?: Accesso
                     alt={acc.name}
                     fill
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    className="object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+                    className="object-contain p-2"
                   />
                   {acc.badge && (
                     <span className="absolute left-2 top-2 rounded bg-neutral-900 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
