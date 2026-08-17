@@ -1,0 +1,30 @@
+❯ https://www.garmin.com/en-US/c/garmin-pay/ review this page again your build is not looks like it. i need 1005 clone…
+      14 -const features = [
+      13 +const iconStrip = [
+      14    {
+      15 +    Icon: CardIcon,
+      16 +    text: "Garmin Pay works with multiple major card networks, including Visa®, Discover® and Mastercar
+         +d®.",
+      17 +  },
+      18 +  {
+      19 +    Icon: SwapIcon,
+      20 +    text: "We protect your information by swapping your real card number with a virtual number.",
+      21 +  },
+      22 +  {
+      23 +    Icon: TapIcon,
+      24 +    text: "Just enter your passcode and tap your device to pay in seconds.",
+      25 +  },
+      26 +  {
+      27 +    Icon: WaveIcon,
+      28 +    text: "You can use Garmin Pay wherever contactless payments are accepted, including on select trans
+         +it systems.",
+      29 +  },
+      30 +];
+      31 +
+      32 +const details = [                    Jump to bottom (ctrl+End) ↓
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+❯ https://github.com/sardor710/GRMN
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  5h limit: N/A
+  ⏵⏵ auto mode on · 1 shell

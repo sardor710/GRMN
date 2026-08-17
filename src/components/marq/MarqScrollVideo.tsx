@@ -8,13 +8,14 @@ interface MarqScrollVideoProps {
   title?: string;
   subtitle?: string;
   ctaLabel?: string;
+  ctaHref?: string;
 }
 
 /**
  * Sections 3 & 8 — full-viewport video that plays through when scrolled into
  * view (mirrors the site's fixed scroll-play video). Optional centered overlay.
  */
-export function MarqScrollVideo({ src, title, subtitle, ctaLabel }: MarqScrollVideoProps) {
+export function MarqScrollVideo({ src, title, subtitle, ctaLabel, ctaHref }: MarqScrollVideoProps) {
   const sectionRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -57,13 +58,25 @@ export function MarqScrollVideo({ src, title, subtitle, ctaLabel }: MarqScrollVi
             <p className="mt-3 text-[18px] font-medium text-white md:text-[22px]">{subtitle}</p>
           )}
           {ctaLabel && (
-            <button
-              type="button"
-              className="mt-8 inline-flex items-center gap-2 border border-white/80 px-7 py-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition-colors hover:bg-white hover:text-black"
-            >
-              {ctaLabel}
-              <PlayIcon className="h-4 w-4" />
-            </button>
+            ctaHref ? (
+              <a
+                href={ctaHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-8 inline-flex items-center gap-2 border border-white/80 px-7 py-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition-colors hover:bg-white hover:text-black cursor-pointer"
+              >
+                {ctaLabel}
+                <PlayIcon className="h-4 w-4" />
+              </a>
+            ) : (
+              <button
+                type="button"
+                className="mt-8 inline-flex items-center gap-2 border border-white/80 px-7 py-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition-colors hover:bg-white hover:text-black cursor-pointer"
+              >
+                {ctaLabel}
+                <PlayIcon className="h-4 w-4" />
+              </button>
+            )
           )}
         </div>
       )}

@@ -5,7 +5,7 @@ export type MarqEdition = "Damascus Steel Edition" | "Carbon Edition" | "Titaniu
 export interface MarqLifestyleSlide {
   edition: string; // e.g. "TITANIUM EDITION"
   model: string; // e.g. "CAPTAIN"
-  accent: "red" | "green" | "gold";
+  accent: "red" | "green" | "gold" | "yellow" | "blue" | "cyan";
   href: string;
   poster: string; // marq2-product-*.jpg (lifestyle scene still)
   video: string; // video/*.mp4 lifestyle clip
@@ -25,7 +25,7 @@ export interface MarqMaterialPanel {
 export interface MarqProductCard {
   edition: string; // "DAMASCUS STEEL EDITION"
   model: string; // "ADVENTURER"
-  accent: "red" | "green" | "gold"; // underline color by edition
+  accent: "red" | "green" | "gold" | "yellow" | "blue" | "cyan"; // underline color by edition
   image: string; // marq-spec-*.png
   href: string;
   isNew?: boolean;

@@ -9,19 +9,22 @@ const VID = "/marq/video";
 
 // Section 5 — auto-advancing lifestyle carousel (7 models)
 export const lifestyleSlides: MarqLifestyleSlide[] = [
-  { edition: "TITANIUM EDITION", model: "CAPTAIN", accent: "gold", href: "#", poster: `${IMG}/marq2-product-captain.jpg`, video: `${VID}/captain.mp4`, watch: `${IMG}/marq-spec-captain.png` },
-  { edition: "CARBON EDITION", model: "GOLFER", accent: "green", href: "#", poster: `${IMG}/marq2-product-carbon-golfer.jpg`, video: `${VID}/carbon-golfer.mp4`, watch: `${IMG}/marq-spec-carbon-golfer.png` },
-  { edition: "CARBON EDITION", model: "ATHLETE", accent: "green", href: "#", poster: `${IMG}/marq2-product-carbon-athlete.jpg`, video: `${VID}/carbon-athlete.mp4`, watch: `${IMG}/marq-spec-carbon-athlete.png` },
-  { edition: "TITANIUM EDITION", model: "GOLFER", accent: "gold", href: "#", poster: `${IMG}/marq2-product-golfer.jpg`, video: `${VID}/golfer.mp4`, watch: `${IMG}/marq-spec-golfer.png` },
-  { edition: "TITANIUM EDITION", model: "ATHLETE", accent: "gold", href: "#", poster: `${IMG}/marq2-product-athlete.jpg`, video: `${VID}/athlete.mp4`, watch: `${IMG}/marq-spec-athlete.png` },
-  { edition: "DAMASCUS STEEL EDITION", model: "ADVENTURER", accent: "red", href: "#", poster: `${IMG}/marq2-product-adventurer.jpg`, video: `${VID}/adventurer.mp4`, watch: `${IMG}/marq-spec-damascus.png` },
-  { edition: "TITANIUM EDITION", model: "AVIATOR", accent: "gold", href: "#", poster: `${IMG}/marq2-product-aviator.jpg`, video: `${VID}/aviator.mp4`, watch: `${IMG}/marq-spec-aviator.png` },
+  { edition: "TITANIUM EDITION", model: "CAPTAIN", accent: "cyan", href: "/p/1228429", poster: `${IMG}/marq2-product-captain.jpg`, video: `${VID}/captain.mp4`, watch: `${IMG}/marq-spec-captain.png` },
+  { edition: "CARBON EDITION", model: "GOLFER", accent: "green", href: "/p/1228429", poster: `${IMG}/marq2-product-carbon-golfer.jpg`, video: `${VID}/carbon-golfer.mp4`, watch: `${IMG}/marq-spec-carbon-golfer.png` },
+  { edition: "CARBON EDITION", model: "ATHLETE", accent: "yellow", href: "/p/1228429", poster: `${IMG}/marq2-product-carbon-athlete.jpg`, video: `${VID}/carbon-athlete.mp4`, watch: `${IMG}/marq-spec-carbon-athlete.png` },
+  { edition: "TITANIUM EDITION", model: "GOLFER", accent: "green", href: "/p/1228429", poster: `${IMG}/marq2-product-golfer.jpg`, video: `${VID}/golfer.mp4`, watch: `${IMG}/marq-spec-golfer.png` },
+  { edition: "TITANIUM EDITION", model: "ATHLETE", accent: "yellow", href: "/p/1228429", poster: `${IMG}/marq2-product-athlete.jpg`, video: `${VID}/athlete.mp4`, watch: `${IMG}/marq-spec-athlete.png` },
+  { edition: "DAMASCUS STEEL EDITION", model: "ADVENTURER", accent: "red", href: "/p/1228429", poster: `${IMG}/marq2-product-adventurer.jpg`, video: `${VID}/adventurer.mp4`, watch: `${IMG}/marq-spec-damascus.png` },
+  { edition: "TITANIUM EDITION", model: "AVIATOR", accent: "blue", href: "/p/1228429", poster: `${IMG}/marq2-product-aviator.jpg`, video: `${VID}/aviator.mp4`, watch: `${IMG}/marq-spec-aviator.png` },
 ];
 
 export const accentColor: Record<string, string> = {
-  red: "var(--marq-red)",
-  green: "var(--marq-green)",
-  gold: "var(--marq-gold)",
+  red: "#e76123",
+  green: "#6BA055",
+  yellow: "#DCDB55",
+  blue: "#0074B8",
+  cyan: "#8BC6D0",
+  gold: "#d4af37",
 };
 
 // Section 9 — three material feature panels

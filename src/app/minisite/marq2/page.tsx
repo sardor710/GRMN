@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     "Seven luxury modern tool watches. The second generation of the MARQ Collection — Fused Carbon Fiber, Damascus Steel and Grade-5 Titanium. Where luxury and performance collide.",
 };
 
-export default function MarqMinisitePage() {
+export default function Marq2MinisitePage() {
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <SiteHeader />
