@@ -1,4 +1,5 @@
 import type { Product, WatchFamily, ProductDetail, AccessoryItem } from "@/types";
+import { getProducts as getCMSProducts } from "@/lib/cms/store";
 
 export const watchFamilies: WatchFamily[] = [
   { name: "fēnix®", tagline: "Push the limits of multisport performance.", image: "/images/families/fenix.png" },
@@ -71,8 +72,32 @@ export function getCatalogue(slug: string): CatalogueDef | undefined {
   return catalogues.find((c) => c.slug === slug);
 }
 
+export function getAllProducts(): Product[] {
+  try {
+    const cmsProducts = getCMSProducts();
+    if (cmsProducts && cmsProducts.length > 0) {
+      return cmsProducts.map((cp) => ({
+        id: cp.id,
+        name: cp.name,
+        price: cp.price,
+        priceSuffix: cp.priceSuffix,
+        description: cp.description,
+        image: cp.image,
+        badge: cp.badge && cp.badge !== "NONE" ? cp.badge : undefined,
+        family: cp.family,
+        activities: cp.activities,
+        level: cp.level,
+        caseSize: cp.caseSize,
+      }));
+    }
+  } catch (err) {
+    console.error("Error reading CMS products, fallback to static:", err);
+  }
+  return products;
+}
+
 export function catalogueProducts(def: CatalogueDef): Product[] {
-  return products.filter(def.filter);
+  return getAllProducts().filter(def.filter);
 }
 
 // Back-compat: simple metadata lookup keyed by slug.
@@ -80,7 +105,38 @@ export const catalogueMeta: Record<string, { title: string; heading: string }> =
   catalogues.map((c) => [c.slug, { title: c.title, heading: c.heading }]),
 );
 
+export function getCMSProduct(id: string) {
+  try {
+    const cmsProducts = getCMSProducts();
+    return cmsProducts.find((cp) => cp.id === id);
+  } catch (err) {
+    console.error("Error looking up raw CMS product:", err);
+    return undefined;
+  }
+}
+
 export function getProduct(id: string): Product | undefined {
+  try {
+    const cmsProducts = getCMSProducts();
+    const found = cmsProducts.find((cp) => cp.id === id);
+    if (found) {
+      return {
+        id: found.id,
+        name: found.name,
+        price: found.price,
+        priceSuffix: found.priceSuffix,
+        description: found.description,
+        image: found.image,
+        badge: found.badge && found.badge !== "NONE" ? found.badge : undefined,
+        family: found.family,
+        activities: found.activities,
+        level: found.level,
+        caseSize: found.caseSize,
+      };
+    }
+  } catch (err) {
+    console.error("Error looking up CMS product:", err);
+  }
   return products.find((p) => p.id === id);
 }
 
@@ -231,11 +287,34 @@ export const fenix8Detail: ProductDetail = {
 
 // Build a functional detail page for products without hand-authored data.
 function buildFallbackDetail(p: Product): ProductDetail {
+  let specs = [
+    { label: "Family", value: p.family },
+    { label: "Level", value: p.level },
+    { label: "Case size", value: p.caseSize },
+    { label: "Activities", value: p.activities.join(", ") },
+  ];
+  let inTheBox = [p.name, "Charging/data cable", "Documentation"];
+
+  try {
+    const cmsProducts = getCMSProducts();
+    const found = cmsProducts.find((cp) => cp.id === p.id);
+    if (found) {
+      if (found.specs && found.specs.length > 0) {
+        specs = found.specs;
+      }
+      if (found.inTheBox && found.inTheBox.length > 0) {
+        inTheBox = found.inTheBox;
+      }
+    }
+  } catch (e) {
+    console.error("Error reading CMS product details:", e);
+  }
+
   return {
     id: p.id,
     title: p.name,
     subtitle: p.description,
-    partNumber: "010-0000-00",
+    partNumber: `010-${p.id.slice(0, 4)}-00`,
     price: p.price,
     badge: p.badge,
     breadcrumb: [
@@ -255,14 +334,9 @@ function buildFallbackDetail(p: Product): ProductDetail {
         image: p.image,
       },
     ],
-    specs: [
-      { label: "Family", value: p.family },
-      { label: "Level", value: p.level },
-      { label: "Case size", value: p.caseSize },
-      { label: "Activities", value: p.activities.join(", ") },
-    ],
-    inTheBox: [p.name, "Charging/data cable", "Documentation"],
-    related: products
+    specs,
+    inTheBox,
+    related: getAllProducts()
       .filter((x) => x.id !== p.id && x.family === p.family)
       .slice(0, 4)
       .map((x) => x.id),
@@ -270,7 +344,18 @@ function buildFallbackDetail(p: Product): ProductDetail {
 }
 
 export function getProductDetail(id: string): ProductDetail | undefined {
-  if (id === "1228429") return fenix8Detail;
-  const basic = getProduct(id);
-  return basic ? buildFallbackDetail(basic) : undefined;
+  const dynamicProduct = getProduct(id);
+
+  if (id === "1228429") {
+    if (!dynamicProduct) return fenix8Detail;
+    return {
+      ...fenix8Detail,
+      title: dynamicProduct.name || fenix8Detail.title,
+      subtitle: dynamicProduct.description || fenix8Detail.subtitle,
+      price: dynamicProduct.price ?? fenix8Detail.price,
+      badge: dynamicProduct.badge, // Dynamically pulled from CMS store
+    };
+  }
+
+  return dynamicProduct ? buildFallbackDetail(dynamicProduct) : undefined;
 }

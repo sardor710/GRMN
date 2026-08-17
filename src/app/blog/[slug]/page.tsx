@@ -6,6 +6,9 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SectionHeading } from "@/components/SectionHeading";
 import { blogPosts, getPost, articleBody } from "@/lib/blog";
+import { getBlogs } from "@/lib/cms/store";
+import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
+import type { CMSBlog } from "@/lib/cms/types";
 
 export function generateStaticParams() {
   return blogPosts.map((p) => ({ slug: p.slug }));
@@ -18,7 +21,54 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const post = getPost(slug);
-  return { title: post ? `${post.title} | Garmin Blog` : "Garmin Blog" };
+  const cmsBlogs = getBlogs();
+  const cmsBlog = cmsBlogs.find((b) => b.slug === slug);
+
+  if (!post && !cmsBlog) {
+    return { title: "Garmin Blog & Fitness Guides" };
+  }
+
+  const title = cmsBlog?.seoTitle || (post ? `${post.title} | Garmin Blog` : "Garmin Blog");
+  const description =
+    cmsBlog?.seoDescription ||
+    cmsBlog?.excerpt ||
+    post?.excerpt ||
+    "Explore training tips, GPS navigation guides, and smartwatch features on the official Garmin Blog.";
+  const image = cmsBlog?.ogImage || cmsBlog?.coverImage || post?.image || "/images/blog/triathlon.jpg";
+  const url = `https://www.garmin.com/blog/${slug}`;
+
+  return {
+    title,
+    description,
+    keywords: cmsBlog?.focusKeywords?.join(", "),
+    alternates: {
+      canonical: cmsBlog?.canonicalUrl || url,
+    },
+    robots: cmsBlog?.noIndex
+      ? { index: false, follow: false }
+      : { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: "Garmin",
+      type: "article",
+      images: [
+        {
+          url: image,
+          width: 1200,
+          height: 630,
+          alt: post?.title || title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [image],
+    },
+  };
 }
 
 export default async function ArticlePage({
@@ -28,40 +78,82 @@ export default async function ArticlePage({
 }) {
   const { slug } = await params;
   const post = getPost(slug);
-  if (!post) notFound();
+  const cmsBlogs = getBlogs();
+  const cmsBlog = cmsBlogs.find((b) => b.slug === slug);
 
-  const body = articleBody(post);
-  const related = blogPosts.filter((p) => p.slug !== post.slug && p.category === post.category).slice(0, 3);
-  const fallbackRelated = related.length ? related : blogPosts.filter((p) => p.slug !== post.slug).slice(0, 3);
+  if (!post && !cmsBlog) notFound();
+
+  const activeBlog: CMSBlog = cmsBlog || {
+    id: `post-${post!.slug}`,
+    slug: post!.slug,
+    title: post!.title,
+    excerpt: post!.excerpt,
+    content: post!.excerpt,
+    coverImage: post!.image,
+    category: post!.categories[0] || "Fitness",
+    readingTime: post!.readTime,
+    author: "Garmin Editorial Team",
+    status: "published",
+    publishedAt: new Date(post!.date).toISOString(),
+    createdAt: new Date().toISOString(),
+  };
+
+  const breadcrumbs = [
+    { name: "Garmin", url: "https://www.garmin.com" },
+    { name: "Blog", url: "https://www.garmin.com/blog" },
+    { name: activeBlog.title, url: `https://www.garmin.com/blog/${activeBlog.slug}` },
+  ];
+
+  const body = post ? articleBody(post) : [activeBlog.content];
+  const categories = post ? post.categories : [activeBlog.category];
+  const displayImage = activeBlog.coverImage || post?.image || "/images/blog/triathlon.jpg";
+  const displayDate = post?.date || new Date(activeBlog.publishedAt || activeBlog.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+  const displayReadTime = post?.readTime || activeBlog.readingTime || "4 min read";
+
+  const related = blogPosts.filter((p) => p.slug !== slug && p.category === (post?.category || activeBlog.category)).slice(0, 3);
+  const fallbackRelated = related.length ? related : blogPosts.filter((p) => p.slug !== slug).slice(0, 3);
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
+      {/* Structured Article Schema for Google Rich Results */}
+      <ArticleJsonLd blog={activeBlog} url={`https://www.garmin.com/blog/${slug}`} />
+      <BreadcrumbJsonLd items={breadcrumbs} />
+
       <SiteHeader />
       <main className="flex-1">
         {/* Hero */}
         <div className="relative aspect-[1440/520] w-full">
-          <Image src={post.image} alt={post.title} fill priority sizes="100vw" className="object-cover object-center" />
+          <Image
+            src={displayImage}
+            alt={activeBlog.title}
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-center"
+          />
         </div>
 
         <article className="mx-auto max-w-[760px] px-4 py-12">
           <div className="flex gap-3">
-            {post.categories.map((c) => (
+            {categories.map((c) => (
               <span key={c} className="text-[12px] font-medium uppercase tracking-[0.06em] text-[#007cc3]">
                 {c}
               </span>
             ))}
           </div>
-          <h1 className="g-heading mt-3 text-[36px] leading-tight text-black">{post.title}</h1>
+          <h1 className="g-heading mt-3 text-[36px] leading-tight text-black">{activeBlog.title}</h1>
           <div className="mt-3 flex items-center gap-4 text-[13px] text-neutral-500">
-            <span>{post.date}</span>
+            <span>{displayDate}</span>
             <span>·</span>
-            <span>{post.readTime}</span>
+            <span>{displayReadTime}</span>
+            <span>·</span>
+            <span>By {activeBlog.author}</span>
           </div>
           <div className="mt-8 space-y-5">
             {body.map((para, i) => (
               <p
                 key={i}
-                className={i === 0 ? "text-[19px] leading-relaxed text-black" : "text-[17px] leading-relaxed text-neutral-700"}
+                className={i === 0 ? "text-[19px] leading-relaxed text-black font-medium" : "text-[17px] leading-relaxed text-neutral-700"}
               >
                 {para}
               </p>

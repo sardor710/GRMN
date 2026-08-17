@@ -8,6 +8,8 @@ import { CatalogueGrid } from "@/components/CatalogueGrid";
 import { SectionHeading } from "@/components/SectionHeading";
 import { catalogues, getCatalogue, catalogueProducts } from "@/lib/products";
 
+export const dynamic = "force-dynamic";
+
 export function generateStaticParams() {
   return catalogues.map((c) => ({ slug: c.slug.split("/") }));
 }

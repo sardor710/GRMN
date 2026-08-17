@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { ProductDetail } from "@/types";
 import { useCart } from "@/lib/cart";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
+import { GarminBadge } from "@/components/GarminBadge";
 
 export function ProductTop({ product }: { product: ProductDetail }) {
   const [mainIdx, setMainIdx] = useState(0);
@@ -92,10 +93,10 @@ export function ProductTop({ product }: { product: ProductDetail }) {
             Part Number {product.partNumber}
           </p>
 
-          {product.badge && (
-            <span className="mt-4 inline-block bg-[#5bc2e7] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.06em] text-white">
-              {product.badge}
-            </span>
+          {product.badge && product.badge !== "NONE" && (
+            <div className="mt-3">
+              <GarminBadge badge={product.badge} variant="pill" />
+            </div>
           )}
 
           <p className="mt-4 text-[28px] font-medium text-black">

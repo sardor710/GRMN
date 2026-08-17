@@ -8,7 +8,7 @@ export interface HeroSlide {
 }
 
 export interface FeaturedCard {
-  badge?: "NEW" | "SALE";
+  badge?: string;
   title: string;
   description: string;
   image: string;
@@ -59,7 +59,7 @@ export interface Product {
   priceSuffix?: string; // e.g. "and up"
   description: string;
   image: string;
-  badge?: "NEW" | "CUSTOMIZABLE" | "SALE";
+  badge?: string;
   family: string;
   activities: string[];
   level: "Entry" | "Advanced" | "Premium" | "Youth";
