@@ -63,9 +63,17 @@
   .bar { padding: 0 16px; }
   .desktopNav, .help { display: none; }
   .logo, .logo svg { width: 105px; }
-  .menuToggle { display: flex; }
+  .actions { gap: 4px; }
+  .iconButton { width: 44px; height: 44px; }
+  .menuToggle { display: flex; width: 44px; height: 44px; align-items: center; }
   .mobileNav { position: absolute; top: 65px; left: 0; right: 0; display: flex; flex-direction: column; max-height: calc(100vh - 65px); overflow-y: auto; background: #fff; box-shadow: 0 12px 24px rgba(0,0,0,.16); }
   .mobileNav a { display: flex; align-items: center; justify-content: space-between; min-height: 50px; padding: 12px 20px; border-top: 1px solid #eee; color: #000; font-size: 15px; text-decoration: none; }
   .mobileNav svg { width: 18px; height: 18px; }
   .searchPanel { padding: 20px; }
+}
+
+@media (max-width: 380px) {
+  .bar { padding: 0 12px; }
+  .logo, .logo svg { width: 100px; }
+  .actions { gap: 2px; }
 }

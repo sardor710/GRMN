@@ -73,6 +73,18 @@ export function HomeFooter() {
             </div>
           ))}
         </div>
+        <div className={styles.mobileColumns}>
+          {footerColumns.map((column) => (
+            <details key={column.heading}>
+              <summary>{column.heading}</summary>
+              <ul>
+                {column.links.map((link) => (
+                  <li key={link.label}><a href={liveLinks[link.label] ?? link.href}>{link.label}</a></li>
+                ))}
+              </ul>
+            </details>
+          ))}
+        </div>
         <div className={styles.lower}>
           <a className={styles.location} href="https://www.garmin.com/en-US/select-a-location/"><GlobeIcon aria-hidden="true" /> United States</a>
           <div className={styles.socials}>

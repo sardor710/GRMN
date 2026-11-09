@@ -130,10 +130,10 @@
   .categoryGrid { grid-template-columns: 1fr; }
   .promoCard { min-height: 0; }
   .promoImage { height: auto; aspect-ratio: 1; }
-  .promoContent { min-height: 170px; }
-  .storyCard { height: auto; aspect-ratio: 1.45; }
-  .categoryCard { height: auto; aspect-ratio: 1; }
-  .promoContent h2,
-  .overlayContent h2,
-  .sectionHeading { font-size: 28px; line-height: 36px; }
+  .promoContent { min-height: 145px; }
+  .storyCard,
+  .categoryCard { height: 400px; aspect-ratio: auto; }
+  .promoContent h2 { font-size: 24px; line-height: 30px; }
+  .overlayContent h2 { font-size: 28px; line-height: 36px; }
+  .sectionHeading { font-size: 24px; line-height: 30px; }
 }

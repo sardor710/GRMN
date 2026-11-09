@@ -23,4 +23,16 @@ If an asset fails to download, keep the existing local asset only where it match
 - Desktop local section heights match the live reference. At 1280px browser width, final page height is 3753px; live page at 1230px browser width was 3739px, with the 14px difference explained by the image-ratio hero width.
 - Hero next/pause, featured advance, and header search were exercised in the local browser. All main images reported loaded.
 - `npm run check` passed (0 lint errors; 27 warnings in existing unrelated files), including production build.
-- Mobile CSS is implemented for the live 990px and 640px image breakpoints and single-column tiles, but a 390px visual screenshot was unavailable because Windows browser control could not verify the browser URL and stopped the mobile inspection.
+- The initial mobile CSS used the live 990px and 640px image breakpoints; the responsive follow-up below completed visual verification.
+
+## Responsive follow-up (2026-11-09)
+- **Goal:** make the same `/` design usable at small iPhones, standard phones, portrait tablets, and Surface Duo single/dual-screen widths without changing other routes.
+- **Work:** capture local renders at 320, 390, 540, 768, and 1114 CSS-pixel widths; measure horizontal overflow, clipped controls, unreadable type, and overlong sections; adjust only `src/components/home/` CSS/markup and homepage-scoped styles.
+- **Acceptance:** no unintended page-level horizontal scrolling; hero text and controls visible; navigation/search/menu usable; featured carousel scrolls by touch; tile grids and footer remain readable; build and targeted lint/typecheck pass.
+- **Recovery:** if local browser automation cannot inspect a width, use computed CSS and asset ratios and record the unverified size. Keep the existing desktop layout and unrelated dirty files intact.
+
+## Responsive follow-up result (2026-11-09)
+- Matched the live 390px reference structure: image followed by a black hero caption, 611px Featured section, fixed-height story/category cards, 252px signup, and 593px mobile footer. The local page and reference both measured 7172px tall at 390px.
+- Added larger mobile header touch targets, swipeable hero slides, and collapsible mobile footer groups. The desktop homepage retains its existing layout.
+- Audited widths 320, 375, 390, 428, 540, 768, 820, 900, 901, 990, 991, 1024, and 1114px with headless Chrome device emulation. No page-level horizontal overflow or clipped header controls were found. All six hero captions and shop links fit at the audited widths. Mobile menu, search, footer accordion, and hero swipe checks passed.
+- `npm run check` passed, including lint, strict TypeScript, and production build. Remaining lint warnings are in other, unrelated files.

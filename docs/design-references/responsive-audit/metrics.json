@@ -1,0 +1,4278 @@
+[
+  {
+    "requestedWidth": 320,
+    "innerWidth": 320,
+    "scrollWidth": 320,
+    "height": 6899,
+    "sections": [
+      {
+        "tag": "SECTION",
+        "className": "HomeHero-module__B1rHZW__hero",
+        "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift ever\" begins\n\nSHOP",
+        "y": 65,
+        "height": 582,
+        "children": [
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift e",
+            "y": 65,
+            "height": 582
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 75,
+            "height": 40
+          },
+          {
+            "tag": "SPAN",
+            "text": "Slide 1 of 6: HOLIDAY GIFT GUIDE",
+            "y": 647,
+            "height": 1
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeFeatured-module__B5JdLq__section",
+        "text": "FEATURED\nHOLIDAY GIFT GUIDE\n\nWhere “best gift ever” beg",
+        "y": 647,
+        "height": 611,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "FEATURED",
+            "y": 647,
+            "height": 50
+          },
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere “best gift e",
+            "y": 697,
+            "height": 561
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__promoGrid",
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP\nF",
+        "y": 1258,
+        "height": 1358,
+        "children": [
+          {
+            "tag": "A",
+            "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR",
+            "y": 1266,
+            "height": 444
+          },
+          {
+            "tag": "A",
+            "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHO",
+            "y": 1726,
+            "height": 433
+          },
+          {
+            "tag": "A",
+            "text": "SMARTWATCHES FOR KIDS\nSHOP",
+            "y": 2175,
+            "height": 433
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__storyGrid",
+        "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLEARN MORE\nSTORIES:",
+        "y": 2616,
+        "height": 832,
+        "children": [
+          {
+            "tag": "A",
+            "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLE",
+            "y": 2624,
+            "height": 400
+          },
+          {
+            "tag": "A",
+            "text": "STORIES: HOW WE CONNECT PEOPLE TO THEI",
+            "y": 3040,
+            "height": 400
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__categories",
+        "text": "SHOP BY CATEGORY\nSMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+        "y": 3448,
+        "height": 2606,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SHOP BY CATEGORY",
+            "y": 3512,
+            "height": 30
+          },
+          {
+            "tag": "DIV",
+            "text": "SMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+            "y": 3558,
+            "height": 2496
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeSignup-module__WpVARG__section",
+        "text": "SIGN UP FOR NEWS\nSign up for News*\n\nGet product news an",
+        "y": 6054,
+        "height": 252,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SIGN UP FOR NEWS",
+            "y": 6078,
+            "height": 36
+          },
+          {
+            "tag": "FORM",
+            "text": "Sign up for News*",
+            "y": 6134,
+            "height": 42
+          },
+          {
+            "tag": "P",
+            "text": "Get product news and promotions based ",
+            "y": 6188,
+            "height": 39
+          },
+          {
+            "tag": "A",
+            "text": "Learn about email privacy.",
+            "y": 6236,
+            "height": 13
+          }
+        ]
+      }
+    ],
+    "promoTiles": [
+      {
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP",
+        "y": 1266,
+        "height": 444
+      },
+      {
+        "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHOP",
+        "y": 1726,
+        "height": 433
+      },
+      {
+        "text": "SMARTWATCHES FOR KIDS\nSHOP",
+        "y": 2175,
+        "height": 433
+      }
+    ],
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 320,
+      "height": 65
+    },
+    "hero": {
+      "x": 0,
+      "y": 65,
+      "width": 320,
+      "height": 582
+    },
+    "featured": {
+      "x": 0,
+      "y": 647,
+      "width": 320,
+      "height": 611
+    },
+    "promo": {
+      "x": 0,
+      "y": 1258,
+      "width": 320,
+      "height": 1358
+    },
+    "stories": {
+      "x": 0,
+      "y": 2616,
+      "width": 320,
+      "height": 832
+    },
+    "categories": {
+      "x": 0,
+      "y": 3448,
+      "width": 320,
+      "height": 2606
+    },
+    "signup": {
+      "x": 0,
+      "y": 6054,
+      "width": 320,
+      "height": 252
+    },
+    "footer": {
+      "x": 0,
+      "y": 6306,
+      "width": 320,
+      "height": 593
+    },
+    "controls": [
+      {
+        "label": "Garmin home",
+        "x": 12,
+        "right": 112
+      },
+      {
+        "label": "Search",
+        "x": 126,
+        "right": 170
+      },
+      {
+        "label": "Account",
+        "x": 172,
+        "right": 216
+      },
+      {
+        "label": "Cart, 0 items",
+        "x": 218,
+        "right": 262
+      },
+      {
+        "label": "Menu",
+        "x": 264,
+        "right": 308
+      }
+    ],
+    "slides": [
+      {
+        "title": "HOLIDAY GIFT GUIDE",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 563,
+        "heroBottom": 647,
+        "shopVisible": true
+      },
+      {
+        "title": "FĒNIX® 9",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 587,
+        "heroBottom": 647,
+        "shopVisible": true
+      },
+      {
+        "title": "CIRQA™ SMART BAND",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 587,
+        "heroBottom": 647,
+        "shopVisible": true
+      },
+      {
+        "title": "DESCENT™ X10",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 587,
+        "heroBottom": 647,
+        "shopVisible": true
+      },
+      {
+        "title": "FORERUNNER® 70 & 170",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 587,
+        "heroBottom": 647,
+        "shopVisible": true
+      },
+      {
+        "title": "VENU® 4",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 587,
+        "heroBottom": 647,
+        "shopVisible": true
+      }
+    ],
+    "swipeTitle": "HOLIDAY GIFT GUIDE",
+    "mobileControls": {
+      "menuOpen": true,
+      "searchOpen": true,
+      "footerOpen": true
+    }
+  },
+  {
+    "requestedWidth": 375,
+    "innerWidth": 375,
+    "scrollWidth": 375,
+    "height": 7111,
+    "sections": [
+      {
+        "tag": "SECTION",
+        "className": "HomeHero-module__B1rHZW__hero",
+        "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift ever\" begins\n\nSHOP",
+        "y": 65,
+        "height": 640,
+        "children": [
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift e",
+            "y": 65,
+            "height": 640
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 75,
+            "height": 40
+          },
+          {
+            "tag": "SPAN",
+            "text": "Slide 1 of 6: HOLIDAY GIFT GUIDE",
+            "y": 705,
+            "height": 1
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeFeatured-module__B5JdLq__section",
+        "text": "FEATURED\nHOLIDAY GIFT GUIDE\n\nWhere “best gift ever” beg",
+        "y": 705,
+        "height": 611,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "FEATURED",
+            "y": 705,
+            "height": 50
+          },
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere “best gift e",
+            "y": 755,
+            "height": 561
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__promoGrid",
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP\nF",
+        "y": 1316,
+        "height": 1512,
+        "children": [
+          {
+            "tag": "A",
+            "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR",
+            "y": 1324,
+            "height": 488
+          },
+          {
+            "tag": "A",
+            "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHO",
+            "y": 1828,
+            "height": 488
+          },
+          {
+            "tag": "A",
+            "text": "SMARTWATCHES FOR KIDS\nSHOP",
+            "y": 2332,
+            "height": 488
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__storyGrid",
+        "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLEARN MORE\nSTORIES:",
+        "y": 2828,
+        "height": 832,
+        "children": [
+          {
+            "tag": "A",
+            "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLE",
+            "y": 2836,
+            "height": 400
+          },
+          {
+            "tag": "A",
+            "text": "STORIES: HOW WE CONNECT PEOPLE TO THEI",
+            "y": 3252,
+            "height": 400
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__categories",
+        "text": "SHOP BY CATEGORY\nSMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+        "y": 3660,
+        "height": 2606,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SHOP BY CATEGORY",
+            "y": 3724,
+            "height": 30
+          },
+          {
+            "tag": "DIV",
+            "text": "SMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+            "y": 3770,
+            "height": 2496
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeSignup-module__WpVARG__section",
+        "text": "SIGN UP FOR NEWS\nSign up for News*\n\nGet product news an",
+        "y": 6266,
+        "height": 252,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SIGN UP FOR NEWS",
+            "y": 6290,
+            "height": 36
+          },
+          {
+            "tag": "FORM",
+            "text": "Sign up for News*",
+            "y": 6346,
+            "height": 42
+          },
+          {
+            "tag": "P",
+            "text": "Get product news and promotions based ",
+            "y": 6400,
+            "height": 39
+          },
+          {
+            "tag": "A",
+            "text": "Learn about email privacy.",
+            "y": 6448,
+            "height": 13
+          }
+        ]
+      }
+    ],
+    "promoTiles": [
+      {
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP",
+        "y": 1324,
+        "height": 488
+      },
+      {
+        "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHOP",
+        "y": 1828,
+        "height": 488
+      },
+      {
+        "text": "SMARTWATCHES FOR KIDS\nSHOP",
+        "y": 2332,
+        "height": 488
+      }
+    ],
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 375,
+      "height": 65
+    },
+    "hero": {
+      "x": 0,
+      "y": 65,
+      "width": 375,
+      "height": 640
+    },
+    "featured": {
+      "x": 0,
+      "y": 705,
+      "width": 375,
+      "height": 611
+    },
+    "promo": {
+      "x": 0,
+      "y": 1316,
+      "width": 375,
+      "height": 1512
+    },
+    "stories": {
+      "x": 0,
+      "y": 2828,
+      "width": 375,
+      "height": 832
+    },
+    "categories": {
+      "x": 0,
+      "y": 3660,
+      "width": 375,
+      "height": 2606
+    },
+    "signup": {
+      "x": 0,
+      "y": 6266,
+      "width": 375,
+      "height": 252
+    },
+    "footer": {
+      "x": 0,
+      "y": 6518,
+      "width": 375,
+      "height": 593
+    },
+    "controls": [
+      {
+        "label": "Garmin home",
+        "x": 12,
+        "right": 112
+      },
+      {
+        "label": "Search",
+        "x": 181,
+        "right": 225
+      },
+      {
+        "label": "Account",
+        "x": 227,
+        "right": 271
+      },
+      {
+        "label": "Cart, 0 items",
+        "x": 273,
+        "right": 317
+      },
+      {
+        "label": "Menu",
+        "x": 319,
+        "right": 363
+      }
+    ],
+    "slides": [
+      {
+        "title": "HOLIDAY GIFT GUIDE",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 621,
+        "heroBottom": 705,
+        "shopVisible": true
+      },
+      {
+        "title": "FĒNIX® 9",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 645,
+        "heroBottom": 705,
+        "shopVisible": true
+      },
+      {
+        "title": "CIRQA™ SMART BAND",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 645,
+        "heroBottom": 705,
+        "shopVisible": true
+      },
+      {
+        "title": "DESCENT™ X10",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 645,
+        "heroBottom": 705,
+        "shopVisible": true
+      },
+      {
+        "title": "FORERUNNER® 70 & 170",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 645,
+        "heroBottom": 705,
+        "shopVisible": true
+      },
+      {
+        "title": "VENU® 4",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 621,
+        "heroBottom": 705,
+        "shopVisible": true
+      }
+    ],
+    "swipeTitle": "HOLIDAY GIFT GUIDE",
+    "mobileControls": {
+      "menuOpen": true,
+      "searchOpen": true,
+      "footerOpen": true
+    }
+  },
+  {
+    "requestedWidth": 390,
+    "innerWidth": 390,
+    "scrollWidth": 390,
+    "height": 7172,
+    "sections": [
+      {
+        "tag": "SECTION",
+        "className": "HomeHero-module__B1rHZW__hero",
+        "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift ever\" begins\n\nSHOP",
+        "y": 65,
+        "height": 656,
+        "children": [
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift e",
+            "y": 65,
+            "height": 656
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 75,
+            "height": 40
+          },
+          {
+            "tag": "SPAN",
+            "text": "Slide 1 of 6: HOLIDAY GIFT GUIDE",
+            "y": 721,
+            "height": 1
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeFeatured-module__B5JdLq__section",
+        "text": "FEATURED\nHOLIDAY GIFT GUIDE\n\nWhere “best gift ever” beg",
+        "y": 721,
+        "height": 611,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "FEATURED",
+            "y": 721,
+            "height": 50
+          },
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere “best gift e",
+            "y": 771,
+            "height": 561
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__promoGrid",
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP\nF",
+        "y": 1332,
+        "height": 1557,
+        "children": [
+          {
+            "tag": "A",
+            "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR",
+            "y": 1340,
+            "height": 503
+          },
+          {
+            "tag": "A",
+            "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHO",
+            "y": 1859,
+            "height": 503
+          },
+          {
+            "tag": "A",
+            "text": "SMARTWATCHES FOR KIDS\nSHOP",
+            "y": 2378,
+            "height": 503
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__storyGrid",
+        "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLEARN MORE\nSTORIES:",
+        "y": 2889,
+        "height": 832,
+        "children": [
+          {
+            "tag": "A",
+            "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLE",
+            "y": 2897,
+            "height": 400
+          },
+          {
+            "tag": "A",
+            "text": "STORIES: HOW WE CONNECT PEOPLE TO THEI",
+            "y": 3313,
+            "height": 400
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__categories",
+        "text": "SHOP BY CATEGORY\nSMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+        "y": 3721,
+        "height": 2606,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SHOP BY CATEGORY",
+            "y": 3785,
+            "height": 30
+          },
+          {
+            "tag": "DIV",
+            "text": "SMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+            "y": 3831,
+            "height": 2496
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeSignup-module__WpVARG__section",
+        "text": "SIGN UP FOR NEWS\nSign up for News*\n\nGet product news an",
+        "y": 6327,
+        "height": 252,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SIGN UP FOR NEWS",
+            "y": 6351,
+            "height": 36
+          },
+          {
+            "tag": "FORM",
+            "text": "Sign up for News*",
+            "y": 6407,
+            "height": 42
+          },
+          {
+            "tag": "P",
+            "text": "Get product news and promotions based ",
+            "y": 6461,
+            "height": 39
+          },
+          {
+            "tag": "A",
+            "text": "Learn about email privacy.",
+            "y": 6509,
+            "height": 13
+          }
+        ]
+      }
+    ],
+    "promoTiles": [
+      {
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP",
+        "y": 1340,
+        "height": 503
+      },
+      {
+        "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHOP",
+        "y": 1859,
+        "height": 503
+      },
+      {
+        "text": "SMARTWATCHES FOR KIDS\nSHOP",
+        "y": 2378,
+        "height": 503
+      }
+    ],
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 390,
+      "height": 65
+    },
+    "hero": {
+      "x": 0,
+      "y": 65,
+      "width": 390,
+      "height": 656
+    },
+    "featured": {
+      "x": 0,
+      "y": 721,
+      "width": 390,
+      "height": 611
+    },
+    "promo": {
+      "x": 0,
+      "y": 1332,
+      "width": 390,
+      "height": 1557
+    },
+    "stories": {
+      "x": 0,
+      "y": 2889,
+      "width": 390,
+      "height": 832
+    },
+    "categories": {
+      "x": 0,
+      "y": 3721,
+      "width": 390,
+      "height": 2606
+    },
+    "signup": {
+      "x": 0,
+      "y": 6327,
+      "width": 390,
+      "height": 252
+    },
+    "footer": {
+      "x": 0,
+      "y": 6579,
+      "width": 390,
+      "height": 593
+    },
+    "controls": [
+      {
+        "label": "Garmin home",
+        "x": 16,
+        "right": 121
+      },
+      {
+        "label": "Search",
+        "x": 186,
+        "right": 230
+      },
+      {
+        "label": "Account",
+        "x": 234,
+        "right": 278
+      },
+      {
+        "label": "Cart, 0 items",
+        "x": 282,
+        "right": 326
+      },
+      {
+        "label": "Menu",
+        "x": 330,
+        "right": 374
+      }
+    ],
+    "slides": [
+      {
+        "title": "HOLIDAY GIFT GUIDE",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 637,
+        "heroBottom": 721,
+        "shopVisible": true
+      },
+      {
+        "title": "FĒNIX® 9",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 661,
+        "heroBottom": 721,
+        "shopVisible": true
+      },
+      {
+        "title": "CIRQA™ SMART BAND",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 637,
+        "heroBottom": 721,
+        "shopVisible": true
+      },
+      {
+        "title": "DESCENT™ X10",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 637,
+        "heroBottom": 721,
+        "shopVisible": true
+      },
+      {
+        "title": "FORERUNNER® 70 & 170",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 661,
+        "heroBottom": 721,
+        "shopVisible": true
+      },
+      {
+        "title": "VENU® 4",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 637,
+        "heroBottom": 721,
+        "shopVisible": true
+      }
+    ],
+    "swipeTitle": "HOLIDAY GIFT GUIDE",
+    "mobileControls": {
+      "menuOpen": true,
+      "searchOpen": true,
+      "footerOpen": true
+    }
+  },
+  {
+    "requestedWidth": 428,
+    "innerWidth": 428,
+    "scrollWidth": 428,
+    "height": 7326,
+    "sections": [
+      {
+        "tag": "SECTION",
+        "className": "HomeHero-module__B1rHZW__hero",
+        "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift ever\" begins\n\nSHOP",
+        "y": 65,
+        "height": 697,
+        "children": [
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift e",
+            "y": 65,
+            "height": 697
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 75,
+            "height": 40
+          },
+          {
+            "tag": "SPAN",
+            "text": "Slide 1 of 6: HOLIDAY GIFT GUIDE",
+            "y": 762,
+            "height": 1
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeFeatured-module__B5JdLq__section",
+        "text": "FEATURED\nHOLIDAY GIFT GUIDE\n\nWhere “best gift ever” beg",
+        "y": 762,
+        "height": 611,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "FEATURED",
+            "y": 762,
+            "height": 50
+          },
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere “best gift e",
+            "y": 812,
+            "height": 561
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__promoGrid",
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP\nF",
+        "y": 1373,
+        "height": 1671,
+        "children": [
+          {
+            "tag": "A",
+            "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR",
+            "y": 1381,
+            "height": 541
+          },
+          {
+            "tag": "A",
+            "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHO",
+            "y": 1938,
+            "height": 541
+          },
+          {
+            "tag": "A",
+            "text": "SMARTWATCHES FOR KIDS\nSHOP",
+            "y": 2495,
+            "height": 541
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__storyGrid",
+        "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLEARN MORE\nSTORIES:",
+        "y": 3044,
+        "height": 832,
+        "children": [
+          {
+            "tag": "A",
+            "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLE",
+            "y": 3052,
+            "height": 400
+          },
+          {
+            "tag": "A",
+            "text": "STORIES: HOW WE CONNECT PEOPLE TO THEI",
+            "y": 3468,
+            "height": 400
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__categories",
+        "text": "SHOP BY CATEGORY\nSMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+        "y": 3876,
+        "height": 2606,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SHOP BY CATEGORY",
+            "y": 3940,
+            "height": 30
+          },
+          {
+            "tag": "DIV",
+            "text": "SMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+            "y": 3986,
+            "height": 2496
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeSignup-module__WpVARG__section",
+        "text": "SIGN UP FOR NEWS\nSign up for News*\n\nGet product news an",
+        "y": 6482,
+        "height": 252,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SIGN UP FOR NEWS",
+            "y": 6506,
+            "height": 36
+          },
+          {
+            "tag": "FORM",
+            "text": "Sign up for News*",
+            "y": 6562,
+            "height": 42
+          },
+          {
+            "tag": "P",
+            "text": "Get product news and promotions based ",
+            "y": 6616,
+            "height": 39
+          },
+          {
+            "tag": "A",
+            "text": "Learn about email privacy.",
+            "y": 6664,
+            "height": 13
+          }
+        ]
+      }
+    ],
+    "promoTiles": [
+      {
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP",
+        "y": 1381,
+        "height": 541
+      },
+      {
+        "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHOP",
+        "y": 1938,
+        "height": 541
+      },
+      {
+        "text": "SMARTWATCHES FOR KIDS\nSHOP",
+        "y": 2495,
+        "height": 541
+      }
+    ],
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 428,
+      "height": 65
+    },
+    "hero": {
+      "x": 0,
+      "y": 65,
+      "width": 428,
+      "height": 697
+    },
+    "featured": {
+      "x": 0,
+      "y": 762,
+      "width": 428,
+      "height": 611
+    },
+    "promo": {
+      "x": 0,
+      "y": 1373,
+      "width": 428,
+      "height": 1671
+    },
+    "stories": {
+      "x": 0,
+      "y": 3044,
+      "width": 428,
+      "height": 832
+    },
+    "categories": {
+      "x": 0,
+      "y": 3876,
+      "width": 428,
+      "height": 2606
+    },
+    "signup": {
+      "x": 0,
+      "y": 6482,
+      "width": 428,
+      "height": 252
+    },
+    "footer": {
+      "x": 0,
+      "y": 6734,
+      "width": 428,
+      "height": 593
+    },
+    "controls": [
+      {
+        "label": "Garmin home",
+        "x": 16,
+        "right": 121
+      },
+      {
+        "label": "Search",
+        "x": 224,
+        "right": 268
+      },
+      {
+        "label": "Account",
+        "x": 272,
+        "right": 316
+      },
+      {
+        "label": "Cart, 0 items",
+        "x": 320,
+        "right": 364
+      },
+      {
+        "label": "Menu",
+        "x": 368,
+        "right": 412
+      }
+    ],
+    "slides": [
+      {
+        "title": "HOLIDAY GIFT GUIDE",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 678,
+        "heroBottom": 762,
+        "shopVisible": true
+      },
+      {
+        "title": "FĒNIX® 9",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 702,
+        "heroBottom": 762,
+        "shopVisible": true
+      },
+      {
+        "title": "CIRQA™ SMART BAND",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 678,
+        "heroBottom": 762,
+        "shopVisible": true
+      },
+      {
+        "title": "DESCENT™ X10",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 678,
+        "heroBottom": 762,
+        "shopVisible": true
+      },
+      {
+        "title": "FORERUNNER® 70 & 170",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 702,
+        "heroBottom": 762,
+        "shopVisible": true
+      },
+      {
+        "title": "VENU® 4",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 678,
+        "heroBottom": 762,
+        "shopVisible": true
+      }
+    ],
+    "swipeTitle": "HOLIDAY GIFT GUIDE",
+    "mobileControls": {
+      "menuOpen": true,
+      "searchOpen": true,
+      "footerOpen": true
+    }
+  },
+  {
+    "requestedWidth": 540,
+    "innerWidth": 540,
+    "scrollWidth": 540,
+    "height": 7781,
+    "sections": [
+      {
+        "tag": "SECTION",
+        "className": "HomeHero-module__B1rHZW__hero",
+        "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift ever\" begins\n\nSHOP",
+        "y": 65,
+        "height": 816,
+        "children": [
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift e",
+            "y": 65,
+            "height": 816
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 75,
+            "height": 40
+          },
+          {
+            "tag": "SPAN",
+            "text": "Slide 1 of 6: HOLIDAY GIFT GUIDE",
+            "y": 881,
+            "height": 1
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeFeatured-module__B5JdLq__section",
+        "text": "FEATURED\nHOLIDAY GIFT GUIDE\n\nWhere “best gift ever” beg",
+        "y": 881,
+        "height": 611,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "FEATURED",
+            "y": 881,
+            "height": 50
+          },
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere “best gift e",
+            "y": 931,
+            "height": 561
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__promoGrid",
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP\nF",
+        "y": 1492,
+        "height": 2007,
+        "children": [
+          {
+            "tag": "A",
+            "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR",
+            "y": 1500,
+            "height": 653
+          },
+          {
+            "tag": "A",
+            "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHO",
+            "y": 2169,
+            "height": 653
+          },
+          {
+            "tag": "A",
+            "text": "SMARTWATCHES FOR KIDS\nSHOP",
+            "y": 2838,
+            "height": 653
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__storyGrid",
+        "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLEARN MORE\nSTORIES:",
+        "y": 3499,
+        "height": 832,
+        "children": [
+          {
+            "tag": "A",
+            "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLE",
+            "y": 3507,
+            "height": 400
+          },
+          {
+            "tag": "A",
+            "text": "STORIES: HOW WE CONNECT PEOPLE TO THEI",
+            "y": 3923,
+            "height": 400
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__categories",
+        "text": "SHOP BY CATEGORY\nSMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+        "y": 4331,
+        "height": 2606,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SHOP BY CATEGORY",
+            "y": 4395,
+            "height": 30
+          },
+          {
+            "tag": "DIV",
+            "text": "SMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+            "y": 4441,
+            "height": 2496
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeSignup-module__WpVARG__section",
+        "text": "SIGN UP FOR NEWS\nSign up for News*\n\nGet product news an",
+        "y": 6937,
+        "height": 252,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SIGN UP FOR NEWS",
+            "y": 6961,
+            "height": 36
+          },
+          {
+            "tag": "FORM",
+            "text": "Sign up for News*",
+            "y": 7017,
+            "height": 42
+          },
+          {
+            "tag": "P",
+            "text": "Get product news and promotions based ",
+            "y": 7071,
+            "height": 20
+          },
+          {
+            "tag": "A",
+            "text": "Learn about email privacy.",
+            "y": 7099,
+            "height": 13
+          }
+        ]
+      }
+    ],
+    "promoTiles": [
+      {
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP",
+        "y": 1500,
+        "height": 653
+      },
+      {
+        "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHOP",
+        "y": 2169,
+        "height": 653
+      },
+      {
+        "text": "SMARTWATCHES FOR KIDS\nSHOP",
+        "y": 2838,
+        "height": 653
+      }
+    ],
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 540,
+      "height": 65
+    },
+    "hero": {
+      "x": 0,
+      "y": 65,
+      "width": 540,
+      "height": 816
+    },
+    "featured": {
+      "x": 0,
+      "y": 881,
+      "width": 540,
+      "height": 611
+    },
+    "promo": {
+      "x": 0,
+      "y": 1492,
+      "width": 540,
+      "height": 2007
+    },
+    "stories": {
+      "x": 0,
+      "y": 3499,
+      "width": 540,
+      "height": 832
+    },
+    "categories": {
+      "x": 0,
+      "y": 4331,
+      "width": 540,
+      "height": 2606
+    },
+    "signup": {
+      "x": 0,
+      "y": 6937,
+      "width": 540,
+      "height": 252
+    },
+    "footer": {
+      "x": 0,
+      "y": 7189,
+      "width": 540,
+      "height": 593
+    },
+    "controls": [
+      {
+        "label": "Garmin home",
+        "x": 16,
+        "right": 121
+      },
+      {
+        "label": "Search",
+        "x": 336,
+        "right": 380
+      },
+      {
+        "label": "Account",
+        "x": 384,
+        "right": 428
+      },
+      {
+        "label": "Cart, 0 items",
+        "x": 432,
+        "right": 476
+      },
+      {
+        "label": "Menu",
+        "x": 480,
+        "right": 524
+      }
+    ],
+    "slides": [
+      {
+        "title": "HOLIDAY GIFT GUIDE",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 797,
+        "heroBottom": 881,
+        "shopVisible": true
+      },
+      {
+        "title": "FĒNIX® 9",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 797,
+        "heroBottom": 881,
+        "shopVisible": true
+      },
+      {
+        "title": "CIRQA™ SMART BAND",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 797,
+        "heroBottom": 881,
+        "shopVisible": true
+      },
+      {
+        "title": "DESCENT™ X10",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 797,
+        "heroBottom": 881,
+        "shopVisible": true
+      },
+      {
+        "title": "FORERUNNER® 70 & 170",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 797,
+        "heroBottom": 881,
+        "shopVisible": true
+      },
+      {
+        "title": "VENU® 4",
+        "captionHeight": 242,
+        "captionScrollHeight": 242,
+        "shopBottom": 797,
+        "heroBottom": 881,
+        "shopVisible": true
+      }
+    ],
+    "swipeTitle": "HOLIDAY GIFT GUIDE",
+    "mobileControls": {
+      "menuOpen": true,
+      "searchOpen": true,
+      "footerOpen": true
+    }
+  },
+  {
+    "requestedWidth": 768,
+    "innerWidth": 768,
+    "scrollWidth": 753,
+    "height": 5393,
+    "sections": [
+      {
+        "tag": "SECTION",
+        "className": "HomeHero-module__B1rHZW__hero",
+        "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift ever\" begins\n\nSHOP",
+        "y": 65,
+        "height": 1052,
+        "children": [
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift e",
+            "y": 65,
+            "height": 1052
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 81,
+            "height": 40
+          },
+          {
+            "tag": "SPAN",
+            "text": "Slide 1 of 6: HOLIDAY GIFT GUIDE",
+            "y": 1117,
+            "height": 1
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeFeatured-module__B5JdLq__section",
+        "text": "FEATURED\nHOLIDAY GIFT GUIDE\n\nWhere “best gift ever” beg",
+        "y": 1117,
+        "height": 594,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "FEATURED",
+            "y": 1117,
+            "height": 50
+          },
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere “best gift e",
+            "y": 1167,
+            "height": 544
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__promoGrid",
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP\nF",
+        "y": 1711,
+        "height": 1152,
+        "children": [
+          {
+            "tag": "A",
+            "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR",
+            "y": 1719,
+            "height": 560
+          },
+          {
+            "tag": "A",
+            "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHO",
+            "y": 1719,
+            "height": 560
+          },
+          {
+            "tag": "A",
+            "text": "SMARTWATCHES FOR KIDS\nSHOP",
+            "y": 2295,
+            "height": 560
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__storyGrid",
+        "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLEARN MORE\nSTORIES:",
+        "y": 2863,
+        "height": 416,
+        "children": [
+          {
+            "tag": "A",
+            "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLE",
+            "y": 2871,
+            "height": 400
+          },
+          {
+            "tag": "A",
+            "text": "STORIES: HOW WE CONNECT PEOPLE TO THEI",
+            "y": 2871,
+            "height": 400
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__categories",
+        "text": "SHOP BY CATEGORY\nSMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+        "y": 3279,
+        "height": 1368,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SHOP BY CATEGORY",
+            "y": 3343,
+            "height": 40
+          },
+          {
+            "tag": "DIV",
+            "text": "SMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+            "y": 3399,
+            "height": 1248
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeSignup-module__WpVARG__section",
+        "text": "SIGN UP FOR NEWS\nSign up for News*\n\nGet product news an",
+        "y": 4647,
+        "height": 245,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SIGN UP FOR NEWS",
+            "y": 4671,
+            "height": 40
+          },
+          {
+            "tag": "FORM",
+            "text": "Sign up for News*",
+            "y": 4731,
+            "height": 42
+          },
+          {
+            "tag": "P",
+            "text": "Get product news and promotions based ",
+            "y": 4785,
+            "height": 20
+          },
+          {
+            "tag": "A",
+            "text": "Learn about email privacy.",
+            "y": 4814,
+            "height": 13
+          }
+        ]
+      }
+    ],
+    "promoTiles": [
+      {
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP",
+        "y": 1719,
+        "height": 560
+      },
+      {
+        "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHOP",
+        "y": 1719,
+        "height": 560
+      },
+      {
+        "text": "SMARTWATCHES FOR KIDS\nSHOP",
+        "y": 2295,
+        "height": 560
+      }
+    ],
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 753,
+      "height": 65
+    },
+    "hero": {
+      "x": 0,
+      "y": 65,
+      "width": 753,
+      "height": 1052
+    },
+    "featured": {
+      "x": 0,
+      "y": 1117,
+      "width": 753,
+      "height": 594
+    },
+    "promo": {
+      "x": 0,
+      "y": 1711,
+      "width": 753,
+      "height": 1152
+    },
+    "stories": {
+      "x": 0,
+      "y": 2863,
+      "width": 753,
+      "height": 416
+    },
+    "categories": {
+      "x": 0,
+      "y": 3279,
+      "width": 753,
+      "height": 1368
+    },
+    "signup": {
+      "x": 0,
+      "y": 4647,
+      "width": 753,
+      "height": 245
+    },
+    "footer": {
+      "x": 0,
+      "y": 4892,
+      "width": 753,
+      "height": 501
+    },
+    "controls": [
+      {
+        "label": "Garmin home",
+        "x": 16,
+        "right": 121
+      },
+      {
+        "label": "Search",
+        "x": 549,
+        "right": 593
+      },
+      {
+        "label": "Account",
+        "x": 597,
+        "right": 641
+      },
+      {
+        "label": "Cart, 0 items",
+        "x": 645,
+        "right": 689
+      },
+      {
+        "label": "Menu",
+        "x": 693,
+        "right": 737
+      }
+    ],
+    "slides": [
+      {
+        "title": "HOLIDAY GIFT GUIDE",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1040,
+        "heroBottom": 1117,
+        "shopVisible": true
+      },
+      {
+        "title": "FĒNIX® 9",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1040,
+        "heroBottom": 1117,
+        "shopVisible": true
+      },
+      {
+        "title": "CIRQA™ SMART BAND",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1040,
+        "heroBottom": 1117,
+        "shopVisible": true
+      },
+      {
+        "title": "DESCENT™ X10",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1040,
+        "heroBottom": 1117,
+        "shopVisible": true
+      },
+      {
+        "title": "FORERUNNER® 70 & 170",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1040,
+        "heroBottom": 1117,
+        "shopVisible": true
+      },
+      {
+        "title": "VENU® 4",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1040,
+        "heroBottom": 1117,
+        "shopVisible": true
+      }
+    ],
+    "mobileControls": {
+      "menuOpen": true,
+      "searchOpen": true,
+      "footerOpen": true
+    }
+  },
+  {
+    "requestedWidth": 820,
+    "innerWidth": 820,
+    "scrollWidth": 805,
+    "height": 5453,
+    "sections": [
+      {
+        "tag": "SECTION",
+        "className": "HomeHero-module__B1rHZW__hero",
+        "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift ever\" begins\n\nSHOP",
+        "y": 65,
+        "height": 1107,
+        "children": [
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift e",
+            "y": 65,
+            "height": 1107
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 81,
+            "height": 40
+          },
+          {
+            "tag": "SPAN",
+            "text": "Slide 1 of 6: HOLIDAY GIFT GUIDE",
+            "y": 1172,
+            "height": 1
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeFeatured-module__B5JdLq__section",
+        "text": "FEATURED\nHOLIDAY GIFT GUIDE\n\nWhere “best gift ever” beg",
+        "y": 1172,
+        "height": 594,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "FEATURED",
+            "y": 1172,
+            "height": 50
+          },
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere “best gift e",
+            "y": 1222,
+            "height": 544
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__promoGrid",
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP\nF",
+        "y": 1766,
+        "height": 1157,
+        "children": [
+          {
+            "tag": "A",
+            "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR",
+            "y": 1774,
+            "height": 565
+          },
+          {
+            "tag": "A",
+            "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHO",
+            "y": 1774,
+            "height": 565
+          },
+          {
+            "tag": "A",
+            "text": "SMARTWATCHES FOR KIDS\nSHOP",
+            "y": 2355,
+            "height": 560
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__storyGrid",
+        "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLEARN MORE\nSTORIES:",
+        "y": 2923,
+        "height": 416,
+        "children": [
+          {
+            "tag": "A",
+            "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLE",
+            "y": 2931,
+            "height": 400
+          },
+          {
+            "tag": "A",
+            "text": "STORIES: HOW WE CONNECT PEOPLE TO THEI",
+            "y": 2931,
+            "height": 400
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__categories",
+        "text": "SHOP BY CATEGORY\nSMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+        "y": 3339,
+        "height": 1368,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SHOP BY CATEGORY",
+            "y": 3403,
+            "height": 40
+          },
+          {
+            "tag": "DIV",
+            "text": "SMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+            "y": 3459,
+            "height": 1248
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeSignup-module__WpVARG__section",
+        "text": "SIGN UP FOR NEWS\nSign up for News*\n\nGet product news an",
+        "y": 4707,
+        "height": 245,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SIGN UP FOR NEWS",
+            "y": 4731,
+            "height": 40
+          },
+          {
+            "tag": "FORM",
+            "text": "Sign up for News*",
+            "y": 4791,
+            "height": 42
+          },
+          {
+            "tag": "P",
+            "text": "Get product news and promotions based ",
+            "y": 4845,
+            "height": 20
+          },
+          {
+            "tag": "A",
+            "text": "Learn about email privacy.",
+            "y": 4873,
+            "height": 13
+          }
+        ]
+      }
+    ],
+    "promoTiles": [
+      {
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP",
+        "y": 1774,
+        "height": 565
+      },
+      {
+        "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHOP",
+        "y": 1774,
+        "height": 565
+      },
+      {
+        "text": "SMARTWATCHES FOR KIDS\nSHOP",
+        "y": 2355,
+        "height": 560
+      }
+    ],
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 805,
+      "height": 65
+    },
+    "hero": {
+      "x": 0,
+      "y": 65,
+      "width": 805,
+      "height": 1107
+    },
+    "featured": {
+      "x": 0,
+      "y": 1172,
+      "width": 805,
+      "height": 594
+    },
+    "promo": {
+      "x": 0,
+      "y": 1766,
+      "width": 805,
+      "height": 1157
+    },
+    "stories": {
+      "x": 0,
+      "y": 2923,
+      "width": 805,
+      "height": 416
+    },
+    "categories": {
+      "x": 0,
+      "y": 3339,
+      "width": 805,
+      "height": 1368
+    },
+    "signup": {
+      "x": 0,
+      "y": 4707,
+      "width": 805,
+      "height": 245
+    },
+    "footer": {
+      "x": 0,
+      "y": 4952,
+      "width": 805,
+      "height": 501
+    },
+    "controls": [
+      {
+        "label": "Garmin home",
+        "x": 16,
+        "right": 121
+      },
+      {
+        "label": "Search",
+        "x": 601,
+        "right": 645
+      },
+      {
+        "label": "Account",
+        "x": 649,
+        "right": 693
+      },
+      {
+        "label": "Cart, 0 items",
+        "x": 697,
+        "right": 741
+      },
+      {
+        "label": "Menu",
+        "x": 745,
+        "right": 789
+      }
+    ],
+    "slides": [
+      {
+        "title": "HOLIDAY GIFT GUIDE",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1095,
+        "heroBottom": 1172,
+        "shopVisible": true
+      },
+      {
+        "title": "FĒNIX® 9",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1095,
+        "heroBottom": 1172,
+        "shopVisible": true
+      },
+      {
+        "title": "CIRQA™ SMART BAND",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1095,
+        "heroBottom": 1172,
+        "shopVisible": true
+      },
+      {
+        "title": "DESCENT™ X10",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1095,
+        "heroBottom": 1172,
+        "shopVisible": true
+      },
+      {
+        "title": "FORERUNNER® 70 & 170",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1095,
+        "heroBottom": 1172,
+        "shopVisible": true
+      },
+      {
+        "title": "VENU® 4",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1095,
+        "heroBottom": 1172,
+        "shopVisible": true
+      }
+    ],
+    "mobileControls": {
+      "menuOpen": true,
+      "searchOpen": true,
+      "footerOpen": true
+    }
+  },
+  {
+    "requestedWidth": 900,
+    "innerWidth": 900,
+    "scrollWidth": 885,
+    "height": 5538,
+    "sections": [
+      {
+        "tag": "SECTION",
+        "className": "HomeHero-module__B1rHZW__hero",
+        "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift ever\" begins\n\nSHOP",
+        "y": 65,
+        "height": 1192,
+        "children": [
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift e",
+            "y": 65,
+            "height": 1192
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 81,
+            "height": 40
+          },
+          {
+            "tag": "SPAN",
+            "text": "Slide 1 of 6: HOLIDAY GIFT GUIDE",
+            "y": 1257,
+            "height": 1
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeFeatured-module__B5JdLq__section",
+        "text": "FEATURED\nHOLIDAY GIFT GUIDE\n\nWhere “best gift ever” beg",
+        "y": 1257,
+        "height": 594,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "FEATURED",
+            "y": 1257,
+            "height": 50
+          },
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere “best gift e",
+            "y": 1307,
+            "height": 544
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__promoGrid",
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP\nF",
+        "y": 1851,
+        "height": 1157,
+        "children": [
+          {
+            "tag": "A",
+            "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR",
+            "y": 1859,
+            "height": 565
+          },
+          {
+            "tag": "A",
+            "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHO",
+            "y": 1859,
+            "height": 565
+          },
+          {
+            "tag": "A",
+            "text": "SMARTWATCHES FOR KIDS\nSHOP",
+            "y": 2440,
+            "height": 560
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__storyGrid",
+        "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLEARN MORE\nSTORIES:",
+        "y": 3008,
+        "height": 416,
+        "children": [
+          {
+            "tag": "A",
+            "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLE",
+            "y": 3016,
+            "height": 400
+          },
+          {
+            "tag": "A",
+            "text": "STORIES: HOW WE CONNECT PEOPLE TO THEI",
+            "y": 3016,
+            "height": 400
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__categories",
+        "text": "SHOP BY CATEGORY\nSMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+        "y": 3424,
+        "height": 1368,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SHOP BY CATEGORY",
+            "y": 3488,
+            "height": 40
+          },
+          {
+            "tag": "DIV",
+            "text": "SMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+            "y": 3544,
+            "height": 1248
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeSignup-module__WpVARG__section",
+        "text": "SIGN UP FOR NEWS\nSign up for News*\n\nGet product news an",
+        "y": 4792,
+        "height": 245,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SIGN UP FOR NEWS",
+            "y": 4816,
+            "height": 40
+          },
+          {
+            "tag": "FORM",
+            "text": "Sign up for News*",
+            "y": 4876,
+            "height": 42
+          },
+          {
+            "tag": "P",
+            "text": "Get product news and promotions based ",
+            "y": 4930,
+            "height": 20
+          },
+          {
+            "tag": "A",
+            "text": "Learn about email privacy.",
+            "y": 4958,
+            "height": 13
+          }
+        ]
+      }
+    ],
+    "promoTiles": [
+      {
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP",
+        "y": 1859,
+        "height": 565
+      },
+      {
+        "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHOP",
+        "y": 1859,
+        "height": 565
+      },
+      {
+        "text": "SMARTWATCHES FOR KIDS\nSHOP",
+        "y": 2440,
+        "height": 560
+      }
+    ],
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 885,
+      "height": 65
+    },
+    "hero": {
+      "x": 0,
+      "y": 65,
+      "width": 885,
+      "height": 1192
+    },
+    "featured": {
+      "x": 0,
+      "y": 1257,
+      "width": 885,
+      "height": 594
+    },
+    "promo": {
+      "x": 0,
+      "y": 1851,
+      "width": 885,
+      "height": 1157
+    },
+    "stories": {
+      "x": 0,
+      "y": 3008,
+      "width": 885,
+      "height": 416
+    },
+    "categories": {
+      "x": 0,
+      "y": 3424,
+      "width": 885,
+      "height": 1368
+    },
+    "signup": {
+      "x": 0,
+      "y": 4792,
+      "width": 885,
+      "height": 245
+    },
+    "footer": {
+      "x": 0,
+      "y": 5037,
+      "width": 885,
+      "height": 501
+    },
+    "controls": [
+      {
+        "label": "Garmin home",
+        "x": 16,
+        "right": 121
+      },
+      {
+        "label": "Search",
+        "x": 681,
+        "right": 725
+      },
+      {
+        "label": "Account",
+        "x": 729,
+        "right": 773
+      },
+      {
+        "label": "Cart, 0 items",
+        "x": 777,
+        "right": 821
+      },
+      {
+        "label": "Menu",
+        "x": 825,
+        "right": 869
+      }
+    ],
+    "slides": [
+      {
+        "title": "HOLIDAY GIFT GUIDE",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1180,
+        "heroBottom": 1257,
+        "shopVisible": true
+      },
+      {
+        "title": "FĒNIX® 9",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1180,
+        "heroBottom": 1257,
+        "shopVisible": true
+      },
+      {
+        "title": "CIRQA™ SMART BAND",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1180,
+        "heroBottom": 1257,
+        "shopVisible": true
+      },
+      {
+        "title": "DESCENT™ X10",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1180,
+        "heroBottom": 1257,
+        "shopVisible": true
+      },
+      {
+        "title": "FORERUNNER® 70 & 170",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1180,
+        "heroBottom": 1257,
+        "shopVisible": true
+      },
+      {
+        "title": "VENU® 4",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1180,
+        "heroBottom": 1257,
+        "shopVisible": true
+      }
+    ],
+    "mobileControls": {
+      "menuOpen": true,
+      "searchOpen": true,
+      "footerOpen": true
+    }
+  },
+  {
+    "requestedWidth": 901,
+    "innerWidth": 901,
+    "scrollWidth": 886,
+    "height": 5539,
+    "sections": [
+      {
+        "tag": "SECTION",
+        "className": "HomeHero-module__B1rHZW__hero",
+        "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift ever\" begins\n\nSHOP",
+        "y": 65,
+        "height": 1193,
+        "children": [
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift e",
+            "y": 65,
+            "height": 1193
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 81,
+            "height": 40
+          },
+          {
+            "tag": "SPAN",
+            "text": "Slide 1 of 6: HOLIDAY GIFT GUIDE",
+            "y": 1258,
+            "height": 1
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeFeatured-module__B5JdLq__section",
+        "text": "FEATURED\nHOLIDAY GIFT GUIDE\n\nWhere “best gift ever” beg",
+        "y": 1258,
+        "height": 594,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "FEATURED",
+            "y": 1258,
+            "height": 50
+          },
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere “best gift e",
+            "y": 1308,
+            "height": 544
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__promoGrid",
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP\nF",
+        "y": 1852,
+        "height": 1157,
+        "children": [
+          {
+            "tag": "A",
+            "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR",
+            "y": 1860,
+            "height": 565
+          },
+          {
+            "tag": "A",
+            "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHO",
+            "y": 1860,
+            "height": 565
+          },
+          {
+            "tag": "A",
+            "text": "SMARTWATCHES FOR KIDS\nSHOP",
+            "y": 2441,
+            "height": 560
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__storyGrid",
+        "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLEARN MORE\nSTORIES:",
+        "y": 3009,
+        "height": 416,
+        "children": [
+          {
+            "tag": "A",
+            "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLE",
+            "y": 3017,
+            "height": 400
+          },
+          {
+            "tag": "A",
+            "text": "STORIES: HOW WE CONNECT PEOPLE TO THEI",
+            "y": 3017,
+            "height": 400
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__categories",
+        "text": "SHOP BY CATEGORY\nSMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+        "y": 3425,
+        "height": 1368,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SHOP BY CATEGORY",
+            "y": 3489,
+            "height": 40
+          },
+          {
+            "tag": "DIV",
+            "text": "SMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+            "y": 3545,
+            "height": 1248
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeSignup-module__WpVARG__section",
+        "text": "SIGN UP FOR NEWS\nSign up for News*\n\nGet product news an",
+        "y": 4793,
+        "height": 245,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SIGN UP FOR NEWS",
+            "y": 4817,
+            "height": 40
+          },
+          {
+            "tag": "FORM",
+            "text": "Sign up for News*",
+            "y": 4877,
+            "height": 42
+          },
+          {
+            "tag": "P",
+            "text": "Get product news and promotions based ",
+            "y": 4931,
+            "height": 20
+          },
+          {
+            "tag": "A",
+            "text": "Learn about email privacy.",
+            "y": 4960,
+            "height": 13
+          }
+        ]
+      }
+    ],
+    "promoTiles": [
+      {
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP",
+        "y": 1860,
+        "height": 565
+      },
+      {
+        "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHOP",
+        "y": 1860,
+        "height": 565
+      },
+      {
+        "text": "SMARTWATCHES FOR KIDS\nSHOP",
+        "y": 2441,
+        "height": 560
+      }
+    ],
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 886,
+      "height": 65
+    },
+    "hero": {
+      "x": 0,
+      "y": 65,
+      "width": 886,
+      "height": 1193
+    },
+    "featured": {
+      "x": 0,
+      "y": 1258,
+      "width": 886,
+      "height": 594
+    },
+    "promo": {
+      "x": 0,
+      "y": 1852,
+      "width": 886,
+      "height": 1157
+    },
+    "stories": {
+      "x": 0,
+      "y": 3009,
+      "width": 886,
+      "height": 416
+    },
+    "categories": {
+      "x": 0,
+      "y": 3425,
+      "width": 886,
+      "height": 1368
+    },
+    "signup": {
+      "x": 0,
+      "y": 4793,
+      "width": 886,
+      "height": 245
+    },
+    "footer": {
+      "x": 0,
+      "y": 5038,
+      "width": 886,
+      "height": 501
+    },
+    "controls": [
+      {
+        "label": "Garmin home",
+        "x": 24,
+        "right": 136
+      },
+      {
+        "label": "Smartwatches",
+        "x": 172,
+        "right": 249
+      },
+      {
+        "label": "Sports & Fitness",
+        "x": 261,
+        "right": 349
+      },
+      {
+        "label": "Outdoor Recreation",
+        "x": 361,
+        "right": 464
+      },
+      {
+        "label": "Auto & Home",
+        "x": 476,
+        "right": 546
+      },
+      {
+        "label": "Marine",
+        "x": 558,
+        "right": 596
+      },
+      {
+        "label": "Aviation",
+        "x": 608,
+        "right": 651
+      },
+      {
+        "label": "Sale",
+        "x": 663,
+        "right": 687
+      },
+      {
+        "label": "Help",
+        "x": 722,
+        "right": 772
+      },
+      {
+        "label": "Search",
+        "x": 784,
+        "right": 802
+      },
+      {
+        "label": "Account",
+        "x": 814,
+        "right": 832
+      },
+      {
+        "label": "Cart, 0 items",
+        "x": 844,
+        "right": 862
+      }
+    ],
+    "slides": [
+      {
+        "title": "HOLIDAY GIFT GUIDE",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1181,
+        "heroBottom": 1258,
+        "shopVisible": true
+      },
+      {
+        "title": "FĒNIX® 9",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1181,
+        "heroBottom": 1258,
+        "shopVisible": true
+      },
+      {
+        "title": "CIRQA™ SMART BAND",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1181,
+        "heroBottom": 1258,
+        "shopVisible": true
+      },
+      {
+        "title": "DESCENT™ X10",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1181,
+        "heroBottom": 1258,
+        "shopVisible": true
+      },
+      {
+        "title": "FORERUNNER® 70 & 170",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1181,
+        "heroBottom": 1258,
+        "shopVisible": true
+      },
+      {
+        "title": "VENU® 4",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1181,
+        "heroBottom": 1258,
+        "shopVisible": true
+      }
+    ]
+  },
+  {
+    "requestedWidth": 990,
+    "innerWidth": 990,
+    "scrollWidth": 975,
+    "height": 5688,
+    "sections": [
+      {
+        "tag": "SECTION",
+        "className": "HomeHero-module__B1rHZW__hero",
+        "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift ever\" begins\n\nSHOP",
+        "y": 65,
+        "height": 1288,
+        "children": [
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift e",
+            "y": 65,
+            "height": 1288
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 0,
+            "height": 0
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 81,
+            "height": 40
+          },
+          {
+            "tag": "SPAN",
+            "text": "Slide 1 of 6: HOLIDAY GIFT GUIDE",
+            "y": 1353,
+            "height": 1
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeFeatured-module__B5JdLq__section",
+        "text": "FEATURED\nHOLIDAY GIFT GUIDE\n\nWhere “best gift ever” beg",
+        "y": 1353,
+        "height": 594,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "FEATURED",
+            "y": 1353,
+            "height": 50
+          },
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere “best gift e",
+            "y": 1403,
+            "height": 544
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__promoGrid",
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP\nF",
+        "y": 1947,
+        "height": 1211,
+        "children": [
+          {
+            "tag": "A",
+            "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR",
+            "y": 1955,
+            "height": 610
+          },
+          {
+            "tag": "A",
+            "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHO",
+            "y": 1955,
+            "height": 610
+          },
+          {
+            "tag": "A",
+            "text": "SMARTWATCHES FOR KIDS\nSHOP",
+            "y": 2580,
+            "height": 570
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__storyGrid",
+        "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLEARN MORE\nSTORIES:",
+        "y": 3158,
+        "height": 416,
+        "children": [
+          {
+            "tag": "A",
+            "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLE",
+            "y": 3166,
+            "height": 400
+          },
+          {
+            "tag": "A",
+            "text": "STORIES: HOW WE CONNECT PEOPLE TO THEI",
+            "y": 3166,
+            "height": 400
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__categories",
+        "text": "SHOP BY CATEGORY\nSMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+        "y": 3574,
+        "height": 1368,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SHOP BY CATEGORY",
+            "y": 3638,
+            "height": 40
+          },
+          {
+            "tag": "DIV",
+            "text": "SMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+            "y": 3694,
+            "height": 1248
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeSignup-module__WpVARG__section",
+        "text": "SIGN UP FOR NEWS\nSign up for News*\n\nGet product news an",
+        "y": 4942,
+        "height": 245,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SIGN UP FOR NEWS",
+            "y": 4966,
+            "height": 40
+          },
+          {
+            "tag": "FORM",
+            "text": "Sign up for News*",
+            "y": 5026,
+            "height": 42
+          },
+          {
+            "tag": "P",
+            "text": "Get product news and promotions based ",
+            "y": 5080,
+            "height": 20
+          },
+          {
+            "tag": "A",
+            "text": "Learn about email privacy.",
+            "y": 5108,
+            "height": 13
+          }
+        ]
+      }
+    ],
+    "promoTiles": [
+      {
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP",
+        "y": 1955,
+        "height": 610
+      },
+      {
+        "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHOP",
+        "y": 1955,
+        "height": 610
+      },
+      {
+        "text": "SMARTWATCHES FOR KIDS\nSHOP",
+        "y": 2580,
+        "height": 570
+      }
+    ],
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 975,
+      "height": 65
+    },
+    "hero": {
+      "x": 0,
+      "y": 65,
+      "width": 975,
+      "height": 1288
+    },
+    "featured": {
+      "x": 0,
+      "y": 1353,
+      "width": 975,
+      "height": 594
+    },
+    "promo": {
+      "x": 0,
+      "y": 1947,
+      "width": 975,
+      "height": 1211
+    },
+    "stories": {
+      "x": 0,
+      "y": 3158,
+      "width": 975,
+      "height": 416
+    },
+    "categories": {
+      "x": 0,
+      "y": 3574,
+      "width": 975,
+      "height": 1368
+    },
+    "signup": {
+      "x": 0,
+      "y": 4942,
+      "width": 975,
+      "height": 245
+    },
+    "footer": {
+      "x": 0,
+      "y": 5187,
+      "width": 975,
+      "height": 501
+    },
+    "controls": [
+      {
+        "label": "Garmin home",
+        "x": 24,
+        "right": 136
+      },
+      {
+        "label": "Smartwatches",
+        "x": 216,
+        "right": 294
+      },
+      {
+        "label": "Sports & Fitness",
+        "x": 306,
+        "right": 393
+      },
+      {
+        "label": "Outdoor Recreation",
+        "x": 405,
+        "right": 509
+      },
+      {
+        "label": "Auto & Home",
+        "x": 521,
+        "right": 591
+      },
+      {
+        "label": "Marine",
+        "x": 603,
+        "right": 640
+      },
+      {
+        "label": "Aviation",
+        "x": 652,
+        "right": 696
+      },
+      {
+        "label": "Sale",
+        "x": 708,
+        "right": 731
+      },
+      {
+        "label": "Help",
+        "x": 811,
+        "right": 861
+      },
+      {
+        "label": "Search",
+        "x": 873,
+        "right": 891
+      },
+      {
+        "label": "Account",
+        "x": 903,
+        "right": 921
+      },
+      {
+        "label": "Cart, 0 items",
+        "x": 933,
+        "right": 951
+      }
+    ],
+    "slides": [
+      {
+        "title": "HOLIDAY GIFT GUIDE",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1276,
+        "heroBottom": 1353,
+        "shopVisible": true
+      },
+      {
+        "title": "FĒNIX® 9",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1276,
+        "heroBottom": 1353,
+        "shopVisible": true
+      },
+      {
+        "title": "CIRQA™ SMART BAND",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1276,
+        "heroBottom": 1353,
+        "shopVisible": true
+      },
+      {
+        "title": "DESCENT™ X10",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1276,
+        "heroBottom": 1353,
+        "shopVisible": true
+      },
+      {
+        "title": "FORERUNNER® 70 & 170",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1276,
+        "heroBottom": 1353,
+        "shopVisible": true
+      },
+      {
+        "title": "VENU® 4",
+        "captionHeight": 252,
+        "captionScrollHeight": 252,
+        "shopBottom": 1276,
+        "heroBottom": 1353,
+        "shopVisible": true
+      }
+    ]
+  },
+  {
+    "requestedWidth": 991,
+    "innerWidth": 991,
+    "scrollWidth": 976,
+    "height": 3671,
+    "sections": [
+      {
+        "tag": "SECTION",
+        "className": "HomeHero-module__B1rHZW__hero",
+        "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift ever\" begins\n\nSHOP",
+        "y": 65,
+        "height": 278,
+        "children": [
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift e",
+            "y": 65,
+            "height": 278
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 176,
+            "height": 56
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 176,
+            "height": 56
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 81,
+            "height": 40
+          },
+          {
+            "tag": "SPAN",
+            "text": "Slide 1 of 6: HOLIDAY GIFT GUIDE",
+            "y": 343,
+            "height": 1
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeFeatured-module__B5JdLq__section",
+        "text": "FEATURED\nHOLIDAY GIFT GUIDE\n\nWhere “best gift ever” beg",
+        "y": 343,
+        "height": 594,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "FEATURED",
+            "y": 343,
+            "height": 50
+          },
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere “best gift e",
+            "y": 393,
+            "height": 544
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__promoGrid",
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP\nF",
+        "y": 937,
+        "height": 620,
+        "children": [
+          {
+            "tag": "A",
+            "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR",
+            "y": 945,
+            "height": 604
+          },
+          {
+            "tag": "A",
+            "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHO",
+            "y": 945,
+            "height": 604
+          },
+          {
+            "tag": "A",
+            "text": "SMARTWATCHES FOR KIDS\nSHOP",
+            "y": 945,
+            "height": 604
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__storyGrid",
+        "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLEARN MORE\nSTORIES:",
+        "y": 1557,
+        "height": 416,
+        "children": [
+          {
+            "tag": "A",
+            "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLE",
+            "y": 1565,
+            "height": 400
+          },
+          {
+            "tag": "A",
+            "text": "STORIES: HOW WE CONNECT PEOPLE TO THEI",
+            "y": 1565,
+            "height": 400
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__categories",
+        "text": "SHOP BY CATEGORY\nSMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+        "y": 1973,
+        "height": 952,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SHOP BY CATEGORY",
+            "y": 2037,
+            "height": 40
+          },
+          {
+            "tag": "DIV",
+            "text": "SMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+            "y": 2093,
+            "height": 832
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeSignup-module__WpVARG__section",
+        "text": "SIGN UP FOR NEWS\nSign up for News*\n\nGet product news an",
+        "y": 2925,
+        "height": 245,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SIGN UP FOR NEWS",
+            "y": 2949,
+            "height": 40
+          },
+          {
+            "tag": "FORM",
+            "text": "Sign up for News*",
+            "y": 3009,
+            "height": 42
+          },
+          {
+            "tag": "P",
+            "text": "Get product news and promotions based ",
+            "y": 3063,
+            "height": 20
+          },
+          {
+            "tag": "A",
+            "text": "Learn about email privacy.",
+            "y": 3091,
+            "height": 13
+          }
+        ]
+      }
+    ],
+    "promoTiles": [
+      {
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP",
+        "y": 945,
+        "height": 604
+      },
+      {
+        "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHOP",
+        "y": 945,
+        "height": 604
+      },
+      {
+        "text": "SMARTWATCHES FOR KIDS\nSHOP",
+        "y": 945,
+        "height": 604
+      }
+    ],
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 976,
+      "height": 65
+    },
+    "hero": {
+      "x": 0,
+      "y": 65,
+      "width": 976,
+      "height": 278
+    },
+    "featured": {
+      "x": 0,
+      "y": 343,
+      "width": 976,
+      "height": 594
+    },
+    "promo": {
+      "x": 0,
+      "y": 937,
+      "width": 976,
+      "height": 620
+    },
+    "stories": {
+      "x": 0,
+      "y": 1557,
+      "width": 976,
+      "height": 416
+    },
+    "categories": {
+      "x": 0,
+      "y": 1973,
+      "width": 976,
+      "height": 952
+    },
+    "signup": {
+      "x": 0,
+      "y": 2925,
+      "width": 976,
+      "height": 245
+    },
+    "footer": {
+      "x": 0,
+      "y": 3170,
+      "width": 976,
+      "height": 501
+    },
+    "controls": [
+      {
+        "label": "Garmin home",
+        "x": 24,
+        "right": 136
+      },
+      {
+        "label": "Smartwatches",
+        "x": 217,
+        "right": 294
+      },
+      {
+        "label": "Sports & Fitness",
+        "x": 306,
+        "right": 394
+      },
+      {
+        "label": "Outdoor Recreation",
+        "x": 406,
+        "right": 509
+      },
+      {
+        "label": "Auto & Home",
+        "x": 521,
+        "right": 591
+      },
+      {
+        "label": "Marine",
+        "x": 603,
+        "right": 641
+      },
+      {
+        "label": "Aviation",
+        "x": 653,
+        "right": 696
+      },
+      {
+        "label": "Sale",
+        "x": 708,
+        "right": 732
+      },
+      {
+        "label": "Help",
+        "x": 812,
+        "right": 862
+      },
+      {
+        "label": "Search",
+        "x": 874,
+        "right": 892
+      },
+      {
+        "label": "Account",
+        "x": 904,
+        "right": 922
+      },
+      {
+        "label": "Cart, 0 items",
+        "x": 934,
+        "right": 952
+      }
+    ],
+    "slides": [
+      {
+        "title": "HOLIDAY GIFT GUIDE",
+        "captionHeight": 151,
+        "captionScrollHeight": 151,
+        "shopBottom": 279,
+        "heroBottom": 343,
+        "shopVisible": true
+      },
+      {
+        "title": "FĒNIX® 9",
+        "captionHeight": 178,
+        "captionScrollHeight": 178,
+        "shopBottom": 293,
+        "heroBottom": 343,
+        "shopVisible": true
+      },
+      {
+        "title": "CIRQA™ SMART BAND",
+        "captionHeight": 228,
+        "captionScrollHeight": 228,
+        "shopBottom": 318,
+        "heroBottom": 343,
+        "shopVisible": true
+      },
+      {
+        "title": "DESCENT™ X10",
+        "captionHeight": 178,
+        "captionScrollHeight": 178,
+        "shopBottom": 293,
+        "heroBottom": 343,
+        "shopVisible": true
+      },
+      {
+        "title": "FORERUNNER® 70 & 170",
+        "captionHeight": 178,
+        "captionScrollHeight": 178,
+        "shopBottom": 293,
+        "heroBottom": 343,
+        "shopVisible": true
+      },
+      {
+        "title": "VENU® 4",
+        "captionHeight": 178,
+        "captionScrollHeight": 178,
+        "shopBottom": 293,
+        "heroBottom": 343,
+        "shopVisible": true
+      }
+    ]
+  },
+  {
+    "requestedWidth": 1024,
+    "innerWidth": 1024,
+    "scrollWidth": 1009,
+    "height": 3680,
+    "sections": [
+      {
+        "tag": "SECTION",
+        "className": "HomeHero-module__B1rHZW__hero",
+        "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift ever\" begins\n\nSHOP",
+        "y": 65,
+        "height": 287,
+        "children": [
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift e",
+            "y": 65,
+            "height": 287
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 180,
+            "height": 56
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 180,
+            "height": 56
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 81,
+            "height": 40
+          },
+          {
+            "tag": "SPAN",
+            "text": "Slide 1 of 6: HOLIDAY GIFT GUIDE",
+            "y": 352,
+            "height": 1
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeFeatured-module__B5JdLq__section",
+        "text": "FEATURED\nHOLIDAY GIFT GUIDE\n\nWhere “best gift ever” beg",
+        "y": 352,
+        "height": 594,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "FEATURED",
+            "y": 352,
+            "height": 50
+          },
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere “best gift e",
+            "y": 402,
+            "height": 544
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__promoGrid",
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP\nF",
+        "y": 946,
+        "height": 620,
+        "children": [
+          {
+            "tag": "A",
+            "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR",
+            "y": 954,
+            "height": 604
+          },
+          {
+            "tag": "A",
+            "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHO",
+            "y": 954,
+            "height": 604
+          },
+          {
+            "tag": "A",
+            "text": "SMARTWATCHES FOR KIDS\nSHOP",
+            "y": 954,
+            "height": 604
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__storyGrid",
+        "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLEARN MORE\nSTORIES:",
+        "y": 1566,
+        "height": 416,
+        "children": [
+          {
+            "tag": "A",
+            "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLE",
+            "y": 1574,
+            "height": 400
+          },
+          {
+            "tag": "A",
+            "text": "STORIES: HOW WE CONNECT PEOPLE TO THEI",
+            "y": 1574,
+            "height": 400
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__categories",
+        "text": "SHOP BY CATEGORY\nSMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+        "y": 1982,
+        "height": 952,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SHOP BY CATEGORY",
+            "y": 2046,
+            "height": 40
+          },
+          {
+            "tag": "DIV",
+            "text": "SMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+            "y": 2102,
+            "height": 832
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeSignup-module__WpVARG__section",
+        "text": "SIGN UP FOR NEWS\nSign up for News*\n\nGet product news an",
+        "y": 2934,
+        "height": 245,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SIGN UP FOR NEWS",
+            "y": 2958,
+            "height": 40
+          },
+          {
+            "tag": "FORM",
+            "text": "Sign up for News*",
+            "y": 3018,
+            "height": 42
+          },
+          {
+            "tag": "P",
+            "text": "Get product news and promotions based ",
+            "y": 3072,
+            "height": 20
+          },
+          {
+            "tag": "A",
+            "text": "Learn about email privacy.",
+            "y": 3100,
+            "height": 13
+          }
+        ]
+      }
+    ],
+    "promoTiles": [
+      {
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP",
+        "y": 954,
+        "height": 604
+      },
+      {
+        "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHOP",
+        "y": 954,
+        "height": 604
+      },
+      {
+        "text": "SMARTWATCHES FOR KIDS\nSHOP",
+        "y": 954,
+        "height": 604
+      }
+    ],
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 1009,
+      "height": 65
+    },
+    "hero": {
+      "x": 0,
+      "y": 65,
+      "width": 1009,
+      "height": 287
+    },
+    "featured": {
+      "x": 0,
+      "y": 352,
+      "width": 1009,
+      "height": 594
+    },
+    "promo": {
+      "x": 0,
+      "y": 946,
+      "width": 1009,
+      "height": 620
+    },
+    "stories": {
+      "x": 0,
+      "y": 1566,
+      "width": 1009,
+      "height": 416
+    },
+    "categories": {
+      "x": 0,
+      "y": 1982,
+      "width": 1009,
+      "height": 952
+    },
+    "signup": {
+      "x": 0,
+      "y": 2934,
+      "width": 1009,
+      "height": 245
+    },
+    "footer": {
+      "x": 0,
+      "y": 3179,
+      "width": 1009,
+      "height": 501
+    },
+    "controls": [
+      {
+        "label": "Garmin home",
+        "x": 24,
+        "right": 136
+      },
+      {
+        "label": "Smartwatches",
+        "x": 233,
+        "right": 311
+      },
+      {
+        "label": "Sports & Fitness",
+        "x": 323,
+        "right": 410
+      },
+      {
+        "label": "Outdoor Recreation",
+        "x": 422,
+        "right": 526
+      },
+      {
+        "label": "Auto & Home",
+        "x": 538,
+        "right": 608
+      },
+      {
+        "label": "Marine",
+        "x": 620,
+        "right": 657
+      },
+      {
+        "label": "Aviation",
+        "x": 669,
+        "right": 713
+      },
+      {
+        "label": "Sale",
+        "x": 725,
+        "right": 748
+      },
+      {
+        "label": "Help",
+        "x": 845,
+        "right": 895
+      },
+      {
+        "label": "Search",
+        "x": 907,
+        "right": 925
+      },
+      {
+        "label": "Account",
+        "x": 937,
+        "right": 955
+      },
+      {
+        "label": "Cart, 0 items",
+        "x": 967,
+        "right": 985
+      }
+    ],
+    "slides": [
+      {
+        "title": "HOLIDAY GIFT GUIDE",
+        "captionHeight": 151,
+        "captionScrollHeight": 151,
+        "shopBottom": 284,
+        "heroBottom": 352,
+        "shopVisible": true
+      },
+      {
+        "title": "FĒNIX® 9",
+        "captionHeight": 178,
+        "captionScrollHeight": 178,
+        "shopBottom": 297,
+        "heroBottom": 352,
+        "shopVisible": true
+      },
+      {
+        "title": "CIRQA™ SMART BAND",
+        "captionHeight": 228,
+        "captionScrollHeight": 228,
+        "shopBottom": 322,
+        "heroBottom": 352,
+        "shopVisible": true
+      },
+      {
+        "title": "DESCENT™ X10",
+        "captionHeight": 178,
+        "captionScrollHeight": 178,
+        "shopBottom": 297,
+        "heroBottom": 352,
+        "shopVisible": true
+      },
+      {
+        "title": "FORERUNNER® 70 & 170",
+        "captionHeight": 178,
+        "captionScrollHeight": 178,
+        "shopBottom": 297,
+        "heroBottom": 352,
+        "shopVisible": true
+      },
+      {
+        "title": "VENU® 4",
+        "captionHeight": 178,
+        "captionScrollHeight": 178,
+        "shopBottom": 297,
+        "heroBottom": 352,
+        "shopVisible": true
+      }
+    ]
+  },
+  {
+    "requestedWidth": 1114,
+    "innerWidth": 1114,
+    "scrollWidth": 1099,
+    "height": 3706,
+    "sections": [
+      {
+        "tag": "SECTION",
+        "className": "HomeHero-module__B1rHZW__hero",
+        "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift ever\" begins\n\nSHOP",
+        "y": 65,
+        "height": 313,
+        "children": [
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere \"best gift e",
+            "y": 65,
+            "height": 313
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 193,
+            "height": 56
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 193,
+            "height": 56
+          },
+          {
+            "tag": "BUTTON",
+            "text": "",
+            "y": 81,
+            "height": 40
+          },
+          {
+            "tag": "SPAN",
+            "text": "Slide 1 of 6: HOLIDAY GIFT GUIDE",
+            "y": 378,
+            "height": 1
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeFeatured-module__B5JdLq__section",
+        "text": "FEATURED\nHOLIDAY GIFT GUIDE\n\nWhere “best gift ever” beg",
+        "y": 378,
+        "height": 594,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "FEATURED",
+            "y": 378,
+            "height": 50
+          },
+          {
+            "tag": "DIV",
+            "text": "HOLIDAY GIFT GUIDE\n\nWhere “best gift e",
+            "y": 428,
+            "height": 544
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__promoGrid",
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP\nF",
+        "y": 972,
+        "height": 620,
+        "children": [
+          {
+            "tag": "A",
+            "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR",
+            "y": 980,
+            "height": 604
+          },
+          {
+            "tag": "A",
+            "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHO",
+            "y": 980,
+            "height": 604
+          },
+          {
+            "tag": "A",
+            "text": "SMARTWATCHES FOR KIDS\nSHOP",
+            "y": 980,
+            "height": 604
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__storyGrid",
+        "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLEARN MORE\nSTORIES:",
+        "y": 1592,
+        "height": 416,
+        "children": [
+          {
+            "tag": "A",
+            "text": "MONITOR PATIENTS WITH GARMIN HEALTH\nLE",
+            "y": 1600,
+            "height": 400
+          },
+          {
+            "tag": "A",
+            "text": "STORIES: HOW WE CONNECT PEOPLE TO THEI",
+            "y": 1600,
+            "height": 400
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeTiles-module__x8DYSW__categories",
+        "text": "SHOP BY CATEGORY\nSMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+        "y": 2008,
+        "height": 952,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SHOP BY CATEGORY",
+            "y": 2072,
+            "height": 40
+          },
+          {
+            "tag": "DIV",
+            "text": "SMARTWATCHES\nSHOP\nAUTO & HOME\nSHOP\nSPO",
+            "y": 2128,
+            "height": 832
+          }
+        ]
+      },
+      {
+        "tag": "SECTION",
+        "className": "HomeSignup-module__WpVARG__section",
+        "text": "SIGN UP FOR NEWS\nSign up for News*\n\nGet product news an",
+        "y": 2960,
+        "height": 245,
+        "children": [
+          {
+            "tag": "H2",
+            "text": "SIGN UP FOR NEWS",
+            "y": 2984,
+            "height": 40
+          },
+          {
+            "tag": "FORM",
+            "text": "Sign up for News*",
+            "y": 3044,
+            "height": 42
+          },
+          {
+            "tag": "P",
+            "text": "Get product news and promotions based ",
+            "y": 3098,
+            "height": 20
+          },
+          {
+            "tag": "A",
+            "text": "Learn about email privacy.",
+            "y": 3126,
+            "height": 13
+          }
+        ]
+      }
+    ],
+    "promoTiles": [
+      {
+        "text": "FORERUNNER® — RUNNING SMARTWATCHES FOR ANY LEVEL\nSHOP",
+        "y": 980,
+        "height": 604
+      },
+      {
+        "text": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH\nSHOP",
+        "y": 980,
+        "height": 604
+      },
+      {
+        "text": "SMARTWATCHES FOR KIDS\nSHOP",
+        "y": 980,
+        "height": 604
+      }
+    ],
+    "header": {
+      "x": 0,
+      "y": 0,
+      "width": 1099,
+      "height": 65
+    },
+    "hero": {
+      "x": 0,
+      "y": 65,
+      "width": 1099,
+      "height": 313
+    },
+    "featured": {
+      "x": 0,
+      "y": 378,
+      "width": 1099,
+      "height": 594
+    },
+    "promo": {
+      "x": 0,
+      "y": 972,
+      "width": 1099,
+      "height": 620
+    },
+    "stories": {
+      "x": 0,
+      "y": 1592,
+      "width": 1099,
+      "height": 416
+    },
+    "categories": {
+      "x": 0,
+      "y": 2008,
+      "width": 1099,
+      "height": 952
+    },
+    "signup": {
+      "x": 0,
+      "y": 2960,
+      "width": 1099,
+      "height": 245
+    },
+    "footer": {
+      "x": 0,
+      "y": 3205,
+      "width": 1099,
+      "height": 501
+    },
+    "controls": [
+      {
+        "label": "Garmin home",
+        "x": 24,
+        "right": 136
+      },
+      {
+        "label": "Smartwatches",
+        "x": 216,
+        "right": 307
+      },
+      {
+        "label": "Sports & Fitness",
+        "x": 325,
+        "right": 426
+      },
+      {
+        "label": "Outdoor Recreation",
+        "x": 444,
+        "right": 565
+      },
+      {
+        "label": "Auto & Home",
+        "x": 583,
+        "right": 665
+      },
+      {
+        "label": "Marine",
+        "x": 683,
+        "right": 726
+      },
+      {
+        "label": "Aviation",
+        "x": 744,
+        "right": 795
+      },
+      {
+        "label": "Sale",
+        "x": 813,
+        "right": 840
+      },
+      {
+        "label": "Help",
+        "x": 920,
+        "right": 970
+      },
+      {
+        "label": "Search",
+        "x": 987,
+        "right": 1005
+      },
+      {
+        "label": "Account",
+        "x": 1022,
+        "right": 1040
+      },
+      {
+        "label": "Cart, 0 items",
+        "x": 1057,
+        "right": 1075
+      }
+    ],
+    "slides": [
+      {
+        "title": "HOLIDAY GIFT GUIDE",
+        "captionHeight": 151,
+        "captionScrollHeight": 151,
+        "shopBottom": 297,
+        "heroBottom": 378,
+        "shopVisible": true
+      },
+      {
+        "title": "FĒNIX® 9",
+        "captionHeight": 178,
+        "captionScrollHeight": 178,
+        "shopBottom": 310,
+        "heroBottom": 378,
+        "shopVisible": true
+      },
+      {
+        "title": "CIRQA™ SMART BAND",
+        "captionHeight": 228,
+        "captionScrollHeight": 228,
+        "shopBottom": 335,
+        "heroBottom": 378,
+        "shopVisible": true
+      },
+      {
+        "title": "DESCENT™ X10",
+        "captionHeight": 178,
+        "captionScrollHeight": 178,
+        "shopBottom": 310,
+        "heroBottom": 378,
+        "shopVisible": true
+      },
+      {
+        "title": "FORERUNNER® 70 & 170",
+        "captionHeight": 178,
+        "captionScrollHeight": 178,
+        "shopBottom": 310,
+        "heroBottom": 378,
+        "shopVisible": true
+      },
+      {
+        "title": "VENU® 4",
+        "captionHeight": 178,
+        "captionScrollHeight": 178,
+        "shopBottom": 310,
+        "heroBottom": 378,
+        "shopVisible": true
+      }
+    ]
+  }
+]

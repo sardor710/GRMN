@@ -13,6 +13,7 @@ export function HomeHero() {
   const [paused, setPaused] = useState(false);
   const remaining = useRef(duration);
   const changingSlide = useRef(false);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
 
   const goTo = useCallback((nextIndex: number) => {
     remaining.current = duration;
@@ -39,7 +40,26 @@ export function HomeHero() {
   }, [index, paused]);
 
   return (
-    <section className={styles.hero} aria-label="Featured Garmin products" aria-roledescription="carousel">
+    <section
+      className={styles.hero}
+      aria-label="Featured Garmin products"
+      aria-roledescription="carousel"
+      onTouchStart={(event) => {
+        const touch = event.touches[0];
+        touchStart.current = touch ? { x: touch.clientX, y: touch.clientY } : null;
+      }}
+      onTouchEnd={(event) => {
+        const start = touchStart.current;
+        const touch = event.changedTouches[0];
+        touchStart.current = null;
+        if (!start || !touch) return;
+        const distanceX = touch.clientX - start.x;
+        const distanceY = touch.clientY - start.y;
+        if (Math.abs(distanceX) < 45 || Math.abs(distanceX) <= Math.abs(distanceY)) return;
+        goTo(index + (distanceX < 0 ? 1 : -1));
+      }}
+      onTouchCancel={() => { touchStart.current = null; }}
+    >
       <div className={`${styles.track} ${styles[`index${index}`]}`}>
         {homeHeroSlides.map((slide, slideIndex) => (
           <div key={slide.key} className={styles.slide} aria-hidden={slideIndex !== index}>

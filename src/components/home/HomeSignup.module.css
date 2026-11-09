@@ -19,3 +19,7 @@
 .inputRow button:hover { background: #333; }
 .section p { color: #5b5b5b; font-size: 13px; margin: 12px 0 2px; }
 .section a { color: #5b5b5b; font-size: 13px; text-decoration: underline; }
+@media (max-width: 640px) {
+  .section { min-height: 252px; }
+  .section h2 { font-size: 28px; line-height: 36px; }
+}

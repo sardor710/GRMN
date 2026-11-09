@@ -1,6 +1,7 @@
 .footer { background: #000; color: #fff; font-size: 13px; }
 .main { min-height: 447px; padding: 24px 24px 0; display: flex; flex-direction: column; }
 .columns { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; }
+.mobileColumns { display: none; }
 .column h2 { font-family: var(--home-display); font-size: 16px; line-height: 20px; font-weight: 400; margin: 0 0 8px; }
 .column ul, .legal ul { list-style: none; padding: 0; margin: 0; }
 .column li { margin: 0; }
@@ -17,13 +18,28 @@
 .legal ul { display: flex; flex-wrap: wrap; gap: 18px; }
 .legal a { color: #bbb; text-decoration: none; }
 @media (max-width: 640px) {
-  .main { min-height: 0; padding: 0 16px; }
-  .columns { grid-template-columns: 1fr; gap: 0; }
-  .column { padding: 12px 0; border-bottom: 1px solid #333; }
-  .column h2 { margin: 0 0 6px; }
-  .column ul { columns: 2; }
-  .column a { line-height: 26px; }
-  .lower { padding: 24px 0; }
-  .legal { padding: 16px; flex-direction: column; align-items: flex-start; font-size: 11px; }
-  .legal ul { gap: 10px 16px; }
+  .main { min-height: 0; padding: 24px 16px 0; }
+  .columns { display: none; }
+  .mobileColumns { display: block; }
+  .mobileColumns details { border: 0; }
+  .mobileColumns summary {
+    display: flex;
+    min-height: 64px;
+    align-items: center;
+    justify-content: space-between;
+    list-style: none;
+    cursor: pointer;
+    font-family: var(--home-display);
+    font-size: 21px;
+    line-height: 28px;
+  }
+  .mobileColumns summary::-webkit-details-marker { display: none; }
+  .mobileColumns summary::after { content: ""; width: 7px; height: 7px; margin-right: 4px; border-right: 1px solid #fff; border-bottom: 1px solid #fff; transform: rotate(45deg); transition: transform .2s; }
+  .mobileColumns details[open] summary::after { transform: rotate(225deg); }
+  .mobileColumns ul { list-style: none; padding: 0 0 16px; margin: 0; }
+  .mobileColumns li a { display: block; min-height: 36px; padding: 7px 0; color: #ddd; font-size: 14px; text-decoration: none; }
+  .mobileColumns li a:hover { color: #fff; text-decoration: underline; }
+  .lower { margin-top: 40px; padding-bottom: 24px; flex-direction: column; justify-content: flex-start; gap: 32px; }
+  .legal { min-height: 177px; padding: 32px 16px 24px; flex-direction: column-reverse; align-items: center; justify-content: space-between; text-align: center; font-size: 12px; }
+  .legal ul { justify-content: center; gap: 16px 24px; line-height: 18px; }
 }

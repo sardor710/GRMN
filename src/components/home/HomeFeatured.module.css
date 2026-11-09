@@ -253,6 +253,7 @@
 }
 
 @media (max-width: 640px) {
+  .carousel { height: 561px; }
   .header {
     padding-right: 24px;
     padding-left: 24px;

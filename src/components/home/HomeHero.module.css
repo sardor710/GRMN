@@ -36,24 +36,46 @@
 @keyframes progress { to { stroke-dashoffset: 0; } }
 
 @media (max-width: 990px) {
-  .hero { aspect-ratio: 16 / 17; }
-  .caption { left: 7%; top: auto; bottom: 12%; width: 75%; transform: none; }
+  .hero { aspect-ratio: auto; height: calc(100vw * 17 / 16 + 236px); }
+  .slide { display: flex; flex-direction: column; }
+  .picture { position: relative; inset: auto; flex: none; width: 100%; aspect-ratio: 16 / 17; }
+  .caption {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    display: flex;
+    width: 100%;
+    max-width: none;
+    min-height: 236px;
+    flex: 1;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 0;
+    transform: none;
+    text-align: center;
+    background: #000;
+  }
   .slide:nth-child(3) .caption,
-  .slide:nth-child(n+4) .caption { width: 75%; }
-  .caption h1 { font-size: clamp(32px, 5vw, 40px); line-height: 1.2; }
-  .caption p { font-size: 17px; line-height: 1.45; }
+  .slide:nth-child(n+4) .caption { width: 100%; }
+  .caption h1,
+  .slide:nth-child(n+4) .caption h1 { max-width: 100%; margin-bottom: 16px; font-size: 40px; line-height: 50px; }
+  .caption p,
+  .slide:nth-child(3) .caption p,
+  .slide:nth-child(n+4) .caption p { max-width: 100%; margin-bottom: 24px; font-size: 18px; line-height: 27px; }
+  .arrow { display: none; }
 }
 
 @media (max-width: 640px) {
-  .hero { aspect-ratio: 16 / 17; }
-  .caption { left: 20px; right: 20px; bottom: 34px; width: auto; max-width: none; }
-  .slide:nth-child(3) .caption,
-  .slide:nth-child(n+4) .caption { width: auto; }
-  .caption h1 { max-width: 260px; margin-bottom: 8px; font-size: 30px; line-height: 1.17; }
-  .caption p { max-width: 300px; margin-bottom: 14px; font-size: 15px; line-height: 1.35; }
-  .shop { padding: 7px 20px; font-size: 13px; }
-  .arrow { width: 30px; height: 44px; }
-  .arrow svg { width: 23px; height: 23px; }
+  .hero { height: calc(100vw * 17 / 16 + 242px); }
+  .caption { min-height: 242px; padding-top: 24px; }
+  .caption h1,
+  .slide:nth-child(n+4) .caption h1 { margin-bottom: 12px; font-size: 32px; line-height: 40px; }
+  .caption p,
+  .slide:nth-child(3) .caption p,
+  .slide:nth-child(n+4) .caption p { margin-bottom: 24px; font-size: 16px; line-height: 24px; }
+  .shop { padding: 8px 24px; font-size: 14px; }
   .playPause { top: 10px; right: 10px; }
 }
 
