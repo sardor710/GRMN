@@ -43,6 +43,7 @@
   height: 100%;
   overflow-x: auto;
   overflow-y: hidden;
+  scroll-padding-left: 12px;
   scrollbar-width: none;
   scroll-snap-type: x proximity;
   overscroll-behavior-inline: contain;
@@ -89,7 +90,7 @@
 }
 
 .edgeImage {
-  object-fit: cover;
+  object-fit: fill;
   object-position: center;
 }
 

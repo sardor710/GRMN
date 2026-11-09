@@ -1,0 +1,139 @@
+.promoGrid,
+.storyGrid,
+.categoryGrid {
+  display: grid;
+  padding-inline: 16px;
+  gap: 16px;
+  background: #fff;
+}
+
+.promoGrid,
+.categoryGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.storyGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+.promoGrid { padding-block: 8px; }
+.storyGrid { padding-block: 8px; }
+
+.promoCard {
+  min-width: 0;
+  height: 604px;
+  color: #000;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 2px 3px 1px #d9d9d9;
+  overflow: hidden;
+}
+
+.promoImage {
+  position: relative;
+  height: 400px;
+  flex: none;
+  overflow: hidden;
+}
+
+.promoImage img,
+.storyCard img,
+.categoryCard img {
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.promoCard:hover img,
+.storyCard:hover img,
+.categoryCard:hover img { transform: scale(1.025); }
+
+.promoContent {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.promoContent h2,
+.overlayContent h2,
+.sectionHeading {
+  font-family: var(--home-display);
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 40px;
+  text-transform: uppercase;
+}
+
+.promoContent h2 { margin: 0; }
+.promoButton,
+.overlayButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 34px;
+  padding: 8px 24px;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 16px;
+  transition: color .2s, background .2s, border-color .2s;
+  width: max-content;
+}
+
+.promoButton {
+  margin: auto 0 0 auto;
+  color: #000;
+  border: 1px solid #000;
+}
+.promoCard:hover .promoButton { background: #000; color: #fff; }
+
+.storyCard,
+.categoryCard {
+  position: relative;
+  min-width: 0;
+  height: 400px;
+  display: block;
+  overflow: hidden;
+  color: #fff;
+}
+.storyCard img,
+.categoryCard img { position: absolute; inset: 0; }
+.overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(0,0,0,.72), transparent 50%);
+}
+.overlayContent {
+  position: absolute;
+  inset-inline: 16px;
+  bottom: 16px;
+}
+.overlayContent h2 {
+  color: #fff;
+  margin: 0 0 16px;
+}
+.overlayButton {
+  border: 1px solid #fff;
+  color: #fff;
+}
+.storyCard:hover .overlayButton,
+.categoryCard:hover .overlayButton { background: #fff; color: #000; }
+
+.categories { padding-top: 64px; background: #fff; }
+.sectionHeading { text-align: center; margin: 0 0 16px; color: #000; }
+.categoryGrid { padding-block: 8px; }
+
+@media (max-width: 990px) {
+  .promoGrid,
+  .categoryGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .promoCard { height: auto; min-height: 560px; }
+  .promoImage { height: auto; aspect-ratio: 1; }
+}
+
+@media (max-width: 640px) {
+  .promoGrid,
+  .storyGrid,
+  .categoryGrid { grid-template-columns: 1fr; }
+  .promoCard { min-height: 0; }
+  .promoImage { height: auto; aspect-ratio: 1; }
+  .promoContent { min-height: 170px; }
+  .storyCard { height: auto; aspect-ratio: 1.45; }
+  .categoryCard { height: auto; aspect-ratio: 1; }
+  .promoContent h2,
+  .overlayContent h2,
+  .sectionHeading { font-size: 28px; line-height: 36px; }
+}

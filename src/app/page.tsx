@@ -1,23 +1,22 @@
-import { SiteHeader } from "@/components/SiteHeader";
-import { HeroRotator } from "@/components/HeroRotator";
-import { FeaturedCarousel } from "@/components/FeaturedCarousel";
-import { PromoPods } from "@/components/PromoPods";
-import { CategoryGrid } from "@/components/CategoryGrid";
-import { EmailSignup } from "@/components/EmailSignup";
-import { SiteFooter } from "@/components/SiteFooter";
+import "./homepage.css";
+import { HomeHeader } from "@/components/home/HomeHeader";
+import { HomeHero } from "@/components/home/HomeHero";
+import { HomeFeatured } from "@/components/home/HomeFeatured";
+import { HomeTiles } from "@/components/home/HomeTiles";
+import { HomeSignup } from "@/components/home/HomeSignup";
+import { HomeFooter } from "@/components/home/HomeFooter";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col bg-white">
-      <SiteHeader />
-      <main className="flex-1">
-        <HeroRotator />
-        <FeaturedCarousel />
-        <PromoPods />
-        <CategoryGrid />
-        <EmailSignup />
+    <div className="garmin-home min-h-screen bg-white">
+      <HomeHeader />
+      <main>
+        <HomeHero />
+        <HomeFeatured />
+        <HomeTiles />
+        <HomeSignup />
       </main>
-      <SiteFooter />
+      <HomeFooter />
     </div>
   );
 }
