@@ -1,0 +1,54 @@
+.hero { position: relative; width: 100%; aspect-ratio: 3200 / 910; overflow: hidden; background: #111; color: #fff; }
+.track { display: flex; width: 100%; height: 100%; transition: transform .65s ease-in-out; }
+.index0 { transform: translateX(0); }
+.index1 { transform: translateX(-100%); }
+.index2 { transform: translateX(-200%); }
+.index3 { transform: translateX(-300%); }
+.index4 { transform: translateX(-400%); }
+.index5 { transform: translateX(-500%); }
+.slide { position: relative; flex: 0 0 100%; height: 100%; overflow: hidden; }
+.picture { position: absolute; inset: 0; display: block; }
+.image { display: block; object-fit: cover; object-position: center; }
+.caption { position: absolute; top: 50%; left: max(48px, 6.6vw); z-index: 1; width: 44%; max-width: 530px; transform: translateY(-50%); text-align: left; }
+.caption h1 { max-width: 400px; margin: 0 0 16px; color: #fff; font-family: var(--home-display, Oswald, sans-serif); font-size: 40px; font-weight: 400; line-height: 50px; text-transform: uppercase; }
+.caption p { max-width: 400px; margin: 0 0 24px; color: #fff; font-family: var(--home-body, Roboto, sans-serif); font-size: 18px; font-weight: 400; line-height: 27px; }
+.shop { display: inline-block; min-width: 90px; border: 1px solid #fff; padding: 8px 24px; color: #fff; font-size: 14px; font-weight: 500; line-height: 16px; text-align: center; text-decoration: none; transition: background-color .2s, border-color .2s, color .2s; }
+.shop:hover, .shop:focus-visible { color: #000; background: #fff; }
+.arrow { position: absolute; top: 50%; z-index: 2; display: grid; place-items: center; width: 48px; height: 56px; border: 0; color: #fff; background: transparent; cursor: pointer; transform: translateY(-50%); opacity: .78; transition: opacity .2s, background-color .2s; }
+.arrow:hover, .arrow:focus-visible { opacity: 1; background: rgba(0,0,0,.2); }
+.arrow svg { width: 30px; height: 30px; }
+.previous { left: 0; }
+.next { right: 0; }
+.playPause { position: absolute; top: 16px; right: 22px; z-index: 3; display: grid; place-items: center; width: 40px; height: 40px; border: 0; color: #fff; background: transparent; cursor: pointer; }
+.playPause > svg:not(.progress) { position: relative; width: 17px; height: 17px; }
+.progress { position: absolute; inset: 0; width: 40px; height: 40px; transform: rotate(-90deg); }
+.progressTrack, .progressFill { fill: none; stroke-width: 1.5; }
+.progressTrack { stroke: rgba(255,255,255,.5); }
+.progressFill { stroke: #fff; stroke-dasharray: 100; stroke-dashoffset: 100; animation: progress 5s linear forwards; }
+.progressPaused { animation-play-state: paused; }
+.srOnly { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; }
+
+@keyframes progress { to { stroke-dashoffset: 0; } }
+
+@media (max-width: 990px) {
+  .hero { aspect-ratio: 16 / 17; }
+  .caption { left: 7%; top: auto; bottom: 12%; width: 75%; transform: none; }
+  .caption h1 { font-size: clamp(32px, 5vw, 40px); line-height: 1.2; }
+  .caption p { font-size: 17px; line-height: 1.45; }
+}
+
+@media (max-width: 640px) {
+  .hero { aspect-ratio: 16 / 17; }
+  .caption { left: 20px; right: 20px; bottom: 34px; width: auto; max-width: none; }
+  .caption h1 { max-width: 260px; margin-bottom: 8px; font-size: 30px; line-height: 1.17; }
+  .caption p { max-width: 300px; margin-bottom: 14px; font-size: 15px; line-height: 1.35; }
+  .shop { padding: 7px 20px; font-size: 13px; }
+  .arrow { width: 30px; height: 44px; }
+  .arrow svg { width: 23px; height: 23px; }
+  .playPause { top: 10px; right: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track { transition: none; }
+  .progressFill { animation: none; }
+}

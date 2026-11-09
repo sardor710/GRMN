@@ -1,0 +1,71 @@
+.header {
+  position: relative;
+  z-index: 100;
+  width: 100%;
+  height: 65px;
+  background: #fff;
+  color: #000;
+  font-family: var(--home-body, Roboto, sans-serif);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 65px;
+  padding: 0 24px;
+}
+
+.logo { display: block; flex: none; width: 112px; line-height: 0; color: #000; }
+.logo svg { display: block; width: 112px; height: auto; }
+
+.desktopNav { display: flex; align-items: center; justify-content: center; gap: 18px; height: 100%; margin-left: auto; margin-right: auto; }
+.navItem { display: flex; align-items: center; height: 100%; }
+.navLink { white-space: nowrap; font-size: 14px; font-weight: 500; color: #000; text-decoration: none; transition: color .2s; }
+.navLink:hover, .navLink:focus-visible { color: #007cc3; }
+
+.megaMenu { position: absolute; left: 0; right: 0; top: 65px; border-top: 1px solid #e7e7e7; background: #fff; box-shadow: 0 12px 24px rgba(0,0,0,.16); }
+.megaInner { display: flex; gap: 64px; max-width: 1200px; margin: 0 auto; padding: 32px; }
+.megaColumn { display: flex; min-width: 200px; flex-direction: column; align-items: flex-start; gap: 12px; }
+.megaHeading { margin: 0 0 4px; font-family: var(--home-display, Oswald, sans-serif) !important; font-size: 20px; text-transform: uppercase; }
+.megaLink { color: #333; font-size: 14px; text-decoration: none; transition: color .2s; }
+.megaLink:hover { color: #007cc3; }
+
+.actions { display: flex; align-items: center; gap: 17px; }
+.help { display: flex; align-items: center; gap: 5px; color: #000; text-decoration: none; white-space: nowrap; font-size: 14px; }
+.help svg { width: 16px; height: 16px; }
+.iconButton { position: relative; display: grid; place-items: center; border: 0; padding: 0; width: 18px; height: 26px; color: #000; background: none; cursor: pointer; transition: color .2s; }
+.iconButton:hover, .help:hover { color: #007cc3; }
+.iconButton svg { width: 18px; height: 18px; }
+.cartCount { position: absolute; top: -5px; right: -8px; display: grid; place-items: center; min-width: 14px; height: 14px; padding: 0 2px; border-radius: 50%; color: #fff; background: #000; font-size: 9px; }
+.menuToggle { display: none; flex-direction: column; justify-content: center; gap: 4px; width: 25px; height: 25px; border: 0; background: none; cursor: pointer; }
+.menuToggle span { display: block; width: 23px; height: 2px; background: #000; }
+
+.searchPanel { position: absolute; top: 65px; left: 0; right: 0; padding: 24px max(24px, calc((100vw - 800px)/2)); background: #fff; box-shadow: 0 12px 24px rgba(0,0,0,.16); }
+.searchLabel { display: block; margin-bottom: 10px; font-size: 14px; font-weight: 600; }
+.searchBox { display: flex; align-items: center; gap: 12px; border: 1px solid #aaa; padding: 8px 12px; }
+.searchBox svg { width: 20px; height: 20px; }
+.searchBox input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font-size: 16px; }
+.searchBox button { border: 0; background: none; font-size: 26px; line-height: 1; cursor: pointer; }
+.searchResults { display: flex; flex-direction: column; margin-top: 8px; border: 1px solid #eee; }
+.searchResults a, .searchResults p { padding: 10px 12px; color: #000; font-size: 14px; text-decoration: none; }
+.searchResults a:hover { background: #f2f2f2; }
+.mobileNav { display: none; }
+
+@media (max-width: 1100px) {
+  .desktopNav { gap: 12px; }
+  .navLink { font-size: 12px; }
+  .actions { gap: 12px; }
+}
+
+@media (max-width: 900px) {
+  .bar { padding: 0 16px; }
+  .desktopNav, .help { display: none; }
+  .logo, .logo svg { width: 105px; }
+  .menuToggle { display: flex; }
+  .mobileNav { position: absolute; top: 65px; left: 0; right: 0; display: flex; flex-direction: column; max-height: calc(100vh - 65px); overflow-y: auto; background: #fff; box-shadow: 0 12px 24px rgba(0,0,0,.16); }
+  .mobileNav a { display: flex; align-items: center; justify-content: space-between; min-height: 50px; padding: 12px 20px; border-top: 1px solid #eee; color: #000; font-size: 15px; text-decoration: none; }
+  .mobileNav svg { width: 18px; height: 18px; }
+  .searchPanel { padding: 20px; }
+}
