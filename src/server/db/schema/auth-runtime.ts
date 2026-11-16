@@ -7,7 +7,9 @@ import { session, user } from "./identity.ts";
 export const phoneChallenges = pgTable("phone_challenges", {
   id: uuid("id").primaryKey().$defaultFn(randomUUID), phoneNumber: text("phone_number").notNull(), codeHash: text("code_hash").notNull(),
   failedAttempts: integer("failed_attempts").notNull().default(0), expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(), consumedAt: timestamp("consumed_at", { withTimezone: true }), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-}, t => [index("phone_challenges_phone_idx").on(t.phoneNumber, t.createdAt), index("phone_challenges_expiry_idx").on(t.expiresAt), check("phone_challenges_valid", sql`${t.phoneNumber} ~ '^[+][1-9][0-9]{7,14}$' AND ${t.codeHash} ~ '^[0-9a-f]{64}$' AND ${t.failedAttempts} BETWEEN 0 AND 5 AND ${t.expiresAt}>${t.createdAt} AND (${t.consumedAt} IS NULL OR ${t.consumedAt}>=${t.createdAt})`)]);
+  // Task 10B: a code proves possession only for the action it was sent for.
+  purpose: text("purpose").notNull().default("sign_in"),
+}, t => [index("phone_challenges_phone_idx").on(t.phoneNumber, t.createdAt), index("phone_challenges_expiry_idx").on(t.expiresAt), check("phone_challenges_purpose_valid", sql`${t.purpose} IN ('sign_in','phone_change_current','phone_change_new','order_claim')`), check("phone_challenges_valid",sql`${t.phoneNumber} ~ '^[+][1-9][0-9]{7,14}$' AND ${t.codeHash} ~ '^[0-9a-f]{64}$' AND ${t.failedAttempts} BETWEEN 0 AND 5 AND ${t.expiresAt}>${t.createdAt} AND (${t.consumedAt} IS NULL OR ${t.consumedAt}>=${t.createdAt})`)]);
 
 export const staffSessionGrants = pgTable("staff_session_grants", {
   sessionId: uuid("session_id").primaryKey().references(() => session.id, { onDelete: "cascade" }), userId: uuid("user_id").notNull().references(() => user.id, { onDelete: "cascade" }), method: text("method").notNull(), verifiedAt: timestamp("verified_at", { withTimezone: true }).notNull().defaultNow(),

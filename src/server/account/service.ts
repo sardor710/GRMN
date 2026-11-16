@@ -1,10 +1,11 @@
 import "server-only";
-import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import type { PoolClient } from "pg";
 import { z } from "zod";
 import type { DatabaseHandle } from "../db/client.ts";
-import type { Principal } from "../context.ts";
+import type { Permission, Principal } from "../context.ts";
 import { AuthFailure } from "../auth/config.ts";
+import { authDigest, capabilityHash, createPhoneService } from "../auth/phone-service.ts";
 import type { CustomerProfileDTO, DeliveryAddress, Money, OrderDetailDTO, OrderItemDTO, OrderSummaryDTO, SavedAddressDTO } from "../../contracts/commerce.ts";
 import type { Page } from "../../contracts/pagination.ts";
 
@@ -44,6 +45,12 @@ const addressInput = z.strictObject({
   isPrimary: z.boolean().default(false),
 }).refine(value => (value.id === undefined) === (value.expectedVersion === undefined));
 const pageInput = z.strictObject({ limit: z.number().int().min(1).max(100).optional(), cursor: z.string().min(1).max(2048).optional() });
+const uuid = z.string().regex(UUID);
+const otp = z.string().regex(/^[0-9]{6}$/);
+const approveClaimInput = z.strictObject({ orderId: uuid, expectedVersion: z.number().int().min(1), reason: z.string().trim().min(1).max(500), phoneNumber: phone.optional() });
+const claimInput = z.strictObject({ orderId: uuid, receiptToken: z.string().regex(/^[A-Za-z0-9_-]{43}$/), challengeId: uuid, code: otp });
+const changePhoneInput = z.strictObject({ phoneNumber: phone, currentChallengeId: uuid, currentCode: otp, challengeId: uuid, code: otp, expectedVersion: z.number().int().min(0) });
+export const CLAIM_RECEIPT_HOURS = 72;
 
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
@@ -70,6 +77,7 @@ function databaseFailure(error: unknown): unknown {
   if (error instanceof AuthFailure) return error;
   const constraint = (error as { constraint?: unknown } | null)?.constraint;
   if (constraint === "customer_addresses_limit") return new AuthFailure("ADDRESS_LIMIT_REACHED", 409, `At most ${MAX_SAVED_ADDRESSES} addresses can be saved`);
+  if (constraint === "users_phone_number_unique") return new AuthFailure("VERSION_CONFLICT", 409, "This phone number is linked to another account");
   if (constraint === "customer_addresses_primary_unique" || constraint === "customer_addresses_primary_required" || constraint === "customer_profiles_user_unique") {
     return new AuthFailure("VERSION_CONFLICT", 409, "This record changed; reload and try again");
   }
@@ -79,12 +87,17 @@ function databaseFailure(error: unknown): unknown {
 export interface AccountServiceOptions {
   database: Pick<DatabaseHandle, "pool">;
   authorize: (headers: Headers) => Promise<Principal>;
+  // Staff decisions that hand customer data to another person need fresh (15 minute) MFA.
+  // Without it, approveLegacyClaim fails closed.
+  authorizeFresh?: (headers: Headers, permission: Permission) => Promise<Principal>;
   secret: string;
 }
 
-export function createAccountService({ database, authorize, secret }: AccountServiceOptions) {
+export function createAccountService({ database, authorize, authorizeFresh, secret }: AccountServiceOptions) {
   if (!/^[a-f0-9]{64}$/i.test(secret)) throw new Error("Account services require the validated auth secret");
   const cursorKey = createHmac("sha256", secret).update("grmn-account-order-cursor:v1").digest();
+  // Only consumes challenges; delivery happens through /api/auth/grmn/phone/send.
+  const phones = createPhoneService({ database, secret });
 
   async function transaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {
     const client = await database.pool.connect();
@@ -250,6 +263,77 @@ export function createAccountService({ database, authorize, secret }: AccountSer
         events: events.rows.map(row => ({ id: row.id, type: row.type, occurredAt: row.happened_at.toISOString(), label: EVENT_LABELS[row.type] ?? row.type })),
         originalUsdEquivalent: null,
       };
+    },
+
+    // Staff step of an audited legacy claim: issues a single-use receipt bound to one unowned
+    // order and one canonical phone. A newer receipt revokes the previous open one.
+    async approveLegacyClaim(headers: Headers, input: unknown): Promise<{ orderId: string; receiptToken: string; expiresAt: string }> {
+      if (!authorizeFresh) throw new AuthFailure("FORBIDDEN", 403, "Fresh staff verification is unavailable");
+      const principal = await authorizeFresh(headers, "customers:write");
+      if (!principal.permissions.includes("customers:write")) throw new AuthFailure("FORBIDDEN", 403, "Permission is required");
+      const command = parse(approveClaimInput, input);
+      return transaction(async client => {
+        const order = (await client.query<{ user_id: string | null; contact_phone: string | null; version: number }>("SELECT user_id,contact_phone,version FROM orders WHERE id=$1 FOR UPDATE", [command.orderId])).rows[0] ?? notFound();
+        if (order.user_id !== null) conflict("This order already has an owner");
+        if (order.version !== command.expectedVersion) conflict();
+        const phoneNumber = command.phoneNumber ?? order.contact_phone?.trim() ?? "";
+        if (!E164.test(phoneNumber)) invalid("The order phone is not canonical; supply the confirmed phoneNumber");
+        const receiptToken = randomBytes(32).toString("base64url");
+        await client.query("UPDATE order_claim_approvals SET revoked_at=now() WHERE order_id=$1 AND consumed_at IS NULL AND revoked_at IS NULL", [command.orderId]);
+        const approvalId = randomUUID();
+        const created = await client.query<{ expires_at: Date }>(`INSERT INTO order_claim_approvals(id,order_id,token_hash,phone_number,approved_by,reason,expires_at) VALUES($1,$2,$3,$4,$5,$6,now()+interval '${CLAIM_RECEIPT_HOURS} hours') RETURNING expires_at`, [approvalId, command.orderId, capabilityHash(receiptToken), phoneNumber, principal.userId, command.reason]);
+        await client.query("INSERT INTO audit_events(id,actor_user_id,action,target_type,target_id,dedupe_key,redacted_changes) VALUES($1,$2,'staff.legacy_claim_approved','order',$3,$4,$5)", [randomUUID(), principal.userId, command.orderId, `legacy-claim-approved:${randomUUID()}`, JSON.stringify({ approvalId, phoneDigest: authDigest(secret, `claim-phone:${phoneNumber}`), phoneOverride: command.phoneNumber !== undefined, reason: command.reason })]);
+        return { orderId: command.orderId, receiptToken, expiresAt: created.rows[0].expires_at.toISOString() };
+      });
+    },
+
+    // Customer step: the session owner proves fresh possession of their verified phone and
+    // redeems a receipt approved for that phone and order. A typed contact match grants nothing.
+    async claimLegacyOrder(headers: Headers, input: unknown): Promise<{ id: string; claimed: true }> {
+      const principal = await authorize(headers), command = parse(claimInput, input);
+      const owner = (await database.pool.query<{ phone_number: string | null; phone_number_verified: boolean; staff: boolean }>("SELECT phone_number,phone_number_verified,EXISTS(SELECT 1 FROM user_roles WHERE user_id=u.id) AS staff FROM users u WHERE id=$1 AND status='active'", [principal.userId])).rows[0];
+      // Separation of duties: staff (including every possible approver) cannot redeem receipts.
+      if (owner?.staff) throw new AuthFailure("FORBIDDEN", 403, "Staff accounts cannot claim customer orders");
+      if (!owner?.phone_number || !owner.phone_number_verified) throw new AuthFailure("FORBIDDEN", 403, "A verified phone number is required");
+      const proof = await phones.consume(command.challengeId, owner.phone_number, command.code, "order_claim");
+      return transaction(async client => {
+        const locked = await lockOwner(client, principal.userId);
+        if (locked.phone_number !== proof.phoneNumber || !locked.phone_number_verified) throw new AuthFailure("UNAUTHENTICATED", 401, "Invalid or expired verification");
+        // Lock order before approval (same order as approveLegacyClaim). Every mismatch is the same 404.
+        if (!(await client.query("SELECT 1 FROM orders WHERE id=$1 AND user_id IS NULL FOR UPDATE", [command.orderId])).rowCount) notFound();
+        const approval = (await client.query<{ id: string }>("SELECT id FROM order_claim_approvals WHERE token_hash=$1 AND order_id=$2 AND phone_number=$3 AND consumed_at IS NULL AND revoked_at IS NULL AND expires_at>now() FOR UPDATE", [capabilityHash(command.receiptToken), command.orderId, proof.phoneNumber])).rows[0] ?? notFound();
+        await client.query("UPDATE orders SET user_id=$2,version=version+1,updated_at=now() WHERE id=$1", [command.orderId, principal.userId]);
+        await client.query("UPDATE order_claim_approvals SET consumed_at=now(),consumed_by=$2 WHERE id=$1", [approval.id, principal.userId]);
+        await client.query("INSERT INTO audit_events(id,actor_user_id,action,target_type,target_id,dedupe_key,redacted_changes) VALUES($1,$2,'customer.legacy_order_claimed','order',$3,$4,$5)", [randomUUID(), principal.userId, command.orderId, `legacy-order-claimed:${command.orderId}`, JSON.stringify({ approvalId: approval.id })]);
+        return { id: command.orderId, claimed: true as const };
+      });
+    },
+
+    // Verified phone change: fresh proof of the current and the new number, unique identity,
+    // then every session of the account is revoked so the user signs in again.
+    async changePhone(headers: Headers, input: unknown): Promise<{ phone: string; version: number; signedOut: true }> {
+      const principal = await authorize(headers), command = parse(changePhoneInput, input);
+      const owner = (await database.pool.query<{ phone_number: string | null; phone_number_verified: boolean; staff: boolean }>("SELECT phone_number,phone_number_verified,EXISTS(SELECT 1 FROM user_roles WHERE user_id=u.id) AS staff FROM users u WHERE id=$1 AND status='active'", [principal.userId])).rows[0];
+      if (!owner) throw new AuthFailure("UNAUTHENTICATED", 401, "Sign in is required");
+      if (owner.staff) throw new AuthFailure("FORBIDDEN", 403, "Staff identity changes are managed separately");
+      if (!owner.phone_number || !owner.phone_number_verified) invalid("A verified phone number is required");
+      const current = owner.phone_number as string;
+      if (command.phoneNumber === current) invalid("The new phone number must differ");
+      await phones.consume(command.currentChallengeId, current, command.currentCode, "phone_change_current");
+      await phones.consume(command.challengeId, command.phoneNumber, command.code, "phone_change_new");
+      return transaction(async client => {
+        const locked = await lockOwner(client, principal.userId);
+        if (locked.phone_number !== current || !locked.phone_number_verified) conflict();
+        const profile = (await client.query<{ version: number }>("SELECT version FROM customer_profiles WHERE user_id=$1 FOR UPDATE", [principal.userId])).rows[0];
+        if ((profile?.version ?? 0) !== command.expectedVersion) conflict();
+        await client.query("UPDATE users SET phone_number=$2,phone_number_verified=true,updated_at=now() WHERE id=$1", [principal.userId, command.phoneNumber]);
+        const version = profile ? (await client.query<{ version: number }>("UPDATE customer_profiles SET entered_phone=$2,normalized_phone=$2,version=version+1,updated_at=now() WHERE user_id=$1 RETURNING version", [principal.userId, command.phoneNumber])).rows[0].version : 0;
+        // An unfinished signup for the new number can no longer create a second identity for it.
+        await client.query("UPDATE customer_completion_sessions SET revoked_at=now() WHERE phone_number=$1 AND consumed_at IS NULL AND revoked_at IS NULL", [command.phoneNumber]);
+        await client.query("DELETE FROM auth_sessions WHERE user_id=$1", [principal.userId]);
+        await client.query("INSERT INTO audit_events(id,actor_user_id,action,target_type,target_id,dedupe_key) VALUES($1,$2,'customer.phone_changed','user',$2,$3)", [randomUUID(), principal.userId, `phone-changed:${randomUUID()}`]);
+        return { phone: command.phoneNumber, version, signedOut: true as const };
+      });
     },
   };
 }

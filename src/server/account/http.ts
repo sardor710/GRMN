@@ -58,6 +58,12 @@ export function createAccountHandler(input: { service: AccountService; baseURL: 
         }
         return method();
       }
+      if ((resource === "phone" || resource === "claims") && id === undefined) {
+        query(url, []);
+        if (request.method !== "POST") return method();
+        const body = object(await readAdminJSON(request));
+        return adminJSON(resource === "phone" ? await service.changePhone(request.headers, body) : await service.claimLegacyOrder(request.headers, body));
+      }
       if (resource === "orders") {
         if (!read) return method();
         if (id !== undefined) { query(url, []); return adminJSON(await service.getOwnOrder(request.headers, id)); }
@@ -66,6 +72,22 @@ export function createAccountHandler(input: { service: AccountService; baseURL: 
         return adminJSON(await service.getOwnOrders(request.headers, { ...(params.limit !== undefined ? { limit: Number(params.limit) } : {}), ...(params.cursor !== undefined ? { cursor: params.cursor } : {}) }));
       }
       return missing();
+    } catch (error) { return authErrorResponse(error); }
+  };
+}
+
+// POST /api/admin/order-claims: staff issue a legacy-claim receipt (customers:write + MFA admission,
+// enforced by the service principal). Same-origin only; no query parameters.
+export function createClaimApprovalHandler(input: { service: AccountService; baseURL: string }) {
+  const { service, baseURL } = input;
+  return async function handleClaimApproval(request: Request): Promise<Response> {
+    try {
+      const url = new URL(request.url);
+      if (url.origin !== baseURL || url.pathname !== "/api/admin/order-claims") missing();
+      if (request.method !== "POST") return method();
+      if (request.headers.get("origin") !== baseURL) throw new AuthFailure("FORBIDDEN", 403, "Invalid request origin");
+      query(url, []);
+      return adminJSON(await service.approveLegacyClaim(request.headers, object(await readAdminJSON(request))));
     } catch (error) { return authErrorResponse(error); }
   };
 }

@@ -143,3 +143,16 @@ export const orderAccessTokens = pgTable("order_access_tokens", {
   tokenHash: text("token_hash").notNull().unique(), scope: text("scope").notNull().default("order_status"),
   expiresAt: time("expires_at").notNull(), revokedAt: time("revoked_at"), createdAt: createdAt(),
 }, t => [index("order_access_tokens_order_idx").on(t.orderId), index("order_access_tokens_expiry_idx").on(t.expiresAt), check("order_access_tokens_valid", sql`${t.tokenHash} ~ '^[0-9a-f]{64}$' AND ${t.scope} IN ('order_status','order_receipt') AND ${t.expiresAt}>${t.createdAt} AND (${t.revokedAt} IS NULL OR ${t.revokedAt}>=${t.createdAt})`)]);
+
+// Task 10B: a staff-approved, single-use receipt that lets the verified owner of the approved
+// phone claim one unowned (legacy/provisional) order. Only the SHA-256 of the receipt is stored.
+export const orderClaimApprovals = pgTable("order_claim_approvals", {
+  id: id(), orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "restrict" }),
+  tokenHash: text("token_hash").notNull().unique(), phoneNumber: text("phone_number").notNull(),
+  approvedBy: uuid("approved_by").notNull().references(() => user.id, { onDelete: "restrict" }), reason: text("reason").notNull(),
+  expiresAt: time("expires_at").notNull(), revokedAt: time("revoked_at"),
+  consumedAt: time("consumed_at"), consumedBy: uuid("consumed_by").references(() => user.id, { onDelete: "restrict" }), createdAt: createdAt(),
+}, t => [
+  uniqueIndex("order_claim_approvals_open_unique").on(t.orderId).where(sql`${t.consumedAt} IS NULL AND ${t.revokedAt} IS NULL`),
+  check("order_claim_approvals_valid", sql`${t.tokenHash} ~ '^[0-9a-f]{64}$' AND ${t.phoneNumber} ~ '^[+][1-9][0-9]{7,14}$' AND length(btrim(${t.reason})) BETWEEN 1 AND 500 AND ${t.expiresAt}>${t.createdAt} AND (${t.consumedAt} IS NULL) = (${t.consumedBy} IS NULL) AND (${t.consumedAt} IS NULL OR ${t.revokedAt} IS NULL)`),
+]);

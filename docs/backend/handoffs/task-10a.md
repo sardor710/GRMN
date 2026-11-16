@@ -4,7 +4,7 @@
 
 **Branch:** `codex/backend-task-02` in the worktree `C:/Users/Freakman/.codex/worktrees/backend-task-02/GRMN`, on top of `b92fd0e` (Tasks 02–09).
 
-**Nothing in 10A is committed.** It waits for the owner's confirmation. No push, merge, deployment, real import or backend activation has been done.
+**Committed as `76bbf3b`** on `codex/backend-task-02` (correction 2026-11-17: this receipt originally said 10A was uncommitted). No push, merge, deployment, real import or backend activation has been done.
 
 **Out of scope here (Task 10B):** AccountDashboard UI wiring, legacy-order claims, verified phone change and recovery, and the credential-reset flow. Task 11 has not started.
 

@@ -62,7 +62,10 @@ async function handlers(request: Request, resource: AdminResource) {
   };
   return createAdminHandlers({ runtime, store, baseURL: new URL(process.env.AUTH_BASE_URL!).origin });
 }
-export async function handleAdminRequest(resource: AdminResource, request: Request) {
+export async function handleAdminRequest(resource: AdminResource | "order-claims", request: Request) {
+  // Legacy-order claim approval exists only in PostgreSQL+auth mode; the account service
+  // enforces staff MFA admission and customers:write itself.
+  if (resource === "order-claims") return (await import("../account/runtime.ts")).handleClaimApprovalRequest(request);
   try { return await (await handlers(request, resource)).handle(resource, request); }
   catch (error) { return authErrorResponse(error); }
 }

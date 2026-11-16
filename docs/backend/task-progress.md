@@ -4,10 +4,10 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 ## Current position
 
-- **Completed:** Tasks **01–09** and **10A** (account APIs and ownership), within the scope and activation limits below.
-- **Committed:** Tasks 02–09 are committed on `codex/backend-task-02` as `b92fd0e`. **10A is uncommitted** until the owner confirms the commit.
-- **Next:** Task **10B**: AccountDashboard UI wiring, audited legacy-order claims, verified phone change/recovery and the credential-reset flow. It runs in a separate session. Its draft tests are in `tests/integration/account-claims.pending.mjs`.
-- **Authorized stopping point:** Finish 10 (10B remains), then stop before 11.
+- **Completed:** Tasks **01–09**, **10A** (account APIs and ownership) and **10B** (legacy claims, verified phone change/recovery, staff credential change), within the scope and activation limits below.
+- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, and 10B in the commit after it (see `git log`). The earlier note calling 10A "uncommitted" was out of date and is corrected here.
+- **Next:** Task **10C**: wire the AccountDashboard UI to `/api/account/*` (profile, addresses, orders, phone, claims) with loading, empty and error states. Replace the fake password-reset modal with phone verification. See [the 10B handoff](handoffs/task-10b.md#exact-next-step).
+- **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
 - **Active implementation:** `C:/Users/Freakman/.codex/worktrees/backend-task-02/GRMN`, branch `codex/backend-task-02`.
 - **Original checkout:** `D:/projects/garmin/GRMN`. Its progress documentation is synchronized, but the backend implementation has **not** been merged or copied there. An AI inspecting only that checkout's application files will see older code. Continue code work in the active worktree above.
 - No merge, push, deployment, real import, production database migration or backend activation has been performed.
@@ -54,7 +54,7 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 ### Task 10A
 
-**Complete — account APIs and ownership (2026-11-17, uncommitted).**
+**Complete — account APIs and ownership (2026-11-17, commit `76bbf3b`).**
 - Added session-owned profile, saved-address CRUD and paginated order history/detail services. They are exposed through `/api/account/{profile,addresses,addresses/[id],orders,orders/[id]}`.
 - The API never accepts an email or user ID as a selector. It returns 503 unless both PostgreSQL mode and auth are enabled.
 - Migration 0006 enforces the five-address limit, owner immutability and exactly one primary address in the database, under concurrency. Address writes fail closed outside READ COMMITTED.
@@ -65,21 +65,33 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 [Detailed receipt](handoffs/task-10a.md).
 
-## Task 10B — next, not started
+### Task 10B
+
+**Complete — legacy claims, phone change/recovery and credential change (2026-11-17).**
+- **Audited legacy-order claims.** Staff with `customers:write` and MFA from the last 15 minutes issue a single-use receipt for one unowned order. It is bound to a canonical phone, stored only as a hash, expires after 72 hours and is superseded by a newer approval.
+- **Redeeming a receipt.** The verified owner of that phone redeems it with a fresh `order_claim` OTP. Staff cannot redeem receipts. Both steps are audited. A typed matching email or phone grants nothing.
+- **Verified phone change.** Requires fresh proofs of the old and the new number. The new number must not belong to another account (409 otherwise). Every session is revoked and the change is audited.
+- **Phone recovery** is the existing phone-possession sign-in. A sign-in racing a phone change can no longer keep a session. Lost or recycled-number recovery remains owner decision O04.
+- **OTP codes are purpose-bound:** `sign_in`, `phone_change_current`, `phone_change_new` or `order_claim`.
+- **`POST /api/auth/change-password`** uses the Better Auth credential service for MFA-admitted staff and revokes every session. Customers own no password and get 403, never a fake success.
+- **New routes:** `/api/account/phone`, `/api/account/claims`, `/api/admin/order-claims`. Migration 0007.
+- **Review:** no Critical findings. Three Important findings (sign-in race, OTP purpose, approval strength) were fixed test-first.
+- **Gates:** final `npm test` **326/326** (21 legacy + 112 unit + 193 integration) with boundaries passing; `npm run check` passes; the full admin and public Chrome smoke passed.
+
+[Detailed receipt](handoffs/task-10b.md).
+
+## Task 10C — next, not started
 
 Required work:
-- Wire the AccountDashboard UI to `/api/account/*`, with loading, empty and error states, and remove its `?email=` fetch and demo literals.
-- Implement verified phone change and recovery.
-- Implement audited legacy-order claims.
-- Make the credential reset use the real auth service.
-
-Start from `tests/integration/account-claims.pending.mjs`. Preserve embedded real records privately and expose only approved data to their verified owner.
-
+- Mount a session-owned account page and wire `AccountDashboard.tsx` to `/api/account/*`, with loading, empty and error states. Remove the `?email=` fetch and the demo literals.
+- Replace the fake password-reset modal with phone verification (and staff `change-password`).
+- Handle `signedOut` after a phone change, plus nullable legacy money and addresses.
+- Keep mutations disabled on failure.
 ## Remaining task list
 
 | Task | Status | Work still required |
 |---|---|---|
-| 10 | 10A complete; 10B next, authorized | 10B: account UI wiring, verified phone change/recovery, legacy claims, credential reset |
+| 10 | 10A and 10B complete; 10C next | 10C: AccountDashboard UI wiring and the UI credential/recovery flow |
 | 11 | Not started | Inventory ledger and race-safe reservations |
 | 12 | Not started | Durable inbox/outbox and background workers |
 | 13 | Not started | Server cart, pricing, shipping/tax quotes and promotion quotas |

@@ -8,7 +8,7 @@ import type { DatabaseHandle } from "../db/client.ts";
 import { buildAuth } from "./factory.ts";
 import { AuthFailure } from "./config.ts";
 import type { AuthConfig } from "./config.ts";
-import { authDigest, consumeAuthBudget } from "./phone-service.ts";
+import { authDigest, consumeAuthBudget, PHONE_PURPOSES } from "./phone-service.ts";
 import type { PhoneSender } from "./phone-service.ts";
 import { getSessionIdentity } from "./principal.ts";
 import { completeProfileInput, emailInput, phoneInput } from "./validation.ts";
@@ -20,9 +20,11 @@ const bodies = {
   "/two-factor/enable": z.object({ password: z.string().min(16).max(128) }).strict(),
   "/two-factor/verify-totp": z.object({ code: z.string().regex(/^[0-9]{6}$/) }).strict(),
   "/two-factor/verify-backup-code": z.object({ code: z.string().min(6).max(64) }).strict(),
-  "/grmn/phone/send": z.object({ phoneNumber: phoneInput }).strict(),
+  "/grmn/phone/send": z.object({ phoneNumber: phoneInput, purpose: z.enum(PHONE_PURPOSES).optional() }).strict(),
   "/grmn/phone/verify": z.object({ phoneNumber: phoneInput, challengeId: z.uuid(), code: z.string().regex(/^[0-9]{6}$/) }).strict(),
   "/grmn/phone/complete": completeProfileInput,
+  // Staff credential change through the Better Auth credential service; every session is revoked.
+  "/change-password": z.object({ currentPassword: z.string().min(1).max(128), newPassword: z.string().min(16).max(128), revokeOtherSessions: z.literal(true).default(true) }).strict(),
 };
 async function boundedJSON(request: Request): Promise<unknown> {
   const length = request.headers.get("content-length");
@@ -99,6 +101,16 @@ export function createAuthFoundation(input: { database: DatabaseHandle; config: 
         const details = bodies["/sign-in/email"].parse(parsed.data);
         await consumeAuthBudget(database, config.secret, "staff-password", details.email, 10, 300);
       }
+      let passwordOwner: string | undefined;
+      if (path==="/change-password") {
+        // Customers sign in by phone proof and own no password; never report a fake success.
+        const identity = await getSessionIdentity(runtime, request.headers);
+        if (!identity) throw new AuthFailure("UNAUTHENTICATED", 401, "Sign in is required");
+        if (!identity.staff) throw new AuthFailure("FORBIDDEN", 403, "This account signs in with a verified phone; use phone verification instead");
+        if (!identity.mfa_at) throw new AuthFailure("FORBIDDEN", 403, "Staff MFA verification is required");
+        await consumeAuthBudget(database, config.secret, "password-change", identity.id, 5, 900);
+        passwordOwner = identity.id;
+      }
       const verifiesMfa = ["/two-factor/verify-totp", "/two-factor/verify-backup-code"].includes(path);
       if (path.startsWith("/two-factor/") || path==="/sign-out") {
         // Staff-only low-volume verification is serialized across instances to
@@ -153,6 +165,12 @@ export function createAuthFoundation(input: { database: DatabaseHandle; config: 
           await gate.query("ROLLBACK").catch(() => {});
           throw new AuthFailure("DEPENDENCY_UNAVAILABLE", 503, "MFA admission is unavailable");
         }
+      }
+      if (passwordOwner) {
+        // The credential already changed; a failed audit write must not hide that, so report it as a 503 the caller can see.
+        try { await database.pool.query("INSERT INTO audit_events(id,actor_user_id,action,target_type,target_id,dedupe_key) VALUES($1,$2,'auth.password_changed','user',$2,$3)", [randomUUID(), passwordOwner, `password-changed:${randomUUID()}`]); }
+        catch { return json({ error: { code: "DEPENDENCY_UNAVAILABLE", message: "Password changed, but the audit record failed; contact an administrator" } }, 503, response.headers); }
+        return json({ success: true, mfaRequired: true }, 200, response.headers);
       }
       if (path==="/two-factor/enable") return json({ totpURI: data.totpURI, backupCodes: data.backupCodes }, 200, response.headers);
       if (path.startsWith("/grmn/")) return json(data, 200, response.headers);

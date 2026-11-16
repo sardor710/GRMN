@@ -20,7 +20,7 @@ test("public account route never imports the preserved shared dashboard or selec
   for(const query of ["","?email=victim@example.invalid","?phone=+77000000000"]){const response=await GET(new Request("http://localhost:3000/api/account/orders"+query));assert.equal(response.status,503);assert.doesNotMatch(await response.text(),/clientEmail|ordersCount|shippingAddress/);}
 });
 test("every account API route binds the session-owned handler and stays closed outside postgres+auth mode",async()=>{
-  const routes={"profile":["GET","PUT"],"addresses":["GET","POST"],"addresses/[id]":["PUT","DELETE"],"orders":["GET"],"orders/[id]":["GET"]};
+  const routes={"profile":["GET","PUT"],"addresses":["GET","POST"],"addresses/[id]":["PUT","DELETE"],"orders":["GET"],"orders/[id]":["GET"],"phone":["POST"],"claims":["POST"]};
   const saved={AUTH_ENABLED:process.env.AUTH_ENABLED,CMS_BACKEND:process.env.CMS_BACKEND};
   try{
     for(const env of [{CMS_BACKEND:"legacy",AUTH_ENABLED:"1"},{CMS_BACKEND:"postgres",AUTH_ENABLED:"0"}]){
@@ -65,4 +65,18 @@ test("browser product imports never reach private CMS source or the server produ
   assert.ok(read("src/lib/cms/seed.ts").includes('import "server-only";'));
   for(const component of ["CatalogueGrid","CompareTool"])assert.ok(!read(`src/components/${component}.tsx`).includes('from "@/lib/public-products"'));
   assert.deepEqual(findServerBoundaryViolations(fileURLToPath(new URL("../../",import.meta.url))),[]);
+});
+
+test("staff legacy-claim approval route binds the claim handler and stays closed outside postgres+auth mode",async()=>{
+  const source=read("src/app/api/admin/order-claims/route.ts");assert.doesNotMatch(source,/cms\/store|data\.json/);assert.match(read("src/server/auth/admin-runtime.ts"),/resource === "order-claims"\) return \(await import\("..\/account\/runtime.ts"\)\).handleClaimApprovalRequest/);
+  const saved={AUTH_ENABLED:process.env.AUTH_ENABLED,CMS_BACKEND:process.env.CMS_BACKEND};
+  try{
+    for(const env of [{CMS_BACKEND:"legacy",AUTH_ENABLED:"1"},{CMS_BACKEND:"postgres",AUTH_ENABLED:"0"}]){
+      Object.assign(process.env,env);
+      const route=await import("../../src/app/api/admin/order-claims/route.ts");
+      assert.deepEqual(Object.keys(route).filter(key=>/^[A-Z]+$/.test(key)),["POST"]);
+      const response=await route.POST(new Request("http://localhost:3000/api/admin/order-claims",{method:"POST",headers:{origin:"http://localhost:3000","content-type":"application/json"},body:"{}"}));
+      assert.equal(response.status,503);assert.equal(response.headers.get("cache-control"),"no-store");
+    }
+  }finally{for(const [key,value] of Object.entries(saved)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
 });

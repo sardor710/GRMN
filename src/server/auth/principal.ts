@@ -36,6 +36,14 @@ export async function requirePermission(runtime: AuthRuntime, headers: Headers, 
   }
   return principal;
 }
+// High-impact staff decisions (for example, granting a customer a legacy order) always need
+// MFA admission from the last 15 minutes, whatever the permission.
+export async function requireFreshPermission(runtime: AuthRuntime, headers: Headers, permission: Permission) {
+  const current = await getSessionIdentity(runtime, headers), principal = principalFromIdentity(current);
+  if (!current?.staff || !principal.permissions.includes(permission)) throw new AuthFailure("FORBIDDEN", 403, "Permission is required");
+  if (!current.mfa_at || Date.now()-current.mfa_at.getTime()>900000) throw new AuthFailure("FORBIDDEN", 403, "Fresh MFA verification is required");
+  return principal;
+}
 export async function revokeUserSessions(runtime: AuthRuntime, headers: Headers, targetUserId: string) {
   const actor = await requirePermission(runtime, headers, "staff:manage");
   const client = await runtime.database.pool.connect();

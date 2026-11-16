@@ -4,27 +4,31 @@ import type { DatabaseHandle } from "../db/client.ts";
 import { AuthFailure } from "./config.ts";
 import { completeProfileInput } from "./validation.ts";
 
-export type PhoneSender = (input: { phoneNumber: string; code: string }) => Promise<void>;
+export const PHONE_PURPOSES = ["sign_in", "phone_change_current", "phone_change_new", "order_claim"] as const;
+export type PhonePurpose = typeof PHONE_PURPOSES[number];
+// The provider must use purpose-specific message text so a code is never read out for the wrong action.
+export type PhoneSender = (input: { phoneNumber: string; code: string; purpose: PhonePurpose }) => Promise<void>;
 export interface VerifiedPhoneProof { readonly phoneNumber: string; readonly challengeId: string }
 export const canonicalPhone = (phone: string) => /^[+][1-9][0-9]{7,14}$/.test(phone);
 export const capabilityHash = (value: string) => createHash("sha256").update(value).digest("hex");
 export function authDigest(secret: string, value: string) { return createHmac("sha256", secret).update(value).digest("hex"); }
 
-export async function consumeAuthBudget(database: DatabaseHandle, secret: string, operation: string, subject: string, max: number, seconds: number) {
+export async function consumeAuthBudget(database: Pick<DatabaseHandle, "pool">, secret: string, operation: string, subject: string, max: number, seconds: number) {
   const bucket = Math.floor(Date.now()/(seconds*1000));
   const key = "grmn:" + authDigest(secret, `${operation}:${subject}:${bucket}`);
   const result = await database.pool.query("INSERT INTO auth_request_budgets(id,key,count,expires_at) VALUES($1,$2,1,clock_timestamp()+$3*interval '1 second') ON CONFLICT(key) DO UPDATE SET count=auth_request_budgets.count+1 WHERE auth_request_budgets.count<$4 RETURNING count", [randomUUID(), key, seconds, max]);
   if (!result.rowCount) throw new AuthFailure("RATE_LIMITED", 429, "Too many authentication requests", seconds);
 }
 
-export function createPhoneService(input: { database: DatabaseHandle; secret: string; send?: PhoneSender; ttlMs?: number }) {
+export function createPhoneService(input: { database: Pick<DatabaseHandle, "pool">; secret: string; send?: PhoneSender; ttlMs?: number }) {
   const { database, secret, send } = input;
   const ttlMs = input.ttlMs ?? 300000;
   if (!Number.isInteger(ttlMs) || ttlMs<100 || ttlMs>300000) throw new Error("Invalid phone challenge lifetime");
   const invalid = () => new AuthFailure("UNAUTHENTICATED", 401, "Invalid or expired verification");
   const proofs = new WeakSet<VerifiedPhoneProof>();
   return {
-    async request(phoneNumber: string) {
+    async request(phoneNumber: string, purpose: PhonePurpose = "sign_in") {
+      if (!PHONE_PURPOSES.includes(purpose)) throw new AuthFailure("INVALID_INPUT", 400, "Invalid verification purpose");
       if (!canonicalPhone(phoneNumber)) throw new AuthFailure("INVALID_INPUT", 400, "Invalid phone number");
       if (!send) throw new AuthFailure("DEPENDENCY_UNAVAILABLE", 503, "Phone delivery is not configured");
       await consumeAuthBudget(database, secret, "phone-send", phoneNumber, 5, 900);
@@ -34,17 +38,17 @@ export function createPhoneService(input: { database: DatabaseHandle; secret: st
         await client.query("BEGIN");
         await client.query("SELECT pg_advisory_xact_lock(hashtext('grmn-phone'),hashtext($1))", [phoneNumber]);
         await client.query("UPDATE phone_challenges SET consumed_at=now() WHERE phone_number=$1 AND consumed_at IS NULL", [phoneNumber]);
-        await client.query("INSERT INTO phone_challenges(id,phone_number,code_hash,expires_at) VALUES($1,$2,$3,clock_timestamp()+$4*interval '1 millisecond')", [id, phoneNumber, authDigest(secret, `${id}:${phoneNumber}:${code}`), ttlMs]);
+        await client.query("INSERT INTO phone_challenges(id,phone_number,code_hash,expires_at,purpose) VALUES($1,$2,$3,clock_timestamp()+$4*interval '1 millisecond',$5)", [id, phoneNumber, authDigest(secret, `${id}:${phoneNumber}:${code}`), ttlMs, purpose]);
         await client.query("COMMIT");
       } catch (error) { await client.query("ROLLBACK"); throw error; } finally { client.release(); }
-      try { await send({ phoneNumber, code }); }
+      try { await send({ phoneNumber, code, purpose }); }
       catch { await database.pool.query("UPDATE phone_challenges SET consumed_at=now() WHERE id=$1 AND consumed_at IS NULL", [id]); throw new AuthFailure("DEPENDENCY_UNAVAILABLE", 503, "Phone delivery is unavailable"); }
       return { challengeId: id };
     },
-    async consume(challengeId: string, phoneNumber: string, code: string) {
+    async consume(challengeId: string, phoneNumber: string, code: string, purpose: PhonePurpose = "sign_in") {
       if (!/^[a-f0-9-]{36}$/i.test(challengeId) || !canonicalPhone(phoneNumber) || !/^[0-9]{6}$/.test(code)) throw invalid();
       await consumeAuthBudget(database, secret, "phone-verify", phoneNumber, 20, 300);
-      const consumed = await database.pool.query<{ consumed_at: Date | null }>("UPDATE phone_challenges SET failed_attempts=failed_attempts+CASE WHEN code_hash=$3 THEN 0 ELSE 1 END,consumed_at=CASE WHEN code_hash=$3 THEN clock_timestamp() ELSE NULL END WHERE id=$1 AND phone_number=$2 AND consumed_at IS NULL AND expires_at>clock_timestamp() AND failed_attempts<5 RETURNING consumed_at", [challengeId, phoneNumber, authDigest(secret, `${challengeId}:${phoneNumber}:${code}`)]);
+      const consumed = await database.pool.query<{ consumed_at: Date | null }>("UPDATE phone_challenges SET failed_attempts=failed_attempts+CASE WHEN code_hash=$3 THEN 0 ELSE 1 END,consumed_at=CASE WHEN code_hash=$3 THEN clock_timestamp() ELSE NULL END WHERE id=$1 AND phone_number=$2 AND purpose=$4 AND consumed_at IS NULL AND expires_at>clock_timestamp() AND failed_attempts<5 RETURNING consumed_at", [challengeId, phoneNumber, authDigest(secret, `${challengeId}:${phoneNumber}:${code}`), purpose]);
       if (!consumed.rows[0]?.consumed_at) throw invalid();
       const proof = Object.freeze({ phoneNumber, challengeId });
       proofs.add(proof);

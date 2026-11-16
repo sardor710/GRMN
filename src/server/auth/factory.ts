@@ -9,7 +9,7 @@ import type { DatabaseHandle } from "../db/client.ts";
 import { authTables } from "../db/auth-tables.ts";
 import { AuthFailure } from "./config.ts";
 import type { AuthConfig } from "./config.ts";
-import { createPhoneService } from "./phone-service.ts";
+import { createPhoneService, PHONE_PURPOSES } from "./phone-service.ts";
 import type { PhoneSender } from "./phone-service.ts";
 import { completeProfileInput, phoneInput } from "./validation.ts";
 
@@ -58,7 +58,7 @@ export function buildAuth(input: { database: DatabaseHandle; config: AuthConfig;
       {
         id: "grmn-phone-flow",
         endpoints: {
-          requestPhoneProof: createAuthEndpoint("/grmn/phone/send", { method: "POST", body: z.object({ phoneNumber: phoneInput }).strict() }, ctx => endpointResult(async () => ctx.json(await phones.request(ctx.body.phoneNumber)))),
+          requestPhoneProof: createAuthEndpoint("/grmn/phone/send", { method: "POST", body: z.object({ phoneNumber: phoneInput, purpose: z.enum(PHONE_PURPOSES).default("sign_in") }).strict() }, ctx => endpointResult(async () => ctx.json(await phones.request(ctx.body.phoneNumber, ctx.body.purpose)))),
           verifyPhoneProof: createAuthEndpoint("/grmn/phone/verify", { method: "POST", body: z.object({ challengeId: z.uuid(), phoneNumber: phoneInput, code: z.string().regex(/^[0-9]{6}$/) }).strict() }, ctx => endpointResult(async () => {
             const proof = await phones.consume(ctx.body.challengeId, ctx.body.phoneNumber, ctx.body.code);
             const found = await database.pool.query<{ id: string; status: string; staff: boolean; two_factor_enabled: boolean }>("SELECT id,status,two_factor_enabled,EXISTS(SELECT 1 FROM user_roles WHERE user_id=u.id) AS staff FROM users u WHERE phone_number=$1 AND phone_number_verified", [proof.phoneNumber]);
@@ -71,6 +71,14 @@ export function buildAuth(input: { database: DatabaseHandle; config: AuthConfig;
             if (current.status!=="active" || current.staff || current.two_factor_enabled) throw new AuthFailure("FORBIDDEN", 403, "This account requires its separate sign-in flow");
             const user = await ctx.context.internalAdapter.findUserById(current.id), session = await ctx.context.internalAdapter.createSession(current.id);
             if (!user || !session) throw new AuthFailure("DEPENDENCY_UNAVAILABLE", 503, "Authentication is unavailable");
+            // A phone change may have committed (and revoked sessions) between the lookup and this
+            // insert. Re-check after the session exists: either the change's session delete or this
+            // check removes it, so the old number never keeps a session on the moved account.
+            const still = await database.pool.query("SELECT 1 FROM users WHERE id=$1 AND phone_number=$2 AND phone_number_verified AND status='active'", [current.id, proof.phoneNumber]);
+            if (!still.rowCount) {
+              await database.pool.query("DELETE FROM auth_sessions WHERE id=$1", [session.id]);
+              throw new AuthFailure("UNAUTHENTICATED", 401, "Invalid or expired verification");
+            }
             await setSessionCookie(ctx, { user, session });
             return ctx.json({ state: "authenticated" });
           })),

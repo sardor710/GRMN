@@ -889,16 +889,16 @@ Use the existing Vibe/executing-plans/TDD workflow and a scoped read-only review
 
 ### Task 10 — Real customer profiles, addresses, and order ownership
 
-**Current status:** 10A COMPLETE (2026-11-17, uncommitted) — APIs and ownership; see `docs/backend/handoffs/task-10a.md`. 10B (account UI wiring, legacy claims, verified phone change/recovery, credential reset) is NEXT, in a separate session. Task 09 accepted 2026-11-16.
+**Current status:** 10A COMPLETE (2026-11-17, commit `76bbf3b`) — APIs and ownership; see `docs/backend/handoffs/task-10a.md`. 10B COMPLETE (2026-11-17) — audited legacy claims, verified phone change/recovery and the real staff credential change (server + HTTP); see `docs/backend/handoffs/task-10b.md`. 10C (AccountDashboard UI wiring to `/api/account/*` with loading/empty/error states and the UI credential/recovery flow) is NEXT. Task 09 accepted 2026-11-16.
 
-**Depends on:** 09. **Size:** 10A APIs/ownership; 10B account UI and claims.
+**Depends on:** 09. **Size:** 10A APIs/ownership; 10B claims, phone change/recovery and credential change; 10C account UI wiring (split from 10B on 2026-11-17 to keep one reviewable slice per session).
 
 **Files:** Customer/order services, `/api/account/*`, `AccountDashboard.tsx`, address DTO/helper adapters, integration/e2e tests.
 
 - [x] Implement session-owned profile/address CRUD and paginated order detail/history; remove email-authorized lookup and demo fallback in production. *(10A: server services + `/api/account/*`; no email/user-ID selector is accepted and legacy mode stays 503. The unmounted `AccountDashboard.tsx` still holds its old `?email=` fetch and literals until 10B rewires it.)*
-- [ ] Persist profile/address changes, five-address/primary rules, verified phone account linking/change/recovery and audited legacy-order claims. Profile completion collects name/email/phone; email delivery/verification integration is deferred, and an unverified email grants no ownership. Empty history must stay empty. *(10A done: profile/address persistence, DB-enforced five-address/one-primary rules, unverified email stored as unverified and granting nothing, empty history. 10B: verified phone linking/change/recovery and audited legacy claims.)*
+- [x] Persist profile/address changes, five-address/primary rules, verified phone account linking/change/recovery and audited legacy-order claims. Profile completion collects name/email/phone; email delivery/verification integration is deferred, and an unverified email grants no ownership. Empty history must stay empty. *(10A done: profile/address persistence, DB-enforced five-address/one-primary rules, unverified email stored as unverified and granting nothing, empty history. 10B done: verified phone change (fresh proof of old and new number, unique identity, all sessions revoked), recovery by phone possession through the existing `/api/auth/grmn/phone/verify` flow, and staff-approved single-use legacy-order claim receipts redeemed with fresh phone proof and audited. Lost/recycled-number recovery remains owner decision O04.)*
 - [x] Two-user tests deny order/address access using another ID or email; concurrent address inserts cannot exceed five; concurrent primary edits cannot create two primaries; address edits never rewrite old order snapshots.
-- [ ] Wire UI loading/empty/error states and persistence across reload/login; verify resetting credentials really uses auth service and does not just show a success message.
+- [ ] Wire UI loading/empty/error states and persistence across reload/login; verify resetting credentials really uses auth service and does not just show a success message. *(10B: `POST /api/auth/change-password` calls the Better Auth credential service for MFA-admitted staff, revokes every session and audits; customers own no password and get 403, never a fake success. 10C: UI wiring.)*
 
 **Acceptance/recovery:** No all-orders response without identity; embedded real account records are preserved and visible only to their established verified owner. Disable account mutation on failure rather than displaying shared component records as the current customer.
 
@@ -1155,7 +1155,7 @@ Later possibilities: additional settlement currencies/warehouses (current USD co
 - [x] Tasks 01–07: inventory, foundations, guarded identity and verified private local staging; source quarantine and real activation gates remain explicit.
 - [x] Task 08: persisted admin/CMS services and UI, final 266/266 tests, check and expanded browser gate.
 - [x] Task 09: public catalog/content reads complete; 300/300 tests, check and full browser smoke passed (`handoffs/task-09.md`).
-- [ ] Task 10: 10A account APIs/ownership complete, with 313/313 tests and check passing (`handoffs/task-10a.md`). 10B (UI wiring, claims, phone change/recovery, credential reset) is next.
+- [ ] Task 10: 10A account APIs/ownership complete (313/313, `handoffs/task-10a.md`). 10B claims, phone change/recovery and staff credential change complete: 326/326 tests, check and browser smoke passed (`handoffs/task-10b.md`). 10C (AccountDashboard UI wiring) is next.
 - [ ] Tasks 11–17: validated stock/checkout/payment/shipping/returns workflows.
 - [ ] Tasks 18–20: CMS/media/operations and explicit optional-feature decisions.
 - [ ] Tasks 21–23: measured performance, full qualification, cutover and recovery rehearsal.
