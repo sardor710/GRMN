@@ -13,6 +13,7 @@ const eslintConfig = defineConfig([
     "build/**",
     "next-env.d.ts",
     "FusionCMS/**",
+    "temp/**", // Private generated fixtures, browser profiles and receipts.
   ]),
 ]);
 

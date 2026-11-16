@@ -50,31 +50,31 @@ export function AdminModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/80 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
         onClick={onClose}
       />
 
       {/* Dialog container */}
       <div
-        className={`relative z-10 w-full ${maxWidthClasses[maxWidth]} max-h-[90vh] flex flex-col border border-[#262c39] bg-[#141720] shadow-2xl overflow-hidden font-sans`}
+        className={`relative z-10 w-full ${maxWidthClasses[maxWidth]} max-h-[90vh] flex flex-col border border-neutral-300 bg-white shadow-2xl overflow-hidden font-sans rounded-none`}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-[#232732] px-6 py-4 bg-[#0f1117]">
+        <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4 bg-white">
           <div>
-            <h3 className="font-heading uppercase tracking-wider text-base font-bold text-white">{title}</h3>
-            {subtitle && <p className="text-[12px] text-[#8a92a3] mt-0.5">{subtitle}</p>}
+            <h3 className="g-heading uppercase tracking-wider text-[18px] text-black font-normal">{title}</h3>
+            {subtitle && <p className="text-[12px] text-neutral-500 mt-0.5">{subtitle}</p>}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-[#8a92a3] transition-colors hover:bg-[#1f2430] hover:text-white"
+            className="p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-black rounded-none"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-6 scrollbar-thin">
+        <div className="flex-1 overflow-y-auto p-6 bg-white text-black">
           {children}
         </div>
       </div>

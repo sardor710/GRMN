@@ -1,3 +1,4 @@
+import "server-only";
 import type { CMSData } from "./types";
 import { blogPosts } from "@/lib/blog";
 

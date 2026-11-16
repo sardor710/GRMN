@@ -1,0 +1,338 @@
+{
+  "version": 1,
+  "betterAuth": "1.7.19",
+  "scope": "Schema metadata only; no live authentication",
+  "models": {
+    "user": {
+      "sqlTable": "users",
+      "fields": {
+        "name": {
+          "sqlColumn": "name",
+          "sqlType": "text",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "email": {
+          "sqlColumn": "email",
+          "sqlType": "text",
+          "required": true,
+          "notNull": true,
+          "unique": true
+        },
+        "emailVerified": {
+          "sqlColumn": "email_verified",
+          "sqlType": "boolean",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "image": {
+          "sqlColumn": "image",
+          "sqlType": "text",
+          "required": false,
+          "notNull": false,
+          "unique": false
+        },
+        "createdAt": {
+          "sqlColumn": "created_at",
+          "sqlType": "timestamp with time zone",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "updatedAt": {
+          "sqlColumn": "updated_at",
+          "sqlType": "timestamp with time zone",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "phoneNumber": {
+          "sqlColumn": "phone_number",
+          "sqlType": "text",
+          "required": false,
+          "notNull": false,
+          "unique": true
+        },
+        "phoneNumberVerified": {
+          "sqlColumn": "phone_number_verified",
+          "sqlType": "boolean",
+          "required": false,
+          "notNull": true,
+          "unique": false
+        },
+        "twoFactorEnabled": {
+          "sqlColumn": "two_factor_enabled",
+          "sqlType": "boolean",
+          "required": false,
+          "notNull": true,
+          "unique": false
+        },
+        "status": {
+          "sqlColumn": "status",
+          "sqlType": "text",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        }
+      }
+    },
+    "session": {
+      "sqlTable": "auth_sessions",
+      "fields": {
+        "expiresAt": {
+          "sqlColumn": "expires_at",
+          "sqlType": "timestamp with time zone",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "token": {
+          "sqlColumn": "token",
+          "sqlType": "text",
+          "required": true,
+          "notNull": true,
+          "unique": true
+        },
+        "createdAt": {
+          "sqlColumn": "created_at",
+          "sqlType": "timestamp with time zone",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "updatedAt": {
+          "sqlColumn": "updated_at",
+          "sqlType": "timestamp with time zone",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "ipAddress": {
+          "sqlColumn": "ip_address",
+          "sqlType": "text",
+          "required": false,
+          "notNull": false,
+          "unique": false
+        },
+        "userAgent": {
+          "sqlColumn": "user_agent",
+          "sqlType": "text",
+          "required": false,
+          "notNull": false,
+          "unique": false
+        },
+        "userId": {
+          "sqlColumn": "user_id",
+          "sqlType": "uuid",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        }
+      }
+    },
+    "account": {
+      "sqlTable": "auth_accounts",
+      "fields": {
+        "accountId": {
+          "sqlColumn": "account_id",
+          "sqlType": "text",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "providerId": {
+          "sqlColumn": "provider_id",
+          "sqlType": "text",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "userId": {
+          "sqlColumn": "user_id",
+          "sqlType": "uuid",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "accessToken": {
+          "sqlColumn": "access_token",
+          "sqlType": "text",
+          "required": false,
+          "notNull": false,
+          "unique": false
+        },
+        "refreshToken": {
+          "sqlColumn": "refresh_token",
+          "sqlType": "text",
+          "required": false,
+          "notNull": false,
+          "unique": false
+        },
+        "idToken": {
+          "sqlColumn": "id_token",
+          "sqlType": "text",
+          "required": false,
+          "notNull": false,
+          "unique": false
+        },
+        "accessTokenExpiresAt": {
+          "sqlColumn": "access_token_expires_at",
+          "sqlType": "timestamp with time zone",
+          "required": false,
+          "notNull": false,
+          "unique": false
+        },
+        "refreshTokenExpiresAt": {
+          "sqlColumn": "refresh_token_expires_at",
+          "sqlType": "timestamp with time zone",
+          "required": false,
+          "notNull": false,
+          "unique": false
+        },
+        "scope": {
+          "sqlColumn": "scope",
+          "sqlType": "text",
+          "required": false,
+          "notNull": false,
+          "unique": false
+        },
+        "password": {
+          "sqlColumn": "password",
+          "sqlType": "text",
+          "required": false,
+          "notNull": false,
+          "unique": false
+        },
+        "createdAt": {
+          "sqlColumn": "created_at",
+          "sqlType": "timestamp with time zone",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "updatedAt": {
+          "sqlColumn": "updated_at",
+          "sqlType": "timestamp with time zone",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        }
+      }
+    },
+    "verification": {
+      "sqlTable": "auth_verifications",
+      "fields": {
+        "identifier": {
+          "sqlColumn": "identifier",
+          "sqlType": "text",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "value": {
+          "sqlColumn": "value",
+          "sqlType": "text",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "expiresAt": {
+          "sqlColumn": "expires_at",
+          "sqlType": "timestamp with time zone",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "createdAt": {
+          "sqlColumn": "created_at",
+          "sqlType": "timestamp with time zone",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "updatedAt": {
+          "sqlColumn": "updated_at",
+          "sqlType": "timestamp with time zone",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        }
+      }
+    },
+    "twoFactor": {
+      "sqlTable": "auth_two_factors",
+      "fields": {
+        "secret": {
+          "sqlColumn": "secret",
+          "sqlType": "text",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "backupCodes": {
+          "sqlColumn": "backup_codes",
+          "sqlType": "text",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "userId": {
+          "sqlColumn": "user_id",
+          "sqlType": "uuid",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "verified": {
+          "sqlColumn": "verified",
+          "sqlType": "boolean",
+          "required": false,
+          "notNull": true,
+          "unique": false
+        },
+        "failedVerificationCount": {
+          "sqlColumn": "failed_verification_count",
+          "sqlType": "integer",
+          "required": false,
+          "notNull": true,
+          "unique": false
+        },
+        "lockedUntil": {
+          "sqlColumn": "locked_until",
+          "sqlType": "timestamp with time zone",
+          "required": false,
+          "notNull": false,
+          "unique": false
+        }
+      }
+    },
+    "rateLimit": {
+      "sqlTable": "auth_rate_limits",
+      "fields": {
+        "key": {
+          "sqlColumn": "key",
+          "sqlType": "text",
+          "required": true,
+          "notNull": true,
+          "unique": true
+        },
+        "count": {
+          "sqlColumn": "count",
+          "sqlType": "integer",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        },
+        "lastRequest": {
+          "sqlColumn": "last_request",
+          "sqlType": "bigint",
+          "required": true,
+          "notNull": true,
+          "unique": false
+        }
+      }
+    }
+  }
+}

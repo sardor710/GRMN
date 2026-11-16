@@ -1,3 +1,4 @@
+import "server-only";
 import type {
   CMSData,
   AdminUser,
@@ -9,14 +10,20 @@ import type {
   Order,
   StoreSettings,
   ActivityLog,
+  HomepageConfig,
 } from "./types";
+import { generateOrderNumber, generateOrderMilestones } from "./order-lifecycle";
+import { createDefaultHomepageConfig } from "./homepage-schema";
 import dataJson from "./data.json";
-import { initialCMSData } from "./seed";
 
 // In-memory cache
-let inMemoryData: CMSData = (dataJson as unknown as CMSData) || initialCMSData;
+let inMemoryData: CMSData = dataJson as unknown as CMSData;
+function assertLegacyMode():void {
+  if(process.env?.CMS_BACKEND==="postgres")throw new Error("Legacy CMS access is disabled with PostgreSQL");
+}
 
 function loadData(): CMSData {
+  assertLegacyMode();
   if (typeof window === "undefined") {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -27,17 +34,17 @@ function loadData(): CMSData {
       if (fs.existsSync(dataFilePath)) {
         const raw = fs.readFileSync(dataFilePath, "utf-8");
         inMemoryData = JSON.parse(raw);
-        return inMemoryData;
+        return structuredClone(inMemoryData);
       }
-    } catch (err) {
-      console.error("Error reading CMS data file:", err);
+    } catch {
+      throw new Error("CMS persistence is unavailable");
     }
   }
-  return inMemoryData;
+  throw new Error("CMS persistence is unavailable");
 }
 
 function saveData(data: CMSData): void {
-  inMemoryData = data;
+  assertLegacyMode();
   if (typeof window === "undefined") {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -50,10 +57,11 @@ function saveData(data: CMSData): void {
         fs.mkdirSync(dir, { recursive: true });
       }
       fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), "utf-8");
-    } catch (err) {
-      console.error("Error saving CMS data to file:", err);
+    } catch {
+      throw new Error("CMS persistence is unavailable");
     }
   }
+  inMemoryData = structuredClone(data);
 }
 
 // ----------------- ADMINS -----------------
@@ -189,7 +197,7 @@ export function saveProduct(product: Partial<CMSProduct> & { name: string; price
       status: product.status || "published",
       isFeatured: product.isFeatured ?? false,
       specs: product.specs || [
-        { label: "Lens Material", value: "Corning® Gorilla® Glass 3" },
+        { label: "Lens Material", value: "CorningВ® GorillaВ® Glass 3" },
         { label: "Bezel Material", value: "Stainless Steel" },
         { label: "Display", value: '1.4" AMOLED' },
         { label: "Battery Life", value: "Up to 14 days" },
@@ -366,7 +374,16 @@ export function deleteBlog(id: string): boolean {
 
 // ----------------- ORDERS -----------------
 export function getOrders(): Order[] {
-  return loadData().orders;
+  const data = loadData();
+  return (data.orders || []).map((o) => {
+    if (!o.orderNumber) {
+      o.orderNumber = generateOrderNumber();
+    }
+    if (!o.milestones || o.milestones.length === 0) {
+      o.milestones = generateOrderMilestones(o);
+    }
+    return o;
+  });
 }
 
 export function saveOrder(order: Partial<Order> & { clientName: string; total: number }): Order {
@@ -376,21 +393,33 @@ export function saveOrder(order: Partial<Order> & { clientName: string; total: n
   let saved: Order;
   if (existingIdx >= 0) {
     saved = { ...data.orders[existingIdx], ...order };
+    if (!saved.milestones || saved.milestones.length === 0 || order.fulfillmentStatus !== undefined) {
+      saved.milestones = generateOrderMilestones(saved);
+    }
     data.orders[existingIdx] = saved;
   } else {
+    const generatedNum = order.orderNumber || generateOrderNumber();
     saved = {
       id: order.id || `ord-${Date.now()}`,
-      orderNumber: order.orderNumber || `GRM-${Math.floor(10000 + Math.random() * 90000)}`,
+      orderNumber: generatedNum,
       clientName: order.clientName,
       clientEmail: order.clientEmail || "customer@example.com",
+      clientPhone: order.clientPhone || "+65 8000 0000",
       total: order.total,
       itemsCount: order.itemsCount || (order.items ? order.items.length : 1),
       items: order.items || [],
       paymentStatus: order.paymentStatus || "paid",
       fulfillmentStatus: order.fulfillmentStatus || "processing",
       shippingAddress: order.shippingAddress || "12 Marina Boulevard, Singapore",
-      createdAt: new Date().toISOString(),
+      comments: order.comments || "",
+      notes: order.notes || "",
+      trackingNumber: order.trackingNumber || "",
+      carrier: order.carrier || "Garmin Express Priority",
+      estimatedDeliveryDate: order.estimatedDeliveryDate,
+      coordinates: order.coordinates || { lat: 1.280095, lng: 103.854675 },
+      createdAt: order.createdAt || new Date().toISOString(),
     };
+    saved.milestones = order.milestones || generateOrderMilestones(saved);
     data.orders.unshift(saved);
   }
 
@@ -460,3 +489,25 @@ export function getDashboardStats() {
     recentClients: data.clients.slice(0, 4),
   };
 }
+
+// ----------------- HOMEPAGE CONFIG -----------------
+export function getHomepageConfig(): HomepageConfig {
+  const data = loadData();
+  if (!data.homepage || !Array.isArray(data.homepage.heroBanners) || !Array.isArray(data.homepage.carousels)) {
+    const defaultConfig = createDefaultHomepageConfig();
+    return defaultConfig;
+  }
+  return data.homepage;
+}
+
+export function saveHomepageConfig(config: HomepageConfig): HomepageConfig {
+  const data = loadData();
+  data.homepage = {
+    ...config,
+    updatedAt: new Date().toISOString(),
+  };
+  saveData(data);
+  logActivity("Admin", "Updated", "Homepage Layout & Content Blocks");
+  return data.homepage;
+}
+

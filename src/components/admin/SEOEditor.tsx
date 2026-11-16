@@ -58,45 +58,46 @@ export function SEOEditor({
   specs,
   seoTitle,
   seoDescription,
-  focusKeywords,
+  focusKeywords = [],
   canonicalUrl,
   noIndex,
   ogImage,
   onChange,
 }: SEOEditorProps) {
-  const [devicePreview, setDevicePreview] = useState<"desktop" | "mobile">("desktop");
   const [socialPlatform, setSocialPlatform] = useState<"google" | "facebook" | "twitter">("google");
+  const [devicePreview, setDevicePreview] = useState<"desktop" | "mobile">("desktop");
   const [keywordInput, setKeywordInput] = useState("");
 
-  // Live Analysis
+  // Real-time Audit Report Calculation
   const report = useMemo(() => {
     if (type === "product") {
       return analyzeProductSEO({
         name: nameOrTitle,
         description: defaultDescription,
+        specs,
         seoTitle,
         seoDescription,
         focusKeywords,
-        image: ogImage || image,
-        specs,
-        category,
+        canonicalUrl,
+        noIndex,
       });
     } else {
       return analyzeBlogSEO({
         title: nameOrTitle,
         excerpt: defaultDescription,
         content: defaultDescription,
+        category,
         seoTitle,
         seoDescription,
         focusKeywords,
-        coverImage: ogImage || image,
-        category,
+        canonicalUrl,
+        noIndex,
       });
     }
-  }, [type, nameOrTitle, defaultDescription, seoTitle, seoDescription, focusKeywords, ogImage, image, specs, category]);
+  }, [type, nameOrTitle, defaultDescription, specs, category, seoTitle, seoDescription, focusKeywords, canonicalUrl, noIndex]);
 
-  // Active Title & Description for Previews
-  const displayTitle = (seoTitle || `${nameOrTitle} | Garmin Official`).trim();
+  // Derived Preview Fallbacks
+  const displayTitle = (seoTitle || `${nameOrTitle} | Official Garmin Store`).trim();
   const displayDesc = (seoDescription || defaultDescription || "Explore premium multisport GPS smartwatches with advanced training and battery life.").trim();
   const displayImage = ogImage || image || "/images/hero-bg.jpg";
   const displayUrl = `https://www.garmin.com${urlPath.startsWith("/") ? "" : "/"}${urlPath}`;
@@ -166,30 +167,30 @@ export function SEOEditor({
   // Score colors
   const scoreColor =
     report.score >= 85
-      ? "text-emerald-400 bg-emerald-950/40 border-emerald-500/30"
+      ? "text-emerald-700 bg-emerald-50 border-emerald-300"
       : report.score >= 70
-      ? "text-blue-400 bg-blue-950/40 border-blue-500/30"
+      ? "text-[#007cc3] bg-[#007cc3]/10 border-[#007cc3]/30"
       : report.score >= 50
-      ? "text-amber-400 bg-amber-950/40 border-amber-500/30"
-      : "text-red-400 bg-red-950/40 border-red-500/30";
+      ? "text-amber-700 bg-amber-50 border-amber-300"
+      : "text-rose-700 bg-rose-50 border-rose-300";
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 font-sans">
       {/* Top Header Card: Score & Auto-Optimizer */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-5 rounded border border-[#262c39] bg-[#141720]">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-5 rounded-none border border-neutral-200 bg-white shadow-xs">
         <div className="flex items-center gap-4">
-          <div className={`flex flex-col items-center justify-center h-16 w-16 rounded border ${scoreColor}`}>
-            <span className="font-['Oswald'] text-2xl font-bold leading-none">{report.score}</span>
+          <div className={`flex flex-col items-center justify-center h-16 w-16 rounded-none border ${scoreColor}`}>
+            <span className="g-heading text-2xl font-bold leading-none">{report.score}</span>
             <span className="text-[10px] uppercase tracking-wider font-semibold opacity-80">Grade {report.grade}</span>
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-['Oswald'] text-lg uppercase tracking-wider text-white">SEO Health & Audit Score</h3>
-              <span className={`px-2 py-0.5 text-[11px] font-bold uppercase rounded border ${scoreColor}`}>
+              <h3 className="g-heading text-lg uppercase tracking-wide text-black font-normal">SEO Health &amp; Audit Score</h3>
+              <span className={`px-2 py-0.5 text-[11px] font-bold uppercase rounded-none border ${scoreColor}`}>
                 {report.status.replace("_", " ")}
               </span>
             </div>
-            <p className="text-xs text-neutral-400 mt-1 max-w-xl">
+            <p className="text-xs text-neutral-500 mt-1 max-w-xl">
               Real-time audit for Google SERP snippet formatting, keyword density, structured data readiness, and social share metadata.
             </p>
           </div>
@@ -198,24 +199,24 @@ export function SEOEditor({
         <button
           type="button"
           onClick={handleAutoGenerate}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#00a0df] hover:bg-[#008cc4] text-white rounded text-xs font-bold uppercase tracking-wider transition-all shadow-md active:scale-95 shrink-0"
+          className="flex items-center gap-2 px-4 py-2 bg-black hover:bg-neutral-800 text-white rounded-none text-xs font-medium uppercase tracking-[0.06em] transition-colors shadow-xs shrink-0"
         >
-          <Sparkles className="h-4 w-4" />
-          ⚡ Auto-Generate SEO Meta
+          <Sparkles className="h-4 w-4 text-[#007cc3]" />
+          <span>Auto-Generate SEO Meta</span>
         </button>
       </div>
 
       {/* Main Grid: Inputs vs Live Simulator */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Form Controls (7 cols) */}
-        <div className="lg:col-span-7 space-y-5">
+        <div className="lg:col-span-7 space-y-4">
           {/* SEO Title Input */}
-          <div className="space-y-1.5 p-4 rounded border border-[#262c39] bg-[#0c0d12]">
+          <div className="space-y-1.5 p-5 rounded-none border border-neutral-200 bg-white">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold uppercase tracking-wider text-neutral-300">
+              <label className="text-xs font-semibold uppercase tracking-wider text-neutral-700">
                 SEO Meta Title
               </label>
-              <span className={`text-[11px] font-mono ${displayTitle.length >= 45 && displayTitle.length <= 65 ? "text-emerald-400" : "text-amber-400"}`}>
+              <span className={`text-[11px] font-mono ${displayTitle.length >= 45 && displayTitle.length <= 65 ? "text-emerald-700" : "text-amber-700"}`}>
                 {displayTitle.length} / 65 chars
               </span>
             </div>
@@ -233,20 +234,20 @@ export function SEOEditor({
                 })
               }
               placeholder={`${nameOrTitle} | Official Garmin GPS & Multisport`}
-              className="w-full bg-[#141720] border border-[#262c39] focus:border-[#00a0df] rounded px-3 py-2 text-sm text-white focus:outline-none transition-colors"
+              className="w-full bg-white border border-neutral-300 focus:border-black rounded-none px-3 py-2 text-sm text-black focus:outline-none transition-colors"
             />
-            <p className="text-[11px] text-neutral-400">
+            <p className="text-[11px] text-neutral-500">
               Ideal length: 45–65 characters. Keep your primary product name and the Garmin brand in the title.
             </p>
           </div>
 
           {/* SEO Description Input */}
-          <div className="space-y-1.5 p-4 rounded border border-[#262c39] bg-[#0c0d12]">
+          <div className="space-y-1.5 p-5 rounded-none border border-neutral-200 bg-white">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-bold uppercase tracking-wider text-neutral-300">
+              <label className="text-xs font-semibold uppercase tracking-wider text-neutral-700">
                 SEO Meta Description
               </label>
-              <span className={`text-[11px] font-mono ${displayDesc.length >= 120 && displayDesc.length <= 160 ? "text-emerald-400" : "text-amber-400"}`}>
+              <span className={`text-[11px] font-mono ${displayDesc.length >= 120 && displayDesc.length <= 160 ? "text-emerald-700" : "text-amber-700"}`}>
                 {displayDesc.length} / 160 chars
               </span>
             </div>
@@ -264,16 +265,16 @@ export function SEOEditor({
                 })
               }
               placeholder={defaultDescription || "Experience cutting-edge Garmin performance with long battery life, rugged titanium casing, and built-in navigation."}
-              className="w-full bg-[#141720] border border-[#262c39] focus:border-[#00a0df] rounded px-3 py-2 text-sm text-white focus:outline-none transition-colors"
+              className="w-full bg-white border border-neutral-300 focus:border-black rounded-none px-3 py-2 text-sm text-black focus:outline-none transition-colors"
             />
-            <p className="text-[11px] text-neutral-400">
+            <p className="text-[11px] text-neutral-500">
               Ideal length: 120–160 characters. Clearly state specs, features, and an actionable reason to click.
             </p>
           </div>
 
           {/* Focus Keywords Manager */}
-          <div className="space-y-2 p-4 rounded border border-[#262c39] bg-[#0c0d12]">
-            <label className="text-xs font-bold uppercase tracking-wider text-neutral-300 block">
+          <div className="space-y-2.5 p-5 rounded-none border border-neutral-200 bg-white">
+            <label className="text-xs font-semibold uppercase tracking-wider text-neutral-700 block">
               Focus Search Keywords
             </label>
             <div className="flex items-center gap-2">
@@ -288,12 +289,12 @@ export function SEOEditor({
                   }
                 }}
                 placeholder="e.g. Garmin fenix 8, multisport GPS, running watch"
-                className="flex-1 bg-[#141720] border border-[#262c39] focus:border-[#00a0df] rounded px-3 py-1.5 text-xs text-white focus:outline-none"
+                className="flex-1 bg-white border border-neutral-300 focus:border-black rounded-none px-3 py-2 text-xs text-black focus:outline-none"
               />
               <button
                 type="button"
                 onClick={handleAddKeyword}
-                className="px-3 py-1.5 bg-[#1e2330] hover:bg-[#282f42] text-white border border-[#343b4e] rounded text-xs font-semibold flex items-center gap-1 transition-colors"
+                className="px-4 py-2 bg-neutral-100 hover:bg-black hover:text-white text-black border border-neutral-300 rounded-none text-xs font-semibold flex items-center gap-1 transition-colors uppercase tracking-wider"
               >
                 <Plus className="h-3.5 w-3.5" /> Add
               </button>
@@ -307,13 +308,13 @@ export function SEOEditor({
                 focusKeywords.map((kw) => (
                   <span
                     key={kw}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-[#1e2433] border border-[#2d374d] text-xs text-neutral-200"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-none bg-neutral-100 border border-neutral-200 text-xs text-neutral-800"
                   >
                     <span>{kw}</span>
                     <button
                       type="button"
                       onClick={() => handleRemoveKeyword(kw)}
-                      className="text-neutral-400 hover:text-red-400"
+                      className="text-neutral-400 hover:text-rose-600"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -324,11 +325,11 @@ export function SEOEditor({
           </div>
 
           {/* Advanced Technical Directives (Canonical & NoIndex) */}
-          <div className="p-4 rounded border border-[#262c39] bg-[#0c0d12] space-y-3">
+          <div className="p-5 rounded-none border border-neutral-200 bg-white space-y-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-[#00a0df]" />
-                <span className="text-xs font-bold uppercase tracking-wider text-neutral-300">Technical Crawling Directives</span>
+                <ShieldCheck className="h-4 w-4 text-[#007cc3]" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-neutral-700">Technical Crawling Directives</span>
               </div>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -344,21 +345,21 @@ export function SEOEditor({
                       ogImage,
                     })
                   }
-                  className="rounded border-[#262c39] text-[#00a0df] focus:ring-0"
+                  className="rounded-none border-neutral-300 text-black focus:ring-0"
                 />
-                <span className="text-xs text-neutral-300 font-medium">noindex (Hide from Google)</span>
+                <span className="text-xs text-neutral-700 font-medium">noindex (Hide from Google)</span>
               </label>
             </div>
 
             {noIndex && (
-              <div className="p-2.5 rounded bg-red-950/40 border border-red-500/30 text-xs text-red-300 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-red-400" />
+              <div className="p-2.5 rounded-none bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
                 <span>Page will output <code>&lt;meta name=&quot;robots&quot; content=&quot;noindex, nofollow&quot; /&gt;</code> and be excluded from Google rankings.</span>
               </div>
             )}
 
             <div>
-              <label className="text-[11px] text-neutral-400 uppercase tracking-wider block mb-1">
+              <label className="text-[11px] text-neutral-500 uppercase tracking-wider block mb-1">
                 Custom Canonical URL (Optional)
               </label>
               <input
@@ -375,7 +376,7 @@ export function SEOEditor({
                   })
                 }
                 placeholder="https://www.garmin.com/p/..."
-                className="w-full bg-[#141720] border border-[#262c39] focus:border-[#00a0df] rounded px-3 py-1.5 text-xs text-white focus:outline-none"
+                className="w-full bg-white border border-neutral-300 focus:border-black rounded-none px-3 py-1.5 text-xs text-black focus:outline-none"
               />
             </div>
           </div>
@@ -384,15 +385,15 @@ export function SEOEditor({
         {/* Right Column: Live SERP & Social Simulator (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
           {/* Simulator Tabs */}
-          <div className="flex items-center justify-between border-b border-[#262c39] pb-2">
+          <div className="flex items-center justify-between border-b border-neutral-200 pb-2">
             <div className="flex items-center gap-1">
               <button
                 type="button"
                 onClick={() => setSocialPlatform("google")}
-                className={`px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
+                className={`px-3 py-1.5 rounded-none text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
                   socialPlatform === "google"
-                    ? "bg-[#00a0df] text-white"
-                    : "bg-[#141720] text-neutral-400 hover:text-white"
+                    ? "bg-black text-white"
+                    : "bg-neutral-100 text-neutral-600 hover:text-black"
                 }`}
               >
                 <Search className="h-3.5 w-3.5" /> Google SERP
@@ -400,10 +401,10 @@ export function SEOEditor({
               <button
                 type="button"
                 onClick={() => setSocialPlatform("facebook")}
-                className={`px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
+                className={`px-3 py-1.5 rounded-none text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
                   socialPlatform === "facebook"
                     ? "bg-[#1877f2] text-white"
-                    : "bg-[#141720] text-neutral-400 hover:text-white"
+                    : "bg-neutral-100 text-neutral-600 hover:text-black"
                 }`}
               >
                 <Share2 className="h-3.5 w-3.5" /> Facebook / OG
@@ -411,10 +412,10 @@ export function SEOEditor({
               <button
                 type="button"
                 onClick={() => setSocialPlatform("twitter")}
-                className={`px-3 py-1.5 rounded text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
+                className={`px-3 py-1.5 rounded-none text-xs font-semibold uppercase tracking-wider flex items-center gap-1.5 transition-colors ${
                   socialPlatform === "twitter"
-                    ? "bg-[#0f1419] text-white border border-neutral-700"
-                    : "bg-[#141720] text-neutral-400 hover:text-white"
+                    ? "bg-black text-white"
+                    : "bg-neutral-100 text-neutral-600 hover:text-black"
                 }`}
               >
                 <span>𝕏 / Twitter</span>
@@ -422,11 +423,11 @@ export function SEOEditor({
             </div>
 
             {socialPlatform === "google" && (
-              <div className="flex items-center gap-1 bg-[#141720] p-0.5 rounded border border-[#262c39]">
+              <div className="flex items-center gap-1 bg-neutral-100 p-0.5 rounded-none border border-neutral-200">
                 <button
                   type="button"
                   onClick={() => setDevicePreview("desktop")}
-                  className={`p-1 rounded ${devicePreview === "desktop" ? "bg-[#262c39] text-white" : "text-neutral-400"}`}
+                  className={`p-1 rounded-none ${devicePreview === "desktop" ? "bg-white text-black shadow-xs" : "text-neutral-500"}`}
                   title="Desktop Preview"
                 >
                   <Monitor className="h-3.5 w-3.5" />
@@ -434,7 +435,7 @@ export function SEOEditor({
                 <button
                   type="button"
                   onClick={() => setDevicePreview("mobile")}
-                  className={`p-1 rounded ${devicePreview === "mobile" ? "bg-[#262c39] text-white" : "text-neutral-400"}`}
+                  className={`p-1 rounded-none ${devicePreview === "mobile" ? "bg-white text-black shadow-xs" : "text-neutral-500"}`}
                   title="Mobile Preview"
                 >
                   <Smartphone className="h-3.5 w-3.5" />
@@ -445,10 +446,10 @@ export function SEOEditor({
 
           {/* PREVIEW CONTAINER */}
           {socialPlatform === "google" ? (
-            <div className={`p-4 rounded border border-[#262c39] bg-white text-black shadow-inner ${devicePreview === "mobile" ? "max-w-[340px] mx-auto" : "w-full"}`}>
+            <div className={`p-4 rounded-none border border-neutral-200 bg-white text-black shadow-xs ${devicePreview === "mobile" ? "max-w-[340px] mx-auto" : "w-full"}`}>
               {/* Google Header / Favicon */}
               <div className="flex items-center gap-2 mb-1.5">
-                <div className="h-6 w-6 rounded-full bg-black flex items-center justify-center text-white font-bold text-[10px]">
+                <div className="h-6 w-6 bg-black flex items-center justify-center text-white font-bold text-[10px]">
                   ▲
                 </div>
                 <div className="flex flex-col text-[12px] leading-tight">
@@ -477,8 +478,8 @@ export function SEOEditor({
               )}
             </div>
           ) : socialPlatform === "facebook" ? (
-            <div className="rounded border border-[#262c39] bg-[#1c1e21] overflow-hidden text-white shadow-md">
-              <div className="relative aspect-[1.91/1] w-full bg-neutral-900 flex items-center justify-center overflow-hidden">
+            <div className="rounded-none border border-neutral-200 bg-white overflow-hidden text-black shadow-xs">
+              <div className="relative aspect-[1.91/1] w-full bg-neutral-100 flex items-center justify-center overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={displayImage}
@@ -489,21 +490,21 @@ export function SEOEditor({
                   }}
                 />
               </div>
-              <div className="p-3.5 bg-[#242526] border-t border-[#3a3b3c]">
-                <span className="text-[11px] uppercase tracking-wider text-neutral-400 font-semibold block">
+              <div className="p-3.5 bg-neutral-50 border-t border-neutral-200">
+                <span className="text-[11px] uppercase tracking-wider text-neutral-500 font-semibold block">
                   GARMIN.COM
                 </span>
-                <h4 className="text-[15px] font-bold leading-snug mt-0.5 text-white line-clamp-2">
+                <h4 className="text-[15px] font-bold leading-snug mt-0.5 text-black line-clamp-2">
                   {displayTitle}
                 </h4>
-                <p className="text-[12px] text-neutral-300 line-clamp-2 mt-1">
+                <p className="text-[12px] text-neutral-600 line-clamp-2 mt-1">
                   {displayDesc}
                 </p>
               </div>
             </div>
           ) : (
-            <div className="rounded-xl border border-neutral-700 bg-black overflow-hidden text-white shadow-md">
-              <div className="relative aspect-[1.91/1] w-full bg-neutral-900 overflow-hidden">
+            <div className="rounded-none border border-neutral-300 bg-white overflow-hidden text-black shadow-xs">
+              <div className="relative aspect-[1.91/1] w-full bg-neutral-100 overflow-hidden">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={displayImage}
@@ -514,12 +515,12 @@ export function SEOEditor({
                   }}
                 />
               </div>
-              <div className="p-3 bg-black">
-                <span className="text-[12px] text-neutral-500 block">garmin.com</span>
-                <h4 className="text-[14px] font-bold text-white line-clamp-1 mt-0.5">
+              <div className="p-3 bg-white border-t border-neutral-200">
+                <span className="text-[12px] text-neutral-400 block">garmin.com</span>
+                <h4 className="text-[14px] font-bold text-black line-clamp-1 mt-0.5">
                   {displayTitle}
                 </h4>
-                <p className="text-[12px] text-neutral-400 line-clamp-2 mt-1">
+                <p className="text-[12px] text-neutral-600 line-clamp-2 mt-1">
                   {displayDesc}
                 </p>
               </div>
@@ -527,10 +528,10 @@ export function SEOEditor({
           )}
 
           {/* Real-Time SEO Checklist */}
-          <div className="p-4 rounded border border-[#262c39] bg-[#0c0d12] space-y-2.5">
-            <h4 className="font-['Oswald'] text-xs uppercase tracking-wider text-neutral-300 flex items-center justify-between">
+          <div className="p-5 rounded-none border border-neutral-200 bg-white space-y-2.5">
+            <h4 className="g-heading text-sm uppercase tracking-wide text-black flex items-center justify-between font-normal">
               <span>Optimization Checklist</span>
-              <span className="text-[11px] font-mono text-neutral-400">
+              <span className="text-[11px] font-mono text-neutral-500">
                 {report.checks.filter((c) => c.status === "pass").length} / {report.checks.length} Passed
               </span>
             </h4>
@@ -539,31 +540,31 @@ export function SEOEditor({
               {report.checks.map((check) => (
                 <div
                   key={check.id}
-                  className="flex items-start gap-2 text-xs p-2 rounded bg-[#141720] border border-[#1f2430]"
+                  className="flex items-start gap-2 text-xs p-2.5 rounded-none bg-neutral-50 border border-neutral-200"
                 >
                   {check.status === "pass" ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
                   ) : check.status === "warning" ? (
-                    <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                    <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                   ) : (
-                    <XCircle className="h-4 w-4 text-red-400 shrink-0 mt-0.5" />
+                    <XCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
                   )}
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
-                      <span className="font-semibold text-neutral-200">{check.label}</span>
+                      <span className="font-semibold text-neutral-800">{check.label}</span>
                       <span
-                        className={`text-[10px] uppercase font-bold px-1.5 py-0.2 rounded ${
+                        className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-none border ${
                           check.status === "pass"
-                            ? "text-emerald-400"
+                            ? "text-emerald-700 bg-emerald-50 border-emerald-200"
                             : check.status === "warning"
-                            ? "text-amber-400"
-                            : "text-red-400"
+                            ? "text-amber-700 bg-amber-50 border-amber-200"
+                            : "text-rose-700 bg-rose-50 border-rose-200"
                         }`}
                       >
                         {check.status}
                       </span>
                     </div>
-                    <p className="text-[11px] text-neutral-400 mt-0.5">{check.message}</p>
+                    <p className="text-[11px] text-neutral-500 mt-0.5">{check.message}</p>
                   </div>
                 </div>
               ))}
@@ -571,11 +572,11 @@ export function SEOEditor({
 
             {/* Suggestions */}
             {report.suggestions.length > 0 && (
-              <div className="mt-3 pt-3 border-t border-[#1f2430]">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-[#00a0df] flex items-center gap-1">
+              <div className="mt-3 pt-3 border-t border-neutral-200">
+                <span className="text-[11px] font-bold uppercase tracking-wider text-[#007cc3] flex items-center gap-1">
                   <Zap className="h-3 w-3" /> Key Action Recommendations
                 </span>
-                <ul className="mt-1.5 space-y-1 text-[11px] text-neutral-300 list-disc list-inside">
+                <ul className="mt-1.5 space-y-1 text-[11px] text-neutral-600 list-disc list-inside">
                   {report.suggestions.map((s, idx) => (
                     <li key={idx} className="leading-snug">{s}</li>
                   ))}

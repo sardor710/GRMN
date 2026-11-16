@@ -26,30 +26,30 @@ export function SalesChart({ currencySymbol, currencyRate }: SalesChartProps) {
   const activeItem = selectedIdx !== null ? data[selectedIdx] : data[7];
 
   return (
-    <div className="border border-[#232836] bg-[#12151e] p-5 rounded font-sans">
+    <div className="border border-neutral-200 bg-white p-6 rounded-none font-sans">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1e2330] pb-4 mb-5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-100 pb-4 mb-5">
         <div>
           <div className="flex items-center gap-2">
             <BarChart2 className="h-4 w-4 text-[#007cc3]" />
-            <h3 className="font-heading uppercase tracking-wider text-sm font-bold text-white">
+            <h3 className="g-heading uppercase tracking-wide text-[18px] text-black font-normal">
               Revenue &amp; Order Performance
             </h3>
           </div>
-          <p className="text-[12px] text-[#8a92a3] mt-0.5">
+          <p className="text-[13px] text-neutral-500 mt-0.5">
             Monthly gross sales volume and average order values
           </p>
         </div>
 
         {/* Selected Month Summary */}
-        <div className="flex items-center gap-4 text-xs font-mono bg-[#171b26] px-3 py-1.5 rounded border border-[#232938]">
-          <span className="text-[#8a92a3]">{activeItem.month} 2026:</span>
-          <span className="font-heading font-bold text-sm text-white">
+        <div className="flex items-center gap-4 text-xs font-mono bg-neutral-50 px-3.5 py-2 rounded-none border border-neutral-200">
+          <span className="text-neutral-500">{activeItem.month} 2026:</span>
+          <span className="font-heading font-bold text-sm text-black">
             {currencySymbol}
             {Math.round(activeItem.rev * currencyRate).toLocaleString()}
           </span>
-          <span className="text-[#00a0df] font-semibold">{activeItem.orders} orders</span>
-          <span className="text-[#4ade80] font-semibold flex items-center gap-0.5">
+          <span className="text-[#007cc3] font-semibold">{activeItem.orders} orders</span>
+          <span className="text-emerald-700 font-semibold flex items-center gap-0.5">
             <TrendingUp className="h-3 w-3" />
             +24.8%
           </span>
@@ -58,11 +58,11 @@ export function SalesChart({ currencySymbol, currencyRate }: SalesChartProps) {
 
       {/* Bar Chart Grid */}
       <div className="relative pt-4">
-        {/* Subtle grid lines */}
-        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-15">
-          <div className="border-b border-[#475569] w-full" />
-          <div className="border-b border-[#475569] w-full" />
-          <div className="border-b border-[#475569] w-full" />
+        {/* Grid lines */}
+        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-40">
+          <div className="border-b border-neutral-100 w-full" />
+          <div className="border-b border-neutral-100 w-full" />
+          <div className="border-b border-neutral-100 w-full" />
         </div>
 
         <div className="flex h-48 items-end gap-3 pt-6 relative z-10">
@@ -78,27 +78,27 @@ export function SalesChart({ currencySymbol, currencyRate }: SalesChartProps) {
               >
                 {/* Tooltip */}
                 <div
-                  className={`absolute -top-9 z-20 px-2 py-1 bg-[#090b10] border border-[#007cc3] text-white text-[11px] font-mono rounded shadow-lg whitespace-nowrap transition-all duration-150 ${
+                  className={`absolute -top-9 z-20 px-2.5 py-1 bg-black text-white text-[11px] font-mono rounded-none shadow-lg whitespace-nowrap transition-all duration-150 ${
                     isSelected ? "opacity-100 scale-100" : "opacity-0 scale-95 pointer-events-none"
                   }`}
                 >
-                  <span className="font-bold text-[#00a0df]">
+                  <span className="font-bold">
                     {currencySymbol}
                     {Math.round(item.rev * currencyRate).toLocaleString()}
                   </span>
-                  <span className="text-[#8a92a3]"> · {item.orders} ord</span>
+                  <span className="text-neutral-300"> · {item.orders} ord</span>
                 </div>
 
                 {/* Bar */}
-                <div className="w-full bg-[#181d28] rounded-t-sm h-full flex items-end overflow-hidden">
+                <div className="w-full bg-neutral-100 rounded-none h-full flex items-end overflow-hidden">
                   <div
                     style={{ height: `${heightPercent}%` }}
-                    className={`w-full transition-all duration-200 rounded-t-sm ${
+                    className={`w-full transition-all duration-200 rounded-none ${
                       isSelected
-                        ? "bg-[#007cc3] shadow-md shadow-[#007cc3]/20"
+                        ? "bg-[#007cc3]"
                         : item.isCurrent
-                        ? "bg-[#007cc3]/80"
-                        : "bg-[#252c3c] group-hover:bg-[#343e54]"
+                        ? "bg-black"
+                        : "bg-neutral-300 group-hover:bg-[#007cc3]"
                     }`}
                   />
                 </div>
@@ -107,10 +107,10 @@ export function SalesChart({ currencySymbol, currencyRate }: SalesChartProps) {
                 <span
                   className={`font-heading text-[11px] uppercase tracking-wider transition-colors ${
                     isSelected
-                      ? "text-[#00a0df] font-bold"
+                      ? "text-[#007cc3] font-bold"
                       : item.isCurrent
-                      ? "text-white font-bold"
-                      : "text-[#737b8c]"
+                      ? "text-black font-bold"
+                      : "text-neutral-500"
                   }`}
                 >
                   {item.month}

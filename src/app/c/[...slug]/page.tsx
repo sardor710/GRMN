@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Image from "next/image";
@@ -7,6 +8,7 @@ import { WearablesHero } from "@/components/WearablesHero";
 import { CatalogueGrid } from "@/components/CatalogueGrid";
 import { SectionHeading } from "@/components/SectionHeading";
 import { catalogues, getCatalogue, catalogueProducts } from "@/lib/products";
+import { readOr } from "@/server/public-input";
 
 export const dynamic = "force-dynamic";
 
@@ -25,15 +27,20 @@ export async function generateMetadata({
 }
 
 export default async function CataloguePage({
-  params,
+  params, searchParams,
 }: {
   params: Promise<{ slug: string[] }>;
+  searchParams: Promise<Record<string,string|string[]|undefined>>;
 }) {
   const { slug } = await params;
   const def = getCatalogue(slug.join("/"));
   if (!def) notFound();
 
-  const items = catalogueProducts(def);
+  const query=await searchParams,one=(k:string)=>typeof query[k]==="string"?query[k] as string:undefined,many=(k:string)=>[query[k]??[]].flat();
+  const sorts={featured:"newest","price-asc":"price_asc","price-desc":"price_desc",name:"name_asc"} as const;
+  const page = await readOr(catalogueProducts(def,{cursor:one("cursor"),search:one("search"),activities:many("activities"),levels:many("levels") as import("@/contracts/commerce").ProductQuery["levels"],caseSizes:many("caseSizes") as import("@/contracts/commerce").ProductQuery["caseSizes"],sort:sorts[(one("sort")??"featured") as keyof typeof sorts]??"name_asc"}), notFound);
+  const next=new URLSearchParams();Object.entries(query).forEach(([key,value])=>[value??[]].flat().forEach(v=>next.append(key,v)));if(page.nextCursor)next.set("cursor",page.nextCursor);
+  const items = page.items;
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
@@ -60,6 +67,7 @@ export default async function CataloguePage({
           <SectionHeading>{def.heading}</SectionHeading>
         </div>
         <CatalogueGrid products={items} />
+        {page.nextCursor&&<Link className="mx-auto block w-fit p-6 underline" href={"?"+next}>Next products</Link>}
         <div className="h-16" />
       </main>
       <SiteFooter />

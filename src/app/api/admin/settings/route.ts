@@ -1,18 +1,10 @@
-import { NextResponse } from "next/server";
-import { getSettings, saveSettings } from "@/lib/cms/store";
+import { handleAdminRequest } from "../../../../server/auth/admin-runtime.ts";
 
-export async function GET() {
-  const settings = getSettings();
-  return NextResponse.json({ settings });
+export const runtime = "nodejs";
+export async function GET(request: Request) {
+  return handleAdminRequest("settings", request);
 }
-
 export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const settings = saveSettings(body);
-    return NextResponse.json({ success: true, settings });
-  } catch (err) {
-    console.error("Save settings error:", err);
-    return NextResponse.json({ error: "Failed to save settings" }, { status: 500 });
-  }
+  return handleAdminRequest("settings", request);
 }
+

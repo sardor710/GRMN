@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ProductCard } from "@/components/ProductCard";
-import { products } from "@/lib/products";
+import {getProductsByKeys} from "@/lib/products";
+export const dynamic="force-dynamic";
 
 export const metadata: Metadata = {
   title: "Garmin Pay™ | A Contactless Payment Solution",
@@ -50,8 +51,8 @@ const details = [
 
 const compatibleIds = ["1228429", "1614061", "1462801", "1463821", "1510465", "1316397", "1800201", "1828641", "851039"];
 
-export default function GarminPayPage() {
-  const compatible = compatibleIds.map((id) => products.find((p) => p.id === id)).filter((p) => p !== undefined);
+export default async function GarminPayPage() {
+  const compatible = await getProductsByKeys(compatibleIds);
 
   return (
     <div className="flex min-h-screen flex-col bg-white">

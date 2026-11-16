@@ -15,7 +15,6 @@ export function BestSellersLeaderboard({
   currencySymbol,
   currencyRate,
 }: BestSellersLeaderboardProps) {
-  // Synthesize sales performance data based on catalog products
   const topProducts = [
     {
       id: "marq-adventurer-damascus",
@@ -80,12 +79,12 @@ export function BestSellersLeaderboard({
   ];
 
   return (
-    <div className="border border-[#232836] bg-[#12151e] p-5 rounded font-sans">
+    <div className="border border-neutral-200 bg-white p-6 rounded-none font-sans">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-[#1f2533] pb-3 mb-4">
+      <div className="flex items-center justify-between border-b border-neutral-100 pb-3 mb-4">
         <div className="flex items-center gap-2">
-          <Trophy className="h-4 w-4 text-[#fbbf24]" />
-          <h3 className="font-heading uppercase tracking-wider text-sm font-bold text-white">
+          <Trophy className="h-4 w-4 text-[#007cc3]" />
+          <h3 className="g-heading uppercase tracking-wide text-[18px] text-black font-normal">
             Best-Selling Products &amp; Luxury Horology Leaderboard
           </h3>
         </div>
@@ -94,7 +93,7 @@ export function BestSellersLeaderboard({
           className="font-heading uppercase tracking-wider text-[11px] font-bold text-[#007cc3] hover:underline flex items-center gap-1"
         >
           <span>Full Catalog</span>
-          <ArrowUpRight className="h-3 w-3" />
+          <ArrowUpRight className="h-3.5 w-3.5" />
         </Link>
       </div>
 
@@ -102,38 +101,38 @@ export function BestSellersLeaderboard({
       <div className="overflow-x-auto">
         <table className="w-full text-left text-[13px]">
           <thead>
-            <tr className="border-b border-[#1f2533] bg-[#0c0e14] text-[#737b8c] text-[10px] font-heading uppercase tracking-wider">
-              <th className="py-2.5 px-3 font-bold">Rank &amp; Product</th>
-              <th className="py-2.5 px-3 font-bold">Category</th>
-              <th className="py-2.5 px-3 font-bold">Units</th>
-              <th className="py-2.5 px-3 font-bold">Gross Revenue</th>
-              <th className="py-2.5 px-3 font-bold">Stock</th>
-              <th className="py-2.5 px-3 font-bold text-right">Action</th>
+            <tr className="border-b border-neutral-200 bg-neutral-50 text-neutral-500 text-[11px] font-heading uppercase tracking-wider">
+              <th className="py-3 px-4 font-semibold">Rank &amp; Product</th>
+              <th className="py-3 px-4 font-semibold">Category</th>
+              <th className="py-3 px-4 font-semibold">Units</th>
+              <th className="py-3 px-4 font-semibold">Gross Revenue</th>
+              <th className="py-3 px-4 font-semibold">Stock</th>
+              <th className="py-3 px-4 font-semibold text-right">Action</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#1f2533] text-[#c0c7d4]">
+          <tbody className="divide-y divide-neutral-100 text-neutral-800">
             {topProducts.map((prod, index) => (
-              <tr key={prod.id} className="hover:bg-[#171c26] transition-colors">
+              <tr key={prod.id} className="hover:bg-neutral-50/70 transition-colors">
                 {/* Rank & Product */}
-                <td className="py-3 px-3">
+                <td className="py-3.5 px-4">
                   <div className="flex items-center gap-3">
-                    <span className="font-heading font-bold text-xs text-[#8a92a3] w-4">
+                    <span className="font-heading font-bold text-xs text-neutral-400 w-4">
                       #{index + 1}
                     </span>
-                    <div className="relative h-10 w-10 shrink-0 bg-[#0c0e14] border border-[#232938] rounded overflow-hidden">
+                    <div className="relative h-11 w-11 shrink-0 bg-neutral-50 border border-neutral-200 rounded-none overflow-hidden">
                       <Image
                         src={prod.image}
                         alt={prod.name}
                         fill
-                        sizes="40px"
+                        sizes="44px"
                         className="object-contain p-1"
                       />
                     </div>
                     <div className="min-w-0 max-w-[240px]">
-                      <p className="font-heading text-[13px] font-bold text-white truncate">
+                      <p className="font-medium text-[13px] text-black truncate">
                         {prod.name}
                       </p>
-                      <p className="text-[11px] font-mono text-[#737b8c]">
+                      <p className="text-[11px] font-mono text-neutral-500">
                         {prod.sku}
                       </p>
                     </div>
@@ -141,36 +140,36 @@ export function BestSellersLeaderboard({
                 </td>
 
                 {/* Category */}
-                <td className="py-3 px-3">
-                  <span className="font-heading uppercase tracking-wider text-[10px] font-bold px-2 py-0.5 rounded bg-[#1e2535] text-[#a0a8b8] border border-[#2e374d]">
+                <td className="py-3.5 px-4">
+                  <span className="font-heading uppercase tracking-wider text-[10px] font-semibold px-2 py-0.5 rounded-none bg-neutral-100 text-neutral-700 border border-neutral-200">
                     {prod.category}
                   </span>
                 </td>
 
                 {/* Units */}
-                <td className="py-3 px-3 font-mono font-bold text-white text-xs">
+                <td className="py-3.5 px-4 font-mono font-bold text-black text-xs">
                   {prod.unitsSold}
                 </td>
 
                 {/* Gross Revenue */}
-                <td className="py-3 px-3">
-                  <p className="font-heading font-bold text-sm text-[#00a0df]">
+                <td className="py-3.5 px-4">
+                  <p className="font-heading font-normal text-[15px] text-black">
                     {currencySymbol}
                     {Math.round(prod.revUSD * currencyRate).toLocaleString()}
                   </p>
-                  <p className="text-[10px] font-mono text-[#4ade80] font-semibold flex items-center gap-0.5">
-                    <TrendingUp className="h-2.5 w-2.5" />
+                  <p className="text-[11px] font-mono text-emerald-700 font-semibold flex items-center gap-0.5">
+                    <TrendingUp className="h-3 w-3" />
                     {prod.growth}
                   </p>
                 </td>
 
                 {/* Stock Level */}
-                <td className="py-3 px-3">
+                <td className="py-3.5 px-4">
                   <span
-                    className={`font-heading uppercase tracking-wider text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                    className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded-none border ${
                       prod.stock < 10
-                        ? "text-rose-400 bg-rose-950/40 border border-rose-500/30"
-                        : "text-emerald-400 bg-emerald-950/40 border border-emerald-500/30"
+                        ? "text-rose-700 bg-rose-50 border-rose-200"
+                        : "text-emerald-700 bg-emerald-50 border-emerald-200"
                     }`}
                   >
                     {prod.stock} left
@@ -178,10 +177,10 @@ export function BestSellersLeaderboard({
                 </td>
 
                 {/* Action */}
-                <td className="py-3 px-3 text-right">
+                <td className="py-3.5 px-4 text-right">
                   <Link
                     href="/admin/products"
-                    className="inline-flex items-center gap-1 p-1 text-[#737b8c] hover:text-white transition-colors"
+                    className="inline-flex items-center gap-1 p-1 text-neutral-400 hover:text-black transition-colors"
                   >
                     <ArrowUpRight className="h-4 w-4" />
                   </Link>

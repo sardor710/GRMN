@@ -1,46 +1,25 @@
-import { cookies } from "next/headers";
-import { getAdminByEmail } from "./store";
-import type { AdminUser } from "./types";
+import "server-only";
+import { headers } from "next/headers";
+import { getAuthRuntime } from "@/server/auth/runtime";
+import { getSessionIdentity, requireStaffPrincipal } from "@/server/auth/principal";
 
-export const ADMIN_COOKIE_NAME = "garmin_admin_session";
-
-export interface SessionData {
+export interface AdminSessionView {
   id: string;
   email: string;
   name: string;
   role: string;
-  avatar?: string;
+  roles: string[];
+  permissions: string[];
 }
-
-export async function getCurrentAdmin(): Promise<AdminUser | null> {
+// Compatibility adapter for the layout only. Each page and service performs its
+// own authorization. No legacy source account or submitted cookie is authority.
+export async function getCurrentAdmin(): Promise<AdminSessionView | null> {
+  const requestHeaders = new Headers(await headers());
   try {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get(ADMIN_COOKIE_NAME);
-    if (!sessionCookie?.value) {
-      return null;
-    }
-
-    const payload: SessionData = JSON.parse(
-      Buffer.from(sessionCookie.value, "base64").toString("utf-8")
-    );
-
-    if (!payload.email) return null;
-    const admin = getAdminByEmail(payload.email);
-    if (!admin || admin.status === "inactive") return null;
-
-    return admin;
-  } catch {
-    return null;
-  }
-}
-
-export function createSessionToken(admin: AdminUser): string {
-  const data: SessionData = {
-    id: admin.id,
-    email: admin.email,
-    name: admin.name,
-    role: admin.role,
-    avatar: admin.avatar,
-  };
-  return Buffer.from(JSON.stringify(data)).toString("base64");
+    const runtime = getAuthRuntime();
+    await requireStaffPrincipal(runtime, requestHeaders);
+    const identity = await getSessionIdentity(runtime, requestHeaders);
+    if (!identity) return null;
+    return { id: identity.id, name: identity.name, email: identity.email, role: identity.roles.join(", "), roles: identity.roles, permissions: identity.permissions };
+  } catch { return null; }
 }

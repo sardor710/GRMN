@@ -16,18 +16,18 @@ export function ProductCard({ product }: { product: Product }) {
       )}
 
       <div className="relative mx-auto aspect-square w-full max-w-[260px]">
-        <Image
+        {product.image&&<Image
           src={product.image}
           alt={product.name}
           fill
           sizes="(max-width: 768px) 100vw, 340px"
           className="object-contain"
-        />
+        />}
       </div>
 
       {/* Color swatches */}
       <div className="mt-3 flex gap-1.5">
-        {swatchColors.slice(0, 3 + (product.id.charCodeAt(0) % 4)).map((c, i) => (
+        {product.currency!=="KZT"&&swatchColors.slice(0, 3 + (product.id.charCodeAt(0) % 4)).map((c, i) => (
           <span
             key={i}
             className="h-3.5 w-3.5 rounded-full border border-neutral-300"
@@ -40,7 +40,7 @@ export function ProductCard({ product }: { product: Product }) {
       <p className="mt-2 text-[14px] leading-snug text-[#5b5b5b]">{product.description}</p>
       <p className="mt-3 text-[15px] text-black">
         <span className="font-medium">
-          ${product.price.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD
+          {product.priceLabel??`${product.currency==="KZT"?"":"$"}${product.price.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${product.currency??"USD"}`}
         </span>
         {product.priceSuffix && (
           <span className="text-[#5b5b5b]"> {product.priceSuffix}</span>

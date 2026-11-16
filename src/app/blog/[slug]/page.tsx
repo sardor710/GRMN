@@ -5,13 +5,16 @@ import Link from "next/link";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SectionHeading } from "@/components/SectionHeading";
-import { blogPosts, getPost, articleBody } from "@/lib/blog";
-import { getBlogs } from "@/lib/cms/store";
+import { cmsBackend } from "@/server/cms/source";
+import { getPost, articleBody } from "@/lib/blog";
+import { decodeRouteParam } from "@/lib/route-params";
+import { readBlog,readBlogsPage } from "@/server/cms/source";
+export const dynamic="force-dynamic";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import type { CMSBlog } from "@/lib/cms/types";
 
-export function generateStaticParams() {
-  return blogPosts.map((p) => ({ slug: p.slug }));
+export async function generateStaticParams() {
+  return (await readBlogsPage({limit:100})).items.map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({
@@ -19,16 +22,15 @@ export async function generateMetadata({
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { slug } = await params;
-  const post = getPost(slug);
-  const cmsBlogs = getBlogs();
-  const cmsBlog = cmsBlogs.find((b) => b.slug === slug);
+  const slug = decodeRouteParam((await params).slug);
+  const cmsBlog = await readBlog(slug);
+  const post = cmsBackend()==="legacy"&&cmsBlog ? getPost(slug) : undefined;
 
   if (!post && !cmsBlog) {
     return { title: "Garmin Blog & Fitness Guides" };
   }
 
-  const title = cmsBlog?.seoTitle || (post ? `${post.title} | Garmin Blog` : "Garmin Blog");
+  const title = cmsBlog?.seoTitle || cmsBlog?.title || (post ? `${post.title} | Garmin Blog` : "Garmin Blog");
   const description =
     cmsBlog?.seoDescription ||
     cmsBlog?.excerpt ||
@@ -76,10 +78,9 @@ export default async function ArticlePage({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = await params;
-  const post = getPost(slug);
-  const cmsBlogs = getBlogs();
-  const cmsBlog = cmsBlogs.find((b) => b.slug === slug);
+  const slug = decodeRouteParam((await params).slug);
+  const cmsBlog = await readBlog(slug);
+  const post = cmsBlog ? getPost(slug) : undefined;
 
   if (!post && !cmsBlog) notFound();
 
@@ -104,14 +105,13 @@ export default async function ArticlePage({
     { name: activeBlog.title, url: `https://www.garmin.com/blog/${activeBlog.slug}` },
   ];
 
-  const body = post ? articleBody(post) : [activeBlog.content];
+  const body = activeBlog.content ? [activeBlog.content] : post ? articleBody(post) : [];
   const categories = post ? post.categories : [activeBlog.category];
-  const displayImage = activeBlog.coverImage || post?.image || "/images/blog/triathlon.jpg";
+  const displayImage = activeBlog.coverImage || post?.image;
   const displayDate = post?.date || new Date(activeBlog.publishedAt || activeBlog.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
   const displayReadTime = post?.readTime || activeBlog.readingTime || "4 min read";
 
-  const related = blogPosts.filter((p) => p.slug !== slug && p.category === (post?.category || activeBlog.category)).slice(0, 3);
-  const fallbackRelated = related.length ? related : blogPosts.filter((p) => p.slug !== slug).slice(0, 3);
+  const fallbackRelated = (await readBlogsPage({limit:4})).items.filter(b=>b.slug!==slug).slice(0,3).map(b=>({slug:b.slug,title:b.title,image:b.coverImage,date:b.publishedAt||b.createdAt}));
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
@@ -122,7 +122,7 @@ export default async function ArticlePage({
       <SiteHeader />
       <main className="flex-1">
         {/* Hero */}
-        <div className="relative aspect-[1440/520] w-full">
+        {displayImage&&<div className="relative aspect-[1440/520] w-full">
           <Image
             src={displayImage}
             alt={activeBlog.title}
@@ -131,7 +131,7 @@ export default async function ArticlePage({
             sizes="100vw"
             className="object-cover object-center"
           />
-        </div>
+        </div>}
 
         <article className="mx-auto max-w-[760px] px-4 py-12">
           <div className="flex gap-3">
@@ -174,7 +174,7 @@ export default async function ArticlePage({
               {fallbackRelated.map((p) => (
                 <Link key={p.slug} href={`/blog/${p.slug}`} className="group flex flex-col">
                   <div className="relative aspect-[16/10] w-full overflow-hidden">
-                    <Image src={p.image} alt={p.title} fill sizes="420px" className="object-cover transition-transform duration-500 group-hover:scale-105" />
+                    {p.image&&<Image src={p.image} alt={p.title} fill sizes="420px" className="object-cover transition-transform duration-500 group-hover:scale-105" />}
                   </div>
                   <h3 className="g-heading mt-3 text-[20px] leading-tight text-black group-hover:text-[#007cc3]">{p.title}</h3>
                   <p className="mt-1 text-[13px] text-neutral-500">{p.date}</p>

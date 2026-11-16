@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Download, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 
 interface DashboardHeaderProps {
   timeframe: string;
@@ -10,7 +10,6 @@ interface DashboardHeaderProps {
   setCurrency: (c: string) => void;
   onRefresh: () => void;
   isRefreshing?: boolean;
-  onExportCSV: () => void;
 }
 
 export function DashboardHeader({
@@ -20,7 +19,6 @@ export function DashboardHeader({
   setCurrency,
   onRefresh,
   isRefreshing = false,
-  onExportCSV,
 }: DashboardHeaderProps) {
   const timeframes = [
     { id: "7d", label: "7 Days" },
@@ -36,13 +34,13 @@ export function DashboardHeader({
   ];
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#232836] pb-5 font-sans">
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-neutral-200 pb-5 font-sans">
       {/* Title */}
       <div>
-        <h1 className="font-heading uppercase tracking-wider text-2xl lg:text-[26px] font-bold text-white">
+        <h1 className="g-heading uppercase tracking-wide text-2xl lg:text-[28px] text-black font-normal">
           Commerce Overview
         </h1>
-        <p className="text-[13px] text-[#8a92a3] mt-0.5">
+        <p className="text-[14px] text-neutral-500 mt-1">
           Store performance, order fulfillment, and catalog inventory metrics.
         </p>
       </div>
@@ -50,16 +48,16 @@ export function DashboardHeader({
       {/* Controls & Actions */}
       <div className="flex flex-wrap items-center gap-2.5">
         {/* Timeframe selector */}
-        <div className="flex items-center border border-[#262d3d] bg-[#12151e] p-0.5 rounded">
+        <div className="flex items-center border border-neutral-300 bg-white p-0.5 rounded-none">
           {timeframes.map((tf) => (
             <button
               key={tf.id}
               type="button"
               onClick={() => setTimeframe(tf.id)}
-              className={`px-2.5 py-1 text-[11px] font-heading uppercase tracking-wider font-bold transition-all rounded-sm ${
+              className={`px-3 py-1.5 text-[11px] font-heading uppercase tracking-wider font-semibold transition-all rounded-none ${
                 timeframe === tf.id
-                  ? "bg-[#007cc3] text-white shadow-sm"
-                  : "text-[#8a92a3] hover:text-white hover:bg-[#1c2230]"
+                  ? "bg-black text-white"
+                  : "text-neutral-600 hover:text-black hover:bg-neutral-100"
               }`}
             >
               {tf.label}
@@ -68,16 +66,16 @@ export function DashboardHeader({
         </div>
 
         {/* Currency selector */}
-        <div className="flex items-center border border-[#262d3d] bg-[#12151e] p-0.5 rounded">
+        <div className="flex items-center border border-neutral-300 bg-white p-0.5 rounded-none">
           {currencies.map((c) => (
             <button
               key={c.code}
               type="button"
               onClick={() => setCurrency(c.code)}
-              className={`px-2 py-1 text-[11px] font-heading uppercase tracking-wider font-bold transition-all rounded-sm ${
+              className={`px-2.5 py-1.5 text-[11px] font-heading uppercase tracking-wider font-semibold transition-all rounded-none ${
                 currency === c.code
-                  ? "bg-[#1f2636] text-[#00a0df] border border-[#00a0df]/30"
-                  : "text-[#737b8c] hover:text-white"
+                  ? "bg-neutral-100 text-black border border-neutral-300"
+                  : "text-neutral-500 hover:text-black"
               }`}
             >
               {c.code}
@@ -86,31 +84,23 @@ export function DashboardHeader({
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={onRefresh}
             disabled={isRefreshing}
-            className="flex items-center gap-1 border border-[#262d3d] bg-[#12151e] px-2.5 py-1.5 text-[11px] font-heading uppercase tracking-wider font-bold text-[#c0c7d4] hover:bg-[#181d28] hover:text-white transition-colors rounded disabled:opacity-50"
+            className="flex items-center gap-1.5 border border-neutral-300 bg-white px-3 py-1.5 text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-700 hover:border-black hover:text-black transition-colors rounded-none disabled:opacity-50"
             title="Refresh metrics"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? "animate-spin text-[#007cc3]" : ""}`} />
             <span className="hidden sm:inline">Sync</span>
           </button>
 
-          <button
-            type="button"
-            onClick={onExportCSV}
-            className="flex items-center gap-1 border border-[#262d3d] bg-[#12151e] px-2.5 py-1.5 text-[11px] font-heading uppercase tracking-wider font-bold text-[#c0c7d4] hover:bg-[#181d28] hover:text-white transition-colors rounded"
-            title="Export CSV"
-          >
-            <Download className="h-3.5 w-3.5 text-[#007cc3]" />
-            <span className="hidden sm:inline">Export</span>
-          </button>
+          <span className="text-xs text-neutral-500">Exports are unavailable.</span>
 
           <Link
             href="/admin/products"
-            className="flex items-center gap-1.5 bg-[#007cc3] hover:bg-[#006cae] px-3 py-1.5 text-[11px] font-heading uppercase tracking-wider font-bold text-white transition-all rounded"
+            className="flex items-center gap-1.5 bg-black text-white hover:bg-white hover:text-black border border-black px-4 py-1.5 text-[11px] font-heading uppercase tracking-wider font-semibold transition-colors rounded-none"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>Add Product</span>

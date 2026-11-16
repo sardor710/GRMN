@@ -1,9 +1,10 @@
 import type { MetadataRoute } from "next";
-import { getProducts, getBlogs } from "@/lib/cms/store";
+import { cmsBackend, readProductsPage, readBlogsPage } from "@/server/cms/source";
+import { catalogues } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.garmin.com";
   const now = new Date();
 
@@ -60,13 +61,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   ];
 
   // Category Routes
-  const categories = [
-    "smartwatches",
-    "sports-fitness",
-    "outdoor-recreation",
-    "marine",
-    "aviation",
-  ];
+  const categories = catalogues.map((c) => c.slug);
   const categoryRoutes: MetadataRoute.Sitemap = categories.map((slug) => ({
     url: `${baseUrl}/c/${slug}`,
     lastModified: now,
@@ -75,7 +70,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
   }));
 
   // Dynamic Products from CMS Store
-  const products = getProducts();
+  const normalized:MetadataRoute.Sitemap=[];
+  if(cmsBackend()==="postgres"){const {getCatalogService}=await import("@/server/catalog/runtime");let cursor:string|undefined;do{const page=await getCatalogService().listProducts({market:"default",locale:"en",displayCurrency:"KZT"},{limit:100,cursor});normalized.push(...page.items.filter(p=>!p.noIndex).map(p=>({url:p.canonicalUrl||`${baseUrl}/p/${encodeURIComponent(p.publicKey)}`,lastModified:p.updatedAt?new Date(p.updatedAt):now,changeFrequency:"daily" as const,priority:0.85})));cursor=page.nextCursor??undefined;}while(cursor);}
+  const products: import("@/lib/cms/types").CMSProduct[] = [];
+  let productCursor:string|undefined;if(cmsBackend()==="legacy")do{const page=await readProductsPage({limit:100,cursor:productCursor});products.push(...page.items);productCursor=page.nextCursor??undefined;}while(productCursor);
   const productRoutes: MetadataRoute.Sitemap = products
     .filter((p) => !p.noIndex && p.status === "published")
     .map((p) => ({
@@ -86,7 +84,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }));
 
   // Dynamic Blogs from CMS Store
-  const blogs = getBlogs();
+  const blogs: import("@/lib/cms/types").CMSBlog[] = [];
+  let blogCursor:string|undefined;do{const page=await readBlogsPage({limit:100,cursor:blogCursor});blogs.push(...page.items);blogCursor=page.nextCursor??undefined;}while(blogCursor);
   const blogRoutes: MetadataRoute.Sitemap = blogs
     .filter((b) => !b.noIndex && b.status === "published")
     .map((b) => ({
@@ -96,5 +95,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.75,
     }));
 
-  return [...staticRoutes, ...categoryRoutes, ...productRoutes, ...blogRoutes];
+  return [...staticRoutes, ...categoryRoutes, ...normalized, ...productRoutes, ...blogRoutes];
 }

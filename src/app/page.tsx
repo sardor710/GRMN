@@ -5,15 +5,24 @@ import { HomeFeatured } from "@/components/home/HomeFeatured";
 import { HomeTiles } from "@/components/home/HomeTiles";
 import { HomeSignup } from "@/components/home/HomeSignup";
 import { HomeFooter } from "@/components/home/HomeFooter";
+import { readHomepage } from "@/server/cms/source";
 
-export default function Home() {
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const config = await readHomepage();
+
   return (
     <div className="garmin-home min-h-screen bg-white">
       <HomeHeader />
       <main>
-        <HomeHero />
-        <HomeFeatured />
-        <HomeTiles />
+        <HomeHero banners={config.heroBanners} />
+        <HomeFeatured carousels={config.carousels} />
+        <HomeTiles
+          promoTiles={config.promoTiles}
+          storyTiles={config.storyTiles}
+          categoryTiles={config.categoryTiles}
+        />
         <HomeSignup />
       </main>
       <HomeFooter />

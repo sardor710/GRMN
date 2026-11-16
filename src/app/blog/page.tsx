@@ -1,3 +1,8 @@
+import Link from "next/link";
+import {readBlogsPage} from "@/server/cms/source";
+import { notFound } from "next/navigation";
+import { readOr } from "@/server/public-input";
+export const dynamic="force-dynamic";
 import type { Metadata } from "next";
 import Image from "next/image";
 import { SiteHeader } from "@/components/SiteHeader";
@@ -9,7 +14,9 @@ export const metadata: Metadata = {
   description: "The latest on Garmin products and technology.",
 };
 
-export default function BlogPage() {
+export default async function BlogPage({searchParams}:{searchParams:Promise<{cursor?:string;search?:string;category?:string}>}) {
+  const query=await searchParams,page=await readOr(readBlogsPage({limit:24,...query}),notFound),next=new URLSearchParams();if(query.search)next.set("search",query.search);if(query.category)next.set("category",query.category);if(page.nextCursor)next.set("cursor",page.nextCursor);
+  const posts=page.items.map(b=>({slug:b.slug,title:b.title,category:(b.category??"").toLowerCase(),categories:b.category?[b.category]:[],date:b.publishedAt||b.createdAt,image:b.coverImage,excerpt:b.excerpt,readTime:b.readingTime}));
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <SiteHeader />
@@ -29,7 +36,8 @@ export default function BlogPage() {
             className="object-cover object-center"
           />
         </div>
-        <BlogExplorer />
+        <BlogExplorer posts={posts} />
+        {page.nextCursor&&<Link className="block p-6 text-center underline" href={"?"+next}>Next articles</Link>}
       </main>
       <SiteFooter />
     </div>

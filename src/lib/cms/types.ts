@@ -16,14 +16,15 @@ export interface AdminUser {
 export type ClientStatus = 'active' | 'vip' | 'pending' | 'suspended';
 
 export interface Client {
+  version?: number;
   id: string;
   name: string;
   email: string;
   phone: string;
   country: string;
   status: ClientStatus;
-  totalSpent: number;
-  ordersCount: number;
+  totalSpent?: number;
+  ordersCount?: number;
   avatar?: string;
   notes?: string;
   createdAt: string;
@@ -56,6 +57,9 @@ export interface ProductFeatureItem {
 }
 
 export interface CMSProduct {
+  currency?: "KZT" | "USD";
+  stockManaged?: boolean;
+  version?: number;
   id: string;
   name: string;
   sku: string;
@@ -115,6 +119,7 @@ export interface Discount {
 export type BannerPosition = 'hero' | 'promo_pod' | 'announcement';
 
 export interface Banner {
+  version?: number;
   id: string;
   title: string;
   subtitle?: string;
@@ -130,6 +135,8 @@ export interface Banner {
 export type BlogStatus = 'published' | 'draft';
 
 export interface CMSBlog {
+  updatedAt?: string;
+  version?: number;
   id: string;
   slug: string;
   title: string;
@@ -181,7 +188,14 @@ export interface PageSEOAudit {
 }
 
 export type PaymentStatus = 'paid' | 'pending' | 'refunded';
-export type FulfillmentStatus = 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type FulfillmentStatus =
+  | 'new'
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'canceled'
+  | 'returned'
+  | 'cancelled';
 
 export interface OrderItem {
   productId: string;
@@ -189,6 +203,23 @@ export interface OrderItem {
   price: number;
   quantity: number;
   image?: string;
+}
+
+export type OrderRouteStage =
+  | 'created'
+  | 'processing'
+  | 'shipped'
+  | 'out_for_delivery'
+  | 'delivered';
+
+export interface OrderMilestone {
+  stage: OrderRouteStage;
+  label: string;
+  date: string;
+  description: string;
+  completed: boolean;
+  current?: boolean;
+  location?: string;
 }
 
 export interface Order {
@@ -202,6 +233,14 @@ export interface Order {
   paymentStatus: PaymentStatus;
   fulfillmentStatus: FulfillmentStatus;
   shippingAddress: string;
+  clientPhone?: string;
+  comments?: string;
+  notes?: string;
+  trackingNumber?: string;
+  carrier?: string;
+  estimatedDeliveryDate?: string;
+  milestones?: OrderMilestone[];
+  coordinates?: { lat: number; lng: number };
   createdAt: string;
 }
 
@@ -238,4 +277,82 @@ export interface CMSData {
   orders: Order[];
   settings: StoreSettings;
   activities: ActivityLog[];
+  homepage?: HomepageConfig;
 }
+
+// ----------------- HOMEPAGE MANAGEMENT TYPES -----------------
+
+export interface HeroBanner {
+  id: string;
+  key: string;
+  title: string;
+  subtitle: string;
+  image: string;
+  href: string;
+  active: boolean;
+  order: number;
+}
+
+export interface ProductCarouselItem {
+  id: string;
+  title: string;
+  description: string;
+  price: string;
+  originalPrice?: string;
+  badge?: "NEW" | "SALE" | string;
+  image: string;
+  href: string;
+  order: number;
+}
+
+export interface PromoCarouselItem {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  href: string;
+  ctaText: string;
+  order: number;
+}
+
+export type CarouselType = "product" | "promo";
+
+export interface CarouselBlock {
+  id: string;
+  title: string;
+  subtitle?: string;
+  type: CarouselType; // "product" (with price and tag) | "promo" (with photo and hyperlink button)
+  active: boolean;
+  order: number;
+  items: (ProductCarouselItem | PromoCarouselItem)[];
+}
+
+export interface HomepageTileBlock {
+  id: string;
+  title: string;
+  image: string;
+  href: string;
+  cta: string;
+  order: number;
+}
+
+export interface HomepageConfig {
+  heroBanners: HeroBanner[];
+  carousels: CarouselBlock[];
+  promoTiles: HomepageTileBlock[];
+  storyTiles: HomepageTileBlock[];
+  categoryTiles: HomepageTileBlock[];
+  updatedAt?: string;
+}
+
+export interface ImageDimensionSpec {
+  label: string;
+  recommendedWidth: number;
+  recommendedHeight: number;
+  aspectRatio: string;
+  maxSizeBytes: number;
+  maxSizeFormatted: string;
+  supportedFormats: string[];
+  description: string;
+}
+

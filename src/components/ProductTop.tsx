@@ -3,12 +3,16 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import {minorToMajor,catalogPriceLabel} from "@/lib/public-catalog";
 import type { ProductDetail } from "@/types";
 import { useCart } from "@/lib/cart";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { GarminBadge } from "@/components/GarminBadge";
 
-export function ProductTop({ product }: { product: ProductDetail }) {
+export function ProductTop({ product:initial }: { product: ProductDetail }) {
+  const [variantId,setVariantId]=useState(initial.commerce?.selectedVariantId??initial.commerce?.variants[0]?.id??"");
+  const variant=initial.commerce?.variants.find(v=>v.id===variantId);
+  const product:ProductDetail=variant?{...initial,price:minorToMajor(variant.price.selling.amountMinor),priceLabel:catalogPriceLabel(variant.price,"KZT"),partNumber:variant.sku,gallery:(variant.gallery??[]).map(m=>({view:m.alt||variant.name,src:m.url}))}:initial;
   const [mainIdx, setMainIdx] = useState(0);
   const [caseSize, setCaseSize] = useState(product.defaultCaseSize);
   const [version, setVersion] = useState(product.defaultVersion);
@@ -17,6 +21,7 @@ export function ProductTop({ product }: { product: ProductDetail }) {
   const { add } = useCart();
 
   const handleAdd = () => {
+    if(product.purchasable===false||typeof product.price!=="number")return;
     add({
       id: product.id,
       name: product.title,
@@ -73,14 +78,14 @@ export function ProductTop({ product }: { product: ProductDetail }) {
           </div>
           <div className="relative flex-1">
             <div className="relative aspect-square w-full">
-              <Image
+              {product.gallery[mainIdx]&&<Image
                 src={product.gallery[mainIdx].src}
                 alt={product.title}
                 fill
                 priority
                 sizes="(max-width: 1024px) 100vw, 560px"
                 className="object-contain"
-              />
+              />}
             </div>
           </div>
         </div>
@@ -100,9 +105,9 @@ export function ProductTop({ product }: { product: ProductDetail }) {
           )}
 
           <p className="mt-4 text-[28px] font-medium text-black">
-            ${product.price.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD
+            {product.priceLabel??`${product.currency==="KZT"?"":"$"}${product.price.toLocaleString("en-US", { minimumFractionDigits: 2 })} ${product.currency??"USD"}`}
           </p>
-          <p className="mt-2 text-[14px] text-neutral-600">
+          {product.currency!=="KZT"&&<><p className="mt-2 text-[14px] text-neutral-600">
             Starting at $69/mo or 0% APR with <span className="font-semibold">affirm</span>.{" "}
             <a href="#" className="underline">See if you qualify</a>
           </p>
@@ -110,6 +115,9 @@ export function ProductTop({ product }: { product: ProductDetail }) {
             HSA/FSA eligible for qualified customers. <a href="#" className="underline">Learn more</a>
           </p>
 
+          </>}
+          {product.commerce&&<label className="mt-6 block">Variant<select aria-label="Variant" value={variantId} onChange={e=>{setVariantId(e.target.value);setMainIdx(0);}} className="mt-2 block w-full border p-3">{product.commerce.variants.map(v=><option key={v.id} value={v.id}>{v.name} {Object.values(v.options).join(" / ")}</option>)}</select><span>{variant?.availability==="available"?"In stock":variant?.availability==="out_of_stock"?"Out of stock":"Availability unavailable"}</span></label>}
+          {!product.commerce&&<>
           {/* Case size */}
           <Selector
             label="Case Size"
@@ -147,14 +155,14 @@ export function ProductTop({ product }: { product: ProductDetail }) {
             </div>
           </div>
 
-          <p className="mt-6 text-[14px] text-neutral-700">Available to ship in 1–3 business days.</p>
+          <p className="mt-6 text-[14px] text-neutral-700">Available to ship in 1–3 business days.</p></>}
 
           <div className="mt-4 flex items-center gap-3">
             <button
-              onClick={handleAdd}
+              disabled={product.purchasable===false} onClick={handleAdd}
               className="g-btn bg-[#5bc2e7] text-black transition-colors hover:bg-[#37b4dc]"
             >
-              {added ? "Added ✓" : "Add to Cart"}
+              {product.purchasable===false?"Purchasing unavailable":added ? "Added ✓" : "Add to Cart"}
             </button>
             <button className="g-btn g-btn--outline-dark">Customize</button>
           </div>

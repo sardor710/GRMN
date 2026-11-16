@@ -1,41 +1,13 @@
-import type { Product, WatchFamily, ProductDetail, AccessoryItem } from "@/types";
-import { getProducts as getCMSProducts } from "@/lib/cms/store";
+import "server-only";
+import type { Product, ProductDetail, AccessoryItem } from "@/types";
+import { cmsBackend, readProduct, readProductsPage } from "@/server/cms/source";
+import { getCatalogService } from "@/server/catalog/runtime";
+import { catalogCardView } from "@/lib/public-catalog";
+import type { ProductQuery } from "@/contracts/commerce";
+import type { CMSProduct } from "@/lib/cms/types";
 
-export const watchFamilies: WatchFamily[] = [
-  { name: "fēnix®", tagline: "Push the limits of multisport performance.", image: "/images/families/fenix.png" },
-  { name: "Venu®", tagline: "Style and design meet health and fitness.", image: "/images/families/venu.png" },
-  { name: "Forerunner®", tagline: "For any reason to run.", image: "/images/families/forerunner.png" },
-  { name: "Instinct®", tagline: "Keep it bold, rugged and ready for adventure.", image: "/images/families/instinct.png" },
-  { name: "vívoactive®", tagline: "Stay healthy and active every day.", image: "/images/families/vivoactive.png" },
-];
 
-export const products: Product[] = [
-  { id: "1228429", name: "fēnix® 8", price: 799.99, priceSuffix: "and up", description: "Premium multisport GPS smartwatches with options that include inReach® technology for connectivity on the go.", image: "/images/products/1228429.jpg", badge: "CUSTOMIZABLE", family: "fēnix", activities: ["Hiking", "Running", "Swimming", "Triathlon", "Diving"], level: "Premium", caseSize: "Medium" },
-  { id: "1614061", name: "Venu® 4", price: 549.99, description: "Advanced health and fitness GPS smartwatches with bright, colorful displays, a built-in flashlight, and wellness and smart features.", image: "/images/products/1614061.jpg", badge: "CUSTOMIZABLE", family: "Venu", activities: ["Running", "Strength", "Swimming", "Walking"], level: "Advanced", caseSize: "Medium" },
-  { id: "1462801", name: "Forerunner® 970", price: 749.99, description: "Premium GPS running and triathlon smartwatch with an AMOLED display, built-in LED flashlight and enhanced navigation plus advanced training and recovery features.", image: "/images/products/1462801.jpg", family: "Forerunner", activities: ["Running", "Triathlon", "Cycling", "Swimming"], level: "Premium", caseSize: "Medium" },
-  { id: "1510465", name: "Venu® X1", price: 699.99, description: "Sleek, lightweight GPS smartwatch with a bright 2-inch AMOLED display and advanced health and fitness features.", image: "/images/products/1510465.jpg", family: "Venu", activities: ["Running", "Strength", "Walking"], level: "Advanced", caseSize: "Large" },
-  { id: "1463821", name: "Forerunner® 570", price: 549.99, description: "Advanced GPS running and triathlon smartwatches with AMOLED displays plus training and recovery features.", image: "/images/products/1463821.jpg", badge: "CUSTOMIZABLE", family: "Forerunner", activities: ["Running", "Triathlon", "Cycling"], level: "Advanced", caseSize: "Medium" },
-  { id: "1941179", name: "Forerunner® 70/170", price: 249.99, priceSuffix: "and up", description: "GPS running smartwatches with essential training and recovery features, plus optional music.", image: "/images/products/1941179.jpg", badge: "NEW", family: "Forerunner", activities: ["Running", "Walking"], level: "Entry", caseSize: "Small" },
-  { id: "1316397", name: "Instinct® 3", price: 249.99, priceSuffix: "and up", description: "Rugged GPS smartwatches with dedicated tactical features and solar charging or AMOLED displays.", image: "/images/products/1316397.jpg", badge: "CUSTOMIZABLE", family: "Instinct", activities: ["Hiking", "Tactical training", "Running"], level: "Advanced", caseSize: "Medium" },
-  { id: "1555457", name: "vívoactive® 6", price: 299.99, description: "Health and fitness GPS smartwatch with a bright, colorful display and essential fitness, wellness and smart features.", image: "/images/products/1555457.jpg", family: "vívoactive", activities: ["Running", "Walking", "Strength"], level: "Entry", caseSize: "Small" },
-  { id: "1800201", name: "Instinct® Crossover", price: 399.99, priceSuffix: "and up", description: "Hybrid outdoor GPS smartwatches with options for solar charging or AMOLED displays.", image: "/images/products/1800201.jpg", family: "Instinct", activities: ["Hiking", "Tactical training", "Running"], level: "Advanced", caseSize: "Medium" },
-  { id: "1828641", name: "tactix® 8", price: 1299.99, priceSuffix: "and up", description: "Premium tactical GPS smartwatches with solar charging or AMOLED displays.", image: "/images/products/1828641.jpg", family: "tactix", activities: ["Tactical training", "Flying", "Diving", "Hiking"], level: "Premium", caseSize: "Large" },
-  { id: "851039", name: "Enduro™ 3", price: 899.99, description: "Ultraperformance smartwatch with GPS plus advanced training metrics and maps.", image: "/images/products/851039.jpg", family: "Enduro", activities: ["Running", "Hiking", "Triathlon"], level: "Premium", caseSize: "Large" },
-  { id: "1196650", name: "Lily® 2", price: 249.99, priceSuffix: "and up", description: "Small fashion smartwatch with essential wellness and smart features plus optional GPS.", image: "/images/products/1196650.jpg", family: "Lily", activities: ["Walking", "Strength"], level: "Entry", caseSize: "Small" },
-  { id: "1815501", name: "Bounce™ 2", price: 299.99, description: "Kids smartwatch with calling, messaging and location tracking features.", image: "/images/products/1815501.jpg", family: "Bounce", activities: ["Walking"], level: "Youth", caseSize: "Small" },
-  { id: "1908217", name: "Approach® J1", price: 299.99, description: "Junior golf watch with built-in GPS, a bright, colorful display and essential features.", image: "/images/products/1908217.jpg", family: "Approach", activities: ["Golfing"], level: "Youth", caseSize: "Small" },
-  { id: "1765781", name: "MARQ® (Gen 2)", price: 1900.0, priceSuffix: "and up", description: "Luxury GPS tool watches with AMOLED displays, premium materials and multisport capabilities.", image: "/images/products/1765781.jpg", badge: "CUSTOMIZABLE", family: "MARQ", activities: ["Hiking", "Flying", "Boating"], level: "Premium", caseSize: "Large" },
-  { id: "785411", name: "vívomove®", price: 269.99, priceSuffix: "and up", description: "Hybrid smartwatches with hidden displays, essential wellness tracking and smart features.", image: "/images/products/785411.jpg", family: "vívomove", activities: ["Walking", "Strength"], level: "Entry", caseSize: "Small" },
-  { id: "847706", name: "Approach® S70", price: 649.99, priceSuffix: "and up", description: "Premium golf smartwatch with GPS, an AMOLED display and advanced wellness and on-course features.", image: "/images/products/847706.jpg", family: "Approach", activities: ["Golfing"], level: "Premium", caseSize: "Medium" },
-];
-
-export const activityFilters = ["Boating", "Cycling", "Diving", "Flying", "Golfing", "Hiking", "Running", "Strength", "Swimming", "Tactical training", "Triathlon", "Walking"];
-export const levelFilters: Product["level"][] = ["Entry", "Advanced", "Premium", "Youth"];
-export const caseSizeFilters: { label: string; value: Product["caseSize"] }[] = [
-  { label: "Small (35 to 43 mm)", value: "Small" },
-  { label: "Medium (44 to 49 mm)", value: "Medium" },
-  { label: "Large (≥ 50 mm)", value: "Large" },
-];
+export { watchFamilies, products, activityFilters, levelFilters, caseSizeFilters } from "./public-products";
 
 export interface CatalogueDef {
   slug: string;
@@ -72,32 +44,23 @@ export function getCatalogue(slug: string): CatalogueDef | undefined {
   return catalogues.find((c) => c.slug === slug);
 }
 
-export function getAllProducts(): Product[] {
-  try {
-    const cmsProducts = getCMSProducts();
-    if (cmsProducts && cmsProducts.length > 0) {
-      return cmsProducts.map((cp) => ({
-        id: cp.id,
-        name: cp.name,
-        price: cp.price,
-        priceSuffix: cp.priceSuffix,
-        description: cp.description,
-        image: cp.image,
-        badge: cp.badge && cp.badge !== "NONE" ? cp.badge : undefined,
-        family: cp.family,
-        activities: cp.activities,
-        level: cp.level,
-        caseSize: cp.caseSize,
-      }));
-    }
-  } catch (err) {
-    console.error("Error reading CMS products, fallback to static:", err);
-  }
-  return products;
+function publicProduct(cp: CMSProduct): Product {
+  return {currency:cp.currency??"USD",purchasable:cp.stockManaged===false?false:undefined,id:cp.id,name:cp.name,price:cp.price,priceSuffix:cp.priceSuffix,description:cp.description,image:cp.image,badge:cp.badge&&cp.badge!=="NONE"?cp.badge:undefined,family:cp.family,activities:cp.activities,level:cp.level,caseSize:cp.caseSize};
 }
-
-export function catalogueProducts(def: CatalogueDef): Product[] {
-  return getAllProducts().filter(def.filter);
+export const defaultProductQuery:ProductQuery={market:"default",locale:"en",displayCurrency:"KZT"};
+export async function getAllProducts(): Promise<Product[]> {
+  if(cmsBackend()==="postgres")return (await getCatalogService().listProducts(defaultProductQuery,{limit:100})).items.map(p=>catalogCardView(p));
+  return (await readProductsPage({limit:100})).items.map(publicProduct);
+}
+export async function getProductsByKeys(keys:string[]):Promise<Product[]> {
+  if(cmsBackend()==="postgres")return (await getCatalogService().getProductsByKeys(keys,defaultProductQuery)).items.map(p=>catalogCardView(p));
+  return (await Promise.all(keys.slice(0,100).map(getProduct))).filter((p):p is Product=>p!==undefined);
+}
+export async function catalogueProducts(def:CatalogueDef,input:Partial<ProductQuery>&{cursor?:string}={}) {
+  const {cursor,...filters}=input;
+  const query:ProductQuery={...defaultProductQuery,...filters,...(def.slug.includes("running-smartwatches")?{activitiesAll:["running"]}:{})};
+  if(cmsBackend()==="postgres"){const page=await getCatalogService().listProducts(query,{limit:24,cursor});return{items:page.items.map(p=>catalogCardView(p,query.displayCurrency)),nextCursor:page.nextCursor};}
+  const page=await readProductsPage({limit:24,cursor,...filters,...(def.slug.includes("running-smartwatches")?{activitiesAll:["running"]}:{})});return {items:page.items.map(publicProduct),nextCursor:page.nextCursor};
 }
 
 // Back-compat: simple metadata lookup keyed by slug.
@@ -105,40 +68,12 @@ export const catalogueMeta: Record<string, { title: string; heading: string }> =
   catalogues.map((c) => [c.slug, { title: c.title, heading: c.heading }]),
 );
 
-export function getCMSProduct(id: string) {
-  try {
-    const cmsProducts = getCMSProducts();
-    return cmsProducts.find((cp) => cp.id === id);
-  } catch (err) {
-    console.error("Error looking up raw CMS product:", err);
-    return undefined;
-  }
+export async function getCMSProduct(id:string){return cmsBackend()==="legacy"?readProduct(id):undefined;}
+export async function getProduct(id:string):Promise<Product|undefined> {
+  if(cmsBackend()==="postgres"){const found=await getCatalogService().getProductByPublicKey(id,"default","KZT");return found?catalogCardView(found):undefined;}
+  const found=await readProduct(id);return found?publicProduct(found):undefined;
 }
 
-export function getProduct(id: string): Product | undefined {
-  try {
-    const cmsProducts = getCMSProducts();
-    const found = cmsProducts.find((cp) => cp.id === id);
-    if (found) {
-      return {
-        id: found.id,
-        name: found.name,
-        price: found.price,
-        priceSuffix: found.priceSuffix,
-        description: found.description,
-        image: found.image,
-        badge: found.badge && found.badge !== "NONE" ? found.badge : undefined,
-        family: found.family,
-        activities: found.activities,
-        level: found.level,
-        caseSize: found.caseSize,
-      };
-    }
-  } catch (err) {
-    console.error("Error looking up CMS product:", err);
-  }
-  return products.find((p) => p.id === id);
-}
 
 export const fenix8Accessories: AccessoryItem[] = [
   {
@@ -286,7 +221,7 @@ export const fenix8Detail: ProductDetail = {
 };
 
 // Build a functional detail page for products without hand-authored data.
-function buildFallbackDetail(p: Product): ProductDetail {
+async function buildFallbackDetail(p: Product): Promise<ProductDetail> {
   let specs = [
     { label: "Family", value: p.family },
     { label: "Level", value: p.level },
@@ -295,26 +230,16 @@ function buildFallbackDetail(p: Product): ProductDetail {
   ];
   let inTheBox = [p.name, "Charging/data cable", "Documentation"];
 
-  try {
-    const cmsProducts = getCMSProducts();
-    const found = cmsProducts.find((cp) => cp.id === p.id);
-    if (found) {
-      if (found.specs && found.specs.length > 0) {
-        specs = found.specs;
-      }
-      if (found.inTheBox && found.inTheBox.length > 0) {
-        inTheBox = found.inTheBox;
-      }
-    }
-  } catch (e) {
-    console.error("Error reading CMS product details:", e);
-  }
+  const found=await readProduct(p.id);
+  if(found?.specs?.length)specs=found.specs;
+  if(found?.inTheBox?.length)inTheBox=found.inTheBox;
 
   return {
     id: p.id,
     title: p.name,
     subtitle: p.description,
-    partNumber: `010-${p.id.slice(0, 4)}-00`,
+    partNumber: found?.sku ?? p.id,
+    currency:p.currency,purchasable:p.purchasable,
     price: p.price,
     badge: p.badge,
     breadcrumb: [
@@ -336,22 +261,33 @@ function buildFallbackDetail(p: Product): ProductDetail {
     ],
     specs,
     inTheBox,
-    related: getAllProducts()
+    related: (await getAllProducts())
       .filter((x) => x.id !== p.id && x.family === p.family)
       .slice(0, 4)
       .map((x) => x.id),
   };
 }
 
-export function getProductDetail(id: string): ProductDetail | undefined {
-  const dynamicProduct = getProduct(id);
+export async function getProductDetail(id: string): Promise<ProductDetail | undefined> {
+  if(cmsBackend()==="postgres"){
+    const detail=await getCatalogService().getProductByPublicKey(id,"default","KZT");if(!detail)return undefined;
+    const view=catalogCardView(detail),editorial=id==="1228429"?fenix8Detail:undefined;
+    return {id:detail.publicKey,title:detail.name,subtitle:detail.description,partNumber:detail.variants.find(v=>v.id===detail.selectedVariantId)?.sku??detail.variants[0]?.sku??"",price:view.price,priceLabel:view.priceLabel,currency:"KZT",purchasable:false,badge:view.badge,commerce:detail,
+      breadcrumb:editorial?.breadcrumb??[{label:"SMARTWATCHES",href:"/c/wearables-smartwatches"}],
+      gallery:detail.gallery.map(m=>({view:m.alt||detail.name,src:m.url})),
+      caseSizes:[],defaultCaseSize:"",versions:[],defaultVersion:"",colors:[],
+      features:detail.features.length?detail.features.map(f=>({title:f.title,body:f.body,image:f.image?.url})):editorial?.features??[],specs:detail.specs.length?detail.specs:editorial?.specs??[],inTheBox:detail.inTheBox.length?detail.inTheBox:editorial?.inTheBox??[],related:detail.relatedProductKeys??[]};
+  }
+  const dynamicProduct = await getProduct(id);
 
   if (id === "1228429") {
-    if (!dynamicProduct) return fenix8Detail;
+    if (!dynamicProduct) return undefined;
     return {
       ...fenix8Detail,
+      accessories:dynamicProduct.currency==="KZT"?undefined:fenix8Detail.accessories,
       title: dynamicProduct.name || fenix8Detail.title,
       subtitle: dynamicProduct.description || fenix8Detail.subtitle,
+      currency:dynamicProduct.currency,purchasable:dynamicProduct.purchasable,
       price: dynamicProduct.price ?? fenix8Detail.price,
       badge: dynamicProduct.badge, // Dynamically pulled from CMS store
     };
