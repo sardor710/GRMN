@@ -7,7 +7,12 @@ Implemented 2026-11-11 using the Task 05A Better Auth 1.7.19 / Next.js 16.2.1 fo
 - Every `/api/admin/**` data operation delegates to `src/server/auth/admin-service.ts` through the private runtime adapter. Both the service and runtime validate an active, signed DB session, staff membership and per-session MFA admission. The runtime checks permission before importing the legacy store; the service rechecks before accessing it. Disabled runtime access is 503; no session/forged legacy cookie is 401; staff admission or permission denial is 403. SQL/library failures produce a safe 503 without raw errors or credentials.
 - The old login/logout URLs delegate to the restricted foundation (`/sign-in/email` and `/sign-out`) and expire `garmin_admin_session`. No source password, username alias, default password or base64 cookie grants identity. `/api/admin/auth/me` returns an explicit DB-derived staff view; it never reads source admins.
 - Every private admin `page.tsx` is a Server Component that calls `authorizeAdminPage` before rendering its client screen. A layout alone is not the boundary. Request headers are read outside the error handler so Next request-time rendering cannot be accidentally swallowed as an unavailable static page. Enabled unauthenticated pages redirect to `/admin/login`; forbidden/unavailable pages render a clear denied state. Navigation follows permissions, and sensitive-page denials link to fresh MFA verification.
-- `/api/account/orders` is closed with 503 for every request, including typed email/phone selectors. `/account` shows only an unavailable notice. `AccountDashboard.tsx`, its profile/address/order literals, source JSON and all old business values remain preserved for extraction. Customer account ownership and historical claims remain Task 10.
+- Since Task 10A, `/api/account/{profile,addresses,addresses/[id],orders,orders/[id]}` serves only the signed-in session owner.
+  - It is available only when `CMS_BACKEND=postgres` and `AUTH_ENABLED=1`; otherwise it returns 503, with no shared or demo fallback.
+  - Email, phone and user-ID query selectors are rejected with 400. Resources the caller does not own return 404.
+  - Writes require the same-origin `Origin` header.
+- `/account` still shows only an unavailable notice. `AccountDashboard.tsx`, its profile/address/order literals, source JSON and all old business values remain preserved for extraction until 10B wires the UI.
+- Historical (legacy) order claims and verified phone change remain Task 10B.
 
 ## Permission matrix v1
 

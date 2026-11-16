@@ -127,10 +127,13 @@ export interface CompleteProfileCommand {
 }
 
 export interface CustomerProfileDTO {
-  id: string;
+  /** Null until the signed-in user first saves a customer profile (version 0). */
+  id: string | null;
   name: string;
   email: string | null;
-  phone: string;
+  /** False for a customer-typed contact email; an unverified email grants no ownership. */
+  emailVerified: boolean;
+  phone: string | null;
   phoneVerified: boolean;
   profileState: "provisional" | "complete";
   version: number;
@@ -242,13 +245,14 @@ export interface OrderItemDTO {
 export interface OrderDetailDTO extends OrderSummaryDTO {
   version: number;
   contact: { name: string; phone: string | null; email: string | null };
-  deliveryAddress: { kind: "structured"; address: DeliveryAddress } | { kind: "legacy_unstructured"; raw: string };
+  deliveryAddress: { kind: "structured"; address: DeliveryAddress } | { kind: "legacy_unstructured"; raw: string } | null;
   dataQuality: "complete" | "legacy_incomplete";
   items: OrderItemDTO[];
-  subtotal: Money;
-  discount: Money;
-  shipping: Money;
-  tax: Money;
+  // Null only for legacy_incomplete history: missing values are never invented.
+  subtotal: Money | null;
+  discount: Money | null;
+  shipping: Money | null;
+  tax: Money | null;
   events: { id: string; type: string; occurredAt: string; label: string }[];
   originalUsdEquivalent: UsdEquivalentDTO | null;
 }
@@ -268,7 +272,7 @@ export interface WishlistItemDTO {
 
 export type ApiErrorCode =
   | "INVALID_INPUT" | "UNAUTHENTICATED" | "FORBIDDEN" | "NOT_FOUND"
-  | "VERSION_CONFLICT" | "IDEMPOTENCY_CONFLICT" | "OUT_OF_STOCK"
+  | "VERSION_CONFLICT" | "IDEMPOTENCY_CONFLICT" | "OUT_OF_STOCK" | "ADDRESS_LIMIT_REACHED"
   | "QUOTE_EXPIRED" | "QUOTE_CHANGED" | "RATE_UNAVAILABLE"
   | "METHOD_UNAVAILABLE" | "RATE_LIMITED" | "DEPENDENCY_UNAVAILABLE" | "INTERNAL_ERROR";
 

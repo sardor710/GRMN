@@ -1,16 +1,16 @@
 # Backend migration — task reports and current position
 
-Updated: **2026-11-16**. This is the current progress index; individual handoffs are historical completion receipts.
+Updated: **2026-11-17**. This is the current progress index; individual handoffs are historical completion receipts.
 
 ## Current position
 
-- **Completed:** Tasks **01–09**, within the scope and activation limits below.
-- **Uncommitted:** all Tasks 02–09 work is uncommitted on `codex/backend-task-02`; commit before Task 10.
-- **Next:** Task **10**, customer profile/address/order ownership. A test draft exists; implementation has not started.
-- **Authorized stopping point:** Finish 09 and 10, then stop before 11.
+- **Completed:** Tasks **01–09** and **10A** (account APIs and ownership), within the scope and activation limits below.
+- **Committed:** Tasks 02–09 are committed on `codex/backend-task-02` as `b92fd0e`. **10A is uncommitted** until the owner confirms the commit.
+- **Next:** Task **10B**: AccountDashboard UI wiring, audited legacy-order claims, verified phone change/recovery and the credential-reset flow. It runs in a separate session. Its draft tests are in `tests/integration/account-claims.pending.mjs`.
+- **Authorized stopping point:** Finish 10 (10B remains), then stop before 11.
 - **Active implementation:** `C:/Users/Freakman/.codex/worktrees/backend-task-02/GRMN`, branch `codex/backend-task-02`.
-- **Original checkout:** `D:/projects/garmin/GRMN`. Its progress documentation is synchronized, but the backend implementation has **not** been merged/copied there. An AI inspecting only that checkout's application files will see older code. Continue code work in the active worktree above.
-- Work is uncommitted. No merge, push, deployment, real import, production database migration or backend activation has been performed.
+- **Original checkout:** `D:/projects/garmin/GRMN`. Its progress documentation is synchronized, but the backend implementation has **not** been merged or copied there. An AI inspecting only that checkout's application files will see older code. Continue code work in the active worktree above.
+- No merge, push, deployment, real import, production database migration or backend activation has been performed.
 
 **Complete means the recorded task scope passed its stated gate.** Schema completion does not mean its later services exist. Historical test counts below describe each completion point, not a fresh test run of all current uncommitted changes.
 
@@ -52,15 +52,34 @@ Updated: **2026-11-16**. This is the current progress index; individual handoffs
 
 **Complete — public catalog/content reads from PostgreSQL.** Normalized catalog list/detail, publication/market filters, exact KZT with optional manual-rate USD display, scoped cursors, batched related/Compare reads, browser-safe constants, Unicode slugs and redirects; catalog/product/Compare/blog/sitemap/metadata consumers wired. The closing session fixed a percent-encoded Unicode slug 404 and four review findings (undecoded `/p/[id]`, 500 on invalid public input, proxy 503 on malformed URLs, dead sitemap category URLs). Final `npm test` **300/300**, check passed, full admin+public Chrome smoke passed. [Detailed receipt](handoffs/task-09.md).
 
-## Task 10 — queued, implementation not started
+### Task 10A
 
-A draft integration test file is prepared, excluded from the normal test glob. It has not established a passing account implementation. Required work: session-owned profiles/address CRUD and paginated order history/detail; five-address/one-primary concurrency; verified phone change/recovery and audited legacy claims; real auth credential handling; persisted UI loading/empty/error states. Preserve embedded real records privately and expose only approved data to its verified owner. Do not unlock the existing account UI with shared literals or email-authorized lookup.
+**Complete — account APIs and ownership (2026-11-17, uncommitted).**
+- Added session-owned profile, saved-address CRUD and paginated order history/detail services. They are exposed through `/api/account/{profile,addresses,addresses/[id],orders,orders/[id]}`.
+- The API never accepts an email or user ID as a selector. It returns 503 unless both PostgreSQL mode and auth are enabled.
+- Migration 0006 enforces the five-address limit, owner immutability and exactly one primary address in the database, under concurrency. Address writes fail closed outside READ COMMITTED.
+- `customer_profiles.email_verified_at` keeps a customer-typed email marked as unverified; an unverified email grants no ownership.
+- Order history uses HMAC cursors bound to the user. Order detail returns customer-visible snapshots and events only.
+- Final `npm test` **313/313** (21 legacy + 111 unit + 181 integration), with boundaries passing. `npm run check` passes. Browser smoke results are recorded in the receipt.
+- An independent identity reviewer found no Critical issues. Two findings were re-graded Important and fixed test-first.
+
+[Detailed receipt](handoffs/task-10a.md).
+
+## Task 10B — next, not started
+
+Required work:
+- Wire the AccountDashboard UI to `/api/account/*`, with loading, empty and error states, and remove its `?email=` fetch and demo literals.
+- Implement verified phone change and recovery.
+- Implement audited legacy-order claims.
+- Make the credential reset use the real auth service.
+
+Start from `tests/integration/account-claims.pending.mjs`. Preserve embedded real records privately and expose only approved data to their verified owner.
 
 ## Remaining task list
 
 | Task | Status | Work still required |
 |---|---|---|
-| 10 | Next, authorized | Customer persistence, identity and order ownership |
+| 10 | 10A complete; 10B next, authorized | 10B: account UI wiring, verified phone change/recovery, legacy claims, credential reset |
 | 11 | Not started | Inventory ledger and race-safe reservations |
 | 12 | Not started | Durable inbox/outbox and background workers |
 | 13 | Not started | Server cart, pricing, shipping/tax quotes and promotion quotas |

@@ -156,7 +156,7 @@ export function createCMSService({pool,authorize}:Options) {
         const old=data.id?(await client.query("SELECT * FROM customer_profiles WHERE id=$1 FOR UPDATE",[data.id])).rows[0]:undefined;
         if(data.id&&!old)return fail("NOT_FOUND",404,"Customer was not found");if(old&&data.version!==old.version)return fail("VERSION_CONFLICT",409,"Customer changed; reload before saving");
         const email=data.email===undefined?old?.email??null:data.email.trim().toLowerCase()||null;
-        if(old?.user_id&&(old.email!==email||old.entered_phone!==data.phone))return fail("CONFLICT",409,"Verified account contacts require the account workflow");
+        if(old?.user_id&&(old.email!==email||old.entered_phone!==data.phone))return fail("CONFLICT",409,"Account-linked contacts can only be changed by the customer's account workflow");
         const id=old?.id??randomUUID();
         if(old)await client.query("UPDATE customer_profiles SET name=$2,email=$3,entered_phone=$4,avatar=$5,status=$6,country_code=$7,version=version+1,updated_at=clock_timestamp() WHERE id=$1",[id,data.name,email,data.phone,data.avatar??old.avatar??null,data.status??old.status??"active",data.country===undefined?old.country_code:data.country||null]);
         else await client.query("INSERT INTO customer_profiles(id,name,email,entered_phone,avatar,status,country_code) VALUES($1,$2,$3,$4,$5,$6,$7)",[id,data.name,email,data.phone,data.avatar??null,data.status??"active",data.country||null]);

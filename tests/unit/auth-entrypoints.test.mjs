@@ -19,6 +19,21 @@ test("public account route never imports the preserved shared dashboard or selec
   const {GET}=await import("../../src/app/api/account/orders/route.ts");
   for(const query of ["","?email=victim@example.invalid","?phone=+77000000000"]){const response=await GET(new Request("http://localhost:3000/api/account/orders"+query));assert.equal(response.status,503);assert.doesNotMatch(await response.text(),/clientEmail|ordersCount|shippingAddress/);}
 });
+test("every account API route binds the session-owned handler and stays closed outside postgres+auth mode",async()=>{
+  const routes={"profile":["GET","PUT"],"addresses":["GET","POST"],"addresses/[id]":["PUT","DELETE"],"orders":["GET"],"orders/[id]":["GET"]};
+  const saved={AUTH_ENABLED:process.env.AUTH_ENABLED,CMS_BACKEND:process.env.CMS_BACKEND};
+  try{
+    for(const env of [{CMS_BACKEND:"legacy",AUTH_ENABLED:"1"},{CMS_BACKEND:"postgres",AUTH_ENABLED:"0"}]){
+      Object.assign(process.env,env);
+      for(const [path,methods] of Object.entries(routes)){
+        const source=read(`src/app/api/account/${path}/route.ts`);assert.match(source,/handleAccountRequest/,path);assert.doesNotMatch(source,/cms\/store|AccountDashboard|email/,path);
+        const route=await import(`../../src/app/api/account/${path}/route.ts`);
+        assert.deepEqual(Object.keys(route).filter(key=>/^[A-Z]+$/.test(key)).sort(),[...methods].sort(),path);
+        for(const method of methods){const url="http://localhost:3000/api/account/"+path.replace("[id]","00000000-0000-4000-8000-000000000000")+"?email=victim@example.invalid";const response=await route[method](new Request(url,{method,headers:{origin:"http://localhost:3000"}}));assert.equal(response.status,503,`${path} ${method}`);assert.equal(response.headers.get("cache-control"),"no-store");}
+      }
+    }
+  }finally{for(const [key,value] of Object.entries(saved)){if(value===undefined)delete process.env[key];else process.env[key]=value;}}
+});
 test("actual route exports default to closed without DB or source access",async()=>{
   const previous=process.env.AUTH_ENABLED;process.env.AUTH_ENABLED="0";
   try{

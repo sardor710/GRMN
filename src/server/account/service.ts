@@ -1,0 +1,256 @@
+import "server-only";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
+import type { PoolClient } from "pg";
+import { z } from "zod";
+import type { DatabaseHandle } from "../db/client.ts";
+import type { Principal } from "../context.ts";
+import { AuthFailure } from "../auth/config.ts";
+import type { CustomerProfileDTO, DeliveryAddress, Money, OrderDetailDTO, OrderItemDTO, OrderSummaryDTO, SavedAddressDTO } from "../../contracts/commerce.ts";
+import type { Page } from "../../contracts/pagination.ts";
+
+// Every operation derives the owner from the verified session principal. No input field,
+// typed email or phone can select another customer's profile, address book or orders.
+
+export const MAX_SAVED_ADDRESSES = 5;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const E164 = /^[+][1-9][0-9]{7,14}$/;
+const TIMESTAMP_KEY = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/;
+
+const invalid = (message = "Invalid or unknown fields"): never => { throw new AuthFailure("INVALID_INPUT", 400, message); };
+const notFound = (): never => { throw new AuthFailure("NOT_FOUND", 404, "Not found"); };
+const conflict = (message = "This record changed; reload and try again"): never => { throw new AuthFailure("VERSION_CONFLICT", 409, message); };
+
+const requiredText = (max: number) => z.string().trim().min(1).max(max);
+const optionalText = (max: number) => z.string().trim().max(max).optional().transform(value => value || undefined);
+const phone = z.string().trim().regex(E164);
+const profileInput = z.strictObject({
+  name: requiredText(200),
+  email: z.string().trim().toLowerCase().max(254).pipe(z.email()),
+  phone,
+  expectedVersion: z.number().int().min(0),
+});
+const addressInput = z.strictObject({
+  id: z.string().regex(UUID).optional(),
+  expectedVersion: z.number().int().min(1).optional(),
+  label: requiredText(60),
+  recipientName: requiredText(200),
+  phone,
+  countryCode: z.string().trim().regex(/^[A-Z]{2}$/),
+  city: requiredText(120),
+  line1: requiredText(200),
+  line2: optionalText(200),
+  region: optionalText(120),
+  postalCode: optionalText(20),
+  isPrimary: z.boolean().default(false),
+}).refine(value => (value.id === undefined) === (value.expectedVersion === undefined));
+const pageInput = z.strictObject({ limit: z.number().int().min(1).max(100).optional(), cursor: z.string().min(1).max(2048).optional() });
+
+function parse<T>(schema: z.ZodType<T>, value: unknown): T {
+  const result = schema.safeParse(value);
+  return result.success ? result.data : invalid();
+}
+
+interface AddressRow { id: string; label: string; recipient_name: string; phone: string; country_code: string; city: string; line1: string; line2: string | null; region: string | null; postal_code: string | null; is_primary: boolean; version: number }
+const ADDRESS_COLUMNS = "id,label,recipient_name,phone,country_code,city,line1,line2,region,postal_code,is_primary,version";
+function addressDTO(row: AddressRow): SavedAddressDTO {
+  return {
+    id: row.id, label: row.label, recipientName: row.recipient_name, phone: row.phone, countryCode: row.country_code, city: row.city, line1: row.line1,
+    ...(row.line2 ? { line2: row.line2 } : {}), ...(row.region ? { region: row.region } : {}), ...(row.postal_code ? { postalCode: row.postal_code } : {}),
+    isPrimary: row.is_primary, version: row.version,
+  };
+}
+const money = (amountMinor: string): Money => ({ amountMinor, currency: "KZT" });
+const optionalMoney = (amountMinor: string | null) => amountMinor === null ? null : money(amountMinor);
+const EVENT_LABELS: Readonly<Record<string, string>> = {
+  "order.placed": "Order placed", "order.confirmed": "Order confirmed", "order.cancelled": "Order cancelled",
+  "payment.paid": "Payment received", "fulfillment.shipped": "Shipped", "fulfillment.delivered": "Delivered",
+};
+
+function databaseFailure(error: unknown): unknown {
+  if (error instanceof AuthFailure) return error;
+  const constraint = (error as { constraint?: unknown } | null)?.constraint;
+  if (constraint === "customer_addresses_limit") return new AuthFailure("ADDRESS_LIMIT_REACHED", 409, `At most ${MAX_SAVED_ADDRESSES} addresses can be saved`);
+  if (constraint === "customer_addresses_primary_unique" || constraint === "customer_addresses_primary_required" || constraint === "customer_profiles_user_unique") {
+    return new AuthFailure("VERSION_CONFLICT", 409, "This record changed; reload and try again");
+  }
+  return error;
+}
+
+export interface AccountServiceOptions {
+  database: Pick<DatabaseHandle, "pool">;
+  authorize: (headers: Headers) => Promise<Principal>;
+  secret: string;
+}
+
+export function createAccountService({ database, authorize, secret }: AccountServiceOptions) {
+  if (!/^[a-f0-9]{64}$/i.test(secret)) throw new Error("Account services require the validated auth secret");
+  const cursorKey = createHmac("sha256", secret).update("grmn-account-order-cursor:v1").digest();
+
+  async function transaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {
+    const client = await database.pool.connect();
+    try {
+      // The address limit/primary counts need a fresh snapshot after the owner lock wait.
+      await client.query("BEGIN ISOLATION LEVEL READ COMMITTED");
+      const result = await work(client);
+      await client.query("COMMIT");
+      return result;
+    } catch (error) {
+      await client.query("ROLLBACK").catch(() => undefined);
+      throw databaseFailure(error);
+    } finally { client.release(); }
+  }
+  // Serializes every address-book/profile write for one owner (the database triggers take the same lock).
+  async function lockOwner(client: PoolClient, userId: string) {
+    const row = await client.query<{ phone_number: string | null; phone_number_verified: boolean }>("SELECT phone_number,phone_number_verified FROM users WHERE id=$1 AND status='active' FOR NO KEY UPDATE", [userId]);
+    return row.rows[0] ?? (() => { throw new AuthFailure("UNAUTHENTICATED", 401, "Sign in is required"); })();
+  }
+
+  function signCursor(userId: string, placed: string | null, id: string) {
+    const payload = Buffer.from(JSON.stringify({ v: 1, u: userId, t: placed, i: id })).toString("base64url");
+    return `${payload}.${createHmac("sha256", cursorKey).update(payload).digest("base64url")}`;
+  }
+  function readCursor(userId: string, cursor: string): { t: string | null; i: string } {
+    const [payload, signature, extra] = cursor.split(".");
+    if (!payload || !signature || extra !== undefined) return invalid("Invalid page cursor");
+    const expected = createHmac("sha256", cursorKey).update(payload).digest(), actual = Buffer.from(signature, "base64url");
+    if (actual.length !== expected.length || !timingSafeEqual(actual, expected)) return invalid("Invalid page cursor");
+    let value: unknown;
+    try { value = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")); } catch { return invalid("Invalid page cursor"); }
+    const data = value as { v?: unknown; u?: unknown; t?: unknown; i?: unknown };
+    if (data.v !== 1 || data.u !== userId || typeof data.i !== "string" || !UUID.test(data.i) || !(data.t === null || (typeof data.t === "string" && TIMESTAMP_KEY.test(data.t)))) return invalid("Invalid page cursor");
+    return { t: data.t, i: data.i };
+  }
+
+  return {
+    async getProfile(headers: Headers): Promise<CustomerProfileDTO> {
+      const principal = await authorize(headers);
+      const result = await database.pool.query<{ user_name: string; user_email: string; user_email_verified: boolean; phone_number: string | null; phone_number_verified: boolean; id: string | null; name: string | null; email: string | null; email_verified_at: Date | null; profile_state: "provisional" | "complete" | null; version: number | null }>(
+        "SELECT u.name AS user_name,u.email AS user_email,u.email_verified AS user_email_verified,u.phone_number,u.phone_number_verified,p.id,p.name,p.email,p.email_verified_at,p.profile_state,p.version FROM users u LEFT JOIN customer_profiles p ON p.user_id=u.id WHERE u.id=$1 AND u.status='active'", [principal.userId]);
+      const row = result.rows[0] ?? (() => { throw new AuthFailure("UNAUTHENTICATED", 401, "Sign in is required"); })();
+      const profileEmail = row.id !== null && row.email !== null;
+      return {
+        id: row.id, name: row.name ?? row.user_name, email: profileEmail ? row.email : row.user_email,
+        emailVerified: profileEmail ? row.email_verified_at !== null : row.user_email_verified,
+        phone: row.phone_number, phoneVerified: Boolean(row.phone_number && row.phone_number_verified),
+        profileState: row.profile_state ?? "provisional", version: row.version ?? 0,
+      };
+    },
+
+    // Saves the customer-facing profile. The email is an unverified contact value stored on the
+    // profile; it never replaces the auth login email, never marks anything verified and never
+    // links orders. The phone must equal the session owner's verified phone (changes are 10B).
+    async saveProfile(headers: Headers, input: unknown): Promise<CustomerProfileDTO> {
+      const principal = await authorize(headers), command = parse(profileInput, input);
+      return transaction(async client => {
+        const owner = await lockOwner(client, principal.userId);
+        if (!owner.phone_number || !owner.phone_number_verified || owner.phone_number !== command.phone) invalid("Phone must match your verified phone number");
+        const values = [principal.userId, command.name, command.email, command.phone];
+        // A new or changed email is stored unverified; only an unchanged email keeps prior verification.
+        const saved = command.expectedVersion === 0
+          ? await client.query<{ id: string; version: number; email_verified_at: Date | null }>("INSERT INTO customer_profiles(id,user_id,name,email,email_verified_at,entered_phone,normalized_phone,profile_state,version) VALUES($5,$1,$2,$3,NULL,$4,$4,'complete',1) ON CONFLICT (user_id) WHERE user_id IS NOT NULL DO NOTHING RETURNING id,version,email_verified_at", [...values, randomUUID()])
+          : await client.query<{ id: string; version: number; email_verified_at: Date | null }>("UPDATE customer_profiles SET name=$2,email_verified_at=CASE WHEN email IS NOT DISTINCT FROM $3 THEN email_verified_at ELSE NULL END,email=$3,entered_phone=$4,normalized_phone=$4,profile_state='complete',version=version+1,updated_at=now() WHERE user_id=$1 AND version=$5 RETURNING id,version,email_verified_at", [...values, command.expectedVersion]);
+        const row = saved.rows[0] ?? conflict();
+        return { id: row.id, name: command.name, email: command.email, emailVerified: row.email_verified_at !== null, phone: command.phone, phoneVerified: true, profileState: "complete" as const, version: row.version };
+      });
+    },
+
+    async listAddresses(headers: Headers): Promise<Page<SavedAddressDTO>> {
+      const principal = await authorize(headers);
+      const rows = await database.pool.query<AddressRow>(`SELECT ${ADDRESS_COLUMNS} FROM customer_addresses WHERE user_id=$1 ORDER BY is_primary DESC,created_at,id LIMIT ${MAX_SAVED_ADDRESSES}`, [principal.userId]);
+      return { items: rows.rows.map(addressDTO), nextCursor: null };
+    },
+
+    // Creates (no id) or edits (id + expectedVersion) a saved address. isPrimary only promotes:
+    // the primary moves when another address is selected or the primary is deleted.
+    async saveAddress(headers: Headers, input: unknown): Promise<SavedAddressDTO> {
+      const principal = await authorize(headers), command = parse(addressInput, input);
+      const fields = [command.label, command.recipientName, command.phone, command.countryCode, command.city, command.line1, command.line2 ?? null, command.region ?? null, command.postalCode ?? null];
+      return transaction(async client => {
+        await lockOwner(client, principal.userId);
+        if (command.id === undefined) {
+          const count = (await client.query<{ n: number }>("SELECT count(*)::int AS n FROM customer_addresses WHERE user_id=$1", [principal.userId])).rows[0].n;
+          if (count >= MAX_SAVED_ADDRESSES) throw new AuthFailure("ADDRESS_LIMIT_REACHED", 409, `At most ${MAX_SAVED_ADDRESSES} addresses can be saved`);
+          const primary = command.isPrimary || count === 0;
+          if (primary) await client.query("UPDATE customer_addresses SET is_primary=false,version=version+1,updated_at=now() WHERE user_id=$1 AND is_primary", [principal.userId]);
+          const created = await client.query<AddressRow>(`INSERT INTO customer_addresses(id,user_id,label,recipient_name,phone,country_code,city,line1,line2,region,postal_code,is_primary) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING ${ADDRESS_COLUMNS}`, [randomUUID(), principal.userId, ...fields, primary]);
+          return addressDTO(created.rows[0]);
+        }
+        const current = (await client.query<{ version: number; is_primary: boolean }>("SELECT version,is_primary FROM customer_addresses WHERE id=$1 AND user_id=$2 FOR UPDATE", [command.id, principal.userId])).rows[0] ?? notFound();
+        if (current.version !== command.expectedVersion) conflict();
+        const primary = current.is_primary || command.isPrimary;
+        if (primary && !current.is_primary) await client.query("UPDATE customer_addresses SET is_primary=false,version=version+1,updated_at=now() WHERE user_id=$1 AND is_primary", [principal.userId]);
+        const updated = await client.query<AddressRow>(`UPDATE customer_addresses SET label=$3,recipient_name=$4,phone=$5,country_code=$6,city=$7,line1=$8,line2=$9,region=$10,postal_code=$11,is_primary=$12,version=version+1,updated_at=now() WHERE id=$1 AND user_id=$2 RETURNING ${ADDRESS_COLUMNS}`, [command.id, principal.userId, ...fields, primary]);
+        return addressDTO(updated.rows[0]);
+      });
+    },
+
+    async deleteAddress(headers: Headers, id: unknown, expectedVersion: unknown): Promise<{ id: string; deleted: true }> {
+      const principal = await authorize(headers);
+      if (typeof id !== "string" || !UUID.test(id)) return notFound();
+      if (typeof expectedVersion !== "number" || !Number.isInteger(expectedVersion) || expectedVersion < 1) return invalid();
+      return transaction(async client => {
+        await lockOwner(client, principal.userId);
+        const current = (await client.query<{ version: number; is_primary: boolean }>("SELECT version,is_primary FROM customer_addresses WHERE id=$1 AND user_id=$2 FOR UPDATE", [id, principal.userId])).rows[0] ?? notFound();
+        if (current.version !== expectedVersion) conflict();
+        await client.query("DELETE FROM customer_addresses WHERE id=$1 AND user_id=$2", [id, principal.userId]);
+        // The oldest remaining address inherits primary so a nonempty book always has one.
+        if (current.is_primary) await client.query("UPDATE customer_addresses SET is_primary=true,version=version+1,updated_at=now() WHERE id=(SELECT id FROM customer_addresses WHERE user_id=$1 ORDER BY created_at,id LIMIT 1)", [principal.userId]);
+        return { id, deleted: true as const };
+      });
+    },
+
+    async getOwnOrders(headers: Headers, input: unknown): Promise<Page<OrderSummaryDTO>> {
+      const principal = await authorize(headers), page = parse(pageInput, input ?? {}), limit = page.limit ?? 20;
+      const after = page.cursor === undefined ? null : readCursor(principal.userId, page.cursor);
+      const args: unknown[] = [principal.userId, limit + 1];
+      let where = "";
+      if (after) {
+        args.push(after.i);
+        if (after.t === null) where = " AND o.placed_at IS NULL AND o.id<$3::uuid";
+        else { args.push(after.t); where = " AND (o.placed_at<$4::timestamptz OR (o.placed_at=$4::timestamptz AND o.id<$3::uuid) OR o.placed_at IS NULL)"; }
+      }
+      const rows = (await database.pool.query<{ id: string; order_number: string; placed_key: string | null; shown_at: Date; order_status: OrderSummaryDTO["status"]; payment_status: OrderSummaryDTO["paymentStatus"]; fulfillment_status: OrderSummaryDTO["fulfillmentStatus"]; total_minor: string; items_count: number }>(
+        `SELECT o.id,o.order_number,to_char(o.placed_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS placed_key,COALESCE(o.placed_at,o.created_at) AS shown_at,o.order_status,o.payment_status,o.fulfillment_status,o.total_minor::text AS total_minor,(SELECT COALESCE(sum(quantity),0)::int FROM order_items WHERE order_id=o.id) AS items_count FROM orders o WHERE o.user_id=$1${where} ORDER BY o.placed_at DESC NULLS LAST,o.id DESC LIMIT $2`, args)).rows;
+      const items = rows.slice(0, limit), last = items.at(-1);
+      return {
+        items: items.map(row => ({ id: row.id, orderNumber: row.order_number, createdAt: row.shown_at.toISOString(), status: row.order_status, paymentStatus: row.payment_status, fulfillmentStatus: row.fulfillment_status, total: money(row.total_minor), itemsCount: row.items_count })),
+        nextCursor: rows.length > limit && last ? signCursor(principal.userId, last.placed_key, last.id) : null,
+      };
+    },
+
+    async getOwnOrder(headers: Headers, orderId: unknown): Promise<OrderDetailDTO> {
+      const principal = await authorize(headers);
+      if (typeof orderId !== "string" || !UUID.test(orderId)) return notFound();
+      const order = (await database.pool.query<{ id: string; order_number: string; shown_at: Date; order_status: OrderSummaryDTO["status"]; payment_status: OrderSummaryDTO["paymentStatus"]; fulfillment_status: OrderSummaryDTO["fulfillmentStatus"]; total_minor: string; subtotal_minor: string | null; discount_minor: string | null; shipping_minor: string | null; tax_minor: string | null; contact_name: string; contact_phone: string | null; contact_email: string | null; data_quality: OrderDetailDTO["dataQuality"]; version: number }>(
+        "SELECT id,order_number,COALESCE(placed_at,created_at) AS shown_at,order_status,payment_status,fulfillment_status,total_minor::text AS total_minor,subtotal_minor::text AS subtotal_minor,discount_minor::text AS discount_minor,shipping_minor::text AS shipping_minor,tax_minor::text AS tax_minor,contact_name,contact_phone,contact_email,data_quality,version FROM orders WHERE id=$1 AND user_id=$2", [orderId, principal.userId])).rows[0] ?? notFound();
+      const [items, address, events] = await Promise.all([
+        database.pool.query<{ id: string; product_key: string | null; sku: string | null; name: string; options: Record<string, unknown>; quantity: number; unit_price_minor: string; discount_minor: string; tax_minor: string; total_minor: string }>("SELECT id,product_key,sku,name,options,quantity,unit_price_minor::text AS unit_price_minor,discount_minor::text AS discount_minor,tax_minor::text AS tax_minor,total_minor::text AS total_minor FROM order_items WHERE order_id=$1 ORDER BY id", [orderId]),
+        database.pool.query<{ kind: "structured" | "legacy_unstructured"; recipient_name: string | null; phone: string | null; country_code: string | null; city: string | null; line1: string | null; line2: string | null; region: string | null; postal_code: string | null; legacy_raw: string | null }>("SELECT kind,recipient_name,phone,country_code,city,line1,line2,region,postal_code,legacy_raw FROM order_addresses WHERE order_id=$1", [orderId]),
+        database.pool.query<{ id: string; type: string; happened_at: Date }>("SELECT id,type,COALESCE(occurred_at,recorded_at) AS happened_at FROM order_events WHERE order_id=$1 AND visibility='customer' ORDER BY COALESCE(occurred_at,recorded_at),id", [orderId]),
+      ]);
+      const snapshot = address.rows[0];
+      let deliveryAddress: OrderDetailDTO["deliveryAddress"] = null;
+      if (snapshot?.kind === "legacy_unstructured" && snapshot.legacy_raw) deliveryAddress = { kind: "legacy_unstructured", raw: snapshot.legacy_raw };
+      else if (snapshot?.kind === "structured") {
+        const value: DeliveryAddress = { recipientName: snapshot.recipient_name ?? "", phone: snapshot.phone ?? "", countryCode: snapshot.country_code ?? "", city: snapshot.city ?? "", line1: snapshot.line1 ?? "",
+          ...(snapshot.line2 ? { line2: snapshot.line2 } : {}), ...(snapshot.region ? { region: snapshot.region } : {}), ...(snapshot.postal_code ? { postalCode: snapshot.postal_code } : {}) };
+        deliveryAddress = { kind: "structured", address: value };
+      }
+      const lines: OrderItemDTO[] = items.rows.map(row => ({
+        id: row.id, productKey: row.product_key, sku: row.sku, name: row.name,
+        // Only flat customer-chosen option strings are shown; nested/provider data stays private.
+        options: Object.fromEntries(Object.entries(row.options ?? {}).filter((entry): entry is [string, string] => typeof entry[1] === "string")),
+        quantity: row.quantity, unitPrice: money(row.unit_price_minor), discount: money(row.discount_minor), tax: money(row.tax_minor), total: money(row.total_minor),
+      }));
+      return {
+        id: order.id, orderNumber: order.order_number, createdAt: order.shown_at.toISOString(), status: order.order_status, paymentStatus: order.payment_status, fulfillmentStatus: order.fulfillment_status,
+        total: money(order.total_minor), itemsCount: lines.reduce((sum, line) => sum + line.quantity, 0), version: order.version,
+        contact: { name: order.contact_name, phone: order.contact_phone, email: order.contact_email }, deliveryAddress, dataQuality: order.data_quality, items: lines,
+        subtotal: optionalMoney(order.subtotal_minor), discount: optionalMoney(order.discount_minor), shipping: optionalMoney(order.shipping_minor), tax: optionalMoney(order.tax_minor),
+        events: events.rows.map(row => ({ id: row.id, type: row.type, occurredAt: row.happened_at.toISOString(), label: EVENT_LABELS[row.type] ?? row.type })),
+        originalUsdEquivalent: null,
+      };
+    },
+  };
+}
+export type AccountService = ReturnType<typeof createAccountService>;

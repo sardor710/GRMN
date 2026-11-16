@@ -14,6 +14,8 @@ export const customerProfiles = pgTable("customer_profiles", {
   legacyClientId: text("legacy_client_id").unique(),
   name: text("name").notNull(),
   email: text("email"),
+  // Null = unverified contact value (customer-typed or imported); never an ownership signal.
+  emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
   enteredPhone: text("entered_phone").notNull(),
   normalizedPhone: text("normalized_phone"),
   countryCode: text("country_code"),

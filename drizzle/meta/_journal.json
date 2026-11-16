@@ -43,6 +43,13 @@
       "when": 1794346222912,
       "tag": "0005_auth-runtime",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794854847314,
+      "tag": "0006_account-ownership",
+      "breakpoints": true
     }
   ]
 }
