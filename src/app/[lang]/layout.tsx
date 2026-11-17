@@ -10,6 +10,7 @@ import { bodyClassName, htmlClassName, siteIcons } from "../fonts";
 
 /** Message namespaces that client components read. Server-only namespaces stay off the client. */
 const CLIENT_NAMESPACES: readonly string[] = [
+  "Account",
   "BlogExplorer",
   "Cart",
   "CatalogueGrid",
@@ -19,6 +20,8 @@ const CLIENT_NAMESPACES: readonly string[] = [
   "HomeFeatured",
   "HomeHero",
   "HomeSignup",
+  "Newsletter",
+  "OrderDetails",
   "ProductAccessories",
   "ProductCard",
   "ProductTabs",

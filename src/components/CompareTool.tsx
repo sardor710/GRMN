@@ -17,15 +17,15 @@ type Translate = (key: string) => string;
 const rows: { key: string; get: (p: Product, t: Translate, money: (n: number) => string) => string }[] = [
   { key: "price", get: (p, _t, money) => money(p.price) },
   { key: "family", get: (p) => p.family },
-  { key: "level", get: (p, t) => label(t, filterLabelKey(levelFilters, p.level), p.level) },
-  { key: "caseSize", get: (p, t) => label(t, filterLabelKey(caseSizeFilters, p.caseSize), p.caseSize) },
-  { key: "bestFor", get: (p, t) => p.activities.map((a) => label(t, filterLabelKey(activityFilters, a), a)).join(", ") },
-  { key: "customizable", get: (p, t) => (p.badge === "CUSTOMIZABLE" ? t("Compare.yes") : "—") },
+  { key: "level", get: (p, tr) => label(tr, filterLabelKey(levelFilters, p.level), p.level) },
+  { key: "caseSize", get: (p, tr) => label(tr, filterLabelKey(caseSizeFilters, p.caseSize), p.caseSize) },
+  { key: "bestFor", get: (p, tr) => p.activities.map((a) => label(tr, filterLabelKey(activityFilters, a), a)).join(", ") },
+  { key: "customizable", get: (p, tr) => (p.badge === "CUSTOMIZABLE" ? tr("Compare.yes") : "—") },
   { key: "overview", get: (p) => p.description },
 ];
 
-function label(t: Translate, key: string | undefined, fallback: string): string {
-  return key ? t(key) : fallback;
+function label(tr: Translate, key: string | undefined, fallback: string): string {
+  return key ? tr(key) : fallback;
 }
 
 export function CompareTool() {

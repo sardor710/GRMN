@@ -7,8 +7,8 @@ import { BlogExplorer } from "@/components/BlogExplorer";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/blog">): Promise<Metadata> {
-  const t = await getMetaTranslations(params);
-  return { title: t("blogTitle"), description: t("blogDescription") };
+  const tm = await getMetaTranslations(params);
+  return { title: tm("blogTitle"), description: tm("blogDescription") };
 }
 
 export default async function BlogPage({ params }: PageProps<"/[lang]/blog">) {

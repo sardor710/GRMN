@@ -11,7 +11,7 @@ How to review:
 - A blank or missing string falls back to English at runtime.
 - Text in UPPER CASE is upper case in the source; some components also uppercase with CSS.
 
-Totals: 390 keys in 22 namespaces, 24 marked do-not-translate.
+Totals: 560 keys in 25 namespaces, 25 marked do-not-translate.
 
 ## Meta
 
@@ -37,6 +37,117 @@ Totals: 390 keys in 22 namespaces, 24 marked do-not-translate.
 | [ ] | `catalogueTitle` | {title} \| Garmin | {title} \| Garmin | {title} \| Garmin |
 | [ ] | `garminPayTitle` | Garmin Pay™ \| A Contactless Payment Solution | Garmin Pay™ \| Бесконтактная оплата | Garmin Pay™ \| Контактсыз төлем |
 | [ ] | `garminPayDescription` | No wallet? No phone? No problem. Make contactless payments on the go with your compatible Garmin smartwatch or bike computer. | Без кошелька? Без телефона? Не проблема. Оплачивайте покупки бесконтактно с совместимых смарт-часов или велокомпьютера Garmin. | Әмиян жоқ па? Телефон жоқ па? Мәселе емес. Үйлесімді Garmin смарт-сағатымен немесе велокомпьютерімен жолда контактсыз төлеңіз. |
+
+## Account
+
+| ✓ | Key | English | Русский | Қазақша |
+|---|---|---|---|---|
+| [ ] | `tabs.Profile` | Profile | Профиль | Профиль |
+| [ ] | `tabs.Orders` | Orders | Заказы | Тапсырыстар |
+| [ ] | `tabs.Devices` | Devices | Устройства | Құрылғылар |
+| [ ] | `tabs.Subscriptions` | Subscriptions | Подписки | Жазылымдар |
+| [ ] | `memberSince` | Member since {year} | Участник с {year} г. | {year} жылдан бері мүше |
+| [ ] | `signOut` | Sign Out | Выйти | Шығу |
+| [ ] | `cancel` | Cancel | Отмена | Бас тарту |
+| [ ] | `notAvailable` | N/A | н/д | жоқ |
+| [ ] | `fallbackProduct` | Garmin Product | Продукт Garmin | Garmin өнімі |
+| [ ] | `fallbackEquipment` | Garmin Equipment | Оборудование Garmin | Garmin жабдығы |
+| [ ] | `fallbackDevice` | Garmin Device | Устройство Garmin | Garmin құрылғысы |
+| [ ] | `status.new` | new | новый | жаңа |
+| [ ] | `status.processing` | processing | в обработке | өңделуде |
+| [ ] | `status.shipped` | shipped | отправлен | жөнелтілді |
+| [ ] | `status.delivered` | delivered | доставлен | жеткізілді |
+| [ ] | `status.canceled` | canceled | отменён | бас тартылды |
+| [ ] | `status.cancelled` | cancelled | отменён | бас тартылды |
+| [ ] | `status.returned` | returned | возвращён | қайтарылды |
+| [ ] | `details.title` | Account Details | Данные аккаунта | Аккаунт деректері |
+| [ ] | `details.edit` | Edit Details | Изменить данные | Деректерді өзгерту |
+| [ ] | `details.fullName` | Full Name | Полное имя | Толық аты-жөні |
+| [ ] | `details.email` | Email Address | Электронная почта | Электрондық пошта |
+| [ ] | `details.phone` | Phone Number | Номер телефона | Телефон нөмірі |
+| [ ] | `details.cityCountry` | City, Country | Город, страна | Қала, ел |
+| [ ] | `details.birthDate` | Birth Date | Дата рождения | Туған күні |
+| [ ] | `details.locked` | Locked | Заблокировано | Құлыпталған |
+| [ ] | `details.notProvided` | Not provided | Не указано | Көрсетілмеген |
+| [ ] | `details.birthDateNote` | Verified during registration (immutable). | Подтверждено при регистрации (изменить нельзя). | Тіркелу кезінде расталған (өзгертуге болмайды). |
+| [ ] | `details.password` | Password | Пароль | Құпиясөз |
+| [ ] | `details.resetPassword` | Reset Password | Сбросить пароль | Құпиясөзді қалпына келтіру |
+| [ ] | `form.fullName` | Full Name * | Полное имя * | Толық аты-жөні * |
+| [ ] | `form.email` | Email Address * | Электронная почта * | Электрондық пошта * |
+| [ ] | `form.phone` | Phone Number * | Номер телефона * | Телефон нөмірі * |
+| [ ] | `form.country` | Country * | Страна * | Ел * |
+| [ ] | `form.city` | City * | Город * | Қала * |
+| [ ] | `form.otherCity` | + Other / Not Listed... | + Другой / нет в списке... | + Басқа / тізімде жоқ... |
+| [ ] | `form.cityPlaceholder` | Enter your city name | Введите название города | Қала атауын енгізіңіз |
+| [ ] | `form.selectList` | Select List | Выбрать из списка | Тізімнен таңдау |
+| [ ] | `form.save` | Save Details | Сохранить данные | Деректерді сақтау |
+| [ ] | `addresses.title` | Shipping Addresses ({count}/{max}) | Адреса доставки ({count}/{max}) | Жеткізу мекенжайлары ({count}/{max}) |
+| [ ] | `addresses.add` | Add Address | Добавить адрес | Мекенжай қосу |
+| [ ] | `addresses.maxReached` | Max {max} addresses reached | Достигнут максимум: {max, plural, one {# адрес} few {# адреса} many {# адресов} other {# адреса}} | Ең көбі {max, plural, one {# мекенжай} other {# мекенжай}} қосылды |
+| [ ] | `addresses.primary` | Primary | Основной | Негізгі |
+| [ ] | `addresses.edit` | Edit address | Изменить адрес | Мекенжайды өзгерту |
+| [ ] | `addresses.delete` | Delete address | Удалить адрес | Мекенжайды жою |
+| [ ] | `addresses.phone` | Phone: {phone} | Телефон: {phone} | Телефон: {phone} |
+| [ ] | `addresses.currentPrimary` | Current primary address | Текущий основной адрес | Қазіргі негізгі мекенжай |
+| [ ] | `addresses.setPrimaryTitle` | Set as primary shipping address | Сделать основным адресом доставки | Негізгі жеткізу мекенжайы ету |
+| [ ] | `addresses.primaryNote` | Primary address (used in every order) | Основной адрес (используется во всех заказах) | Негізгі мекенжай (барлық тапсырыста қолданылады) |
+| [ ] | `addresses.setPrimary` | Set as Primary | Сделать основным | Негізгі ету |
+| [ ] | `recent.title` | Recent Order | Последний заказ | Соңғы тапсырыс |
+| [ ] | `recent.viewAll` | View All Orders | Все заказы | Барлық тапсырыстар |
+| [ ] | `recent.otherItems` | + {count} other item(s) | + ещё {count, plural, one {# товар} few {# товара} many {# товаров} other {# товара}} | + тағы {count, plural, one {# тауар} other {# тауар}} |
+| [ ] | `recent.placed` | Placed {date} | Оформлен {date} | Рәсімделді: {date} |
+| [ ] | `recent.destination` | Destination: {title} ({city}) | Адрес: {title} ({city}) | Мекенжай: {title} ({city}) |
+| [ ] | `recent.inspect` | Inspect Route Map → | Маршрут доставки → | Жеткізу бағыты → |
+| [ ] | `orders.title` | Order History & Fulfillment Tracker ({count}) | История заказов и отслеживание ({count}) | Тапсырыстар тарихы және бақылау ({count}) |
+| [ ] | `orders.hint` | Click any order to view details & route map | Нажмите на заказ, чтобы увидеть детали и маршрут | Мәліметтер мен бағытты көру үшін тапсырысты басыңыз |
+| [ ] | `orders.placedOn` | Placed on {date} | Оформлен {date} | Рәсімделген күні: {date} |
+| [ ] | `orders.additional` | + {count} additional product(s) | + ещё {count, plural, one {# товар} few {# товара} many {# товаров} other {# товара}} | + тағы {count, plural, one {# өнім} other {# өнім}} |
+| [ ] | `orders.shippingTo` | Shipping to: {address} | Доставка: {address} | Жеткізу: {address} |
+| [ ] | `orders.total` | Order Total | Сумма заказа | Тапсырыс сомасы |
+| [ ] | `orders.carrier` | Carrier: <b>{carrier}</b> | Перевозчик: <b>{carrier}</b> | Тасымалдаушы: <b>{carrier}</b> |
+| [ ] | `orders.tracking` | Tracking #{number} | Трек-номер {number} | Трек-нөмір {number} |
+| [ ] | `orders.view` | View Order Popup & Route Map → | Детали заказа и маршрут → | Тапсырыс мәліметтері және бағыт → |
+| [ ] | `devices.title` | Registered Devices | Зарегистрированные устройства | Тіркелген құрылғылар |
+| [ ] | `devices.register` | Register a device | Зарегистрировать устройство | Құрылғыны тіркеу |
+| [ ] | `devices.serial` | Serial: {serial} | Серийный номер: {serial} | Сериялық нөмір: {serial} |
+| [ ] | `devices.registered` | Registered {date} | Зарегистрировано {date} | Тіркелген күні: {date} |
+| [ ] | `subscriptions.title` | Subscriptions & Plans | Подписки и планы | Жазылымдар мен жоспарлар |
+| [ ] | `subscriptions.annual` | Annual | Годовая | Жылдық |
+| [ ] | `subscriptions.monthly` | Monthly | Ежемесячная | Айлық |
+| [ ] | `subscriptions.renews` | Renews {date} | Продление {date} | Ұзарту: {date} |
+| [ ] | `subscriptions.perYear` | {price}/yr | {price}/год | {price}/жыл |
+| [ ] | `subscriptions.perMonth` | {price}/mo | {price}/мес. | {price}/ай |
+| [ ] | `subscriptions.active` | Active | Активна | Белсенді |
+| [ ] | `addressForm.editTitle` | Edit Shipping Address | Изменить адрес доставки | Жеткізу мекенжайын өзгерту |
+| [ ] | `addressForm.addTitle` | Add New Shipping Address | Новый адрес доставки | Жаңа жеткізу мекенжайы |
+| [ ] | `addressForm.titleLabel` | Address Title (e.g. Home, Office, 2nd Home, Summer House) * | Название адреса (например, Дом, Офис, Дача) * | Мекенжай атауы (мысалы, Үй, Кеңсе, Саяжай) * |
+| [ ] | `addressForm.titlePlaceholder` | e.g. 2nd Home, Villa, Office | например, Дача, Вилла, Офис | мысалы, Саяжай, Вилла, Кеңсе |
+| [ ] | `addressForm.recipient` | Recipient Name * | Имя получателя * | Алушының аты * |
+| [ ] | `addressForm.street` | Street Address * | Улица и дом * | Көше және үй * |
+| [ ] | `addressForm.streetPlaceholder` | Street name, building, apartment/suite | Улица, дом, квартира/офис | Көше, үй, пәтер/кеңсе |
+| [ ] | `addressForm.zip` | Postal / Zip Code | Почтовый индекс | Пошта индексі |
+| [ ] | `addressForm.phone` | Contact Phone | Контактный телефон | Байланыс телефоны |
+| [ ] | `addressForm.primary` | Set as Primary Shipping Address (used by default for all orders) | Сделать основным адресом доставки (по умолчанию для всех заказов) | Негізгі жеткізу мекенжайы ету (барлық тапсырыстар үшін әдепкі) |
+| [ ] | `addressForm.saveChanges` | Save Changes | Сохранить изменения | Өзгерістерді сақтау |
+| [ ] | `reset.title` | Password Reset Request | Запрос на сброс пароля | Құпиясөзді қалпына келтіру сұрауы |
+| [ ] | `reset.body` | Clicking confirm will send an encrypted password recovery token to your registered email: | После подтверждения на вашу зарегистрированную почту будет отправлен зашифрованный токен для восстановления пароля: | Растағаннан кейін тіркелген поштаңызға құпиясөзді қалпына келтіретін шифрланған токен жіберіледі: |
+| [ ] | `reset.send` | Send Reset Link | Отправить ссылку | Сілтеме жіберу |
+| [ ] | `notify.nameEmailRequired` | Name and email are required fields. | Имя и почта обязательны. | Аты мен пошта міндетті. |
+| [ ] | `notify.profileSaved` | Personal details successfully updated. | Личные данные обновлены. | Жеке деректер жаңартылды. |
+| [ ] | `notify.resetSent` | Password reset instructions sent to {email} | Инструкции по сбросу пароля отправлены на {email} | Құпиясөзді қалпына келтіру нұсқаулары {email} мекенжайына жіберілді |
+| [ ] | `notify.resetDispatched` | Password reset link dispatched to {email} | Ссылка для сброса пароля отправлена на {email} | Құпиясөзді қалпына келтіру сілтемесі {email} мекенжайына жіберілді |
+| [ ] | `notify.maxAddresses` | Maximum limit of {max} shipping addresses reached. Please remove one before adding. | Достигнут лимит адресов доставки ({max}). Удалите один, чтобы добавить новый. | Жеткізу мекенжайларының шегіне ({max}) жеттіңіз. Жаңасын қосу үшін біреуін жойыңыз. |
+| [ ] | `notify.titleRequired` | Address Title (e.g. Home, Office, 2nd Home) is required. | Укажите название адреса (например, Дом, Офис, Дача). | Мекенжай атауын көрсетіңіз (мысалы, Үй, Кеңсе, Саяжай). |
+| [ ] | `notify.addressRequired` | Street, City, and Country are required. | Улица, город и страна обязательны. | Көше, қала және ел міндетті. |
+| [ ] | `notify.addressUpdated` | Shipping address updated successfully. | Адрес доставки обновлён. | Жеткізу мекенжайы жаңартылды. |
+| [ ] | `notify.addressSaved` | New shipping address saved. | Новый адрес доставки сохранён. | Жаңа жеткізу мекенжайы сақталды. |
+| [ ] | `notify.addressError` | Error saving address. | Не удалось сохранить адрес. | Мекенжайды сақтау мүмкін болмады. |
+| [ ] | `notify.confirmRemove` | Remove shipping address "{title}"? | Удалить адрес доставки «{title}»? | «{title}» жеткізу мекенжайын жою керек пе? |
+| [ ] | `notify.addressRemoved` | Address "{title}" removed. | Адрес «{title}» удалён. | «{title}» мекенжайы жойылды. |
+| [ ] | `notify.primarySet` | "{title}" is now set as your primary address for all orders. | «{title}» теперь ваш основной адрес для всех заказов. | «{title}» енді барлық тапсырыстар үшін негізгі мекенжайыңыз. |
+| [ ] | `notify.selectedAddress` | Selected address | Выбранный адрес | Таңдалған мекенжай |
+| [ ] | `notify.signedOut` | Signed out from session. | Вы вышли из аккаунта. | Сіз аккаунттан шықтыңыз. |
+| [ ] | `notify.deviceForm` | Device registration form opened. | Открыта форма регистрации устройства. | Құрылғыны тіркеу формасы ашылды. |
 
 ## BlogArticle
 
@@ -431,6 +542,34 @@ Totals: 390 keys in 22 namespaces, 24 marked do-not-translate.
 | [ ] | `storiesLabel` | Garmin stories | Истории Garmin | Garmin оқиғалары |
 | [ ] | `categoriesHeading` | SHOP BY CATEGORY | ПОКУПКИ ПО КАТЕГОРИЯМ | САНАТТАР БОЙЫНША САТЫП АЛУ |
 
+## Newsletter
+
+| ✓ | Key | English | Русский | Қазақша |
+|---|---|---|---|---|
+| [ ] | `heading` | Sign Up for News | Подпишитесь на новости | Жаңалықтарға жазылыңыз |
+| [ ] | `intro` | Get product news and promotions based on your preferences, devices and services. | Получайте новости о продуктах и акциях с учётом ваших предпочтений, устройств и сервисов. | Қалауларыңызға, құрылғыларыңыз бен сервистеріңізге сай өнім жаңалықтары мен акциялар туралы хабар алыңыз. |
+| [ ] | `emailLabel` | Email address | Адрес электронной почты | Электрондық пошта мекенжайы |
+| [ ] | `placeholder` | john@example.com | ivan@example.com | aidar@example.com |
+| [ ] | `signUp` | Sign up | Подписаться | Жазылу |
+| [ ] | `privacyLink` | Learn about email privacy. | Узнайте о конфиденциальности email-рассылок. | Электрондық пошта құпиялылығы туралы біліңіз. |
+| [ ] | `subscribedHeading` | You're subscribed! | Вы подписаны! | Сіз жазылдыңыз! |
+| [ ] | `subscribedBody` | Thanks for signing up{hasEmail, select, yes {, {email}} other {}}. Look out for Garmin news{count, plural, =0 {} one { on # topic} other { on # topics}} in your inbox. | Спасибо за подписку{hasEmail, select, yes {, {email}} other {}}. Ждите новостей Garmin{count, plural, =0 {} one { по # теме} few { по # темам} many { по # темам} other { по # темы}} в своём почтовом ящике. | Жазылғаныңызға рахмет{hasEmail, select, yes {, {email}} other {}}. Garmin жаңалықтарын{count, plural, =0 {} one { # тақырып бойынша} other { # тақырып бойынша}} поштаңыздан күтіңіз. |
+| [ ] | `updatePreferences` | Update Preferences | Изменить настройки | Баптауларды өзгерту |
+| [ ] | `interestsLegend` | What are you interested in? | Что вас интересует? | Сізді не қызықтырады? |
+| [ ] | `interestsHint` | Choose the topics you'd like to hear about. | Выберите темы, о которых хотите узнавать. | Білгіңіз келетін тақырыптарды таңдаңыз. |
+| [ ] | `consent` | I agree to receive marketing emails from Garmin and understand I can unsubscribe at any time. Read about <link>email privacy</link>. | Я согласен(на) получать маркетинговые письма от Garmin и понимаю, что могу отписаться в любой момент. Подробнее о <link>конфиденциальности рассылок</link>. | Garmin-нен маркетингтік хаттар алуға келісемін және кез келген уақытта жазылымнан бас тарта алатынымды түсінемін. <link>Хат құпиялылығы</link> туралы оқыңыз. |
+| [ ] | `subscribe` | Subscribe | Подписаться | Жазылу |
+| [ ] | `interests.wearables` | Smartwatches & Wearables | Смарт-часы и носимые устройства | Смарт-сағаттар мен тағылатын құрылғылар |
+| [ ] | `interests.running` | Running & Fitness | Бег и фитнес | Жүгіру және фитнес |
+| [ ] | `interests.outdoor` | Outdoor Recreation | Активный отдых | Белсенді демалыс |
+| [ ] | `interests.cycling` | Cycling | Велоспорт | Велоспорт |
+| [ ] | `interests.golf` | Golf | Гольф | Гольф |
+| [ ] | `interests.marine` | Marine | Морская техника | Теңіз техникасы |
+| [ ] | `interests.aviation` | Aviation | Авиация | Авиация |
+| [ ] | `interests.automotive` | Automotive & Home | Авто и дом | Көлік және үй |
+| [ ] | `interests.health` | Health & Wellness | Здоровье и самочувствие | Денсаулық және әл-ауқат |
+| [ ] | `interests.deals` | Deals & Promotions | Скидки и акции | Жеңілдіктер мен акциялар |
+
 ## NotFound
 
 | ✓ | Key | English | Русский | Қазақша |
@@ -438,6 +577,52 @@ Totals: 390 keys in 22 namespaces, 24 marked do-not-translate.
 | [ ] | `heading` | Page not found | Страница не найдена | Бет табылмады |
 | [ ] | `body` | The page you are looking for does not exist. | Страница, которую вы ищете, не существует. | Сіз іздеген бет жоқ. |
 | [ ] | `home` | Go to homepage | На главную | Басты бетке өту |
+
+## OrderDetails
+
+| ✓ | Key | English | Русский | Қазақша |
+|---|---|---|---|---|
+| [ ] | `title` | Order {number} | Заказ {number} | Тапсырыс {number} |
+| [ ] | `copyNumber` | Copy Order Number | Скопировать номер заказа | Тапсырыс нөмірін көшіру |
+| [ ] | `reference` | System Reference: {id} · Placed {date} | Системный номер: {id} · Оформлен {date} | Жүйелік нөмір: {id} · Рәсімделді: {date} |
+| [ ] | `notAvailable` | N/A | н/д | жоқ |
+| [ ] | `close` | Close popup | Закрыть окно | Терезені жабу |
+| [ ] | `closeButton` | Close | Закрыть | Жабу |
+| [ ] | `routeMap` | Fulfillment & Process Route Map | Маршрут обработки и доставки | Өңдеу және жеткізу бағыты |
+| [ ] | `carrier` | Carrier: <b>{carrier}</b> | Перевозчик: <b>{carrier}</b> | Тасымалдаушы: <b>{carrier}</b> |
+| [ ] | `tracking` | Tracking: | Трек-номер: | Трек-нөмір: |
+| [ ] | `canceled` | This order was canceled. The standard delivery route was halted. | Заказ отменён. Стандартная доставка остановлена. | Тапсырыстан бас тартылды. Стандартты жеткізу тоқтатылды. |
+| [ ] | `products` | Purchased Products ({count}) | Купленные товары ({count}) | Сатып алынған тауарлар ({count}) |
+| [ ] | `itemsTotal` | Items Total: {amount} | Сумма товаров: {amount} | Тауарлар сомасы: {amount} |
+| [ ] | `sku` | SKU / Item ID: {id} | Артикул / ID товара: {id} | Артикул / тауар ID: {id} |
+| [ ] | `qty` | Qty: <b>{quantity}</b> × {price} | Кол-во: <b>{quantity}</b> × {price} | Саны: <b>{quantity}</b> × {price} |
+| [ ] | `lineTotal` | Line Total | Сумма позиции | Позиция сомасы |
+| [ ] | `noItems` | No line items detailed in this order record. | В этом заказе нет позиций. | Бұл тапсырыста позициялар жоқ. |
+| [ ] | `shippingHeading` | Shipping Destination & Recipient | Адрес доставки и получатель | Жеткізу мекенжайы және алушы |
+| [ ] | `note` | Note: “{comments}” | Комментарий: «{comments}» | Ескертпе: «{comments}» |
+| [ ] | `paymentHeading` | Payment & Financial Summary | Оплата и итоги | Төлем және қорытынды |
+| [ ] | `paymentStatus` | Payment Status: | Статус оплаты: | Төлем мәртебесі: |
+| [ ] | `paymentMethod` | Payment Method: | Способ оплаты: | Төлем тәсілі: |
+| [ ] | `paymentMethodValue` 🔒 **do not translate** | Garmin Pay / Visa (•••• 4242) | Garmin Pay / Visa (•••• 4242) | Garmin Pay / Visa (•••• 4242) |
+| [ ] | `subtotal` | Subtotal: | Промежуточный итог: | Аралық сома: |
+| [ ] | `shipping` | Shipping: | Доставка: | Жеткізу: |
+| [ ] | `freeShipping` | FREE (Garmin Express) | БЕСПЛАТНО (Garmin Express) | ТЕГІН (Garmin Express) |
+| [ ] | `grandTotal` | Grand Total: | Итого: | Жалпы сома: |
+| [ ] | `certified` | Official Garmin Certified Order Record | Официальная запись заказа Garmin | Garmin-нің ресми тапсырыс жазбасы |
+| [ ] | `print` | Print Invoice | Печать счёта | Шотты басып шығару |
+| [ ] | `payment.paid` | paid | оплачен | төленді |
+| [ ] | `payment.pending` | pending | ожидает оплаты | төлем күтілуде |
+| [ ] | `payment.refunded` | refunded | возвращён | қайтарылды |
+| [ ] | `milestones.created.label` | Order Placed & Verified | Заказ оформлен и подтверждён | Тапсырыс рәсімделді және расталды |
+| [ ] | `milestones.created.description` | Order received by Garmin system and payment verified. | Заказ получен системой Garmin, оплата подтверждена. | Тапсырысты Garmin жүйесі қабылдады, төлем расталды. |
+| [ ] | `milestones.processing.label` | Processing & Packaging | Обработка и упаковка | Өңдеу және қаптау |
+| [ ] | `milestones.processing.description` | Items picked, inspected, and packed at Regional Fulfillment Center. | Товары собраны, проверены и упакованы в региональном центре выполнения заказов. | Тауарлар өңірлік орталықта жиналды, тексерілді және қапталды. |
+| [ ] | `milestones.shipped.label` | Shipped & In Transit | Отправлен и в пути | Жөнелтілді және жолда |
+| [ ] | `milestones.shipped.description` | Dispatched via {carrier}. Tracking: {tracking} | Отправлен через {carrier}. Трек-номер: {tracking} | {carrier} арқылы жөнелтілді. Трек-нөмір: {tracking} |
+| [ ] | `milestones.out_for_delivery.label` | Out for Final Delivery | Передан курьеру | Курьерге берілді |
+| [ ] | `milestones.out_for_delivery.description` | Courier assigned and en route to the designated delivery address. | Курьер назначен и направляется по адресу доставки. | Курьер тағайындалды және жеткізу мекенжайына бара жатыр. |
+| [ ] | `milestones.delivered.label` | Package Delivered | Посылка доставлена | Сәлемдеме жеткізілді |
+| [ ] | `milestones.delivered.description` | Package safely delivered and signed for by recipient. | Посылка доставлена и получена под подпись. | Сәлемдеме жеткізілді, алушы қол қойды. |
 
 ## ProductAccessories
 

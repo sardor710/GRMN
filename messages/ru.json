@@ -21,6 +21,138 @@
     "garminPayTitle": "Garmin Pay™ | Бесконтактная оплата",
     "garminPayDescription": "Без кошелька? Без телефона? Не проблема. Оплачивайте покупки бесконтактно с совместимых смарт-часов или велокомпьютера Garmin."
   },
+  "Account": {
+    "tabs": {
+      "Profile": "Профиль",
+      "Orders": "Заказы",
+      "Devices": "Устройства",
+      "Subscriptions": "Подписки"
+    },
+    "memberSince": "Участник с {year} г.",
+    "signOut": "Выйти",
+    "cancel": "Отмена",
+    "notAvailable": "н/д",
+    "fallbackProduct": "Продукт Garmin",
+    "fallbackEquipment": "Оборудование Garmin",
+    "fallbackDevice": "Устройство Garmin",
+    "status": {
+      "new": "новый",
+      "processing": "в обработке",
+      "shipped": "отправлен",
+      "delivered": "доставлен",
+      "canceled": "отменён",
+      "cancelled": "отменён",
+      "returned": "возвращён"
+    },
+    "details": {
+      "title": "Данные аккаунта",
+      "edit": "Изменить данные",
+      "fullName": "Полное имя",
+      "email": "Электронная почта",
+      "phone": "Номер телефона",
+      "cityCountry": "Город, страна",
+      "birthDate": "Дата рождения",
+      "locked": "Заблокировано",
+      "notProvided": "Не указано",
+      "birthDateNote": "Подтверждено при регистрации (изменить нельзя).",
+      "password": "Пароль",
+      "resetPassword": "Сбросить пароль"
+    },
+    "form": {
+      "fullName": "Полное имя *",
+      "email": "Электронная почта *",
+      "phone": "Номер телефона *",
+      "country": "Страна *",
+      "city": "Город *",
+      "otherCity": "+ Другой / нет в списке...",
+      "cityPlaceholder": "Введите название города",
+      "selectList": "Выбрать из списка",
+      "save": "Сохранить данные"
+    },
+    "addresses": {
+      "title": "Адреса доставки ({count}/{max})",
+      "add": "Добавить адрес",
+      "maxReached": "Достигнут максимум: {max, plural, one {# адрес} few {# адреса} many {# адресов} other {# адреса}}",
+      "primary": "Основной",
+      "edit": "Изменить адрес",
+      "delete": "Удалить адрес",
+      "phone": "Телефон: {phone}",
+      "currentPrimary": "Текущий основной адрес",
+      "setPrimaryTitle": "Сделать основным адресом доставки",
+      "primaryNote": "Основной адрес (используется во всех заказах)",
+      "setPrimary": "Сделать основным"
+    },
+    "recent": {
+      "title": "Последний заказ",
+      "viewAll": "Все заказы",
+      "otherItems": "+ ещё {count, plural, one {# товар} few {# товара} many {# товаров} other {# товара}}",
+      "placed": "Оформлен {date}",
+      "destination": "Адрес: {title} ({city})",
+      "inspect": "Маршрут доставки →"
+    },
+    "orders": {
+      "title": "История заказов и отслеживание ({count})",
+      "hint": "Нажмите на заказ, чтобы увидеть детали и маршрут",
+      "placedOn": "Оформлен {date}",
+      "additional": "+ ещё {count, plural, one {# товар} few {# товара} many {# товаров} other {# товара}}",
+      "shippingTo": "Доставка: {address}",
+      "total": "Сумма заказа",
+      "carrier": "Перевозчик: <b>{carrier}</b>",
+      "tracking": "Трек-номер {number}",
+      "view": "Детали заказа и маршрут →"
+    },
+    "devices": {
+      "title": "Зарегистрированные устройства",
+      "register": "Зарегистрировать устройство",
+      "serial": "Серийный номер: {serial}",
+      "registered": "Зарегистрировано {date}"
+    },
+    "subscriptions": {
+      "title": "Подписки и планы",
+      "annual": "Годовая",
+      "monthly": "Ежемесячная",
+      "renews": "Продление {date}",
+      "perYear": "{price}/год",
+      "perMonth": "{price}/мес.",
+      "active": "Активна"
+    },
+    "addressForm": {
+      "editTitle": "Изменить адрес доставки",
+      "addTitle": "Новый адрес доставки",
+      "titleLabel": "Название адреса (например, Дом, Офис, Дача) *",
+      "titlePlaceholder": "например, Дача, Вилла, Офис",
+      "recipient": "Имя получателя *",
+      "street": "Улица и дом *",
+      "streetPlaceholder": "Улица, дом, квартира/офис",
+      "zip": "Почтовый индекс",
+      "phone": "Контактный телефон",
+      "primary": "Сделать основным адресом доставки (по умолчанию для всех заказов)",
+      "saveChanges": "Сохранить изменения"
+    },
+    "reset": {
+      "title": "Запрос на сброс пароля",
+      "body": "После подтверждения на вашу зарегистрированную почту будет отправлен зашифрованный токен для восстановления пароля:",
+      "send": "Отправить ссылку"
+    },
+    "notify": {
+      "nameEmailRequired": "Имя и почта обязательны.",
+      "profileSaved": "Личные данные обновлены.",
+      "resetSent": "Инструкции по сбросу пароля отправлены на {email}",
+      "resetDispatched": "Ссылка для сброса пароля отправлена на {email}",
+      "maxAddresses": "Достигнут лимит адресов доставки ({max}). Удалите один, чтобы добавить новый.",
+      "titleRequired": "Укажите название адреса (например, Дом, Офис, Дача).",
+      "addressRequired": "Улица, город и страна обязательны.",
+      "addressUpdated": "Адрес доставки обновлён.",
+      "addressSaved": "Новый адрес доставки сохранён.",
+      "addressError": "Не удалось сохранить адрес.",
+      "confirmRemove": "Удалить адрес доставки «{title}»?",
+      "addressRemoved": "Адрес «{title}» удалён.",
+      "primarySet": "«{title}» теперь ваш основной адрес для всех заказов.",
+      "selectedAddress": "Выбранный адрес",
+      "signedOut": "Вы вышли из аккаунта.",
+      "deviceForm": "Открыта форма регистрации устройства."
+    }
+  },
   "BlogArticle": {
     "byline": "Автор: {author}",
     "defaultReadTime": "4 мин чтения",
@@ -416,10 +548,94 @@
     "storiesLabel": "Истории Garmin",
     "categoriesHeading": "ПОКУПКИ ПО КАТЕГОРИЯМ"
   },
+  "Newsletter": {
+    "heading": "Подпишитесь на новости",
+    "intro": "Получайте новости о продуктах и акциях с учётом ваших предпочтений, устройств и сервисов.",
+    "emailLabel": "Адрес электронной почты",
+    "placeholder": "ivan@example.com",
+    "signUp": "Подписаться",
+    "privacyLink": "Узнайте о конфиденциальности email-рассылок.",
+    "subscribedHeading": "Вы подписаны!",
+    "subscribedBody": "Спасибо за подписку{hasEmail, select, yes {, {email}} other {}}. Ждите новостей Garmin{count, plural, =0 {} one { по # теме} few { по # темам} many { по # темам} other { по # темы}} в своём почтовом ящике.",
+    "updatePreferences": "Изменить настройки",
+    "interestsLegend": "Что вас интересует?",
+    "interestsHint": "Выберите темы, о которых хотите узнавать.",
+    "consent": "Я согласен(на) получать маркетинговые письма от Garmin и понимаю, что могу отписаться в любой момент. Подробнее о <link>конфиденциальности рассылок</link>.",
+    "subscribe": "Подписаться",
+    "interests": {
+      "wearables": "Смарт-часы и носимые устройства",
+      "running": "Бег и фитнес",
+      "outdoor": "Активный отдых",
+      "cycling": "Велоспорт",
+      "golf": "Гольф",
+      "marine": "Морская техника",
+      "aviation": "Авиация",
+      "automotive": "Авто и дом",
+      "health": "Здоровье и самочувствие",
+      "deals": "Скидки и акции"
+    }
+  },
   "NotFound": {
     "heading": "Страница не найдена",
     "body": "Страница, которую вы ищете, не существует.",
     "home": "На главную"
+  },
+  "OrderDetails": {
+    "title": "Заказ {number}",
+    "copyNumber": "Скопировать номер заказа",
+    "reference": "Системный номер: {id} · Оформлен {date}",
+    "notAvailable": "н/д",
+    "close": "Закрыть окно",
+    "closeButton": "Закрыть",
+    "routeMap": "Маршрут обработки и доставки",
+    "carrier": "Перевозчик: <b>{carrier}</b>",
+    "tracking": "Трек-номер:",
+    "canceled": "Заказ отменён. Стандартная доставка остановлена.",
+    "products": "Купленные товары ({count})",
+    "itemsTotal": "Сумма товаров: {amount}",
+    "sku": "Артикул / ID товара: {id}",
+    "qty": "Кол-во: <b>{quantity}</b> × {price}",
+    "lineTotal": "Сумма позиции",
+    "noItems": "В этом заказе нет позиций.",
+    "shippingHeading": "Адрес доставки и получатель",
+    "note": "Комментарий: «{comments}»",
+    "paymentHeading": "Оплата и итоги",
+    "paymentStatus": "Статус оплаты:",
+    "paymentMethod": "Способ оплаты:",
+    "paymentMethodValue": "Garmin Pay / Visa (•••• 4242)",
+    "subtotal": "Промежуточный итог:",
+    "shipping": "Доставка:",
+    "freeShipping": "БЕСПЛАТНО (Garmin Express)",
+    "grandTotal": "Итого:",
+    "certified": "Официальная запись заказа Garmin",
+    "print": "Печать счёта",
+    "payment": {
+      "paid": "оплачен",
+      "pending": "ожидает оплаты",
+      "refunded": "возвращён"
+    },
+    "milestones": {
+      "created": {
+        "label": "Заказ оформлен и подтверждён",
+        "description": "Заказ получен системой Garmin, оплата подтверждена."
+      },
+      "processing": {
+        "label": "Обработка и упаковка",
+        "description": "Товары собраны, проверены и упакованы в региональном центре выполнения заказов."
+      },
+      "shipped": {
+        "label": "Отправлен и в пути",
+        "description": "Отправлен через {carrier}. Трек-номер: {tracking}"
+      },
+      "out_for_delivery": {
+        "label": "Передан курьеру",
+        "description": "Курьер назначен и направляется по адресу доставки."
+      },
+      "delivered": {
+        "label": "Посылка доставлена",
+        "description": "Посылка доставлена и получена под подпись."
+      }
+    }
   },
   "ProductAccessories": {
     "quickFitHeading": "Совместимость ремешков QuickFit®",

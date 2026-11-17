@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import {
   Check,
@@ -23,7 +24,8 @@ import {
 import { AccountIcon } from "@/components/icons";
 import type { Order } from "@/lib/cms/types";
 import { OrderDetailsModal } from "@/components/OrderDetailsModal";
-import { formatOrderDate } from "@/lib/cms/order-lifecycle";
+import { formatDate, formatDateTime, formatMoney } from "@/i18n/format";
+import { useAppLocale } from "@/i18n/useAppLocale";
 import {
   type ShippingAddress,
   type UserProfile,
@@ -39,6 +41,7 @@ import {
   updateProfileDetails,
 } from "@/lib/account-addresses";
 
+/** Tab ids; labels are `Account.tabs.<id>` messages. */
 const TABS = ["Profile", "Orders", "Devices", "Subscriptions"] as const;
 type Tab = (typeof TABS)[number];
 
@@ -189,14 +192,17 @@ const initialAccountOrders: Order[] = [
 ];
 
 const devices = [
-  { name: "fēnix® 8 – 47 mm", serial: "6J2004921", registered: "July 5, 2026", image: "/images/products/fenix8-cf.jpg" },
-  { name: "Instinct® 3", serial: "7A1188342", registered: "May 20, 2026", image: "/images/products/1316397.jpg" },
+  { name: "fēnix® 8 – 47 mm", serial: "6J2004921", registered: "2026-07-05", image: "/images/products/fenix8-cf.jpg" },
+  { name: "Instinct® 3", serial: "7A1188342", registered: "2026-05-20", image: "/images/products/1316397.jpg" },
 ];
 
-const subscriptions = [
-  { name: "Outdoor Maps+", plan: "Annual", renews: "July 8, 2027", price: "$49.99/yr", active: true },
-  { name: "inReach® Standard", plan: "Monthly", renews: "Aug 1, 2026", price: "$34.99/mo", active: true },
+const subscriptions: { name: string; plan: "annual" | "monthly"; renews: string; renewsStyle: "long" | "short"; price: number; active: boolean }[] = [
+  { name: "Outdoor Maps+", plan: "annual", renews: "2027-07-08", renewsStyle: "long", price: 49.99, active: true },
+  { name: "inReach® Standard", plan: "monthly", renews: "2026-08-01", renewsStyle: "short", price: 34.99, active: true },
 ];
+
+/** Fulfillment statuses with an `Account.status.*` message. */
+const ORDER_STATUSES = new Set(["new", "processing", "shipped", "delivered", "canceled", "cancelled", "returned"]);
 
 function Card({
   title,
@@ -219,6 +225,10 @@ function Card({
 }
 
 export function AccountDashboard() {
+  const t = useTranslations("Account");
+  const locale = useAppLocale();
+  // Order screens show ungrouped prices ($1099.99) today; keep that look, localize the separators.
+  const money = (n: number) => formatMoney(n, locale, "USD", { grouping: false });
   const [tab, setTab] = useState<Tab>("Profile");
 
   // Profile State
@@ -312,7 +322,7 @@ export function AccountDashboard() {
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
     if (!profileForm.name.trim() || !profileForm.email.trim()) {
-      showNotification("Name and email are required fields.", "error");
+      showNotification(t("notify.nameEmailRequired"), "error");
       return;
     }
     const updated = updateProfileDetails(profile, {
@@ -324,7 +334,7 @@ export function AccountDashboard() {
     });
     setProfile(updated);
     setIsEditingProfile(false);
-    showNotification("Personal details successfully updated.", "success");
+    showNotification(t("notify.profileSaved"), "success");
   };
 
   // Password Reset Trigger
@@ -334,21 +344,18 @@ export function AccountDashboard() {
   };
 
   const handleConfirmPasswordReset = () => {
-    setResetPasswordStatus(`Password reset instructions sent to ${profile.email}`);
+    setResetPasswordStatus(t("notify.resetSent", { email: profile.email }));
     setTimeout(() => {
       setIsResetPasswordModalOpen(false);
       setResetPasswordStatus(null);
-      showNotification(`Password reset link dispatched to ${profile.email}`);
+      showNotification(t("notify.resetDispatched", { email: profile.email }));
     }, 1800);
   };
 
   // Address Handlers
   const handleOpenAddAddress = () => {
     if (addresses.length >= MAX_SHIPPING_ADDRESSES) {
-      showNotification(
-        `Maximum limit of ${MAX_SHIPPING_ADDRESSES} shipping addresses reached. Please remove one before adding.`,
-        "error"
-      );
+      showNotification(t("notify.maxAddresses", { max: MAX_SHIPPING_ADDRESSES }), "error");
       return;
     }
     setEditingAddressId(null);
@@ -386,11 +393,11 @@ export function AccountDashboard() {
     e.preventDefault();
     try {
       if (!addressForm.title.trim()) {
-        showNotification("Address Title (e.g. Home, Office, 2nd Home) is required.", "error");
+        showNotification(t("notify.titleRequired"), "error");
         return;
       }
       if (!addressForm.street.trim() || !addressForm.city.trim() || !addressForm.country.trim()) {
-        showNotification("Street, City, and Country are required.", "error");
+        showNotification(t("notify.addressRequired"), "error");
         return;
       }
 
@@ -400,7 +407,7 @@ export function AccountDashboard() {
           ...addressForm,
         });
         setAddresses(updatedList);
-        showNotification("Shipping address updated successfully.");
+        showNotification(t("notify.addressUpdated"));
       } else {
         const newAddress: ShippingAddress = {
           id: `addr-${Date.now()}`,
@@ -408,11 +415,11 @@ export function AccountDashboard() {
         };
         const updatedList = addShippingAddress(addresses, newAddress);
         setAddresses(updatedList);
-        showNotification("New shipping address saved.");
+        showNotification(t("notify.addressSaved"));
       }
       setIsAddressModalOpen(false);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error saving address.";
+      const msg = err instanceof Error ? err.message : t("notify.addressError");
       showNotification(msg, "error");
     }
   };
@@ -420,10 +427,10 @@ export function AccountDashboard() {
   const handleDeleteAddress = (id: string) => {
     const target = addresses.find((a) => a.id === id);
     if (!target) return;
-    if (confirm(`Remove shipping address "${target.title}"?`)) {
+    if (confirm(t("notify.confirmRemove", { title: target.title }))) {
       const updatedList = deleteShippingAddress(addresses, id);
       setAddresses(updatedList);
-      showNotification(`Address "${target.title}" removed.`);
+      showNotification(t("notify.addressRemoved", { title: target.title }));
     }
   };
 
@@ -431,10 +438,11 @@ export function AccountDashboard() {
     const updated = setPrimaryAddress(addresses, id);
     setAddresses(updated);
     const chosen = updated.find((a) => a.id === id);
-    showNotification(`"${chosen?.title || "Selected address"}" is now set as your primary address for all orders.`);
+    showNotification(t("notify.primarySet", { title: chosen?.title || t("notify.selectedAddress") }));
   };
 
   const primaryAddress = addresses.find((a) => a.isPrimary) || addresses[0];
+  const statusLabel = (status: string) => (ORDER_STATUSES.has(status) ? t(`status.${status}`) : status);
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-10 font-sans">
@@ -466,7 +474,7 @@ export function AccountDashboard() {
             {profile.name}
           </h1>
           <p className="text-[13px] text-neutral-500 font-mono">
-            {profile.email} · {profile.city}, {profile.country} · Member since 2021
+            {profile.email} · {profile.city}, {profile.country} · {t("memberSince", { year: 2021 })}
           </p>
         </div>
       </div>
@@ -475,19 +483,19 @@ export function AccountDashboard() {
         {/* Navigation Sidebar */}
         <nav className="lg:border-r lg:border-neutral-200">
           <ul className="flex gap-2 overflow-x-auto lg:flex-col lg:gap-1 lg:pr-4">
-            {TABS.map((t) => (
-              <li key={t}>
+            {TABS.map((id) => (
+              <li key={id}>
                 <button
                   type="button"
-                  onClick={() => setTab(t)}
+                  onClick={() => setTab(id)}
                   className={`w-full whitespace-nowrap px-4 py-2.5 text-left text-[14px] transition-colors ${
-                    tab === t
+                    tab === id
                       ? "bg-black text-white font-medium lg:border-l-4 lg:border-[#007cc3]"
                       : "text-neutral-600 hover:text-black hover:bg-neutral-100/60"
                   }`}
                 >
-                  {t}
-                  {t === "Orders" && (
+                  {t(`tabs.${id}`)}
+                  {id === "Orders" && (
                     <span className="ml-2 px-1.5 py-0.5 text-[11px] bg-neutral-200 text-neutral-800 font-mono">
                       {customerOrders.length}
                     </span>
@@ -498,10 +506,10 @@ export function AccountDashboard() {
             <li className="pt-2">
               <button
                 type="button"
-                onClick={() => showNotification("Signed out from session.")}
+                onClick={() => showNotification(t("notify.signedOut"))}
                 className="w-full px-4 py-2 text-left text-[13px] text-neutral-400 hover:text-black transition-colors"
               >
-                Sign Out
+                {t("signOut")}
               </button>
             </li>
           </ul>
@@ -516,7 +524,7 @@ export function AccountDashboard() {
             <>
               {/* Account Details Box */}
               <Card
-                title="Account Details"
+                title={t("details.title")}
                 action={
                   !isEditingProfile ? (
                     <button
@@ -525,7 +533,7 @@ export function AccountDashboard() {
                       className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#007cc3] hover:underline"
                     >
                       <Edit3 className="h-3.5 w-3.5" />
-                      <span>Edit Details</span>
+                      <span>{t("details.edit")}</span>
                     </button>
                   ) : null
                 }
@@ -533,22 +541,22 @@ export function AccountDashboard() {
                 {!isEditingProfile ? (
                   <dl className="grid grid-cols-1 gap-4 text-[14px] sm:grid-cols-2">
                     <div className="border border-neutral-100 bg-neutral-50/50 p-3">
-                      <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">Full Name</dt>
+                      <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">{t("details.fullName")}</dt>
                       <dd className="mt-1 font-semibold text-black">{profile.name}</dd>
                     </div>
 
                     <div className="border border-neutral-100 bg-neutral-50/50 p-3">
-                      <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">Email Address</dt>
+                      <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">{t("details.email")}</dt>
                       <dd className="mt-1 font-semibold text-black">{profile.email}</dd>
                     </div>
 
                     <div className="border border-neutral-100 bg-neutral-50/50 p-3">
-                      <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">Phone Number</dt>
+                      <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">{t("details.phone")}</dt>
                       <dd className="mt-1 font-semibold text-black">{profile.phone}</dd>
                     </div>
 
                     <div className="border border-neutral-100 bg-neutral-50/50 p-3">
-                      <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">City, Country</dt>
+                      <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">{t("details.cityCountry")}</dt>
                       <dd className="mt-1 font-semibold text-black">
                         {profile.city}, {profile.country}
                       </dd>
@@ -557,29 +565,23 @@ export function AccountDashboard() {
                     {/* Birth Date (Immutable) */}
                     <div className="border border-neutral-100 bg-neutral-50/50 p-3">
                       <div className="flex items-center justify-between">
-                        <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">Birth Date</dt>
+                        <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">{t("details.birthDate")}</dt>
                         <span className="flex items-center gap-1 text-[11px] text-neutral-400">
-                          <Lock className="h-3 w-3" /> Locked
+                          <Lock className="h-3 w-3" /> {t("details.locked")}
                         </span>
                       </div>
                       <dd className="mt-1 font-semibold text-black">
-                        {profile.birthDate
-                          ? new Date(profile.birthDate + "T00:00:00").toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })
-                          : "Not provided"}
+                        {profile.birthDate ? formatDate(profile.birthDate, locale, "long") : t("details.notProvided")}
                       </dd>
                       <p className="mt-1 text-[11px] text-neutral-400">
-                        Verified during registration (immutable).
+                        {t("details.birthDateNote")}
                       </p>
                     </div>
 
                     {/* Password */}
                     <div className="border border-neutral-100 bg-neutral-50/50 p-3 flex flex-col justify-between">
                       <div>
-                        <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">Password</dt>
+                        <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">{t("details.password")}</dt>
                         <dd className="mt-1 text-black font-mono">••••••••</dd>
                       </div>
                       <div className="mt-2 pt-2 border-t border-neutral-200/60">
@@ -589,7 +591,7 @@ export function AccountDashboard() {
                           className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-[#007cc3] hover:underline"
                         >
                           <KeyRound className="h-3.5 w-3.5" />
-                          <span>Reset Password</span>
+                          <span>{t("details.resetPassword")}</span>
                         </button>
                       </div>
                     </div>
@@ -599,7 +601,7 @@ export function AccountDashboard() {
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                       <div>
                         <label className="block text-[12px] font-semibold uppercase tracking-wider text-neutral-600">
-                          Full Name *
+                          {t("form.fullName")}
                         </label>
                         <input
                           type="text"
@@ -612,7 +614,7 @@ export function AccountDashboard() {
 
                       <div>
                         <label className="block text-[12px] font-semibold uppercase tracking-wider text-neutral-600">
-                          Email Address *
+                          {t("form.email")}
                         </label>
                         <input
                           type="email"
@@ -625,7 +627,7 @@ export function AccountDashboard() {
 
                       <div>
                         <label className="block text-[12px] font-semibold uppercase tracking-wider text-neutral-600">
-                          Phone Number *
+                          {t("form.phone")}
                         </label>
                         <input
                           type="text"
@@ -638,7 +640,7 @@ export function AccountDashboard() {
 
                       <div>
                         <label className="block text-[12px] font-semibold uppercase tracking-wider text-neutral-600">
-                          Country *
+                          {t("form.country")}
                         </label>
                         <select
                           value={profileForm.country}
@@ -655,7 +657,7 @@ export function AccountDashboard() {
 
                       <div className="sm:col-span-2">
                         <label className="block text-[12px] font-semibold uppercase tracking-wider text-neutral-600">
-                          City *
+                          {t("form.city")}
                         </label>
                         {profileForm.country === DEFAULT_COUNTRY && !isCustomCity ? (
                           <div className="mt-1 flex gap-2">
@@ -669,7 +671,7 @@ export function AccountDashboard() {
                                   {city}
                                 </option>
                               ))}
-                              <option value="__custom__">+ Other / Not Listed...</option>
+                              <option value="__custom__">{t("form.otherCity")}</option>
                             </select>
                           </div>
                         ) : (
@@ -677,7 +679,7 @@ export function AccountDashboard() {
                             <input
                               type="text"
                               required
-                              placeholder="Enter your city name"
+                              placeholder={t("form.cityPlaceholder")}
                               value={profileForm.city}
                               onChange={(e) => setProfileForm({ ...profileForm, city: e.target.value })}
                               className="w-full border border-neutral-300 bg-white px-3 py-2 text-[14px] text-black focus:border-black focus:outline-none"
@@ -691,7 +693,7 @@ export function AccountDashboard() {
                                 }}
                                 className="shrink-0 border border-neutral-300 px-3 text-xs font-semibold uppercase hover:bg-neutral-100"
                               >
-                                Select List
+                                {t("form.selectList")}
                               </button>
                             )}
                           </div>
@@ -705,13 +707,13 @@ export function AccountDashboard() {
                         onClick={handleCancelEditProfile}
                         className="border border-neutral-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-700 hover:bg-neutral-50"
                       >
-                        Cancel
+                        {t("cancel")}
                       </button>
                       <button
                         type="submit"
                         className="bg-black px-6 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800"
                       >
-                        Save Details
+                        {t("form.save")}
                       </button>
                     </div>
                   </form>
@@ -720,7 +722,7 @@ export function AccountDashboard() {
 
               {/* Shipping Addresses Section (Max 5) */}
               <Card
-                title={`Shipping Addresses (${addresses.length}/${MAX_SHIPPING_ADDRESSES})`}
+                title={t("addresses.title", { count: addresses.length, max: MAX_SHIPPING_ADDRESSES })}
                 action={
                   addresses.length < MAX_SHIPPING_ADDRESSES ? (
                     <button
@@ -729,11 +731,11 @@ export function AccountDashboard() {
                       className="inline-flex items-center gap-1.5 bg-black px-3.5 py-1.5 text-[12px] font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors"
                     >
                       <Plus className="h-3.5 w-3.5" />
-                      <span>Add Address</span>
+                      <span>{t("addresses.add")}</span>
                     </button>
                   ) : (
                     <span className="text-[12px] font-medium text-neutral-400">
-                      Max {MAX_SHIPPING_ADDRESSES} addresses reached
+                      {t("addresses.maxReached", { max: MAX_SHIPPING_ADDRESSES })}
                     </span>
                   )
                 }
@@ -758,7 +760,7 @@ export function AccountDashboard() {
                               </span>
                               {isPrimary && (
                                 <span className="inline-flex items-center gap-1 bg-[#007cc3] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
-                                  Primary
+                                  {t("addresses.primary")}
                                 </span>
                               )}
                             </div>
@@ -767,7 +769,7 @@ export function AccountDashboard() {
                                 type="button"
                                 onClick={() => handleOpenEditAddress(addr)}
                                 className="p-1 hover:text-black"
-                                title="Edit address"
+                                title={t("addresses.edit")}
                               >
                                 <Edit3 className="h-3.5 w-3.5" />
                               </button>
@@ -776,7 +778,7 @@ export function AccountDashboard() {
                                   type="button"
                                   onClick={() => handleDeleteAddress(addr.id)}
                                   className="p-1 hover:text-red-600"
-                                  title="Delete address"
+                                  title={t("addresses.delete")}
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </button>
@@ -791,7 +793,7 @@ export function AccountDashboard() {
                               {addr.city}, {addr.state} {addr.zip}
                             </p>
                             <p>{addr.country}</p>
-                            {addr.phone && <p className="text-[12px] text-neutral-500 pt-0.5">Phone: {addr.phone}</p>}
+                            {addr.phone && <p className="text-[12px] text-neutral-500 pt-0.5">{t("addresses.phone", { phone: addr.phone })}</p>}
                           </div>
                         </div>
 
@@ -801,7 +803,7 @@ export function AccountDashboard() {
                             type="button"
                             onClick={() => handleSetPrimary(addr.id)}
                             className="group flex items-center gap-2 text-left"
-                            title={isPrimary ? "Current primary address" : "Set as primary shipping address"}
+                            title={isPrimary ? t("addresses.currentPrimary") : t("addresses.setPrimaryTitle")}
                           >
                             <span
                               className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${
@@ -821,7 +823,7 @@ export function AccountDashboard() {
                                 isPrimary ? "text-[#007cc3] font-semibold" : "text-neutral-600 group-hover:text-black"
                               }`}
                             >
-                              {isPrimary ? "Primary address (used in every order)" : "Set as Primary"}
+                              {isPrimary ? t("addresses.primaryNote") : t("addresses.setPrimary")}
                             </span>
                           </button>
                         </div>
@@ -834,14 +836,14 @@ export function AccountDashboard() {
               {/* Recent Order Preview */}
               {customerOrders.length > 0 && (
                 <Card
-                  title="Recent Order"
+                  title={t("recent.title")}
                   action={
                     <button
                       type="button"
                       onClick={() => setTab("Orders")}
                       className="text-[13px] font-semibold text-[#007cc3] hover:underline flex items-center gap-1"
                     >
-                      <span>View All Orders</span>
+                      <span>{t("recent.viewAll")}</span>
                       <ChevronRight className="h-3.5 w-3.5" />
                     </button>
                   }
@@ -854,7 +856,7 @@ export function AccountDashboard() {
                       <div className="relative h-14 w-14 shrink-0 bg-neutral-50 border border-neutral-200 p-1 flex items-center justify-center">
                         <Image
                           src={customerOrders[0].items[0]?.image || "/images/products/fenix8-cf.jpg"}
-                          alt={customerOrders[0].items[0]?.name || "Garmin Product"}
+                          alt={customerOrders[0].items[0]?.name || t("fallbackProduct")}
                           width={52}
                           height={52}
                           className="object-contain max-h-full max-w-full"
@@ -874,31 +876,31 @@ export function AccountDashboard() {
                                 : "bg-amber-50 text-amber-800 border-amber-300"
                             }`}
                           >
-                            {customerOrders[0].fulfillmentStatus}
+                            {statusLabel(customerOrders[0].fulfillmentStatus)}
                           </span>
                         </div>
                         <p className="font-semibold text-sm text-black mt-1">
-                          {customerOrders[0].items[0]?.name || "Garmin Equipment"}
+                          {customerOrders[0].items[0]?.name || t("fallbackEquipment")}
                           {customerOrders[0].items.length > 1 && (
                             <span className="text-xs text-neutral-500 font-normal">
                               {" "}
-                              + {customerOrders[0].items.length - 1} other item(s)
+                              {t("recent.otherItems", { count: customerOrders[0].items.length - 1 })}
                             </span>
                           )}
                         </p>
                         <p className="text-[12px] text-neutral-500 font-mono mt-0.5">
-                          Placed {formatOrderDate(customerOrders[0].createdAt)} · Destination: {primaryAddress.title} ({primaryAddress.city})
+                          {t("recent.placed", { date: formatDateTime(customerOrders[0].createdAt, locale) || t("notAvailable") })} · {t("recent.destination", { title: primaryAddress.title, city: primaryAddress.city })}
                         </p>
                       </div>
                     </div>
 
                     <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center border-t sm:border-t-0 pt-2 sm:pt-0 border-neutral-100">
                       <span className="g-heading text-lg font-bold text-black">
-                        ${customerOrders[0].total.toFixed(2)}
+                        {money(customerOrders[0].total)}
                       </span>
                       <span className="text-[12px] font-semibold text-[#007cc3] group-hover:underline inline-flex items-center gap-1 mt-1">
                         <Eye className="h-3.5 w-3.5" />
-                        <span>Inspect Route Map →</span>
+                        <span>{t("recent.inspect")}</span>
                       </span>
                     </div>
                   </div>
@@ -912,10 +914,10 @@ export function AccountDashboard() {
           {/* ======================================================== */}
           {tab === "Orders" && (
             <Card
-              title={`Order History & Fulfillment Tracker (${customerOrders.length})`}
+              title={t("orders.title", { count: customerOrders.length })}
               action={
                 <span className="text-xs text-neutral-500 font-mono hidden sm:inline-block">
-                  Click any order to view details &amp; route map
+                  {t("orders.hint")}
                 </span>
               }
             >
@@ -935,7 +937,7 @@ export function AccountDashboard() {
                             {ord.orderNumber || ord.id}
                           </span>
                           <span className="text-xs text-neutral-500 font-mono">
-                            Placed on {formatOrderDate(ord.createdAt)}
+                            {t("orders.placedOn", { date: formatDateTime(ord.createdAt, locale) || t("notAvailable") })}
                           </span>
                         </div>
 
@@ -951,7 +953,7 @@ export function AccountDashboard() {
                                 : "bg-neutral-100 text-neutral-800 border-neutral-300"
                             }`}
                           >
-                            {ord.fulfillmentStatus}
+                            {statusLabel(ord.fulfillmentStatus)}
                           </span>
                           <span className="text-xs text-[#007cc3] group-hover:translate-x-0.5 transition-transform">
                             <ChevronRight className="h-4 w-4" />
@@ -965,7 +967,7 @@ export function AccountDashboard() {
                           <div className="relative h-14 w-14 shrink-0 bg-neutral-50 border border-neutral-200 p-1 flex items-center justify-center">
                             <Image
                               src={firstItem?.image || "/images/products/1228429.jpg"}
-                              alt={firstItem?.name || "Garmin Product"}
+                              alt={firstItem?.name || t("fallbackProduct")}
                               width={50}
                               height={50}
                               className="object-contain max-h-full max-w-full"
@@ -973,23 +975,23 @@ export function AccountDashboard() {
                           </div>
                           <div>
                             <p className="font-semibold text-sm text-black">
-                              {firstItem?.name || "Garmin Device"}
+                              {firstItem?.name || t("fallbackDevice")}
                             </p>
                             {ord.items.length > 1 && (
                               <p className="text-xs text-neutral-500">
-                                + {ord.items.length - 1} additional product(s)
+                                {t("orders.additional", { count: ord.items.length - 1 })}
                               </p>
                             )}
                             <p className="text-[11px] text-neutral-400 font-mono mt-0.5 truncate max-w-md">
-                              Shipping to: {ord.shippingAddress}
+                              {t("orders.shippingTo", { address: ord.shippingAddress })}
                             </p>
                           </div>
                         </div>
 
                         <div className="text-left sm:text-right border-t sm:border-t-0 pt-2 sm:pt-0 border-neutral-100">
-                          <span className="text-xs text-neutral-400 block font-mono">Order Total</span>
+                          <span className="text-xs text-neutral-400 block font-mono">{t("orders.total")}</span>
                           <span className="g-heading text-lg font-bold text-black">
-                            ${ord.total.toFixed(2)}
+                            {money(ord.total)}
                           </span>
                         </div>
                       </div>
@@ -999,12 +1001,15 @@ export function AccountDashboard() {
                         <div className="flex items-center gap-1.5">
                           <Truck className="h-3.5 w-3.5 text-[#007cc3]" />
                           <span>
-                            Carrier: <strong className="text-black font-semibold">{ord.carrier || "Garmin Priority"}</strong>
-                            {ord.trackingNumber && ` · Tracking #${ord.trackingNumber}`}
+                            {t.rich("orders.carrier", {
+                              carrier: ord.carrier || "Garmin Priority",
+                              b: (chunks) => <strong className="text-black font-semibold">{chunks}</strong>,
+                            })}
+                            {ord.trackingNumber && ` · ${t("orders.tracking", { number: ord.trackingNumber })}`}
                           </span>
                         </div>
                         <span className="font-semibold text-[#007cc3] group-hover:underline">
-                          View Order Popup &amp; Route Map →
+                          {t("orders.view")}
                         </span>
                       </div>
                     </div>
@@ -1017,14 +1022,14 @@ export function AccountDashboard() {
           {/* DEVICES TAB */}
           {tab === "Devices" && (
             <Card
-              title="Registered Devices"
+              title={t("devices.title")}
               action={
                 <button
                   type="button"
-                  onClick={() => showNotification("Device registration form opened.")}
+                  onClick={() => showNotification(t("notify.deviceForm"))}
                   className="text-[13px] text-[#007cc3] underline font-semibold"
                 >
-                  Register a device
+                  {t("devices.register")}
                 </button>
               }
             >
@@ -1043,7 +1048,7 @@ export function AccountDashboard() {
                     <div>
                       <p className="g-heading text-[16px] font-semibold text-black">{d.name}</p>
                       <p className="text-[13px] text-neutral-500 font-mono">
-                        Serial: {d.serial} · Registered {d.registered}
+                        {t("devices.serial", { serial: d.serial })} · {t("devices.registered", { date: formatDate(d.registered, locale, "long") })}
                       </p>
                     </div>
                   </li>
@@ -1054,20 +1059,20 @@ export function AccountDashboard() {
 
           {/* SUBSCRIPTIONS TAB */}
           {tab === "Subscriptions" && (
-            <Card title="Subscriptions &amp; Plans">
+            <Card title={t("subscriptions.title")}>
               <ul className="divide-y divide-neutral-200">
                 {subscriptions.map((s) => (
                   <li key={s.name} className="flex flex-wrap items-center justify-between gap-2 py-4">
                     <div>
                       <p className="g-heading text-[16px] font-semibold text-black">{s.name}</p>
                       <p className="text-[13px] text-neutral-500 font-mono">
-                        {s.plan} · Renews {s.renews}
+                        {t(`subscriptions.${s.plan}`)} · {t("subscriptions.renews", { date: formatDate(s.renews, locale, s.renewsStyle) })}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[15px] font-semibold text-black">{s.price}</p>
+                      <p className="text-[15px] font-semibold text-black">{t(s.plan === "annual" ? "subscriptions.perYear" : "subscriptions.perMonth", { price: formatMoney(s.price, locale) })}</p>
                       <span className="text-[12px] font-bold text-emerald-700 uppercase tracking-wider">
-                        Active
+                        {t("subscriptions.active")}
                       </span>
                     </div>
                   </li>
@@ -1101,7 +1106,7 @@ export function AccountDashboard() {
           >
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
               <h3 className="g-heading text-lg font-bold uppercase tracking-wider text-black">
-                {editingAddressId ? "Edit Shipping Address" : "Add New Shipping Address"}
+                {editingAddressId ? t("addressForm.editTitle") : t("addressForm.addTitle")}
               </h3>
               <button
                 type="button"
@@ -1115,12 +1120,12 @@ export function AccountDashboard() {
             <form onSubmit={handleSaveAddress} className="mt-4 space-y-3">
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-700">
-                  Address Title (e.g. Home, Office, 2nd Home, Summer House) *
+                  {t("addressForm.titleLabel")}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. 2nd Home, Villa, Office"
+                  placeholder={t("addressForm.titlePlaceholder")}
                   value={addressForm.title}
                   onChange={(e) => setAddressForm({ ...addressForm, title: e.target.value })}
                   className="mt-1 w-full border border-neutral-300 px-3 py-2 text-xs focus:border-black focus:outline-none"
@@ -1129,7 +1134,7 @@ export function AccountDashboard() {
 
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-700">
-                  Recipient Name *
+                  {t("addressForm.recipient")}
                 </label>
                 <input
                   type="text"
@@ -1142,12 +1147,12 @@ export function AccountDashboard() {
 
               <div>
                 <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-700">
-                  Street Address *
+                  {t("addressForm.street")}
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="Street name, building, apartment/suite"
+                  placeholder={t("addressForm.streetPlaceholder")}
                   value={addressForm.street}
                   onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })}
                   className="mt-1 w-full border border-neutral-300 px-3 py-2 text-xs focus:border-black focus:outline-none"
@@ -1157,7 +1162,7 @@ export function AccountDashboard() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-700">
-                    City *
+                    {t("form.city")}
                   </label>
                   <input
                     type="text"
@@ -1169,7 +1174,7 @@ export function AccountDashboard() {
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-700">
-                    Postal / Zip Code
+                    {t("addressForm.zip")}
                   </label>
                   <input
                     type="text"
@@ -1183,7 +1188,7 @@ export function AccountDashboard() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-700">
-                    Country *
+                    {t("form.country")}
                   </label>
                   <select
                     value={addressForm.country}
@@ -1199,7 +1204,7 @@ export function AccountDashboard() {
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold uppercase tracking-wider text-neutral-700">
-                    Contact Phone
+                    {t("addressForm.phone")}
                   </label>
                   <input
                     type="text"
@@ -1219,7 +1224,7 @@ export function AccountDashboard() {
                     className="h-4 w-4 accent-black"
                   />
                   <span className="text-xs text-neutral-700 font-medium">
-                    Set as Primary Shipping Address (used by default for all orders)
+                    {t("addressForm.primary")}
                   </span>
                 </label>
               </div>
@@ -1230,13 +1235,13 @@ export function AccountDashboard() {
                   onClick={() => setIsAddressModalOpen(false)}
                   className="border border-neutral-300 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-700 hover:bg-neutral-100"
                 >
-                  Cancel
+                  {t("cancel")}
                 </button>
                 <button
                   type="submit"
                   className="bg-black text-white px-5 py-2 text-xs font-semibold uppercase tracking-wider hover:bg-neutral-800"
                 >
-                  {editingAddressId ? "Save Changes" : "Add Address"}
+                  {editingAddressId ? t("addressForm.saveChanges") : t("addresses.add")}
                 </button>
               </div>
             </form>
@@ -1259,7 +1264,7 @@ export function AccountDashboard() {
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
               <h3 className="g-heading text-base font-bold uppercase tracking-wider text-black flex items-center gap-2">
                 <KeyRound className="h-4 w-4 text-[#007cc3]" />
-                Password Reset Request
+                {t("reset.title")}
               </h3>
               <button
                 type="button"
@@ -1272,7 +1277,7 @@ export function AccountDashboard() {
 
             <div className="mt-4 space-y-3">
               <p className="text-xs text-neutral-600 leading-relaxed">
-                Clicking confirm will send an encrypted password recovery token to your registered email:
+                {t("reset.body")}
               </p>
               <div className="bg-neutral-50 border border-neutral-200 p-3 font-mono text-xs font-bold text-black">
                 {profile.email}
@@ -1291,14 +1296,14 @@ export function AccountDashboard() {
                   onClick={() => setIsResetPasswordModalOpen(false)}
                   className="border border-neutral-300 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-700 hover:bg-neutral-100"
                 >
-                  Cancel
+                  {t("cancel")}
                 </button>
                 <button
                   type="button"
                   onClick={handleConfirmPasswordReset}
                   className="bg-black text-white px-5 py-2 text-xs font-semibold uppercase tracking-wider hover:bg-neutral-800"
                 >
-                  Send Reset Link
+                  {t("reset.send")}
                 </button>
               </div>
             </div>

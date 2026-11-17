@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { mergeMessages } from '../src/i18n/messages.js';
 import { checkCatalogs } from '../src/i18n/messages-check.js';
-import { formatMoney, formatDate } from '../src/i18n/format.js';
+import { formatMoney, formatDate, formatDateTime } from '../src/i18n/format.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const load = (locale) => JSON.parse(readFileSync(path.join(root, 'messages', `${locale}.json`), 'utf8'));
@@ -100,6 +100,17 @@ test('formatDate: en long matches the current site format', () =>
   assert.equal(formatDate('2026-11-17', 'en', 'long'), 'November 17, 2026'));
 test('formatDate: date-only strings do not shift a day', () =>
   assert.equal(formatDate('2026-01-01', 'en', 'short'), 'Jan 1, 2026'));
+test('formatMoney: grouping can be turned off (legacy toFixed displays)', () =>
+  assert.equal(formatMoney(1099.99, 'en', 'USD', { grouping: false }), '$1099.99'));
+test('formatDateTime: en matches the order-history format', () => {
+  const iso = '2026-11-08T09:15:00.000Z';
+  const expected = new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  assert.equal(formatDateTime(iso, 'en'), expected);
+});
+test('formatDateTime: missing or invalid input', () => {
+  assert.equal(formatDateTime(undefined, 'ru'), '');
+  assert.equal(formatDateTime('nope', 'ru'), 'nope');
+});
 test('formatDate: ru long uses Russian month names', () => assert.match(formatDate('2026-11-17', 'ru', 'long'), /ноября/));
 
 // --- no hard-coded English in public components ----------------------------------------------
@@ -168,4 +179,51 @@ test('grep helper catches inline and own-line JSX text and attributes', () => {
 for (const file of scannedFiles) {
   test(`no hard-coded English in ${file}`, () =>
     assert.deepEqual(findEnglish(readFileSync(path.join(root, file), 'utf8')), []));
+}
+
+// --- every literal message key used in code exists in en ----------------------------------
+
+function flattenKeys(node, prefix = '', out = new Set()) {
+  for (const [key, value] of Object.entries(node)) {
+    const p = prefix ? `${prefix}.${key}` : key;
+    if (value && typeof value === 'object') flattenKeys(value, p, out);
+    else out.add(p);
+  }
+  return out;
+}
+const enKeys = flattenKeys(en);
+
+function usedKeys(source) {
+  const keys = [];
+  const translators = new Map();
+  for (const m of source.matchAll(/const (\w+) = (?:await )?(?:useTranslations|getTranslations)\((?:"([\w.]+)")?\)/g)) {
+    translators.set(m[1], m[2] ?? '');
+  }
+  for (const m of source.matchAll(/const (\w+) = await getMetaTranslations\(/g)) translators.set(m[1], 'Meta');
+  for (const [name, ns] of translators) {
+    for (const m of source.matchAll(new RegExp(String.raw`\b${name}(?:\.rich)?\("([\w.-]+)"`, 'g'))) {
+      keys.push(ns ? `${ns}.${m[1]}` : m[1]);
+    }
+  }
+  for (const m of source.matchAll(/\b\w+Key: "([A-Z]\w*\.[\w.-]+)"/g)) keys.push(m[1]);
+  return keys;
+}
+
+const KEY_SOURCES = [
+  ...scannedFiles,
+  'src/components/product/ProductOverview.tsx',
+  'src/lib/homepage-nav.ts',
+  'src/lib/content.ts',
+  'src/lib/products.ts',
+];
+test('usedKeys helper resolves namespaces and data keys', () =>
+  assert.deepEqual(
+    usedKeys('const t = useTranslations("Cart");\nconst tk = useTranslations();\nt("total"); t.rich("x"); tk("Header.help"); { labelKey: "Footer.links.blog" }'),
+    ['Cart.total', 'Cart.x', 'Header.help', 'Footer.links.blog'],
+  ));
+for (const file of KEY_SOURCES) {
+  test(`message keys used in ${file} exist in en`, () => {
+    const missing = usedKeys(readFileSync(path.join(root, file), 'utf8')).filter((key) => !enKeys.has(key));
+    assert.deepEqual(missing, []);
+  });
 }

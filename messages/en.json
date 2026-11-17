@@ -21,6 +21,138 @@
     "garminPayTitle": "Garmin Pay™ | A Contactless Payment Solution",
     "garminPayDescription": "No wallet? No phone? No problem. Make contactless payments on the go with your compatible Garmin smartwatch or bike computer."
   },
+  "Account": {
+    "tabs": {
+      "Profile": "Profile",
+      "Orders": "Orders",
+      "Devices": "Devices",
+      "Subscriptions": "Subscriptions"
+    },
+    "memberSince": "Member since {year}",
+    "signOut": "Sign Out",
+    "cancel": "Cancel",
+    "notAvailable": "N/A",
+    "fallbackProduct": "Garmin Product",
+    "fallbackEquipment": "Garmin Equipment",
+    "fallbackDevice": "Garmin Device",
+    "status": {
+      "new": "new",
+      "processing": "processing",
+      "shipped": "shipped",
+      "delivered": "delivered",
+      "canceled": "canceled",
+      "cancelled": "cancelled",
+      "returned": "returned"
+    },
+    "details": {
+      "title": "Account Details",
+      "edit": "Edit Details",
+      "fullName": "Full Name",
+      "email": "Email Address",
+      "phone": "Phone Number",
+      "cityCountry": "City, Country",
+      "birthDate": "Birth Date",
+      "locked": "Locked",
+      "notProvided": "Not provided",
+      "birthDateNote": "Verified during registration (immutable).",
+      "password": "Password",
+      "resetPassword": "Reset Password"
+    },
+    "form": {
+      "fullName": "Full Name *",
+      "email": "Email Address *",
+      "phone": "Phone Number *",
+      "country": "Country *",
+      "city": "City *",
+      "otherCity": "+ Other / Not Listed...",
+      "cityPlaceholder": "Enter your city name",
+      "selectList": "Select List",
+      "save": "Save Details"
+    },
+    "addresses": {
+      "title": "Shipping Addresses ({count}/{max})",
+      "add": "Add Address",
+      "maxReached": "Max {max} addresses reached",
+      "primary": "Primary",
+      "edit": "Edit address",
+      "delete": "Delete address",
+      "phone": "Phone: {phone}",
+      "currentPrimary": "Current primary address",
+      "setPrimaryTitle": "Set as primary shipping address",
+      "primaryNote": "Primary address (used in every order)",
+      "setPrimary": "Set as Primary"
+    },
+    "recent": {
+      "title": "Recent Order",
+      "viewAll": "View All Orders",
+      "otherItems": "+ {count} other item(s)",
+      "placed": "Placed {date}",
+      "destination": "Destination: {title} ({city})",
+      "inspect": "Inspect Route Map →"
+    },
+    "orders": {
+      "title": "Order History & Fulfillment Tracker ({count})",
+      "hint": "Click any order to view details & route map",
+      "placedOn": "Placed on {date}",
+      "additional": "+ {count} additional product(s)",
+      "shippingTo": "Shipping to: {address}",
+      "total": "Order Total",
+      "carrier": "Carrier: <b>{carrier}</b>",
+      "tracking": "Tracking #{number}",
+      "view": "View Order Popup & Route Map →"
+    },
+    "devices": {
+      "title": "Registered Devices",
+      "register": "Register a device",
+      "serial": "Serial: {serial}",
+      "registered": "Registered {date}"
+    },
+    "subscriptions": {
+      "title": "Subscriptions & Plans",
+      "annual": "Annual",
+      "monthly": "Monthly",
+      "renews": "Renews {date}",
+      "perYear": "{price}/yr",
+      "perMonth": "{price}/mo",
+      "active": "Active"
+    },
+    "addressForm": {
+      "editTitle": "Edit Shipping Address",
+      "addTitle": "Add New Shipping Address",
+      "titleLabel": "Address Title (e.g. Home, Office, 2nd Home, Summer House) *",
+      "titlePlaceholder": "e.g. 2nd Home, Villa, Office",
+      "recipient": "Recipient Name *",
+      "street": "Street Address *",
+      "streetPlaceholder": "Street name, building, apartment/suite",
+      "zip": "Postal / Zip Code",
+      "phone": "Contact Phone",
+      "primary": "Set as Primary Shipping Address (used by default for all orders)",
+      "saveChanges": "Save Changes"
+    },
+    "reset": {
+      "title": "Password Reset Request",
+      "body": "Clicking confirm will send an encrypted password recovery token to your registered email:",
+      "send": "Send Reset Link"
+    },
+    "notify": {
+      "nameEmailRequired": "Name and email are required fields.",
+      "profileSaved": "Personal details successfully updated.",
+      "resetSent": "Password reset instructions sent to {email}",
+      "resetDispatched": "Password reset link dispatched to {email}",
+      "maxAddresses": "Maximum limit of {max} shipping addresses reached. Please remove one before adding.",
+      "titleRequired": "Address Title (e.g. Home, Office, 2nd Home) is required.",
+      "addressRequired": "Street, City, and Country are required.",
+      "addressUpdated": "Shipping address updated successfully.",
+      "addressSaved": "New shipping address saved.",
+      "addressError": "Error saving address.",
+      "confirmRemove": "Remove shipping address \"{title}\"?",
+      "addressRemoved": "Address \"{title}\" removed.",
+      "primarySet": "\"{title}\" is now set as your primary address for all orders.",
+      "selectedAddress": "Selected address",
+      "signedOut": "Signed out from session.",
+      "deviceForm": "Device registration form opened."
+    }
+  },
   "BlogArticle": {
     "byline": "By {author}",
     "defaultReadTime": "4 min read",
@@ -416,10 +548,94 @@
     "storiesLabel": "Garmin stories",
     "categoriesHeading": "SHOP BY CATEGORY"
   },
+  "Newsletter": {
+    "heading": "Sign Up for News",
+    "intro": "Get product news and promotions based on your preferences, devices and services.",
+    "emailLabel": "Email address",
+    "placeholder": "john@example.com",
+    "signUp": "Sign up",
+    "privacyLink": "Learn about email privacy.",
+    "subscribedHeading": "You're subscribed!",
+    "subscribedBody": "Thanks for signing up{hasEmail, select, yes {, {email}} other {}}. Look out for Garmin news{count, plural, =0 {} one { on # topic} other { on # topics}} in your inbox.",
+    "updatePreferences": "Update Preferences",
+    "interestsLegend": "What are you interested in?",
+    "interestsHint": "Choose the topics you'd like to hear about.",
+    "consent": "I agree to receive marketing emails from Garmin and understand I can unsubscribe at any time. Read about <link>email privacy</link>.",
+    "subscribe": "Subscribe",
+    "interests": {
+      "wearables": "Smartwatches & Wearables",
+      "running": "Running & Fitness",
+      "outdoor": "Outdoor Recreation",
+      "cycling": "Cycling",
+      "golf": "Golf",
+      "marine": "Marine",
+      "aviation": "Aviation",
+      "automotive": "Automotive & Home",
+      "health": "Health & Wellness",
+      "deals": "Deals & Promotions"
+    }
+  },
   "NotFound": {
     "heading": "Page not found",
     "body": "The page you are looking for does not exist.",
     "home": "Go to homepage"
+  },
+  "OrderDetails": {
+    "title": "Order {number}",
+    "copyNumber": "Copy Order Number",
+    "reference": "System Reference: {id} · Placed {date}",
+    "notAvailable": "N/A",
+    "close": "Close popup",
+    "closeButton": "Close",
+    "routeMap": "Fulfillment & Process Route Map",
+    "carrier": "Carrier: <b>{carrier}</b>",
+    "tracking": "Tracking:",
+    "canceled": "This order was canceled. The standard delivery route was halted.",
+    "products": "Purchased Products ({count})",
+    "itemsTotal": "Items Total: {amount}",
+    "sku": "SKU / Item ID: {id}",
+    "qty": "Qty: <b>{quantity}</b> × {price}",
+    "lineTotal": "Line Total",
+    "noItems": "No line items detailed in this order record.",
+    "shippingHeading": "Shipping Destination & Recipient",
+    "note": "Note: “{comments}”",
+    "paymentHeading": "Payment & Financial Summary",
+    "paymentStatus": "Payment Status:",
+    "paymentMethod": "Payment Method:",
+    "paymentMethodValue": "Garmin Pay / Visa (•••• 4242)",
+    "subtotal": "Subtotal:",
+    "shipping": "Shipping:",
+    "freeShipping": "FREE (Garmin Express)",
+    "grandTotal": "Grand Total:",
+    "certified": "Official Garmin Certified Order Record",
+    "print": "Print Invoice",
+    "payment": {
+      "paid": "paid",
+      "pending": "pending",
+      "refunded": "refunded"
+    },
+    "milestones": {
+      "created": {
+        "label": "Order Placed & Verified",
+        "description": "Order received by Garmin system and payment verified."
+      },
+      "processing": {
+        "label": "Processing & Packaging",
+        "description": "Items picked, inspected, and packed at Regional Fulfillment Center."
+      },
+      "shipped": {
+        "label": "Shipped & In Transit",
+        "description": "Dispatched via {carrier}. Tracking: {tracking}"
+      },
+      "out_for_delivery": {
+        "label": "Out for Final Delivery",
+        "description": "Courier assigned and en route to the designated delivery address."
+      },
+      "delivered": {
+        "label": "Package Delivered",
+        "description": "Package safely delivered and signed for by recipient."
+      }
+    }
   },
   "ProductAccessories": {
     "quickFitHeading": "QuickFit® Watch Band Compatibility",

@@ -18,22 +18,22 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/blog/[slug]">): Promise<Metadata> {
-  const t = await getMetaTranslations(params);
+  const tm = await getMetaTranslations(params);
   const { slug } = await params;
   const post = getPost(slug);
   const cmsBlogs = getBlogs();
   const cmsBlog = cmsBlogs.find((b) => b.slug === slug);
 
   if (!post && !cmsBlog) {
-    return { title: t("blogFallbackTitle") };
+    return { title: tm("blogFallbackTitle") };
   }
 
-  const title = cmsBlog?.seoTitle || (post ? t("blogPostTitle", { title: post.title }) : t("blogShortTitle"));
+  const title = cmsBlog?.seoTitle || (post ? tm("blogPostTitle", { title: post.title }) : tm("blogShortTitle"));
   const description =
     cmsBlog?.seoDescription ||
     cmsBlog?.excerpt ||
     post?.excerpt ||
-    t("blogPostDescription");
+    tm("blogPostDescription");
   const image = cmsBlog?.ogImage || cmsBlog?.coverImage || post?.image || "/images/blog/triathlon.jpg";
   const url = `https://www.garmin.com/blog/${slug}`;
 
