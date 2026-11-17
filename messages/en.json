@@ -362,6 +362,7 @@
     "account": "Account",
     "cartLabel": "Cart, {count, plural, one {# item} other {# items}}",
     "toggleMenu": "Toggle Menu",
+    "language": "Language",
     "searchHeading": "Search Garmin",
     "searchPlaceholder": "Search products",
     "closeSearch": "Close search",

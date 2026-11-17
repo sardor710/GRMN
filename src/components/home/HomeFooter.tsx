@@ -11,6 +11,7 @@ import {
   FooterPinterestIcon,
   FooterInstagramIcon,
 } from "./footer-icons";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import styles from "./HomeFooter.module.css";
 import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
@@ -111,6 +112,7 @@ export function HomeFooter() {
       <div className={styles.company}>
         <div className={styles.locale}>
           <a href="https://www.garmin.com/en-US/select-a-location/">{t("Footer.region")}</a>
+          <LanguageSwitcher variant="footer" />
         </div>
         <ul className={styles.socials}>
           {socials.map(({ network, href, Icon, wide }) => (

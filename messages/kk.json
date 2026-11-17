@@ -362,6 +362,7 @@
     "account": "Аккаунт",
     "cartLabel": "Себет, {count, plural, one {# тауар} other {# тауар}}",
     "toggleMenu": "Мәзірді ашу немесе жабу",
+    "language": "Тіл",
     "searchHeading": "Garmin бойынша іздеу",
     "searchPlaceholder": "Тауарларды іздеу",
     "closeSearch": "Іздеуді жабу",

@@ -16,6 +16,7 @@ import {
   GhPlusIcon,
   GhSearchIcon,
 } from "./header-icons";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import styles from "./HomeHeader.module.css";
 import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
@@ -176,6 +177,7 @@ export function HomeHeader() {
         </nav>
 
         <div className={styles.utility}>
+          <LanguageSwitcher variant="header" />
           <a href={HELP_HREF} className={styles.help}>
             <GhHelpIcon />
             {t("Header.help")}
@@ -287,6 +289,9 @@ export function HomeHeader() {
                 {t("Header.help")}
               </span>
             </a>
+          </div>
+          <div className={styles.mobileItem}>
+            <LanguageSwitcher variant="mobile" />
           </div>
         </nav>
       )}

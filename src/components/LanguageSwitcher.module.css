@@ -1,0 +1,72 @@
+.list {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.link {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 21px;
+}
+
+.link[aria-current="true"] {
+  font-weight: 700;
+}
+
+/* ---- desktop utility bar ---- */
+.header {
+  flex-shrink: 0;
+  column-gap: 12px;
+  height: 64px;
+}
+
+.header .link {
+  display: flex;
+  align-items: center;
+  height: 64px;
+}
+
+.header .link:hover,
+.header .link[aria-current="true"] {
+  box-shadow: inset 0 -3.2px 0 0 #000;
+}
+
+/* ---- mobile accordion ---- */
+.mobile {
+  flex-wrap: wrap;
+  column-gap: 24px;
+}
+
+.mobile .link {
+  padding: 16px 0;
+  font-size: 18px;
+  line-height: 32px;
+  letter-spacing: 0.64px;
+}
+
+/* ---- footer (black background) ---- */
+.footer {
+  flex-wrap: wrap;
+  justify-content: center;
+  column-gap: 16px;
+}
+
+.footer .link {
+  font-size: 14.4px;
+  line-height: 21.6px;
+  color: #fff;
+}
+
+.footer .link:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 1023.98px) {
+  .header {
+    display: none;
+  }
+}

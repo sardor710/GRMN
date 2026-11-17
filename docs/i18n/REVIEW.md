@@ -11,7 +11,7 @@ How to review:
 - A blank or missing string falls back to English at runtime.
 - Text in UPPER CASE is upper case in the source; some components also uppercase with CSS.
 
-Totals: 560 keys in 25 namespaces, 25 marked do-not-translate.
+Totals: 561 keys in 25 namespaces, 25 marked do-not-translate.
 
 ## Meta
 
@@ -362,6 +362,7 @@ Totals: 560 keys in 25 namespaces, 25 marked do-not-translate.
 | [ ] | `account` | Account | Аккаунт | Аккаунт |
 | [ ] | `cartLabel` | Cart, {count, plural, one {# item} other {# items}} | Корзина, {count, plural, one {# товар} few {# товара} many {# товаров} other {# товара}} | Себет, {count, plural, one {# тауар} other {# тауар}} |
 | [ ] | `toggleMenu` | Toggle Menu | Открыть или закрыть меню | Мәзірді ашу немесе жабу |
+| [ ] | `language` | Language | Язык | Тіл |
 | [ ] | `searchHeading` | Search Garmin | Поиск по Garmin | Garmin бойынша іздеу |
 | [ ] | `searchPlaceholder` | Search products | Поиск товаров | Тауарларды іздеу |
 | [ ] | `closeSearch` | Close search | Закрыть поиск | Іздеуді жабу |

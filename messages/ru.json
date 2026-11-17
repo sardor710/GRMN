@@ -362,6 +362,7 @@
     "account": "Аккаунт",
     "cartLabel": "Корзина, {count, plural, one {# товар} few {# товара} many {# товаров} other {# товара}}",
     "toggleMenu": "Открыть или закрыть меню",
+    "language": "Язык",
     "searchHeading": "Поиск по Garmin",
     "searchPlaceholder": "Поиск товаров",
     "closeSearch": "Закрыть поиск",
