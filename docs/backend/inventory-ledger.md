@@ -1,6 +1,6 @@
-# Inventory ledger and stock adjustments (Task 11A)
+# Inventory ledger, stock adjustments and reservations (Task 11)
 
-Status: implemented in Task 11A (2026-11-17). Reservation, consumption, release and expiry are Task 11B. Nothing here activates live stock: owner decision **O08** (inventory accuracy, single location) still gates live reservation and fulfillment.
+Status: the ledger, adjustments, reconciliation and opening import were implemented in Task 11A; reservation, consumption, release and expiry in Task 11B (both 2026-11-17). Nothing here activates live stock: owner decision **O08** (inventory accuracy, single location) still gates live reservation and fulfillment.
 
 ## Rules
 
@@ -11,6 +11,15 @@ Status: implemented in Task 11A (2026-11-17). Reservation, consumption, release 
 - **One location.** Under O08 every service uses the location keyed `main`, created on first use. A second location needs an owner decision.
 - **Movement reasons:** `opening`, `receive`, `adjust`, `reserve`, `release`, `consume`, `compensate`, `return`.
   - `opening` must be positive on-hand only and must carry a `source_reference`.
+- **Signs per reason** (migration `0009_inventory-reservations`, check `stock_movements_reason_signs_valid`):
+
+  | Reason | On-hand delta | Reserved delta | Also required |
+  |---|---|---|---|
+  | `opening`, `receive`, `compensate`, `return` | > 0 | 0 | — |
+  | `adjust` | ≠ 0 | 0 | — |
+  | `reserve` | 0 | > 0 | — (the 0008 backfill's residual `reserve` rows have no line) |
+  | `release` | 0 | < 0 | `reservation_line_id` |
+  | `consume` | < 0 | equal to the on-hand delta | `reservation_line_id` and `allocation_id` |
 
 ## Upgrading an existing database
 
@@ -78,3 +87,37 @@ The route requires a staff session with MFA admission, plus the action's permiss
 ## Admin product DTO
 
 PostgreSQL-mode admin product rows now report `stock` as available units (on-hand minus reserved) over non-archived locations, with `stockManaged: true` once a balance exists. The admin product form still never submits stock in PostgreSQL mode. A product save with a nonzero `stock` still returns 501 and points to this workflow.
+
+## Reservations (Task 11B): `src/server/inventory/reservations.ts`
+
+These are internal functions for checkout (Task 14), payment capture (Task 15) and the expiry worker (Task 12). There is no HTTP route. Each takes the caller's `PoolClient`, so checkout can reserve stock, create the order and record its idempotency result in **one transaction**. `withInventoryTransaction(pool, work)` supplies that transaction.
+
+| Function | Effect |
+|---|---|
+| `reserveStock(client, { checkoutAttemptId, lines: [{ variantId, quantity }], holdSeconds? })` | One reservation header, plus one line and one `reserve` movement (+q reserved) per line. All lines or none. |
+| `consumeReservation(client, { reservationId, orderId })` | The header becomes `consumed`. Per line: one paid allocation and one `consume` movement (−q on-hand, −q reserved). |
+| `releaseReservation(client, { reservationId })` | The header becomes `released`. Per line: one `release` movement (−q reserved). |
+| `expireDueReservations(pool, { asOf?, limit? })` | Ends every active hold whose `expires_at` has passed as `expired`, with the same `release` movements. |
+
+### Rules
+
+- **Lock order.** One canonical order for every writer, including later cancellation and fulfillment code: checkout attempt, order, reservation header, then balances in `(variant_id, location_id)` order. `reserve` locks the attempt and then its existing holds (so it waits for a concurrent release or expiry and never replays a hold that just ended); `consume` locks the order, then the header; release and expiry lock the header. Movement rows are inserted in that same order. Concurrent checkouts with opposite line orders therefore never deadlock (tested with 20 crossing reservations: no retry).
+- **Availability.** `reserve` checks on-hand − reserved under the balance locks; a missing balance counts as unavailable. Any short line fails the whole call with 409 `INSUFFICIENT_STOCK`, and the transaction rolls back every line. The balance check constraint is the last line of defence. Tested: of 100 concurrent last-unit reservations, exactly one wins.
+- **Exactly once.** Movement dedupe keys are `reserve:<line>`, `consume:<line>` and `release:<line>`; release and expiry share `release:<line>`. The header has one terminal transition (0002 trigger), checked under its row lock.
+  - `reserve` again for an attempt with an active hold: the same lines replay it (`replayed: true`); different lines return 409 `RESERVATION_CONFLICT`.
+  - `reserve` after the hold was consumed: 409 `RESERVATION_ENDED`. After it was released or expired, a new hold is allowed (the capture-after-expiry path). A `failed` attempt: 409 `CHECKOUT_FAILED`.
+  - `consume` again for the same order: `changed: false` with the original allocations. For another order: 409 `RESERVATION_CONFLICT`. A released or expired hold: 409 `RESERVATION_ENDED`; payment capture then follows the Section 6 re-reserve or exception policy.
+  - `release` or expiry of a hold that already ended returns its status with `changed: false`.
+- **Consumption allocates.** The order must belong to the reservation's checkout attempt. Lines and order items must match one-to-one: each line is exactly one order item of the same variant and quantity, and the order has no other items (an item without a variant cannot be held). Otherwise 409 `ALLOCATION_MISMATCH` and nothing changes. A hold past `expires_at` that the sweeper has not ended yet can still be consumed: its units are still reserved.
+- **Holds** default to 15 minutes (`holdSeconds` 60–86,400) on the database clock.
+- **Expiry** reads the due ids, then ends each hold in its own short transaction, rechecking status and due time under the header lock. Concurrent sweeps expire each hold once. A hold that fails to end (for example drifted counters) is reported in `failures` and skipped, so it never blocks the holds behind it; reconciliation shows the drift. Task 12 schedules it.
+- **Retries.** `withInventoryTransaction` runs READ COMMITTED.
+  - A deadlock (`40P01`) or serialization failure (`40001`) rolls back, returns the connection to the pool and retries with jittered exponential backoff (base 10 ms).
+  - At most 4 runs by default (cap 10). Past the bound: 503 `INVENTORY_BUSY`.
+  - Other errors are rethrown at once.
+  - Tested: a real crossing-lock deadlock is retried once and both transactions commit.
+- **Validation.** Strict input: 1–100 lines, no repeated variant, quantity 1–10,000. An unknown attempt, reservation or order returns 404.
+
+### Staff `expectedVersion` (review M3)
+
+Every reservation movement bumps the balance `version`. An adjustment sent with `expectedVersion` can therefore get 409 `VERSION_CONFLICT` on a SKU with checkout traffic; the staff member reloads and retries. That fails closed, and the floor check already prevents overselling, so the behaviour is kept. The admin UI that will send `expectedVersion` is Task 18/19.

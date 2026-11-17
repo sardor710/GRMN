@@ -63,7 +63,7 @@ async function transaction<T>(pool: Pool, work: (client: PoolClient) => Promise<
   } finally { client.release(broken); }
 }
 
-async function mainLocation(client: PoolClient): Promise<string> {
+export async function mainLocation(client: PoolClient): Promise<string> {
   await client.query("INSERT INTO stock_locations(id,key,name) VALUES($1,$2,'Main stock location') ON CONFLICT (key) DO NOTHING", [randomUUID(), MAIN_LOCATION_KEY]);
   return (await client.query<{ id: string }>("SELECT id FROM stock_locations WHERE key=$1", [MAIN_LOCATION_KEY])).rows[0].id;
 }

@@ -71,4 +71,7 @@ export const stockMovements = pgTable("stock_movements", {
   check("stock_movements_valid", sql`(${t.deltaOnHand}<>0 OR ${t.deltaReserved}<>0) AND ${t.reason} IN ('opening','receive','adjust','reserve','release','consume','compensate','return') AND length(btrim(${t.dedupeKey}))>0`),
   // Opening stock (Task 11A, owner decision O08) is a positive on-hand-only movement that names its source.
   check("stock_movements_opening_valid", sql`${t.reason}<>'opening' OR (${t.deltaOnHand}>0 AND ${t.deltaReserved}=0 AND ${t.sourceReference} IS NOT NULL AND length(btrim(${t.sourceReference}))>0)`),
+  // Per-reason signs (Task 11B, review M5). Release and consume always name the reservation
+  // line they end; consume also names the paid allocation it commits to.
+  check("stock_movements_reason_signs_valid", sql`(${t.reason} IN ('opening','receive','compensate','return') AND ${t.deltaOnHand}>0 AND ${t.deltaReserved}=0) OR (${t.reason}='adjust' AND ${t.deltaOnHand}<>0 AND ${t.deltaReserved}=0) OR (${t.reason}='reserve' AND ${t.deltaOnHand}=0 AND ${t.deltaReserved}>0) OR (${t.reason}='release' AND ${t.deltaOnHand}=0 AND ${t.deltaReserved}<0 AND ${t.reservationLineId} IS NOT NULL) OR (${t.reason}='consume' AND ${t.deltaOnHand}<0 AND ${t.deltaOnHand}=${t.deltaReserved} AND ${t.reservationLineId} IS NOT NULL AND ${t.allocationId} IS NOT NULL)`),
 ]);

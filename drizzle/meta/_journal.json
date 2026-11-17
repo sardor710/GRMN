@@ -64,6 +64,13 @@
       "when": 1794887309437,
       "tag": "0008_inventory-ledger",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794892755822,
+      "tag": "0009_inventory-reservations",
+      "breakpoints": true
     }
   ]
 }

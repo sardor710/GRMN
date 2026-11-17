@@ -4,9 +4,9 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 ## Current position
 
-- **Completed:** Tasks **01–10** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring) and sub-slice **11A** (inventory ledger, audited adjustments, reconciliation, opening import), within the scope and activation limits below.
-- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, 10C in `3eecd53`, and 11A in the commit after it (see `git log`).
-- **Next:** Task **11B**: race-safe reserve/consume/release/expiry. See [the 11A handoff](handoffs/task-11a.md#exact-next-step).
+- **Completed:** Tasks **01–11** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring; 11A inventory ledger, audited adjustments, reconciliation, opening import; 11B race-safe reservations), within the scope and activation limits below.
+- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, 10C in `3eecd53`, 11A in `6aed380`, and 11B in the commit after it (see `git log`).
+- **Next:** Task **12A**: durable outbox leasing and worker. See [the 11B handoff](handoffs/task-11b.md#exact-next-step).
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
 - **Active implementation:** `C:/Users/Freakman/.codex/worktrees/backend-task-02/GRMN`, branch `codex/backend-task-02`.
 - **Original checkout:** `D:/projects/garmin/GRMN`. Its progress documentation is synchronized, but the backend implementation has **not** been merged or copied there. An AI inspecting only that checkout's application files will see older code. Continue code work in the active worktree above.
@@ -115,13 +115,35 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 [Detailed receipt](handoffs/task-11a.md).
 
+### Task 11B
+
+**Complete — race-safe reserve, consume, release and expiry (2026-11-17).** Task 11 is complete.
+- **`src/server/inventory/reservations.ts`** (internal; no HTTP route). Each function runs inside the caller's transaction, so checkout can reserve, create the order and record its result in one transaction.
+  - `reserveStock` holds every line or none. Balances are locked in `(variant_id, location_id)` order, and each line gets one `reserve` movement.
+  - `consumeReservation` turns each line into a paid allocation for the matching order item, with one `consume` movement (−on-hand, −reserved). Lines and items must match one-to-one.
+  - `releaseReservation` and `expireDueReservations` reduce reserved once per line.
+  - Every effect is deduplicated per line. Repeats return `changed: false` or replay the hold.
+- **Lock order:** checkout attempt, order, reservation header, then sorted balances.
+- **`withInventoryTransaction`** retries deadlocks and serialization failures with backoff, at most 4 runs, then returns 503 `INVENTORY_BUSY`.
+- **Migration 0009** enforces movement signs per reason. `release` and `consume` must name their reservation line, and `consume` also its allocation.
+- **Tests on a real database:**
+  - of 100 concurrent last-unit reservations, exactly one wins;
+  - a multi-line failure rolls back every line;
+  - repeated or concurrent consume, release and expiry have one effect;
+  - opposite line orders never deadlock;
+  - a real deadlock is retried and both transactions commit.
+- **Review:** no Critical findings. Four Important findings were fixed test-first: reserve racing a release, unreserved order items, one bad hold blocking the expiry sweep, and the consume lock order.
+- **Gates:** final `npm test` **380/380** (21 legacy + 137 unit + 222 integration) with boundaries passing; `npm run check` passes (0 errors, 23 warnings); the full admin, public and account browser smoke passed.
+
+[Detailed receipt](handoffs/task-11b.md).
+
 ## Remaining task list
 
 | Task | Status | Work still required |
 |---|---|---|
 | 10 | Complete (10A, 10B, 10C) | — |
-| 11 | 11A complete; 11B next | 11B: reserve/consume/release/expiry, 100-way last-unit race, deadlock/serialization retry bounds |
-| 12 | Not started | Durable inbox/outbox and background workers |
+| 11 | Complete (11A, 11B) | — |
+| 12 | Not started (next: 12A) | Durable inbox/outbox and background workers, including the reservation expiry dispatch |
 | 13 | Not started | Server cart, pricing, shipping/tax quotes and promotion quotas |
 | 14 | Not started | Idempotent checkout and pending orders |
 | 15 | Not started | Payment adapter, verified webhooks and reconciliation |
