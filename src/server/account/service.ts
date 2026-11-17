@@ -70,7 +70,7 @@ const money = (amountMinor: string): Money => ({ amountMinor, currency: "KZT" })
 const optionalMoney = (amountMinor: string | null) => amountMinor === null ? null : money(amountMinor);
 const EVENT_LABELS: Readonly<Record<string, string>> = {
   "order.placed": "Order placed", "order.confirmed": "Order confirmed", "order.cancelled": "Order cancelled",
-  "payment.paid": "Payment received", "order.paid": "Payment received", "order.expired": "Order expired", "fulfillment.shipped": "Shipped", "fulfillment.delivered": "Delivered",
+  "payment.paid": "Payment received", "order.paid": "Payment received", "order.expired": "Order expired", "order.reinstated": "Order reinstated", "refund.succeeded": "Refund issued", "fulfillment.shipped": "Shipped", "fulfillment.delivered": "Delivered",
 };
 
 function databaseFailure(error: unknown): unknown {

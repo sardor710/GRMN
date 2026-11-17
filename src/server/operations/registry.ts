@@ -5,6 +5,7 @@ import { expireDueCouponReservations } from "../pricing/coupons.ts";
 import { PAYMENT_START_KIND } from "../checkout/service.ts";
 import { PAYMENT_INBOX_KIND, expireUnpaidOrders, type OrderExpiryCursor, processInboxEvent, reconcilePayments, startPaymentSession } from "../payments/service.ts";
 import { paymentProviders } from "../payments/providers.ts";
+import { processRefunds } from "../fulfillment/aftersales.ts";
 import { JobError } from "./outbox.ts";
 import type { ClaimedJob, JobHandler, JobHandlers } from "./outbox.ts";
 import type { Schedule } from "./schedule.ts";
@@ -89,6 +90,15 @@ const expireOrders: JobHandler = async (_job, ctx) => {
   await ctx.complete();
 };
 
+// Task 16B: submit reserved refunds to their provider (outside any transaction) and retry pending or
+// unknown ones with their stable keys. Only real providers are asked; the demo adapter has no captures.
+export const REFUND_PROCESS_KIND = "payments.refunds.process";
+const processRefundsJob: JobHandler = async (_job, ctx) => {
+  const result = await processRefunds(ctx.pool, paymentProviders(), { limit: 100 });
+  if (result.failed > 0) console.error("Refund processing failures", result.failed);
+  await ctx.complete();
+};
+
 export { PAYMENT_INBOX_KIND };
 export const jobHandlers: JobHandlers = {
   [RESERVATION_EXPIRY_KIND]: expireReservations,
@@ -97,6 +107,7 @@ export const jobHandlers: JobHandlers = {
   [PAYMENT_INBOX_KIND]: processInbox,
   [PAYMENT_RECONCILE_KIND]: reconcile,
   [ORDER_EXPIRY_KIND]: expireOrders,
+  [REFUND_PROCESS_KIND]: processRefundsJob,
 };
 
 /**
@@ -107,5 +118,5 @@ export function jobSchedules(env: Readonly<Record<string, string | undefined>>):
   const raw = env.RESERVATION_EXPIRY_INTERVAL_MS;
   const everyMs = raw === undefined ? 30_000 : /^\d+$/.test(raw) ? Number(raw) : NaN;
   if (!Number.isSafeInteger(everyMs) || everyMs < 1000 || everyMs > 60_000) throw new Error("Missing or invalid worker configuration: RESERVATION_EXPIRY_INTERVAL_MS");
-  return [{ kind: RESERVATION_EXPIRY_KIND, everyMs }, { kind: COUPON_EXPIRY_KIND, everyMs }, { kind: ORDER_EXPIRY_KIND, everyMs }, { kind: PAYMENT_RECONCILE_KIND, everyMs: 60_000 }];
+  return [{ kind: RESERVATION_EXPIRY_KIND, everyMs }, { kind: COUPON_EXPIRY_KIND, everyMs }, { kind: ORDER_EXPIRY_KIND, everyMs }, { kind: PAYMENT_RECONCILE_KIND, everyMs: 60_000 }, { kind: REFUND_PROCESS_KIND, everyMs: 60_000 }];
 }

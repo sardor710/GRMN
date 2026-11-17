@@ -251,6 +251,36 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 [Detailed receipt](handoffs/task-16a.md).
 
+### Task 16B
+
+**Complete: cancellation, returns and refunds (2026-11-18).** It absorbs Task 17 and needs no migration. Task 16 is complete except for the browser smoke runs, which are still open.
+- **Service:** `src/server/fulfillment/aftersales.ts`. Every after-sales action is one more action on `/api/admin/orders`, and every one locks the order first (16A ruling M8).
+- **Cancellation** (`cancel_order`, `orders:fulfill`) depends on the payment and shipping state:
+  - **Unpaid:** the open payment attempts are cancelled, the stock hold and coupon quota are released, and an authorization also gets an internal `void_required` event.
+  - **Paid but not shipped:** ready shipments are cancelled first. Each allocation's unshipped units are then restored with one compensating movement, and the paying capture's remaining balance is reserved for refund item by item. This path also needs `payments:refund`.
+  - **Shipped:** 409 `ORDER_SHIPPED`; shipped units go through a return.
+- **Refunds** (`refund`, `payments:refund` with fresh MFA): item, shipping and adjustment lines are reserved against the paying capture, and the refundable balance is checked under the order lock and by the 0003 trigger.
+  - Discount and tax are split by cumulative quantity share, so refunding every unit, in any split, adds up exactly to the line total.
+  - Refunding unshipped units puts them back on hand (16A ruling I2), unless staff send `restock: false`.
+  - The provider is called outside any transaction with the refund's stable key. A timeout leaves the refund `unknown` and keeps the money reserved; only a definitive failure releases it.
+  - The worker job `payments.refunds.process` (every 60 s) submits and retries refunds. The payment summary follows only the paying capture.
+- **Returns** (`create_return`, `update_return`, `orders:fulfill`): requested → authorized → received → inspected → closed. Only an inspection with a `restock` decision puts accepted units back on hand, once per return line; quarantined and disposed units never do.
+- **UI:** a "Cancel order" button, plus read-only refund and return lists in the fulfillment screen.
+- **Review:** one Critical and four Important findings were fixed test-first:
+  - a failed refund no longer lets the same units be restored twice;
+  - refunds use the paying capture;
+  - the payment summary ignores duplicate captures;
+  - an unpaid order with a mismatched capture cancels like an unpaid order;
+  - cancelling after a partial refund still refunds item by item.
+
+  Two more are rulings: whether item refunds should restore stock (now opt-out with `restock: false`), and automatic refund submission (I6).
+- **Gates:**
+  - `npm test` passed **514/514**, run one test file per process (see the handoff for why).
+  - `npm run check` exited 0.
+  - **The browser smoke was not run:** only 84 MB of RAM was free.
+
+[Detailed receipt](handoffs/task-16b.md).
+
 ## Remaining task list
 
 Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained slices; see "Consolidation of Tasks 12–22" in the plan. Steps that need a real provider are in its deferred activation backlog.
@@ -263,7 +293,7 @@ Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained
 | 13 | Complete (13A, 13B) | — |
 | 14 | Complete (14A, 14B) | — |
 | 15 | Merged into 14 | Real provider work is in the deferred activation backlog |
-| 16 | 16A code complete (smoke pending) | 16A browser smoke rerun on a machine with free RAM; 16B cancellation, returns and refunds with stock compensation (absorbs 17) |
+| 16 | Complete (16A, 16B); smoke open | Browser smoke for 16A and 16B on a machine with ≥1 GB free RAM |
 | 17 | Merged into 16 | — |
 | 18 | Not started | 18A scheduled publishing and media uploads; 18B reports, exports, settings, USD rate editor and inventory admin UI (absorbs 19) |
 | 19 | Merged into 18 | Email/newsletter sending is in the deferred activation backlog |

@@ -7,6 +7,8 @@ import { requirePermission, requireStaffPrincipal } from "../auth/principal.ts";
 import { cmsBackend } from "../cms/source.ts";
 import { createFulfillmentService } from "./service.ts";
 import { createFulfillmentHTTP } from "./http.ts";
+import { createAfterSalesService } from "./aftersales.ts";
+import { paymentProviders } from "../payments/providers.ts";
 
 let handler: ReturnType<typeof createFulfillmentHTTP> | undefined;
 
@@ -22,7 +24,13 @@ function getFulfillmentHandler() {
         return requirePermission(runtime, headers, permission);
       },
     });
-    handler = createFulfillmentHTTP({ service, baseURL: new URL(process.env.AUTH_BASE_URL!).origin });
+    const authorize = async (headers: Headers, permission: Parameters<typeof requirePermission>[2]) => {
+      await requireStaffPrincipal(runtime, headers);
+      return requirePermission(runtime, headers, permission);
+    };
+    // Task 16B: cancellations, refunds (payments:refund needs fresh MFA) and returns.
+    const aftersales = createAfterSalesService({ pool: getDatabase().pool, authorize, providers: paymentProviders() });
+    handler = createFulfillmentHTTP({ service, aftersales, baseURL: new URL(process.env.AUTH_BASE_URL!).origin });
   }
   return handler;
 }

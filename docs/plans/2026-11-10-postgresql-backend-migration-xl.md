@@ -1028,7 +1028,7 @@ The owner-scoped payment core (interface, demo adapter, verified inbox, capture,
 
 ### Task 16 — Fulfillment, cancellation, returns and refunds (manual)
 
-**Current status:** 16A CODE COMPLETE (2026-11-17; browser smoke pending: host memory). 16B NOT STARTED. **Depends on:** 14. **Size:** 16A fulfillment and order timeline; 16B cancellation, returns and refunds. (Absorbs Task 17.)
+**Current status:** 16A CODE COMPLETE (2026-11-17; browser smoke pending: host memory). 16B COMPLETE (2026-11-18; browser smoke not run: host memory). Task 16 complete apart from the open smoke runs. **Depends on:** 14. **Size:** 16A fulfillment and order timeline; 16B cancellation, returns and refunds. (Absorbs Task 17.)
 
 **Files:** fulfillment/order-transition/return/refund services, admin orders UI/API, customer order detail, tests.
 
@@ -1039,13 +1039,13 @@ The owner-scoped payment core (interface, demo adapter, verified inbox, capture,
   - carrier and routing fields kept out of customer DTOs;
   - legacy summary orders stay flagged and cannot take item operations.
 - [x] **16A tests:** over-shipping, shipping unpaid or exception orders, a duplicate shipment action, backwards transitions, fabricated milestones, and fulfillment never decrementing consumed stock again.
-- [ ] **16B:**
+- [x] **16B:**
   - Cancellation specific to each state (uncaptured, captured and unshipped, shipped).
   - Exactly one compensating stock movement per allocation.
   - Return authorization, receipt and inspection before any restock.
   - A refundable-balance reservation, with the refund issued outside the transaction through the simulated adapter.
   - Item/tax/discount refund allocation.
-- [ ] **16B tests:**
+- [x] **16B tests:**
   - concurrent refunds never exceed the captured remainder;
   - a timeout keeps the reservation;
   - a duplicate provider response has one effect;

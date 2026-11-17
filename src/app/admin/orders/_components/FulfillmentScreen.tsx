@@ -72,6 +72,13 @@ export default function FulfillmentScreen() {
     if (ok) { setCarrier(""); setTracking(""); setNote(""); }
   }
   const act = (shipment: ShipmentDTO, action: "dispatch" | "deliver" | "cancel") => post({ action, shipmentId: shipment.id, expectedVersion: shipment.version });
+  // Task 16B: the server decides what a cancellation does (release holds, or restore stock and reserve a refund).
+  async function cancelOrder() {
+    if (!detail) return;
+    const reason = window.prompt("Reason for cancelling this order");
+    if (!reason?.trim()) return;
+    await post({ action: "cancel_order", orderId: detail.id, expectedOrderVersion: detail.version, reason: reason.trim() });
+  }
 
   return (
     <div className="space-y-6 p-6">
@@ -115,6 +122,9 @@ export default function FulfillmentScreen() {
                 <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.paymentMode}</span>
               </div>
               {!detail.fulfillable.allowed && detail.fulfillable.reason && <p className="border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900">{REASONS[detail.fulfillable.reason]}</p>}
+              {!detail.legacy && detail.status !== "cancelled" && detail.status !== "closed" && (
+                <button type="button" disabled={busy} onClick={() => void cancelOrder()} className="border border-red-700 px-3 py-1 text-xs font-bold uppercase tracking-wider text-red-800 disabled:opacity-50">Cancel order</button>
+              )}
               <table className="w-full text-sm">
                 <thead><tr className="text-left text-xs uppercase text-neutral-500"><th>Item</th><th>Ordered</th><th>Shipped</th><th>Left</th><th>Ship now</th></tr></thead>
                 <tbody>
@@ -158,6 +168,22 @@ export default function FulfillmentScreen() {
                   </ul>
                 )}
               </div>
+              {(detail.refunds.length > 0 || detail.returns.length > 0) && (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-600">Refunds</h3>
+                    <ul className="space-y-1 text-xs">
+                      {detail.refunds.map(refund => <li key={refund.id} className="flex justify-between gap-2"><span className="uppercase">{refund.status}</span><span>{formatKzt(refund.amountMinor)}</span></li>)}
+                    </ul>
+                  </div>
+                  <div>
+                    <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-600">Returns</h3>
+                    <ul className="space-y-1 text-xs">
+                      {detail.returns.map(entry => <li key={entry.id} className="flex justify-between gap-2"><span className="uppercase">{entry.status}</span><span>{entry.items.reduce((sum, item) => sum + item.quantity, 0)} units · {entry.reason}</span></li>)}
+                    </ul>
+                  </div>
+                </div>
+              )}
               <div>
                 <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-600">Timeline</h3>
                 <ol className="space-y-1 text-xs">

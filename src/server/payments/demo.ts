@@ -15,5 +15,7 @@ export function createDemoProvider(): PaymentProvider {
     verifySignature() { return false; },
     parseEvent() { return null; },
     async lookup() { return { state: "pending" }; },
+    // A demo order is never captured, so there is never anything to refund (D03).
+    async refund() { return { state: "failed", providerRefundId: null }; },
   };
 }

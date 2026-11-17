@@ -30,6 +30,11 @@ export interface PaymentEvent {
 export type ProviderLookup = { state: "pending" | "unknown" } | { state: "event"; event: PaymentEvent };
 export interface LookupRequest { attemptId: string; merchantReference: string; sessionId: string | null; idempotencyKey: string }
 
+/** Task 16B. A refund of part or all of one capture. The key is stable per refund: a retry after a timeout must reach the same provider refund. */
+export interface RefundRequest { refundId: string; orderId: string; idempotencyKey: string; transactionExternalId: string; amountMinor: string; currency: "KZT" }
+/** A definitive or pending provider answer. A thrown error (timeout, lost response) means unknown: the reservation is kept. */
+export interface RefundResult { state: "succeeded" | "failed" | "pending"; providerRefundId: string | null }
+
 export interface PaymentProvider {
   readonly name: ProviderName;
   readonly environment: ProviderEnvironment;
@@ -43,6 +48,8 @@ export interface PaymentProvider {
   parseEvent(rawBody: Uint8Array): PaymentEvent | null;
   /** Authenticated provider state of an attempt, for reconciliation. */
   lookup(request: LookupRequest): Promise<ProviderLookup>;
+  /** Task 16B: refunds part of a capture, idempotent on request.idempotencyKey. */
+  refund(request: RefundRequest): Promise<RefundResult>;
 }
 
 export type PaymentProviders = ReadonlyMap<string, PaymentProvider>;

@@ -411,9 +411,39 @@ export interface AdminOrderDetailDTO extends AdminOrderSummaryDTO {
   items: { id: string; name: string; sku: string | null; quantity: number; allocated: number; claimed: number; shipped: number; remaining: number }[];
   shipments: ShipmentDTO[];
   timeline: TimelineEventDTO[];
+  /** Task 16B: refunds of this order (reserved, pending, unknown, succeeded, failed, cancelled). */
+  refunds: RefundDTO[];
+  /** Task 16B: returns of this order. */
+  returns: ReturnDTO[];
 }
 export interface ShipmentResultDTO {
   shipment: ShipmentDTO;
   order: { id: string; version: number; fulfillmentStatus: FulfillmentStatus };
+  replayed: boolean;
+}
+
+// Task 16B after-sales DTOs (staff only, /api/admin/orders).
+export interface RefundDTO {
+  id: string;
+  status: "reserved" | "pending" | "unknown" | "succeeded" | "failed" | "cancelled";
+  amountMinor: string;
+  reason: string | null;
+  createdAt: string;
+  items: { kind: "item" | "shipping" | "adjustment"; orderItemId: string | null; quantity: number | null; amountMinor: string }[];
+}
+export interface ReturnDTO {
+  id: string;
+  status: "requested" | "authorized" | "received" | "inspected" | "rejected" | "cancelled" | "closed";
+  version: number;
+  reason: string;
+  createdAt: string;
+  receivedAt: string | null;
+  inspectedAt: string | null;
+  items: { id: string; orderItemId: string; shipmentItemId: string; quantity: number; receivedQuantity: number; acceptedQuantity: number; restockedQuantity: number; decision: "undecided" | "restock" | "quarantine" | "dispose" }[];
+}
+export interface CancelResultDTO {
+  order: { id: string; version: number; status: OrderStatus; paymentStatus: PaymentStatus; fulfillmentStatus: FulfillmentStatus };
+  /** The refund reserved for a captured order; null when nothing was captured. */
+  refundId: string | null;
   replayed: boolean;
 }

@@ -8,6 +8,7 @@ export type { AdminOrderDetailDTO, AdminOrderSummaryDTO, FulfillmentBlock, Shipm
 import type { Permission, Principal } from "../context.ts";
 import { AuthFailure } from "../auth/config.ts";
 import { withInventoryTransaction } from "../inventory/reservations.ts";
+import { readRefunds, readReturns } from "./aftersales.ts";
 
 // Task 16A. Permissioned, versioned manual fulfillment (D04: staff ship themselves).
 //
@@ -59,16 +60,16 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
   return result.success ? result.data : invalid();
 }
-const canonical = (value: unknown): string => Array.isArray(value) ? "[" + value.map(canonical).join(",") + "]"
+export const canonical = (value: unknown): string => Array.isArray(value) ? "[" + value.map(canonical).join(",") + "]"
   : value && typeof value === "object" ? "{" + Object.keys(value).sort().map(name => JSON.stringify(name) + ":" + canonical((value as Record<string, unknown>)[name])).join(",") + "}"
   : JSON.stringify(value);
-const requestHash = (value: Record<string, unknown>) => {
+export const requestHash = (value: Record<string, unknown>) => {
   const rest = { ...value };
   delete rest.idempotencyKey;
   return createHash("sha256").update(canonical(rest)).digest("hex");
 };
 
-interface OrderRow {
+export interface OrderRow {
   id: string; order_number: string; checkout_attempt_id: string | null; order_status: OrderStatus; payment_status: PaymentStatus; fulfillment_status: FulfillmentStatus;
   payment_mode: AdminOrderSummaryDTO["paymentMode"]; data_quality: "complete" | "legacy_incomplete"; version: number; captured: boolean;
 }
@@ -80,7 +81,7 @@ interface ShipmentRow {
 }
 const SHIPMENT_COLUMNS = "id,order_id,status,version,carrier,tracking_reference,internal_notes,created_at,dispatched_at,delivered_at";
 
-const isLegacy = (order: Pick<OrderRow, "data_quality" | "payment_mode" | "checkout_attempt_id">) =>
+export const isLegacy = (order: Pick<OrderRow, "data_quality" | "payment_mode" | "checkout_attempt_id">) =>
   order.data_quality !== "complete" || order.payment_mode === "legacy_unknown" || order.checkout_attempt_id === null;
 
 /** Why this order cannot ship now, or null when it can. */
@@ -99,7 +100,7 @@ const BLOCK_MESSAGES: Record<FulfillmentBlock, string> = {
 };
 const refuse = (block: FulfillmentBlock): never => fail(block, 409, BLOCK_MESSAGES[block]);
 
-async function lockOrder(client: PoolClient, orderId: string): Promise<OrderRow> {
+export async function lockOrder(client: PoolClient, orderId: string): Promise<OrderRow> {
   const found = (await client.query<{ checkout_attempt_id: string | null }>("SELECT checkout_attempt_id FROM orders WHERE id=$1", [orderId])).rows[0] ?? notFound();
   if (found.checkout_attempt_id) await client.query("SELECT 1 FROM checkout_attempts WHERE id=$1 FOR UPDATE", [found.checkout_attempt_id]);
   await client.query("SELECT 1 FROM orders WHERE id=$1 FOR UPDATE", [orderId]);
@@ -132,7 +133,7 @@ async function readShipment(client: PoolClient, shipmentId: string): Promise<Shi
 }
 
 /** Derives the order's fulfillment status from its shipments; an exception is never overwritten. */
-async function refreshOrder(client: PoolClient, orderId: string): Promise<{ id: string; version: number; fulfillmentStatus: FulfillmentStatus }> {
+export async function refreshOrder(client: PoolClient, orderId: string): Promise<{ id: string; version: number; fulfillmentStatus: FulfillmentStatus }> {
   const totals = (await client.query<{ ordered: string; ready: string; dispatched: string; delivered: string }>(`
     -- Review I1: units restored to stock (16B) are no longer owed, so they leave the denominator.
     SELECT (SELECT COALESCE(sum(a.quantity-a.restored_quantity),0) FROM inventory_allocations a JOIN order_items oi ON oi.id=a.order_item_id WHERE oi.order_id=$1)::text AS ordered,
@@ -149,7 +150,7 @@ async function refreshOrder(client: PoolClient, orderId: string): Promise<{ id: 
   return { id: row.id, version: row.version, fulfillmentStatus: row.fulfillment_status };
 }
 
-async function orderEvent(client: PoolClient, input: { orderId: string; type: string; actor: string; dedupeKey: string; visibility: "internal" | "customer"; payload: Record<string, unknown> }): Promise<string> {
+export async function orderEvent(client: PoolClient, input: { orderId: string; type: string; actor: string; dedupeKey: string; visibility: "internal" | "customer"; payload: Record<string, unknown> }): Promise<string> {
   const id = randomUUID();
   await client.query(
     "INSERT INTO order_events(id,order_id,type,source,actor_user_id,dedupe_key,visibility,occurred_at,payload) VALUES($1,$2,$3,'staff',$4,$5,$6,clock_timestamp(),$7)",
@@ -184,7 +185,7 @@ function decodeCursor(cursor: string): { at: Date; id: string } {
 // Review I3: one staff key used for different bodies on two orders at once passes both prior-action
 // checks (different order locks); the event dedupe key then rejects the second. That is the same
 // 409 a serial reuse gets, never a raw database error (which the HTTP layer would report as 503).
-async function inTransaction<T>(pool: Pool, work: (client: PoolClient) => Promise<T>): Promise<T> {
+export async function inTransaction<T>(pool: Pool, work: (client: PoolClient) => Promise<T>): Promise<T> {
   try { return await withInventoryTransaction(pool, work); }
   catch (error) {
     if ((error as { constraint?: unknown } | null)?.constraint === "order_events_dedupe_key_unique") fail("IDEMPOTENCY_CONFLICT", 409, "This idempotency key was used for a different action");
@@ -259,6 +260,8 @@ export function createFulfillmentService({ pool, authorize }: Options) {
           const internalNote = staffDetail && typeof row.payload.internalNote === "string" ? row.payload.internalNote : undefined;
           return { id: row.id, type: row.type, visibility: row.visibility, source: row.source, occurredAt: row.happened_at.toISOString(), actorUserId: row.actor_user_id, shipmentId, ...(internalNote ? { internalNote } : {}) };
         }),
+        refunds: await readRefunds(pool, orderId),
+        returns: await readReturns(pool, orderId),
       };
     },
 
