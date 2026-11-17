@@ -6,6 +6,7 @@ import {
 } from "@/lib/homepage-content";
 import type { HomepageTileBlock } from "@/lib/cms/types";
 import styles from "./HomeTiles.module.css";
+import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
 interface TileData {
   title: string;
@@ -15,8 +16,9 @@ interface TileData {
 }
 
 function PromoCard({ tile }: { tile: TileData }) {
+  const localize = useLocalizeHref();
   return (
-    <a href={tile.href} className={styles.promoCard}>
+    <a href={localize(tile.href)} className={styles.promoCard}>
       <div className={styles.promoImage}>
         <Image
           src={tile.image}
@@ -37,8 +39,9 @@ function PromoCard({ tile }: { tile: TileData }) {
 }
 
 function OverlayTile({ tile, kind }: { tile: TileData; kind: "story" | "category" }) {
+  const localize = useLocalizeHref();
   return (
-    <a href={tile.href} className={kind === "story" ? styles.storyTile : styles.categoryTile}>
+    <a href={localize(tile.href)} className={kind === "story" ? styles.storyTile : styles.categoryTile}>
       <Image
         src={tile.image}
         alt=""

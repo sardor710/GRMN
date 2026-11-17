@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { megaNav, takeoverBar, type MegaNavItem } from "@/lib/homepage-nav";
 import { homeFeaturedCards } from "@/lib/homepage-content";
 import { useCart } from "@/lib/cart";
@@ -16,6 +16,7 @@ import {
   GhSearchIcon,
 } from "./header-icons";
 import styles from "./HomeHeader.module.css";
+import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
 const HELP_HREF = "https://support.garmin.com/en-US/";
 
@@ -73,6 +74,7 @@ function MegaMenu({ item, onNavigate }: { item: MegaNavItem; onNavigate: () => v
 }
 
 export function HomeHeader() {
+  const localize = useLocalizeHref();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [mobileItem, setMobileItem] = useState<number | null>(null);
@@ -212,7 +214,7 @@ export function HomeHeader() {
 
       {!mobileOpen && (
         <div className={styles.takeover}>
-          <a href={takeoverBar.href} className={styles.takeoverLink}>
+          <a href={localize(takeoverBar.href)} className={styles.takeoverLink}>
             {takeoverBar.label}
           </a>
         </div>
@@ -304,7 +306,7 @@ export function HomeHeader() {
           {query.trim() && (
             <div className={styles.searchResults}>
               {suggestions.length ? suggestions.map((card) => (
-                <a key={card.title} href={card.href} onClick={() => setSearchOpen(false)}>{card.title}</a>
+                <a key={card.title} href={localize(card.href)} onClick={() => setSearchOpen(false)}>{card.title}</a>
               )) : <p>No featured products found.</p>}
             </div>
           )}

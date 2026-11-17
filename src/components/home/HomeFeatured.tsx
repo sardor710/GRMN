@@ -4,6 +4,7 @@ import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
 import type { CarouselBlock, ProductCarouselItem, PromoCarouselItem } from "@/lib/cms/types";
 import styles from "./HomeFeatured.module.css";
+import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
 type CarouselItem = ProductCarouselItem | PromoCarouselItem;
 
@@ -61,8 +62,9 @@ function ArrowIcon({ direction }: { direction: "left" | "right" }) {
 }
 
 function PromoTile({ item, eager }: { item: PromoCarouselItem; eager: boolean }) {
+  const localize = useLocalizeHref();
   return (
-    <a className={`${styles.slide} ${styles.promo}`} href={item.href || "#"}>
+    <a className={`${styles.slide} ${styles.promo}`} href={localize(item.href || "#")}>
       <Image
         src={item.image}
         alt={item.imageAlt ?? plainText(item.title)}
@@ -81,8 +83,9 @@ function PromoTile({ item, eager }: { item: PromoCarouselItem; eager: boolean })
 }
 
 function ProductCard({ item, eager }: { item: ProductCarouselItem; eager: boolean }) {
+  const localize = useLocalizeHref();
   return (
-    <a className={`${styles.slide} ${styles.product}`} href={item.href || "#"} aria-label={plainText(item.title)}>
+    <a className={`${styles.slide} ${styles.product}`} href={localize(item.href || "#")} aria-label={plainText(item.title)}>
       {item.badge && (
         <div className={styles.badges}>
           <div className={styles.badge}>{item.badge}</div>

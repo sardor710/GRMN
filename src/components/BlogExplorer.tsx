@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { blogPosts, blogCategories } from "@/lib/blog";
 import { categoryIcons } from "@/components/blog-icons";
 import { SearchIcon } from "@/components/icons";

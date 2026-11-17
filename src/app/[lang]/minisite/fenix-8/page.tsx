@@ -1,0 +1,25 @@
+import type { Metadata } from "next";
+import "./fenix-8.css";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
+import { Fenix8Client } from "@/components/fenix-8/Fenix8Client";
+import { initPageLocale } from "@/i18n/page-locale";
+
+export const metadata: Metadata = {
+  title: "fēnix 8 Series the ultimate smartwatch | Garmin Singapore",
+  description:
+    "fēnix 8 series - the ultimate smartwatch - the top choice for mountain climbing, trail running, skiing and other outdoor adventures. With either AMOLED or solar displays, torchlight, spectacular battery life, speaker and microphones and enhanced training features.",
+};
+
+export default async function Fenix8Page({ params }: PageProps<"/[lang]/minisite/fenix-8">) {
+  await initPageLocale(params);
+  return (
+    <div className="flex min-h-screen flex-col bg-white">
+      <SiteHeader />
+      <main className="f8-root flex-1 bg-black">
+        <Fenix8Client />
+      </main>
+      <SiteFooter />
+    </div>
+  );
+}

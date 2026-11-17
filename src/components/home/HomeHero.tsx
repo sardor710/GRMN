@@ -6,6 +6,7 @@ import { homeHeroSlides } from "@/lib/homepage-content";
 import type { HeroBanner } from "@/lib/cms/types";
 import { ChevronLeftIcon, ChevronRightIcon, PauseIcon, PlayIcon } from "@/components/icons";
 import styles from "./HomeHero.module.css";
+import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
 const duration = 6000; // live hero__slideshow animation: 6000ms
 
@@ -14,6 +15,7 @@ interface HomeHeroProps {
 }
 
 export function HomeHero({ banners }: HomeHeroProps) {
+  const localize = useLocalizeHref();
   const activeSlides = banners && banners.length > 0
     ? banners.filter((b) => b.active !== false).sort((a, b) => a.order - b.order).map((b) => ({
         key: b.key || b.id,
@@ -101,7 +103,7 @@ export function HomeHero({ banners }: HomeHeroProps) {
               <h1>{slide.title}</h1>
               <p className={slide.disclaimer ? styles.subtitleTight : undefined}>{slide.subtitle}</p>
               {slide.disclaimer && <p className={styles.disclaimer}>{slide.disclaimer}</p>}
-              <a href={slide.href} className={styles.shop} tabIndex={slideIndex === index ? 0 : -1}>SHOP</a>
+              <a href={localize(slide.href)} className={styles.shop} tabIndex={slideIndex === index ? 0 : -1}>SHOP</a>
             </div>
           </div>
         ))}

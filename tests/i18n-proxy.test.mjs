@@ -20,3 +20,18 @@ test('redirect: excluded paths → null', () => {
 });
 test('redirect: unknown first segment is treated as unprefixed', () =>
   assert.equal(decideLocaleRedirect('/de/p/x', '', 'en', undefined), '/en/de/p/x'));
+
+// The proxy matcher is a static string in src/proxy.ts; compile it the way Next does.
+test('proxy matcher: runs for public paths, skips excluded ones', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { createRequire } = await import('node:module');
+  const { pathToRegexp } = createRequire(import.meta.url)('next/dist/compiled/path-to-regexp');
+  const source = readFileSync(new URL('../src/proxy.ts', import.meta.url), 'utf8');
+  const sources = [...source.matchAll(/^\s*"(\/\(.*\))",\s*$/gm)].map((m) => m[1]);
+  assert.equal(sources.length, 1);
+  const re = pathToRegexp(sources[0], [], { delimiter: '/', sensitive: false, strict: true });
+  for (const p of ['/', '/en', '/p/1228429', '/de/p/x', '/administrator', '/kk/blog/a', '/apiary'])
+    assert.equal(re.test(p), true, p);
+  for (const p of ['/admin', '/admin/x', '/api/x', '/uploads/a.png', '/_next/static/a.js', '/robots.txt', '/sitemap.xml', '/seo/x', '/homepage/x', '/images/a', '/videos/a', '/favicon.ico', '/a/b/c.js'])
+    assert.equal(re.test(p), false, p);
+});

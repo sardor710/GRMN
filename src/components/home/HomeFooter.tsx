@@ -11,6 +11,7 @@ import {
   FooterInstagramIcon,
 } from "./footer-icons";
 import styles from "./HomeFooter.module.css";
+import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
 const liveLinks: Record<string, string> = {
   "Support Center": "https://support.garmin.com/en-US/",
@@ -70,6 +71,7 @@ function renderLabel(label: string) {
 }
 
 export function HomeFooter() {
+  const localize = useLocalizeHref();
   const [open, setOpen] = useState<string | null>(null);
 
   return (
@@ -94,7 +96,7 @@ export function HomeFooter() {
                 <ul className={styles.links} id={panelId}>
                   {column.links.map((link) => (
                     <li key={link.label}>
-                      <a href={liveLinks[link.label] ?? link.href}>{renderLabel(link.label)}</a>
+                      <a href={localize(liveLinks[link.label] ?? link.href)}>{renderLabel(link.label)}</a>
                     </li>
                   ))}
                 </ul>
@@ -124,7 +126,7 @@ export function HomeFooter() {
         <ul>
           {legalLinks.map((link) => (
             <li key={link.label}>
-              <a href={liveLinks[link.label] ?? link.href}>{link.label}</a>
+              <a href={localize(liveLinks[link.label] ?? link.href)}>{link.label}</a>
             </li>
           ))}
         </ul>

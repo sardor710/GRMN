@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { PlayIcon } from "@/components/icons";
+import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
 interface MarqScrollVideoProps {
   src: string;
@@ -16,6 +17,7 @@ interface MarqScrollVideoProps {
  * view (mirrors the site's fixed scroll-play video). Optional centered overlay.
  */
 export function MarqScrollVideo({ src, title, subtitle, ctaLabel, ctaHref }: MarqScrollVideoProps) {
+  const localize = useLocalizeHref();
   const sectionRef = useRef<HTMLElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
 
@@ -60,7 +62,7 @@ export function MarqScrollVideo({ src, title, subtitle, ctaLabel, ctaHref }: Mar
           {ctaLabel && (
             ctaHref ? (
               <a
-                href={ctaHref}
+                href={localize(ctaHref)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-8 inline-flex items-center gap-2 border border-white/80 px-7 py-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-white transition-colors hover:bg-white hover:text-black cursor-pointer"

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import type { ProductDetail } from "@/types";
 import { useCart } from "@/lib/cart";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";

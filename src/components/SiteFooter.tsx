@@ -7,6 +7,7 @@ import {
   PinterestIcon,
   InstagramIcon,
 } from "@/components/icons";
+import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
 const socials = [
   { label: "Facebook", Icon: FacebookIcon },
@@ -17,6 +18,7 @@ const socials = [
 ];
 
 export function SiteFooter() {
+  const localize = useLocalizeHref();
   return (
     <footer className="bg-black text-white">
       <div className="mx-auto max-w-[1200px] px-4 py-12">
@@ -31,7 +33,7 @@ export function SiteFooter() {
                 {col.links.map((link) => (
                   <li key={link.label}>
                     <a
-                      href={link.href}
+                      href={localize(link.href)}
                       className="text-[13px] text-neutral-300 transition-colors hover:text-white"
                     >
                       {link.label}
@@ -66,7 +68,7 @@ export function SiteFooter() {
           <ul className="flex flex-wrap gap-x-5 gap-y-2">
             {legalLinks.map((link) => (
               <li key={link.label}>
-                <a href={link.href} className="transition-colors hover:text-white">
+                <a href={localize(link.href)} className="transition-colors hover:text-white">
                   {link.label}
                 </a>
               </li>

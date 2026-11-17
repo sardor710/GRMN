@@ -5,6 +5,7 @@ import type { Product } from "@/types";
 import { activityFilters, levelFilters, caseSizeFilters } from "@/lib/products";
 import { ProductCard } from "@/components/ProductCard";
 import { ChevronRightIcon } from "@/components/icons";
+import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
 type SortKey = "featured" | "price-asc" | "price-desc" | "name";
 
@@ -72,6 +73,7 @@ function Check({
 }
 
 export function CatalogueGrid({ products }: { products: Product[] }) {
+  const localize = useLocalizeHref();
   const [activities, setActivities] = useState<Set<string>>(new Set());
   const [levels, setLevels] = useState<Set<string>>(new Set());
   const [sizes, setSizes] = useState<Set<string>>(new Set());
@@ -109,7 +111,7 @@ export function CatalogueGrid({ products }: { products: Product[] }) {
     <div className="mx-auto flex max-w-[1400px] flex-col gap-8 px-4 lg:flex-row">
       {/* Sidebar */}
       <aside className="w-full shrink-0 lg:w-[240px]">
-        <a href="/compare" className="g-btn g-btn--solid w-full">Compare</a>
+        <a href={localize("/compare")} className="g-btn g-btn--solid w-full">Compare</a>
         {activeCount > 0 && (
           <button
             onClick={clearAll}

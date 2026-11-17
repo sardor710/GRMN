@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { lifestyleSlides, accentColor } from "@/lib/marq";
+import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
 const DURATION = 6000; // ms per slide
 
@@ -95,6 +96,7 @@ const SLIDE_KEYS = [
  * - Subtle Carousel Play/Pause button next to progress bars
  */
 export function MarqLifestyleCarousel() {
+  const localize = useLocalizeHref();
   const [active, setActive] = useState(0);
   const [tick, setTick] = useState(0);
   const [autoPlay, setAutoPlay] = useState(true);
@@ -163,7 +165,7 @@ export function MarqLifestyleCarousel() {
           style={{ backgroundColor: accentColor[slide.accent] || "#fff" }}
         />
         <a
-          href={slide.href}
+          href={localize(slide.href)}
           className="inline-flex items-center gap-1.5 text-[15px] font-medium uppercase tracking-wider text-white transition-colors hover:text-white/70"
         >
           Learn More
