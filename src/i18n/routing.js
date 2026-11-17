@@ -1,0 +1,72 @@
+import { DEFAULT_LOCALE, isLocale } from './config.js';
+
+const EXCLUDED_PREFIXES = [
+  '/admin',
+  '/api',
+  '/uploads',
+  '/_next',
+  '/robots.txt',
+  '/sitemap.xml',
+  '/seo',
+  '/homepage',
+  '/images',
+  '/videos',
+];
+
+/** True for paths that are never locale-prefixed or redirected (matched on segment boundaries). */
+export function isExcludedPath(pathname) {
+  for (const prefix of EXCLUDED_PREFIXES) {
+    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) return true;
+  }
+  const last = pathname.split('/').pop() ?? '';
+  return /\.[^./]+$/.test(last);
+}
+
+/** Splits a leading locale segment off a pathname. `rest` always starts with "/". */
+export function stripLocale(pathname) {
+  const match = /^\/([^/]+)(\/.*)?$/.exec(pathname);
+  if (match && isLocale(match[1])) {
+    return { locale: match[1], rest: match[2] || '/' };
+  }
+  return { locale: null, rest: pathname };
+}
+
+function parseAcceptLanguage(header) {
+  const entries = [];
+  header.split(',').forEach((part, index) => {
+    const [tag, ...params] = part.split(';').map((s) => s.trim());
+    if (!tag || tag === '*') return;
+    let q = 1;
+    for (const param of params) {
+      const m = /^q=(\d*\.?\d+)$/i.exec(param);
+      if (m) q = Number(m[1]);
+    }
+    if (!(q > 0)) return;
+    entries.push({ primary: tag.toLowerCase().split('-')[0], q, index });
+  });
+  entries.sort((a, b) => b.q - a.q || a.index - b.index);
+  return entries;
+}
+
+/** Cookie wins, then Accept-Language (q-weighted, primary subtag), then DEFAULT_LOCALE. */
+export function negotiateLocale({ cookie, acceptLanguage } = {}) {
+  if (cookie && isLocale(cookie)) return cookie;
+  if (acceptLanguage) {
+    for (const { primary } of parseAcceptLanguage(acceptLanguage)) {
+      if (isLocale(primary)) return primary;
+    }
+  }
+  return DEFAULT_LOCALE;
+}
+
+/** Adds (or swaps) the locale prefix on an internal path; leaves external/excluded hrefs untouched. */
+export function localizeHref(href, locale) {
+  if (!href.startsWith('/') || href.startsWith('//')) return href;
+  const match = /^([^?#]*)(.*)$/.exec(href);
+  const path = match[1];
+  const suffix = match[2];
+  const { locale: existing, rest } = stripLocale(path);
+  if (existing === null && isExcludedPath(path)) return href;
+  const base = existing === null ? path : rest;
+  return `/${locale}${base === '/' ? '' : base}${suffix}`;
+}
