@@ -19,6 +19,10 @@ export type RouteKey =
   | "minisite:why-garmin"
   | "minisite:garmin-pay";
 
+export const SITE_URL: string = core.SITE_URL;
+export const absoluteUrl: (path: string) => string = (path) => core.absoluteUrl(path);
+export const localizedUrl: (path: string, locale: Locale) => string = (path, locale) => core.localizedUrl(path, locale);
+
 export const ROUTE_LOCALES = core.ROUTE_LOCALES as Record<RouteKey, readonly Locale[]>;
 
 export interface AlternatesInput {
@@ -51,7 +55,7 @@ interface LocalizedSeoInput {
 
 /** `alternates`, `robots` and the OG locale fields shared by every localized page. */
 export function localizedSeo(input: LocalizedSeoInput): Pick<Metadata, "alternates" | "robots"> & {
-  openGraph: { url: string; locale: string; alternateLocale: string[] };
+  openGraph: { url: string; siteName: string; locale: string; alternateLocale: string[] };
 } {
   const { locale, indexedLocales, noIndex } = input;
   const { canonical, languages } = buildAlternates(input);
@@ -66,6 +70,7 @@ export function localizedSeo(input: LocalizedSeoInput): Pick<Metadata, "alternat
         : { index: false, follow: true },
     openGraph: {
       url: selfUrl,
+      siteName: "Garmin",
       locale: OG_LOCALE[locale],
       alternateLocale: LOCALES.filter((l) => l !== locale && indexedLocales.includes(l)).map((l) => OG_LOCALE[l]),
     },

@@ -43,3 +43,12 @@ test('ROUTE_LOCALES table', () => {
     assert.deepEqual(ROUTE_LOCALES[key], ['en'], key);
   }
 });
+
+import { absoluteUrl, localizedUrl } from '../src/i18n/seo-core.js';
+
+test('absoluteUrl / localizedUrl use the given site origin', () => {
+  assert.equal(absoluteUrl('/images/a.jpg', 'https://h.test'), 'https://h.test/images/a.jpg');
+  assert.equal(absoluteUrl('https://cdn/x.jpg', 'https://h.test'), 'https://cdn/x.jpg');
+  assert.equal(localizedUrl('/p/x', 'kk', 'https://h.test'), 'https://h.test/kk/p/x');
+  assert.equal(localizedUrl('/', 'ru', 'https://h.test'), 'https://h.test/ru');
+});

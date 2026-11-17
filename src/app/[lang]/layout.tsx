@@ -6,6 +6,7 @@ import "../globals.css";
 import "../garmin-fonts.css";
 import { CartProvider } from "@/lib/cart";
 import { LOCALES } from "@/i18n/config";
+import { SITE_URL } from "@/i18n/seo";
 import { bodyClassName, htmlClassName, siteIcons } from "../fonts";
 
 /** Message namespaces that client components read. Server-only namespaces stay off the client. */
@@ -31,8 +32,6 @@ const CLIENT_NAMESPACES: readonly string[] = [
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
 }
-
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.garmin.com";
 
 export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Promise<Metadata> {
   const { lang } = await params;

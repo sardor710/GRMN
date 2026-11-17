@@ -11,7 +11,7 @@ import { getBlogs } from "@/lib/cms/store";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import type { CMSBlog } from "@/lib/cms/types";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
-import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
+import { ROUTE_LOCALES, localizedSeo, localizedUrl } from "@/i18n/seo";
 import { formatDate } from "@/i18n/format";
 
 export function generateStaticParams() {
@@ -101,9 +101,9 @@ export default async function ArticlePage({ params }: PageProps<"/[lang]/blog/[s
   };
 
   const breadcrumbs = [
-    { name: "Garmin", url: "https://www.garmin.com" },
-    { name: "Blog", url: "https://www.garmin.com/blog" },
-    { name: activeBlog.title, url: `https://www.garmin.com/blog/${activeBlog.slug}` },
+    { name: "Garmin", url: localizedUrl("/", locale) },
+    { name: "Blog", url: localizedUrl("/blog", locale) },
+    { name: activeBlog.title, url: localizedUrl(`/blog/${activeBlog.slug}`, locale) },
   ];
 
   const body = post ? articleBody(post) : [activeBlog.content];
@@ -118,7 +118,7 @@ export default async function ArticlePage({ params }: PageProps<"/[lang]/blog/[s
   return (
     <div className="flex min-h-screen flex-col bg-white">
       {/* Structured Article Schema for Google Rich Results */}
-      <ArticleJsonLd blog={activeBlog} url={`https://www.garmin.com/${locale}/blog/${slug}`} locale={locale} />
+      <ArticleJsonLd blog={activeBlog} url={localizedUrl(`/blog/${slug}`, locale)} locale={locale} />
       <BreadcrumbJsonLd items={breadcrumbs} />
 
       <SiteHeader />

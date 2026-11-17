@@ -8,7 +8,7 @@ import { RelatedProducts } from "@/components/RelatedProducts";
 import { getProductDetail, getAllProducts, getCMSProduct } from "@/lib/products";
 import { ProductJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
-import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
+import { ROUTE_LOCALES, localizedSeo, localizedUrl } from "@/i18n/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -102,15 +102,15 @@ export default async function ProductPage({ params }: PageProps<"/[lang]/p/[id]"
   };
 
   const breadcrumbs = [
-    { name: "Garmin", url: "https://www.garmin.com" },
-    { name: "Smartwatches", url: "https://www.garmin.com/c/wearables-smartwatches" },
-    { name: fullProduct.name, url: `https://www.garmin.com/p/${fullProduct.id}` },
+    { name: "Garmin", url: localizedUrl("/", locale) },
+    { name: "Smartwatches", url: localizedUrl("/c/wearables-smartwatches", locale) },
+    { name: fullProduct.name, url: localizedUrl(`/p/${fullProduct.id}`, locale) },
   ];
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
       {/* Google Structured Data */}
-      <ProductJsonLd product={fullProduct} url={`https://www.garmin.com/${locale}/p/${id}`} locale={locale} />
+      <ProductJsonLd product={fullProduct} url={localizedUrl(`/p/${id}`, locale)} locale={locale} />
       <BreadcrumbJsonLd items={breadcrumbs} />
 
       <SiteHeader />

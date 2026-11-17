@@ -1,5 +1,6 @@
 import type { CMSProduct, CMSBlog } from "@/lib/cms/types";
 import type { Locale } from "@/i18n/config";
+import { SITE_URL, absoluteUrl } from "@/i18n/seo";
 
 interface ProductJsonLdProps {
   product: CMSProduct;
@@ -14,7 +15,7 @@ export function ProductJsonLd({ product, url, locale }: ProductJsonLdProps) {
     "@type": "Product",
     inLanguage: locale,
     name: product.name,
-    image: [product.image.startsWith("http") ? product.image : `https://www.garmin.com${product.image}`],
+    image: [absoluteUrl(product.image)],
     description: product.seoDescription || product.description,
     sku: product.sku || `GRM-${product.id}`,
     mpn: product.id,
@@ -64,7 +65,7 @@ export function ArticleJsonLd({ blog, url, locale }: ArticleJsonLdProps) {
     "@type": "Article",
     inLanguage: locale,
     headline: blog.seoTitle || blog.title,
-    image: [blog.coverImage.startsWith("http") ? blog.coverImage : `https://www.garmin.com${blog.coverImage}`],
+    image: [absoluteUrl(blog.coverImage)],
     datePublished: blog.publishedAt || blog.createdAt,
     dateModified: blog.publishedAt || blog.createdAt,
     author: {
@@ -76,7 +77,7 @@ export function ArticleJsonLd({ blog, url, locale }: ArticleJsonLdProps) {
       name: "Garmin",
       logo: {
         "@type": "ImageObject",
-        url: "https://www.garmin.com/seo/og-image.jpg",
+        url: `${SITE_URL}/seo/og-image.jpg`,
       },
     },
     description: blog.seoDescription || blog.excerpt,
