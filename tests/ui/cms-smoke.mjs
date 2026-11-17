@@ -98,6 +98,28 @@ try{
   console.log("PASS Task09 review fixes: invalid filters/cursors/keys are 404 and malformed URLs are not 503");
   console.log("PASS Task09 public catalog/filters/Compare/exact JSONLD/sitemap/404/Unicode and newly-admin-created visibility without rebuild");
 
+  // Task 10C: the mounted account page shows only the signed-in customer's own records.
+  const customerId=randomUUID();await database.pool.query("INSERT INTO users(id,name,email,phone_number,phone_number_verified) VALUES($1,'UI Account Owner','ui-owner@example.invalid','+77000000077',true)",[customerId]);
+  const legacyId=randomUUID(),orderClient=await database.pool.connect();
+  try{await orderClient.query("BEGIN");await orderClient.query("INSERT INTO orders(id,user_id,contact_name,contact_phone,data_quality,total_minor) VALUES($1,$2,'UI Account Owner','+77000000077','legacy_incomplete',4321)",[legacyId,customerId]);await orderClient.query("INSERT INTO order_addresses(id,order_id,kind,legacy_raw) VALUES($1,$2,'legacy_unstructured','UI legacy typed address')",[randomUUID(),legacyId]);await orderClient.query("COMMIT");}catch(error){await orderClient.query("ROLLBACK");throw error;}finally{orderClient.release();}
+  const legacyNumber=(await database.pool.query("SELECT order_number FROM orders WHERE id=$1",[legacyId])).rows[0].order_number;
+  const low=async()=>(await text()).toLowerCase();
+  await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
+  await navigate("/account");await until(async()=>(await low()).includes("sign in with your phone"),"Signed-out account page did not offer phone sign-in").catch(async error=>{await writeFile(path.join(receipt,"account-body.txt"),await text());throw error;});assert.ok(!(await low()).includes("ui account owner"));
+  const customerSession=await(await runtime.auth.$context).internalAdapter.createSession(customerId);
+  await send("Network.setCookie",{name:"grmn-auth.session_token",value:encodeURIComponent(customerSession.token+"."+createHmac("sha256",secret).update(customerSession.token).digest("base64")),url:origin,httpOnly:true,sameSite:"Lax"});
+  await navigate("/account");await until(async()=>(await low()).includes("ui account owner"),"Account page did not load the session profile");
+  assert.ok(!(await low()).includes("alex rivera"));assert.ok((await low()).includes("no saved addresses yet"));
+  await click("Add Address");await until(()=>evaluate("!!document.querySelector('form[name=address]')"),"Address form missing");
+  await fill("Address Title","UI Home");await fill("Street Address","UI street 10");await fill("City","Almaty");
+  await evaluate("document.querySelector('form[name=address]').requestSubmit();true");await until(()=>evaluate("!document.querySelector('form[name=address]')"),"Address save failed");
+  const savedAddress=(await database.pool.query("SELECT label,line1,is_primary,phone FROM customer_addresses WHERE user_id=$1",[customerId])).rows;assert.equal(savedAddress.length,1);assert.equal(savedAddress[0].label,"UI Home");assert.equal(savedAddress[0].is_primary,true);assert.equal(savedAddress[0].phone,"+77000000077");
+  await navigate("/account");await until(async()=>(await low()).includes("ui street 10"),"Saved address did not persist across reload");
+  await click("Orders");await until(async()=>(await low()).includes(legacyNumber.toLowerCase()),"Owned order missing from history");assert.ok((await low()).includes("43.21 kzt"));
+  await click(legacyNumber);await until(async()=>(await low()).includes("ui legacy typed address"),"Order detail did not load");assert.match(await low(),/subtotal\s+—/);
+  assert.ok(!(await low()).includes("send reset link"));
+  console.log("PASS Task10C account page: signed-out phone sign-in, session profile, address create + reload persistence, owned legacy order with missing money shown as —");
+
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");
   console.log("Browser smoke passed: 20/5 cursor pages, server search, versioned product create/update, homepage editor save/render, article create/public render, banner create/archive, provisional customer create, KZT rendering and unchanged source bytes.");

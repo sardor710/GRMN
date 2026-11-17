@@ -18,5 +18,5 @@ export function componentFixture(file,{backend="postgres",items=[],fetcher=async
   const Component=output.default??Object.values(output).find(value=>typeof value==="function");
   return{render(props={}){index=0;effects.length=0;return Component(props);},effects,writes,collection,state,async flush(){await new Promise(resolve=>setImmediate(resolve));}};
 }
-export function nodes(tree){if(!tree||typeof tree!=="object")return[];if(Array.isArray(tree))return tree.flatMap(nodes);return[tree,...nodes(tree.props?.children)];}
+export function nodes(tree){if(!tree||typeof tree!=="object")return[];if(Array.isArray(tree))return tree.flatMap(nodes);return[tree,...nodes(tree.props?.action),...nodes(tree.props?.children)];}
 export function nodeText(tree){if(tree==null||typeof tree==="boolean")return"";if(typeof tree!=="object")return String(tree);if(Array.isArray(tree))return tree.map(nodeText).join(" ");return nodeText(tree.props?.children);}

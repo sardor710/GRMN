@@ -14,8 +14,9 @@ test("all admin routes bind the guarded runtime and every private page checks se
   const pages=["",...readdirSync(new URL("src/app/admin/",root),{withFileTypes:true}).filter(entry=>entry.isDirectory()&&entry.name!=="login"&&!entry.name.startsWith("_")).map(entry=>entry.name+"/")];
   for(const page of pages){const source=read(`src/app/admin/${page}page.tsx`);assert.doesNotMatch(source,/use client|cms\/store/);assert.match(source,/await authorizeAdminPage\(/);assert.match(source,/if \(!access\.allowed\)/);}
 });
-test("public account route never imports the preserved shared dashboard or selects orders by contact",async()=>{
-  const source=read("src/app/account/page.tsx");assert.doesNotMatch(source,/AccountDashboard|data\.json|seed/);
+test("public account route mounts only the session-owned dashboard and never selects orders by contact",async()=>{
+  const source=read("src/app/account/page.tsx");assert.match(source,/AccountDashboard/);assert.doesNotMatch(source,/data\.json|seed|cms\/store/);
+  const dashboard=read("src/components/AccountDashboard.tsx");assert.doesNotMatch(dashboard,/\?email=|@\/lib\/cms|data\.json/);assert.match(dashboard,/@\/lib\/account-client/);
   const {GET}=await import("../../src/app/api/account/orders/route.ts");
   for(const query of ["","?email=victim@example.invalid","?phone=+77000000000"]){const response=await GET(new Request("http://localhost:3000/api/account/orders"+query));assert.equal(response.status,503);assert.doesNotMatch(await response.text(),/clientEmail|ordersCount|shippingAddress/);}
 });

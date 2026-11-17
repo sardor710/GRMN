@@ -4,9 +4,9 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 ## Current position
 
-- **Completed:** Tasks **01–09**, **10A** (account APIs and ownership) and **10B** (legacy claims, verified phone change/recovery, staff credential change), within the scope and activation limits below.
-- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, and 10B in the commit after it (see `git log`). The earlier note calling 10A "uncommitted" was out of date and is corrected here.
-- **Next:** Task **10C**: wire the AccountDashboard UI to `/api/account/*` (profile, addresses, orders, phone, claims) with loading, empty and error states. Replace the fake password-reset modal with phone verification. See [the 10B handoff](handoffs/task-10b.md#exact-next-step).
+- **Completed:** Tasks **01–10** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring), within the scope and activation limits below.
+- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, and 10C in the commit after it (see `git log`).
+- **Next:** Task **11**: inventory ledger and race-safe reservations. See [the 10C handoff](handoffs/task-10c.md#exact-next-step).
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
 - **Active implementation:** `C:/Users/Freakman/.codex/worktrees/backend-task-02/GRMN`, branch `codex/backend-task-02`.
 - **Original checkout:** `D:/projects/garmin/GRMN`. Its progress documentation is synchronized, but the backend implementation has **not** been merged or copied there. An AI inspecting only that checkout's application files will see older code. Continue code work in the active worktree above.
@@ -80,19 +80,26 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 [Detailed receipt](handoffs/task-10b.md).
 
-## Task 10C — next, not started
+### Task 10C
 
-Required work:
-- Mount a session-owned account page and wire `AccountDashboard.tsx` to `/api/account/*`, with loading, empty and error states. Remove the `?email=` fetch and the demo literals.
-- Replace the fake password-reset modal with phone verification (and staff `change-password`).
-- Handle `signedOut` after a phone change, plus nullable legacy money and addresses.
-- Keep mutations disabled on failure.
+**Complete — account UI wiring (2026-11-17).**
+- `/account` now mounts `AccountDashboard.tsx`, rewritten to read only `/api/auth/get-session` and `/api/account/*` through the new browser client `src/lib/account-client.ts`. The demo profile, addresses, orders, devices and subscriptions and the `?email=` fetch are gone.
+- **States:** loading; signed out (phone sign-in with send/verify and new-account completion); unavailable (503: no mutations); error (any partial load failure shows nothing and offers Try again).
+- **Profile and addresses** save with versions; a 409 refreshes the version so the edit can be resubmitted; a successful write is never reported as failed when only the list refresh fails.
+- **Orders:** cursor pages, detail with exact KZT; missing legacy subtotal/discount/shipping/tax show "—"; legacy raw or missing delivery addresses are labelled.
+- **Credentials:** no password reset for customers. Customers change phone with `phone_change_new` then `phone_change_current` codes and are signed out; staff use `/api/auth/change-password` and see its real errors. Spent codes are dropped after a failed submit.
+- **Legacy claim:** receipt + fresh `order_claim` code. Sign-out clears every typed form for the next person on the device.
+- **Review:** no Critical findings; nine Important findings fixed test-first.
+- **Gates:** final `npm test` **349/349** (21 legacy + 135 unit + 193 integration) with boundaries passing; `npm run check` passes (0 errors, 23 warnings); the full admin + public + new account Chrome smoke passed.
+
+[Detailed receipt](handoffs/task-10c.md).
+
 ## Remaining task list
 
 | Task | Status | Work still required |
 |---|---|---|
-| 10 | 10A and 10B complete; 10C next | 10C: AccountDashboard UI wiring and the UI credential/recovery flow |
-| 11 | Not started | Inventory ledger and race-safe reservations |
+| 10 | Complete (10A, 10B, 10C) | — |
+| 11 | Next, not started | Inventory ledger and race-safe reservations |
 | 12 | Not started | Durable inbox/outbox and background workers |
 | 13 | Not started | Server cart, pricing, shipping/tax quotes and promotion quotas |
 | 14 | Not started | Idempotent checkout and pending orders |
