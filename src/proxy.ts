@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { decideLocaleRedirect, stripLocale } from "@/i18n/routing";
+import { LOCALE_REDIRECT_HEADERS, decideLocaleRedirect, stripLocale } from "@/i18n/routing";
 import { LOCALE_COOKIE } from "@/i18n/config";
 
 /** next-intl reads the request locale from this header when `setRequestLocale` was not called. */
@@ -13,7 +13,11 @@ export function proxy(request: NextRequest) {
     request.cookies.get(LOCALE_COOKIE)?.value,
     request.headers.get("accept-language") ?? undefined,
   );
-  if (target) return NextResponse.redirect(new URL(target, request.url), 307);
+  if (target) {
+    const response = NextResponse.redirect(new URL(target, request.url), 307);
+    for (const [name, value] of Object.entries(LOCALE_REDIRECT_HEADERS)) response.headers.set(name, value);
+    return response;
+  }
 
   const headers = new Headers(request.headers);
   const { locale } = stripLocale(pathname);

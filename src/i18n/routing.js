@@ -82,3 +82,12 @@ export function decideLocaleRedirect(pathname, search, cookie, acceptLanguage) {
   const locale = negotiateLocale({ cookie, acceptLanguage });
   return `/${locale}${pathname === '/' ? '' : pathname}${search || ''}`;
 }
+
+/**
+ * Headers for the locale redirect: its target depends on the cookie and Accept-Language, so
+ * shared caches must not reuse it across users.
+ */
+export const LOCALE_REDIRECT_HEADERS = Object.freeze({
+  Vary: 'Cookie, Accept-Language',
+  'Cache-Control': 'private, no-store',
+});

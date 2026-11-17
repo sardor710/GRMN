@@ -25,3 +25,6 @@ export function decideLocaleRedirect(
 ): string | null {
   return js.decideLocaleRedirect(pathname, search, cookie, acceptLanguage);
 }
+
+export const LOCALE_REDIRECT_HEADERS: Readonly<Record<"Vary" | "Cache-Control", string>> =
+  js.LOCALE_REDIRECT_HEADERS;

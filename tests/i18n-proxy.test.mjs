@@ -35,3 +35,8 @@ test('proxy matcher: runs for public paths, skips excluded ones', async () => {
   for (const p of ['/admin', '/admin/x', '/api/x', '/uploads/a.png', '/_next/static/a.js', '/robots.txt', '/sitemap.xml', '/seo/x', '/homepage/x', '/images/a', '/videos/a', '/favicon.ico', '/a/b/c.js'])
     assert.equal(re.test(p), false, p);
 });
+
+test('locale redirect headers: vary on Cookie + Accept-Language and are never cached publicly', async () => {
+  const { LOCALE_REDIRECT_HEADERS } = await import('../src/i18n/routing.js');
+  assert.deepEqual({ ...LOCALE_REDIRECT_HEADERS }, { Vary: 'Cookie, Accept-Language', 'Cache-Control': 'private, no-store' });
+});
