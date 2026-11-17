@@ -139,29 +139,54 @@ export interface CustomerProfileDTO {
   version: number;
 }
 
-export interface CartLineCommand {
-  variantId: string;
+/** POST /api/cart/lines adds `quantity` to a line; identify it by variant or by product (its default variant). */
+export interface CartAddCommand {
+  variantId?: string;
+  productKey?: string;
   quantity: number;
   expectedCartVersion: number;
+}
+
+/** PUT /api/cart/lines/{variantId} sets the quantity; 0 removes the line. */
+export interface CartLineCommand {
+  quantity: number;
+  expectedCartVersion: number;
+}
+
+/** One-time import of the browser-stored cart: ids and quantities only, never names or prices. */
+export interface CartImportCommand {
+  items: { id: string; quantity: number }[];
 }
 
 export interface CartLineDTO {
   variantId: string;
   productKey: string;
   name: string;
+  variantName: string;
+  image: string | null;
   quantity: number;
-  unitPrice: Money;
-  lineTotal: Money;
+  /** Null when the variant is no longer sold; such a line is excluded from the subtotal. */
+  unitPrice: Money | null;
+  /** The price the shopper last saw, when it differs from the current one. */
+  previousUnitPrice: Money | null;
+  lineTotal: Money | null;
   availability: Availability;
 }
 
+export type CartNoticeCode = "price_changed" | "quantity_adjusted" | "item_unavailable";
+
 export interface CartDTO {
-  id: string;
+  /** Null until the first line is added. */
+  id: string | null;
   version: number;
+  owner: "guest" | "account";
   lines: CartLineDTO[];
+  /** Sum of the available lines only. Display value; the checkout quote is authoritative. */
   subtotal: Money;
-  expiresAt: string;
-  notices: { code: "price_changed" | "quantity_adjusted" | "item_unavailable"; variantId: string }[];
+  expiresAt: string | null;
+  /** True when a signed-in shopper still holds a guest cart that can be merged. */
+  pendingMerge: boolean;
+  notices: { code: CartNoticeCode; variantId: string }[];
 }
 
 export interface QuoteCommand {
@@ -265,8 +290,13 @@ export interface OrderTransitionCommand {
 }
 
 export interface WishlistItemDTO {
-  id: string;
-  product: ProductCardDTO;
+  productKey: string;
+  name: string;
+  image: string | null;
+  /** Lowest active KZT price; null when the product is archived or not sold. */
+  price: Money | null;
+  availability: Availability;
+  archived: boolean;
   addedAt: string;
 }
 

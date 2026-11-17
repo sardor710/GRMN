@@ -29,6 +29,16 @@ test("variant selection changes the actual price and media without fabricating o
  let tree=fixture.render(props);const selector=nodes(tree).find(n=>n.type==="select"&&n.props["aria-label"]==="Variant");assert.ok(selector);selector.props.onChange({target:{value:"b"}});tree=fixture.render(props);assert.match(nodeText(tree),/2500 KZT/);assert.ok(nodes(tree).some(n=>n.props?.src==="/images/b.jpg"));assert.doesNotMatch(nodeText(tree),/1–3 business days/);
 });
 
+test("Task 13A: in server-cart mode an available variant is added by its exact id; an out-of-stock one is not offered",async()=>{
+ const commerce={selectedVariantId:"a",variants:[{id:"a",sku:"A",name:"Small",options:{size:"Small"},availability:"out_of_stock",price:{selling:{amountMinor:"1000"}},gallery:[]},{id:"b",sku:"B",name:"Large",options:{size:"Large"},availability:"available",price:{selling:{amountMinor:"2500"}},gallery:[]}]};
+ const adds=[];const fixture=componentFixture("src/components/ProductTop.tsx",{modules:{"@/lib/cart":{useCart:()=>({mode:"server",add:async item=>{adds.push(item);}})},"@/lib/cart-client":{createCartClient:()=>({}),CartRequestError:Error},"@/lib/public-catalog":{minorToMajor:v=>String(BigInt(v)/100n),catalogPriceLabel:p=>p.selling.amountMinor+" KZT"}}});
+ const props={product:{id:"fixture",title:"Model",price:"10.00",priceLabel:"1000 KZT",currency:"KZT",purchasable:false,breadcrumb:[],gallery:[],caseSizes:[],versions:[],colors:[],commerce}};
+ const button=tree=>nodes(tree).find(n=>n.type==="button"&&/Add to Cart|Out of stock|Purchasing unavailable/.test(nodeText(n)));
+ let tree=fixture.render(props);assert.equal(button(tree).props.disabled,true);assert.match(nodeText(button(tree)),/Out of stock/);
+ nodes(tree).find(n=>n.type==="select"&&n.props["aria-label"]==="Variant").props.onChange({target:{value:"b"}});tree=fixture.render(props);
+ assert.equal(button(tree).props.disabled,false);await button(tree).props.onClick();assert.equal(adds[0].variantId,"b");assert.equal(adds[0].id,"fixture");
+});
+
 test("normalized structured offers keep exact KZT money and real availability",()=>{
  const fixture=componentFixture("src/components/seo/JsonLd.tsx",{modules:{"@/lib/json-ld":{serializeJsonLd:JSON.stringify},"@/lib/public-catalog":{minorToMajor:()=>"90071992547409.93"}}});
  const tree=fixture.render({product:{publicKey:"exact",name:"Exact",description:"D",image:null,price:{selling:{amountMinor:"9007199254740993",currency:"KZT"}},variants:[{id:"v",sku:"V",availability:"available",price:{selling:{amountMinor:"9007199254740993",currency:"KZT"}}}]},url:"https://example.invalid/p/exact"});

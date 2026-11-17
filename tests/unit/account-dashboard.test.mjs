@@ -128,6 +128,24 @@ test("a rejected write shows the server error and keeps the form open", async ()
   assert.ok(nodes(view.tree).some(node => node.type === "form" && node.props.name === "address"));
 });
 
+test("the wishlist tab lists the session's saved products, marks archived ones and removes by product key", async () => {
+  const saved = { productKey: "fenix-8", name: "Saved watch", image: null, price: { amountMinor: "45000000", currency: "KZT" }, availability: "available", archived: false, addedAt: "2026-11-10T10:00:00.000Z" };
+  const gone = { productKey: "old-watch", name: "Retired watch", image: null, price: null, availability: "unavailable", archived: true, addedAt: "2026-11-09T10:00:00.000Z" };
+  const view = await mount(signedIn({ "GET /api/account/wishlist": [200, { items: [saved, gone] }], "DELETE /api/account/wishlist/old-watch": [200, { items: [saved] }] }));
+  await view.click("Wishlist");
+  assert.match(view.text(), /Saved watch/); assert.match(view.text(), /450[\s ,.]?000[.,]00 KZT/);
+  assert.match(view.text(), /Retired watch/); assert.match(view.text(), /no longer available/i);
+  const remove = nodes(view.tree).find(node => node.type === "button" && node.props["aria-label"] === "Remove Retired watch from wishlist");
+  assert.ok(remove); await remove.props.onClick(); await settle(); view.rerender();
+  assert.ok(view.calls.some(call => call.key === "DELETE /api/account/wishlist/old-watch"));
+  assert.doesNotMatch(view.text(), /Retired watch/);
+});
+
+test("the account tabs that are not built yet say so and show no records", async () => {
+  const view = await mount(signedIn());
+  for (const tab of ["Devices", "Subscriptions"]) { await view.click(tab); assert.match(view.text(), /not available yet/i); }
+});
+
 test("order detail shows exact KZT and marks missing legacy money and addresses", async () => {
   const view = await mount(signedIn({ "GET /api/account/orders?limit=20": [200, { items: [ORDER], nextCursor: null }], [`GET /api/account/orders/${ORDER.id}`]: [200, DETAIL] }));
   await view.click("Orders");
@@ -225,6 +243,20 @@ test("review I1: signing out clears every form so the next person on the device 
   await view.click("Orders");
   for (const name of ["claimOrderId", "claimReceipt"]) assert.equal(nodes(view.tree).find(node => node.props?.name === name).props.value, "", name);
   assert.doesNotMatch(view.text(), /first-person/);
+});
+
+test("13A review I2: in-page sign-out and sign-in announce the session change so the server cart re-syncs and merges", async () => {
+  const events = [], saved = globalThis.window;
+  globalThis.window = { dispatchEvent: event => { events.push(event.type); return true; } };
+  try {
+    const routes = signedIn({ "POST /api/auth/sign-out": [200, { success: true }], "POST /api/auth/grmn/phone/send": [200, { challengeId: "00000000-0000-4000-8000-0000000000dd" }], "POST /api/auth/grmn/phone/verify": [200, { state: "authenticated" }] });
+    const view = await mount(routes);
+    await view.click("Sign Out");
+    assert.deepEqual(events, ["grmn:session-changed"]);
+    view.input("signInPhone", "+77000000003"); await view.submit("sign-in"); view.input("signInCode", "123456");
+    await view.submit("sign-in-verify");
+    assert.deepEqual(events, ["grmn:session-changed", "grmn:session-changed"]);
+  } finally { if (saved === undefined) delete globalThis.window; else globalThis.window = saved; }
 });
 
 test("review I2: a saved address is reported saved even when the list refresh fails, so it is not resubmitted", async () => {

@@ -21,7 +21,7 @@ test("public account route mounts only the session-owned dashboard and never sel
   for(const query of ["","?email=victim@example.invalid","?phone=+77000000000"]){const response=await GET(new Request("http://localhost:3000/api/account/orders"+query));assert.equal(response.status,503);assert.doesNotMatch(await response.text(),/clientEmail|ordersCount|shippingAddress/);}
 });
 test("every account API route binds the session-owned handler and stays closed outside postgres+auth mode",async()=>{
-  const routes={"profile":["GET","PUT"],"addresses":["GET","POST"],"addresses/[id]":["PUT","DELETE"],"orders":["GET"],"orders/[id]":["GET"],"phone":["POST"],"claims":["POST"]};
+  const routes={"profile":["GET","PUT"],"addresses":["GET","POST"],"addresses/[id]":["PUT","DELETE"],"orders":["GET"],"orders/[id]":["GET"],"phone":["POST"],"claims":["POST"],"wishlist":["GET","POST"],"wishlist/[id]":["DELETE"]};
   const saved={AUTH_ENABLED:process.env.AUTH_ENABLED,CMS_BACKEND:process.env.CMS_BACKEND};
   try{
     for(const env of [{CMS_BACKEND:"legacy",AUTH_ENABLED:"1"},{CMS_BACKEND:"postgres",AUTH_ENABLED:"0"}]){

@@ -6,6 +6,7 @@ import Link from "next/link";
 import {minorToMajor,catalogPriceLabel} from "@/lib/public-catalog";
 import type { ProductDetail } from "@/types";
 import { useCart } from "@/lib/cart";
+import { CartRequestError, createCartClient } from "@/lib/cart-client";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { GarminBadge } from "@/components/GarminBadge";
 
@@ -18,18 +19,37 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   const [version, setVersion] = useState(product.defaultVersion);
   const [colorIdx, setColorIdx] = useState(0);
   const [added, setAdded] = useState(false);
-  const { add } = useCart();
+  const { add, mode } = useCart();
+  const [notice, setNotice] = useState<string | null>(null);
+  const [wish, setWish] = useState<"idle" | "saving" | "saved">("idle");
 
-  const handleAdd = () => {
-    if(product.purchasable===false||typeof product.price!=="number")return;
-    add({
-      id: product.id,
-      name: product.title,
-      price: product.price,
-      image: product.gallery[0]?.src,
-    });
+  // Server cart (Task 13A): the selected variant's real availability decides; the server prices it.
+  // `purchasable` still means checkout, which stays off until Task 14.
+  const serverCart = mode === "server" && !!initial.commerce;
+  const sellable = serverCart ? variant?.availability === "available" : product.purchasable !== false;
+  const addLabel = !sellable ? (serverCart && variant?.availability === "out_of_stock" ? "Out of stock" : "Purchasing unavailable") : added ? "Added ✓" : "Add to Cart";
+  const handleAdd = async () => {
+    if(!sellable||(!serverCart&&typeof product.price!=="number"))return;
+    setNotice(null);
+    try {
+      await add({
+        id: product.id,
+        name: product.title,
+        price: typeof product.price === "number" ? product.price : 0,
+        image: product.gallery[0]?.src,
+        ...(variant ? { variantId: variant.id } : {}),
+      });
+    } catch (error) { setNotice(error instanceof Error ? error.message : "This item could not be added"); return; }
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+  };
+  const handleWishlist = async () => {
+    setWish("saving"); setNotice(null);
+    try { await createCartClient((url, init) => fetch(url, { ...init, credentials: "same-origin" })).saveToWishlist(product.id); setWish("saved"); }
+    catch (error) {
+      setWish("idle");
+      setNotice(error instanceof CartRequestError && error.status === 401 ? "Sign in to save items to your wishlist." : error instanceof Error ? error.message : "This item could not be saved");
+    }
   };
 
   return (
@@ -159,13 +179,19 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
 
           <div className="mt-4 flex items-center gap-3">
             <button
-              disabled={product.purchasable===false} onClick={handleAdd}
+              disabled={!sellable} onClick={handleAdd}
               className="g-btn bg-[#5bc2e7] text-black transition-colors hover:bg-[#37b4dc]"
             >
-              {product.purchasable===false?"Purchasing unavailable":added ? "Added ✓" : "Add to Cart"}
+              {addLabel}
             </button>
             <button className="g-btn g-btn--outline-dark">Customize</button>
+            {mode === "server" && (
+              <button type="button" onClick={handleWishlist} disabled={wish === "saving"} className="g-btn g-btn--outline-dark disabled:opacity-50">
+                {wish === "saved" ? "Saved to Wishlist ✓" : "Save to Wishlist"}
+              </button>
+            )}
           </div>
+          {notice && <p role="status" className="mt-3 text-[13px] text-neutral-700">{notice}</p>}
         </div>
       </div>
     </div>

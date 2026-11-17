@@ -1,8 +1,10 @@
 // Browser client for the session-owned account API (Task 10C). Identity always comes from the
 // session cookie; no call accepts an email, phone or user ID as a selector.
-import type { CustomerProfileDTO, Money, OrderDetailDTO, OrderSummaryDTO, SavedAddressDTO } from "../contracts/commerce.ts";
+import type { CustomerProfileDTO, Money, OrderDetailDTO, OrderSummaryDTO, SavedAddressDTO, WishlistItemDTO } from "../contracts/commerce.ts";
 import type { Page } from "../contracts/pagination.ts";
 import { formatMinorMoney } from "./public-catalog.ts";
+// Sign-in and sign-out in the account page tell the cart to re-sync (and merge a guest cart).
+export { announceSessionChange } from "./cart-client.ts";
 
 export type PhonePurpose = "sign_in" | "phone_change_current" | "phone_change_new" | "order_claim";
 export interface AccountSession { user: { id: string; name: string } | null; staff: boolean }
@@ -85,6 +87,8 @@ export function createAccountClient(fetcher: AccountFetcher) {
     claimOrder: (command: { orderId: string; receiptToken: string; challengeId: string; code: string }) => call<unknown>("/api/account/claims", "POST", command),
     changeStaffPassword: (command: { currentPassword: string; newPassword: string }) => call<{ success: true; mfaRequired: true }>("/api/auth/change-password", "POST", { ...command, revokeOtherSessions: true }),
     signOut: () => call<{ success: true }>("/api/auth/sign-out", "POST", {}),
+    wishlist: () => call<{ items: WishlistItemDTO[] }>("/api/account/wishlist"),
+    removeFromWishlist: (productKey: string) => call<{ items: WishlistItemDTO[] }>(`/api/account/wishlist/${encodeURIComponent(productKey)}`, "DELETE", {}),
   };
 }
 export type AccountClient = ReturnType<typeof createAccountClient>;

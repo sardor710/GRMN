@@ -166,6 +166,24 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 [Detailed receipt](handoffs/task-12b.md).
 
+### Task 13A
+
+**Complete — server cart, login merge and wishlist (2026-11-17).** Migration **0010** adds `cart_items.seen_unit_price_minor` (the price the shopper last saw).
+- **Cart service** `src/server/cart/service.ts`, routes under `/api/cart`:
+  - A guest cart is opened only by a random capability in an HttpOnly, SameSite=Lax cookie (`Path=/api/cart`); only its HMAC digest is stored. A signed-in shopper always uses the account cart.
+  - Every write checks `expectedCartVersion` under the cart row lock. Lines hold 1–99, a cart at most 100 lines. Increases need free stock.
+  - Tampered, draft, unpublished or unpriced variants are 404; prices never come from the client.
+  - Login merge folds the guest cart into the account cart exactly once (guest row lock; merged carts add nothing on replay, by anyone).
+  - The one-time localStorage import takes ids and quantities only and keeps the larger quantity on a retry.
+  - Price-change notices persist until the shopper accepts the new prices.
+- **Wishlist** `src/server/wishlist/service.ts` at `/api/account/wishlist`: idempotent add and remove, session-owned, archived products shown as unavailable.
+- **UI:** the cart page renders server KZT DTOs with notices and keeps checkout disabled; product pages add the exact variant and save to the wishlist; the account page has a Wishlist tab. Legacy mode (cart API 503) keeps the browser-only cart.
+- **Account tab dispositions:** [account-tab-dispositions.md](account-tab-dispositions.md).
+- **Review:** no Critical findings. Three Important client findings were fixed test-first (add while loading, re-sync and no stale retry after sign-in, local fallback only on 503). The smoke then found two more client bugs, also fixed test-first: a hydration mismatch in the header count, and duplicate guest carts from a double start.
+- **Gates:** see the [handoff](handoffs/task-13a.md#commands-and-results).
+
+[Detailed receipt](handoffs/task-13a.md).
+
 ## Remaining task list
 
 Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained slices; see "Consolidation of Tasks 12–22" in the plan. Steps that need a real provider are in its deferred activation backlog.
@@ -175,14 +193,14 @@ Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained
 | 10 | Complete (10A, 10B, 10C) | — |
 | 11 | Complete (11A, 11B) | — |
 | 12 | Complete (12A, 12B) | — |
-| 13 | Not started | 13A server cart, login merge and wishlist; 13B quotes, markdowns, coupon quotas and USD display |
+| 13 | 13A complete | 13B quotes, markdowns, coupon quotas and USD display |
 | 14 | Not started | 14A idempotent checkout and pending order; 14B payment interface, demo adapter, verified inbox and capture (absorbs 15) |
 | 15 | Merged into 14 | Real provider work is in the deferred activation backlog |
 | 16 | Not started | 16A manual fulfillment and order timeline; 16B cancellation, returns and refunds with stock compensation (absorbs 17) |
 | 17 | Merged into 16 | — |
 | 18 | Not started | 18A scheduled publishing and media uploads; 18B reports, exports, settings, USD rate editor and inventory admin UI (absorbs 19) |
 | 19 | Merged into 18 | Email/newsletter sending is in the deferred activation backlog |
-| 20 | Merged into 13 | Wishlist in 13A; other account domains recorded as deferred there |
+| 20 | Merged into 13 | Wishlist built in 13A; other account domains deferred in [account-tab-dispositions.md](account-tab-dispositions.md) |
 | 21 | Not started | 21A query/cache/rate tuning and end-to-end matrix; 21B load and failure injection (absorbs 22). Last chained task |
 | 22 | Merged into 21 | — |
 | 23 | Not started (owner-run) | Cutover and recovery rehearsal |

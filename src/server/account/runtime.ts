@@ -7,6 +7,7 @@ import { requireFreshPermission, requirePrincipal } from "../auth/principal.ts";
 import { cmsBackend } from "../cms/source.ts";
 import { createAccountService } from "./service.ts";
 import { createAccountHandler, createClaimApprovalHandler } from "./http.ts";
+import { createWishlistService } from "../wishlist/service.ts";
 
 let handler: ReturnType<typeof createAccountHandler> | undefined;
 let approvals: ReturnType<typeof createClaimApprovalHandler> | undefined;
@@ -19,7 +20,8 @@ function getAccountHandler() {
   if (!handler) {
     const config = parseAuthConfig(process.env);
     const service = createAccountService({ database: getDatabase(), authorize: headers => requirePrincipal(runtime, headers), authorizeFresh: (headers, permission) => requireFreshPermission(runtime, headers, permission), secret: config.secret });
-    handler = createAccountHandler({ service, baseURL: config.baseURL });
+    const wishlist = createWishlistService({ database: getDatabase(), authorize: headers => requirePrincipal(runtime, headers) });
+    handler = createAccountHandler({ service, baseURL: config.baseURL, wishlist });
     approvals = createClaimApprovalHandler({ service, baseURL: config.baseURL });
   }
   return { handler, approvals: approvals as ReturnType<typeof createClaimApprovalHandler> };

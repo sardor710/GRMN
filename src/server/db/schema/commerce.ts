@@ -35,8 +35,12 @@ export const carts = pgTable("carts", {
 export const cartItems = pgTable("cart_items", {
   cartId: uuid("cart_id").notNull().references(() => carts.id, { onDelete: "restrict" }),
   variantId: uuid("variant_id").notNull().references(() => productVariants.id, { onDelete: "restrict" }),
-  quantity: integer("quantity").notNull(), createdAt: createdAt(), updatedAt: updatedAt(),
-}, t => [primaryKey({ columns: [t.cartId, t.variantId] }), index("cart_items_variant_idx").on(t.variantId), check("cart_items_quantity_valid", sql`${t.quantity} BETWEEN 1 AND 99`)]);
+  quantity: integer("quantity").notNull(),
+  // The KZT unit price the shopper last saw for this line (Task 13A price-change notices). Display only;
+  // quotes and orders always re-read the active price.
+  seenUnitPriceMinor: money("seen_unit_price_minor"),
+  createdAt: createdAt(), updatedAt: updatedAt(),
+}, t => [primaryKey({ columns: [t.cartId, t.variantId] }), index("cart_items_variant_idx").on(t.variantId), check("cart_items_quantity_valid", sql`${t.quantity} BETWEEN 1 AND 99`), check("cart_items_seen_price_valid", sql`${t.seenUnitPriceMinor} IS NULL OR ${t.seenUnitPriceMinor}>=0`)]);
 
 export const checkoutQuotes = pgTable("checkout_quotes", {
   id: id(), cartId: uuid("cart_id").notNull().references(() => carts.id, { onDelete: "restrict" }),

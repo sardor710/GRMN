@@ -57,7 +57,7 @@ try{
   await send("Network.enable");await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
   let saved;
   if(process.env.CMS_SMOKE_PUBLIC_ONLY!=="1"){
-  await navigate("/admin/products");await until(async()=>(await text()).toLowerCase().includes("ui fixture"),"Product page did not load");
+  await navigate("/admin/products");await until(async()=>(await text()).toLowerCase().includes("ui fixture"),"Product page did not load").catch(async error=>{await writeFile(path.join(receipt,"admin-products-body.txt"),await text());throw error;});
   assert.equal(await evaluate("document.querySelectorAll('tbody tr').length"),20);await click("Next page");await until(async()=>(await text()).includes("Page 2"),"Pagination failed");
   await until(async()=>await evaluate("document.querySelectorAll('tbody tr').length===5"),"Second page did not load");
   await click("Add New");await until(()=>evaluate("!!document.querySelector('form')"),"Product modal missing");
@@ -119,6 +119,39 @@ try{
   await click(legacyNumber);await until(async()=>(await low()).includes("ui legacy typed address"),"Order detail did not load");assert.match(await low(),/subtotal\s+—/);
   assert.ok(!(await low()).includes("send reset link"));
   console.log("PASS Task10C account page: signed-out phone sign-in, session profile, address create + reload persistence, owned legacy order with missing money shown as —");
+
+  // Task 13A: a guest's stored local cart is imported once (ids and quantities only), the server cart
+  // survives a reload through its HttpOnly capability, sign-in merges it into the account cart, and the
+  // wishlist persists for the session owner.
+  const cartProduct=randomUUID(),cartVariant=randomUUID(),cartLocation=randomUUID();
+  await database.pool.query("INSERT INTO products(id,public_key,name,status) VALUES($1,'ui-cart-fixture','UI CART FIXTURE','published')",[cartProduct]);
+  await database.pool.query("INSERT INTO product_variants(id,product_id,sku,name,is_default,status) VALUES($1,$2,'UI-CART-SKU','Base',true,'active')",[cartVariant,cartProduct]);
+  await database.pool.query("INSERT INTO prices(id,variant_id,amount_minor) VALUES($1,$2,250000)",[randomUUID(),cartVariant]);
+  await database.pool.query("INSERT INTO stock_locations(id,key,name) VALUES($1,'ui-cart-stock','UI cart stock')",[cartLocation]);
+  await database.pool.query("INSERT INTO inventory_balances(variant_id,location_id) VALUES($1,$2)",[cartVariant,cartLocation]);
+  await database.pool.query("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key,source_reference) VALUES($1,$2,$3,10,0,'opening','ui-cart-opening','synthetic:ui-smoke')",[randomUUID(),cartVariant,cartLocation]);
+  await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
+  await navigate("/c/wearables-smartwatches");
+  await evaluate(`localStorage.setItem("garmin-clone-cart",JSON.stringify([{id:"ui-cart-fixture",name:"Forged name",price:1,qty:2}]));true`);
+  await navigate("/p/ui-cart-fixture");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Cart fixture product did not render");
+  await until(()=>evaluate("localStorage.getItem('garmin-clone-cart')===null"),"The stored local cart was not imported");
+  await until(async()=>{try{await click("Add to Cart");return true;}catch{return false;}},"Add to Cart was not clickable");
+  await until(async()=>(await database.pool.query("SELECT ci.quantity FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.status='active' AND c.user_id IS NULL AND ci.variant_id=$1",[cartVariant])).rows[0]?.quantity===3,"Guest server cart did not hold the imported and added quantity");
+  const guestCookie=(await send("Network.getCookies",{urls:[origin+"/api/cart"]})).cookies.find(c=>c.name==="grmn-cart");assert.ok(guestCookie?.httpOnly,"guest cart capability must be HttpOnly");
+  await navigate("/cart");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Cart page did not show the server cart");
+  assert.match(await text(),/7[\s ,.]?500[.,]00 KZT/);assert.ok(!(await text()).includes("Forged name"));
+  await navigate("/cart");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Server cart did not persist across reload");
+  assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Checkout').disabled"),true,"checkout stays off until Task 14");
+  await send("Network.setCookie",{name:"grmn-auth.session_token",value:encodeURIComponent(customerSession.token+"."+createHmac("sha256",secret).update(customerSession.token).digest("base64")),url:origin,httpOnly:true,sameSite:"Lax"});
+  await navigate("/cart");
+  await until(async()=>(await database.pool.query("SELECT ci.quantity FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=$1 AND c.status='active' AND ci.variant_id=$2",[customerId,cartVariant])).rows[0]?.quantity===3,"Sign-in did not merge the guest cart into the account cart");
+  assert.equal((await database.pool.query("SELECT count(*)::int AS n FROM carts WHERE user_id IS NULL AND status='active' AND id IN (SELECT cart_id FROM cart_items WHERE variant_id=$1)",[cartVariant])).rows[0].n,0,"the guest cart is retired after the merge");
+  await until(async()=>(await text()).includes("UI CART FIXTURE"),"Merged account cart did not render");
+  await navigate("/p/ui-cart-fixture");await until(async()=>{try{await click("Save to Wishlist");return true;}catch{return false;}},"Save to Wishlist missing");
+  await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.includes('Saved to Wishlist'))"),"Wishlist save failed");
+  await navigate("/account");await until(async()=>(await low()).includes("ui account owner"),"Account page did not reload");await click("Wishlist");
+  await until(async()=>(await text()).includes("UI CART FIXTURE"),"Saved product missing from the wishlist tab");
+  console.log("PASS Task13A cart: one-time local import, guest server cart persisted across reload via HttpOnly capability, sign-in merge, checkout off, wishlist save and list");
 
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");

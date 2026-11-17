@@ -5,7 +5,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { Check, Plus, Trash2, Edit3, X, AlertCircle, Lock, KeyRound, Package, ChevronRight, Phone, Loader2 } from "lucide-react";
 import { AccountIcon } from "@/components/icons";
-import type { CustomerProfileDTO, OrderDetailDTO, OrderSummaryDTO, SavedAddressDTO } from "@/contracts/commerce";
+import type { CustomerProfileDTO, OrderDetailDTO, OrderSummaryDTO, SavedAddressDTO, WishlistItemDTO } from "@/contracts/commerce";
 import {
   AccountRequestError,
   COUNTRY_OPTIONS,
@@ -13,11 +13,12 @@ import {
   createAccountClient,
   deliveryAddressLines,
   formatKzt,
+  announceSessionChange,
   type AccountFetcher,
   type AddressFields,
 } from "@/lib/account-client";
 
-const TABS = ["Profile", "Orders", "Devices", "Subscriptions"] as const;
+const TABS = ["Profile", "Orders", "Wishlist", "Devices", "Subscriptions"] as const;
 type Tab = (typeof TABS)[number];
 type Phase = "loading" | "signed_out" | "unavailable" | "error" | "ready";
 const MAX_ADDRESSES = 5;
@@ -100,6 +101,18 @@ export function AccountDashboard() {
   const [orderDetail, setOrderDetail] = useState<OrderDetailDTO | null>(null);
   const [orderDetailError, setOrderDetailError] = useState<string | null>(null);
 
+  // Wishlist (Task 13A): loaded from the session-owned API when the tab opens.
+  const [wishlist, setWishlist] = useState<WishlistItemDTO[] | null>(null);
+  const [wishlistError, setWishlistError] = useState<string | null>(null);
+  const loadWishlist = async () => {
+    setWishlistError(null);
+    try { setWishlist((await client.wishlist()).items); } catch (error) { setWishlistError(errorMessage(error)); }
+  };
+  const removeFromWishlist = async (productKey: string) => {
+    setWishlistError(null);
+    try { setWishlist((await client.removeFromWishlist(productKey)).items); } catch (error) { setWishlistError(errorMessage(error)); }
+  };
+
   // Legacy order claim
   const [claim, setClaim] = useState({ orderId: "", receipt: "", code: "" });
   const [claimChallenge, setClaimChallenge] = useState<string | null>(null);
@@ -127,7 +140,7 @@ export function AccountDashboard() {
     setTab("Profile"); setBusy(null); setStatusMessage(null);
     setIsEditingProfile(false); setProfileForm({ name: "", email: "" }); setProfileError(null);
     setIsAddressModalOpen(false); setEditingAddress(null); setAddressForm(EMPTY_ADDRESS); setAddressError(null);
-    setOrdersError(null); setOrderDetailError(null);
+    setOrdersError(null); setOrderDetailError(null); setWishlist(null); setWishlistError(null);
     setClaim({ orderId: "", receipt: "", code: "" }); setClaimChallenge(null); setClaimError(null);
     setPhoneChange({ newPhone: "", currentCode: "", newCode: "" }); setPhoneChangeError(null);
     setIsPasswordChangeOpen(false); setPasswordForm({ currentPassword: "", newPassword: "" }); setPasswordError(null);
@@ -182,7 +195,7 @@ export function AccountDashboard() {
     try {
       const result = await client.verifySignIn({ phoneNumber: cleanPhone(signInPhone), challengeId: signInChallenge, code: signInCode.trim() });
       if (result.state === "complete_profile") { setNeedsCompletion(true); return; }
-      setSignInNotice(null); setPhase("loading"); await load();
+      announceSessionChange(); setSignInNotice(null); setPhase("loading"); await load();
     } catch (error) { setSignInError(errorMessage(error)); }
     finally { setBusy(null); }
   };
@@ -192,14 +205,14 @@ export function AccountDashboard() {
     setSignInError(null); setBusy("sign-in");
     try {
       await client.completeProfile({ name: completion.name.trim(), email: completion.email.trim(), phoneNumber: cleanPhone(signInPhone) });
-      setNeedsCompletion(false); setSignInNotice(null); setPhase("loading"); await load();
+      announceSessionChange(); setNeedsCompletion(false); setSignInNotice(null); setPhase("loading"); await load();
     } catch (error) { setSignInError(errorMessage(error)); }
     finally { setBusy(null); }
   };
 
   const handleSignOut = async () => {
     setBusy("sign-out");
-    try { await client.signOut(); signedOut("You have been signed out."); }
+    try { await client.signOut(); announceSessionChange(); signedOut("You have been signed out."); }
     catch (error) { showNotification(errorMessage(error), "error"); }
     finally { setBusy(null); }
   };
@@ -475,7 +488,7 @@ export function AccountDashboard() {
           <ul className="flex gap-2 overflow-x-auto lg:flex-col lg:gap-1 lg:pr-4">
             {TABS.map(t => (
               <li key={t}>
-                <button type="button" onClick={() => setTab(t)} aria-current={tab === t ? "page" : undefined}
+                <button type="button" onClick={() => { setTab(t); if (t === "Wishlist") void loadWishlist(); }} aria-current={tab === t ? "page" : undefined}
                   className={`w-full whitespace-nowrap px-4 py-2.5 text-left text-[14px] transition-colors ${tab === t ? "bg-black font-medium text-white lg:border-l-4 lg:border-[#007cc3]" : "text-neutral-600 hover:bg-neutral-100/60 hover:text-black"}`}>
                   {t}
                   {t === "Orders" && <span className="ml-2 bg-neutral-200 px-1.5 py-0.5 font-mono text-[11px] text-neutral-800">{orders.length}{nextCursor ? "+" : ""}</span>}
@@ -749,6 +762,29 @@ export function AccountDashboard() {
                 </form>
               </Card>
             </>
+          )}
+
+          {tab === "Wishlist" && (
+            <Card title="Wishlist">
+              {renderError(wishlistError)}
+              {wishlist === null && !wishlistError && <p className="flex items-center gap-2 text-[13px] text-neutral-600"><Loader2 className="h-4 w-4 animate-spin" /> Loading wishlist…</p>}
+              {wishlist !== null && wishlist.length === 0 && <p className="text-[14px] text-neutral-500">Your wishlist is empty. Save products from their product page.</p>}
+              {wishlist !== null && wishlist.length > 0 && (
+                <ul className="divide-y divide-neutral-100 border border-neutral-200">
+                  {wishlist.map(item => (
+                    <li key={item.productKey} className="flex items-center justify-between gap-3 p-3">
+                      <div>
+                        {item.archived ? <p className="font-semibold text-black">{item.name}</p> : <a href={`/p/${encodeURIComponent(item.productKey)}`} className="font-semibold text-black hover:text-[#007cc3]">{item.name}</a>}
+                        <p className="text-[12px] text-neutral-500">
+                          {item.availability === "available" ? formatKzt(item.price) : item.availability === "out_of_stock" ? `${formatKzt(item.price)} · Out of stock` : "This product is no longer available"}
+                        </p>
+                      </div>
+                      <button type="button" onClick={() => removeFromWishlist(item.productKey)} aria-label={`Remove ${item.name} from wishlist`} className="text-neutral-400 hover:text-black"><Trash2 className="h-4 w-4" /></button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
           )}
 
           {tab === "Devices" && (

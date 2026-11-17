@@ -1,0 +1,2 @@
+ALTER TABLE "cart_items" ADD COLUMN "seen_unit_price_minor" bigint;--> statement-breakpoint
+ALTER TABLE "cart_items" ADD CONSTRAINT "cart_items_seen_price_valid" CHECK ("cart_items"."seen_unit_price_minor" IS NULL OR "cart_items"."seen_unit_price_minor">=0);

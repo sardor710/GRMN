@@ -3,6 +3,7 @@ import { AuthFailure } from "../auth/config.ts";
 import { authErrorResponse } from "../auth/http.ts";
 import { adminJSON, readAdminJSON } from "../auth/admin-service.ts";
 import type { AccountService } from "./service.ts";
+import type { WishlistService } from "../wishlist/service.ts";
 
 // HTTP mapping for /api/account/*. Identity always comes from the session cookie inside the
 // service; query strings accept only pagination, and bodies never carry an owner.
@@ -19,8 +20,8 @@ function object(value: unknown): Record<string, unknown> {
   return value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : bad();
 }
 
-export function createAccountHandler(input: { service: AccountService; baseURL: string }) {
-  const { service, baseURL } = input;
+export function createAccountHandler(input: { service: AccountService; baseURL: string; wishlist?: WishlistService }) {
+  const { service, baseURL, wishlist } = input;
   return async function handleAccount(request: Request): Promise<Response> {
     try {
       const url = new URL(request.url);
@@ -63,6 +64,16 @@ export function createAccountHandler(input: { service: AccountService; baseURL: 
         if (request.method !== "POST") return method();
         const body = object(await readAdminJSON(request));
         return adminJSON(resource === "phone" ? await service.changePhone(request.headers, body) : await service.claimLegacyOrder(request.headers, body));
+      }
+      if (resource === "wishlist" && wishlist) {
+        query(url, []);
+        if (id === undefined) {
+          if (read) return adminJSON(await wishlist.list(request.headers));
+          return request.method === "POST" ? adminJSON(await wishlist.add(request.headers, await readAdminJSON(request))) : method();
+        }
+        let key = "";
+        try { key = decodeURIComponent(id); } catch { bad(); }
+        return request.method === "DELETE" ? adminJSON(await wishlist.remove(request.headers, key)) : method();
       }
       if (resource === "orders") {
         if (!read) return method();

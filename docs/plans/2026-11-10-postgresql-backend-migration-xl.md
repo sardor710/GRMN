@@ -952,20 +952,20 @@ What changed:
 
 ### Task 13 — Server cart, quotes, promotions and wishlist
 
-**Current status:** NOT STARTED. **Depends on:** 12. **Size:** 13A cart, merge and wishlist; 13B quotes, markdowns, coupons and USD display.
+**Current status:** 13A COMPLETE (2026-11-17, `handoffs/task-13a.md`); 13B NOT STARTED. **Depends on:** 12. **Size:** 13A cart, merge and wishlist; 13B quotes, markdowns, coupons and USD display.
 
 **Files:** cart/pricing/promotion/wishlist services and APIs, `src/lib/cart.tsx`, `CartView.tsx`, wishlist UI, money utilities, tests.
 
-- [ ] **13A — cart:**
+- [x] **13A — cart:** (migration 0010 adds the seen-price snapshot)
   - Guest capability and account carts, with quantity limits and versioning.
   - Idempotent login merge.
   - One-time import of the localStorage cart (ids and quantities only).
   - Wire the cart UI to server DTOs, with price-change notices.
   - Do not enable real checkout yet.
-- [ ] **13A — wishlist:**
+- [x] **13A — wishlist:** (dispositions in `docs/backend/account-tab-dispositions.md`)
   - A persistent wishlist: unique user/product membership with ownership checks; add, remove and list; archived or unavailable products shown as such.
   - Record one disposition list for the other account tabs (devices, warranty, subscriptions, support): each is preserved and deferred, with no fake records.
-- [ ] **13A — tests:** tampered or unavailable variant, merge retry, idempotent wishlist add/remove, cross-user denial, persistence across reload.
+- [x] **13A — tests:** tampered or unavailable variant, merge retry, idempotent wishlist add/remove, cross-user denial, persistence across reload.
 - [ ] **13B:** integer-safe server quotes in KZT, with quote expiry and policy versions:
   - admin markdown rules kept separate from coupon codes;
   - coupon validity, stacking, global and per-user limits, with atomic quota reservation;
@@ -1202,4 +1202,4 @@ Repository findings are sourced from the exact relative paths in Section 2; rech
 
 Primary external documentation was checked on 2026-11-10 and linked next to relevant decisions. It supports platform capabilities, not this store's unmeasured throughput, pricing, legal obligations, or provider eligibility. Versions, plans, regional availability, auth adapters, and provider retry semantics must be revalidated at the owning task.
 
-**Suggested next execution request:** “Read `docs/backend/handoffs/task-12b.md` and execute only Task 13A (server cart, login merge and wishlist); save its handoff and stop.” Preserve current source bytes, migrations0000–0005 and unresolved source/ownership/provider blockers. Keep real activation and persistent/production import disabled; no seed fallback, automatic quarantine approval or live dual writes.
+**Suggested next execution request:** “Read `docs/backend/handoffs/task-13a.md` and execute only Task 13B (quotes, markdowns, coupons and USD display); save its handoff and stop.” Preserve current source bytes, migrations0000–0005 and unresolved source/ownership/provider blockers. Keep real activation and persistent/production import disabled; no seed fallback, automatic quarantine approval or live dual writes.
