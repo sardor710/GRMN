@@ -4,9 +4,9 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 ## Current position
 
-- **Completed:** Tasks **01–11** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring; 11A inventory ledger, audited adjustments, reconciliation, opening import; 11B race-safe reservations) and **12** (12A durable outbox and leased worker; 12B scheduled reservation expiry, audited dead-letter replay and job-lag metric), within the scope and activation limits below.
-- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, 10C in `3eecd53`, 11A in `6aed380`, 11B in `eb1cb5b`, 12A in `3432aeb`, and 12B in the commit after it (see `git log`).
-- **Next:** Task **13A**: server cart, login merge and wishlist. See [the 12B handoff](handoffs/task-12b.md#exact-next-step).
+- **Completed:** Tasks **01–11** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring; 11A inventory ledger, audited adjustments, reconciliation, opening import; 11B race-safe reservations) **12** (12A durable outbox and leased worker; 12B scheduled reservation expiry, audited dead-letter replay and job-lag metric) and **13** (13A server cart, login merge and wishlist; 13B quotes, markdowns, coupon quotas and USD display), within the scope and activation limits below.
+- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, 10C in `3eecd53`, 11A in `6aed380`, 11B in `eb1cb5b`, 12A in `3432aeb`, 12B in `4fe08d2`, 13A in `40a16cb`, and 13B in the commit after it (see `git log`).
+- **Next:** Task **14A**: idempotent checkout and pending order. See [the 13B handoff](handoffs/task-13b.md#exact-next-step).
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
 - **Active implementation:** `C:/Users/Freakman/.codex/worktrees/backend-task-02/GRMN`, branch `codex/backend-task-02`.
 - **Original checkout:** `D:/projects/garmin/GRMN`. Its progress documentation is synchronized, but the backend implementation has **not** been merged or copied there. An AI inspecting only that checkout's application files will see older code. Continue code work in the active worktree above.
@@ -184,6 +184,25 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 [Detailed receipt](handoffs/task-13a.md).
 
+### Task 13B
+
+**Complete — quotes, markdowns, coupon quotas and USD display (2026-11-17).** No migration. Task 13 is complete.
+- **Quotes** (`src/server/pricing/quote.ts`, `POST /api/cart/quote`):
+  - integer KZT from the active prices, admin markdown rules, at most one coupon, and the active tax and shipping policy versions;
+  - an immutable `checkout_quotes` row that expires after 15 minutes, carrying the line, policy and USD snapshots;
+  - `revalidateQuote` is checkout's guard: the same cart revision, unexpired, and a fresh pricing that still matches.
+  - Client totals, prices and a non-KZT payment currency are rejected.
+  - There is no default tax: without an active policy, quotes are refused (409 `POLICY_UNAVAILABLE`).
+- **Coupons** (`src/server/pricing/coupons.ts`, internal for Task 14A):
+  - an atomic quota reservation per checkout attempt, with global and per-user limits enforced by the 0003 trigger;
+  - consume, release and expiry, where exactly one terminal transition wins;
+  - one lock order: attempt, promotion, then redemption.
+- **USD** is display-only from the admin rate version and snapshotted on the quote. A rate change never alters KZT amounts or a stored snapshot.
+- **Review:** no Critical findings. Four Important findings were fixed test-first: a coupon lock-order deadlock, a checkout retry failing its own revalidation, tax and shipping detail missing from the snapshot, and revalidation hiding the 409 reason. Rate limiting is deferred to Task 21.
+- **Gates:** see the [handoff](handoffs/task-13b.md#commands-and-results).
+
+[Detailed receipt](handoffs/task-13b.md).
+
 ## Remaining task list
 
 Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained slices; see "Consolidation of Tasks 12–22" in the plan. Steps that need a real provider are in its deferred activation backlog.
@@ -193,7 +212,7 @@ Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained
 | 10 | Complete (10A, 10B, 10C) | — |
 | 11 | Complete (11A, 11B) | — |
 | 12 | Complete (12A, 12B) | — |
-| 13 | 13A complete | 13B quotes, markdowns, coupon quotas and USD display |
+| 13 | Complete (13A, 13B) | — |
 | 14 | Not started | 14A idempotent checkout and pending order; 14B payment interface, demo adapter, verified inbox and capture (absorbs 15) |
 | 15 | Merged into 14 | Real provider work is in the deferred activation backlog |
 | 16 | Not started | 16A manual fulfillment and order timeline; 16B cancellation, returns and refunds with stock compensation (absorbs 17) |

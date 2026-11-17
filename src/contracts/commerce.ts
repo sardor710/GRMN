@@ -194,14 +194,23 @@ export interface QuoteCommand {
   delivery: DeliveryAddressSelection;
   displayCurrency: DisplayCurrency;
   couponCode?: string;
+  /** Payment is always in KZT; any other value is rejected. */
+  paymentCurrency?: "KZT";
 }
 
 export interface QuoteLineDTO {
   variantId: string;
   quantity: number;
+  /** The active catalog price before admin markdowns. */
+  baseUnitPrice: Money;
+  /** The selling unit price after admin markdowns. */
   unitPrice: Money;
+  /** This line's share of the coupon discount. */
   discount: Money;
+  /** Exclusive tax added to this line. */
   tax: Money;
+  /** Tax already included in the price (inclusive tax policy); informational. */
+  includedTax: Money;
   total: Money;
 }
 
@@ -209,15 +218,20 @@ export interface CheckoutQuoteDTO {
   id: string;
   cartId: string;
   cartVersion: number;
+  payableCurrency: "KZT";
+  /** "USD" only when a USD equivalent is shown; amounts are always KZT. */
+  displayCurrency: DisplayCurrency;
   lines: QuoteLineDTO[];
   subtotal: Money;
   discount: Money;
   shipping: Money;
   tax: Money;
+  includedTax: Money;
   total: Money;
+  coupon: { code: string; discount: Money } | null;
   usdEquivalent: UsdEquivalentDTO | null;
   expiresAt: string;
-  policyVersions: { pricing: string; tax: string; shipping: string; promotion: string | null };
+  policyVersions: { pricing: string; tax: string; shipping: string; promotion: string | null; markdowns: string[]; exchangeRate: string | null };
 }
 
 export type PaymentMethodCode = "demo" | "kaspi" | "secondary";

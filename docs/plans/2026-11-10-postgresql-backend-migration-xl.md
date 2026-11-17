@@ -952,7 +952,7 @@ What changed:
 
 ### Task 13 — Server cart, quotes, promotions and wishlist
 
-**Current status:** 13A COMPLETE (2026-11-17, `handoffs/task-13a.md`); 13B NOT STARTED. **Depends on:** 12. **Size:** 13A cart, merge and wishlist; 13B quotes, markdowns, coupons and USD display.
+**Current status:** COMPLETE. 13A (2026-11-17, `handoffs/task-13a.md`) and 13B (2026-11-17, `handoffs/task-13b.md`). **Depends on:** 12. **Size:** 13A cart, merge and wishlist; 13B quotes, markdowns, coupons and USD display.
 
 **Files:** cart/pricing/promotion/wishlist services and APIs, `src/lib/cart.tsx`, `CartView.tsx`, wishlist UI, money utilities, tests.
 
@@ -966,13 +966,13 @@ What changed:
   - A persistent wishlist: unique user/product membership with ownership checks; add, remove and list; archived or unavailable products shown as such.
   - Record one disposition list for the other account tabs (devices, warranty, subscriptions, support): each is preserved and deferred, with no fake records.
 - [x] **13A — tests:** tampered or unavailable variant, merge retry, idempotent wishlist add/remove, cross-user denial, persistence across reload.
-- [ ] **13B:** integer-safe server quotes in KZT, with quote expiry and policy versions:
+- [x] **13B:** integer-safe server quotes in KZT, with quote expiry and policy versions:
   - admin markdown rules kept separate from coupon codes;
   - coupon validity, stacking, global and per-user limits, with atomic quota reservation;
   - a configurable tax/shipping policy (manual shipping per owner, no hardcoded demo tax);
   - optional USD display from the admin rate version only.
   - Reject client totals and non-KZT payment currencies.
-- [ ] **13B tests:**
+- [x] **13B tests:**
   - tampered or changed price;
   - rounding remainders across lines;
   - mixed currency;
@@ -1190,7 +1190,7 @@ Later possibilities: additional settlement currencies/warehouses (current USD co
 - [x] Task 09: public catalog/content reads complete; 300/300 tests, check and full browser smoke passed (`handoffs/task-09.md`).
 - [x] Task 10: 10A account APIs/ownership (`handoffs/task-10a.md`), 10B claims/phone change/staff credential change (`handoffs/task-10b.md`) and 10C AccountDashboard UI wiring (349/349, `handoffs/task-10c.md`) complete.
 - [x] Task 11: inventory ledger, adjustments, reconciliation, opening import (`handoffs/task-11a.md`) and race-safe reservations (`handoffs/task-11b.md`).
-- [ ] Tasks 12–16 (consolidated 2026-11-17; 15 merged into 14, 17 into 16): worker and expiry, cart/quotes/wishlist, checkout with demo payment, manual fulfillment/returns/refunds. Task 12 is complete (`handoffs/task-12a.md`, `handoffs/task-12b.md`); Task 13A is next.
+- [ ] Tasks 12–16 (consolidated 2026-11-17; 15 merged into 14, 17 into 16): worker and expiry, cart/quotes/wishlist, checkout with demo payment, manual fulfillment/returns/refunds. Tasks 12 and 13 are complete (`handoffs/task-12a.md`, `task-12b.md`, `task-13a.md`, `task-13b.md`); Task 14A is next.
 - [ ] Task 18 (19 merged in; 20 merged into 13): CMS media/publishing, reports, exports, settings and inventory admin UI.
 - [ ] Task 21 (22 merged in): measured performance and full qualification — the last chained task.
 - [ ] Task 23: cutover and recovery rehearsal (owner-run, not chained).
@@ -1202,4 +1202,4 @@ Repository findings are sourced from the exact relative paths in Section 2; rech
 
 Primary external documentation was checked on 2026-11-10 and linked next to relevant decisions. It supports platform capabilities, not this store's unmeasured throughput, pricing, legal obligations, or provider eligibility. Versions, plans, regional availability, auth adapters, and provider retry semantics must be revalidated at the owning task.
 
-**Suggested next execution request:** “Read `docs/backend/handoffs/task-13a.md` and execute only Task 13B (quotes, markdowns, coupons and USD display); save its handoff and stop.” Preserve current source bytes, migrations0000–0005 and unresolved source/ownership/provider blockers. Keep real activation and persistent/production import disabled; no seed fallback, automatic quarantine approval or live dual writes.
+**Suggested next execution request:** “Read `docs/backend/handoffs/task-13b.md` and execute only Task 14A (idempotent checkout and pending order); save its handoff and stop.” Preserve current source bytes, migrations0000–0005 and unresolved source/ownership/provider blockers. Keep real activation and persistent/production import disabled; no seed fallback, automatic quarantine approval or live dual writes.

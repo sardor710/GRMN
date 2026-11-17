@@ -47,6 +47,7 @@ export function createCartHandler(input: { service: CartService; baseURL: string
       if (resource === "merge") return request.method === "POST" ? respond(await service.merge(h)) : method();
       if (resource === "import") return request.method === "POST" ? respond(await service.importLegacy(h, await readAdminJSON(request))) : method();
       if (resource === "acknowledge") return request.method === "POST" ? respond(await service.acknowledge(h, await readAdminJSON(request))) : method();
+      if (resource === "quote") return request.method === "POST" ? adminJSON(await service.quote(h, await readAdminJSON(request))) : method();
       return missing();
     } catch (error) { return authErrorResponse(error); }
   };

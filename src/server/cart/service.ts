@@ -4,9 +4,10 @@ import type { PoolClient } from "pg";
 import { z } from "zod";
 import type { DatabaseHandle } from "../db/client.ts";
 import type { Principal } from "../context.ts";
-import type { Availability, CartDTO, CartLineDTO, CartNoticeCode, Money } from "../../contracts/commerce.ts";
+import type { Availability, CartDTO, CheckoutQuoteDTO, CartLineDTO, CartNoticeCode, Money } from "../../contracts/commerce.ts";
 import { AuthFailure } from "../auth/config.ts";
 import { publicImage } from "../catalog/service.ts";
+import { createQuote, QUOTE_TTL_SECONDS, type DeliverySnapshot } from "../pricing/quote.ts";
 
 // Server carts (Task 13A). A guest cart is opened only by a random capability held in an HttpOnly
 // cookie; only its HMAC digest is stored. A signed-in shopper always uses the account cart, and the
@@ -33,6 +34,20 @@ const addInput = z.strictObject({ variantId: z.string().regex(UUID).optional(), 
 const setInput = z.strictObject({ quantity: z.number().int().min(0).max(MAX_LINE_QUANTITY), expectedCartVersion: version });
 const versionInput = z.strictObject({ expectedCartVersion: version });
 const importInput = z.strictObject({ items: z.array(z.strictObject({ id: z.string().min(1).max(200), quantity })).max(MAX_CART_LINES) });
+const line = (max: number) => z.string().trim().min(1).max(max);
+const inlineAddress = z.strictObject({
+  recipientName: line(200), phone: z.string().regex(/^[+][1-9][0-9]{7,14}$/), countryCode: z.string().regex(/^[A-Z]{2}$/), city: line(200), line1: line(300),
+  line2: z.string().trim().max(300).optional(), region: z.string().trim().max(200).optional(), postalCode: z.string().trim().max(20).optional(),
+});
+const quoteInput = z.strictObject({
+  cartVersion: version, displayCurrency: z.enum(["KZT", "USD"]),
+  delivery: z.discriminatedUnion("kind", [
+    z.strictObject({ kind: z.literal("inline"), address: inlineAddress }),
+    z.strictObject({ kind: z.literal("saved"), addressId: z.string().regex(UUID), version: z.number().int().min(1).max(2147483647) }),
+  ]),
+  couponCode: z.string().trim().regex(/^[\p{L}\p{N}_-]{1,64}$/u).transform(code => code.toLowerCase()).optional(),
+  paymentCurrency: z.string().max(16).optional(),
+});
 
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
@@ -66,9 +81,11 @@ export interface CartServiceOptions {
   /** The signed-in principal, or null for a guest. Must throw for a session that is present but not admitted. */
   identify: (headers: Headers) => Promise<Principal | null>;
   market?: string;
+  /** Quote lifetime (Task 13B); 15 minutes by default. */
+  quoteTtlSeconds?: number;
 }
 
-export function createCartService({ database, secret, identify, market = "default" }: CartServiceOptions) {
+export function createCartService({ database, secret, identify, market = "default", quoteTtlSeconds = QUOTE_TTL_SECONDS }: CartServiceOptions) {
   if (!/^[a-f0-9]{64}$/i.test(secret)) throw new Error("Cart services require the validated auth secret");
   const digest = (token: string) => createHmac("sha256", secret).update("grmn-cart-capability:v1:" + token).digest("hex");
 
@@ -248,6 +265,33 @@ export function createCartService({ database, secret, identify, market = "defaul
           const amount = current.get(line.variant_id)?.amount;
           if (amount != null) await client.query("UPDATE cart_items SET seen_unit_price_minor=$3 WHERE cart_id=$1 AND variant_id=$2 AND seen_unit_price_minor IS DISTINCT FROM $3::bigint", [cart.id, line.variant_id, amount]);
         }
+      });
+    },
+
+    // Task 13B: an immutable server quote for the shopper's current cart revision. Only the cart
+    // version, delivery address, display currency and an optional coupon code are accepted; every
+    // amount is computed on the server and the payable currency is always KZT.
+    async quote(headers: Headers, input: unknown): Promise<CheckoutQuoteDTO> {
+      const payment = input && typeof input === "object" && !Array.isArray(input) ? (input as Record<string, unknown>).paymentCurrency : undefined;
+      if (payment !== undefined && payment !== "KZT") throw new AuthFailure("UNSUPPORTED_CURRENCY", 400, "Payment is accepted in KZT only");
+      const command = parse(quoteInput, input), who = await actor(headers);
+      let delivery: DeliverySnapshot;
+      if (command.delivery.kind === "inline") delivery = command.delivery.address;
+      else {
+        if (!who.userId) throw new AuthFailure("UNAUTHENTICATED", 401, "Sign in to use a saved address");
+        const saved = (await database.pool.query<{ version: number; recipient_name: string; phone: string; country_code: string; city: string; line1: string; line2: string | null; region: string | null; postal_code: string | null }>(
+          "SELECT version,recipient_name,phone,country_code,city,line1,line2,region,postal_code FROM customer_addresses WHERE id=$1 AND user_id=$2", [command.delivery.addressId, who.userId])).rows[0];
+        if (!saved) throw new AuthFailure("NOT_FOUND", 404, "Not found");
+        if (saved.version !== command.delivery.version) conflict();
+        delivery = { addressId: command.delivery.addressId, addressVersion: saved.version, recipientName: saved.recipient_name, phone: saved.phone, countryCode: saved.country_code, city: saved.city, line1: saved.line1,
+          ...(saved.line2 ? { line2: saved.line2 } : {}), ...(saved.region ? { region: saved.region } : {}), ...(saved.postal_code ? { postalCode: saved.postal_code } : {}) };
+      }
+      return transaction(async client => {
+        const cart = await loadCart(client, who, true);
+        if ((cart?.version ?? 0) !== command.cartVersion) conflict();
+        if (!cart) throw new AuthFailure("CART_EMPTY", 409, "Your cart is empty");
+        return createQuote(client, { cartId: cart.id, cartVersion: cart.version, userId: who.userId },
+          { market, displayCurrency: command.displayCurrency, couponCode: command.couponCode ?? null, delivery }, quoteTtlSeconds);
       });
     },
 

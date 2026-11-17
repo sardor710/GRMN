@@ -8,7 +8,7 @@ const root = new URL("../../", import.meta.url);
 const read = path => readFileSync(new URL(path, root), "utf8");
 
 test("every cart API route binds the cart handler and stays closed outside postgres+auth mode", async () => {
-  const routes = { "": ["GET", "DELETE"], "lines": ["POST"], "lines/[variantId]": ["PUT", "DELETE"], "merge": ["POST"], "import": ["POST"], "acknowledge": ["POST"] };
+  const routes = { "": ["GET", "DELETE"], "lines": ["POST"], "lines/[variantId]": ["PUT", "DELETE"], "merge": ["POST"], "import": ["POST"], "acknowledge": ["POST"], "quote": ["POST"] };
   const saved = { AUTH_ENABLED: process.env.AUTH_ENABLED, CMS_BACKEND: process.env.CMS_BACKEND };
   try {
     for (const env of [{ CMS_BACKEND: "legacy", AUTH_ENABLED: "1" }, { CMS_BACKEND: "postgres", AUTH_ENABLED: "0" }]) {
