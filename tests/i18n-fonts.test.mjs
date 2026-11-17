@@ -24,7 +24,7 @@ function parseWeight(value) {
 
 const faces = [...css.matchAll(/@font-face\s*\{([^}]*)\}/g)].map((m) => {
   const body = m[1];
-  const get = (prop) => new RegExp(`${prop}:\s*([^;]+);`).exec(body)?.[1].trim();
+  const get = (prop) => new RegExp(`${prop}:\\s*([^;]+);`).exec(body)?.[1].trim();
   return {
     family: get('font-family')?.replace(/["']/g, ''),
     weight: get('font-weight'),
@@ -65,7 +65,7 @@ for (const [family, weight] of combos) {
   });
 }
 
-test('every referenced font file exists and is woff2/otf', () => {
+test('every referenced font file exists and is present and woff2 files have the wOF2 signature', () => {
   for (const f of faces) {
     for (const url of f.urls) {
       const file = path.join(root, 'public', url);
@@ -75,12 +75,9 @@ test('every referenced font file exists and is woff2/otf', () => {
   }
 });
 
-test('next/font instances include cyrillic subsets', () => {
+test('next/font stays latin-only so Cyrillic is not preloaded on every page', () => {
   const src = readFileSync(path.join(root, 'src/app/fonts.ts'), 'utf8');
   const matches = [...src.matchAll(/subsets:\s*\[([^\]]*)\]/g)].map((m) => m[1]);
   assert.equal(matches.length, 2);
-  for (const m of matches) {
-    assert.match(m, /"cyrillic"/);
-    assert.match(m, /"cyrillic-ext"/);
-  }
+  for (const m of matches) assert.doesNotMatch(m, /cyrillic/);
 });

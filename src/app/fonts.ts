@@ -2,13 +2,13 @@ import { Oswald, Roboto } from "next/font/google";
 
 export const oswald = Oswald({
   variable: "--font-oswald",
-  subsets: ["latin", "cyrillic", "cyrillic-ext"],
+  subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
 });
 
 export const roboto = Roboto({
   variable: "--font-roboto",
-  subsets: ["latin", "cyrillic", "cyrillic-ext"],
+  subsets: ["latin"],
   weight: ["300", "400", "500", "700", "900"],
 });
 
