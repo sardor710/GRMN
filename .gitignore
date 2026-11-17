@@ -50,3 +50,6 @@ temp/
 
 # uploaded and imported product media (served by /uploads route)
 /storage/
+
+# Agent scratch
+.superpowers/
