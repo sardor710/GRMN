@@ -190,12 +190,17 @@ export async function releaseReservation(client: PoolClient, input: unknown): Pr
 /**
  * Expires active holds whose expiry has passed (by the database clock, or `asOf`). Each hold ends in
  * its own short transaction, so concurrent sweeps and checkout traffic never hold balance locks
- * across reservations. Task 12 dispatches this from the durable worker.
+ * across reservations. Task 12 dispatches this from the durable worker. `after` pages by keyset
+ * (expires_at, id) so a caller can move past holds that failed (Task 12B review I2); `cursor` is
+ * the last hold checked, or null when none were.
  */
-export async function expireDueReservations(pool: Pool, options: { asOf?: Date; limit?: number } & RetryOptions = {}): Promise<{ checked: number; expired: number; failed: number; failures: { reservationId: string; code: string }[] }> {
+export interface ExpiryCursor { expiresAt: Date; id: string }
+export async function expireDueReservations(pool: Pool, options: { asOf?: Date; limit?: number; after?: ExpiryCursor } & RetryOptions = {}): Promise<{ checked: number; expired: number; failed: number; failures: { reservationId: string; code: string }[]; cursor: ExpiryCursor | null }> {
   const limit = Math.min(Math.max(Math.trunc(options.limit ?? 100), 1), 1000);
   const asOf = options.asOf ?? null;
-  const due = (await pool.query<{ id: string }>("SELECT id FROM inventory_reservations WHERE status='active' AND expires_at<=COALESCE($1::timestamptz,now()) ORDER BY expires_at,id LIMIT $2", [asOf, limit])).rows;
+  const due = (await pool.query<{ id: string; expires_at: Date }>(
+    "SELECT id,expires_at FROM inventory_reservations WHERE status='active' AND expires_at<=COALESCE($1::timestamptz,now()) AND ($3::timestamptz IS NULL OR (expires_at,id)>($3::timestamptz,$4::uuid)) ORDER BY expires_at,id LIMIT $2",
+    [asOf, limit, options.after?.expiresAt ?? null, options.after?.id ?? null])).rows;
   let expired = 0;
   const failures: { reservationId: string; code: string }[] = [];
   for (const { id } of due) {
@@ -209,7 +214,8 @@ export async function expireDueReservations(pool: Pool, options: { asOf?: Date; 
       failures.push({ reservationId: id, code: typeof code === "string" ? code : "UNKNOWN" });
     }
   }
-  return { checked: due.length, expired, failed: failures.length, failures };
+  const last = due[due.length - 1];
+  return { checked: due.length, expired, failed: failures.length, failures, cursor: last ? { expiresAt: last.expires_at, id: last.id } : null };
 }
 
 const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

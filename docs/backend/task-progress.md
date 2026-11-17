@@ -4,9 +4,9 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 ## Current position
 
-- **Completed:** Tasks **01–11** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring; 11A inventory ledger, audited adjustments, reconciliation, opening import; 11B race-safe reservations) and **12A** (durable outbox and leased worker), within the scope and activation limits below.
-- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, 10C in `3eecd53`, 11A in `6aed380`, 11B in `eb1cb5b`, and 12A in the commit after `944f78d` (see `git log`).
-- **Next:** Task **12B**: reservation-expiry dispatch, audited dead-letter replay and a job-lag metric. See [the 12A handoff](handoffs/task-12a.md#exact-next-step).
+- **Completed:** Tasks **01–11** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring; 11A inventory ledger, audited adjustments, reconciliation, opening import; 11B race-safe reservations) and **12** (12A durable outbox and leased worker; 12B scheduled reservation expiry, audited dead-letter replay and job-lag metric), within the scope and activation limits below.
+- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, 10C in `3eecd53`, 11A in `6aed380`, 11B in `eb1cb5b`, 12A in `3432aeb`, and 12B in the commit after it (see `git log`).
+- **Next:** Task **13A**: server cart, login merge and wishlist. See [the 12B handoff](handoffs/task-12b.md#exact-next-step).
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
 - **Active implementation:** `C:/Users/Freakman/.codex/worktrees/backend-task-02/GRMN`, branch `codex/backend-task-02`.
 - **Original checkout:** `D:/projects/garmin/GRMN`. Its progress documentation is synchronized, but the backend implementation has **not** been merged or copied there. An AI inspecting only that checkout's application files will see older code. Continue code work in the active worktree above.
@@ -146,12 +146,25 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
   - `completeJob` renews the lease under a row lock, applies the handler's database effect, and marks the job done in one transaction. A worker that lost its lease gets 409 `LEASE_LOST` and its effect rolls back.
   - `failJob` retries with jittered exponential backoff or dead-letters. Only safe error codes are stored.
   - `createWorker` adds bounded concurrency, one-at-a-time lease renewal and graceful shutdown (`WORKER_SHUTDOWN` retry).
-- **Standalone process:** `src/server/operations/worker-process.ts`, `scripts/workers/outbox-worker.mjs` and `npm run worker`. The handler registry is empty until 12B, so the entry exits 1 by design.
+- **Standalone process:** `src/server/operations/worker-process.ts`, `scripts/workers/outbox-worker.mjs` and `npm run worker`. 12B registered the first handler (reservation expiry).
 - **Tests on a real database (11):** a SIGKILLed worker process's job is reclaimed after the lease; two workers never run a job twice; a repeated job has one effect; a failing call retries, then dead-letters; plus shutdown, renewal, exhausted leases, config and the two review regressions.
 - **Review:** no Critical findings. Four Important findings were fixed test-first: lease renewal during completion, a late trigger rejection surfacing as 23514, and two timing-sensitive tests.
 - **Gates:** see the [handoff](handoffs/task-12a.md#commands-and-results).
 
 [Detailed receipt](handoffs/task-12a.md).
+
+### Task 12B
+
+**Complete — scheduled reservation expiry, audited dead-letter replay and job-lag metric (2026-11-17).** No migration.
+- **Scheduling:** `src/server/operations/schedule.ts`. Every worker process enqueues the current time slot's job on each tick, and the slot is the dedupe key, so there is one job per slot whatever the number of workers. A restarted worker resumes the schedule on its first tick. `RESERVATION_EXPIRY_INTERVAL_MS` sets the slot (default 30 s, range 1–60 s).
+- **Expiry handler:** `inventory.reservations.expire` in `src/server/operations/registry.ts`. It runs `expireDueReservations`, which now pages by keyset so failed holds never block the ones behind them. It is bounded and idempotent, and a partial sweep still completes its slot.
+- **Replay:** `src/server/operations/admin.ts`. A replay of an open dead letter is a new `job_runs` row whose `replay_of_job_id` points at the chain's original job, with the same kind, payload and attempt budget. It writes an `operations.job_replayed` audit row in the same transaction. Replays of one chain are serialised. The worker resolves the original event and idempotency key for a replay.
+- **Metric:** per kind: ready, scheduled, running, expired leases, open dead letters, job lag (oldest claimable wait) and `lastDoneAt`. It also reports holds overdue by more than 60 s, which shows when the worker is down.
+- **Route:** `/api/admin/operations`. GET returns the metrics and open dead letters, without payloads. POST `{ jobId, reason }` replays one dead letter. Staff need `settings:write` with MFA from the last 15 minutes. The route works in PostgreSQL mode only.
+- **Review:** no Critical findings. Three Important findings were fixed test-first: per-slot dead-letter flooding, stuck holds blocking the sweep, and a lag metric that read healthy with no worker running. The fourth, full-table metric scans, is deferred to Task 21 by ruling.
+- **Gates:** see the [handoff](handoffs/task-12b.md#commands-and-results).
+
+[Detailed receipt](handoffs/task-12b.md).
 
 ## Remaining task list
 
@@ -161,7 +174,7 @@ Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained
 |---|---|---|
 | 10 | Complete (10A, 10B, 10C) | — |
 | 11 | Complete (11A, 11B) | — |
-| 12 | 12A complete (next: 12B) | 12B reservation-expiry dispatch, audited replay and lag metric |
+| 12 | Complete (12A, 12B) | — |
 | 13 | Not started | 13A server cart, login merge and wishlist; 13B quotes, markdowns, coupon quotas and USD display |
 | 14 | Not started | 14A idempotent checkout and pending order; 14B payment interface, demo adapter, verified inbox and capture (absorbs 15) |
 | 15 | Merged into 14 | Real provider work is in the deferred activation backlog |

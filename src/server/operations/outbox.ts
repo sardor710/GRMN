@@ -63,7 +63,8 @@ export class JobError extends Error {
 export interface EnqueueResult { jobId: string; created: boolean }
 export interface AppendResult { eventId: string; created: boolean; jobIds: string[] }
 export interface ClaimedJob {
-  id: string; kind: string; dedupeKey: string; eventId: string | null; payload: Record<string, unknown>;
+  /** dedupeKey is the logical key: a replay (Task 12B) reports the original job's key, so ctx.idempotencyKey is stable across replays. */
+  id: string; kind: string; dedupeKey: string; eventId: string | null; replayOfJobId: string | null; payload: Record<string, unknown>;
   attempts: number; maxAttempts: number; leasedUntil: Date; owner: string; leaseMs: number;
   event: { topic: string; payload: Record<string, unknown>; payloadVersion: number } | null;
   /** The lease token. Only its hash is stored. */
@@ -128,7 +129,7 @@ export async function appendOutboxEvent(client: PoolClient, raw: unknown): Promi
 }
 
 interface ClaimRow {
-  id: string; kind: string; dedupe_key: string; event_id: string | null; payload: Record<string, unknown>; attempts: number; max_attempts: number; leased_until: Date;
+  id: string; kind: string; dedupe_key: string; event_id: string | null; replay_of_job_id: string | null; payload: Record<string, unknown>; attempts: number; max_attempts: number; leased_until: Date;
   topic: string | null; event_payload: Record<string, unknown> | null; payload_version: number | null;
 }
 
@@ -147,7 +148,8 @@ export async function claimJobs(pool: Pool, raw: unknown): Promise<ClaimedJob[]>
   const secret = randomBytes(32).toString("hex");
   const rows = (await pool.query<ClaimRow>(
     `WITH ready AS (
-       SELECT j.id,e.topic,e.payload AS event_payload,e.payload_version FROM job_runs j LEFT JOIN outbox_events e ON e.id=j.event_id
+       SELECT j.id,e.topic,e.payload AS event_payload,e.payload_version,COALESCE(o.dedupe_key,j.dedupe_key) AS logical_key,COALESCE(j.event_id,o.event_id) AS logical_event
+       FROM job_runs j LEFT JOIN job_runs o ON o.id=j.replay_of_job_id LEFT JOIN outbox_events e ON e.id=COALESCE(j.event_id,o.event_id)
        WHERE j.kind=ANY($1::text[]) AND ((j.status='pending' AND j.available_at<=clock_timestamp())
           OR (j.status='leased' AND j.leased_until<=clock_timestamp() AND j.attempts<j.max_attempts))
        ORDER BY j.available_at,j.created_at,j.id LIMIT $2 FOR UPDATE OF j SKIP LOCKED)
@@ -155,11 +157,11 @@ export async function claimJobs(pool: Pool, raw: unknown): Promise<ClaimedJob[]>
        lease_token_hash=encode(sha256(convert_to($4::text||j.id::text,'UTF8')),'hex'),
        leased_until=clock_timestamp()+($5::int * interval '1 millisecond')
      FROM ready WHERE j.id=ready.id
-     RETURNING j.id,j.kind,j.dedupe_key,j.event_id,j.payload,j.attempts,j.max_attempts,j.leased_until,ready.topic,ready.event_payload,ready.payload_version`,
+     RETURNING j.id,j.kind,ready.logical_key AS dedupe_key,ready.logical_event AS event_id,j.replay_of_job_id,j.payload,j.attempts,j.max_attempts,j.leased_until,ready.topic,ready.event_payload,ready.payload_version`,
     [input.kinds, input.limit, input.owner, secret, input.leaseMs])).rows;
   return rows.map(row => {
     const job = {
-      id: row.id, kind: row.kind, dedupeKey: row.dedupe_key, eventId: row.event_id, payload: row.payload, attempts: row.attempts, maxAttempts: row.max_attempts,
+      id: row.id, kind: row.kind, dedupeKey: row.dedupe_key, eventId: row.event_id, replayOfJobId: row.replay_of_job_id, payload: row.payload, attempts: row.attempts, maxAttempts: row.max_attempts,
       leasedUntil: row.leased_until, owner: input.owner, leaseMs: input.leaseMs,
       event: row.topic === null ? null : { topic: row.topic, payload: row.event_payload ?? {}, payloadVersion: row.payload_version ?? 1 },
     } as ClaimedJob;
@@ -222,6 +224,8 @@ export async function failJob(pool: Pool, job: ClaimedJob, failure: { code: stri
 }
 
 export interface JobContext {
+  /** The worker's pool, for handlers whose effects run in their own short transactions (Task 12B expiry). */
+  pool: Pool;
   /** Aborted when the lease is lost or the worker shuts down past its grace period. */
   signal: AbortSignal;
   /** Stable across retries of this job: pass it to external providers. */
@@ -280,7 +284,7 @@ export function createWorker(options: WorkerOptions): Worker {
       lease.completing = true;
       try { const result = await completeJob(pool, job, work); completed = true; return result; } finally { lease.completing = false; }
     };
-    const ctx: JobContext = { signal: controller.signal, idempotencyKey: `${job.kind}:${job.dedupeKey}`, complete: finish };
+    const ctx: JobContext = { pool, signal: controller.signal, idempotencyKey: `${job.kind}:${job.dedupeKey}`, complete: finish };
     try {
       await handlers[job.kind](job, ctx);
       if (!completed) await finish();
