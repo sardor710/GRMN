@@ -62,7 +62,7 @@ export function localizedSeo(input: LocalizedSeoInput): Pick<Metadata, "alternat
   const selfUrl = buildAlternates({ ...input, canonicalOverride: undefined }).canonical;
   const indexable = isIndexable(locale, indexedLocales);
   return {
-    alternates: { canonical, languages },
+    alternates: Object.keys(languages).length > 0 ? { canonical, languages } : { canonical },
     robots: noIndex
       ? { index: false, follow: false }
       : indexable
@@ -91,4 +91,9 @@ export function buildSitemapEntries(baseUrl: string, routes: SitemapRoute[]): Me
     baseUrl,
     routes.map((r) => ({ ...r, indexedLocales: [...r.indexedLocales] })),
   ) as MetadataRoute.Sitemap;
+}
+
+/** JSON-LD script body with `<`, `>`, `&`, U+2028/2029 escaped (safe inside `<script>`). */
+export function serializeJsonLd(value: unknown): string {
+  return core.serializeJsonLd(value);
 }

@@ -10,6 +10,7 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/account">)
   const t = await getMetaTranslations(params);
   return {
     title: t("accountTitle"),
+    // Private page: noindex,follow and no hreflang (ROUTE_LOCALES.account is empty).
     ...localizedSeo({ path: "/account", locale, indexedLocales: ROUTE_LOCALES.account }),
   };
 }

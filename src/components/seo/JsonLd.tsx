@@ -1,6 +1,6 @@
 import type { CMSProduct, CMSBlog } from "@/lib/cms/types";
 import type { Locale } from "@/i18n/config";
-import { SITE_URL, absoluteUrl } from "@/i18n/seo";
+import { SITE_URL, absoluteUrl, serializeJsonLd } from "@/i18n/seo";
 
 interface ProductJsonLdProps {
   product: CMSProduct;
@@ -49,7 +49,7 @@ export function ProductJsonLd({ product, url, locale, description }: ProductJson
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }}
     />
   );
 }
@@ -95,7 +95,7 @@ export function ArticleJsonLd({ blog, url, locale, headline, description }: Arti
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }}
     />
   );
 }
@@ -119,7 +119,7 @@ export function BreadcrumbJsonLd({ items }: BreadcrumbJsonLdProps) {
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: serializeJsonLd(schema) }}
     />
   );
 }

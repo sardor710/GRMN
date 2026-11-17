@@ -36,7 +36,7 @@ test('buildAlternates: languages follow LOCALES order regardless of input order'
 });
 
 test('ROUTE_LOCALES table', () => {
-  for (const key of ['home', 'category', 'product', 'blogIndex', 'blogPost', 'compare', 'cart', 'account', 'newsletter']) {
+  for (const key of ['home', 'category', 'product', 'blogIndex', 'blogPost', 'compare', 'newsletter']) {
     assert.deepEqual(ROUTE_LOCALES[key], ALL, key);
   }
   for (const key of ['garminPay', 'minisite:fenix-8', 'minisite:marq', 'minisite:marq2', 'minisite:why-garmin', 'minisite:garmin-pay']) {
@@ -82,4 +82,39 @@ test('buildSitemapEntries: en-only route yields one entry; home has no trailing 
 
 test('buildSitemapEntries: routes without indexed locales produce nothing', () => {
   assert.deepEqual(buildSitemapEntries('https://x.test', [route('/p/x', [])]), []);
+});
+
+test('buildAlternates: en canonicalOverride off /en drops en from hreflang, keeps x-default', () => {
+  const en = buildAlternates({ path: '/p/x', locale: 'en', indexedLocales: ALL, canonicalOverride: 'https://other.example/y' });
+  assert.equal(en.canonical, 'https://other.example/y');
+  assert.deepEqual(en.languages, { ru: '/ru/p/x', kk: '/kk/p/x', 'x-default': '/p/x' });
+  const ru = buildAlternates({ path: '/p/x', locale: 'ru', indexedLocales: ALL, canonicalOverride: 'https://other.example/y' });
+  assert.deepEqual(ru.languages, { ru: '/ru/p/x', kk: '/kk/p/x', 'x-default': '/p/x' });
+});
+
+test('buildAlternates: canonicalOverride equal to the /en URL keeps en', () => {
+  for (const override of ['/en/p/x', 'https://www.garmin.com/en/p/x']) {
+    const a = buildAlternates({ path: '/p/x', locale: 'en', indexedLocales: ALL, canonicalOverride: override });
+    assert.equal(a.languages.en, '/en/p/x', override);
+  }
+});
+
+test('serializeJsonLd: escapes <, >, & and line separators so a string cannot close the script', async () => {
+  const { serializeJsonLd } = await import('../src/i18n/seo-core.js');
+  const value = { name: '</script><script>alert(1)</script> & ' + String.fromCharCode(0x2028, 0x2029) };
+  const out = serializeJsonLd(value);
+  assert.ok(!/[<>&\u2028\u2029]/.test(out), out);
+  assert.deepEqual(JSON.parse(out), value);
+  assert.equal(serializeJsonLd({ a: 'plain' }), '{"a":"plain"}');
+});
+
+test('ROUTE_LOCALES: cart and account are private (never indexed, no hreflang)', () => {
+  assert.deepEqual(ROUTE_LOCALES.cart, []);
+  assert.deepEqual(ROUTE_LOCALES.account, []);
+  for (const path of ['/cart', '/account']) {
+    const a = buildAlternates({ path, locale: 'ru', indexedLocales: ROUTE_LOCALES.cart });
+    assert.equal(a.canonical, `/ru${path}`);
+    assert.deepEqual(a.languages, {}, 'no hreflang, not even x-default');
+    assert.equal(isIndexable('en', []), false);
+  }
 });
