@@ -1,26 +1,20 @@
 // Validate/normalize blog, banner, settings and homepage payloads from the admin (pure; used by the
 // API routes and tests). Base values and their ru/kk translations share field limits and sanitizers.
-import sanitizeHtml from 'sanitize-html';
 import { BLOG_SPEC, BANNER_SPEC, SETTINGS_SPEC, HOMEPAGE_SPEC } from '../../i18n/translate-record.js';
 import { findBaseLimitViolation, mergeTranslationsSafely } from './translation-input.js';
 import { validateHomepageConfig } from './homepage-schema.js';
 
-const ENTITIES = [
-  [/&lt;/g, '<'],
-  [/&gt;/g, '>'],
-  [/&quot;/g, '"'],
-  [/&#0*39;|&#x0*27;/gi, "'"],
-  [/&amp;/g, '&'],
-];
+// C0 control characters except \t (09), \n (0A) and \r (0D), plus DEL.
+const CONTROL_CHARS = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g;
 
 /**
- * Blog bodies are plain text/markdown rendered as React text (never as HTML). Strip every tag (script
- * and style contents included) and turn the parser's entity escapes back into characters, so
- * "Tom & Jerry" stays readable. Used for the base `content` and every translated `content`.
+ * Blog bodies are plain text/markdown that the storefront renders as React text (never as HTML), so
+ * escaping is React's job and the cleaning here must be lossless (ruling R14): trim and drop control
+ * characters only. No tag stripping or entity decoding, so `x<y`, `<https://…>` and `&amp;` survive
+ * and the function is idempotent. Used for the base `content` and every translated `content`.
  */
 export function sanitizeBlogContent(text) {
-  const stripped = sanitizeHtml(String(text ?? ''), { allowedTags: [], allowedAttributes: {} });
-  return ENTITIES.reduce((s, [re, ch]) => s.replace(re, ch), stripped);
+  return String(text ?? '').replace(CONTROL_CHARS, '').trim();
 }
 
 export const BLOG_HTML_FIELDS = Object.freeze({ content: sanitizeBlogContent });

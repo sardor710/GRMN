@@ -89,13 +89,34 @@ test('translations.ru.overviewHtml is sanitized identically to the base field', 
   assert.doesNotMatch(JSON.stringify(res.product.translations), /onerror|script|onclick/);
 });
 
-test('blog content translations are sanitized identically to the base field', () => {
-  const res = sanitizeBlogInput({ title: 'T', content: XSS, translations: { kk: { content: XSS } } });
+test('blog content translations go through the same function as the base field', () => {
+  const body = 'Keep HR <zone 2> today\u0000';
+  const res = sanitizeBlogInput({ title: 'T', content: body, translations: { kk: { content: body } } });
   assert.equal(res.ok, true);
-  assert.equal(res.blog.content, sanitizeBlogContent(XSS));
+  assert.equal(res.blog.content, sanitizeBlogContent(body));
   assert.equal(res.blog.translations.kk.content, res.blog.content);
-  assert.doesNotMatch(res.blog.content, /<|onerror|alert/);
-  assert.equal(sanitizeBlogContent('Tom & Jerry <b>bold</b> > 3'), 'Tom & Jerry bold > 3');
+  assert.equal(res.blog.content, 'Keep HR <zone 2> today');
+});
+
+test('R14: blog content cleaning is lossless (rendered as React text, never HTML)', () => {
+  for (const text of [
+    'Use x<y',
+    'Keep HR <zone 2> today',
+    'see <https://garmin.com>',
+    '<!-- note --> text',
+    'a &amp; b',
+    '&lt;b&gt; stays',
+    'Tom & Jerry <b>bold</b> > 3',
+    'line 1\n\tline 2\r\n',
+    XSS,
+  ]) {
+    const once = sanitizeBlogContent(text);
+    assert.equal(once, text.trim(), text);
+    assert.equal(sanitizeBlogContent(once), once, `idempotent: ${text}`);
+  }
+  assert.equal(sanitizeBlogContent('  a\u0000b\u0007c\u001Fd\u007Fe\u000Bf\u000Cg  '), 'abcdefg');
+  assert.equal(sanitizeBlogContent('keep\n\r\twhitespace'), 'keep\n\r\twhitespace');
+  assert.equal(sanitizeBlogContent(undefined), '');
 });
 
 test('every translated field keeps the same length limit as its base field', () => {

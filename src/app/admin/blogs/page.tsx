@@ -605,7 +605,7 @@ function BlogTranslationFields({ locale, blog, onChange }: BlogTranslationFields
         onChange={set("excerpt")}
       />
       <TranslationField
-        label="Full article body (markdown, tags removed on save)"
+        label="Full article body (markdown, shown as plain text)"
         field="content"
         multiline
         rows={8}

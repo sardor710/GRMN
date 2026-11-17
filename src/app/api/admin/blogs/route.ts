@@ -15,10 +15,10 @@ export async function POST(request: Request) {
   if (!(await getCurrentAdmin())) return unauthorized();
   try {
     const raw = (await request.json()) as Partial<CMSBlog>;
-    if (!raw || typeof raw !== "object") {
-      return NextResponse.json({ error: "Blog title and content are required" }, { status: 400 });
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+      return NextResponse.json({ error: "Request body must be a JSON object" }, { status: 400 });
     }
-    // Field limits, sanitized content (base and ru/kk), translations merged per locale with the stored blog.
+    // Field limits, cleaned content (base and ru/kk), translations merged per locale with the stored blog.
     const existing = typeof raw.id === "string" ? getBlogs().find((b) => b.id === raw.id) : undefined;
     const checked = sanitizeBlogInput(raw, existing);
     if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
