@@ -110,6 +110,6 @@ From the review:
 2. Implement transactional outbox append and leased claiming with retry/backoff, dedupe, dead-letter, safe shutdown and bounded concurrency, test-first. Required tests: kill or restart a worker mid-lease, run two workers, repeat a job, fail an external call.
 3. 12B then adds reservation-expiry dispatch through `expireDueReservations` (this task), audited replay and lag metrics.
 4. Run the gates from PowerShell. If the smoke stalls on `Compiling / ...`, remove `.next/dev`. **Do not round-trip source files through PowerShell `Get-Content`/`Set-Content`** (UTF-8 corruption).
-5. Stop instead if 12 needs a production worker host decision that `docs/backend/decisions.md` leaves open: the plan asks for "a documented production worker host" (O09 operations).
+5. Tasks 12–22 were consolidated after this handoff (see "Consolidation of Tasks 12–22" in the plan). The worker host is settled by D05; production sizing (O09) is in the deferred backlog and does not block 12.
 
 **STOP_AFTER is Task 22.**

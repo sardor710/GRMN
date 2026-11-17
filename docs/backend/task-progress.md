@@ -139,22 +139,24 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 ## Remaining task list
 
+Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained slices; see "Consolidation of Tasks 12–22" in the plan. Steps that need a real provider are in its deferred activation backlog.
+
 | Task | Status | Work still required |
 |---|---|---|
 | 10 | Complete (10A, 10B, 10C) | — |
 | 11 | Complete (11A, 11B) | — |
-| 12 | Not started (next: 12A) | Durable inbox/outbox and background workers, including the reservation expiry dispatch |
-| 13 | Not started | Server cart, pricing, shipping/tax quotes and promotion quotas |
-| 14 | Not started | Idempotent checkout and pending orders |
-| 15 | Not started | Payment adapter, verified webhooks and reconciliation |
-| 16 | Not started | Fulfillment, shipments and actual order events |
-| 17 | Not started | Cancellations, refunds, returns and stock compensation |
-| 18 | Not started | CMS publishing, media and merchandising operations |
-| 19 | Not started | Reports, exports, notifications and store configuration |
-| 20 | Not started | Required wishlist and remaining account domains |
-| 21 | Not started | Measured queries, caching and search optimization |
-| 22 | Not started | End-to-end, load, security and failure qualification |
-| 23 | Not started | Cutover and recovery rehearsal |
-| 24 | Not started | Authorized production cutover, observation and retirement |
+| 12 | Not started (next: 12A) | 12A outbox and worker; 12B reservation-expiry dispatch, replay and lag metric |
+| 13 | Not started | 13A server cart, login merge and wishlist; 13B quotes, markdowns, coupon quotas and USD display |
+| 14 | Not started | 14A idempotent checkout and pending order; 14B payment interface, demo adapter, verified inbox and capture (absorbs 15) |
+| 15 | Merged into 14 | Real provider work is in the deferred activation backlog |
+| 16 | Not started | 16A manual fulfillment and order timeline; 16B cancellation, returns and refunds with stock compensation (absorbs 17) |
+| 17 | Merged into 16 | — |
+| 18 | Not started | 18A scheduled publishing and media uploads; 18B reports, exports, settings, USD rate editor and inventory admin UI (absorbs 19) |
+| 19 | Merged into 18 | Email/newsletter sending is in the deferred activation backlog |
+| 20 | Merged into 13 | Wishlist in 13A; other account domains recorded as deferred there |
+| 21 | Not started | 21A query/cache/rate tuning and end-to-end matrix; 21B load and failure injection (absorbs 22). Last chained task |
+| 22 | Merged into 21 | — |
+| 23 | Not started (owner-run) | Cutover and recovery rehearsal |
+| 24 | Not started (owner-run) | Authorized production cutover, observation and retirement |
 
 Real source quarantine, provider configuration, production capacity and recovery qualification remain explicit launch gates. Nothing here certifies production readiness. The [XL task list](../plans/2026-11-10-postgresql-backend-migration-xl.md) remains the binding specification; this file is its progress report.
