@@ -16,3 +16,12 @@ export function negotiateLocale(input: { cookie?: string; acceptLanguage?: strin
 export function localizeHref(href: string, locale: Locale): string {
   return js.localizeHref(href, locale);
 }
+
+export function decideLocaleRedirect(
+  pathname: string,
+  search: string,
+  cookie?: string,
+  acceptLanguage?: string,
+): string | null {
+  return js.decideLocaleRedirect(pathname, search, cookie, acceptLanguage);
+}

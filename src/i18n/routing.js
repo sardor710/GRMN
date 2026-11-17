@@ -70,3 +70,15 @@ export function localizeHref(href, locale) {
   const base = existing === null ? path : rest;
   return `/${locale}${base === '/' ? '' : base}${suffix}`;
 }
+
+/**
+ * Pure core of the proxy: where an incoming request should be redirected, or null to pass it on.
+ * Excluded paths and paths that already carry a locale prefix are never redirected (the prefix wins
+ * over the cookie). Everything else gets the negotiated locale prepended, keeping the query string.
+ */
+export function decideLocaleRedirect(pathname, search, cookie, acceptLanguage) {
+  if (isExcludedPath(pathname)) return null;
+  if (stripLocale(pathname).locale !== null) return null;
+  const locale = negotiateLocale({ cookie, acceptLanguage });
+  return `/${locale}${pathname === '/' ? '' : pathname}${search || ''}`;
+}
