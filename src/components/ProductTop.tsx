@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { ProductDetail } from "@/types";
 import { useCart } from "@/lib/cart";
@@ -9,11 +10,14 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { GarminBadge } from "@/components/GarminBadge";
 import { VariantPicker } from "@/components/product/VariantPicker";
 import { isPurchasable, selectValue } from "@/lib/cms/product-variants";
-
-// Same price format the storefront used before variants (site-wide currency display is a separate follow-up).
-const money = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD`;
+import { formatMoney } from "@/i18n/format";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
 export function ProductTop({ product }: { product: ProductDetail }) {
+  const t = useTranslations("ProductTop");
+  const locale = useAppLocale();
+  // Currency stays USD (plan L9); only the number format follows the locale.
+  const money = (n: number) => t("price", { price: formatMoney(n, locale) });
   const [mainIdx, setMainIdx] = useState(0);
   const [caseSize, setCaseSize] = useState(product.defaultCaseSize);
   const [version, setVersion] = useState(product.defaultVersion);
@@ -94,7 +98,7 @@ export function ProductTop({ product }: { product: ProductDetail }) {
         <div className="flex gap-4">
           <div className="flex flex-col gap-2">
             <button
-              aria-label="Previous"
+              aria-label={t("previousImage")}
               onClick={() => setMainIdx((i) => Math.max(0, i - 1))}
               className="grid h-8 place-items-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
             >
@@ -112,7 +116,7 @@ export function ProductTop({ product }: { product: ProductDetail }) {
               </button>
             ))}
             <button
-              aria-label="Next"
+              aria-label={t("nextImage")}
               onClick={() => setMainIdx((i) => Math.min(gallery.length - 1, i + 1))}
               className="grid h-8 place-items-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
             >
@@ -139,7 +143,7 @@ export function ProductTop({ product }: { product: ProductDetail }) {
           <h1 className="g-heading text-[32px] leading-tight text-black">{product.title}</h1>
           <p className="mt-2 text-[16px] text-neutral-700">{product.subtitle}</p>
           <p className="mt-3 text-[12px] font-medium uppercase tracking-[0.06em] text-neutral-500">
-            Part Number {partNumber}
+            {t("partNumber", { partNumber })}
           </p>
 
           {product.badge && product.badge !== "NONE" && (
@@ -157,11 +161,11 @@ export function ProductTop({ product }: { product: ProductDetail }) {
             )}
           </p>
           <p className="mt-2 text-[14px] text-neutral-600">
-            Starting at $69/mo or 0% APR with <span className="font-semibold">affirm</span>.{" "}
-            <a href="#" className="underline">See if you qualify</a>
+            {t.rich("financing", { brand: (chunks) => <span className="font-semibold">{chunks}</span> })}{" "}
+            <a href="#" className="underline">{t("qualify")}</a>
           </p>
           <p className="mt-1 text-[14px] text-neutral-600">
-            HSA/FSA eligible for qualified customers. <a href="#" className="underline">Learn more</a>
+            {t("hsa")} <a href="#" className="underline">{t("learnMore")}</a>
           </p>
 
           {vm && variant ? (
@@ -170,14 +174,14 @@ export function ProductTop({ product }: { product: ProductDetail }) {
           <>
           {/* Case size */}
           <Selector
-            label="Case Size"
+            label={t("caseSize")}
             options={product.caseSizes}
             value={caseSize}
             onChange={setCaseSize}
           />
           {/* Version */}
           <Selector
-            label="Version"
+            label={t("version")}
             options={product.versions}
             value={version}
             onChange={setVersion}
@@ -185,7 +189,7 @@ export function ProductTop({ product }: { product: ProductDetail }) {
 
           {/* Model / Color */}
           <div className="mt-6">
-            <p className="text-[14px] font-medium text-black">Model/Color</p>
+            <p className="text-[14px] font-medium text-black">{t("modelColor")}</p>
             <div className="mt-2 flex flex-wrap gap-2">
               {product.colors.map((c, i) => (
                 <button
@@ -208,7 +212,7 @@ export function ProductTop({ product }: { product: ProductDetail }) {
           )}
 
           <p className="mt-6 text-[14px] text-neutral-700">
-            {variant && variant.stock <= 0 ? "Currently out of stock." : "Available to ship in 1–3 business days."}
+            {variant && variant.stock <= 0 ? t("outOfStockNote") : t("shipsIn")}
           </p>
 
           <div className="mt-4 flex items-center gap-3">
@@ -217,9 +221,9 @@ export function ProductTop({ product }: { product: ProductDetail }) {
               disabled={!isPurchasable(variant)}
               className="g-btn bg-[#5bc2e7] text-black transition-colors hover:bg-[#37b4dc] disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-500"
             >
-              {!isPurchasable(variant) ? "Out of Stock" : added ? "Added ✓" : "Add to Cart"}
+              {!isPurchasable(variant) ? t("outOfStock") : added ? t("added") : t("addToCart")}
             </button>
-            <button className="g-btn g-btn--outline-dark">Customize</button>
+            <button className="g-btn g-btn--outline-dark">{t("customize")}</button>
           </div>
         </div>
       </div>

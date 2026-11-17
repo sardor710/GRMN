@@ -11,13 +11,18 @@ import { bodyClassName, htmlClassName, siteIcons } from "../fonts";
 /** Message namespaces that client components read. Server-only namespaces stay off the client. */
 const CLIENT_NAMESPACES: readonly string[] = [
   "BlogExplorer",
+  "Cart",
   "CatalogueGrid",
+  "Compare",
   "Footer",
   "Header",
   "HomeFeatured",
   "HomeHero",
   "HomeSignup",
+  "ProductAccessories",
   "ProductCard",
+  "ProductTabs",
+  "ProductTop",
 ];
 
 export function generateStaticParams() {

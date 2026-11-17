@@ -48,6 +48,32 @@
     "eyebrow": "Блог Garmin",
     "heroAlt": "Блог Garmin"
   },
+  "Cart": {
+    "heading": "Корзина",
+    "thankYou": "Спасибо за заказ!",
+    "demoNotice": "Это демонстрационное оформление заказа — оплата не проводилась. Корзина очищена.",
+    "continueShoppingButton": "Продолжить покупки",
+    "emptyHeading": "Ваша корзина пуста",
+    "emptyBody": "Похоже, вы ещё ничего не добавили.",
+    "shopSmartwatches": "Смотреть смарт-часы",
+    "item": "Товар",
+    "quantity": "Количество",
+    "price": "Цена",
+    "part": "Арт. {sku}",
+    "remove": "Удалить",
+    "decrease": "Уменьшить",
+    "increase": "Увеличить",
+    "continueShopping": "← Продолжить покупки",
+    "clear": "Очистить корзину",
+    "summary": "Итог заказа",
+    "subtotal": "Промежуточный итог",
+    "shipping": "Доставка",
+    "free": "БЕСПЛАТНО",
+    "tax": "Расчётный налог",
+    "total": "Итого",
+    "checkout": "Оформить заказ",
+    "freeShippingNote": "Бесплатная стандартная доставка при заказе от 25 $."
+  },
   "CatalogueGrid": {
     "compare": "Сравнить",
     "clearAll": "Сбросить все фильтры ({count})",
@@ -117,6 +143,27 @@
       "outdoorRecreation": "АКТИВНЫЙ ОТДЫХ",
       "marine": "МОРСКАЯ ТЕХНИКА",
       "aviation": "АВИАЦИЯ"
+    }
+  },
+  "Compare": {
+    "heading": "Сравнение смарт-часов",
+    "intro": "Добавьте до {max} моделей, чтобы сравнить характеристики.",
+    "addWatch": "Добавить часы",
+    "selectModel": "Выберите модель…",
+    "empty": "Добавьте часы выше, чтобы начать сравнение.",
+    "remove": "✕ Убрать",
+    "removeLabel": "Убрать {name}",
+    "shop": "Купить",
+    "yes": "Да",
+    "back": "← Ко всем смарт-часам",
+    "rows": {
+      "price": "Цена",
+      "family": "Линейка",
+      "level": "Уровень подготовки",
+      "caseSize": "Размер корпуса",
+      "bestFor": "Лучше всего для",
+      "customizable": "Персонализация",
+      "overview": "Обзор"
     }
   },
   "Footer": {
@@ -374,9 +421,59 @@
     "body": "Страница, которую вы ищете, не существует.",
     "home": "На главную"
   },
+  "ProductAccessories": {
+    "quickFitHeading": "Совместимость ремешков QuickFit®",
+    "quickFitBody": "Серия fēnix® 8 поддерживает ремешки QuickFit: <b>20 мм</b> для моделей 43 мм, <b>22 мм</b> для моделей 47 мм и <b>26 мм</b> для моделей 51 мм. Замена за секунды без инструментов.",
+    "toolFree": "Замена без инструментов",
+    "empty": "В этой категории нет аксессуаров.",
+    "partNumber": "Артикул {partNumber}",
+    "currency": "USD",
+    "added": "Добавлено в корзину ✓",
+    "addToCart": "В корзину",
+    "categories": {
+      "all": "Все",
+      "bands": "Ремешки и браслеты",
+      "sensors": "Пульсометры и датчики",
+      "power": "Кабели и питание",
+      "protection": "Крепления и защита",
+      "navigation": "Спутниковая связь и навигация"
+    }
+  },
   "ProductCard": {
     "price": "{price} USD",
     "andUp": "и выше"
+  },
+  "ProductTabs": {
+    "tabs": {
+      "overview": "Обзор",
+      "specs": "Характеристики",
+      "inTheBox": "Комплектация",
+      "accessories": "Аксессуары",
+      "maps": "Карты",
+      "compatible": "Совместимые устройства"
+    },
+    "specifications": "Технические характеристики",
+    "mapsText": "Предустановленные карты TopoActive и поддержка загружаемых туристических, велосипедных и горнолыжных карт.",
+    "compatibleText": "Совместимо с приложением Garmin Connect™ и магазином Connect IQ™ на устройствах iPhone® и Android™."
+  },
+  "ProductTop": {
+    "price": "{price} USD",
+    "previousImage": "Предыдущее фото",
+    "nextImage": "Следующее фото",
+    "partNumber": "Артикул {partNumber}",
+    "financing": "От 69 $ в месяц или 0% годовых с <brand>affirm</brand>.",
+    "qualify": "Проверьте, подходите ли вы",
+    "hsa": "Можно оплатить средствами HSA/FSA (для подходящих клиентов).",
+    "learnMore": "Подробнее",
+    "caseSize": "Размер корпуса",
+    "version": "Версия",
+    "modelColor": "Модель/цвет",
+    "outOfStockNote": "Сейчас нет в наличии.",
+    "shipsIn": "Отправка в течение 1–3 рабочих дней.",
+    "outOfStock": "Нет в наличии",
+    "added": "Добавлено ✓",
+    "addToCart": "В корзину",
+    "customize": "Настроить"
   },
   "RelatedProducts": {
     "heading": "Вам также может понравиться"

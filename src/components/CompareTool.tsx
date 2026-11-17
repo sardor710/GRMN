@@ -2,23 +2,37 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { products } from "@/lib/products";
+import { activityFilters, caseSizeFilters, filterLabelKey, levelFilters, products } from "@/lib/products";
 import type { Product } from "@/types";
+import { formatMoney } from "@/i18n/format";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
 const MAX = 4;
 
-const rows: { label: string; get: (p: Product) => string }[] = [
-  { label: "Price", get: (p) => `$${p.price.toLocaleString("en-US", { minimumFractionDigits: 2 })}` },
-  { label: "Product family", get: (p) => p.family },
-  { label: "Experience level", get: (p) => p.level },
-  { label: "Case size", get: (p) => p.caseSize },
-  { label: "Best for", get: (p) => p.activities.join(", ") },
-  { label: "Customizable", get: (p) => (p.badge === "CUSTOMIZABLE" ? "Yes" : "—") },
-  { label: "Overview", get: (p) => p.description },
+type Translate = (key: string) => string;
+
+/** Row labels are `Compare.rows.*` messages; values use the catalogue filter labels where they exist. */
+const rows: { key: string; get: (p: Product, t: Translate, money: (n: number) => string) => string }[] = [
+  { key: "price", get: (p, _t, money) => money(p.price) },
+  { key: "family", get: (p) => p.family },
+  { key: "level", get: (p, t) => label(t, filterLabelKey(levelFilters, p.level), p.level) },
+  { key: "caseSize", get: (p, t) => label(t, filterLabelKey(caseSizeFilters, p.caseSize), p.caseSize) },
+  { key: "bestFor", get: (p, t) => p.activities.map((a) => label(t, filterLabelKey(activityFilters, a), a)).join(", ") },
+  { key: "customizable", get: (p, t) => (p.badge === "CUSTOMIZABLE" ? t("Compare.yes") : "—") },
+  { key: "overview", get: (p) => p.description },
 ];
 
+function label(t: Translate, key: string | undefined, fallback: string): string {
+  return key ? t(key) : fallback;
+}
+
 export function CompareTool() {
+  const t = useTranslations("Compare");
+  const tk = useTranslations();
+  const locale = useAppLocale();
+  const money = (n: number) => formatMoney(n, locale);
   const [selected, setSelected] = useState<string[]>(["1228429", "1462801", "1614061"]);
 
   const chosen = selected.map((id) => products.find((p) => p.id === id)).filter((p): p is Product => !!p);
@@ -30,23 +44,23 @@ export function CompareTool() {
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-10">
       <div className="text-center">
-        <h1 className="g-heading text-[34px] text-black">Compare Smartwatches</h1>
+        <h1 className="g-heading text-[34px] text-black">{t("heading")}</h1>
         <p className="mt-2 text-[15px] text-neutral-600">
-          Add up to {MAX} watches to compare specs side by side.
+          {t("intro", { max: MAX })}
         </p>
       </div>
 
       {/* Add picker */}
       {chosen.length < MAX && (
         <div className="mt-6 flex items-center justify-center gap-3">
-          <label htmlFor="add-watch" className="text-[14px] text-neutral-600">Add a watch</label>
+          <label htmlFor="add-watch" className="text-[14px] text-neutral-600">{t("addWatch")}</label>
           <select
             id="add-watch"
             value=""
             onChange={(e) => add(e.target.value)}
             className="h-10 border border-neutral-300 bg-white px-3 text-[14px] outline-none"
           >
-            <option value="" disabled>Select a model…</option>
+            <option value="" disabled>{t("selectModel")}</option>
             {available.map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
@@ -55,7 +69,7 @@ export function CompareTool() {
       )}
 
       {chosen.length === 0 ? (
-        <p className="py-20 text-center text-neutral-500">Add a watch above to start comparing.</p>
+        <p className="py-20 text-center text-neutral-500">{t("empty")}</p>
       ) : (
         <div className="mt-10 overflow-x-auto">
           <table className="w-full min-w-[720px] border-collapse">
@@ -68,9 +82,9 @@ export function CompareTool() {
                       <button
                         onClick={() => remove(p.id)}
                         className="self-end text-[12px] text-neutral-400 hover:text-black"
-                        aria-label={`Remove ${p.name}`}
+                        aria-label={t("removeLabel", { name: p.name })}
                       >
-                        ✕ Remove
+                        {t("remove")}
                       </button>
                       <div className="relative h-32 w-32">
                         <Image src={p.image} alt={p.name} fill sizes="128px" className="object-contain" />
@@ -79,7 +93,7 @@ export function CompareTool() {
                         {p.name}
                       </Link>
                       <Link href={`/p/${p.id}`} className="g-btn g-btn--outline-dark mt-3 text-[12px]">
-                        Shop
+                        {t("shop")}
                       </Link>
                     </div>
                   </th>
@@ -88,13 +102,13 @@ export function CompareTool() {
             </thead>
             <tbody>
               {rows.map((row, ri) => (
-                <tr key={row.label} className={ri % 2 ? "bg-neutral-50" : ""}>
+                <tr key={row.key} className={ri % 2 ? "bg-neutral-50" : ""}>
                   <th className="p-4 text-left align-top text-[13px] font-medium uppercase tracking-[0.04em] text-neutral-500">
-                    {row.label}
+                    {t(`rows.${row.key}`)}
                   </th>
                   {chosen.map((p) => (
                     <td key={p.id} className="p-4 align-top text-[14px] text-neutral-800">
-                      {row.get(p)}
+                      {row.get(p, tk, money)}
                     </td>
                   ))}
                 </tr>
@@ -106,7 +120,7 @@ export function CompareTool() {
 
       <div className="mt-10 text-center">
         <Link href="/c/wearables-smartwatches" className="text-[14px] text-[#007cc3] underline">
-          ← Back to all smartwatches
+          {t("back")}
         </Link>
       </div>
     </div>

@@ -11,7 +11,7 @@ How to review:
 - A blank or missing string falls back to English at runtime.
 - Text in UPPER CASE is upper case in the source; some components also uppercase with CSS.
 
-Totals: 309 keys in 17 namespaces, 23 marked do-not-translate.
+Totals: 390 keys in 22 namespaces, 24 marked do-not-translate.
 
 ## Meta
 
@@ -71,6 +71,35 @@ Totals: 309 keys in 17 namespaces, 23 marked do-not-translate.
 |---|---|---|---|---|
 | [ ] | `eyebrow` | Garmin Blog | Блог Garmin | Garmin блогы |
 | [ ] | `heroAlt` | Garmin Blog | Блог Garmin | Garmin блогы |
+
+## Cart
+
+| ✓ | Key | English | Русский | Қазақша |
+|---|---|---|---|---|
+| [ ] | `heading` | Shopping Cart | Корзина | Себет |
+| [ ] | `thankYou` | Thank you for your order! | Спасибо за заказ! | Тапсырысыңызға рахмет! |
+| [ ] | `demoNotice` | This is a demo checkout — no payment was processed. Your cart has been cleared. | Это демонстрационное оформление заказа — оплата не проводилась. Корзина очищена. | Бұл тапсырысты рәсімдеудің демо-нұсқасы — төлем жүргізілген жоқ. Себет тазартылды. |
+| [ ] | `continueShoppingButton` | Continue Shopping | Продолжить покупки | Сатып алуды жалғастыру |
+| [ ] | `emptyHeading` | Your cart is empty | Ваша корзина пуста | Себетіңіз бос |
+| [ ] | `emptyBody` | Looks like you haven't added anything yet. | Похоже, вы ещё ничего не добавили. | Сіз әлі ештеңе қоспаған сияқтысыз. |
+| [ ] | `shopSmartwatches` | Shop Smartwatches | Смотреть смарт-часы | Смарт-сағаттарды қарау |
+| [ ] | `item` | Item | Товар | Тауар |
+| [ ] | `quantity` | Quantity | Количество | Саны |
+| [ ] | `price` | Price | Цена | Бағасы |
+| [ ] | `part` | Part {sku} | Арт. {sku} | Арт. {sku} |
+| [ ] | `remove` | Remove | Удалить | Жою |
+| [ ] | `decrease` | Decrease | Уменьшить | Азайту |
+| [ ] | `increase` | Increase | Увеличить | Көбейту |
+| [ ] | `continueShopping` | ← Continue shopping | ← Продолжить покупки | ← Сатып алуды жалғастыру |
+| [ ] | `clear` | Clear cart | Очистить корзину | Себетті тазалау |
+| [ ] | `summary` | Order Summary | Итог заказа | Тапсырыс қорытындысы |
+| [ ] | `subtotal` | Subtotal | Промежуточный итог | Аралық сома |
+| [ ] | `shipping` | Shipping | Доставка | Жеткізу |
+| [ ] | `free` | FREE | БЕСПЛАТНО | ТЕГІН |
+| [ ] | `tax` | Estimated tax | Расчётный налог | Болжамды салық |
+| [ ] | `total` | Total | Итого | Барлығы |
+| [ ] | `checkout` | Checkout | Оформить заказ | Тапсырысты рәсімдеу |
+| [ ] | `freeShippingNote` | Free standard shipping on orders over $25. | Бесплатная стандартная доставка при заказе от 25 $. | 25 $-дан асатын тапсырыстарға стандартты жеткізу тегін. |
 
 ## CatalogueGrid
 
@@ -135,6 +164,28 @@ Totals: 309 keys in 17 namespaces, 23 marked do-not-translate.
 | [ ] | `tiles.outdoorRecreation` | OUTDOOR RECREATION | АКТИВНЫЙ ОТДЫХ | БЕЛСЕНДІ ДЕМАЛЫС |
 | [ ] | `tiles.marine` | MARINE | МОРСКАЯ ТЕХНИКА | ТЕҢІЗ ТЕХНИКАСЫ |
 | [ ] | `tiles.aviation` | AVIATION | АВИАЦИЯ | АВИАЦИЯ |
+
+## Compare
+
+| ✓ | Key | English | Русский | Қазақша |
+|---|---|---|---|---|
+| [ ] | `heading` | Compare Smartwatches | Сравнение смарт-часов | Смарт-сағаттарды салыстыру |
+| [ ] | `intro` | Add up to {max} watches to compare specs side by side. | Добавьте до {max} моделей, чтобы сравнить характеристики. | Сипаттамаларды салыстыру үшін {max} үлгіге дейін қосыңыз. |
+| [ ] | `addWatch` | Add a watch | Добавить часы | Сағат қосу |
+| [ ] | `selectModel` | Select a model… | Выберите модель… | Үлгіні таңдаңыз… |
+| [ ] | `empty` | Add a watch above to start comparing. | Добавьте часы выше, чтобы начать сравнение. | Салыстыруды бастау үшін жоғарыда сағат қосыңыз. |
+| [ ] | `remove` | ✕ Remove | ✕ Убрать | ✕ Алып тастау |
+| [ ] | `removeLabel` | Remove {name} | Убрать {name} | {name} алып тастау |
+| [ ] | `shop` | Shop | Купить | Сатып алу |
+| [ ] | `yes` | Yes | Да | Иә |
+| [ ] | `back` | ← Back to all smartwatches | ← Ко всем смарт-часам | ← Барлық смарт-сағаттарға |
+| [ ] | `rows.price` | Price | Цена | Бағасы |
+| [ ] | `rows.family` | Product family | Линейка | Өнім желісі |
+| [ ] | `rows.level` | Experience level | Уровень подготовки | Дайындық деңгейі |
+| [ ] | `rows.caseSize` | Case size | Размер корпуса | Корпус өлшемі |
+| [ ] | `rows.bestFor` | Best for | Лучше всего для | Кімге қолайлы |
+| [ ] | `rows.customizable` | Customizable | Персонализация | Жекелендіру |
+| [ ] | `rows.overview` | Overview | Обзор | Шолу |
 
 ## Footer
 
@@ -388,12 +439,67 @@ Totals: 309 keys in 17 namespaces, 23 marked do-not-translate.
 | [ ] | `body` | The page you are looking for does not exist. | Страница, которую вы ищете, не существует. | Сіз іздеген бет жоқ. |
 | [ ] | `home` | Go to homepage | На главную | Басты бетке өту |
 
+## ProductAccessories
+
+| ✓ | Key | English | Русский | Қазақша |
+|---|---|---|---|---|
+| [ ] | `quickFitHeading` | QuickFit® Watch Band Compatibility | Совместимость ремешков QuickFit® | QuickFit® бауларының үйлесімділігі |
+| [ ] | `quickFitBody` | The fēnix® 8 series supports QuickFit bands: <b>20 mm</b> for 43 mm models, <b>22 mm</b> for 47 mm models, and <b>26 mm</b> for 51 mm models. Swap in seconds with no tools required. | Серия fēnix® 8 поддерживает ремешки QuickFit: <b>20 мм</b> для моделей 43 мм, <b>22 мм</b> для моделей 47 мм и <b>26 мм</b> для моделей 51 мм. Замена за секунды без инструментов. | fēnix® 8 сериясы QuickFit бауларын қолдайды: 43 мм үлгілерге <b>20 мм</b>, 47 мм үлгілерге <b>22 мм</b> және 51 мм үлгілерге <b>26 мм</b>. Құралсыз бірнеше секундта ауыстырылады. |
+| [ ] | `toolFree` | Tool-Free Swap | Замена без инструментов | Құралсыз ауыстыру |
+| [ ] | `empty` | No accessories found in this category. | В этой категории нет аксессуаров. | Бұл санатта аксессуарлар жоқ. |
+| [ ] | `partNumber` | Part Number {partNumber} | Артикул {partNumber} | Артикул {partNumber} |
+| [ ] | `currency` 🔒 **do not translate** | USD | USD | USD |
+| [ ] | `added` | Added to Cart ✓ | Добавлено в корзину ✓ | Себетке қосылды ✓ |
+| [ ] | `addToCart` | Add to Cart | В корзину | Себетке салу |
+| [ ] | `categories.all` | All | Все | Барлығы |
+| [ ] | `categories.bands` | Bands & Straps | Ремешки и браслеты | Баулар мен білезіктер |
+| [ ] | `categories.sensors` | Heart Rate & Sensors | Пульсометры и датчики | Пульсометрлер мен датчиктер |
+| [ ] | `categories.power` | Cables & Power | Кабели и питание | Кабельдер мен қуат |
+| [ ] | `categories.protection` | Mounts & Protection | Крепления и защита | Бекіткіштер мен қорғаныс |
+| [ ] | `categories.navigation` | Satellite & Navigation | Спутниковая связь и навигация | Спутниктік байланыс және навигация |
+
 ## ProductCard
 
 | ✓ | Key | English | Русский | Қазақша |
 |---|---|---|---|---|
 | [ ] | `price` | {price} USD | {price} USD | {price} USD |
 | [ ] | `andUp` | and up | и выше | бастап |
+
+## ProductTabs
+
+| ✓ | Key | English | Русский | Қазақша |
+|---|---|---|---|---|
+| [ ] | `tabs.overview` | Overview | Обзор | Шолу |
+| [ ] | `tabs.specs` | Specs | Характеристики | Сипаттамалар |
+| [ ] | `tabs.inTheBox` | In the Box | Комплектация | Жиынтық |
+| [ ] | `tabs.accessories` | Accessories | Аксессуары | Аксессуарлар |
+| [ ] | `tabs.maps` | Maps | Карты | Карталар |
+| [ ] | `tabs.compatible` | Compatible Devices | Совместимые устройства | Үйлесімді құрылғылар |
+| [ ] | `specifications` | Specifications | Технические характеристики | Техникалық сипаттамалар |
+| [ ] | `mapsText` | Preloaded TopoActive maps plus support for downloadable outdoor, cycling and ski maps. | Предустановленные карты TopoActive и поддержка загружаемых туристических, велосипедных и горнолыжных карт. | Алдын ала орнатылған TopoActive карталары және жүктелетін туристік, велосипед және тау шаңғысы карталарына қолдау. |
+| [ ] | `compatibleText` | Compatible with the Garmin Connect™ app and Connect IQ™ store on iPhone® and Android™ devices. | Совместимо с приложением Garmin Connect™ и магазином Connect IQ™ на устройствах iPhone® и Android™. | iPhone® және Android™ құрылғыларындағы Garmin Connect™ қосымшасымен және Connect IQ™ дүкенімен үйлесімді. |
+
+## ProductTop
+
+| ✓ | Key | English | Русский | Қазақша |
+|---|---|---|---|---|
+| [ ] | `price` | {price} USD | {price} USD | {price} USD |
+| [ ] | `previousImage` | Previous | Предыдущее фото | Алдыңғы сурет |
+| [ ] | `nextImage` | Next | Следующее фото | Келесі сурет |
+| [ ] | `partNumber` | Part Number {partNumber} | Артикул {partNumber} | Артикул {partNumber} |
+| [ ] | `financing` | Starting at $69/mo or 0% APR with <brand>affirm</brand>. | От 69 $ в месяц или 0% годовых с <brand>affirm</brand>. | Айына 69 $-дан бастап немесе <brand>affirm</brand> арқылы жылдық 0%. |
+| [ ] | `qualify` | See if you qualify | Проверьте, подходите ли вы | Сізге сай келетінін тексеріңіз |
+| [ ] | `hsa` | HSA/FSA eligible for qualified customers. | Можно оплатить средствами HSA/FSA (для подходящих клиентов). | Сәйкес клиенттер HSA/FSA қаражатымен төлей алады. |
+| [ ] | `learnMore` | Learn more | Подробнее | Толығырақ |
+| [ ] | `caseSize` | Case Size | Размер корпуса | Корпус өлшемі |
+| [ ] | `version` | Version | Версия | Нұсқа |
+| [ ] | `modelColor` | Model/Color | Модель/цвет | Үлгі/түс |
+| [ ] | `outOfStockNote` | Currently out of stock. | Сейчас нет в наличии. | Қазір қоймада жоқ. |
+| [ ] | `shipsIn` | Available to ship in 1–3 business days. | Отправка в течение 1–3 рабочих дней. | 1–3 жұмыс күні ішінде жөнелтіледі. |
+| [ ] | `outOfStock` | Out of Stock | Нет в наличии | Қоймада жоқ |
+| [ ] | `added` | Added ✓ | Добавлено ✓ | Қосылды ✓ |
+| [ ] | `addToCart` | Add to Cart | В корзину | Себетке салу |
+| [ ] | `customize` | Customize | Настроить | Баптау |
 
 ## RelatedProducts
 

@@ -63,6 +63,11 @@ export const caseSizeFilters: FilterOption<Product["caseSize"]>[] = [
   { value: "Large", labelKey: "CatalogueGrid.caseSizes.large" },
 ];
 
+/** Message key for a filter value (e.g. a product's level), or undefined for values outside the list. */
+export function filterLabelKey(options: FilterOption[], value: string): string | undefined {
+  return options.find((option) => option.value === value)?.labelKey;
+}
+
 export interface CatalogueDef {
   slug: string;
   /** Message keys (`CataloguePage.*`), resolved with `t()` where rendered. */

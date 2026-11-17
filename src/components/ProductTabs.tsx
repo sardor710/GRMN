@@ -2,34 +2,37 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import type { ProductDetail } from "@/types";
 import { ProductOverview } from "@/components/product/ProductOverview";
 import { ProductAccessories } from "@/components/product/ProductAccessories";
 import overviewStyles from "@/components/product/CmsOverview.module.css";
 
-const TABS = ["Overview", "Specs", "In the Box", "Accessories", "Maps", "Compatible Devices"] as const;
+/** Tab ids; labels are `ProductTabs.tabs.<id>` messages. */
+const TABS = ["overview", "specs", "inTheBox", "accessories", "maps", "compatible"] as const;
 type Tab = (typeof TABS)[number];
 
 export function ProductTabs({ product }: { product: ProductDetail }) {
-  const [tab, setTab] = useState<Tab>("Overview");
+  const t = useTranslations("ProductTabs");
+  const [tab, setTab] = useState<Tab>("overview");
 
-  const isRichOverview = tab === "Overview" && product.id === "1228429" && !product.overviewHtml;
+  const isRichOverview = tab === "overview" && product.id === "1228429" && !product.overviewHtml;
 
   return (
     <section className="mt-8">
       {/* Tab bar */}
       <div className="sticky top-0 z-30 border-y border-neutral-200 bg-[#f2f2f2]">
         <div className="mx-auto flex max-w-[1280px] gap-8 overflow-x-auto px-4">
-          {TABS.map((t) => (
+          {TABS.map((id) => (
             <button
-              key={t}
-              onClick={() => setTab(t)}
+              key={id}
+              onClick={() => setTab(id)}
               className={`relative whitespace-nowrap py-4 text-[14px] font-medium uppercase tracking-[0.06em] transition-colors ${
-                tab === t ? "text-black" : "text-neutral-500 hover:text-black"
+                tab === id ? "text-black" : "text-neutral-500 hover:text-black"
               }`}
             >
-              {t}
-              {tab === t && <span className="absolute inset-x-0 bottom-0 h-[3px] bg-black" />}
+              {t(`tabs.${id}`)}
+              {tab === id && <span className="absolute inset-x-0 bottom-0 h-[3px] bg-black" />}
             </button>
           ))}
         </div>
@@ -37,7 +40,7 @@ export function ProductTabs({ product }: { product: ProductDetail }) {
 
       {/* Tab Content */}
       <div className={isRichOverview ? "w-full" : "mx-auto max-w-[1280px] px-4 py-12"}>
-        {tab === "Overview" && (
+        {tab === "overview" && (
           product.id === "1228429" && !product.overviewHtml ? (
             <ProductOverview product={product} />
           ) : product.overviewHtml ? (
@@ -51,29 +54,29 @@ export function ProductTabs({ product }: { product: ProductDetail }) {
             </div>
           )
         )}
-        {tab === "Specs" && (
+        {tab === "specs" && (
           <div className="mx-auto max-w-[1080px]">
             <Specs product={product} />
           </div>
         )}
-        {tab === "In the Box" && (
+        {tab === "inTheBox" && (
           <div className="mx-auto max-w-[1080px]">
             <InTheBox product={product} />
           </div>
         )}
-        {tab === "Accessories" && (
+        {tab === "accessories" && (
           <div className="mx-auto max-w-[1280px]">
             <ProductAccessories accessories={product.accessories} />
           </div>
         )}
-        {tab === "Maps" && (
+        {tab === "maps" && (
           <div className="mx-auto max-w-[1080px]">
-            <Placeholder text="Preloaded TopoActive maps plus support for downloadable outdoor, cycling and ski maps." />
+            <Placeholder text={t("mapsText")} />
           </div>
         )}
-        {tab === "Compatible Devices" && (
+        {tab === "compatible" && (
           <div className="mx-auto max-w-[1080px]">
-            <Placeholder text="Compatible with the Garmin Connect™ app and Connect IQ™ store on iPhone® and Android™ devices." />
+            <Placeholder text={t("compatibleText")} />
           </div>
         )}
       </div>
@@ -109,10 +112,11 @@ function DefaultOverview({ product }: { product: ProductDetail }) {
 }
 
 function Specs({ product }: { product: ProductDetail }) {
+  const t = useTranslations("ProductTabs");
   if (product.specGroups?.length) {
     return (
       <div>
-        <h2 className="g-heading text-[32px] md:text-[38px] uppercase tracking-wide text-black">Specifications</h2>
+        <h2 className="g-heading text-[32px] md:text-[38px] uppercase tracking-wide text-black">{t("specifications")}</h2>
         {product.specGroups.map((group) => (
           <section key={group.title} className="mt-8">
             <h3 className="g-heading text-[20px] uppercase tracking-[0.04em] text-black">{group.title}</h3>
@@ -131,7 +135,7 @@ function Specs({ product }: { product: ProductDetail }) {
   }
   return (
     <div>
-      <h2 className="g-heading text-[32px] md:text-[38px] uppercase tracking-wide text-black">Specifications</h2>
+      <h2 className="g-heading text-[32px] md:text-[38px] uppercase tracking-wide text-black">{t("specifications")}</h2>
       <dl className="mt-6 divide-y divide-neutral-200 border-t border-neutral-200">
         {product.specs.map((s) => (
           <div key={s.label} className="grid grid-cols-1 gap-1 py-4 sm:grid-cols-3">
@@ -145,9 +149,10 @@ function Specs({ product }: { product: ProductDetail }) {
 }
 
 function InTheBox({ product }: { product: ProductDetail }) {
+  const t = useTranslations("ProductTabs");
   return (
     <div>
-      <h2 className="g-heading text-[32px] md:text-[38px] uppercase tracking-wide text-black">In the Box</h2>
+      <h2 className="g-heading text-[32px] md:text-[38px] uppercase tracking-wide text-black">{t("tabs.inTheBox")}</h2>
       <ul className="mt-6 space-y-3">
         {product.inTheBox.map((item) => (
           <li key={item} className="flex items-center gap-3 text-[16px] text-neutral-700">
