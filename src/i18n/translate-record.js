@@ -144,3 +144,21 @@ export const localizeSettings = (record, locale) => localizeRecord(record, local
 export function translatedLocales(record, requiredFields) {
   return LOCALES.filter((locale) => isRecordTranslated(record, locale, requiredFields));
 }
+
+/**
+ * SEO text for a raw (un-localized) record. `fields` is ordered by priority, e.g. ['seoTitle','name'].
+ * ru/kk: translated overlay fields in that order, then the base value of the first (SEO) field.
+ * en: the base value of the first (SEO) field only, so English output is unchanged.
+ * Returns undefined when nothing applies; the caller then uses its own template/fallback.
+ */
+export function resolveSeoText(raw, locale, fields) {
+  const usable = (v) => (typeof v === 'string' && v.trim() !== '' ? v : undefined);
+  if (locale !== 'en') {
+    const overlay = raw?.translations?.[locale];
+    for (const field of fields) {
+      const v = usable(overlay?.[field]);
+      if (v) return v;
+    }
+  }
+  return usable(raw?.[fields[0]]);
+}

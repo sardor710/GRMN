@@ -9,7 +9,7 @@ import { getProductDetail, getAllProducts, getCMSProduct, getRawCMSProduct } fro
 import { ProductJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 import { localizedSeo, localizedUrl } from "@/i18n/seo";
-import { translatedLocales } from "@/i18n/translate-record";
+import { resolveSeoText, translatedLocales } from "@/i18n/translate-record";
 
 export const dynamic = "force-dynamic";
 
@@ -29,9 +29,10 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/p/[id]">):
   }
 
   const name = cmsProduct?.name || detail?.title || t("productFallbackName");
-  const title = cmsProduct?.seoTitle || t("productTitle", { name });
+  const rawProduct = getRawCMSProduct(id);
+  const title = resolveSeoText(rawProduct, locale, ["seoTitle", "name"]) || t("productTitle", { name });
   const description =
-    cmsProduct?.seoDescription ||
+    resolveSeoText(rawProduct, locale, ["seoDescription", "description"]) ||
     cmsProduct?.description ||
     detail?.subtitle ||
     t("productDescription", { name });
@@ -39,7 +40,7 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/p/[id]">):
   const seo = localizedSeo({
     path: `/p/${id}`,
     locale,
-    indexedLocales: translatedLocales(getRawCMSProduct(id) ?? {}, ["name", "description"]),
+    indexedLocales: translatedLocales(rawProduct ?? {}, ["name", "description"]),
     canonicalOverride: cmsProduct?.canonicalUrl || undefined,
     noIndex: cmsProduct?.noIndex,
   });
@@ -111,7 +112,16 @@ export default async function ProductPage({ params }: PageProps<"/[lang]/p/[id]"
   return (
     <div className="flex min-h-screen flex-col bg-white">
       {/* Google Structured Data */}
-      <ProductJsonLd product={fullProduct} url={localizedUrl(`/p/${id}`, locale)} locale={locale} />
+      <ProductJsonLd
+        product={fullProduct}
+        url={localizedUrl(`/p/${id}`, locale)}
+        locale={locale}
+        description={
+          resolveSeoText(getRawCMSProduct(id), locale, ["seoDescription", "description"]) ||
+          fullProduct.seoDescription ||
+          fullProduct.description
+        }
+      />
       <BreadcrumbJsonLd items={breadcrumbs} />
 
       <SiteHeader />

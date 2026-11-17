@@ -247,3 +247,29 @@ test('translatedLocales: en always, plus locales with all required fields', asyn
   assert.deepEqual(translatedLocales(rec, ['name', 'description']), ['en', 'ru']);
   assert.deepEqual(translatedLocales({}, ['name']), ['en']);
 });
+
+test('resolveSeoText: ru with only name/description translated uses the translations', async () => {
+  const { resolveSeoText } = await import('../src/i18n/translate-record.js');
+  const raw = { seoTitle: 'Base SEO', name: 'Base', seoDescription: 'Base SD', description: 'Base D', translations: { ru: { name: 'Имя', description: 'Описание' } } };
+  assert.equal(resolveSeoText(raw, 'ru', ['seoTitle', 'name']), 'Имя');
+  assert.equal(resolveSeoText(raw, 'ru', ['seoDescription', 'description']), 'Описание');
+});
+
+test('resolveSeoText: a translated seoTitle wins over a translated name', async () => {
+  const { resolveSeoText } = await import('../src/i18n/translate-record.js');
+  const raw = { seoTitle: 'Base SEO', name: 'Base', translations: { ru: { seoTitle: 'СЕО', name: 'Имя' } } };
+  assert.equal(resolveSeoText(raw, 'ru', ['seoTitle', 'name']), 'СЕО');
+});
+
+test('resolveSeoText: en returns the base seoTitle and ignores overlays', async () => {
+  const { resolveSeoText } = await import('../src/i18n/translate-record.js');
+  const raw = { seoTitle: 'Base SEO', name: 'Base', translations: { ru: { name: 'Имя' } } };
+  assert.equal(resolveSeoText(raw, 'en', ['seoTitle', 'name']), 'Base SEO');
+  assert.equal(resolveSeoText({ name: 'Base' }, 'en', ['seoTitle', 'name']), undefined);
+});
+
+test('resolveSeoText: untranslated kk falls back to the base seoTitle', async () => {
+  const { resolveSeoText } = await import('../src/i18n/translate-record.js');
+  const raw = { seoTitle: 'Base SEO', name: 'Base', translations: { ru: { name: 'Имя' } } };
+  assert.equal(resolveSeoText(raw, 'kk', ['seoTitle', 'name']), 'Base SEO');
+});

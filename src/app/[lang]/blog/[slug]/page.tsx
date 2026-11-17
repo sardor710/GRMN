@@ -12,7 +12,7 @@ import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import type { CMSBlog } from "@/lib/cms/types";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 import { localizedSeo, localizedUrl } from "@/i18n/seo";
-import { translatedLocales } from "@/i18n/translate-record";
+import { resolveSeoText, translatedLocales } from "@/i18n/translate-record";
 import { formatDate } from "@/i18n/format";
 
 export function generateStaticParams() {
@@ -31,9 +31,9 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/blog/[slug
     return { title: tm("blogFallbackTitle") };
   }
 
-  const title = cmsBlog?.seoTitle || (post ? tm("blogPostTitle", { title: post.title }) : tm("blogShortTitle"));
+  const title = resolveSeoText(rawBlog, locale, ["seoTitle", "title"]) || (post ? tm("blogPostTitle", { title: post.title }) : tm("blogShortTitle"));
   const description =
-    cmsBlog?.seoDescription ||
+    resolveSeoText(rawBlog, locale, ["seoDescription", "excerpt"]) ||
     cmsBlog?.excerpt ||
     post?.excerpt ||
     tm("blogPostDescription");
@@ -82,6 +82,7 @@ export default async function ArticlePage({ params }: PageProps<"/[lang]/blog/[s
   const { slug } = await params;
   const post = getPost(slug);
   const cmsBlog = getBlogsFor(locale).find((b) => b.slug === slug);
+  const rawBlog = getBlogs().find((b) => b.slug === slug);
 
   if (!post && !cmsBlog) notFound();
 
@@ -118,7 +119,13 @@ export default async function ArticlePage({ params }: PageProps<"/[lang]/blog/[s
   return (
     <div className="flex min-h-screen flex-col bg-white">
       {/* Structured Article Schema for Google Rich Results */}
-      <ArticleJsonLd blog={activeBlog} url={localizedUrl(`/blog/${slug}`, locale)} locale={locale} />
+      <ArticleJsonLd
+        blog={activeBlog}
+        url={localizedUrl(`/blog/${slug}`, locale)}
+        locale={locale}
+        headline={resolveSeoText(rawBlog, locale, ["seoTitle", "title"]) || activeBlog.seoTitle || activeBlog.title}
+        description={resolveSeoText(rawBlog, locale, ["seoDescription", "excerpt"]) || activeBlog.seoDescription || activeBlog.excerpt}
+      />
       <BreadcrumbJsonLd items={breadcrumbs} />
 
       <SiteHeader />

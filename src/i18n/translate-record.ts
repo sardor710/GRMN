@@ -65,3 +65,11 @@ export function localizeSettings(record: StoreSettings, locale: Locale): StoreSe
 export function translatedLocales(record: { translations?: unknown }, requiredFields: string[]): Locale[] {
   return js.translatedLocales(record, requiredFields) as Locale[];
 }
+
+export function resolveSeoText(
+  raw: { translations?: unknown } | undefined,
+  locale: Locale,
+  fields: [string, ...string[]],
+): string | undefined {
+  return js.resolveSeoText(raw, locale, fields) as string | undefined;
+}

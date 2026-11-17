@@ -7,16 +7,18 @@ interface ProductJsonLdProps {
   url: string;
   /** BCP-47 language of the page (en, ru, kk). */
   locale: Locale;
+  /** Resolved (localized) description; defaults to the record's seoDescription / description. */
+  description?: string;
 }
 
-export function ProductJsonLd({ product, url, locale }: ProductJsonLdProps) {
+export function ProductJsonLd({ product, url, locale, description }: ProductJsonLdProps) {
   const schema = {
     "@context": "https://schema.org/",
     "@type": "Product",
     inLanguage: locale,
     name: product.name,
     image: [absoluteUrl(product.image)],
-    description: product.seoDescription || product.description,
+    description: description ?? (product.seoDescription || product.description),
     sku: product.sku || `GRM-${product.id}`,
     mpn: product.id,
     brand: {
@@ -57,14 +59,17 @@ interface ArticleJsonLdProps {
   url: string;
   /** BCP-47 language of the page (en, ru, kk). */
   locale: Locale;
+  /** Resolved (localized) headline and description; default to the record's seo fields. */
+  headline?: string;
+  description?: string;
 }
 
-export function ArticleJsonLd({ blog, url, locale }: ArticleJsonLdProps) {
+export function ArticleJsonLd({ blog, url, locale, headline, description }: ArticleJsonLdProps) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "Article",
     inLanguage: locale,
-    headline: blog.seoTitle || blog.title,
+    headline: headline ?? (blog.seoTitle || blog.title),
     image: [absoluteUrl(blog.coverImage)],
     datePublished: blog.publishedAt || blog.createdAt,
     dateModified: blog.publishedAt || blog.createdAt,
@@ -80,7 +85,7 @@ export function ArticleJsonLd({ blog, url, locale }: ArticleJsonLdProps) {
         url: `${SITE_URL}/seo/og-image.jpg`,
       },
     },
-    description: blog.seoDescription || blog.excerpt,
+    description: description ?? (blog.seoDescription || blog.excerpt),
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": url,
