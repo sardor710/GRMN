@@ -33,6 +33,10 @@ import type {
 } from "@/lib/cms/types";
 import { IMAGE_DIMENSION_SPECS } from "@/lib/cms/homepage-schema";
 import { AdminModal } from "@/components/admin/AdminModal";
+import { LocaleTabs, type ContentLocale } from "@/components/admin/LocaleTabs";
+import { HomepageTranslationPanel } from "@/components/admin/HomepageTranslationPanel";
+import { translationStatus } from "@/lib/cms/translation-input";
+import { HOMEPAGE_SPEC } from "@/i18n/translate-record";
 
 export default function AdminHomepagePage() {
   const [config, setConfig] = useState<HomepageConfig | null>(null);
@@ -41,6 +45,7 @@ export default function AdminHomepagePage() {
   const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [activeTab, setActiveTab] = useState<"banners" | "carousels" | "blocks" | "specs">("banners");
+  const [contentLocale, setContentLocale] = useState<ContentLocale>("en");
 
   // Modals state
   const [bannerModalOpen, setBannerModalOpen] = useState(false);
@@ -105,7 +110,8 @@ export default function AdminHomepagePage() {
         setConfig(data.config);
         showNotification("success", "Homepage configuration saved successfully!");
       } else {
-        throw new Error(data.error || "Save failed");
+        const detail = Array.isArray(data.details) && data.details.length ? `: ${data.details.join("; ")}` : "";
+        throw new Error(data.error && detail && !data.details.includes(data.error) ? `${data.error}${detail}` : data.error || "Save failed");
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Failed to save homepage changes";
@@ -475,6 +481,24 @@ export default function AdminHomepagePage() {
         </div>
       </div>
 
+      <LocaleTabs
+        value={contentLocale}
+        onChange={setContentLocale}
+        status={{
+          ru: translationStatus(config, "ru", HOMEPAGE_SPEC),
+          kk: translationStatus(config, "kk", HOMEPAGE_SPEC),
+        }}
+      />
+
+      {contentLocale !== "en" ? (
+        <HomepageTranslationPanel
+          key={contentLocale}
+          locale={contentLocale}
+          config={config}
+          onChange={(translations) => setConfig({ ...config, translations })}
+        />
+      ) : (
+      <>
       {/* Tabs Header */}
       <div className="flex border-b border-neutral-200">
         <button
@@ -1020,6 +1044,8 @@ export default function AdminHomepagePage() {
             </ul>
           </div>
         </div>
+      )}
+      </>
       )}
 
       {/* ================= MODAL: HERO BANNER EDIT ================= */}

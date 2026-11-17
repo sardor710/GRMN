@@ -21,6 +21,13 @@ import {
   generateBlogSEOMeta,
 } from "@/lib/seo/analyzer";
 import type { CMSProduct, CMSBlog } from "@/lib/cms/types";
+import { LocaleTabs, type ContentLocale } from "@/components/admin/LocaleTabs";
+import { TranslationField } from "@/components/admin/TranslationField";
+import { translationStatus } from "@/lib/cms/translation-input";
+import { getOverlayString, setOverlayValue } from "@/lib/cms/translation-edit";
+
+/** The quick editor translates only the SEO pair; the RU/KK dot counts those two fields. */
+const SEO_FIELDS = ["seoTitle", "seoDescription"] as const;
 
 export default function AdminSEOPage() {
   const [products, setProducts] = useState<CMSProduct[]>([]);
@@ -37,6 +44,14 @@ export default function AdminSEOPage() {
     type: "product" | "blog";
     data: CMSProduct | CMSBlog;
   } | null>(null);
+  const [seoLocale, setSeoLocale] = useState<ContentLocale>("en");
+  const [seoSaveError, setSeoSaveError] = useState("");
+
+  const openSeoEditor = (item: { type: "product" | "blog"; data: CMSProduct | CMSBlog }) => {
+    setSeoLocale("en");
+    setSeoSaveError("");
+    setEditingItem(item);
+  };
 
   const fetchData = useCallback(async () => {
     try {
@@ -146,23 +161,18 @@ export default function AdminSEOPage() {
     ogImage?: string;
   }) => {
     if (!editingItem) return;
+    setSeoSaveError("");
 
-    if (editingItem.type === "product") {
-      const prod = editingItem.data as CMSProduct;
-      const updated = { ...prod, ...updates };
-      await fetch("/api/admin/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated),
-      });
-    } else {
-      const blog = editingItem.data as CMSBlog;
-      const updated = { ...blog, ...updates };
-      await fetch("/api/admin/blogs", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updated),
-      });
+    // editingItem.data carries `translations` (RU/KK SEO edits); the API merges them per locale.
+    const res = await fetch(editingItem.type === "product" ? "/api/admin/products" : "/api/admin/blogs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...editingItem.data, ...updates }),
+    });
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      setSeoSaveError(data.error || `Save failed (HTTP ${res.status}).`);
+      return;
     }
 
     setEditingItem(null);
@@ -503,10 +513,10 @@ export default function AdminSEOPage() {
                             onClick={() => {
                               if (page.type === "product") {
                                 const prod = products.find((p) => p.id === page.id);
-                                if (prod) setEditingItem({ type: "product", data: prod });
+                                if (prod) openSeoEditor({ type: "product", data: prod });
                               } else {
                                 const blog = blogs.find((b) => b.id === page.id);
-                                if (blog) setEditingItem({ type: "blog", data: blog });
+                                if (blog) openSeoEditor({ type: "blog", data: blog });
                               }
                             }}
                             className="px-3 py-1.5 bg-white hover:bg-neutral-100 text-neutral-800 border border-neutral-300 rounded-none text-xs font-semibold uppercase tracking-wider inline-flex items-center gap-1.5 transition-colors"
@@ -677,6 +687,53 @@ Sitemap: https://www.garmin.com/sitemap.xml`}
           maxWidth="4xl"
         >
           <div className="space-y-6">
+            <LocaleTabs
+              value={seoLocale}
+              onChange={setSeoLocale}
+              status={{
+                ru: translationStatus(editingItem.data, "ru", SEO_FIELDS),
+                kk: translationStatus(editingItem.data, "kk", SEO_FIELDS),
+              }}
+            />
+            {seoLocale !== "en" ? (
+              <div className="space-y-4">
+                <TranslationField
+                  label="SEO title"
+                  field="seoTitle"
+                  value={getOverlayString(editingItem.data.translations, seoLocale, ["seoTitle"])}
+                  source={editingItem.data.seoTitle}
+                  onChange={(v) =>
+                    setEditingItem({
+                      type: editingItem.type,
+                      data: {
+                        ...editingItem.data,
+                        translations: setOverlayValue(editingItem.data.translations, seoLocale, ["seoTitle"], v),
+                      },
+                    })
+                  }
+                />
+                <TranslationField
+                  label="SEO description"
+                  field="seoDescription"
+                  multiline
+                  rows={3}
+                  value={getOverlayString(editingItem.data.translations, seoLocale, ["seoDescription"])}
+                  source={editingItem.data.seoDescription}
+                  onChange={(v) =>
+                    setEditingItem({
+                      type: editingItem.type,
+                      data: {
+                        ...editingItem.data,
+                        translations: setOverlayValue(editingItem.data.translations, seoLocale, ["seoDescription"], v),
+                      },
+                    })
+                  }
+                />
+                <p className="text-[11px] text-neutral-500">
+                  Focus keywords, canonical URL, robots and social image are shared across languages — edit them in the EN tab.
+                </p>
+              </div>
+            ) : (
             <SEOEditor
               type={editingItem.type}
               nameOrTitle={
@@ -721,6 +778,13 @@ Sitemap: https://www.garmin.com/sitemap.xml`}
                 });
               }}
             />
+            )}
+
+            {seoSaveError && (
+              <p role="alert" className="border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                {seoSaveError}
+              </p>
+            )}
 
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-neutral-200">
               <button

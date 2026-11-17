@@ -9,14 +9,21 @@ import {
   Trash2,
   Edit,
 } from "lucide-react";
-import type { Banner, BannerPosition } from "@/lib/cms/types";
+import type { Banner, BannerPosition, BannerTranslatable, Translations } from "@/lib/cms/types";
 import { AdminModal } from "@/components/admin/AdminModal";
+import { LocaleTabs, SharedAcrossLanguages, type ContentLocale } from "@/components/admin/LocaleTabs";
+import { TranslationField } from "@/components/admin/TranslationField";
+import { translationStatus } from "@/lib/cms/translation-input";
+import { getOverlayString, setOverlayValue } from "@/lib/cms/translation-edit";
+import { BANNER_SPEC } from "@/i18n/translate-record";
 
 export default function AdminBannersPage() {
   const [banners, setBanners] = useState<Banner[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
+  const [contentLocale, setContentLocale] = useState<ContentLocale>("en");
+  const [saveError, setSaveError] = useState("");
 
   // Form State
   const [formData, setFormData] = useState({
@@ -28,6 +35,7 @@ export default function AdminBannersPage() {
     position: "hero" as BannerPosition,
     active: true,
     order: 1,
+    translations: {} as Translations<BannerTranslatable>,
   });
 
   const fetchBanners = async () => {
@@ -58,7 +66,10 @@ export default function AdminBannersPage() {
       position: "hero",
       active: true,
       order: banners.length + 1,
+      translations: {},
     });
+    setContentLocale("en");
+    setSaveError("");
     setIsModalOpen(true);
   };
 
@@ -73,7 +84,10 @@ export default function AdminBannersPage() {
       position: b.position,
       active: b.active,
       order: b.order,
+      translations: b.translations || {},
     });
+    setContentLocale("en");
+    setSaveError("");
     setIsModalOpen(true);
   };
 
@@ -89,6 +103,7 @@ export default function AdminBannersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaveError("");
     try {
       const payload = {
         ...(editingBanner ? { id: editingBanner.id } : {}),
@@ -104,9 +119,15 @@ export default function AdminBannersPage() {
       if (res.ok) {
         setIsModalOpen(false);
         fetchBanners();
+        return;
       }
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      const badLocale = /^translations\.(ru|kk)\b/.exec(data.error || "")?.[1] as "ru" | "kk" | undefined;
+      if (badLocale) setContentLocale(badLocale);
+      setSaveError(data.error || `Save failed (HTTP ${res.status}).`);
     } catch (err) {
       console.error("Failed to save banner:", err);
+      setSaveError("Network error — the banner was not saved.");
     }
   };
 
@@ -242,6 +263,72 @@ export default function AdminBannersPage() {
         subtitle="Manage hero graphics, title copy, call-to-action button, and placement"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
+          <LocaleTabs
+            value={contentLocale}
+            onChange={setContentLocale}
+            status={{
+              ru: translationStatus(formData, "ru", BANNER_SPEC),
+              kk: translationStatus(formData, "kk", BANNER_SPEC),
+            }}
+          />
+
+          {contentLocale !== "en" ? (
+            <div key={contentLocale} className="space-y-4">
+              <TranslationField
+                label="Headline title"
+                field="title"
+                value={getOverlayString(formData.translations, contentLocale, ["title"])}
+                source={formData.title}
+                onChange={(v) =>
+                  setFormData({ ...formData, translations: setOverlayValue(formData.translations, contentLocale, ["title"], v) })
+                }
+              />
+              <TranslationField
+                label="Subtitle / supporting text"
+                field="subtitle"
+                multiline
+                rows={2}
+                value={getOverlayString(formData.translations, contentLocale, ["subtitle"])}
+                source={formData.subtitle}
+                onChange={(v) =>
+                  setFormData({ ...formData, translations: setOverlayValue(formData.translations, contentLocale, ["subtitle"], v) })
+                }
+              />
+              <TranslationField
+                label="Button label"
+                field="ctaLabel"
+                value={getOverlayString(formData.translations, contentLocale, ["ctaLabel"])}
+                source={formData.ctaLabel}
+                onChange={(v) =>
+                  setFormData({ ...formData, translations: setOverlayValue(formData.translations, contentLocale, ["ctaLabel"], v) })
+                }
+              />
+              <section className="space-y-2 border border-dashed border-neutral-300 bg-neutral-50 p-3">
+                <SharedAcrossLanguages />
+                <dl className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+                  <div>
+                    <dt className="font-semibold uppercase tracking-wider text-neutral-500">Image</dt>
+                    <dd className="mt-1 truncate font-mono text-neutral-800">{formData.image}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-semibold uppercase tracking-wider text-neutral-500">Target URL</dt>
+                    <dd className="mt-1 truncate font-mono text-neutral-800">{formData.ctaUrl}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-semibold uppercase tracking-wider text-neutral-500">Placement</dt>
+                    <dd className="mt-1 uppercase text-neutral-800">{formData.position}</dd>
+                  </div>
+                  <div>
+                    <dt className="font-semibold uppercase tracking-wider text-neutral-500">Active / order</dt>
+                    <dd className="mt-1 text-neutral-800">
+                      {formData.active ? "Yes" : "No"} · {formData.order}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+            </div>
+          ) : (
+          <>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
               Headline Title *
@@ -350,6 +437,14 @@ export default function AdminBannersPage() {
               </label>
             </div>
           </div>
+          </>
+          )}
+
+          {saveError && (
+            <p role="alert" className="border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+              {saveError}
+            </p>
+          )}
 
           <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200">
             <button
