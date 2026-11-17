@@ -74,3 +74,13 @@ export function resolveSeoText(
 ): string | undefined {
   return js.resolveSeoText(raw, locale, fields) as string | undefined;
 }
+
+/** R18: hero + carousel titles translated for `locale` (en always true). */
+export function isHomepageTranslated(config: HomepageConfig | undefined, locale: Locale): boolean {
+  return js.isHomepageTranslated(config, locale);
+}
+
+/** Locales the homepage is indexed in: en plus each locale passing `isHomepageTranslated`. */
+export function homepageLocales(config: HomepageConfig): Locale[] {
+  return js.homepageLocales(config) as Locale[];
+}

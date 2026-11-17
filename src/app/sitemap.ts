@@ -1,8 +1,8 @@
 import type { MetadataRoute } from "next";
-import { getProducts, getBlogs } from "@/lib/cms/store";
+import { getProducts, getBlogs, getHomepageConfig } from "@/lib/cms/store";
 import { catalogues } from "@/lib/products";
 import { ROUTE_LOCALES, SITE_URL, buildSitemapEntries, type SitemapRoute } from "@/i18n/seo";
-import { translatedLocales } from "@/i18n/translate-record";
+import { homepageLocales, translatedLocales } from "@/i18n/translate-record";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
   const staticRoutes: SitemapRoute[] = [
-    { path: "/", indexedLocales: ROUTE_LOCALES.home, changeFrequency: "daily", priority: 1.0 },
+    { path: "/", indexedLocales: homepageLocales(getHomepageConfig()), changeFrequency: "daily", priority: 1.0 },
     { path: "/compare", indexedLocales: ROUTE_LOCALES.compare, changeFrequency: "weekly", priority: 0.8 },
     { path: "/garmin-pay", indexedLocales: ROUTE_LOCALES.garminPay, changeFrequency: "monthly", priority: 0.7 },
     { path: "/minisite/fenix-8", indexedLocales: ROUTE_LOCALES["minisite:fenix-8"], changeFrequency: "weekly", priority: 0.9 },

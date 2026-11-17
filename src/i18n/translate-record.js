@@ -162,3 +162,32 @@ export function resolveSeoText(raw, locale, fields) {
   }
   return usable(raw?.[fields[0]]);
 }
+
+/**
+ * R18: whether the homepage's main CMS copy is translated for `locale` (en always is).
+ * Required: a non-blank overlay title for every rendered hero banner (active, non-blank English
+ * title) and every rendered carousel block (active, with items, non-blank English title).
+ * With nothing CMS-rendered the page falls back to static English slides, so that is untranslated.
+ */
+export function isHomepageTranslated(config, locale) {
+  if (locale === 'en') return true;
+  const overlay = config?.translations?.[locale];
+  if (!isPlainObject(overlay)) return false;
+  const hero = (Array.isArray(config.heroBanners) ? config.heroBanners : []).filter(
+    (b) => b && b.active !== false && !isBlank(b.title),
+  );
+  const carousels = (Array.isArray(config.carousels) ? config.carousels : []).filter(
+    (c) => c && c.active !== false && Array.isArray(c.items) && c.items.length > 0 && !isBlank(c.title),
+  );
+  if (hero.length === 0 && carousels.length === 0) return false;
+  const titled = (map, id) => isPlainObject(map) && isPlainObject(map[id]) && !isBlank(map[id].title);
+  return (
+    hero.every((b) => titled(overlay.heroBanners, b.id)) &&
+    carousels.every((c) => titled(overlay.carousels, c.id))
+  );
+}
+
+/** Locales the homepage may be indexed in (en always, ru/kk per `isHomepageTranslated`). */
+export function homepageLocales(config) {
+  return LOCALES.filter((locale) => isHomepageTranslated(config, locale));
+}

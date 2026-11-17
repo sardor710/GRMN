@@ -273,3 +273,37 @@ test('resolveSeoText: untranslated kk falls back to the base seoTitle', async ()
   const raw = { seoTitle: 'Base SEO', name: 'Base', translations: { ru: { name: 'Имя' } } };
   assert.equal(resolveSeoText(raw, 'kk', ['seoTitle', 'name']), 'Base SEO');
 });
+
+test('isHomepageTranslated: en always; ru/kk need every active hero + carousel title translated', async () => {
+  const { isHomepageTranslated } = await import('../src/i18n/translate-record.js');
+  const base = {
+    heroBanners: [
+      { id: 'b1', title: 'SALE', active: true },
+      { id: 'b2', title: 'OFF', active: false },
+    ],
+    carousels: [
+      { id: 'c1', title: 'Featured', active: true, items: [{ id: 'i1' }] },
+      { id: 'c2', title: 'Hidden', active: false, items: [{ id: 'i2' }] },
+      { id: 'c3', title: 'Empty', active: true, items: [] },
+    ],
+    promoTiles: [],
+    storyTiles: [],
+    categoryTiles: [],
+  };
+  const full = {
+    ...base,
+    translations: {
+      ru: { heroBanners: { b1: { title: 'РАСПРОДАЖА' } }, carousels: { c1: { title: 'Избранное' } } },
+      kk: { heroBanners: { b1: { title: 'ЖЕҢІЛДІК' } }, carousels: { c1: { title: '  ' } } },
+    },
+  };
+  assert.equal(isHomepageTranslated(base, 'en'), true);
+  assert.equal(isHomepageTranslated(base, 'ru'), false, 'no overlay');
+  assert.equal(isHomepageTranslated(full, 'ru'), true, 'inactive/empty blocks are not required');
+  assert.equal(isHomepageTranslated(full, 'kk'), false, 'blank carousel title');
+  const missingHero = { ...base, translations: { ru: { carousels: { c1: { title: 'Избранное' } } } } };
+  assert.equal(isHomepageTranslated(missingHero, 'ru'), false);
+  const noBlocks = { ...base, heroBanners: [], carousels: [], translations: { ru: {} } };
+  assert.equal(isHomepageTranslated(noBlocks, 'ru'), false, 'nothing CMS-rendered → static English fallback');
+  assert.equal(isHomepageTranslated(undefined, 'ru'), false);
+});
