@@ -6,6 +6,9 @@ import { PAYMENT_START_KIND } from "../checkout/service.ts";
 import { PAYMENT_INBOX_KIND, expireUnpaidOrders, type OrderExpiryCursor, processInboxEvent, reconcilePayments, startPaymentSession } from "../payments/service.ts";
 import { paymentProviders } from "../payments/providers.ts";
 import { processRefunds } from "../fulfillment/aftersales.ts";
+import { CONTENT_INVALIDATE_KIND } from "../content/publishing.ts";
+import { cleanupOrphanMedia } from "../content/media.ts";
+import path from "node:path";
 import { JobError } from "./outbox.ts";
 import type { ClaimedJob, JobHandler, JobHandlers } from "./outbox.ts";
 import type { Schedule } from "./schedule.ts";
@@ -99,7 +102,19 @@ const processRefundsJob: JobHandler = async (_job, ctx) => {
   await ctx.complete();
 };
 
-export { PAYMENT_INBOX_KIND };
+// Task 18A: publishing enqueues cache invalidation in the same transaction. Every public page is
+// rendered per request today (force-dynamic), so there is no cache to purge yet; the job records the
+// hand-off point for the cache layer Task 21A may add.
+const invalidateContent: JobHandler = async (_job, ctx) => { await ctx.complete(); };
+
+// Task 18A: archive unfinished and unreferenced editor uploads after a 24-hour grace period.
+export const MEDIA_CLEANUP_KIND = "media.orphans.cleanup";
+const cleanupMedia: JobHandler = async (_job, ctx) => {
+  await cleanupOrphanMedia(ctx.pool, process.env.MEDIA_STORAGE_DIR ? path.resolve(/*turbopackIgnore: true*/ process.env.MEDIA_STORAGE_DIR) : path.join(/*turbopackIgnore: true*/ process.cwd(), "storage", "media"), { graceMs: 24 * 60 * 60 * 1000, limit: 500 });
+  await ctx.complete();
+};
+
+export { PAYMENT_INBOX_KIND, CONTENT_INVALIDATE_KIND };
 export const jobHandlers: JobHandlers = {
   [RESERVATION_EXPIRY_KIND]: expireReservations,
   [COUPON_EXPIRY_KIND]: expireCoupons,
@@ -108,6 +123,8 @@ export const jobHandlers: JobHandlers = {
   [PAYMENT_RECONCILE_KIND]: reconcile,
   [ORDER_EXPIRY_KIND]: expireOrders,
   [REFUND_PROCESS_KIND]: processRefundsJob,
+  [CONTENT_INVALIDATE_KIND]: invalidateContent,
+  [MEDIA_CLEANUP_KIND]: cleanupMedia,
 };
 
 /**
@@ -118,5 +135,5 @@ export function jobSchedules(env: Readonly<Record<string, string | undefined>>):
   const raw = env.RESERVATION_EXPIRY_INTERVAL_MS;
   const everyMs = raw === undefined ? 30_000 : /^\d+$/.test(raw) ? Number(raw) : NaN;
   if (!Number.isSafeInteger(everyMs) || everyMs < 1000 || everyMs > 60_000) throw new Error("Missing or invalid worker configuration: RESERVATION_EXPIRY_INTERVAL_MS");
-  return [{ kind: RESERVATION_EXPIRY_KIND, everyMs }, { kind: COUPON_EXPIRY_KIND, everyMs }, { kind: ORDER_EXPIRY_KIND, everyMs }, { kind: PAYMENT_RECONCILE_KIND, everyMs: 60_000 }, { kind: REFUND_PROCESS_KIND, everyMs: 60_000 }];
+  return [{ kind: RESERVATION_EXPIRY_KIND, everyMs }, { kind: COUPON_EXPIRY_KIND, everyMs }, { kind: ORDER_EXPIRY_KIND, everyMs }, { kind: PAYMENT_RECONCILE_KIND, everyMs: 60_000 }, { kind: REFUND_PROCESS_KIND, everyMs: 60_000 }, { kind: MEDIA_CLEANUP_KIND, everyMs: 3_600_000 }];
 }

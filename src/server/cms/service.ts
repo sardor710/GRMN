@@ -5,6 +5,9 @@ import { z } from "zod";
 import type { Permission, Principal } from "../context.ts";
 import { AuthFailure } from "../auth/config.ts";
 import { adminDTO, productInput, blogInput, bannerInput, homepageInput } from "../auth/admin-schemas.ts";
+import { plainText, sanitizeRichText } from "../content/sanitize.ts";
+import { CONTENT_INVALIDATE_KIND } from "../content/events.ts";
+import { appendOutboxEvent } from "../operations/outbox.ts";
 
 export type CMSResource = "products" | "blogs" | "banners" | "clients";
 export interface CMSItem extends Record<string, unknown> { id: string; version: number }
@@ -23,8 +26,9 @@ const money = z.union([z.string(),z.number()]).transform((value,ctx) => {
   return minor.toString();
 });
 const productCommand = productInput.extend({id:identity.optional(),version:version.optional(),price:money,originalPrice:money.nullable().optional(),sku:z.string().trim().min(1).max(128)}).strict();
-const blogCommand = blogInput.extend({id:z.uuid().optional(),version:version.optional(),slug:z.string().trim().max(200).regex(/^[\p{L}\p{N}_-]*$/u).optional()}).strict();
-const bannerCommand = bannerInput.extend({id:z.uuid().optional(),version:version.optional()}).strict();
+const blogCommand = blogInput.extend({id:z.uuid().optional(),version:version.optional(),slug:z.string().trim().max(200).regex(/^[\p{L}\p{N}_-]*$/u).optional(),draft:z.boolean().optional()}).strict();
+// Task 18A: draft:true saves a new version without changing what is live (draft isolation).
+const bannerCommand = bannerInput.extend({id:z.uuid().optional(),version:version.optional(),draft:z.boolean().optional()}).strict();
 const clientCommand = z.object({id:z.uuid().optional(),version:version.optional(),name:z.string().trim().min(1).max(200),phone:z.string().trim().min(1).max(64),email:z.union([z.email().max(254),z.literal("")]).optional(),country:z.string().regex(/^(?:[A-Z]{2})?$/).optional(),status:z.enum(["active","vip","pending","suspended"]).optional(),avatar:z.string().max(2048).optional(),notes:z.string().max(10000).optional()}).strict();
 const querySchema = z.object({limit:z.number().int().min(1).max(100).default(20),cursor:z.string().max(2048).optional(),search:z.string().trim().max(200).default(""),status:z.string().max(30).optional(),family:z.string().max(200).optional(),category:z.string().max(200).optional()}).strict();
 function parse<T>(schema:z.ZodType<T>, value:unknown):T { const result=schema.safeParse(value);if(!result.success)return fail("INVALID_INPUT",400,"Invalid or unknown fields");return result.data; }
@@ -55,7 +59,7 @@ function contentDTO(row:Record<string,unknown>):CMSItem {
 function customerDTO(row:Record<string,unknown>,principal:Principal):CMSItem {return {id:String(row.id),version:Number(row.version),name:row.name,email:row.email??"",phone:row.entered_phone,country:row.country_code??"",status:row.status,avatar:row.avatar??"",...(principal.permissions.includes("customers:write")?{notes:row.notes??""}:{}),createdAt:(row.created_at as Date).toISOString()};}
 const customerSelect="SELECT c.*,n.body AS notes FROM customer_profiles c LEFT JOIN LATERAL (SELECT body FROM customer_private_notes WHERE profile_id=c.id ORDER BY created_at DESC,id DESC LIMIT 1) n ON true";
 const productSelect = "SELECT p.*,v.sku,v.id AS variant_id,pr.id AS price_id,pr.amount_minor,pr.compare_at_minor,stock.stock_known,stock.stock_available FROM products p LEFT JOIN LATERAL (SELECT * FROM product_variants WHERE product_id=p.id AND is_default ORDER BY (status='archived'),created_at DESC,id DESC LIMIT 1) v ON true LEFT JOIN prices pr ON pr.variant_id=v.id AND pr.is_active AND pr.currency='KZT' AND pr.market='default' LEFT JOIN LATERAL (SELECT count(*) AS stock_known,COALESCE(sum(ib.on_hand-ib.reserved),0) AS stock_available FROM inventory_balances ib JOIN stock_locations sl ON sl.id=ib.location_id AND sl.archived_at IS NULL WHERE ib.variant_id=v.id) stock ON true";
-const contentSelect = (published=false) => `SELECT p.id,p.key,p.kind,p.slug,p.status,p.version,p.created_at,pv.*,p.id AS id,p.version AS version,p.created_at AS created_at,pv.created_at AS revision_created_at,b.author_label,b.category,b.reading_time,b.cover_source,bn.position,bn.sort_order,bn.cta_label,bn.cta_url,bn.image_source,pub.published_at FROM pages p ${published?"JOIN page_publications pub ON pub.page_id=p.id JOIN page_versions pv ON pv.id=pub.version_id":"JOIN LATERAL (SELECT * FROM page_versions WHERE page_id=p.id ORDER BY version DESC LIMIT 1) pv ON true LEFT JOIN page_publications pub ON pub.page_id=p.id"} LEFT JOIN blog_posts b ON b.version_id=pv.id LEFT JOIN banners bn ON bn.version_id=pv.id`;
+const contentSelect = (published=false) => `SELECT p.id,p.key,p.kind,p.slug,p.status,p.version,p.created_at,pv.*,p.id AS id,p.version AS version,p.created_at AS created_at,pv.created_at AS revision_created_at,b.author_label,b.category,b.reading_time,b.cover_source,bn.position,bn.sort_order,bn.cta_label,bn.cta_url,bn.image_source,pub.published_at FROM pages p ${published?"JOIN page_publications pub ON pub.page_id=p.id AND pub.published_at<=now() AND (pub.scheduled_until IS NULL OR pub.scheduled_until>now()) JOIN page_versions pv ON pv.id=pub.version_id":"JOIN LATERAL (SELECT * FROM page_versions WHERE page_id=p.id ORDER BY version DESC LIMIT 1) pv ON true LEFT JOIN page_publications pub ON pub.page_id=p.id"} LEFT JOIN blog_posts b ON b.version_id=pv.id LEFT JOIN banners bn ON bn.version_id=pv.id`;
 
 export function createCMSService({pool,authorize}:Options) {
   async function tx<T>(action:(client:PoolClient)=>Promise<T>):Promise<T> {
@@ -92,7 +96,9 @@ export function createCMSService({pool,authorize}:Options) {
   }
   async function saveContent(client:PoolClient,principal:Principal,resource:"blogs"|"banners"|"homepage",raw:unknown):Promise<CMSItem>{
     const homepage=resource==="homepage",input=homepage?parse(z.object({version:z.number().int().min(0),config:homepageInput}).strict(),raw):resource==="blogs"?parse(blogCommand,raw):parse(bannerCommand,raw);
-    const data=record(input),kind=homepage?"homepage":resource==="blogs"?"blog":"banner";
+    const {draft,...fields}=record(input),kind=homepage?"homepage":resource==="blogs"?"blog":"banner";
+    // Task 18A: editor rich text is sanitized before it is stored; the excerpt is shown as text, so it is plain text.
+    const data=kind==="blog"?{...fields,content:sanitizeRichText(String(fields.content??"")),...(typeof fields.excerpt==="string"?{excerpt:plainText(fields.excerpt)}:{})}:fields;
     if(homepage)await client.query("SELECT pg_advisory_xact_lock(hashtextextended('cms:homepage',0))");
     const old=homepage?(await client.query("SELECT * FROM pages WHERE kind='homepage' ORDER BY id LIMIT 1 FOR UPDATE")).rows[0]:data.id?(await client.query("SELECT * FROM pages WHERE id=$1 AND kind=$2 FOR UPDATE",[data.id,kind])).rows[0]:undefined;
     if(data.id&&!old)return fail("NOT_FOUND",404,"Content was not found");
@@ -108,8 +114,14 @@ export function createCMSService({pool,authorize}:Options) {
     await client.query("INSERT INTO page_versions(id,page_id,page_kind,version,title,subtitle,summary,body,blocks,legacy_content,seo_title,seo_description,focus_keywords,canonical_url,no_index,og_image_source,author_user_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)",[versionId,id,kind,next,homepage?"Homepage":data.title,data.subtitle??null,data.excerpt??"",data.content??"",json(homepage?[config]:[]),json(homepage?{}:data),data.seoTitle??null,data.seoDescription??null,json(data.focusKeywords??[]),data.canonicalUrl||null,data.noIndex??false,data.ogImage||null,principal.userId]);
     if(kind==="blog")await client.query("INSERT INTO blog_posts(version_id,page_id,author_label,category,reading_time,cover_source) VALUES($1,$2,$3,$4,$5,$6)",[versionId,id,data.author??null,data.category??null,data.readingTime??null,data.coverImage??null]);
     if(kind==="banner")await client.query("INSERT INTO banners(version_id,page_id,position,sort_order,cta_label,cta_url,image_source) VALUES($1,$2,$3,$4,$5,$6,$7)",[versionId,id,data.position??"hero",data.order??0,data.ctaLabel??null,data.ctaUrl??null,data.image??null]);
-    const status=homepage||data.status==="published"||data.active===true?"published":"draft";
-    if(status==="published")await client.query("INSERT INTO page_publications(page_id,version_id) VALUES($1,$2) ON CONFLICT(page_id) DO UPDATE SET version_id=excluded.version_id",[id,versionId]);
+    const keepLive=draft===true&&old?.status==="published";
+    const status=keepLive?"published":draft===true?"draft":homepage||data.status==="published"||data.active===true?"published":"draft";
+    // Task 18A review I3: publishing from the editor makes the page live now; an earlier schedule or
+    // end time no longer applies (the original publish date is kept). Review I5: invalidate caches.
+    if(status==="published"&&!keepLive){
+      await client.query("INSERT INTO page_publications(page_id,version_id) VALUES($1,$2) ON CONFLICT(page_id) DO UPDATE SET version_id=excluded.version_id,published_at=LEAST(page_publications.published_at,now()),scheduled_until=NULL",[id,versionId]);
+      await appendOutboxEvent(client,{topic:"content.published",dedupeKey:`content.published:${id}:${next}`,aggregate:{type:"page",id},payload:{pageId:id,kind,slug,versionId},consumers:[CONTENT_INVALIDATE_KIND]});
+    }
     await client.query("UPDATE pages SET status=$2 WHERE id=$1",[id,status]);
     await audit(client,principal,"cms.saved",entityTypes[resource],id,Object.keys(data).filter(key=>!["id","version","config"].includes(key)),oldVersion,next);
     const row=(await client.query(`${contentSelect()} WHERE p.id=$1`,[id])).rows[0];return contentDTO(row);

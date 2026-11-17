@@ -47,3 +47,6 @@ next-env.d.ts
 
 # Local temp files
 temp/
+
+# Uploaded media (Task 18A; MEDIA_STORAGE_DIR default)
+storage/

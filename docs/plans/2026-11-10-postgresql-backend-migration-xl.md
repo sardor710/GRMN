@@ -1061,14 +1061,14 @@ The owner-scoped payment core (interface, demo adapter, verified inbox, capture,
 
 ### Task 18 — Admin content, media, reports and store settings
 
-**Current status:** NOT STARTED. **Depends on:** 16. **Size:** 18A publishing and media; 18B reports, exports, settings and inventory admin UI. (Absorbs Task 19.)
+**Current status:** 18A COMPLETE (2026-11-18; browser smoke not run: host memory). 18B NOT STARTED. **Depends on:** 16. **Size:** 18A publishing and media; 18B reports, exports, settings and inventory admin UI. (Absorbs Task 19.)
 
 **Files:** content/media services, signed upload routes, admin homepage/blog/banner/SEO/dashboard/settings pages, operations queries and export jobs.
 
-- [ ] **18A:** scheduled publishing and product-referenced homepage collections, extending Task 08's versioned CMS. Preserve the current carousel, hero and tile fields.
+- [x] **18A:** scheduled publishing and product-referenced homepage collections, extending Task 08's versioned CMS. Preserve the current carousel, hero and tile fields.
   - Authorized scoped uploads with MIME, content and size validation; checksum confirmation; immutable keys; alt text; orphan cleanup after a grace period. Private files stay separate.
   - Publishing invalidates the cache after commit.
-- [ ] **18A tests:** draft isolation, publish conflict, rich-text sanitization, wrong upload type or size, expired grant, deleted product reference, canonical/noindex/redirect/sitemap behaviour, and restoring a prior published version.
+- [x] **18A tests:** draft isolation, publish conflict, rich-text sanitization, wrong upload type or size, expired grant, deleted product reference, canonical/noindex/redirect/sitemap behaviour, and restoring a prior published version.
 - [ ] **18B:**
   - Paginated SQL dashboard summaries (captured minus refunded, per currency and timezone), replacing browser-wide aggregation.
   - Asynchronous, filtered, private, expiring CSV exports with formula-injection protection.

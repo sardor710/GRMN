@@ -62,7 +62,7 @@ async function handlers(request: Request, resource: AdminResource) {
   };
   return createAdminHandlers({ runtime, store, baseURL: new URL(process.env.AUTH_BASE_URL!).origin });
 }
-export async function handleAdminRequest(resource: AdminResource | "order-claims" | "inventory" | "operations", request: Request) {
+export async function handleAdminRequest(resource: AdminResource | "order-claims" | "inventory" | "operations" | "content" | "media", request: Request) {
   // Legacy-order claim approval exists only in PostgreSQL+auth mode; the account service
   // enforces staff MFA admission and customers:write itself.
   if (resource === "order-claims") return (await import("../account/runtime.ts")).handleClaimApprovalRequest(request);
@@ -70,6 +70,9 @@ export async function handleAdminRequest(resource: AdminResource | "order-claims
   if (resource === "inventory") return (await import("../inventory/runtime.ts")).handleInventoryRequest(request);
   // The job queue (Task 12B) is PostgreSQL-only; the operations runtime requires settings:write with fresh MFA.
   if (resource === "operations") return (await import("../operations/runtime.ts")).handleOperationsRequest(request);
+  // Publishing and media uploads (Task 18A) are PostgreSQL-only; the content runtime checks content:write.
+  if (resource === "content") return (await import("../content/runtime.ts")).handleContentRequest(request);
+  if (resource === "media") return (await import("../content/runtime.ts")).handleMediaRequest(request);
   // Orders in PostgreSQL mode are the fulfillment service (Task 16A); the legacy JSON store serves the rest.
   if (resource === "orders" && cmsBackend() === "postgres") return (await import("../fulfillment/runtime.ts")).handleFulfillmentRequest(request);
   try { return await (await handlers(request, resource)).handle(resource, request); }

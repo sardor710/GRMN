@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { sanitizeRichText } from "@/server/content/sanitize";
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
@@ -82,6 +83,7 @@ export default async function ArticlePage({
   const cmsBlog = await readBlog(slug);
   const post = cmsBlog ? getPost(slug) : undefined;
 
+  // A changed URL is redirected by the proxy (redirects table) before this page runs.
   if (!post && !cmsBlog) notFound();
 
   const activeBlog: CMSBlog = cmsBlog || {
@@ -150,7 +152,10 @@ export default async function ArticlePage({
             <span>By {activeBlog.author}</span>
           </div>
           <div className="mt-8 space-y-5">
-            {body.map((para, i) => (
+            {/* Task 18A: CMS rich text is sanitized on save and again here (older rows predate the sanitizer). */}
+            {activeBlog.content ? (
+              <div className="space-y-5 text-[17px] leading-relaxed text-neutral-700 [&_a]:underline [&_strong]:font-semibold" dangerouslySetInnerHTML={{ __html: sanitizeRichText(activeBlog.content) }} />
+            ) : body.map((para, i) => (
               <p
                 key={i}
                 className={i === 0 ? "text-[19px] leading-relaxed text-black font-medium" : "text-[17px] leading-relaxed text-neutral-700"}

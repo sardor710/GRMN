@@ -281,6 +281,33 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 [Detailed receipt](handoffs/task-16b.md).
 
+### Task 18A
+
+**Complete: scheduled publishing and media uploads (2026-11-18).** No migration. 18B is next.
+- **Publishing** (`src/server/content/publishing.ts`, `/api/admin/content`, `content:write`):
+  - version history; publish now or at a scheduled time, optionally until an end time; unpublish;
+  - restore an earlier version as a new version (history is never rewritten);
+  - slug change with a 308 redirect, which the proxy already serves from the `redirects` table.
+  - Every write checks the page version, is audited, and enqueues `content.published` / `content.unpublished` for cache invalidation in the same transaction.
+- **Rules:**
+  - Public reads apply the publication window: lists, slugs, the homepage and the sitemap.
+  - A live page cannot be replaced by a future publication, and the homepage cannot be scheduled.
+  - Editor saves with `draft: true` leave the live version untouched (draft isolation).
+- **Rich text:** blog bodies go through an allowlist sanitizer when saved and again when rendered (balanced tags, linear time). Excerpts are plain text.
+- **Collections:** merchandising collections reference products by public key. The public read skips archived or unpublished products and keeps the order.
+- **Uploads** (`src/server/content/media.ts`, `/api/admin/media`, `/api/admin/media/upload`, `/media/<key>`):
+  - a signed upload grant expires after 15 minutes and covers one file, whose type (PNG, JPEG, GIF or WebP), size (5 MB maximum), SHA-256 checksum and alt text are declared up front;
+  - the upload is checked for exact size, magic bytes and checksum, and stored under an immutable key;
+  - public and private files are stored separately, and private files are never served;
+  - an hourly job, `media.orphans.cleanup`, archives orphaned uploads after a 24-hour grace period and keeps the files so they can be recovered.
+- **Review:** no Critical findings. Five Important findings were fixed test-first: unbalanced tags, quadratic sanitizing, a stale publication window after an editor save, the homepage being scheduled offline, and the editor publish path not invalidating. The sixth, homepage collection wiring, is a ruling deferred to 18B.
+- **Gates:**
+  - `npm test` **532/532**, one test file per process; this covers the route fix, with units re-run at 178/178.
+  - `npm run check`: exit 0, with no file-tracing warnings.
+  - **The browser smoke was not run**: 104–161 MB free.
+
+[Detailed receipt](handoffs/task-18a.md).
+
 ## Remaining task list
 
 Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained slices; see "Consolidation of Tasks 12–22" in the plan. Steps that need a real provider are in its deferred activation backlog.
@@ -295,7 +322,7 @@ Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained
 | 15 | Merged into 14 | Real provider work is in the deferred activation backlog |
 | 16 | Complete (16A, 16B); smoke open | Browser smoke for 16A and 16B on a machine with ≥1 GB free RAM |
 | 17 | Merged into 16 | — |
-| 18 | Not started | 18A scheduled publishing and media uploads; 18B reports, exports, settings, USD rate editor and inventory admin UI (absorbs 19) |
+| 18 | 18A complete; 18B not started | 18B reports, exports, settings, USD rate editor and inventory admin UI (absorbs 19); homepage collection wiring (18A ruling I6) |
 | 19 | Merged into 18 | Email/newsletter sending is in the deferred activation backlog |
 | 20 | Merged into 13 | Wishlist built in 13A; other account domains deferred in [account-tab-dispositions.md](account-tab-dispositions.md) |
 | 21 | Not started | 21A query/cache/rate tuning and end-to-end matrix; 21B load and failure injection (absorbs 22). Last chained task |
