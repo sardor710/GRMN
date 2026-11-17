@@ -308,6 +308,42 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 [Detailed receipt](handoffs/task-18a.md).
 
+### Task 18B
+
+**Complete: reports, exports, settings, USD rate editor and inventory admin UI (2026-11-18).** No migration. This absorbs Task 19, so Task 18 is complete.
+- **Dashboard** (`src/server/reports/service.ts`, `/api/admin/reports`): SQL summaries replace the old browser-side aggregation. It reports captured money minus succeeded refunds:
+  - grouped by currency and by payment environment (sandbox or live);
+  - in local calendar days of an IANA time zone, for at most 92 days;
+  - a refund counts on the day it succeeded, taken from its immutable `refund.succeeded` event.
+
+  It also serves a low-stock list. In PostgreSQL mode the admin dashboard is the new `ReportsScreen`.
+- **Exports** (`src/server/reports/exports.ts`, `/api/admin/exports`):
+  - Who: `exports:create` plus the read permission for the kind; only the requester can download, and both checks repeat on every download.
+  - What: catalog CSVs and dated order CSVs; order exports carry no names, phones, e-mails or addresses.
+  - How: generated asynchronously by the worker job `exports.generate` into private storage, expiring after 24 hours. Exports over 50,000 rows are refused (409).
+  - Each cell is quoted, and anything that could run as a spreadsheet formula is neutralised.
+  - An export that cannot be built ends as `failed`. An hourly sweep (`exports.expire`) expires old exports and deletes their files, crash-safely.
+- **Settings** (`src/server/settings/service.ts`, `/api/admin/settings` in PostgreSQL mode): typed, versioned and audited, and they never return legacy secrets. The payment mode cannot be changed here.
+  - Invalid combinations are 409: USD display without a rate, or an unknown or band-less shipping policy.
+  - The KZT-per-USD editor writes a new exchange-rate version each time.
+  - New `StoreSettingsScreen`.
+- **Stock (11A M7):** the dashboard's low-stock list has a Restock +10 button and a ± count correction, both posting audited adjustments to `/api/admin/inventory`. Each pending action keeps its idempotency key, so a retry cannot double the stock. The product list shows real stock counts.
+- **Review:** no Critical findings. Nine Important findings were fixed test-first:
+  - an export expiry could leave its private file behind after a crash;
+  - impossible dates were accepted;
+  - exports never reached `failed`;
+  - exports were truncated silently;
+  - sandbox money was mixed into revenue;
+  - a refund's day could move;
+  - two client errors came back as 503;
+  - the restock retry could double the stock;
+  - order exports needed no order-read permission.
+- **Gates:**
+  - `npm test` **546/546** (one test file per process) and `npm run check` exit 0.
+  - **The browser smoke was not run**: 116–418 MB free.
+
+[Detailed receipt](handoffs/task-18b.md).
+
 ## Remaining task list
 
 Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained slices; see "Consolidation of Tasks 12–22" in the plan. Steps that need a real provider are in its deferred activation backlog.
@@ -322,7 +358,7 @@ Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained
 | 15 | Merged into 14 | Real provider work is in the deferred activation backlog |
 | 16 | Complete (16A, 16B); smoke open | Browser smoke for 16A and 16B on a machine with ≥1 GB free RAM |
 | 17 | Merged into 16 | — |
-| 18 | 18A complete; 18B not started | 18B reports, exports, settings, USD rate editor and inventory admin UI (absorbs 19); homepage collection wiring (18A ruling I6) |
+| 18 | Complete (18A, 18B); smoke open | Homepage collection wiring with draft isolation (18A ruling I6, deferred) |
 | 19 | Merged into 18 | Email/newsletter sending is in the deferred activation backlog |
 | 20 | Merged into 13 | Wishlist built in 13A; other account domains deferred in [account-tab-dispositions.md](account-tab-dispositions.md) |
 | 21 | Not started | 21A query/cache/rate tuning and end-to-end matrix; 21B load and failure injection (absorbs 22). Last chained task |

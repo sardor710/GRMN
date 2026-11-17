@@ -26,3 +26,10 @@ test("backslash and protocol-relative links are dropped",()=>{
 test("plainText strips every tag and decodes nothing into markup",()=>{
   assert.equal(plainText("<b>Short</b><script>x()</script> a < b"),"Short a < b");
 });
+
+test("Task 18B: CSV cells neutralise formulas, including padded and full-width triggers",async()=>{
+  const {csvCell}=await import("../../src/server/reports/exports.ts");
+  for(const value of ["=1+1","+1","-1","@SUM(A1)","\tx","\rx","\nx"," =1+1","\u00a0=1","＝1","＋1","－1","＠x"])assert.ok(csvCell(value).startsWith("\"'"),JSON.stringify(value)+" -> "+csvCell(value));
+  assert.equal(csvCell('He said "hi"'),'"He said ""hi"""');
+  assert.equal(csvCell(42),'"42"');
+});

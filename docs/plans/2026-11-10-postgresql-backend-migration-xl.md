@@ -1061,7 +1061,7 @@ The owner-scoped payment core (interface, demo adapter, verified inbox, capture,
 
 ### Task 18 — Admin content, media, reports and store settings
 
-**Current status:** 18A COMPLETE (2026-11-18; browser smoke not run: host memory). 18B NOT STARTED. **Depends on:** 16. **Size:** 18A publishing and media; 18B reports, exports, settings and inventory admin UI. (Absorbs Task 19.)
+**Current status:** COMPLETE (18A, 18B; 2026-11-18; browser smoke not run: host memory). **Depends on:** 16. **Size:** 18A publishing and media; 18B reports, exports, settings and inventory admin UI. (Absorbs Task 19.)
 
 **Files:** content/media services, signed upload routes, admin homepage/blog/banner/SEO/dashboard/settings pages, operations queries and export jobs.
 
@@ -1069,14 +1069,14 @@ The owner-scoped payment core (interface, demo adapter, verified inbox, capture,
   - Authorized scoped uploads with MIME, content and size validation; checksum confirmation; immutable keys; alt text; orphan cleanup after a grace period. Private files stay separate.
   - Publishing invalidates the cache after commit.
 - [x] **18A tests:** draft isolation, publish conflict, rich-text sanitization, wrong upload type or size, expired grant, deleted product reference, canonical/noindex/redirect/sitemap behaviour, and restoring a prior published version.
-- [ ] **18B:**
+- [x] **18B:**
   - Paginated SQL dashboard summaries (captured minus refunded, per currency and timezone), replacing browser-wide aggregation.
   - Asynchronous, filtered, private, expiring CSV exports with formula-injection protection.
   - Typed settings validation and policy versioning.
   - A permissioned, audited KZT-per-USD rate editor.
   - Wire the admin stock adjustment form and restock button to `/api/admin/inventory` (11A M7).
   - Settings never return secrets; no message is sent.
-- [ ] **18B tests:** report totals after a partial refund, mixed-currency grouping, export permission/revocation/expiry, a CSV formula payload, invalid setting combinations, and stock adjustment through the UI.
+- [x] **18B tests:** report totals after a partial refund, mixed-currency grouping, export permission/revocation/expiry, a CSV formula payload, invalid setting combinations, and stock adjustment through the UI.
 
 **Acceptance/recovery:** editors publish safely with revision history and recoverable media; reports are bounded and auditable; no full personal-data dump reaches dashboard clients.
 

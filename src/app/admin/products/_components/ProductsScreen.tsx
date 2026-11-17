@@ -476,7 +476,7 @@ export default function AdminProductsPage() {
                               : "bg-rose-600"
                           }`}
                         />
-                        <span className="font-semibold text-black text-[12px]">{collection.backend==="postgres"?"Not configured":`${p.stock} units`}</span>
+                        <span className="font-semibold text-black text-[12px]">{collection.backend==="postgres"&&!p.stockManaged?"Not tracked":`${p.stock} units`}</span>
                       </div>
                     </td>
                     <td className="py-3.5 px-4">

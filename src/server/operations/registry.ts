@@ -8,6 +8,7 @@ import { paymentProviders } from "../payments/providers.ts";
 import { processRefunds } from "../fulfillment/aftersales.ts";
 import { CONTENT_INVALIDATE_KIND } from "../content/publishing.ts";
 import { cleanupOrphanMedia } from "../content/media.ts";
+import { EXPORT_EXPIRE_KIND, EXPORT_GENERATE_KIND, expireExports, generateExport } from "../reports/exports.ts";
 import path from "node:path";
 import { JobError } from "./outbox.ts";
 import type { ClaimedJob, JobHandler, JobHandlers } from "./outbox.ts";
@@ -114,7 +115,18 @@ const cleanupMedia: JobHandler = async (_job, ctx) => {
   await ctx.complete();
 };
 
-export { PAYMENT_INBOX_KIND, CONTENT_INVALIDATE_KIND };
+// Task 18B: build one requested CSV export into a private file; sweep expired exports hourly.
+const storageRoot = () => process.env.MEDIA_STORAGE_DIR ? path.resolve(/*turbopackIgnore: true*/ process.env.MEDIA_STORAGE_DIR) : path.join(/*turbopackIgnore: true*/ process.cwd(), "storage", "media");
+const buildExport: JobHandler = async (job, ctx) => {
+  await generateExport(ctx.pool, storageRoot(), payloadId(job, "exportId"), typeof job.payload.maxRows === "number" ? { maxRows: job.payload.maxRows } : {});
+  await ctx.complete();
+};
+const sweepExports: JobHandler = async (_job, ctx) => {
+  await expireExports(ctx.pool, storageRoot());
+  await ctx.complete();
+};
+
+export { PAYMENT_INBOX_KIND, CONTENT_INVALIDATE_KIND, EXPORT_EXPIRE_KIND, EXPORT_GENERATE_KIND };
 export const jobHandlers: JobHandlers = {
   [RESERVATION_EXPIRY_KIND]: expireReservations,
   [COUPON_EXPIRY_KIND]: expireCoupons,
@@ -125,6 +137,8 @@ export const jobHandlers: JobHandlers = {
   [REFUND_PROCESS_KIND]: processRefundsJob,
   [CONTENT_INVALIDATE_KIND]: invalidateContent,
   [MEDIA_CLEANUP_KIND]: cleanupMedia,
+  [EXPORT_GENERATE_KIND]: buildExport,
+  [EXPORT_EXPIRE_KIND]: sweepExports,
 };
 
 /**
@@ -135,5 +149,5 @@ export function jobSchedules(env: Readonly<Record<string, string | undefined>>):
   const raw = env.RESERVATION_EXPIRY_INTERVAL_MS;
   const everyMs = raw === undefined ? 30_000 : /^\d+$/.test(raw) ? Number(raw) : NaN;
   if (!Number.isSafeInteger(everyMs) || everyMs < 1000 || everyMs > 60_000) throw new Error("Missing or invalid worker configuration: RESERVATION_EXPIRY_INTERVAL_MS");
-  return [{ kind: RESERVATION_EXPIRY_KIND, everyMs }, { kind: COUPON_EXPIRY_KIND, everyMs }, { kind: ORDER_EXPIRY_KIND, everyMs }, { kind: PAYMENT_RECONCILE_KIND, everyMs: 60_000 }, { kind: REFUND_PROCESS_KIND, everyMs: 60_000 }, { kind: MEDIA_CLEANUP_KIND, everyMs: 3_600_000 }];
+  return [{ kind: RESERVATION_EXPIRY_KIND, everyMs }, { kind: COUPON_EXPIRY_KIND, everyMs }, { kind: ORDER_EXPIRY_KIND, everyMs }, { kind: PAYMENT_RECONCILE_KIND, everyMs: 60_000 }, { kind: REFUND_PROCESS_KIND, everyMs: 60_000 }, { kind: MEDIA_CLEANUP_KIND, everyMs: 3_600_000 }, { kind: EXPORT_EXPIRE_KIND, everyMs: 3_600_000 }];
 }

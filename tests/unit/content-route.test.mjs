@@ -34,3 +34,16 @@ test("the content runtime is PostgreSQL-only, staff-guarded, and the public medi
   assert.match(media,/storage_namespace='cms-public' AND visibility='public' AND status='ready'/);
   assert.match(media,/folder\(storageDir, "public"\)/);
 });
+
+test("Task 18B: reports, exports and settings routes go through the guarded admin runtime",()=>{
+  for(const [file,resource,methods] of [["src/app/api/admin/reports/route.ts","reports",["GET"]],["src/app/api/admin/exports/route.ts","exports",["GET","POST"]]]){
+    assert.ok(existsSync(new URL("../../"+file,import.meta.url)),file+" is missing");
+    const route=read(file);
+    for(const method of methods)assert.ok(route.includes(`export async function ${method}(request: Request)`),file+" "+method);
+    assert.equal(count(route,`handleAdminRequest("${resource}", request)`),methods.length,file);
+  }
+  const admin=read("src/server/auth/admin-runtime.ts");
+  assert.match(admin,/resource === "reports"/);assert.match(admin,/resource === "exports"/);
+  assert.match(admin,/resource === "settings" && cmsBackend\(\) === "postgres"/);
+  const settingsRoute=read("src/app/api/admin/settings/route.ts");assert.match(settingsRoute,/handleAdminRequest\("settings", request\)/);
+});
