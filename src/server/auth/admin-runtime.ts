@@ -70,6 +70,8 @@ export async function handleAdminRequest(resource: AdminResource | "order-claims
   if (resource === "inventory") return (await import("../inventory/runtime.ts")).handleInventoryRequest(request);
   // The job queue (Task 12B) is PostgreSQL-only; the operations runtime requires settings:write with fresh MFA.
   if (resource === "operations") return (await import("../operations/runtime.ts")).handleOperationsRequest(request);
+  // Orders in PostgreSQL mode are the fulfillment service (Task 16A); the legacy JSON store serves the rest.
+  if (resource === "orders" && cmsBackend() === "postgres") return (await import("../fulfillment/runtime.ts")).handleFulfillmentRequest(request);
   try { return await (await handlers(request, resource)).handle(resource, request); }
   catch (error) { return authErrorResponse(error); }
 }

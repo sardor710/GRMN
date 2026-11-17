@@ -70,7 +70,7 @@ const money = (amountMinor: string): Money => ({ amountMinor, currency: "KZT" })
 const optionalMoney = (amountMinor: string | null) => amountMinor === null ? null : money(amountMinor);
 const EVENT_LABELS: Readonly<Record<string, string>> = {
   "order.placed": "Order placed", "order.confirmed": "Order confirmed", "order.cancelled": "Order cancelled",
-  "payment.paid": "Payment received", "fulfillment.shipped": "Shipped", "fulfillment.delivered": "Delivered",
+  "payment.paid": "Payment received", "order.paid": "Payment received", "order.expired": "Order expired", "fulfillment.shipped": "Shipped", "fulfillment.delivered": "Delivered",
 };
 
 function databaseFailure(error: unknown): unknown {
@@ -236,10 +236,12 @@ export function createAccountService({ database, authorize, authorizeFresh, secr
       if (typeof orderId !== "string" || !UUID.test(orderId)) return notFound();
       const order = (await database.pool.query<{ id: string; order_number: string; shown_at: Date; order_status: OrderSummaryDTO["status"]; payment_status: OrderSummaryDTO["paymentStatus"]; fulfillment_status: OrderSummaryDTO["fulfillmentStatus"]; total_minor: string; subtotal_minor: string | null; discount_minor: string | null; shipping_minor: string | null; tax_minor: string | null; contact_name: string; contact_phone: string | null; contact_email: string | null; data_quality: OrderDetailDTO["dataQuality"]; version: number }>(
         "SELECT id,order_number,COALESCE(placed_at,created_at) AS shown_at,order_status,payment_status,fulfillment_status,total_minor::text AS total_minor,subtotal_minor::text AS subtotal_minor,discount_minor::text AS discount_minor,shipping_minor::text AS shipping_minor,tax_minor::text AS tax_minor,contact_name,contact_phone,contact_email,data_quality,version FROM orders WHERE id=$1 AND user_id=$2", [orderId, principal.userId])).rows[0] ?? notFound();
-      const [items, address, events] = await Promise.all([
+      const [items, address, events, shipments] = await Promise.all([
         database.pool.query<{ id: string; product_key: string | null; sku: string | null; name: string; options: Record<string, unknown>; quantity: number; unit_price_minor: string; discount_minor: string; tax_minor: string; total_minor: string }>("SELECT id,product_key,sku,name,options,quantity,unit_price_minor::text AS unit_price_minor,discount_minor::text AS discount_minor,tax_minor::text AS tax_minor,total_minor::text AS total_minor FROM order_items WHERE order_id=$1 ORDER BY id", [orderId]),
         database.pool.query<{ kind: "structured" | "legacy_unstructured"; recipient_name: string | null; phone: string | null; country_code: string | null; city: string | null; line1: string | null; line2: string | null; region: string | null; postal_code: string | null; legacy_raw: string | null }>("SELECT kind,recipient_name,phone,country_code,city,line1,line2,region,postal_code,legacy_raw FROM order_addresses WHERE order_id=$1", [orderId]),
         database.pool.query<{ id: string; type: string; happened_at: Date }>("SELECT id,type,COALESCE(occurred_at,recorded_at) AS happened_at FROM order_events WHERE order_id=$1 AND visibility='customer' ORDER BY COALESCE(occurred_at,recorded_at),id", [orderId]),
+        // Task 16A: only dispatched and delivered shipments, without carrier, tracking or staff notes (D04).
+        database.pool.query<{ id: string; status: "dispatched" | "delivered"; dispatched_at: Date; delivered_at: Date | null; items: { orderItemId: string; quantity: number }[] }>("SELECT s.id,s.status,s.dispatched_at,s.delivered_at,(SELECT COALESCE(json_agg(json_build_object('orderItemId',g.order_item_id,'quantity',g.quantity) ORDER BY g.order_item_id),'[]'::json) FROM (SELECT order_item_id,sum(quantity)::int AS quantity FROM shipment_items WHERE shipment_id=s.id GROUP BY order_item_id) g) AS items FROM shipments s WHERE s.order_id=$1 AND s.status IN ('dispatched','delivered') ORDER BY s.dispatched_at,s.id", [orderId]),
       ]);
       const snapshot = address.rows[0];
       let deliveryAddress: OrderDetailDTO["deliveryAddress"] = null;
@@ -261,6 +263,7 @@ export function createAccountService({ database, authorize, authorizeFresh, secr
         contact: { name: order.contact_name, phone: order.contact_phone, email: order.contact_email }, deliveryAddress, dataQuality: order.data_quality, items: lines,
         subtotal: optionalMoney(order.subtotal_minor), discount: optionalMoney(order.discount_minor), shipping: optionalMoney(order.shipping_minor), tax: optionalMoney(order.tax_minor),
         events: events.rows.map(row => ({ id: row.id, type: row.type, occurredAt: row.happened_at.toISOString(), label: EVENT_LABELS[row.type] ?? row.type })),
+        shipments: shipments.rows.map(row => ({ id: row.id, status: row.status, dispatchedAt: row.dispatched_at.toISOString(), deliveredAt: row.delivered_at?.toISOString() ?? null, items: row.items })),
         originalUsdEquivalent: null,
       };
     },

@@ -1028,17 +1028,17 @@ The owner-scoped payment core (interface, demo adapter, verified inbox, capture,
 
 ### Task 16 — Fulfillment, cancellation, returns and refunds (manual)
 
-**Current status:** NOT STARTED. **Depends on:** 14. **Size:** 16A fulfillment and order timeline; 16B cancellation, returns and refunds. (Absorbs Task 17.)
+**Current status:** 16A CODE COMPLETE (2026-11-17; browser smoke pending: host memory). 16B NOT STARTED. **Depends on:** 14. **Size:** 16A fulfillment and order timeline; 16B cancellation, returns and refunds. (Absorbs Task 17.)
 
 **Files:** fulfillment/order-transition/return/refund services, admin orders UI/API, customer order detail, tests.
 
-- [ ] **16A:** permissioned, versioned staff fulfillment:
+- [x] **16A:** permissioned, versioned staff fulfillment:
   - split shipments by item quantity;
   - tracking references and protected internal notes;
   - actual order events in the admin and customer timelines;
   - carrier and routing fields kept out of customer DTOs;
   - legacy summary orders stay flagged and cannot take item operations.
-- [ ] **16A tests:** over-shipping, shipping unpaid or exception orders, a duplicate shipment action, backwards transitions, fabricated milestones, and fulfillment never decrementing consumed stock again.
+- [x] **16A tests:** over-shipping, shipping unpaid or exception orders, a duplicate shipment action, backwards transitions, fabricated milestones, and fulfillment never decrementing consumed stock again.
 - [ ] **16B:**
   - Cancellation specific to each state (uncaptured, captured and unshipped, shipped).
   - Exactly one compensating stock movement per allocation.

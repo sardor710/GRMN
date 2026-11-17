@@ -230,6 +230,27 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 [Detailed receipt](handoffs/task-14b.md).
 
+### Task 16A
+
+**Code complete, browser smoke pending: manual fulfillment and order timeline (2026-11-17).** No migration.
+- **Service:** `src/server/fulfillment/service.ts`. In PostgreSQL mode `/api/admin/orders` is served by it: reads need `orders:read`, writes need `orders:fulfill`.
+  - Split shipments by item quantity over the order's paid allocations. The shipment states are `ready → dispatched → delivered`, or `ready → cancelled`. Backwards moves are 409 `INVALID_TRANSITION`.
+  - Every write takes a CAS version and an idempotency key scoped to the staff user, and is audited.
+  - It writes no stock movement: capture already consumed the stock.
+- **Eligibility:** a live order with a capture fact, paid or partially refunded, confirmed and not an exception. Otherwise 409 with `LEGACY_ORDER`, `ORDER_NOT_PAID`, `FULFILLMENT_EXCEPTION` or `ORDER_NOT_SHIPPABLE`. Demo and legacy summary orders never ship.
+- **Timelines:**
+  - Staff see every recorded order event, and internal notes need `orders:fulfill`.
+  - Customers see `fulfillment.shipped` and `fulfillment.delivered` and their dispatched or delivered shipments, with no carrier, tracking or notes (D04). Times come from the server clock; no client date is accepted.
+- **UI:**
+  - The admin orders page is a fulfillment screen in PostgreSQL mode: queue, items, shipments, actions, timeline.
+  - The account order detail lists shipments.
+- **Review:** no Critical findings. Three Important findings were fixed test-first: the status denominator now uses restored units, a concurrent key reuse is 409 not 503, and support no longer sees tracking. The fourth (refund-vs-shipping contract) is a 16B ruling.
+- **Gates:**
+  - `npm test` **499/499** and `npm run check` exit 0.
+  - **The browser smoke is NOT yet passed.** Two runs stalled compiling `/account` (CDP navigate timeout), before the new Task16A step, with 0.1–0.3 GB free RAM. See the [handoff](handoffs/task-16a.md#commands-and-results).
+
+[Detailed receipt](handoffs/task-16a.md).
+
 ## Remaining task list
 
 Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained slices; see "Consolidation of Tasks 12–22" in the plan. Steps that need a real provider are in its deferred activation backlog.
@@ -242,7 +263,7 @@ Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained
 | 13 | Complete (13A, 13B) | — |
 | 14 | Complete (14A, 14B) | — |
 | 15 | Merged into 14 | Real provider work is in the deferred activation backlog |
-| 16 | Not started | 16A manual fulfillment and order timeline; 16B cancellation, returns and refunds with stock compensation (absorbs 17) |
+| 16 | 16A code complete (smoke pending) | 16A browser smoke rerun on a machine with free RAM; 16B cancellation, returns and refunds with stock compensation (absorbs 17) |
 | 17 | Merged into 16 | — |
 | 18 | Not started | 18A scheduled publishing and media uploads; 18B reports, exports, settings, USD rate editor and inventory admin UI (absorbs 19) |
 | 19 | Merged into 18 | Email/newsletter sending is in the deferred activation backlog |

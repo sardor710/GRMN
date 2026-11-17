@@ -850,6 +850,19 @@ export function AccountDashboard() {
                     </ol>
                   </div>
                 )}
+                {(orderDetail.shipments?.length ?? 0) > 0 && (
+                  <div>
+                    <h4 className="text-[12px] font-semibold uppercase tracking-wider text-neutral-500">Shipments</h4>
+                    <ul className="mt-1 space-y-1">
+                      {orderDetail.shipments.map(shipment => (
+                        <li key={shipment.id} className="flex justify-between gap-3">
+                          <span>{shipment.items.map(line => `${line.quantity}× ${orderDetail.items.find(item => item.id === line.orderItemId)?.name ?? "item"}`).join(", ")}</span>
+                          <span className="font-mono text-[11px] text-neutral-500">{shipment.status === "delivered" ? `Delivered ${formatDate(shipment.deliveredAt ?? shipment.dispatchedAt)}` : `Shipped ${formatDate(shipment.dispatchedAt)}`}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
               </div>
             )}
           </div>

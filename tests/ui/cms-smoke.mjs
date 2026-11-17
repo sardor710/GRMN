@@ -181,6 +181,18 @@ try{
   await navigate("/cart");await until(async()=>/your cart is empty/i.test(await text()),"The converted cart still shows lines");
   console.log("PASS Task14A checkout: server KZT quote, one idempotent pending demo order, server-side cart conversion, unpaid receipt");
 
+  // Task 16A: in PostgreSQL mode the admin orders page is the fulfillment screen. The unpaid demo
+  // order is listed with its real timeline and cannot ship (no shipment form).
+  await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
+  await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
+  await navigate("/admin/orders");
+  await until(async()=>(await text()).toUpperCase().includes(placedOrders[0].order_number.toUpperCase()),"The fulfillment queue did not list the placed order").catch(async error=>{await writeFile(path.join(receipt,"admin-orders-body.txt"),await text());throw error;});
+  await evaluate(`(()=>{const button=[...document.querySelectorAll('section[aria-label="Order queue"] button')].find(b=>b.textContent.toUpperCase().includes(${JSON.stringify(placedOrders[0].order_number.toUpperCase())}));button.click();return true;})()`);
+  await until(async()=>/not paid: only captured orders can ship/i.test(await text()),"The demo order did not show as not shippable");
+  assert.ok(/order\.placed/i.test(await text()),"the timeline shows the recorded order.placed event");
+  assert.equal(await evaluate("[...document.querySelectorAll('button')].some(b=>/create shipment/i.test(b.textContent))"),false,"an unpaid order offers no shipment action");
+  console.log("PASS Task16A fulfillment: PostgreSQL admin orders queue, real timeline, unpaid demo order refused for shipping");
+
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");
   console.log("Browser smoke passed: 20/5 cursor pages, server search, versioned product create/update, homepage editor save/render, article create/public render, banner create/archive, provisional customer create, KZT rendering and unchanged source bytes.");

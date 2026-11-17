@@ -315,7 +315,17 @@ export interface OrderDetailDTO extends OrderSummaryDTO {
   shipping: Money | null;
   tax: Money | null;
   events: { id: string; type: string; occurredAt: string; label: string }[];
+  /** Dispatched and delivered shipments (Task 16A). Carrier, tracking and staff notes are never included (D04). */
+  shipments: OrderShipmentDTO[];
   originalUsdEquivalent: UsdEquivalentDTO | null;
+}
+
+export interface OrderShipmentDTO {
+  id: string;
+  status: "dispatched" | "delivered";
+  dispatchedAt: string;
+  deliveredAt: string | null;
+  items: { orderItemId: string; quantity: number }[];
 }
 
 export interface OrderTransitionCommand {
@@ -349,4 +359,61 @@ export interface ApiErrorResponse {
     fieldErrors?: Readonly<Record<string, readonly string[]>>;
     requestId: string;
   };
+}
+
+// Task 16A staff fulfillment DTOs (served only under /api/admin/orders).
+export type FulfillmentBlock = "LEGACY_ORDER" | "ORDER_NOT_PAID" | "FULFILLMENT_EXCEPTION" | "ORDER_NOT_SHIPPABLE";
+export interface ShipmentDTO {
+  id: string;
+  status: "draft" | "ready" | "dispatched" | "delivered" | "cancelled";
+  version: number;
+  /** Staff-only; null for readers without orders:fulfill. */
+  carrier: string | null;
+  /** Staff-only; null for readers without orders:fulfill (review I4). */
+  trackingReference: string | null;
+  /** Staff-only; null for readers without orders:fulfill. */
+  internalNotes: string | null;
+  createdAt: string;
+  dispatchedAt: string | null;
+  deliveredAt: string | null;
+  items: { orderItemId: string; quantity: number }[];
+}
+export interface AdminOrderSummaryDTO {
+  id: string;
+  orderNumber: string;
+  placedAt: string;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  fulfillmentStatus: FulfillmentStatus;
+  paymentMode: "demo" | "live" | "legacy_unknown";
+  dataQuality: "complete" | "legacy_incomplete";
+  total: Money;
+  itemsCount: number;
+  contactName: string;
+}
+export interface TimelineEventDTO {
+  id: string;
+  type: string;
+  visibility: "internal" | "customer";
+  source: string;
+  occurredAt: string;
+  actorUserId: string | null;
+  shipmentId: string | null;
+  /** Present only for readers with orders:fulfill. */
+  internalNote?: string;
+}
+export interface AdminOrderDetailDTO extends AdminOrderSummaryDTO {
+  version: number;
+  legacy: boolean;
+  fulfillable: { allowed: boolean; reason: FulfillmentBlock | null };
+  contact: { name: string; phone: string | null; email: string | null };
+  deliveryAddress: Record<string, string> | null;
+  items: { id: string; name: string; sku: string | null; quantity: number; allocated: number; claimed: number; shipped: number; remaining: number }[];
+  shipments: ShipmentDTO[];
+  timeline: TimelineEventDTO[];
+}
+export interface ShipmentResultDTO {
+  shipment: ShipmentDTO;
+  order: { id: string; version: number; fulfillmentStatus: FulfillmentStatus };
+  replayed: boolean;
 }
