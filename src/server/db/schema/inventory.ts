@@ -68,5 +68,7 @@ export const stockMovements = pgTable("stock_movements", {
   foreignKey({ columns: [t.variantId, t.locationId], foreignColumns: [inventoryBalances.variantId, inventoryBalances.locationId] }).onDelete("restrict"),
   index("stock_movements_ledger_idx").on(t.variantId, t.locationId, t.createdAt, t.id),
   index("stock_movements_reservation_idx").on(t.reservationLineId), index("stock_movements_allocation_idx").on(t.allocationId), index("stock_movements_actor_idx").on(t.actorUserId),
-  check("stock_movements_valid", sql`(${t.deltaOnHand}<>0 OR ${t.deltaReserved}<>0) AND ${t.reason} IN ('receive','adjust','reserve','release','consume','compensate','return') AND length(btrim(${t.dedupeKey}))>0`),
+  check("stock_movements_valid", sql`(${t.deltaOnHand}<>0 OR ${t.deltaReserved}<>0) AND ${t.reason} IN ('opening','receive','adjust','reserve','release','consume','compensate','return') AND length(btrim(${t.dedupeKey}))>0`),
+  // Opening stock (Task 11A, owner decision O08) is a positive on-hand-only movement that names its source.
+  check("stock_movements_opening_valid", sql`${t.reason}<>'opening' OR (${t.deltaOnHand}>0 AND ${t.deltaReserved}=0 AND ${t.sourceReference} IS NOT NULL AND length(btrim(${t.sourceReference}))>0)`),
 ]);

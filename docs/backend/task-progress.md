@@ -4,9 +4,9 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 ## Current position
 
-- **Completed:** Tasks **01–10** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring), within the scope and activation limits below.
-- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, and 10C in the commit after it (see `git log`).
-- **Next:** Task **11**: inventory ledger and race-safe reservations. See [the 10C handoff](handoffs/task-10c.md#exact-next-step).
+- **Completed:** Tasks **01–10** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring) and sub-slice **11A** (inventory ledger, audited adjustments, reconciliation, opening import), within the scope and activation limits below.
+- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, 10C in `3eecd53`, and 11A in the commit after it (see `git log`).
+- **Next:** Task **11B**: race-safe reserve/consume/release/expiry. See [the 11A handoff](handoffs/task-11a.md#exact-next-step).
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
 - **Active implementation:** `C:/Users/Freakman/.codex/worktrees/backend-task-02/GRMN`, branch `codex/backend-task-02`.
 - **Original checkout:** `D:/projects/garmin/GRMN`. Its progress documentation is synchronized, but the backend implementation has **not** been merged or copied there. An AI inspecting only that checkout's application files will see older code. Continue code work in the active worktree above.
@@ -94,12 +94,33 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 [Detailed receipt](handoffs/task-10c.md).
 
+### Task 11A
+
+**Complete — inventory ledger, audited adjustments, reconciliation and opening import (2026-11-17).**
+- **Ledger-driven balances (migration 0008).**
+  - Every `stock_movements` row applies its deltas in the same statement.
+  - Direct counter patches, nonzero inserts, deletes and truncation are rejected.
+  - A new `opening` reason records preserved stock and requires a source reference.
+  - On upgrade, existing balances get residual provenance movements.
+- **`/api/admin/inventory`** (PostgreSQL only; staff with MFA admission):
+  - stock read with the recent ledger (`catalog:read`);
+  - audited, idempotent adjustments that cannot take stock below the reserved quantity (`inventory:write`);
+  - a read-only reconciliation of balances against ledger sums and active reservation lines.
+- **`importOpeningBalances`** turns the product stock of a completed legacy migration run into one `opening` movement per default variant, naming the source record and checksum.
+  - Unusable values and balances that already have history are reported, never guessed.
+  - No real import was run; O08 still gates live activation.
+- The admin product DTO now reports ledger stock instead of a fixed zero.
+- **Review:** no Critical findings. Two Important findings (residual backfill, archived default variants) were fixed test-first.
+- **Gates:** final `npm test` **363/363** (21 legacy + 137 unit + 205 integration) with boundaries passing; `npm run check` passes (0 errors, 23 warnings). The browser smoke result is recorded in the receipt.
+
+[Detailed receipt](handoffs/task-11a.md).
+
 ## Remaining task list
 
 | Task | Status | Work still required |
 |---|---|---|
 | 10 | Complete (10A, 10B, 10C) | — |
-| 11 | Next, not started | Inventory ledger and race-safe reservations |
+| 11 | 11A complete; 11B next | 11B: reserve/consume/release/expiry, 100-way last-unit race, deadlock/serialization retry bounds |
 | 12 | Not started | Durable inbox/outbox and background workers |
 | 13 | Not started | Server cart, pricing, shipping/tax quotes and promotion quotas |
 | 14 | Not started | Idempotent checkout and pending orders |

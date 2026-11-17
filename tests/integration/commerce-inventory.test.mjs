@@ -65,11 +65,16 @@ test("commerce migration upgrades prior catalog and identity, replays and retain
 
 test("stock constraints and concurrent last-unit reservations prevent overselling", async () => {
   await query("INSERT INTO stock_locations(id,key,name) VALUES($1,'synthetic-main','Private warehouse')", [location]);
-  await query("INSERT INTO inventory_balances(variant_id,location_id,on_hand,reserved) VALUES($1,$2,1,0)", [variant, location]);
+  // Task 11A: balances start at zero and change only through recorded stock movements.
+  await rejects("INSERT INTO inventory_balances(variant_id,location_id,on_hand,reserved) VALUES($1,$2,1,0)", [variant, location]);
+  await query("INSERT INTO inventory_balances(variant_id,location_id) VALUES($1,$2)", [variant, location]);
+  await query("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key,source_reference) VALUES($1,$2,$3,1,0,'opening','synthetic-opening','synthetic:fixture')", [randomUUID(), variant, location]);
   await rejects("UPDATE inventory_balances SET reserved=2 WHERE variant_id=$1", [variant]);
   await rejects("UPDATE inventory_balances SET on_hand=-1 WHERE variant_id=$1", [variant]);
-  const attempts = await Promise.all([1, 2].map(() => query("UPDATE inventory_balances SET reserved=reserved+1 WHERE variant_id=$1 AND location_id=$2 AND on_hand-reserved>=1 RETURNING reserved", [variant, location])));
-  assert.equal(attempts.reduce((sum, result) => sum + result.rowCount, 0), 1);
+  const attempts = await Promise.allSettled([1, 2].map(n => query("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key) VALUES($1,$2,$3,0,1,'reserve',$4)", [randomUUID(), variant, location, "synthetic-last-unit-" + n])));
+  assert.equal(attempts.filter(result => result.status === "fulfilled").length, 1);
+  assert.equal(attempts.find(result => result.status === "rejected").reason.code, "23514");
+  assert.deepEqual((await query("SELECT on_hand,reserved FROM inventory_balances WHERE variant_id=$1 AND location_id=$2", [variant, location])).rows[0], { on_hand: 1, reserved: 1 });
 });
 
 test("carts require one actor, deduplicate current account carts and bound item quantities", async () => {

@@ -30,7 +30,8 @@ before(async () => {
   await q("INSERT INTO products(id,public_key,name) VALUES($1,'payments-synthetic','Қазақша / Русский / English')", [product]);
   await q("INSERT INTO product_variants(id,product_id,sku,status,is_default) VALUES($1,$2,'Payments-SKU','active',true)", [variant, product]);
   await q("INSERT INTO stock_locations(id,key,name) VALUES($1,'payments-test','Private synthetic location')", [location]);
-  await q("INSERT INTO inventory_balances(variant_id,location_id,on_hand) VALUES($1,$2,100)", [variant, location]);
+  await q("INSERT INTO inventory_balances(variant_id,location_id) VALUES($1,$2)", [variant, location]);
+  await q("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key,source_reference) VALUES($1,$2,$3,100,0,'opening','payments-opening','synthetic:fixture')", [randomUUID(), variant, location]);
 }, { timeout: 120000 });
 after(async () => { try { await handle?.close(); } finally { await temporary?.stop(); } }, { timeout: 45000 });
 

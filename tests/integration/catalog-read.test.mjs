@@ -22,7 +22,7 @@ async function product({name="Catalog fixture",status="published",amount="123456
   await q("INSERT INTO prices(id,variant_id,amount_minor,market) VALUES($1,$2,$3,$4)",[randomUUID(),variantId,amount,market]);
   return{id,variantId,key};
 }
-async function stock(variantId,onHand){const location=randomUUID();await q("INSERT INTO stock_locations(id,key,name) VALUES($1,$2,'Synthetic location')",[location,location]);await q("INSERT INTO inventory_balances(variant_id,location_id,on_hand) VALUES($1,$2,$3)",[variantId,location,onHand]);}
+async function stock(variantId,onHand){const location=randomUUID();await q("INSERT INTO stock_locations(id,key,name) VALUES($1,$2,'Synthetic location')",[location,location]);await q("INSERT INTO inventory_balances(variant_id,location_id) VALUES($1,$2)",[variantId,location]);if(onHand>0)await q("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key,source_reference) VALUES($1,$2,$3,$4,0,'opening',$5,'synthetic:fixture')",[randomUUID(),variantId,location,onHand,"opening-"+location]);}
 async function asset(productId,variantId,url,{visibility="public",status="ready",primary=true}={}){
   const id=randomUUID();await q("INSERT INTO media_assets(id,storage_namespace,storage_key,source_path,kind,visibility,status,mime_type,byte_size,checksum_sha256,width,height,alt_text) VALUES($1,'local-public',$2,$2,'image',$3,$4,'image/jpeg',1,$5,100,100,'Synthetic image')",[id,url,visibility,status,"a".repeat(64)]);
   await q("INSERT INTO product_media(id,product_id,variant_id,media_id,is_primary) VALUES($1,$2,$3,$4,$5)",[randomUUID(),productId,variantId,id,primary]);return id;

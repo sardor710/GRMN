@@ -57,6 +57,13 @@
       "when": 1794859487464,
       "tag": "0007_account-claims",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794887309437,
+      "tag": "0008_inventory-ledger",
+      "breakpoints": true
     }
   ]
 }

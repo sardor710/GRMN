@@ -38,9 +38,9 @@ function productDTO(row:Record<string,unknown>):CMSItem {
   const projected=adminDTO("products",{...extra,
     id:String(row.public_key),name:String(row.name),sku:String(row.sku??""),description:String(row.description),family:String(row.family??""),badge:row.badge??undefined,priceSuffix:row.price_suffix??undefined,
     currency:"KZT",price:amount,originalPrice:row.compare_at_minor==null?undefined:Number(row.compare_at_minor)/100,status:String(row.status),isFeatured:row.is_featured===true,
-    specs:row.specs,inTheBox:row.in_the_box,features:row.features,stock:0,stockManaged:false,version:Number(row.version),createdAt:(row.created_at as Date).toISOString(),
+    specs:row.specs,inTheBox:row.in_the_box,features:row.features,stock:Number(row.stock_available??0),stockManaged:Number(row.stock_known??0)>0,version:Number(row.version),createdAt:(row.created_at as Date).toISOString(),
     seoTitle:row.seo_title??"",seoDescription:row.seo_description??"",focusKeywords:row.focus_keywords??[],canonicalUrl:row.canonical_url??"",noIndex:row.no_index===true,ogImage:row.og_image_source??""});
-  return {...defaults,...projected,id:String(row.public_key),version:Number(row.version),currency:"KZT",stockManaged:false};
+  return {...defaults,...projected,id:String(row.public_key),version:Number(row.version),currency:"KZT",stockManaged:Number(row.stock_known??0)>0};
 }
 function contentDTO(row:Record<string,unknown>):CMSItem {
   const extra=record(row.legacy_content),kind=String(row.kind);
@@ -54,7 +54,7 @@ function contentDTO(row:Record<string,unknown>):CMSItem {
 }
 function customerDTO(row:Record<string,unknown>,principal:Principal):CMSItem {return {id:String(row.id),version:Number(row.version),name:row.name,email:row.email??"",phone:row.entered_phone,country:row.country_code??"",status:row.status,avatar:row.avatar??"",...(principal.permissions.includes("customers:write")?{notes:row.notes??""}:{}),createdAt:(row.created_at as Date).toISOString()};}
 const customerSelect="SELECT c.*,n.body AS notes FROM customer_profiles c LEFT JOIN LATERAL (SELECT body FROM customer_private_notes WHERE profile_id=c.id ORDER BY created_at DESC,id DESC LIMIT 1) n ON true";
-const productSelect = "SELECT p.*,v.sku,v.id AS variant_id,pr.id AS price_id,pr.amount_minor,pr.compare_at_minor FROM products p LEFT JOIN LATERAL (SELECT * FROM product_variants WHERE product_id=p.id AND is_default ORDER BY (status='archived'),created_at DESC,id DESC LIMIT 1) v ON true LEFT JOIN prices pr ON pr.variant_id=v.id AND pr.is_active AND pr.currency='KZT' AND pr.market='default'";
+const productSelect = "SELECT p.*,v.sku,v.id AS variant_id,pr.id AS price_id,pr.amount_minor,pr.compare_at_minor,stock.stock_known,stock.stock_available FROM products p LEFT JOIN LATERAL (SELECT * FROM product_variants WHERE product_id=p.id AND is_default ORDER BY (status='archived'),created_at DESC,id DESC LIMIT 1) v ON true LEFT JOIN prices pr ON pr.variant_id=v.id AND pr.is_active AND pr.currency='KZT' AND pr.market='default' LEFT JOIN LATERAL (SELECT count(*) AS stock_known,COALESCE(sum(ib.on_hand-ib.reserved),0) AS stock_available FROM inventory_balances ib JOIN stock_locations sl ON sl.id=ib.location_id AND sl.archived_at IS NULL WHERE ib.variant_id=v.id) stock ON true";
 const contentSelect = (published=false) => `SELECT p.id,p.key,p.kind,p.slug,p.status,p.version,p.created_at,pv.*,p.id AS id,p.version AS version,p.created_at AS created_at,pv.created_at AS revision_created_at,b.author_label,b.category,b.reading_time,b.cover_source,bn.position,bn.sort_order,bn.cta_label,bn.cta_url,bn.image_source,pub.published_at FROM pages p ${published?"JOIN page_publications pub ON pub.page_id=p.id JOIN page_versions pv ON pv.id=pub.version_id":"JOIN LATERAL (SELECT * FROM page_versions WHERE page_id=p.id ORDER BY version DESC LIMIT 1) pv ON true LEFT JOIN page_publications pub ON pub.page_id=p.id"} LEFT JOIN blog_posts b ON b.version_id=pv.id LEFT JOIN banners bn ON bn.version_id=pv.id`;
 
 export function createCMSService({pool,authorize}:Options) {

@@ -904,14 +904,14 @@ Use the existing Vibe/executing-plans/TDD workflow and a scoped read-only review
 
 ### Task 11 — Inventory ledger and race-safe reservations
 
-**Current status:** NOT STARTED.
+**Current status:** IN PROGRESS. 11A (ledger-driven balances, audited staff adjustments, reconciliation, opening-balance import) complete 2026-11-17; see `docs/backend/handoffs/task-11a.md` and `docs/backend/inventory-ledger.md`. 11B (reserve/consume/release/expiry, 100-way race, retry bounds) not started.
 
 **Depends on:** 10. **Size:** 11A ledger/adjustments; 11B reserve/consume/release.
 
 **Files:** `src/server/modules/inventory/*`, stock admin adapter, integration concurrency tests.
 
 - [ ] Implement stock adjustment ledger with reason/actor/dedupe, atomic reservation, consumption, release/expiry and stable multi-SKU lock order using one transaction context.
-- [ ] Add reconciliation between stock movement history, reservations and balances, including opening balance import.
+- [x] Add reconciliation between stock movement history, reservations and balances, including opening balance import. (11A)
 - [ ] Real-DB tests run 100 competing last-unit reservations; exactly one succeeds, no negative availability; repeat consume/release has no second effect; multi-line failure rolls back all lines.
 - [ ] Verify deliberate deadlock/serialization retry bounds and audit staff adjustments; update inventory contract/handoff.
 
@@ -1155,8 +1155,8 @@ Later possibilities: additional settlement currencies/warehouses (current USD co
 - [x] Tasks 01–07: inventory, foundations, guarded identity and verified private local staging; source quarantine and real activation gates remain explicit.
 - [x] Task 08: persisted admin/CMS services and UI, final 266/266 tests, check and expanded browser gate.
 - [x] Task 09: public catalog/content reads complete; 300/300 tests, check and full browser smoke passed (`handoffs/task-09.md`).
-- [ ] Task 10: 10A account APIs/ownership complete (313/313, `handoffs/task-10a.md`). 10B claims, phone change/recovery and staff credential change complete: 326/326 tests, check and browser smoke passed (`handoffs/task-10b.md`). 10C (AccountDashboard UI wiring) is next.
-- [ ] Tasks 11–17: validated stock/checkout/payment/shipping/returns workflows.
+- [x] Task 10: 10A account APIs/ownership (`handoffs/task-10a.md`), 10B claims/phone change/staff credential change (`handoffs/task-10b.md`) and 10C AccountDashboard UI wiring (349/349, `handoffs/task-10c.md`) complete.
+- [ ] Tasks 11–17: validated stock/checkout/payment/shipping/returns workflows. 11A inventory ledger/adjustments/reconciliation/opening import complete (`handoffs/task-11a.md`); 11B reservations is next.
 - [ ] Tasks 18–20: CMS/media/operations and explicit optional-feature decisions.
 - [ ] Tasks 21–23: measured performance, full qualification, cutover and recovery rehearsal.
 - [ ] Task 24: authorized production release, observation and later legacy cleanup.
@@ -1167,4 +1167,4 @@ Repository findings are sourced from the exact relative paths in Section 2; rech
 
 Primary external documentation was checked on 2026-11-10 and linked next to relevant decisions. It supports platform capabilities, not this store's unmeasured throughput, pricing, legal obligations, or provider eligibility. Versions, plans, regional availability, auth adapters, and provider retry semantics must be revalidated at the owning task.
 
-**Suggested next execution request:** “Read `docs/backend/handoffs/task-07.md` and execute only Task 08A (repository/DTO adapter); save its handoff and stop.” Preserve current source bytes, migrations0000–0005 and unresolved source/ownership/provider blockers. Keep real activation and persistent/production import disabled; no seed fallback, automatic quarantine approval or live dual writes.
+**Suggested next execution request:** “Read `docs/backend/handoffs/task-11a.md` and execute only Task 11B (reserve/consume/release/expiry); save its handoff and stop.” Preserve current source bytes, migrations0000–0005 and unresolved source/ownership/provider blockers. Keep real activation and persistent/production import disabled; no seed fallback, automatic quarantine approval or live dual writes.
