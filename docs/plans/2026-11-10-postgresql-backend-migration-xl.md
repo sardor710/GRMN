@@ -934,11 +934,11 @@ What changed:
 
 ### Task 12 — Durable outbox, worker and reservation expiry
 
-**Current status:** NOT STARTED. **Depends on:** 11. **Size:** 12A outbox and worker; 12B expiry dispatch and replay.
+**Current status:** 12A COMPLETE (2026-11-17, `handoffs/task-12a.md`); 12B next. **Depends on:** 11. **Size:** 12A outbox and worker; 12B expiry dispatch and replay.
 
 **Files:** `src/server/operations/*` (outbox/jobs), `scripts/workers/*`, worker config, failure tests. Uses the 0004 `outbox_events`/job tables.
 
-- [ ] **12A:** transactional outbox append; leased claiming with `FOR UPDATE SKIP LOCKED`; retry with backoff, dedupe, dead-letter, bounded concurrency and graceful shutdown; a standalone worker entry point. Tests:
+- [x] **12A:** transactional outbox append; leased claiming with `FOR UPDATE SKIP LOCKED`; retry with backoff, dedupe, dead-letter, bounded concurrency and graceful shutdown; a standalone worker entry point. Tests:
   - kill a worker mid-lease, and the job is reclaimed after the lease;
   - two workers never run the same job at once;
   - a repeated job has one effect;
@@ -1190,7 +1190,7 @@ Later possibilities: additional settlement currencies/warehouses (current USD co
 - [x] Task 09: public catalog/content reads complete; 300/300 tests, check and full browser smoke passed (`handoffs/task-09.md`).
 - [x] Task 10: 10A account APIs/ownership (`handoffs/task-10a.md`), 10B claims/phone change/staff credential change (`handoffs/task-10b.md`) and 10C AccountDashboard UI wiring (349/349, `handoffs/task-10c.md`) complete.
 - [x] Task 11: inventory ledger, adjustments, reconciliation, opening import (`handoffs/task-11a.md`) and race-safe reservations (`handoffs/task-11b.md`).
-- [ ] Tasks 12–16 (consolidated 2026-11-17; 15 merged into 14, 17 into 16): worker and expiry, cart/quotes/wishlist, checkout with demo payment, manual fulfillment/returns/refunds. Task 12A is next.
+- [ ] Tasks 12–16 (consolidated 2026-11-17; 15 merged into 14, 17 into 16): worker and expiry, cart/quotes/wishlist, checkout with demo payment, manual fulfillment/returns/refunds. Task 12A is complete (`handoffs/task-12a.md`); Task 12B is next.
 - [ ] Task 18 (19 merged in; 20 merged into 13): CMS media/publishing, reports, exports, settings and inventory admin UI.
 - [ ] Task 21 (22 merged in): measured performance and full qualification — the last chained task.
 - [ ] Task 23: cutover and recovery rehearsal (owner-run, not chained).
@@ -1202,4 +1202,4 @@ Repository findings are sourced from the exact relative paths in Section 2; rech
 
 Primary external documentation was checked on 2026-11-10 and linked next to relevant decisions. It supports platform capabilities, not this store's unmeasured throughput, pricing, legal obligations, or provider eligibility. Versions, plans, regional availability, auth adapters, and provider retry semantics must be revalidated at the owning task.
 
-**Suggested next execution request:** “Read `docs/backend/handoffs/task-11b.md` and execute only Task 12A (outbox leasing and worker); save its handoff and stop.” Preserve current source bytes, migrations0000–0005 and unresolved source/ownership/provider blockers. Keep real activation and persistent/production import disabled; no seed fallback, automatic quarantine approval or live dual writes.
+**Suggested next execution request:** “Read `docs/backend/handoffs/task-12a.md` and execute only Task 12B (reservation-expiry dispatch, audited dead-letter replay, job-lag metric); save its handoff and stop.” Preserve current source bytes, migrations0000–0005 and unresolved source/ownership/provider blockers. Keep real activation and persistent/production import disabled; no seed fallback, automatic quarantine approval or live dual writes.

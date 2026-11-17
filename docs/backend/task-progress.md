@@ -4,9 +4,9 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 ## Current position
 
-- **Completed:** Tasks **01–11** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring; 11A inventory ledger, audited adjustments, reconciliation, opening import; 11B race-safe reservations), within the scope and activation limits below.
-- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, 10C in `3eecd53`, 11A in `6aed380`, and 11B in the commit after it (see `git log`).
-- **Next:** Task **12A**: durable outbox leasing and worker. See [the 11B handoff](handoffs/task-11b.md#exact-next-step).
+- **Completed:** Tasks **01–11** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring; 11A inventory ledger, audited adjustments, reconciliation, opening import; 11B race-safe reservations) and **12A** (durable outbox and leased worker), within the scope and activation limits below.
+- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, 10C in `3eecd53`, 11A in `6aed380`, 11B in `eb1cb5b`, and 12A in the commit after `944f78d` (see `git log`).
+- **Next:** Task **12B**: reservation-expiry dispatch, audited dead-letter replay and a job-lag metric. See [the 12A handoff](handoffs/task-12a.md#exact-next-step).
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
 - **Active implementation:** `C:/Users/Freakman/.codex/worktrees/backend-task-02/GRMN`, branch `codex/backend-task-02`.
 - **Original checkout:** `D:/projects/garmin/GRMN`. Its progress documentation is synchronized, but the backend implementation has **not** been merged or copied there. An AI inspecting only that checkout's application files will see older code. Continue code work in the active worktree above.
@@ -137,6 +137,22 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 [Detailed receipt](handoffs/task-11b.md).
 
+### Task 12A
+
+**Complete — durable outbox and leased job worker (2026-11-17).** No migration; it runs on the 0004 `outbox_events`/`job_runs` tables and their guard trigger.
+- **`src/server/operations/outbox.ts`**:
+  - `appendOutboxEvent` and `enqueueJob` write inside the caller's transaction and deduplicate (a different fact under the same key is 409).
+  - `claimJobs` leases a bounded batch with `FOR UPDATE SKIP LOCKED`, storing only a token hash. It reclaims expired leases and dead-letters expired leases with no attempts left (`LEASE_EXPIRED`).
+  - `completeJob` renews the lease under a row lock, applies the handler's database effect, and marks the job done in one transaction. A worker that lost its lease gets 409 `LEASE_LOST` and its effect rolls back.
+  - `failJob` retries with jittered exponential backoff or dead-letters. Only safe error codes are stored.
+  - `createWorker` adds bounded concurrency, one-at-a-time lease renewal and graceful shutdown (`WORKER_SHUTDOWN` retry).
+- **Standalone process:** `src/server/operations/worker-process.ts`, `scripts/workers/outbox-worker.mjs` and `npm run worker`. The handler registry is empty until 12B, so the entry exits 1 by design.
+- **Tests on a real database (11):** a SIGKILLed worker process's job is reclaimed after the lease; two workers never run a job twice; a repeated job has one effect; a failing call retries, then dead-letters; plus shutdown, renewal, exhausted leases, config and the two review regressions.
+- **Review:** no Critical findings. Four Important findings were fixed test-first: lease renewal during completion, a late trigger rejection surfacing as 23514, and two timing-sensitive tests.
+- **Gates:** see the [handoff](handoffs/task-12a.md#commands-and-results).
+
+[Detailed receipt](handoffs/task-12a.md).
+
 ## Remaining task list
 
 Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained slices; see "Consolidation of Tasks 12–22" in the plan. Steps that need a real provider are in its deferred activation backlog.
@@ -145,7 +161,7 @@ Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained
 |---|---|---|
 | 10 | Complete (10A, 10B, 10C) | — |
 | 11 | Complete (11A, 11B) | — |
-| 12 | Not started (next: 12A) | 12A outbox and worker; 12B reservation-expiry dispatch, replay and lag metric |
+| 12 | 12A complete (next: 12B) | 12B reservation-expiry dispatch, audited replay and lag metric |
 | 13 | Not started | 13A server cart, login merge and wishlist; 13B quotes, markdowns, coupon quotas and USD display |
 | 14 | Not started | 14A idempotent checkout and pending order; 14B payment interface, demo adapter, verified inbox and capture (absorbs 15) |
 | 15 | Merged into 14 | Real provider work is in the deferred activation backlog |
