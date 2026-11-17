@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { getHomepageConfig, saveHomepageConfig } from "@/lib/cms/store";
+import { getCurrentAdmin } from "@/lib/cms/auth";
+import { sanitizeHomepageInput } from "@/lib/cms/content-input";
 import {
   IMAGE_DIMENSION_SPECS,
-  validateHomepageConfig,
   createDefaultHomepageConfig
 } from "@/lib/cms/homepage-schema";
+
+const unauthorized = () => NextResponse.json({ error: "Not signed in" }, { status: 401 });
 
 export async function GET() {
   try {
@@ -23,19 +26,22 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
+  if (!(await getCurrentAdmin())) return unauthorized();
   try {
     const body = await request.json();
     const config = body.config || body;
 
-    const validation = validateHomepageConfig(config);
-    if (!validation.isValid) {
+    // Structure check, field limits, and the root `translations` overlay merged per locale with the
+    // stored config (a body without `translations` keeps the stored overlay).
+    const checked = sanitizeHomepageInput(config, getHomepageConfig());
+    if (!checked.ok) {
       return NextResponse.json(
-        { error: "Invalid homepage configuration", details: validation.errors },
+        { error: checked.error, details: checked.details ?? [checked.error] },
         { status: 400 }
       );
     }
 
-    const saved = saveHomepageConfig(config);
+    const saved = saveHomepageConfig(checked.config);
     return NextResponse.json({
       success: true,
       config: saved
@@ -50,10 +56,13 @@ export async function PUT(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (!(await getCurrentAdmin())) return unauthorized();
   try {
     const body = await request.json().catch(() => ({}));
     if (body.action === "reset") {
-      const defaultConfig = createDefaultHomepageConfig();
+      // Reset restores the English blocks; ru/kk overlays are keyed by block id and kept.
+      const { translations } = getHomepageConfig();
+      const defaultConfig = { ...createDefaultHomepageConfig(), ...(translations ? { translations } : {}) };
       const saved = saveHomepageConfig(defaultConfig);
       return NextResponse.json({
         success: true,

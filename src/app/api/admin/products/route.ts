@@ -35,8 +35,10 @@ export async function POST(request: Request) {
         { status: 400 }
       );
     }
-    // Always-string sanitized overview, allowlisted image/swatch URLs, hex swatch colors.
-    const checked = sanitizeProductInput(raw as Record<string, unknown>);
+    // Always-string sanitized overview, allowlisted image/swatch URLs, hex swatch colors, field limits,
+    // and ru/kk translations merged per locale with the stored product (the other locale is preserved).
+    const existing = typeof raw.id === "string" ? getProducts().find((p) => p.id === raw.id) : undefined;
+    const checked = sanitizeProductInput(raw as Record<string, unknown>, existing);
     if (!checked.ok) return NextResponse.json({ error: checked.error }, { status: 400 });
     const body = checked.product as typeof raw;
     const variants = normalizeVariants(body.variants);

@@ -313,6 +313,7 @@ export function saveBanner(banner: Partial<Banner> & { title: string }): Banner 
       active: banner.active ?? true,
       order: banner.order ?? data.banners.length + 1,
       createdAt: new Date().toISOString(),
+      ...(banner.translations ? { translations: banner.translations } : {}),
     };
     data.banners.push(saved);
   }
@@ -360,6 +361,7 @@ export function saveBlog(blog: Partial<CMSBlog> & { title: string; content: stri
       status: blog.status || "published",
       publishedAt: blog.publishedAt || new Date().toISOString().split("T")[0],
       createdAt: new Date().toISOString(),
+      ...(blog.translations ? { translations: blog.translations } : {}),
     };
     data.blogs.unshift(saved);
   }
