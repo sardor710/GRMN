@@ -8,6 +8,7 @@ import { reserveStock, withInventoryTransaction } from "../inventory/reservation
 import { reserveCouponQuota } from "../pricing/coupons.ts";
 import { revalidateQuote, type DeliverySnapshot } from "../pricing/quote.ts";
 import { appendOutboxEvent } from "../operations/outbox.ts";
+import type { PaymentProvider, PaymentProviders } from "../payments/provider.ts";
 
 // Task 14A. Idempotent checkout inside the exact plan Section 6 boundary, in ONE short
 // transaction with no network call: claim the idempotency key (checkout_attempts), lock the cart
@@ -66,10 +67,10 @@ function actorScope(actor: CheckoutActor): string | null {
 const statusToken = (secret: string, orderId: string) => createHmac("sha256", secret).update("grmn-order-status:v1:" + orderId).digest("base64url");
 
 async function result(client: Pick<PoolClient, "query">, secret: string, scope: string, orderId: string, replayed: boolean): Promise<CheckoutResultDTO> {
-  const order = (await client.query<{ order_number: string; order_status: OrderStatus; total_minor: string }>(
-    "SELECT order_number,order_status,total_minor::text AS total_minor FROM orders WHERE id=$1", [orderId])).rows[0] ?? notFound();
+  const order = (await client.query<{ order_number: string; order_status: OrderStatus; total_minor: string; payment_mode: string }>(
+    "SELECT order_number,order_status,total_minor::text AS total_minor,payment_mode FROM orders WHERE id=$1", [orderId])).rows[0] ?? notFound();
   return {
-    orderId, orderNumber: order.order_number, status: order.order_status, paymentMode: "demo", paymentState: "pending", paymentRedirectUrl: null,
+    orderId, orderNumber: order.order_number, status: order.order_status, paymentMode: order.payment_mode === "demo" ? "demo" : "live", paymentState: "pending", paymentRedirectUrl: null,
     total: kzt(order.total_minor), statusToken: scope.startsWith("guest:") ? statusToken(secret, orderId) : null, replayed,
   };
 }
@@ -82,11 +83,18 @@ async function replay(client: PoolClient, secret: string, scope: string, key: st
   return result(client, secret, scope, record.result.orderId, true);
 }
 
-/** Places a pending demo order for the actor's quoted cart revision. A repeated key returns the original order. */
-export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActor, idempotencyKey: string, input: unknown): Promise<CheckoutResultDTO> {
+/**
+ * Places a pending order for the actor's quoted cart revision. A repeated key returns the original
+ * order. Payment is the demo adapter unless the caller registers a real provider for the requested
+ * method (Task 14B; the application registers none yet, D03), so kaspi/secondary stay 409.
+ */
+export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActor, idempotencyKey: string, input: unknown, options: { payments?: PaymentProviders } = {}): Promise<CheckoutResultDTO> {
   if (typeof idempotencyKey !== "string" || !IDEMPOTENCY_KEY.test(idempotencyKey)) invalid();
   const command = parse(checkoutInput, input);
-  if (command.paymentMethod !== "demo") fail("PAYMENT_UNAVAILABLE", 409, "This payment method is not available yet");
+  const provider: PaymentProvider | null = command.paymentMethod === "demo" ? null : options.payments?.get(command.paymentMethod) ?? null;
+  if (command.paymentMethod !== "demo" && (!provider || provider.simulated || provider.name !== command.paymentMethod)) fail("PAYMENT_UNAVAILABLE", 409, "This payment method is not available yet");
+  const paymentMode = provider ? "live" : "demo";
+  const payment = provider ? { name: provider.name, environment: provider.environment, merchantAccount: provider.merchantAccount } : { name: "demo", environment: "demo", merchantAccount: "demo" };
   const scope = actorScope(actor) ?? notFound();
   const requestHash = sha256(canonical({ quoteId: command.quoteId.toLowerCase(), cartVersion: command.cartVersion, paymentMethod: command.paymentMethod, contactEmail: command.contactEmail ?? null }));
 
@@ -136,9 +144,9 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
       .map(line => ({ variantId: line.variantId, baseUnitMinor: line.baseUnitMinor, unitMinor: line.unitMinor, rules: line.markdownRules }));
     const orderNumber = (await client.query<{ order_number: string }>(
       `INSERT INTO orders(id,checkout_attempt_id,user_id,contact_name,contact_phone,contact_email,currency,subtotal_minor,discount_minor,shipping_minor,tax_minor,shipping_tax_minor,total_minor,usd_snapshot,policy_versions,payment_mode,placed_at)
-       VALUES($1,$2,$3,$4,$5,$6,'KZT',$7,$8,$9,$10,0,$11,$12,$13,'demo',clock_timestamp()) RETURNING order_number`,
+       VALUES($1,$2,$3,$4,$5,$6,'KZT',$7,$8,$9,$10,0,$11,$12,$13,$14,clock_timestamp()) RETURNING order_number`,
       [orderId, attemptId, actor.userId, delivery.recipientName, delivery.phone, command.contactEmail ?? null, quote.subtotal_minor, quote.discount_minor, quote.shipping_minor, quote.tax_minor, quote.total_minor,
-        quote.usd_snapshot ? JSON.stringify(quote.usd_snapshot) : null, JSON.stringify({ ...policies, coupon, quoteId: command.quoteId, markdownLines })])).rows[0].order_number;
+        quote.usd_snapshot ? JSON.stringify(quote.usd_snapshot) : null, JSON.stringify({ ...policies, coupon, quoteId: command.quoteId, markdownLines }), paymentMode])).rows[0].order_number;
 
     const variants = new Map((await client.query<{ id: string; sku: string | null; variant_name: string; public_key: string; name: string }>(
       "SELECT v.id,v.sku,v.name AS variant_name,p.public_key,p.name FROM product_variants v JOIN products p ON p.id=v.product_id WHERE v.id=ANY($1::uuid[])",
@@ -171,18 +179,20 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
     // The coupon hold belongs to this order too (review I2); its promotion is already locked above.
     if (couponHold) await client.query("UPDATE promotion_redemptions SET order_id=$1 WHERE id=$2 AND order_id IS NULL", [orderId, couponHold.redemptionId]);
 
-    // 5. The demo payment attempt (no provider call here; 14B drives it from the outbox job).
+    // 5. The payment attempt. No provider call here: the payments.session.start job opens the
+    //    session after commit with the attempt's stable key (Task 14B).
     const paymentAttemptId = randomUUID();
     await client.query(
       `INSERT INTO payment_attempts(id,order_id,provider,environment,merchant_account,merchant_reference,idempotency_key,request_hash,currency,amount_minor,status)
-       VALUES($1,$2,'demo','demo','demo',$3,$4,$5,'KZT',$6,'created')`,
-      [paymentAttemptId, orderId, orderNumber, `payment:${attemptId}`, sha256(canonical({ orderId, amountMinor: quote.total_minor, currency: "KZT" })), quote.total_minor]);
+       VALUES($1,$2,$7,$8,$9,$3,$4,$5,'KZT',$6,'created')`,
+      [paymentAttemptId, orderId, orderNumber, `payment:${attemptId}`, sha256(canonical({ orderId, amountMinor: quote.total_minor, currency: "KZT" })), quote.total_minor,
+        payment.name, payment.environment, payment.merchantAccount]);
     await client.query(
       "INSERT INTO order_events(id,order_id,type,source,actor_user_id,dedupe_key,visibility,occurred_at,payload) VALUES($1,$2,'order.placed','checkout',$3,$4,'customer',clock_timestamp(),$5)",
-      [randomUUID(), orderId, actor.userId, `order-placed:${orderId}`, JSON.stringify({ orderNumber, totalMinor: quote.total_minor, paymentMode: "demo" })]);
+      [randomUUID(), orderId, actor.userId, `order-placed:${orderId}`, JSON.stringify({ orderNumber, totalMinor: quote.total_minor, paymentMode })]);
     await appendOutboxEvent(client, {
       topic: "order.placed", dedupeKey: `order-placed:${orderId}`, aggregate: { type: "order", id: orderId }, consumers: [PAYMENT_START_KIND],
-      payload: { orderId, orderNumber, checkoutAttemptId: attemptId, paymentAttemptId, totalMinor: quote.total_minor, currency: "KZT", paymentMode: "demo" },
+      payload: { orderId, orderNumber, checkoutAttemptId: attemptId, paymentAttemptId, totalMinor: quote.total_minor, currency: "KZT", paymentMode },
     });
     if (!actor.userId) await client.query(
       `INSERT INTO order_access_tokens(id,order_id,token_hash,scope,expires_at) VALUES($1,$2,$3,'order_status',clock_timestamp()+make_interval(days=>${STATUS_TOKEN_DAYS}))`,
@@ -200,13 +210,13 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
 /** Order status for polling: the owning session, or a guest's status token. Anything else is 404. */
 export async function readCheckoutStatus(pool: Pool, actor: CheckoutActor, input: unknown): Promise<CheckoutStatusDTO> {
   const command = parse(statusInput, input);
-  const row = (await pool.query<{ id: string; order_number: string; order_status: OrderStatus; payment_status: PaymentStatus; fulfillment_status: FulfillmentStatus; total_minor: string; placed_at: Date | null }>(
-    `SELECT o.id,o.order_number,o.order_status,o.payment_status,o.fulfillment_status,o.total_minor::text AS total_minor,o.placed_at FROM orders o
-     WHERE o.id=$1 AND o.payment_mode='demo' AND o.checkout_attempt_id IS NOT NULL AND (($2::uuid IS NOT NULL AND o.user_id=$2::uuid) OR EXISTS(
+  const row = (await pool.query<{ id: string; order_number: string; order_status: OrderStatus; payment_status: PaymentStatus; fulfillment_status: FulfillmentStatus; total_minor: string; placed_at: Date | null; payment_mode: string }>(
+    `SELECT o.id,o.order_number,o.order_status,o.payment_status,o.fulfillment_status,o.total_minor::text AS total_minor,o.placed_at,o.payment_mode FROM orders o
+     WHERE o.id=$1 AND o.payment_mode IN ('demo','live') AND o.checkout_attempt_id IS NOT NULL AND (($2::uuid IS NOT NULL AND o.user_id=$2::uuid) OR EXISTS(
        SELECT 1 FROM order_access_tokens t WHERE t.order_id=o.id AND t.token_hash=$3 AND t.scope='order_status' AND t.revoked_at IS NULL AND t.expires_at>clock_timestamp()))`,
     [command.orderId, actor.userId, command.statusToken ? sha256(command.statusToken) : null])).rows[0] ?? notFound();
   return {
     orderId: row.id, orderNumber: row.order_number, status: row.order_status, paymentStatus: row.payment_status, fulfillmentStatus: row.fulfillment_status,
-    paymentMode: "demo", total: kzt(row.total_minor), placedAt: row.placed_at ? row.placed_at.toISOString() : null,
+    paymentMode: row.payment_mode === "demo" ? "demo" : "live", total: kzt(row.total_minor), placedAt: row.placed_at ? row.placed_at.toISOString() : null,
   };
 }

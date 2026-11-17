@@ -987,7 +987,7 @@ What changed:
 
 ### Task 14 — Idempotent checkout, demo payment and capture
 
-**Current status:** 14A COMPLETE (2026-11-17, see docs/backend/handoffs/task-14a.md); 14B NOT STARTED. **Depends on:** 13. **Size:** 14A checkout transaction and UI; 14B payment interface, demo adapter, inbox and capture. (Absorbs Task 15's owner-scoped core.)
+**Current status:** COMPLETE. 14A (2026-11-17, see docs/backend/handoffs/task-14a.md); 14B (2026-11-17, see docs/backend/handoffs/task-14b.md). **Depends on:** 13. **Size:** 14A checkout transaction and UI; 14B payment interface, demo adapter, inbox and capture. (Absorbs Task 15's owner-scoped core.)
 
 **Files:** checkout/order/payment services, checkout and webhook routes, `CartView` checkout integration, transaction/idempotency/failure tests.
 
@@ -1003,14 +1003,14 @@ What changed:
   - two keys on the same cart revision have one winner;
   - a failure leaves no partial stock, quota or order;
   - product and address edits never rewrite snapshots.
-- [ ] **14B:**
+- [x] **14B:**
   - A typed payment-provider interface and an explicitly simulated **demo adapter**. Demo results carry environment/provenance and never create real-capture facts.
   - A durable inbox for verified events.
   - Idempotent capture → `consumeReservation` and quota consume.
   - One active payable attempt per order.
   - A reconciliation job on the Task 12 worker.
   - The browser return URL can never mark an order paid.
-- [ ] **14B tests:**
+- [x] **14B tests:**
   - forged, altered or mismatched events;
   - duplicates and reversed order;
   - a lost provider response;

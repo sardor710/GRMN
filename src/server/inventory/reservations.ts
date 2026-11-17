@@ -187,6 +187,16 @@ export async function releaseReservation(client: PoolClient, input: unknown): Pr
   return endReservation(client, command.reservationId, "released", null);
 }
 
+const expireOneInput = z.strictObject({ reservationId: z.string().regex(UUID), asOf: z.date().optional() });
+/**
+ * Expires one hold inside the caller's transaction (Task 14B order-level expiry, which holds the
+ * order lock first). Only a due, active hold changes; anything else is a no-op.
+ */
+export async function expireReservation(client: PoolClient, input: unknown): Promise<ReleaseResultDTO> {
+  const command = parse(expireOneInput, input);
+  return endReservation(client, command.reservationId, "expired", command.asOf ?? null);
+}
+
 /**
  * Expires active holds whose expiry has passed (by the database clock, or `asOf`). Each hold ends in
  * its own short transaction, so concurrent sweeps and checkout traffic never hold balance locks

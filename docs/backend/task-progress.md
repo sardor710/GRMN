@@ -4,9 +4,9 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 ## Current position
 
-- **Completed:** Tasks **01–11** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring; 11A inventory ledger, audited adjustments, reconciliation, opening import; 11B race-safe reservations) **12** (12A durable outbox and leased worker; 12B scheduled reservation expiry, audited dead-letter replay and job-lag metric) and **13** (13A server cart, login merge and wishlist; 13B quotes, markdowns, coupon quotas and USD display) and **14A** (idempotent checkout and pending demo order), within the scope and activation limits below.
-- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, 10C in `3eecd53`, 11A in `6aed380`, 11B in `eb1cb5b`, 12A in `3432aeb`, 12B in `4fe08d2`, 13A in `40a16cb`, 13B in `d98cc92`, and 14A in the commit after it (see `git log`).
-- **Next:** Task **14B**: payment interface, demo adapter, verified inbox and capture. See [the 14A handoff](handoffs/task-14a.md#exact-next-step).
+- **Completed:** Tasks **01–11** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring; 11A inventory ledger, audited adjustments, reconciliation, opening import; 11B race-safe reservations) **12** (12A durable outbox and leased worker; 12B scheduled reservation expiry, audited dead-letter replay and job-lag metric) and **13** (13A server cart, login merge and wishlist; 13B quotes, markdowns, coupon quotas and USD display) and **14** (14A idempotent checkout and pending demo order; 14B payment interface, demo adapter, verified inbox, capture and unpaid-order expiry), within the scope and activation limits below.
+- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, 10C in `3eecd53`, 11A in `6aed380`, 11B in `eb1cb5b`, 12A in `3432aeb`, 12B in `4fe08d2`, 13A in `40a16cb`, 13B in `d98cc92`, 14A in `92b2737`, and 14B in the commit after it (see `git log`).
+- **Next:** Task **16A**: manual fulfillment and order timeline (15 is merged into 14). See [the 14B handoff](handoffs/task-14b.md#exact-next-step).
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
 - **Active implementation:** `C:/Users/Freakman/.codex/worktrees/backend-task-02/GRMN`, branch `codex/backend-task-02`.
 - **Original checkout:** `D:/projects/garmin/GRMN`. Its progress documentation is synchronized, but the backend implementation has **not** been merged or copied there. An AI inspecting only that checkout's application files will see older code. Continue code work in the active worktree above.
@@ -216,6 +216,20 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 [Detailed receipt](handoffs/task-14a.md).
 
+### Task 14B
+
+**Complete — payment interface, simulated demo adapter, verified inbox and capture (2026-11-17).** No migration.
+- **Providers** (`src/server/payments/`): a typed provider interface and an explicitly simulated demo adapter (provenance `simulated: true`, no webhooks, reconciliation never reports a payment). The application registers only the demo adapter (D03), so no order can be paid in this build (O07 open).
+- **Inbox:** the raw webhook is stored before verification. A forged, altered or out-of-context body stays as a rejected receipt. A verified event is queued once per provider event id and applied in the same transaction that marks it processed.
+- **Capture:** idempotent on the provider transaction id. It consumes the stock hold and the coupon quota once, re-reserves after an expiry, and otherwise records a fulfillment exception with a refund request. A late capture after an explicit cancellation never reactivates the order. Other open attempts are superseded.
+- **Attempts:** one payable attempt per order; replacement only after a definitive failure. Session start uses the attempt's stable key, so a lost response is retried safely.
+- **Worker:** `payments.session.start`, `payments.inbox.process`, `payments.reconcile` (60 s) and `orders.unpaid.expire`. Expired unpaid orders are cancelled with a customer-visible `order.expired` event.
+- **Return URL** `/api/payments/return` writes nothing.
+- **Review:** no Critical findings. Six Important findings were fixed test-first (capture fact rollback, mismatched captures, authorization regression, superseding attempts, the expiry sweep, the unbounded webhook body). Webhook rate limiting is deferred to Task 21.
+- **Gates:** see the [handoff](handoffs/task-14b.md#commands-and-results).
+
+[Detailed receipt](handoffs/task-14b.md).
+
 ## Remaining task list
 
 Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained slices; see "Consolidation of Tasks 12–22" in the plan. Steps that need a real provider are in its deferred activation backlog.
@@ -226,7 +240,7 @@ Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained
 | 11 | Complete (11A, 11B) | — |
 | 12 | Complete (12A, 12B) | — |
 | 13 | Complete (13A, 13B) | — |
-| 14 | In progress (14A complete) | 14B payment interface, demo adapter, verified inbox and capture (absorbs 15); order-level hold expiry policy |
+| 14 | Complete (14A, 14B) | — |
 | 15 | Merged into 14 | Real provider work is in the deferred activation backlog |
 | 16 | Not started | 16A manual fulfillment and order timeline; 16B cancellation, returns and refunds with stock compensation (absorbs 17) |
 | 17 | Merged into 16 | — |
