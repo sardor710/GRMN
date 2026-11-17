@@ -4,27 +4,35 @@ import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { blogPosts, blogCategories } from "@/lib/blog";
+import { blogCategories, type BlogPost } from "@/lib/blog";
 import { categoryIcons } from "@/components/blog-icons";
 import { SearchIcon } from "@/components/icons";
 
-export function BlogExplorer() {
+/** A static post plus its display text for the page locale (localized on the server, R17). */
+export interface BlogExplorerPost extends BlogPost {
+  displayTitle: string;
+  displayExcerpt: string;
+  displayCategories: string[];
+  dateLabel: string;
+}
+
+export function BlogExplorer({ posts }: { posts: BlogExplorerPost[] }) {
   const t = useTranslations("BlogExplorer");
   const [active, setActive] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return blogPosts.filter((p) => {
+    return posts.filter((p) => {
       if (active && p.category !== active && !p.categories.some((c) => c.toLowerCase().includes(active))) {
         // fall back to label match
         const label = blogCategories.find((c) => c.key === active)?.label.toLowerCase() ?? "";
         if (!p.categories.some((c) => c.toLowerCase() === label)) return false;
       }
-      if (q && !p.title.toLowerCase().includes(q) && !p.excerpt.toLowerCase().includes(q)) return false;
+      if (q && !p.displayTitle.toLowerCase().includes(q) && !p.displayExcerpt.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [active, query]);
+  }, [posts, active, query]);
 
   return (
     <>
@@ -86,23 +94,23 @@ export function BlogExplorer() {
                 <div className="relative aspect-[16/10] w-full overflow-hidden">
                   <Image
                     src={post.image}
-                    alt={post.title}
+                    alt={post.displayTitle}
                     fill
                     sizes="(max-width: 768px) 100vw, 420px"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />
                 </div>
                 <div className="mt-4 flex gap-3">
-                  {post.categories.map((c) => (
+                  {post.displayCategories.map((c) => (
                     <span key={c} className="text-[12px] font-medium uppercase tracking-[0.06em] text-neutral-500">
                       {c}
                     </span>
                   ))}
                 </div>
                 <h2 className="g-heading mt-2 text-[22px] leading-tight text-black group-hover:text-[#007cc3]">
-                  {post.title}
+                  {post.displayTitle}
                 </h2>
-                <p className="mt-2 text-[13px] text-neutral-500">{post.date}</p>
+                <p className="mt-2 text-[13px] text-neutral-500">{post.dateLabel}</p>
               </Link>
             ))}
           </div>

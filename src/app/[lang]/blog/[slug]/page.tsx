@@ -14,10 +14,11 @@ import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 import { localizedSeo, localizedUrl } from "@/i18n/seo";
 import { resolveSeoText, translatedLocales } from "@/i18n/translate-record";
 import { formatDate } from "@/i18n/format";
+import { localizeBlogCard, resolveArticleContent } from "@/i18n/blog-content";
 
-export function generateStaticParams() {
-  return blogPosts.map((p) => ({ slug: p.slug }));
-}
+// Rendered per request so an admin edit (content, translations, noindex) shows up together with
+// the force-dynamic sitemap, without a redeploy.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/blog/[slug]">): Promise<Metadata> {
   const locale = await initPageLocale(params);
@@ -107,14 +108,23 @@ export default async function ArticlePage({ params }: PageProps<"/[lang]/blog/[s
     { name: activeBlog.title, url: localizedUrl(`/blog/${activeBlog.slug}`, locale) },
   ];
 
-  const body = post ? articleBody(post) : [activeBlog.content];
-  const categories = post ? post.categories : [activeBlog.category];
+  // R15: ru/kk with translated CMS content show it; en and untranslated keep the static body.
+  const { body, categories } = resolveArticleContent({
+    locale,
+    rawBlog: rawBlog ?? cmsBlog,
+    staticBody: post ? articleBody(post) : undefined,
+    staticCategories: post?.categories,
+  });
   const displayImage = activeBlog.coverImage || post?.image || "/images/blog/triathlon.jpg";
-  const displayDate = post?.date || formatDate(activeBlog.publishedAt || activeBlog.createdAt, locale, "long");
+  const displayDate = post ? formatDate(post.isoDate, locale, "long") : formatDate(activeBlog.publishedAt || activeBlog.createdAt, locale, "long");
   const displayReadTime = post?.readTime || activeBlog.readingTime || t("defaultReadTime");
 
   const related = blogPosts.filter((p) => p.slug !== slug && p.category === (post?.category || activeBlog.category)).slice(0, 3);
-  const fallbackRelated = related.length ? related : blogPosts.filter((p) => p.slug !== slug).slice(0, 3);
+  const fallbackRelated = (related.length ? related : blogPosts.filter((p) => p.slug !== slug).slice(0, 3)).map((p) => ({
+    ...p,
+    title: localizeBlogCard(p, getBlogs().find((b) => b.slug === p.slug), locale).title,
+    dateLabel: formatDate(p.isoDate, locale, "long"),
+  }));
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
@@ -186,7 +196,7 @@ export default async function ArticlePage({ params }: PageProps<"/[lang]/blog/[s
                     <Image src={p.image} alt={p.title} fill sizes="420px" className="object-cover transition-transform duration-500 group-hover:scale-105" />
                   </div>
                   <h3 className="g-heading mt-3 text-[20px] leading-tight text-black group-hover:text-[#007cc3]">{p.title}</h3>
-                  <p className="mt-1 text-[13px] text-neutral-500">{p.date}</p>
+                  <p className="mt-1 text-[13px] text-neutral-500">{p.dateLabel}</p>
                 </Link>
               ))}
             </div>

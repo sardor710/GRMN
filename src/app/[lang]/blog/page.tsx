@@ -3,9 +3,16 @@ import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { BlogExplorer } from "@/components/BlogExplorer";
+import { BlogExplorer, type BlogExplorerPost } from "@/components/BlogExplorer";
+import { blogPosts } from "@/lib/blog";
+import { getBlogs } from "@/lib/cms/store";
+import { formatDate } from "@/i18n/format";
+import { localizeBlogCard } from "@/i18n/blog-content";
 import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
+
+// Card text comes from the CMS (admin translations), so render per request like the article pages.
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/blog">): Promise<Metadata> {
   const locale = await initPageLocale(params);
@@ -18,8 +25,19 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/blog">): P
 }
 
 export default async function BlogPage({ params }: PageProps<"/[lang]/blog">) {
-  await initPageLocale(params);
+  const locale = await initPageLocale(params);
   const t = await getTranslations("BlogPage");
+  const cmsBlogs = getBlogs();
+  const posts: BlogExplorerPost[] = blogPosts.map((post) => {
+    const card = localizeBlogCard(post, cmsBlogs.find((b) => b.slug === post.slug), locale);
+    return {
+      ...post,
+      displayTitle: card.title,
+      displayExcerpt: card.excerpt,
+      displayCategories: card.categories,
+      dateLabel: formatDate(post.isoDate, locale, "long"),
+    };
+  });
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <SiteHeader />
@@ -39,7 +57,7 @@ export default async function BlogPage({ params }: PageProps<"/[lang]/blog">) {
             className="object-cover object-center"
           />
         </div>
-        <BlogExplorer />
+        <BlogExplorer posts={posts} />
       </main>
       <SiteFooter />
     </div>
