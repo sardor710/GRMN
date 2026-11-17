@@ -4,10 +4,11 @@ import type { PoolClient } from "pg";
 import { z } from "zod";
 import type { DatabaseHandle } from "../db/client.ts";
 import type { Principal } from "../context.ts";
-import type { Availability, CartDTO, CheckoutQuoteDTO, CartLineDTO, CartNoticeCode, Money } from "../../contracts/commerce.ts";
+import type { Availability, CartDTO, CheckoutQuoteDTO, CheckoutResultDTO, CheckoutStatusDTO, CartLineDTO, CartNoticeCode, Money } from "../../contracts/commerce.ts";
 import { AuthFailure } from "../auth/config.ts";
 import { publicImage } from "../catalog/service.ts";
 import { createQuote, QUOTE_TTL_SECONDS, type DeliverySnapshot } from "../pricing/quote.ts";
+import { placeOrder, readCheckoutStatus } from "../checkout/service.ts";
 
 // Server carts (Task 13A). A guest cart is opened only by a random capability held in an HttpOnly
 // cookie; only its HMAC digest is stored. A signed-in shopper always uses the account cart, and the
@@ -217,7 +218,9 @@ export function createCartService({ database, secret, identify, market = "defaul
     if (who.tokenHash) {
       const guest = who.userId ? await loadCart(pool, { userId: null, token: who.token, tokenHash: who.tokenHash }, false) : cart;
       if (guest && who.userId) pendingMerge = true;
-      if (!guest) cookie = { clear: true };
+      // A guest cart converted by checkout keeps its capability for a day: a checkout whose response
+      // was lost is retried with the same key and must still identify the same guest (14A review I1).
+      if (!guest && !(await pool.query("SELECT 1 FROM carts WHERE guest_token_hash=$1 AND status='converted' AND updated_at>clock_timestamp()-interval '1 day'", [who.tokenHash])).rowCount) cookie = { clear: true };
     }
     return { cart: await view(pool, who, cart, [], pendingMerge), ...(cookie ? { cookie } : {}) };
   }
@@ -293,6 +296,19 @@ export function createCartService({ database, secret, identify, market = "defaul
         return createQuote(client, { cartId: cart.id, cartVersion: cart.version, userId: who.userId },
           { market, displayCurrency: command.displayCurrency, couponCode: command.couponCode ?? null, delivery }, quoteTtlSeconds);
       });
+    },
+
+    // Task 14A: places one pending demo order for the actor's quoted cart revision. The
+    // idempotency key comes from the Idempotency-Key header; a retried key returns the same order.
+    async checkout(headers: Headers, idempotencyKey: string, input: unknown): Promise<CheckoutResultDTO> {
+      const who = await actor(headers);
+      return placeOrder(database.pool, secret, { userId: who.userId, guestTokenHash: who.userId ? null : who.tokenHash }, idempotencyKey, input);
+    },
+
+    // Task 14A: the polling contract after checkout (owning session, or a guest status token).
+    async checkoutStatus(headers: Headers, input: unknown): Promise<CheckoutStatusDTO> {
+      const who = await actor(headers);
+      return readCheckoutStatus(database.pool, { userId: who.userId, guestTokenHash: null }, input);
     },
 
     // One-time import of a browser-stored cart. Ids are variant ids or product keys; names and prices

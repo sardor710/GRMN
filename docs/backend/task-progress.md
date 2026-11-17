@@ -4,9 +4,9 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 ## Current position
 
-- **Completed:** Tasks **01–11** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring; 11A inventory ledger, audited adjustments, reconciliation, opening import; 11B race-safe reservations) **12** (12A durable outbox and leased worker; 12B scheduled reservation expiry, audited dead-letter replay and job-lag metric) and **13** (13A server cart, login merge and wishlist; 13B quotes, markdowns, coupon quotas and USD display), within the scope and activation limits below.
-- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, 10C in `3eecd53`, 11A in `6aed380`, 11B in `eb1cb5b`, 12A in `3432aeb`, 12B in `4fe08d2`, 13A in `40a16cb`, and 13B in the commit after it (see `git log`).
-- **Next:** Task **14A**: idempotent checkout and pending order. See [the 13B handoff](handoffs/task-13b.md#exact-next-step).
+- **Completed:** Tasks **01–11** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring; 11A inventory ledger, audited adjustments, reconciliation, opening import; 11B race-safe reservations) **12** (12A durable outbox and leased worker; 12B scheduled reservation expiry, audited dead-letter replay and job-lag metric) and **13** (13A server cart, login merge and wishlist; 13B quotes, markdowns, coupon quotas and USD display) and **14A** (idempotent checkout and pending demo order), within the scope and activation limits below.
+- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, 10C in `3eecd53`, 11A in `6aed380`, 11B in `eb1cb5b`, 12A in `3432aeb`, 12B in `4fe08d2`, 13A in `40a16cb`, 13B in `d98cc92`, and 14A in the commit after it (see `git log`).
+- **Next:** Task **14B**: payment interface, demo adapter, verified inbox and capture. See [the 14A handoff](handoffs/task-14a.md#exact-next-step).
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
 - **Active implementation:** `C:/Users/Freakman/.codex/worktrees/backend-task-02/GRMN`, branch `codex/backend-task-02`.
 - **Original checkout:** `D:/projects/garmin/GRMN`. Its progress documentation is synchronized, but the backend implementation has **not** been merged or copied there. An AI inspecting only that checkout's application files will see older code. Continue code work in the active worktree above.
@@ -203,6 +203,19 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 [Detailed receipt](handoffs/task-13b.md).
 
+### Task 14A
+
+**Complete — idempotent checkout and pending demo order (2026-11-17).** No migration.
+- **Checkout** (`src/server/checkout/service.ts`, `POST /api/cart/checkout` with an `Idempotency-Key` header): one short transaction, no network call. It claims the key, locks the quoted cart revision, revalidates the quote, reserves the coupon quota and the stock, and writes the sealed order snapshot (`GRM-` sequence number), a demo payment attempt, an order event, an `order.placed` outbox event, a hashed guest status token and the idempotency result, then converts the cart.
+- **Guarantees, tested:** the same key returns the same order (also concurrently); the same key with a different body is 409; two keys on one cart revision have one winner; any failure leaves no attempt, hold, order or idempotency record; later product, price and address edits never rewrite the snapshot.
+- **Status polling:** `POST /api/cart/checkout/status` for the owning session or a guest status token. The receipt never says paid (D03, O07 open).
+- **UI:** the cart page quotes on the server, places the order once with a stored key, resumes a lost response on reload, and shows an unpaid receipt. The fake success screen, invented tax and client cart clearing are gone.
+- **Worker:** coupon holds expire on the same schedule as stock holds.
+- **Review:** no Critical findings. Three Important findings were fixed test-first (lost-response recovery, the coupon hold linked to its order, inclusive tax recorded on the order). Order-level expiry of a pending order is a 14B ruling.
+- **Gates:** see the [handoff](handoffs/task-14a.md#commands-and-results).
+
+[Detailed receipt](handoffs/task-14a.md).
+
 ## Remaining task list
 
 Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained slices; see "Consolidation of Tasks 12–22" in the plan. Steps that need a real provider are in its deferred activation backlog.
@@ -213,7 +226,7 @@ Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained
 | 11 | Complete (11A, 11B) | — |
 | 12 | Complete (12A, 12B) | — |
 | 13 | Complete (13A, 13B) | — |
-| 14 | Not started | 14A idempotent checkout and pending order; 14B payment interface, demo adapter, verified inbox and capture (absorbs 15) |
+| 14 | In progress (14A complete) | 14B payment interface, demo adapter, verified inbox and capture (absorbs 15); order-level hold expiry policy |
 | 15 | Merged into 14 | Real provider work is in the deferred activation backlog |
 | 16 | Not started | 16A manual fulfillment and order timeline; 16B cancellation, returns and refunds with stock compensation (absorbs 17) |
 | 17 | Merged into 16 | — |

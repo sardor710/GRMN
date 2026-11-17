@@ -25,8 +25,8 @@ test("operations runtime is PostgreSQL-only and requires staff with fresh settin
 });
 
 test("reservation expiry is scheduled at most every 60 seconds and the interval is validated", async()=>{
-  const {jobSchedules,RESERVATION_EXPIRY_KIND}=await import("../../src/server/operations/registry.ts");
-  assert.deepEqual(jobSchedules({}),[{kind:RESERVATION_EXPIRY_KIND,everyMs:30000}]);
+  const {jobSchedules,RESERVATION_EXPIRY_KIND,COUPON_EXPIRY_KIND}=await import("../../src/server/operations/registry.ts");
+  assert.deepEqual(jobSchedules({}),[{kind:RESERVATION_EXPIRY_KIND,everyMs:30000},{kind:COUPON_EXPIRY_KIND,everyMs:30000}],"Task 14A: coupon holds expire beside stock holds");
   assert.equal(jobSchedules({RESERVATION_EXPIRY_INTERVAL_MS:"1000"})[0].everyMs,1000);
   for(const bad of ["999","60001","abc","-1"])assert.throws(()=>jobSchedules({RESERVATION_EXPIRY_INTERVAL_MS:bad}),/RESERVATION_EXPIRY_INTERVAL_MS/);
   assert.throws(()=>jobSchedules({RESERVATION_EXPIRY_INTERVAL_MS:"abc"}),error=>!String(error.message).includes("abc"));

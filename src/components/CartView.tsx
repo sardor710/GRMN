@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/lib/cart";
 import { formatKzt } from "@/lib/account-client";
 import { CartIcon } from "@/components/icons";
+import { CheckoutPanel, OrderReceived, resumeCheckout } from "@/components/CheckoutPanel";
+import type { PlacedOrder } from "@/lib/checkout-client";
 import type { CartDTO } from "@/contracts/commerce";
 
 const money = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
@@ -24,9 +26,9 @@ function emptyCart() {
 }
 
 // Task 13A server cart: every amount is the server's KZT value; nothing is computed or trusted here.
-// Checkout stays off until Task 14 builds the idempotent checkout.
-function serverCart(cart: CartDTO, actions: { busy: boolean; error: string | null; setQty: (id: string, qty: number) => unknown; remove: (id: string) => unknown; clear: () => unknown; acknowledge: () => unknown }) {
-  const { busy, error, setQty, remove, clear, acknowledge } = actions;
+// Checkout is the server checkout panel (Task 14A); notices must be resolved first.
+function serverCart(cart: CartDTO, actions: { busy: boolean; error: string | null; setQty: (id: string, qty: number) => unknown; remove: (id: string) => unknown; clear: () => unknown; acknowledge: () => unknown; placeOrder: (order: PlacedOrder) => unknown }) {
+  const { busy, error, setQty, remove, clear, acknowledge, placeOrder } = actions;
   if (cart.lines.length === 0) return emptyCart();
   const priceChanged = cart.notices.some(n => n.code === "price_changed");
   const adjusted = cart.notices.some(n => n.code === "quantity_adjusted");
@@ -93,45 +95,29 @@ function serverCart(cart: CartDTO, actions: { busy: boolean; error: string | nul
             <button type="button" disabled={busy} onClick={() => clear()} className="text-[14px] text-neutral-500 underline hover:text-black disabled:opacity-50">Clear cart</button>
           </div>
         </div>
-        <aside className="h-fit border border-neutral-200 p-6">
-          <h2 className="g-heading text-[20px] text-black">Order Summary</h2>
-          <dl className="mt-4 space-y-3 text-[15px]">
-            <div className="flex justify-between"><dt className="text-neutral-600">Subtotal</dt><dd className="text-black">{formatKzt(cart.subtotal)}</dd></div>
-            <div className="flex justify-between"><dt className="text-neutral-600">Shipping and taxes</dt><dd className="text-neutral-500">Calculated at checkout</dd></div>
-          </dl>
-          <button type="button" disabled className="g-btn g-btn--solid mt-6 w-full disabled:cursor-not-allowed disabled:opacity-50">Checkout</button>
-          <p className="mt-3 text-center text-[12px] text-neutral-500">Online checkout is not available yet. Your cart is saved.</p>
-        </aside>
+        <CheckoutPanel cart={cart} disabled={busy || unavailable || priceChanged} onPlaced={placeOrder} />
       </div>
     </div>
   );
 }
 
 export function CartView() {
-  const { mode, server, error, busy, items, subtotal, setQty, remove, clear, acknowledge } = useCart();
-  const [placed, setPlaced] = useState(false);
+  const { mode, server, error, busy, items, subtotal, setQty, remove, clear, acknowledge, refresh } = useCart();
+  const [placed, setPlaced] = useState<PlacedOrder | null>(null);
+  // A checkout whose response was lost (reload, network drop) is resent with its key on load (review I1).
+  useEffect(() => {
+    if (mode !== "server") return;
+    let live = true;
+    void resumeCheckout().then(order => { if (live && order) { setPlaced(order); void refresh(); } }).catch(() => { /* kept for the next load */ });
+    return () => { live = false; };
+  }, [mode, refresh]);
 
   if (mode === "loading") return <div className="mx-auto max-w-[640px] px-4 py-24 text-center text-neutral-500">Loading your cart…</div>;
+  if (mode === "server" && placed) return <OrderReceived order={placed} />;
   if (mode === "server" && !server && error) return <div className="mx-auto max-w-[640px] px-4 py-24 text-center"><p role="alert" className="border border-red-200 bg-red-50 p-3 text-[14px] text-red-800">Your cart could not be loaded: {error}</p></div>;
-  if (mode === "server") return server ? serverCart(server, { busy, error, setQty, remove, clear, acknowledge }) : emptyCart();
-
-  const shipping = subtotal > 0 ? 0 : 0;
-  const tax = +(subtotal * 0.0725).toFixed(2);
-  const total = subtotal + shipping + tax;
-
-  if (placed) {
-    return (
-      <div className="mx-auto max-w-[640px] px-4 py-24 text-center">
-        <h1 className="g-heading text-[30px] text-black">Thank you for your order!</h1>
-        <p className="mt-3 text-neutral-600">
-          This is a demo checkout — no payment was processed. Your cart has been cleared.
-        </p>
-        <Link href="/c/wearables-smartwatches" className="g-btn g-btn--solid mt-8">
-          Continue Shopping
-        </Link>
-      </div>
-    );
-  }
+  // The server converted the cart when it placed the order; re-read it rather than clearing it here.
+  const placeOrder = (order: PlacedOrder) => { setPlaced(order); void refresh(); };
+  if (mode === "server") return server ? serverCart(server, { busy, error, setQty, remove, clear, acknowledge, placeOrder }) : emptyCart();
 
   if (items.length === 0) return emptyCart();
 
@@ -214,27 +200,14 @@ export function CartView() {
               <dt className="text-neutral-600">Subtotal</dt>
               <dd className="text-black">{money(subtotal)}</dd>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-neutral-600">Shipping</dt>
-              <dd className="text-black">{shipping === 0 ? "FREE" : money(shipping)}</dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-neutral-600">Estimated tax</dt>
-              <dd className="text-black">{money(tax)}</dd>
-            </div>
           </dl>
-          <div className="mt-4 flex justify-between border-t border-neutral-200 pt-4 text-[18px] font-medium">
-            <span>Total</span>
-            <span>{money(total)}</span>
-          </div>
-          <button
-            onClick={() => { setPlaced(true); clear(); }}
-            className="g-btn g-btn--solid mt-6 w-full"
-          >
+          {/* Task 14A: the browser-only cart cannot place orders (the fake "order placed" screen,
+              its invented tax and its cart clearing are removed). Checkout needs the server cart. */}
+          <button type="button" disabled className="g-btn g-btn--solid mt-6 w-full disabled:cursor-not-allowed disabled:opacity-50">
             Checkout
           </button>
-          <p className="mt-3 text-center text-[12px] text-neutral-400">
-            Free standard shipping on orders over $25.
+          <p className="mt-3 text-center text-[12px] text-neutral-500">
+            Online checkout is not available yet. Your cart is saved in this browser.
           </p>
         </aside>
       </div>

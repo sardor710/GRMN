@@ -1,5 +1,6 @@
-// Task 13A: in server mode the cart page renders the server DTO in KZT, shows price-change and
-// unavailable notices, and offers no checkout (real checkout arrives with Task 14).
+// Task 13A/14A: in server mode the cart page renders the server DTO in KZT, shows price-change and
+// unavailable notices, and hands checkout to the server checkout panel (Task 14A). The legacy
+// browser cart has no checkout: the fake "order placed" screen and its cart clearing are gone.
 import assert from "node:assert/strict";
 import test from "node:test";
 import { componentFixture, nodes, nodeText } from "../helpers/component-fixture.mjs";
@@ -16,34 +17,77 @@ const CART = {
   ],
   notices: [{ code: "price_changed", variantId: V1 }, { code: "item_unavailable", variantId: V2 }],
 };
+function CheckoutPanel() { return null; }
+function OrderReceived() { return null; }
+let resumed = null;
+const resumeCheckout = async () => resumed;
 
-function mount(cart, calls = []) {
+function mount(cart, calls = [], overrides = {}) {
   const useCart = () => ({
     mode: "server", server: cart, error: null, items: [], count: 3, subtotal: 0, busy: false,
     add: async () => {}, setQty: async (id, qty) => { calls.push(["setQty", id, qty]); }, remove: async id => { calls.push(["remove", id]); },
-    clear: async () => { calls.push(["clear"]); }, acknowledge: async () => { calls.push(["acknowledge"]); },
+    clear: async () => { calls.push(["clear"]); }, acknowledge: async () => { calls.push(["acknowledge"]); }, refresh: async () => { calls.push(["refresh"]); },
+    ...overrides,
   });
-  const fixture = componentFixture(file, { modules: { "@/lib/cart": { useCart }, "@/lib/account-client": accountClient } });
-  return fixture.render();
+  const fixture = componentFixture(file, { modules: { "@/lib/cart": { useCart }, "@/lib/account-client": accountClient, "@/components/CheckoutPanel": { CheckoutPanel, OrderReceived, resumeCheckout } } });
+  return { fixture, tree: fixture.render() };
 }
 
-test("server mode shows KZT totals, the old price, the unavailable line and no checkout", () => {
-  const calls = [], tree = mount(CART, calls), text = nodeText(tree);
-  assert.match(text, /3[\s ,.]?000[.,]00 KZT/);
-  assert.match(text, /1[\s ,.]?200[.,]00 KZT/, "the previously seen price is shown");
+test("server mode shows KZT totals, the old price, the unavailable line, and a blocked checkout panel", () => {
+  const calls = [], { tree } = mount(CART, calls), text = nodeText(tree);
+  assert.match(text, /3[\s ,.]?000[.,]00 KZT/);
+  assert.match(text, /1[\s ,.]?200[.,]00 KZT/, "the previously seen price is shown");
   assert.match(text, /price.*changed/i);
   assert.match(text, /no longer available/i);
   assert.doesNotMatch(text, /\$|Estimated tax|Thank you for your order/);
+  const panel = nodes(tree).find(node => node.type === CheckoutPanel);
+  assert.ok(panel, "checkout is the server checkout panel");
+  assert.equal(panel.props.cart, CART);
+  assert.equal(panel.props.disabled, true, "an unavailable line or an unaccepted price change blocks checkout");
   const buttons = nodes(tree).filter(node => node.type === "button");
-  const checkout = buttons.find(node => /checkout/i.test(nodeText(node)));
-  assert.ok(checkout?.props.disabled, "checkout stays disabled until Task 14");
   buttons.find(node => /accept/i.test(nodeText(node))).props.onClick();
   buttons.find(node => node.props["aria-label"] === "Increase" && node.props["data-variant"] === V1).props.onClick();
   assert.equal(buttons.find(node => node.props["aria-label"] === "Increase" && node.props["data-variant"] === V2)?.props.disabled, true, "an unavailable line cannot grow");
   assert.deepEqual(calls, [["acknowledge"], ["setQty", V1, 3]]);
 });
 
+test("a clean server cart enables checkout; a placed order shows the receipt and re-syncs the cart", () => {
+  const clean = { ...CART, lines: [CART.lines[0]], notices: [] }, calls = [], { fixture, tree } = mount(clean, calls);
+  const panel = nodes(tree).find(node => node.type === CheckoutPanel);
+  assert.equal(panel.props.disabled, false);
+  panel.props.onPlaced({ orderId: "o1", orderNumber: "GRM-1000001", statusToken: null });
+  assert.deepEqual(calls, [["refresh"]], "the server converted the cart; the page re-reads it instead of clearing it");
+  const after = fixture.render(), receipt = nodes(after).find(node => node.type === OrderReceived);
+  assert.deepEqual(receipt?.props.order, { orderId: "o1", orderNumber: "GRM-1000001", statusToken: null });
+  assert.ok(!calls.some(call => call[0] === "clear"));
+});
+
 test("server mode with an empty cart shows the empty state", () => {
-  const text = nodeText(mount({ ...CART, id: null, version: 0, lines: [], notices: [], subtotal: kzt("0") }));
+  const text = nodeText(mount({ ...CART, id: null, version: 0, lines: [], notices: [], subtotal: kzt("0") }).tree);
   assert.match(text, /Your cart is empty/);
+});
+
+test("the legacy browser cart offers no fake checkout and never clears itself on checkout", () => {
+  const calls = [], items = [{ id: "fenix-8", name: "fēnix 8", price: 999.99, image: null, qty: 1 }];
+  const { tree } = mount(null, calls, { mode: "local", server: null, items, subtotal: 999.99 });
+  const text = nodeText(tree);
+  assert.doesNotMatch(text, /Thank you for your order|Estimated tax/);
+  assert.match(text, /not available/i);
+  const checkout = nodes(tree).filter(node => node.type === "button").find(node => /checkout/i.test(nodeText(node)));
+  assert.ok(checkout?.props.disabled, "legacy mode cannot place orders");
+  assert.equal(checkout.props.onClick, undefined);
+  assert.deepEqual(calls, []);
+});
+
+// Review I1: a checkout whose response was lost is resumed on load and shows its receipt.
+test("on load a pending checkout is resumed and its receipt is shown", async () => {
+  resumed = { orderId: "o9", orderNumber: "GRM-1000009", statusToken: "tok" };
+  try {
+    const calls = [], { fixture } = mount({ ...CART, id: null, version: 0, lines: [], notices: [], subtotal: kzt("0") }, calls);
+    for (const effect of fixture.effects) effect();
+    await fixture.flush();
+    const receipt = nodes(fixture.render()).find(node => node.type === OrderReceived);
+    assert.deepEqual(receipt?.props.order, resumed);
+    assert.deepEqual(calls, [["refresh"]]);
+  } finally { resumed = null; }
 });

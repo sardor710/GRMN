@@ -141,7 +141,7 @@ try{
   await navigate("/cart");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Cart page did not show the server cart");
   assert.match(await text(),/7[\s ,.]?500[.,]00 KZT/);assert.ok(!(await text()).includes("Forged name"));
   await navigate("/cart");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Server cart did not persist across reload");
-  assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Checkout').disabled"),true,"checkout stays off until Task 14");
+  assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Review order')?.disabled"),true,"the server checkout panel is offered and waits for the delivery contact (Task 14A)");
   await send("Network.setCookie",{name:"grmn-auth.session_token",value:encodeURIComponent(customerSession.token+"."+createHmac("sha256",secret).update(customerSession.token).digest("base64")),url:origin,httpOnly:true,sameSite:"Lax"});
   await navigate("/cart");
   await until(async()=>(await database.pool.query("SELECT ci.quantity FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=$1 AND c.status='active' AND ci.variant_id=$2",[customerId,cartVariant])).rows[0]?.quantity===3,"Sign-in did not merge the guest cart into the account cart");
@@ -151,7 +151,35 @@ try{
   await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.includes('Saved to Wishlist'))"),"Wishlist save failed");
   await navigate("/account");await until(async()=>(await low()).includes("ui account owner"),"Account page did not reload");await click("Wishlist");
   await until(async()=>(await text()).includes("UI CART FIXTURE"),"Saved product missing from the wishlist tab");
-  console.log("PASS Task13A cart: one-time local import, guest server cart persisted across reload via HttpOnly capability, sign-in merge, checkout off, wishlist save and list");
+  console.log("PASS Task13A cart: one-time local import, guest server cart persisted across reload via HttpOnly capability, sign-in merge, checkout panel offered, wishlist save and list");
+
+  // Task 14A: the signed-in customer checks out the merged account cart: server quote in KZT, one
+  // idempotent pending demo order, the cart converted on the server, and a receipt that never says paid.
+  await database.pool.query("INSERT INTO stock_locations(id,key,name) VALUES($1,'main','Main stock location') ON CONFLICT (key) DO NOTHING",[randomUUID()]);
+  const mainStock=(await database.pool.query("SELECT id FROM stock_locations WHERE key='main'")).rows[0].id;
+  await database.pool.query("INSERT INTO inventory_balances(variant_id,location_id) VALUES($1,$2) ON CONFLICT DO NOTHING",[cartVariant,mainStock]);
+  await database.pool.query("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key,source_reference) VALUES($1,$2,$3,5,0,'opening','ui-cart-opening-main','synthetic:ui-smoke')",[randomUUID(),cartVariant,mainStock]);
+  const uiTax=randomUUID(),uiPolicy=randomUUID(),uiZone=randomUUID();
+  await database.pool.query("INSERT INTO tax_configuration(id,version,mode,rate_bps,country_code) VALUES($1,9101,'exclusive',1200,'KZ')",[uiTax]);
+  await database.pool.query("INSERT INTO shipping_policy_versions(id,version) VALUES($1,9101)",[uiPolicy]);
+  await database.pool.query("INSERT INTO shipping_zones(id,key,name,countries,active) VALUES($1,'ui-smoke-zone','UI zone','[\"KZ\"]'::jsonb,true)",[uiZone]);
+  await database.pool.query("INSERT INTO shipping_rates(id,policy_id,zone_id,key,amount_minor) VALUES($1,$2,$3,'standard',1500)",[randomUUID(),uiPolicy,uiZone]);
+  await database.pool.query("INSERT INTO store_settings(id,active_tax_configuration_id,active_shipping_policy_id) VALUES(1,$1,$2) ON CONFLICT (id) DO UPDATE SET active_tax_configuration_id=EXCLUDED.active_tax_configuration_id,active_shipping_policy_id=EXCLUDED.active_shipping_policy_id,version=store_settings.version+1",[uiTax,uiPolicy]);
+  const setInput=(name,value)=>evaluate(`(()=>{const input=document.querySelector('input[name=${name}]');if(!input)throw Error('Missing input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`);
+  await navigate("/cart");await until(async()=>/review order/i.test(await text()),"Checkout panel missing");
+  for(const [name,value] of [["recipientName","UI Checkout Buyer"],["phone","+77000000077"],["city","Almaty"],["line1","UI checkout street 1"]])await until(()=>setInput(name,value),"Could not fill "+name);
+  await until(async()=>{try{await click("Review order");return true;}catch{return false;}},"Review order stayed disabled");
+  await until(async()=>/total payable/i.test(await text()),"The server quote did not render");
+  assert.match(await text(),/8[\s ,.]?415[.,]00 KZT/,"7 500 KZT goods + 12% tax + 15 KZT shipping, all computed on the server");
+  await click("Place order");
+  await until(async()=>/order grm-\d+ received/i.test(await text()),"The order receipt did not render").catch(async error=>{await writeFile(path.join(receipt,"checkout-body.txt"),await text());throw error;});
+  assert.match(await text(),/not paid/i);assert.ok(!/thank you for your order/i.test(await text()));
+  const placedOrders=(await database.pool.query("SELECT order_number,order_status,payment_status,payment_mode,total_minor::text AS total FROM orders WHERE user_id=$1 AND checkout_attempt_id IS NOT NULL",[customerId])).rows;
+  assert.equal(placedOrders.length,1,"exactly one order");assert.deepEqual({...placedOrders[0],order_number:undefined},{order_number:undefined,order_status:"pending_payment",payment_status:"unpaid",payment_mode:"demo",total:"841500"});
+  assert.ok((await text()).toUpperCase().includes(placedOrders[0].order_number.toUpperCase()));
+  assert.equal((await database.pool.query("SELECT count(*)::int AS n FROM carts WHERE user_id=$1 AND status='converted'",[customerId])).rows[0].n,1,"the server converted the cart");
+  await navigate("/cart");await until(async()=>/your cart is empty/i.test(await text()),"The converted cart still shows lines");
+  console.log("PASS Task14A checkout: server KZT quote, one idempotent pending demo order, server-side cart conversion, unpaid receipt");
 
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");

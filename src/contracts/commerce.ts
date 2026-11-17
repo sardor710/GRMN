@@ -236,12 +236,16 @@ export interface CheckoutQuoteDTO {
 
 export type PaymentMethodCode = "demo" | "kaspi" | "secondary";
 
+/**
+ * POST /api/cart/checkout with an `Idempotency-Key` header (16–128 printable ASCII). The contact
+ * name and phone and the delivery address come from the quote's delivery snapshot (D06); only an
+ * optional email is added here. Only "demo" is accepted until a real provider exists (D03).
+ */
 export interface CheckoutCommand {
   quoteId: string;
   cartVersion: number;
-  contact: QuickCheckoutContact;
-  delivery: DeliveryAddressSelection;
   paymentMethod: PaymentMethodCode;
+  contactEmail?: string;
 }
 
 export type OrderStatus = "pending_payment" | "confirmed" | "cancel_requested" | "cancelled" | "closed";
@@ -255,6 +259,24 @@ export interface CheckoutResultDTO {
   paymentMode: "demo" | "live";
   paymentState: "pending" | "redirect_required" | "retry_required" | "simulated";
   paymentRedirectUrl: string | null;
+  /** Payable amount in KZT. */
+  total: Money;
+  /** Guest checkouts only: the order-status capability. Only its hash is stored; a retried key returns it again. */
+  statusToken: string | null;
+  /** True when this key already placed the order and the original result is returned. */
+  replayed: boolean;
+}
+
+/** POST /api/cart/checkout/status `{ orderId, statusToken? }`: the polling contract after checkout. */
+export interface CheckoutStatusDTO {
+  orderId: string;
+  orderNumber: string;
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
+  fulfillmentStatus: FulfillmentStatus;
+  paymentMode: "demo" | "live";
+  total: Money;
+  placedAt: string | null;
 }
 
 export interface OrderSummaryDTO {

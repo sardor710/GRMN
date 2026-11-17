@@ -32,6 +32,7 @@ interface CartContextValue {
   remove: (id: string) => Promise<void>;
   clear: () => Promise<void>;
   acknowledge: () => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -90,12 +91,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [controller]);
 
   const acknowledge = useCallback(async () => { await controller.acknowledge(); }, [controller]);
+  // Re-reads the server cart (Task 14A: after checkout converts it on the server).
+  const refresh = useCallback(async () => { await controller.refresh(); }, [controller]);
 
   const count = cartBadgeCount(state, items);
   const subtotal = items.reduce((n, i) => n + i.qty * i.price, 0);
 
   return (
-    <CartContext.Provider value={{ ...state, items, count, subtotal, add, setQty, remove, clear, acknowledge }}>
+    <CartContext.Provider value={{ ...state, items, count, subtotal, add, setQty, remove, clear, acknowledge, refresh }}>
       {children}
     </CartContext.Provider>
   );

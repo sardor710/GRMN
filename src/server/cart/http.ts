@@ -43,6 +43,12 @@ export function createCartHandler(input: { service: CartService; baseURL: string
         }
         return method();
       }
+      if (resource === "checkout") {
+        if (request.method !== "POST") return method();
+        if (id === undefined) return adminJSON(await service.checkout(h, h.get("idempotency-key") ?? "", await readAdminJSON(request)));
+        if (id === "status") return adminJSON(await service.checkoutStatus(h, await readAdminJSON(request)));
+        return missing();
+      }
       if (id !== undefined) missing();
       if (resource === "merge") return request.method === "POST" ? respond(await service.merge(h)) : method();
       if (resource === "import") return request.method === "POST" ? respond(await service.importLegacy(h, await readAdminJSON(request))) : method();

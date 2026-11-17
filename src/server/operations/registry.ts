@@ -1,6 +1,8 @@
 import "server-only";
-import { expireDueReservations } from "../inventory/reservations.ts";
+import { expireDueReservations, withInventoryTransaction } from "../inventory/reservations.ts";
 import type { ExpiryCursor } from "../inventory/reservations.ts";
+import { expireDueCouponReservations } from "../pricing/coupons.ts";
+import { PAYMENT_START_KIND } from "../checkout/service.ts";
 import type { JobHandler, JobHandlers } from "./outbox.ts";
 import type { Schedule } from "./schedule.ts";
 
@@ -28,14 +30,32 @@ const expireReservations: JobHandler = async (_job, ctx) => {
   await ctx.complete();
 };
 
-export const jobHandlers: JobHandlers = {
-  [RESERVATION_EXPIRY_KIND]: expireReservations,
+// Task 14A: coupon holds (promotion_redemptions) made at checkout expire beside the stock holds.
+// Each batch runs in its own short transaction; expiring an already-ended hold is impossible
+// (status filter + SKIP LOCKED), so overlapping runs are safe.
+export const COUPON_EXPIRY_KIND = "promotions.reservations.expire";
+const expireCoupons: JobHandler = async (_job, ctx) => {
+  for (let round = 0; round < EXPIRY_MAX_ROUNDS && !ctx.signal.aborted; round++) {
+    const { expired } = await withInventoryTransaction(ctx.pool, client => expireDueCouponReservations(client, { limit: EXPIRY_BATCH }));
+    if (expired < EXPIRY_BATCH) break;
+  }
+  await ctx.complete();
 };
 
-/** RESERVATION_EXPIRY_INTERVAL_MS: 1000–60000, default 30000. Errors name the field, never its value. */
+// Task 14A: consumer of order.placed. A demo order needs no provider session, so the job only
+// completes; Task 14B replaces it with the payment-provider interface and demo adapter.
+const startPayment: JobHandler = async (_job, ctx) => { await ctx.complete(); };
+
+export const jobHandlers: JobHandlers = {
+  [RESERVATION_EXPIRY_KIND]: expireReservations,
+  [COUPON_EXPIRY_KIND]: expireCoupons,
+  [PAYMENT_START_KIND]: startPayment,
+};
+
+/** RESERVATION_EXPIRY_INTERVAL_MS: 1000–60000, default 30000 (stock and coupon holds). Errors name the field, never its value. */
 export function jobSchedules(env: Readonly<Record<string, string | undefined>>): Schedule[] {
   const raw = env.RESERVATION_EXPIRY_INTERVAL_MS;
   const everyMs = raw === undefined ? 30_000 : /^\d+$/.test(raw) ? Number(raw) : NaN;
   if (!Number.isSafeInteger(everyMs) || everyMs < 1000 || everyMs > 60_000) throw new Error("Missing or invalid worker configuration: RESERVATION_EXPIRY_INTERVAL_MS");
-  return [{ kind: RESERVATION_EXPIRY_KIND, everyMs }];
+  return [{ kind: RESERVATION_EXPIRY_KIND, everyMs }, { kind: COUPON_EXPIRY_KIND, everyMs }];
 }
