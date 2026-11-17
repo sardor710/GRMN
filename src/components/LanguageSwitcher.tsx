@@ -13,6 +13,7 @@ function LanguageLinks({ variant, search }: { variant: LanguageSwitcherVariant; 
   const t = useTranslations("Header");
   const current = useLocale() as Locale;
   const pathname = usePathname();
+  const compact = variant === "header";
   const href = search ? `${pathname}?${search}` : pathname;
 
   return (
@@ -26,8 +27,10 @@ function LanguageLinks({ variant, search }: { variant: LanguageSwitcherVariant; 
             lang={locale}
             className={styles.link}
             aria-current={locale === current ? "true" : undefined}
+            aria-label={compact ? LOCALE_LABEL[locale] : undefined}
+            title={compact ? LOCALE_LABEL[locale] : undefined}
           >
-            {LOCALE_LABEL[locale]}
+            {compact ? locale.toUpperCase() : LOCALE_LABEL[locale]}
           </Link>
         </li>
       ))}
