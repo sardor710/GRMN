@@ -11,8 +11,10 @@ const missing = (): never => { throw new AuthFailure("NOT_FOUND", 404, "Not foun
 const method = (): never => { throw new AuthFailure("METHOD_NOT_ALLOWED", 405, "Method not allowed"); };
 const GUEST_COOKIE_SECONDS = 30 * 24 * 60 * 60;
 
-export function createCartHandler(input: { service: CartService; baseURL: string }) {
-  const { service, baseURL } = input, secure = baseURL.startsWith("https:") ? "; Secure" : "";
+// Task 21A: an optional limiter runs before quotes and checkouts (the costly, abusable writes).
+export type CartLimiter = (scope: "quote" | "checkout", headers: Headers) => Promise<void>;
+export function createCartHandler(input: { service: CartService; baseURL: string; limit?: CartLimiter }) {
+  const { service, baseURL, limit } = input, secure = baseURL.startsWith("https:") ? "; Secure" : "";
   function respond(result: CartResult): Response {
     const response = adminJSON(result.cart);
     if (result.cookie && "token" in result.cookie) response.headers.append("Set-Cookie", `${CART_COOKIE}=${result.cookie.token}; Path=/api/cart; Max-Age=${GUEST_COOKIE_SECONDS}; HttpOnly; SameSite=Lax${secure}`);
@@ -44,6 +46,7 @@ export function createCartHandler(input: { service: CartService; baseURL: string
         return method();
       }
       if (resource === "checkout") {
+        if (request.method === "POST" && id === undefined) await limit?.("checkout", h);
         if (request.method !== "POST") return method();
         if (id === undefined) return adminJSON(await service.checkout(h, h.get("idempotency-key") ?? "", await readAdminJSON(request)));
         if (id === "status") return adminJSON(await service.checkoutStatus(h, await readAdminJSON(request)));
@@ -53,7 +56,7 @@ export function createCartHandler(input: { service: CartService; baseURL: string
       if (resource === "merge") return request.method === "POST" ? respond(await service.merge(h)) : method();
       if (resource === "import") return request.method === "POST" ? respond(await service.importLegacy(h, await readAdminJSON(request))) : method();
       if (resource === "acknowledge") return request.method === "POST" ? respond(await service.acknowledge(h, await readAdminJSON(request))) : method();
-      if (resource === "quote") return request.method === "POST" ? adminJSON(await service.quote(h, await readAdminJSON(request))) : method();
+      if (resource === "quote") { if (request.method !== "POST") return method(); await limit?.("quote", h); return adminJSON(await service.quote(h, await readAdminJSON(request))); }
       return missing();
     } catch (error) { return authErrorResponse(error); }
   };

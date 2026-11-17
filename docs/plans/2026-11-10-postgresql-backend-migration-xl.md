@@ -1090,7 +1090,7 @@ The wishlist is in 13A. The other account domains get one disposition list in 13
 
 ### Task 21 — Performance hardening and release qualification
 
-**Current status:** NOT STARTED. **Depends on:** 18. **Size:** 21A query/cache/rate tuning and the end-to-end matrix; 21B load and failure injection. (Absorbs Task 22.)
+**Current status:** 21A PARTIAL (2026-11-18): indexes, shared rate limits and plan evidence done; the public cache was withdrawn, browser E2E and catalog/search plans are blocked (see handoffs/task-21a.md). 21B NOT STARTED. **Depends on:** 18. **Size:** 21A query/cache/rate tuning and the end-to-end matrix; 21B load and failure injection. (Absorbs Task 22.)
 
 **Files:** index migrations, cache boundaries, rate-limit and pool config, `tests/{e2e,load}/*`, `docs/backend/performance-report.md`, a qualification report.
 

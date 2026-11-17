@@ -78,6 +78,13 @@
       "when": 1794904872612,
       "tag": "0010_cart-price-snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794949984165,
+      "tag": "0011_performance-throttle",
+      "breakpoints": true
     }
   ]
 }

@@ -48,3 +48,20 @@ test("checkout passes the Idempotency-Key header to the service and status is a 
   assert.equal((await post("/checkout", {}, { origin: "http://evil.example" })).status, 403);
   assert.equal((await handle(new Request("http://localhost:3000/api/cart/checkout?orderId=o1", { method: "POST", headers: { origin: "http://localhost:3000" }, body: "{}" }))).status, 400);
 });
+
+test("Task 21A: quote and checkout are rate limited before the service runs, with 429 and Retry-After", async () => {
+  const { createCartHandler } = await import("../../src/server/cart/http.ts");
+  const { AuthFailure } = await import("../../src/server/auth/config.ts");
+  const calls = [], scopes = [];
+  const service = new Proxy({}, { get: (_target, name) => async () => { calls.push(name); return { cart: {} }; } });
+  const limit = async (scope, headers) => { scopes.push([scope, headers.get("cookie")]); throw new AuthFailure("RATE_LIMITED", 429, "Too many requests", 17); };
+  const handle = createCartHandler({ service, baseURL: "http://localhost:3000", limit });
+  for (const path of ["quote", "checkout"]) {
+    const response = await handle(new Request("http://localhost:3000/api/cart/" + path, { method: "POST", headers: { origin: "http://localhost:3000", "content-type": "application/json", cookie: "grmn-cart=abc" }, body: "{}" }));
+    assert.equal(response.status, 429, path); assert.equal(response.headers.get("retry-after"), "17");
+  }
+  assert.deepEqual(calls, [], "the service never ran");
+  assert.deepEqual(scopes.map(s => s[0]), ["quote", "checkout"]);
+  const runtime = read("src/server/cart/runtime.ts"), payments = read("src/server/payments/runtime.ts");
+  assert.match(runtime, /enforceRateLimit/); assert.match(payments, /enforceRateLimit/);
+});

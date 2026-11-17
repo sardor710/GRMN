@@ -9,6 +9,7 @@ import { processRefunds } from "../fulfillment/aftersales.ts";
 import { CONTENT_INVALIDATE_KIND } from "../content/publishing.ts";
 import { cleanupOrphanMedia } from "../content/media.ts";
 import { EXPORT_EXPIRE_KIND, EXPORT_GENERATE_KIND, expireExports, generateExport } from "../reports/exports.ts";
+import { pruneRateLimits } from "./rate-limit.ts";
 import path from "node:path";
 import { JobError } from "./outbox.ts";
 import type { ClaimedJob, JobHandler, JobHandlers } from "./outbox.ts";
@@ -126,6 +127,10 @@ const sweepExports: JobHandler = async (_job, ctx) => {
   await ctx.complete();
 };
 
+// Task 21A: delete rate-limit windows older than two days.
+export const RATE_LIMIT_PRUNE_KIND = "operations.rate_limits.prune";
+const pruneLimits: JobHandler = async (_job, ctx) => { await pruneRateLimits(ctx.pool); await ctx.complete(); };
+
 export { PAYMENT_INBOX_KIND, CONTENT_INVALIDATE_KIND, EXPORT_EXPIRE_KIND, EXPORT_GENERATE_KIND };
 export const jobHandlers: JobHandlers = {
   [RESERVATION_EXPIRY_KIND]: expireReservations,
@@ -139,6 +144,7 @@ export const jobHandlers: JobHandlers = {
   [MEDIA_CLEANUP_KIND]: cleanupMedia,
   [EXPORT_GENERATE_KIND]: buildExport,
   [EXPORT_EXPIRE_KIND]: sweepExports,
+  [RATE_LIMIT_PRUNE_KIND]: pruneLimits,
 };
 
 /**
@@ -149,5 +155,5 @@ export function jobSchedules(env: Readonly<Record<string, string | undefined>>):
   const raw = env.RESERVATION_EXPIRY_INTERVAL_MS;
   const everyMs = raw === undefined ? 30_000 : /^\d+$/.test(raw) ? Number(raw) : NaN;
   if (!Number.isSafeInteger(everyMs) || everyMs < 1000 || everyMs > 60_000) throw new Error("Missing or invalid worker configuration: RESERVATION_EXPIRY_INTERVAL_MS");
-  return [{ kind: RESERVATION_EXPIRY_KIND, everyMs }, { kind: COUPON_EXPIRY_KIND, everyMs }, { kind: ORDER_EXPIRY_KIND, everyMs }, { kind: PAYMENT_RECONCILE_KIND, everyMs: 60_000 }, { kind: REFUND_PROCESS_KIND, everyMs: 60_000 }, { kind: MEDIA_CLEANUP_KIND, everyMs: 3_600_000 }, { kind: EXPORT_EXPIRE_KIND, everyMs: 3_600_000 }];
+  return [{ kind: RESERVATION_EXPIRY_KIND, everyMs }, { kind: COUPON_EXPIRY_KIND, everyMs }, { kind: ORDER_EXPIRY_KIND, everyMs }, { kind: PAYMENT_RECONCILE_KIND, everyMs: 60_000 }, { kind: REFUND_PROCESS_KIND, everyMs: 60_000 }, { kind: MEDIA_CLEANUP_KIND, everyMs: 3_600_000 }, { kind: EXPORT_EXPIRE_KIND, everyMs: 3_600_000 }, { kind: RATE_LIMIT_PRUNE_KIND, everyMs: 3_600_000 }];
 }

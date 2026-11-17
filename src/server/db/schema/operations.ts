@@ -2,7 +2,7 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import type { Buffer } from "node:buffer";
 import { sql } from "drizzle-orm";
-import { bigint, check, customType, foreignKey, index, integer, jsonb, pgTable, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { bigint, check, customType, foreignKey, index, integer, jsonb, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 import { user } from "./identity.ts";
 import { consentEvents } from "./customers.ts";
@@ -79,3 +79,10 @@ export const migrationIssues = pgTable("migration_issues", {
   id: id(), runId: uuid("run_id").notNull().references(() => migrationRuns.id, { onDelete: "restrict" }), entity: text("entity").notNull(), sourceKey: text("source_key").notNull(), fieldPath: text("field_path").notNull().default(""), code: text("code").notNull(), severity: text("severity").notNull().default("blocker"),
   disposition: text("disposition").notNull().default("open"), safeMessage: text("safe_message").notNull(), resolution: object("resolution"), resolvedAt: time("resolved_at"), createdAt: createdAt(),
 }, t => [uniqueIndex("migration_issues_source_unique").on(t.runId, t.entity, t.sourceKey, t.fieldPath, t.code), index("migration_issues_gate_idx").on(t.runId, t.severity, t.disposition), check("migration_issues_fields_valid", sql`length(btrim(${t.entity}))>0 AND length(btrim(${t.code}))>0 AND length(btrim(${t.safeMessage}))>0 AND ${t.severity} IN ('warning','blocker') AND ((${t.disposition}='open' AND ${t.resolvedAt} IS NULL AND ${t.resolution} IS NULL) OR (${t.disposition} IN ('resolved','approved_quarantine') AND ${t.resolvedAt} IS NOT NULL AND ${t.resolution} IS NOT NULL AND jsonb_typeof(${t.resolution})='object'))`)]);
+
+// Task 21A: shared fixed-window rate-limit counters, so every application instance enforces one
+// budget. The key is a hash of scope and identifier (never a raw IP or token).
+export const rateLimitBuckets = pgTable("rate_limit_buckets", {
+  bucketKey: text("bucket_key").notNull(), windowStart: time("window_start").notNull(), hits: integer("hits").notNull().default(0),
+}, t => [primaryKey({ columns: [t.bucketKey, t.windowStart] }), index("rate_limit_buckets_window_idx").on(t.windowStart),
+  check("rate_limit_buckets_valid", sql`${t.bucketKey} ~ '^[0-9a-f]{64}$' AND ${t.hits}>=0`)]);

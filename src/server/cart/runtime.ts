@@ -7,6 +7,11 @@ import { requirePrincipal } from "../auth/principal.ts";
 import { cmsBackend } from "../cms/source.ts";
 import { createCartService } from "./service.ts";
 import { createCartHandler } from "./http.ts";
+import { enforceRateLimit, trustedClientAddress } from "../operations/rate-limit.ts";
+
+// Task 21A: per trusted client address (review C1/C2/I2), shared by every instance. Generous enough
+// for a shared office or mobile-carrier address; without a trusted proxy (development) no limit.
+const LIMITS = { quote: 120, checkout: 30 } as const;
 
 let handler: ReturnType<typeof createCartHandler> | undefined;
 
@@ -24,7 +29,11 @@ function getCartHandler() {
         catch (error) { if (error instanceof AuthFailure && error.status === 401) return null; throw error; }
       },
     });
-    handler = createCartHandler({ service, baseURL: config.baseURL });
+    const pool = getDatabase().pool;
+    handler = createCartHandler({ service, baseURL: config.baseURL, limit: async (scope, headers) => {
+      const address = trustedClientAddress(headers);
+      if (address) await enforceRateLimit(pool, { scope: `cart:${scope}`, identifier: address, limit: LIMITS[scope], windowMs: 60_000 }, config.secret);
+    } });
   }
   return handler;
 }

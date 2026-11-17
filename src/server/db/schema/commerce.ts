@@ -95,6 +95,8 @@ export const orders = pgTable("orders", {
   index("orders_profile_idx").on(t.profileId),
   index("orders_fulfillment_queue_idx").on(t.fulfillmentStatus, t.placedAt, t.id),
   index("orders_payment_queue_idx").on(t.paymentStatus, t.placedAt, t.id),
+  // Task 21A: the staff order queue and dated exports sort or filter on the shown time (EXPLAIN: seq scan + sort over all orders without it).
+  index("orders_shown_at_idx").on(sql`(COALESCE(${t.placedAt},${t.createdAt})) DESC`, t.id.desc().nullsFirst()),
   check("orders_fields_valid", sql`length(btrim(${t.orderNumber}))>0 AND length(btrim(${t.contactName}))>0 AND ${t.currency}='KZT' AND ${t.dataQuality} IN ('complete','legacy_incomplete') AND ${t.version}>0`),
   check("orders_statuses_valid", sql`${t.orderStatus} IN ('pending_payment','confirmed','cancel_requested','cancelled','closed') AND ${t.paymentStatus} IN ('unpaid','pending','authorized','paid','partially_refunded','refunded','failed') AND ${t.fulfillmentStatus} IN ('unfulfilled','processing','partially_shipped','shipped','delivered','exception') AND ${t.paymentMode} IN ('demo','live','legacy_unknown')`),
   check("orders_amounts_valid", sql`${t.totalMinor}>=0 AND (${t.subtotalMinor} IS NULL OR ${t.subtotalMinor}>=0) AND (${t.discountMinor} IS NULL OR ${t.discountMinor}>=0) AND (${t.shippingMinor} IS NULL OR ${t.shippingMinor}>=0) AND (${t.taxMinor} IS NULL OR ${t.taxMinor}>=0) AND (${t.shippingTaxMinor} IS NULL OR ${t.shippingTaxMinor} BETWEEN 0 AND ${t.taxMinor}) AND (${t.subtotalMinor} IS NULL OR ${t.discountMinor} IS NULL OR ${t.discountMinor}<=${t.subtotalMinor})`),

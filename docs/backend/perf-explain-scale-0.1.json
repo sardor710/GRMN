@@ -1,0 +1,145 @@
+{
+  "scale": 0.1,
+  "postgres": "18.6",
+  "seedMs": 73101,
+  "counts": {
+    "products": 500,
+    "variants": 5000,
+    "users": 15000,
+    "orders": 100000,
+    "items": 300000,
+    "captures": 80000
+  },
+  "indexes": [
+    "CREATE INDEX orders_shown_at_idx ON public.orders USING btree (COALESCE(placed_at, created_at) DESC, id DESC)",
+    "CREATE INDEX payment_transactions_capture_time_idx ON public.payment_transactions USING btree (created_at) WHERE (kind = 'capture'::text)"
+  ],
+  "baseline": {
+    "account order history (10A)": {
+      "ms": 0.43,
+      "sharedBlocks": 4,
+      "scans": [
+        "Bitmap Heap Scan on orders",
+        "Bitmap Index Scan using orders_customer_history_idx"
+      ]
+    },
+    "admin order queue, newest (16A listOrders)": {
+      "ms": 52.98,
+      "sharedBlocks": 3150,
+      "scans": [
+        "Seq Scan on orders",
+        "Bitmap Heap Scan on order_items",
+        "Bitmap Index Scan using order_items_order_idx"
+      ]
+    },
+    "admin order queue, shipped (16A listOrders)": {
+      "ms": 38.51,
+      "sharedBlocks": 3315,
+      "scans": [
+        "Bitmap Heap Scan on orders",
+        "Bitmap Index Scan using orders_fulfillment_queue_idx",
+        "Bitmap Heap Scan on order_items",
+        "Bitmap Index Scan using order_items_order_idx"
+      ]
+    },
+    "admin order queue, rare exception (16A listOrders)": {
+      "ms": 10.47,
+      "sharedBlocks": 390,
+      "scans": [
+        "Bitmap Heap Scan on orders",
+        "Bitmap Index Scan using orders_fulfillment_queue_idx",
+        "Bitmap Heap Scan on order_items",
+        "Bitmap Index Scan using order_items_order_idx"
+      ]
+    },
+    "dashboard totals, 30 days (18B summary)": {
+      "ms": 16.91,
+      "sharedBlocks": 2500,
+      "scans": [
+        "Seq Scan on payment_transactions",
+        "Seq Scan on refunds",
+        "Seq Scan on order_events"
+      ]
+    },
+    "order export count, 30 days (18B countRows)": {
+      "ms": 14.94,
+      "sharedBlocks": 2942,
+      "scans": [
+        "Seq Scan on orders"
+      ]
+    },
+    "low-stock list (18B lowStock)": {
+      "ms": 6.66,
+      "sharedBlocks": 142,
+      "scans": [
+        "Seq Scan on stock_locations",
+        "Seq Scan on inventory_balances",
+        "Seq Scan on product_variants",
+        "Seq Scan on products"
+      ]
+    }
+  },
+  "shipped": {
+    "account order history (10A)": {
+      "ms": 0.04,
+      "sharedBlocks": 4,
+      "scans": [
+        "Bitmap Heap Scan on orders",
+        "Bitmap Index Scan using orders_customer_history_idx"
+      ]
+    },
+    "admin order queue, newest (16A listOrders)": {
+      "ms": 0.76,
+      "sharedBlocks": 262,
+      "scans": [
+        "Index Scan on orders using orders_shown_at_idx",
+        "Bitmap Heap Scan on order_items",
+        "Bitmap Index Scan using order_items_order_idx"
+      ]
+    },
+    "admin order queue, shipped (16A listOrders)": {
+      "ms": 0.67,
+      "sharedBlocks": 477,
+      "scans": [
+        "Index Scan on orders using orders_shown_at_idx",
+        "Bitmap Heap Scan on order_items",
+        "Bitmap Index Scan using order_items_order_idx"
+      ]
+    },
+    "admin order queue, rare exception (16A listOrders)": {
+      "ms": 3.31,
+      "sharedBlocks": 4709,
+      "scans": [
+        "Index Scan on orders using orders_shown_at_idx",
+        "Bitmap Heap Scan on order_items",
+        "Bitmap Index Scan using order_items_order_idx"
+      ]
+    },
+    "dashboard totals, 30 days (18B summary)": {
+      "ms": 0.15,
+      "sharedBlocks": 2,
+      "scans": [
+        "Index Scan on payment_transactions using payment_transactions_capture_time_idx",
+        "Seq Scan on refunds",
+        "Seq Scan on order_events"
+      ]
+    },
+    "order export count, 30 days (18B countRows)": {
+      "ms": 0.03,
+      "sharedBlocks": 3,
+      "scans": [
+        "Index Scan on orders using orders_shown_at_idx"
+      ]
+    },
+    "low-stock list (18B lowStock)": {
+      "ms": 5.08,
+      "sharedBlocks": 142,
+      "scans": [
+        "Seq Scan on stock_locations",
+        "Seq Scan on inventory_balances",
+        "Seq Scan on product_variants",
+        "Seq Scan on products"
+      ]
+    }
+  }
+}

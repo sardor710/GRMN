@@ -344,6 +344,27 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 [Detailed receipt](handoffs/task-18b.md).
 
+### Task 21A
+
+**Partial, and the chain stopped (2026-11-18).** Migration **0011** adds `rate_limit_buckets` and two indexes.
+- **Indexes:** justified by EXPLAIN of the services' own SQL on a seeded, fully migrated database at scale 0.1 (100,000 orders):
+  - `orders_shown_at_idx`: staff queue 53 → 0.8 ms, export count 15 → 0.03 ms;
+  - `payment_transactions_capture_time_idx`: dashboard 17 → 0.15 ms.
+  - Script: `scripts/perf/explain-report.mjs`. Report: [performance-report.md](performance-report.md).
+- **Shared rate limits** (PostgreSQL, one budget across instances, keyed on the trusted proxy client address): webhooks 600/min, quotes 120/min, checkouts 30/min.
+- **Permission matrix:** the default roles are checked against the Section 9 matrix.
+- **Withdrawn:** the public data cache. Review showed stale-while-revalidate takedowns, no cross-instance invalidation and unbounded disk use. It needs a shared, bounded cache handler, which is an infrastructure decision.
+- **Blocked:**
+  - browser E2E purchase lifecycles: they need ≥1 GB free RAM, and a purchase cannot reach "paid" without O07;
+  - catalog and search plans: they need a seed with catalog relations.
+- **Review:** two Critical findings (rate-limit identity: one shared bucket, spoofable forwarding) and the Important I1, I2 and I8 were fixed test-first. I3–I7 (the cache) were resolved by withdrawing it. I9 was resolved with faithful SQL plus an explicit "not measured" for catalog and search. I10 (browser E2E) is blocked.
+- **Gates:**
+  - `npm test` **555/555**, one test file per process.
+  - `npm run check`: exit 0.
+  - **Browser smoke not run:** 104–345 MB free.
+
+[Detailed receipt](handoffs/task-21a.md).
+
 ## Remaining task list
 
 Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained slices; see "Consolidation of Tasks 12–22" in the plan. Steps that need a real provider are in its deferred activation backlog.
@@ -361,7 +382,7 @@ Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained
 | 18 | Complete (18A, 18B); smoke open | Homepage collection wiring with draft isolation (18A ruling I6, deferred) |
 | 19 | Merged into 18 | Email/newsletter sending is in the deferred activation backlog |
 | 20 | Merged into 13 | Wishlist built in 13A; other account domains deferred in [account-tab-dispositions.md](account-tab-dispositions.md) |
-| 21 | Not started | 21A query/cache/rate tuning and end-to-end matrix; 21B load and failure injection (absorbs 22). Last chained task |
+| 21 | 21A partial; chain stopped | 21A: public cache (needs a shared cache handler), browser E2E (needs ≥1 GB RAM and O07), catalog/search plans. 21B: load and failure injection on VPS-class hardware (O05) |
 | 22 | Merged into 21 | — |
 | 23 | Not started (owner-run) | Cutover and recovery rehearsal |
 | 24 | Not started (owner-run) | Authorized production cutover, observation and retirement |
