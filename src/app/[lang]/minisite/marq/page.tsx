@@ -16,12 +16,17 @@ import { MarqProductCarousel } from "@/components/marq/MarqProductCarousel";
 import { MarqSignup } from "@/components/marq/MarqSignup";
 import { MarqScrollVideo } from "@/components/marq/MarqScrollVideo";
 import { initPageLocale } from "@/i18n/page-locale";
+import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
 
-export const metadata: Metadata = {
-  title: "MARQ (Gen 2) COLLECTION | Garmin Singapore",
-  description:
-    "Seven luxury modern tool watches. The second generation of the MARQ Collection — Fused Carbon Fiber, Damascus Steel and Grade-5 Titanium. Where luxury and performance collide.",
-};
+export async function generateMetadata({ params }: PageProps<"/[lang]/minisite/marq">): Promise<Metadata> {
+  const locale = await initPageLocale(params);
+  return {
+    title: "MARQ (Gen 2) COLLECTION | Garmin Singapore",
+    description:
+      "Seven luxury modern tool watches. The second generation of the MARQ Collection — Fused Carbon Fiber, Damascus Steel and Grade-5 Titanium. Where luxury and performance collide.",
+    ...localizedSeo({ path: "/minisite/marq", locale, indexedLocales: ROUTE_LOCALES["minisite:marq"] }),
+  };
+}
 
 export default async function MarqMinisitePage({ params }: PageProps<"/[lang]/minisite/marq">) {
   await initPageLocale(params);

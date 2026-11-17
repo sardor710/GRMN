@@ -9,13 +9,18 @@ import { HealthSection } from "@/components/why-garmin/HealthSection";
 import { ExerciseSection } from "@/components/why-garmin/ExerciseSection";
 import { LifeSection } from "@/components/why-garmin/LifeSection";
 import { initPageLocale } from "@/i18n/page-locale";
+import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
 import { localizeHref } from "@/i18n/routing";
 
-export const metadata: Metadata = {
-  title: "Why Garmin Watches? | Garmin Singapore",
-  description:
-    "Based on feedbacks we collected from 513 users, Garmin watches allow you to tune in to your health 24/7, develop exercise habits and pay for transits or purchases to make your life easier!",
-};
+export async function generateMetadata({ params }: PageProps<"/[lang]/minisite/why-garmin">): Promise<Metadata> {
+  const locale = await initPageLocale(params);
+  return {
+    title: "Why Garmin Watches? | Garmin Singapore",
+    description:
+      "Based on feedbacks we collected from 513 users, Garmin watches allow you to tune in to your health 24/7, develop exercise habits and pay for transits or purchases to make your life easier!",
+    ...localizedSeo({ path: "/minisite/why-garmin", locale, indexedLocales: ROUTE_LOCALES["minisite:why-garmin"] }),
+  };
+}
 
 const BUY_NOW = "/c/wearables-smartwatches";
 

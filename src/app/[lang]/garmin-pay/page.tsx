@@ -3,11 +3,17 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ProductCard } from "@/components/ProductCard";
 import { products } from "@/lib/products";
+import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/garmin-pay">): Promise<Metadata> {
+  const locale = await initPageLocale(params);
   const t = await getMetaTranslations(params);
-  return { title: t("garminPayTitle"), description: t("garminPayDescription") };
+  return {
+    title: t("garminPayTitle"),
+    description: t("garminPayDescription"),
+    ...localizedSeo({ path: "/garmin-pay", locale, indexedLocales: ROUTE_LOCALES.garminPay }),
+  };
 }
 
 const iconStrip = [

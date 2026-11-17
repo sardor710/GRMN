@@ -2,11 +2,16 @@ import type { Metadata } from "next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { AccountDashboard } from "@/components/AccountDashboard";
+import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/account">): Promise<Metadata> {
+  const locale = await initPageLocale(params);
   const t = await getMetaTranslations(params);
-  return { title: t("accountTitle") };
+  return {
+    title: t("accountTitle"),
+    ...localizedSeo({ path: "/account", locale, indexedLocales: ROUTE_LOCALES.account }),
+  };
 }
 
 export default async function AccountPage({ params }: PageProps<"/[lang]/account">) {

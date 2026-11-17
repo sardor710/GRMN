@@ -4,12 +4,17 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { Fenix8Client } from "@/components/fenix-8/Fenix8Client";
 import { initPageLocale } from "@/i18n/page-locale";
+import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
 
-export const metadata: Metadata = {
-  title: "fēnix 8 Series the ultimate smartwatch | Garmin Singapore",
-  description:
-    "fēnix 8 series - the ultimate smartwatch - the top choice for mountain climbing, trail running, skiing and other outdoor adventures. With either AMOLED or solar displays, torchlight, spectacular battery life, speaker and microphones and enhanced training features.",
-};
+export async function generateMetadata({ params }: PageProps<"/[lang]/minisite/fenix-8">): Promise<Metadata> {
+  const locale = await initPageLocale(params);
+  return {
+    title: "fēnix 8 Series the ultimate smartwatch | Garmin Singapore",
+    description:
+      "fēnix 8 series - the ultimate smartwatch - the top choice for mountain climbing, trail running, skiing and other outdoor adventures. With either AMOLED or solar displays, torchlight, spectacular battery life, speaker and microphones and enhanced training features.",
+    ...localizedSeo({ path: "/minisite/fenix-8", locale, indexedLocales: ROUTE_LOCALES["minisite:fenix-8"] }),
+  };
+}
 
 export default async function Fenix8Page({ params }: PageProps<"/[lang]/minisite/fenix-8">) {
   await initPageLocale(params);

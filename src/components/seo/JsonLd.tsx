@@ -1,14 +1,18 @@
 import type { CMSProduct, CMSBlog } from "@/lib/cms/types";
+import type { Locale } from "@/i18n/config";
 
 interface ProductJsonLdProps {
   product: CMSProduct;
   url: string;
+  /** BCP-47 language of the page (en, ru, kk). */
+  locale: Locale;
 }
 
-export function ProductJsonLd({ product, url }: ProductJsonLdProps) {
+export function ProductJsonLd({ product, url, locale }: ProductJsonLdProps) {
   const schema = {
     "@context": "https://schema.org/",
     "@type": "Product",
+    inLanguage: locale,
     name: product.name,
     image: [product.image.startsWith("http") ? product.image : `https://www.garmin.com${product.image}`],
     description: product.seoDescription || product.description,
@@ -50,12 +54,15 @@ export function ProductJsonLd({ product, url }: ProductJsonLdProps) {
 interface ArticleJsonLdProps {
   blog: CMSBlog;
   url: string;
+  /** BCP-47 language of the page (en, ru, kk). */
+  locale: Locale;
 }
 
-export function ArticleJsonLd({ blog, url }: ArticleJsonLdProps) {
+export function ArticleJsonLd({ blog, url, locale }: ArticleJsonLdProps) {
   const schema = {
     "@context": "https://schema.org",
     "@type": "Article",
+    inLanguage: locale,
     headline: blog.seoTitle || blog.title,
     image: [blog.coverImage.startsWith("http") ? blog.coverImage : `https://www.garmin.com${blog.coverImage}`],
     datePublished: blog.publishedAt || blog.createdAt,

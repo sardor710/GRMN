@@ -11,6 +11,7 @@ import { getBlogs } from "@/lib/cms/store";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import type { CMSBlog } from "@/lib/cms/types";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
+import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
 import { formatDate } from "@/i18n/format";
 
 export function generateStaticParams() {
@@ -18,6 +19,7 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/blog/[slug]">): Promise<Metadata> {
+  const locale = await initPageLocale(params);
   const tm = await getMetaTranslations(params);
   const { slug } = await params;
   const post = getPost(slug);
@@ -35,22 +37,24 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/blog/[slug
     post?.excerpt ||
     tm("blogPostDescription");
   const image = cmsBlog?.ogImage || cmsBlog?.coverImage || post?.image || "/images/blog/triathlon.jpg";
-  const url = `https://www.garmin.com/blog/${slug}`;
+  const seo = localizedSeo({
+    path: `/blog/${slug}`,
+    locale,
+    indexedLocales: ROUTE_LOCALES.blogPost,
+    canonicalOverride: cmsBlog?.canonicalUrl || undefined,
+    noIndex: cmsBlog?.noIndex,
+  });
 
   return {
     title,
     description,
     keywords: cmsBlog?.focusKeywords?.join(", "),
-    alternates: {
-      canonical: cmsBlog?.canonicalUrl || url,
-    },
-    robots: cmsBlog?.noIndex
-      ? { index: false, follow: false }
-      : { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+    alternates: seo.alternates,
+    robots: seo.robots,
     openGraph: {
       title,
       description,
-      url,
+      ...seo.openGraph,
       siteName: "Garmin",
       type: "article",
       images: [
@@ -114,7 +118,7 @@ export default async function ArticlePage({ params }: PageProps<"/[lang]/blog/[s
   return (
     <div className="flex min-h-screen flex-col bg-white">
       {/* Structured Article Schema for Google Rich Results */}
-      <ArticleJsonLd blog={activeBlog} url={`https://www.garmin.com/blog/${slug}`} />
+      <ArticleJsonLd blog={activeBlog} url={`https://www.garmin.com/${locale}/blog/${slug}`} locale={locale} />
       <BreadcrumbJsonLd items={breadcrumbs} />
 
       <SiteHeader />

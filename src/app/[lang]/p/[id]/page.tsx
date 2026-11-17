@@ -8,6 +8,7 @@ import { RelatedProducts } from "@/components/RelatedProducts";
 import { getProductDetail, getAllProducts, getCMSProduct } from "@/lib/products";
 import { ProductJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
+import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,7 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/p/[id]">): Promise<Metadata> {
+  const locale = await initPageLocale(params);
   const t = await getMetaTranslations(params);
   const { id } = await params;
   const cmsProduct = getCMSProduct(id);
@@ -33,22 +35,24 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/p/[id]">):
     detail?.subtitle ||
     t("productDescription", { name });
   const image = cmsProduct?.ogImage || cmsProduct?.image || detail?.gallery[0]?.src || "/images/products/1228429.jpg";
-  const url = `https://www.garmin.com/p/${id}`;
+  const seo = localizedSeo({
+    path: `/p/${id}`,
+    locale,
+    indexedLocales: ROUTE_LOCALES.product,
+    canonicalOverride: cmsProduct?.canonicalUrl || undefined,
+    noIndex: cmsProduct?.noIndex,
+  });
 
   return {
     title,
     description,
     keywords: cmsProduct?.focusKeywords?.join(", "),
-    alternates: {
-      canonical: cmsProduct?.canonicalUrl || url,
-    },
-    robots: cmsProduct?.noIndex
-      ? { index: false, follow: false }
-      : { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
+    alternates: seo.alternates,
+    robots: seo.robots,
     openGraph: {
       title,
       description,
-      url,
+      ...seo.openGraph,
       siteName: "Garmin",
       type: "website",
       images: [
@@ -70,7 +74,7 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/p/[id]">):
 }
 
 export default async function ProductPage({ params }: PageProps<"/[lang]/p/[id]">) {
-  await initPageLocale(params);
+  const locale = await initPageLocale(params);
   const { id } = await params;
   const detail = getProductDetail(id);
   if (!detail) notFound();
@@ -106,7 +110,7 @@ export default async function ProductPage({ params }: PageProps<"/[lang]/p/[id]"
   return (
     <div className="flex min-h-screen flex-col bg-white">
       {/* Google Structured Data */}
-      <ProductJsonLd product={fullProduct} url={`https://www.garmin.com/p/${id}`} />
+      <ProductJsonLd product={fullProduct} url={`https://www.garmin.com/${locale}/p/${id}`} locale={locale} />
       <BreadcrumbJsonLd items={breadcrumbs} />
 
       <SiteHeader />

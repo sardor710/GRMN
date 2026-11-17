@@ -8,6 +8,7 @@ import { WearablesHero } from "@/components/WearablesHero";
 import { CatalogueGrid } from "@/components/CatalogueGrid";
 import { SectionHeading } from "@/components/SectionHeading";
 import { catalogues, getCatalogue, catalogueProducts } from "@/lib/products";
+import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 
 export const dynamic = "force-dynamic";
@@ -21,7 +22,13 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/c/[...slug
   const tc = await getTranslations();
   const { slug } = await params;
   const def = getCatalogue(slug.join("/"));
-  return { title: def ? t("catalogueTitle", { title: tc(def.titleKey) }) : "Garmin" };
+  const locale = await initPageLocale(params);
+  return {
+    title: def ? t("catalogueTitle", { title: tc(def.titleKey) }) : "Garmin",
+    ...(def
+      ? localizedSeo({ path: `/c/${slug.join("/")}`, locale, indexedLocales: ROUTE_LOCALES.category })
+      : {}),
+  };
 }
 
 export default async function CataloguePage({ params }: PageProps<"/[lang]/c/[...slug]">) {

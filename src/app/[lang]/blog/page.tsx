@@ -4,11 +4,17 @@ import { getTranslations } from "next-intl/server";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { BlogExplorer } from "@/components/BlogExplorer";
+import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/blog">): Promise<Metadata> {
+  const locale = await initPageLocale(params);
   const tm = await getMetaTranslations(params);
-  return { title: tm("blogTitle"), description: tm("blogDescription") };
+  return {
+    title: tm("blogTitle"),
+    description: tm("blogDescription"),
+    ...localizedSeo({ path: "/blog", locale, indexedLocales: ROUTE_LOCALES.blogIndex }),
+  };
 }
 
 export default async function BlogPage({ params }: PageProps<"/[lang]/blog">) {

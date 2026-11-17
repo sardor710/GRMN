@@ -6,9 +6,16 @@ import { HomeTiles } from "@/components/home/HomeTiles";
 import { HomeSignup } from "@/components/home/HomeSignup";
 import { HomeFooter } from "@/components/home/HomeFooter";
 import { getHomepageConfig } from "@/lib/cms/store";
+import type { Metadata } from "next";
 import { initPageLocale } from "@/i18n/page-locale";
+import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
 
 export const dynamic = "force-dynamic";
+
+export async function generateMetadata({ params }: PageProps<"/[lang]">): Promise<Metadata> {
+  const locale = await initPageLocale(params);
+  return localizedSeo({ path: "/", locale, indexedLocales: ROUTE_LOCALES.home });
+}
 
 export default async function Home({ params }: PageProps<"/[lang]">) {
   await initPageLocale(params);

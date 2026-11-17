@@ -32,11 +32,14 @@ export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));
 }
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://www.garmin.com";
+
 export async function generateMetadata({ params }: LayoutProps<"/[lang]">): Promise<Metadata> {
   const { lang } = await params;
   if (!hasLocale(LOCALES, lang)) return {};
   const t = await getTranslations({ locale: lang, namespace: "Meta" });
   return {
+    metadataBase: new URL(SITE_URL),
     title: t("title"),
     description: t("description"),
     icons: siteIcons,
