@@ -1,0 +1,1125 @@
+{
+ "target": "https://www.garmin.com/en-US/",
+ "clone": "http://localhost:3001/",
+ "sel": "body",
+ "cloneSel": "body",
+ "widths": {
+  "390": {
+   "mismatchPct": 80.97,
+   "size": {
+    "target": [
+     390,
+     6000
+    ],
+    "clone": [
+     390,
+     6000
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "320-360",
+     "pct": 100
+    },
+    {
+     "y": "360-400",
+     "pct": 100
+    },
+    {
+     "y": "400-440",
+     "pct": 100
+    },
+    {
+     "y": "440-480",
+     "pct": 100
+    },
+    {
+     "y": "80-120",
+     "pct": 99.9
+    },
+    {
+     "y": "160-200",
+     "pct": 99.9
+    }
+   ],
+   "file": "docs/design-references/qa/body-390-diff.png",
+   "text": {
+    "matched": 93,
+    "of": 357,
+    "issues": [
+     {
+      "t": "Smartwatches",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "18px → 12px",
+      "lh": "32px → 18px",
+      "ls": "0.64px → normal"
+     },
+     {
+      "t": "FĒNIX® 9",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "fs": "20px → 32px",
+      "lh": "25px → 40px",
+      "ls": "0.8px → normal",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "tt": "none → uppercase",
+      "pos": "0,0 → 535,503",
+      "size": "0×0 → 99×40"
+     },
+     {
+      "t": "Sports & Fitness",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "18px → 12px",
+      "lh": "32px → 18px",
+      "ls": "0.64px → normal"
+     },
+     {
+      "t": "CIRQA™ Smart Band",
+      "ff": "Superscripts-Roboto → GarminHomeOswald",
+      "fs": "14px → 32px",
+      "lh": "17.5px → 40px",
+      "ls": "0.64px → normal",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "tt": "none → uppercase",
+      "pos": "0,0 → 853,503",
+      "size": "0×0 → 245×40"
+     },
+     {
+      "t": "Outdoor Recreation",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "18px → 12px",
+      "lh": "32px → 18px",
+      "ls": "0.64px → normal"
+     },
+     {
+      "t": "Auto & Home",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "18px → 12px",
+      "lh": "32px → 18px",
+      "ls": "0.64px → normal"
+     },
+     {
+      "t": "Marine",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "18px → 12px",
+      "lh": "32px → 18px",
+      "ls": "0.64px → normal"
+     },
+     {
+      "t": "Aviation",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "18px → 12px",
+      "lh": "32px → 18px",
+      "ls": "0.64px → normal"
+     },
+     {
+      "t": "flyGarmin",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "14px → 13px",
+      "lh": "17.5px → 24px",
+      "ls": "0.64px → normal",
+      "c": "rgb(0, 0, 0) → rgb(221, 221, 221)"
+     },
+     {
+      "t": "Sale",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "18px → 12px",
+      "lh": "32px → 18px",
+      "ls": "0.64px → normal"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "ls": "0.8px → normal",
+      "tt": "uppercase → none",
+      "pos": "150,642 → 150,603"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "ls": "0.8px → normal",
+      "tt": "uppercase → none",
+      "pos": "540,747 → 540,627"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "ls": "0.8px → normal",
+      "tt": "uppercase → none",
+      "pos": "930,666 → 930,603"
+     },
+     {
+      "t": "CIRQA™ SMART BAND",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "c": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+      "tt": "none → uppercase",
+      "pos": "1234,538 → 28,880",
+      "size": "261×40 → 291×40"
+     },
+     {
+      "t": "Track all day. Look later. No subscripti",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "pos": "1276,594 → 801,555",
+      "size": "179×48 → 348×24"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "ls": "0.8px → normal",
+      "tt": "uppercase → none",
+      "pos": "1320,666 → 1320,603"
+     },
+     {
+      "t": "DESCENT™ X10",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "1666,538 → 1282,503",
+      "size": "177×40 → 166×40"
+     },
+     {
+      "t": "Essential dive computer for your underwa",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "pos": "1577,594 → 1189,555",
+      "size": "357×24 → 352×24"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "ls": "0.8px → normal",
+      "tt": "uppercase → none",
+      "pos": "1710,642 → 1710,627"
+     },
+     {
+      "t": "FORERUNNER® 70 & 170",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "1997,538 → 1617,503",
+      "size": "296×40 → 276×40"
+     },
+     {
+      "t": "Running smartwatches with everything you",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "pos": "1966,594 → 1576,555"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "ls": "0.8px → normal",
+      "c": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+      "tt": "uppercase → none",
+      "pos": "2100,666 → 271,2488",
+      "size": "90×34 → 87×34"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "ls": "0.8px → normal",
+      "c": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+      "tt": "uppercase → none",
+      "pos": "2490,693 → 271,3007",
+      "size": "90×34 → 87×34"
+     },
+     {
+      "t": "HOLIDAY GIFT GUIDE",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "2797,538 → 76,503",
+      "size": "255×40 → 238×40"
+     },
+     {
+      "t": "Where \"best gift ever\" begins",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "pos": "2823,594 → 95,555",
+      "size": "203×24 → 200×24"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "ls": "0.8px → normal",
+      "c": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+      "tt": "uppercase → none",
+      "pos": "2880,642 → 271,3526",
+      "size": "90×34 → 87×34"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "tt": "uppercase → none",
+      "pos": "115,1296 → 32,4884"
+     },
+     {
+      "t": "Forerunner® — Running Smartwatches for A",
+      "ff": "Arial → GarminHomeOswald",
+      "fs": "13.3333px → 24px",
+      "lh": "normal → 30px",
+      "tt": "none → uppercase",
+      "pos": "16,1410 → 32,2409",
+      "size": "358×508 → 326×60"
+     },
+     {
+      "t": "Shop",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "tt": "uppercase → none",
+      "pos": "271,1868 → 32,5300"
+     },
+     {
+      "t": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH",
+      "ff": "Arial → GarminHomeOswald",
+      "fs": "13.3333px → 24px",
+      "lh": "normal → 30px",
+      "tt": "none → uppercase",
+      "pos": "16,1934 → 32,2928",
+      "size": "358×508 → 326×60"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "tt": "uppercase → none",
+      "pos": "271,2392 → 32,5716"
+     },
+     {
+      "t": "SMARTWATCHES FOR KIDS",
+      "ff": "Arial → GarminHomeOswald",
+      "fs": "13.3333px → 24px",
+      "lh": "normal → 30px",
+      "tt": "none → uppercase",
+      "pos": "16,2458 → 32,3447",
+      "size": "358×478 → 326×30"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "tt": "uppercase → none",
+      "pos": "271,2886 → 32,6132"
+     },
+     {
+      "t": "Monitor Patients With Garmin Health",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "fs": "24px → 28px",
+      "lh": "30px → 36px",
+      "ls": "0.8px → normal",
+      "pos": "32,3234 → 32,3854",
+      "size": "326×60 → 326×72"
+     },
+     {
+      "t": "LEARN MORE",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "c": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+      "pos": "32,3310 → 827,1936",
+      "size": "136×34 → 82×34"
+     },
+     {
+      "t": "Stories: How We Connect People to Their ",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "fs": "24px → 28px",
+      "lh": "30px → 36px",
+      "ls": "0.8px → normal",
+      "pos": "32,3650 → 32,4270",
+      "size": "326×60 → 326×72"
+     },
+     {
+      "t": "Learn More",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "tt": "uppercase → none",
+      "pos": "32,3726 → 32,3942"
+     },
+     {
+      "t": "SHOP BY CATEGORY",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "0,3848 → 0,4480"
+     },
+     {
+      "t": "SMARTWATCHES",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "fs": "24px → 28px",
+      "lh": "30px → 36px",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "32,4206 → 32,4832",
+      "size": "326×30 → 326×36"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "tt": "uppercase → none",
+      "pos": "32,4252 → 32,6548"
+     },
+     {
+      "t": "AUTO & HOME",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "fs": "24px → 28px",
+      "lh": "30px → 36px",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "32,4622 → 32,5248",
+      "size": "326×30 → 326×36"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "tt": "uppercase → none",
+      "pos": "32,4668 → 32,6964"
+     },
+     {
+      "t": "SPORTS & FITNESS",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "fs": "24px → 28px",
+      "lh": "30px → 36px",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "32,5038 → 32,5664",
+      "size": "326×30 → 326×36"
+     },
+     {
+      "t": "OUTDOOR RECREATION",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "fs": "24px → 28px",
+      "lh": "30px → 36px",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "32,5454 → 32,6080",
+      "size": "326×30 → 326×36"
+     },
+     {
+      "t": "MARINE",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "fs": "24px → 28px",
+      "lh": "30px → 36px",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "32,5870 → 32,6496",
+      "size": "326×30 → 326×36"
+     },
+     {
+      "t": "AVIATION",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "fs": "24px → 28px",
+      "lh": "30px → 36px",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "32,6286 → 32,6912",
+      "size": "326×30 → 326×36"
+     },
+     {
+      "t": "Sign up for News",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "fs": "24px → 28px",
+      "lh": "30px → 36px",
+      "ls": "0.8px → normal",
+      "pos": "0,6438 → 16,7046",
+      "size": "390×30 → 358×36"
+     },
+     {
+      "t": "Get product news and promotions based on",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "11px → 13px",
+      "lh": "16.5px → 19.5px",
+      "c": "rgb(0, 0, 0) → rgb(91, 91, 91)",
+      "pos": "0,6544 → 16,7156",
+      "size": "390×33 → 358×39"
+     },
+     {
+      "t": "Learn about email privacy.",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "11px → 13px",
+      "lh": "16.5px → 19.5px",
+      "c": "rgb(0, 0, 0) → rgb(91, 91, 91)",
+      "pos": "131,6578 → 120,7204",
+      "size": "128×13 → 149×13"
+     },
+     {
+      "t": "CUSTOMER SERVICE",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "fs": "20px → 16px",
+      "lh": "32px → 20px",
+      "ls": "0.8px → normal",
+      "pos": "16,6673 → 0,0",
+      "size": "342×32 → 0×0"
+     },
+     {
+      "t": "Support Center",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(0, 0, 0) → rgb(221, 221, 221)"
+     },
+     {
+      "t": "Contact Us",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(0, 0, 0) → rgb(221, 221, 221)"
+     },
+     {
+      "t": "Shipping, Returns & Refunds",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(0, 0, 0) → rgb(221, 221, 221)"
+     },
+     {
+      "t": "Order Support",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(0, 0, 0) → rgb(221, 221, 221)"
+     },
+     {
+      "t": "Warranty Information",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(0, 0, 0) → rgb(221, 221, 221)"
+     },
+     {
+      "t": "Data Management",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(0, 0, 0) → rgb(221, 221, 221)"
+     },
+     {
+      "t": "Deals & Promotions",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(0, 0, 0) → rgb(221, 221, 221)"
+     },
+     {
+      "t": "Find a Dealer",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(0, 0, 0) → rgb(221, 221, 221)"
+     },
+     {
+      "t": "COMPANY",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "fs": "20px → 16px",
+      "lh": "32px → 20px",
+      "ls": "0.8px → normal",
+      "pos": "16,6737 → 0,0",
+      "size": "342×32 → 0×0"
+     },
+     {
+      "t": "About Us",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(0, 0, 0) → rgb(221, 221, 221)"
+     }
+    ],
+    "missing": [
+     "Skip navigation links",
+     "Products",
+     "All Smartwatches",
+     "Health & Fitness Tracking",
+     "Design Your Own Watch",
+     "Watches for Women",
+     "Fashion & Hybrid Smartwatches",
+     "MARQ Luxury Watch Collection",
+     "Running",
+     "Multisport & Triathlete",
+     "Adventure",
+     "Swimming",
+     "Diving",
+     "Golf",
+     "Kids Smartwatches",
+     "Maps",
+     "Outdoor Maps",
+     "Golf Course Locator",
+     "Accessories & Plans",
+     "Accessories"
+    ]
+   }
+  },
+  "1440": {
+   "mismatchPct": 76.97,
+   "size": {
+    "target": [
+     1440,
+     3840
+    ],
+    "clone": [
+     1440,
+     4481
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "80-120",
+     "pct": 100
+    },
+    {
+     "y": "160-200",
+     "pct": 100
+    },
+    {
+     "y": "360-400",
+     "pct": 100
+    },
+    {
+     "y": "400-440",
+     "pct": 100
+    },
+    {
+     "y": "440-480",
+     "pct": 100
+    },
+    {
+     "y": "120-160",
+     "pct": 99.9
+    }
+   ],
+   "file": "docs/design-references/qa/body-1440-diff.png",
+   "text": {
+    "matched": 94,
+    "of": 358,
+    "issues": [
+     {
+      "t": "Smartwatches",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "normal → 21px",
+      "ls": "0.64px → normal",
+      "pos": "380,24 → 386,22",
+      "size": "98×17 → 91×21"
+     },
+     {
+      "t": "FĒNIX® 9",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "fs": "20px → 40px",
+      "lh": "25px → 50px",
+      "ls": "0.8px → normal",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "tt": "none → uppercase",
+      "pos": "977,647 → 1535,181",
+      "size": "216×55 → 400×50"
+     },
+     {
+      "t": "Sports & Fitness",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "normal → 21px",
+      "ls": "0.64px → normal",
+      "size": "113×17 → 102×21"
+     },
+     {
+      "t": "CIRQA™ Smart Band",
+      "ff": "Superscripts-Roboto → GarminHomeOswald",
+      "fs": "14px → 40px",
+      "lh": "17.5px → 50px",
+      "ls": "0.64px → normal",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "tt": "none → uppercase",
+      "pos": "235,212 → 2975,156",
+      "size": "208×34 → 264×100"
+     },
+     {
+      "t": "Outdoor Recreation",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "normal → 21px",
+      "ls": "0.64px → normal",
+      "pos": "623,24 → 615,22",
+      "size": "133×17 → 121×21"
+     },
+     {
+      "t": "Auto & Home",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "normal → 21px",
+      "ls": "0.64px → normal",
+      "pos": "773,24 → 754,22",
+      "size": "90×17 → 82×21"
+     },
+     {
+      "t": "Marine",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "normal → 21px",
+      "ls": "0.64px → normal",
+      "pos": "879,24 → 853,22",
+      "size": "47×17 → 44×21"
+     },
+     {
+      "t": "Aviation",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "normal → 21px",
+      "ls": "0.64px → normal",
+      "pos": "942,24 → 915,22",
+      "size": "56×17 → 51×21"
+     },
+     {
+      "t": "flyGarmin",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "14px → 13px",
+      "lh": "17.5px → 24px",
+      "ls": "0.64px → normal",
+      "c": "rgb(0, 0, 0) → rgb(221, 221, 221)",
+      "pos": "475,493 → 728,4104",
+      "size": "208×34 → 56×24"
+     },
+     {
+      "t": "Sale",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "normal → 21px",
+      "ls": "0.64px → normal",
+      "pos": "1014,24 → 984,22",
+      "size": "30×17 → 27×21"
+     },
+     {
+      "t": "Help",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fw": "500 → 400",
+      "pos": "1261,0 → 1261,22",
+      "size": "53×64 → 50×21"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "ls": "0.8px → normal",
+      "tt": "uppercase → none",
+      "pos": "80,346 → 95,311"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "ls": "0.8px → normal",
+      "tt": "uppercase → none",
+      "pos": "1520,404 → 1535,325"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "ls": "0.8px → normal",
+      "tt": "uppercase → none",
+      "pos": "2960,360 → 2975,350"
+     },
+     {
+      "t": "CIRQA™ SMART BAND",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "fs": "40px → 32px",
+      "lh": "50px → 40px",
+      "ls": "0.8px → normal",
+      "c": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+      "tt": "none → uppercase",
+      "pos": "4400,191 → 28,634",
+      "size": "320×100 → 291×40"
+     },
+     {
+      "t": "Track all day. Look later. No subscripti",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "pos": "4400,307 → 2975,272",
+      "size": "201×54 → 220×54"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "ls": "0.8px → normal",
+      "tt": "uppercase → none",
+      "pos": "4400,385 → 4415,325"
+     },
+     {
+      "t": "DESCENT™ X10",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "5840,229 → 4415,181",
+      "size": "219×50 → 352×50"
+     },
+     {
+      "t": "Essential dive computer for your underwa",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "pos": "5840,295 → 4415,247",
+      "size": "401×27 → 352×54"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "ls": "0.8px → normal",
+      "tt": "uppercase → none",
+      "pos": "5840,346 → 5855,325"
+     },
+     {
+      "t": "FORERUNNER® 70 & 170",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "7280,216 → 5855,181",
+      "size": "365×50 → 352×50"
+     },
+     {
+      "t": "Running smartwatches with everything you",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "pos": "7280,282 → 5855,247",
+      "size": "427×54 → 352×54"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "ls": "0.8px → normal",
+      "c": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+      "tt": "uppercase → none",
+      "pos": "7280,360 → 372,2309",
+      "size": "90×34 → 87×34"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "ls": "0.8px → normal",
+      "c": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+      "tt": "uppercase → none",
+      "pos": "8720,372 → 846,2309",
+      "size": "90×34 → 87×34"
+     },
+     {
+      "t": "HOLIDAY GIFT GUIDE",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "10160,229 → 95,194",
+      "size": "316×50 → 400×50"
+     },
+     {
+      "t": "Where \"best gift ever\" begins",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "pos": "10160,295 → 95,260",
+      "size": "229×27 → 400×27"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "ls": "0.8px → normal",
+      "c": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+      "tt": "uppercase → none",
+      "pos": "10160,346 → 1321,2309",
+      "size": "90×34 → 87×34"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "tt": "uppercase → none",
+      "pos": "116,1007 → 32,3261"
+     },
+     {
+      "t": "Forerunner® — Running Smartwatches for A",
+      "ff": "Arial → GarminHomeOswald",
+      "fs": "13.3333px → 32px",
+      "lh": "normal → 40px",
+      "tt": "none → uppercase",
+      "pos": "136,1121 → 32,2171",
+      "size": "379×589 → 427×80"
+     },
+     {
+      "t": "Shop",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "tt": "uppercase → none",
+      "pos": "412,1660 → 507,3261"
+     },
+     {
+      "t": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH",
+      "ff": "Arial → GarminHomeOswald",
+      "fs": "13.3333px → 32px",
+      "lh": "normal → 40px",
+      "tt": "none → uppercase",
+      "pos": "531,1121 → 507,2171",
+      "size": "379×589 → 427×80"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "tt": "uppercase → none",
+      "pos": "806,1660 → 981,3261"
+     },
+     {
+      "t": "SMARTWATCHES FOR KIDS",
+      "ff": "Arial → GarminHomeOswald",
+      "fs": "13.3333px → 32px",
+      "lh": "normal → 40px",
+      "tt": "none → uppercase",
+      "pos": "925,1121 → 981,2171",
+      "size": "379×589 → 427×40"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "tt": "uppercase → none",
+      "pos": "1201,1660 → 32,3677"
+     },
+     {
+      "t": "Monitor Patients With Garmin Health",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "pos": "40,2028 → 32,2669",
+      "size": "568×40 → 664×40"
+     },
+     {
+      "t": "LEARN MORE",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "c": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+      "pos": "40,2084 → 827,1673",
+      "size": "136×34 → 82×34"
+     },
+     {
+      "t": "Stories: How We Connect People to Their ",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "pos": "744,1988 → 744,2669",
+      "size": "568×80 → 664×40"
+     },
+     {
+      "t": "Learn More",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "tt": "uppercase → none",
+      "pos": "744,2084 → 32,2725"
+     },
+     {
+      "t": "SHOP BY CATEGORY",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "0,2206 → 0,2847"
+     },
+     {
+      "t": "SMARTWATCHES",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "40,2564 → 32,3205",
+      "size": "421×40 → 427×40"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "tt": "uppercase → none",
+      "pos": "40,2620 → 507,3677"
+     },
+     {
+      "t": "AUTO & HOME",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "509,2564 → 507,3205",
+      "size": "421×40 → 427×40"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "lh": "16.1px → 16px",
+      "tt": "uppercase → none",
+      "pos": "509,2620 → 981,3677"
+     },
+     {
+      "t": "SPORTS & FITNESS",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "979,2564 → 981,3205",
+      "size": "421×40 → 427×40"
+     },
+     {
+      "t": "OUTDOOR RECREATION",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "40,2980 → 32,3621",
+      "size": "421×40 → 427×40"
+     },
+     {
+      "t": "MARINE",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "509,2980 → 507,3621",
+      "size": "421×40 → 427×40"
+     },
+     {
+      "t": "AVIATION",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "tt": "none → uppercase",
+      "pos": "979,2980 → 981,3621",
+      "size": "421×40 → 427×40"
+     },
+     {
+      "t": "Sign up for News",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "ls": "0.8px → normal",
+      "pos": "0,3142 → 16,3759",
+      "size": "1440×40 → 1408×40"
+     },
+     {
+      "t": "Get product news and promotions based on",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "11px → 13px",
+      "lh": "16.5px → 19.5px",
+      "c": "rgb(0, 0, 0) → rgb(91, 91, 91)",
+      "pos": "0,3258 → 16,3873",
+      "size": "1440×17 → 1408×20"
+     },
+     {
+      "t": "Learn about email privacy.",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "11px → 13px",
+      "lh": "16.5px → 19.5px",
+      "c": "rgb(0, 0, 0) → rgb(91, 91, 91)",
+      "pos": "656,3275 → 645,3901",
+      "size": "128×13 → 149×13"
+     },
+     {
+      "t": "CUSTOMER SERVICE",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "fs": "20px → 16px",
+      "lh": "32px → 20px",
+      "ls": "0.8px → normal",
+      "pos": "24,3379 → 24,4004",
+      "size": "160×32 → 336×20"
+     },
+     {
+      "t": "Support Center",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(255, 255, 255) → rgb(221, 221, 221)",
+      "pos": "24,3411 → 24,4032",
+      "size": "97×24 → 87×24"
+     },
+     {
+      "t": "Contact Us",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(255, 255, 255) → rgb(221, 221, 221)",
+      "pos": "24,3435 → 24,4056",
+      "size": "71×24 → 63×24"
+     },
+     {
+      "t": "Shipping, Returns & Refunds",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(255, 255, 255) → rgb(221, 221, 221)",
+      "pos": "24,3459 → 24,4080",
+      "size": "182×24 → 161×24"
+     },
+     {
+      "t": "Order Support",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(255, 255, 255) → rgb(221, 221, 221)",
+      "pos": "24,3483 → 24,4104",
+      "size": "90×24 → 80×24"
+     },
+     {
+      "t": "Warranty Information",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(255, 255, 255) → rgb(221, 221, 221)",
+      "pos": "24,3507 → 24,4128",
+      "size": "136×24 → 122×24"
+     },
+     {
+      "t": "Data Management",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(255, 255, 255) → rgb(221, 221, 221)",
+      "pos": "24,3531 → 24,4152",
+      "size": "117×24 → 106×24"
+     },
+     {
+      "t": "Deals & Promotions",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(255, 255, 255) → rgb(221, 221, 221)",
+      "pos": "24,3555 → 24,4176",
+      "size": "127×24 → 113×24"
+     },
+     {
+      "t": "Find a Dealer",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto",
+      "fs": "12.8px → 13px",
+      "ls": "0.8px → normal",
+      "c": "rgb(255, 255, 255) → rgb(221, 221, 221)",
+      "pos": "24,3579 → 24,4200",
+      "size": "85×24 → 74×24"
+     },
+     {
+      "t": "COMPANY",
+      "ff": "Superscripts-Oswald → GarminHomeOswald",
+      "fs": "20px → 16px",
+      "lh": "32px → 20px",
+      "ls": "0.8px → normal",
+      "pos": "380,3379 → 376,4004",
+      "size": "79×32 → 336×20"
+     }
+    ],
+    "missing": [
+     "Skip navigation links",
+     "Products",
+     "All Smartwatches",
+     "Health & Fitness Tracking",
+     "Design Your Own Watch",
+     "Watches for Women",
+     "Fashion & Hybrid Smartwatches",
+     "MARQ Luxury Watch Collection",
+     "Running",
+     "Multisport & Triathlete",
+     "Adventure",
+     "Swimming",
+     "Diving",
+     "Golf",
+     "Kids Smartwatches",
+     "Maps",
+     "Outdoor Maps",
+     "Golf Course Locator",
+     "Accessories & Plans",
+     "Accessories"
+    ]
+   }
+  }
+ }
+}

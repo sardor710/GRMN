@@ -1,19 +1,33 @@
-.section {
-  background: #fff;
-  overflow: hidden;
+/* Measured from garmin.com/en-US "Featured" slider — see docs/research/www.garmin.com/components/HomeFeatured.spec.md */
+
+.root {
+  box-sizing: border-box;
+  color: #000;
+  font-family: var(--home-body, Roboto, sans-serif);
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: normal;
+  line-height: 24px;
 }
+
+.root *,
+.root *::before,
+.root *::after {
+  box-sizing: border-box;
+}
+
+/* ---------- Header bar ---------- */
 
 .header {
   position: relative;
-  z-index: 2;
-  height: 50px;
   margin: 0;
   padding: 16px 64px;
-  background: #000;
+  background-color: #000;
   color: #fff;
   font-family: var(--home-display, Oswald, sans-serif);
   font-size: 14.4px;
   font-weight: 400;
+  letter-spacing: 0.8px;
   line-height: 18px;
   text-align: center;
   text-transform: uppercase;
@@ -21,259 +35,333 @@
 
 .header::after {
   position: absolute;
-  top: 100%;
+  z-index: 1;
+  top: 50px;
   left: 50%;
-  width: 0;
-  height: 0;
-  transform: translateX(-50%);
-  border-left: 28px solid transparent;
-  border-right: 28px solid transparent;
+  display: block;
+  margin-left: -30px;
   border-top: 20px solid #000;
+  border-right: 30px solid transparent;
+  border-left: 30px solid transparent;
   content: "";
 }
 
-.carousel {
+/* ---------- Slider ---------- */
+
+.slider {
   position: relative;
-  height: 544px;
-  background: #fff;
-}
-
-.scroller {
-  display: flex;
-  height: 100%;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-padding-left: 12px;
+  overflow-x: scroll;
   scrollbar-width: none;
-  scroll-snap-type: x proximity;
-  overscroll-behavior-inline: contain;
+  overflow-y: auto;
+  background-color: #fff;
+  scroll-behavior: smooth;
 }
 
-.scroller::-webkit-scrollbar {
+.slider::-webkit-scrollbar {
   display: none;
 }
 
-.scroller:focus-visible {
-  outline: 2px solid #007cc3;
-  outline-offset: -2px;
-}
-
-.card {
+.slides {
   position: relative;
   display: flex;
-  flex: 0 0 323px;
+  min-width: 100%;
+  text-align: center;
+  white-space: nowrap;
+  transition: transform 1s;
+}
+
+.slide {
+  position: relative;
+  display: flex;
+  min-width: 75vw;
+  max-width: 75vw;
+  flex: 0 0 auto;
   flex-direction: column;
-  width: 323px;
-  height: 469px;
   margin: 43px 12px 32px;
-  overflow: hidden;
-  box-shadow: 0 2px 3px 1px #d9d9d9;
-  color: #000;
+  box-shadow: rgb(217 217 217) 0 2px 3px 1px;
+  cursor: pointer;
   text-decoration: none;
-  scroll-snap-align: start;
-  transition: box-shadow 0.2s, transform 0.2s;
+  white-space: normal;
 }
 
-.card:hover,
-.card:focus-visible {
-  box-shadow: 0 4px 14px rgb(0 0 0 / 20%);
+.slide:hover,
+.slide:focus-visible {
+  transition: box-shadow 0.135s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow:
+    rgb(77 77 77 / 20%) 0 1px 3px 1px,
+    rgb(77 77 77 / 10%) 0 2px 8px 4px;
 }
 
-.card:focus-visible {
-  outline: 2px solid #007cc3;
+.slide:focus-visible {
+  outline: 1px auto rgb(16 16 16);
+  outline-offset: 1px;
 }
 
-.edgeCard {
+.name {
+  margin: 16px 0 16px;
+  font-family: var(--home-display, Oswald, sans-serif);
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 0.8px;
+  line-height: 30px;
+  text-transform: none;
+}
+
+
+/* ---------- Promo tile ---------- */
+
+.promo {
   justify-content: flex-end;
   color: #fff;
-  text-align: center;
 }
 
-.edgeImage {
-  object-fit: fill;
-  object-position: center;
+.promoImage {
+  object-fit: cover;
+  vertical-align: top;
 }
 
-.edgeText {
+.promoText {
   position: relative;
-  z-index: 1;
   display: flex;
-  min-height: 165px;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  padding: 0 18px 8px;
+  padding: 0 16px;
 }
 
-.cardTitle {
-  margin: 0 0 16px;
-  font-family: var(--home-display, Oswald, sans-serif);
-  font-size: 32px;
-  font-weight: 400;
-  line-height: 40px;
-  text-align: center;
+.promoText .name {
+  margin-bottom: 24px;
+  color: #fff;
   text-transform: uppercase;
 }
 
-.description {
-  margin: 0;
-  font-family: var(--home-body, Roboto, sans-serif);
-  font-size: 16px;
-  font-weight: 400;
-  line-height: 24px;
-  text-align: center;
-}
-
-.edgeText .cardTitle {
-  color: #fff;
-}
-
-.edgeText .description {
-  color: #fff;
-}
-
-.edgeButton {
-  display: inline-flex;
-  width: 82px;
-  height: 34px;
-  align-items: center;
-  justify-content: center;
-  margin-top: 24px;
-  border: 1px solid #fff;
-  background: #fff;
+.button {
+  display: inline-block;
+  align-self: center;
+  margin-bottom: 32px;
+  padding: 8px 24px;
+  border: 1px solid #000;
+  background-color: #fff;
   color: #000;
   font-family: var(--home-body, Roboto, sans-serif);
   font-size: 14px;
   font-weight: 500;
-  line-height: 16px;
+  line-height: 16.1px;
   text-transform: uppercase;
-  transition: background 0.2s, color 0.2s;
+  vertical-align: middle;
+  transition:
+    background 0.2s ease,
+    border 0.2s ease,
+    color 0.2s ease;
 }
 
-.edgeCard:hover .edgeButton,
-.edgeCard:focus-visible .edgeButton {
-  background: #000;
+.button:hover {
+  background-color: #000;
   color: #fff;
 }
 
-.productCard {
-  padding: 32px 16px 16px;
-  background: #fff;
-  color: #000;
+/* ---------- Product card ---------- */
+
+.product {
+  padding-bottom: 16px;
+  color: rgb(26 26 26);
+  transition: color 0.2s;
 }
 
-.productImage {
-  position: relative;
-  flex: 0 0 215px;
-  width: 100%;
-  height: 215px;
-}
-
-.containImage {
-  object-fit: contain;
-}
-
-.productText {
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  padding-top: 8px;
-}
-
-.productText .cardTitle {
-  margin-bottom: 16px;
-  color: #000;
-}
-
-.productText .description {
-  color: #1a1a1a;
+.badges {
+  position: absolute;
+  z-index: 1;
+  top: 16px;
+  right: 16px;
+  left: 16px;
 }
 
 .badge {
-  position: absolute;
-  z-index: 2;
-  top: 8px;
-  left: 12px;
-  display: grid;
-  width: 64px;
-  height: 64px;
-  place-items: center;
+  width: fit-content;
+  margin-bottom: 16px;
+  padding: 7px 14px;
+  border-radius: 22.75px;
+  background-color: rgb(194 15 47);
   color: #fff;
+  font-size: 14px;
+  line-height: 21px;
+  text-align: left;
 }
 
-.badge svg {
-  position: absolute;
+.imageContainer {
+  margin-top: 16px;
+}
+
+.productImage {
+  display: inline;
+  vertical-align: baseline;
   width: 100%;
-  height: 100%;
-  fill: #bd002b;
+  max-width: 80%;
+  height: auto;
 }
 
-.badge .badgeLabel {
-  position: relative;
-  font-family: var(--home-display, Oswald, sans-serif);
-  font-size: 11px;
-  line-height: 1;
+.text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  padding: 0 16px;
 }
+
+.copy {
+  margin: 8px 0;
+  font-size: 14.4px;
+  line-height: 20px;
+}
+
+.footnote {
+  margin-top: auto;
+  font-size: 11px;
+  line-height: 16.5px;
+}
+
+/* ---------- Arrows ---------- */
 
 .arrow {
   position: absolute;
-  z-index: 3;
+  z-index: 2;
   top: 50%;
-  display: grid;
-  width: 56px;
-  height: 56px;
-  place-items: center;
-  transform: translateY(-50%);
+  display: none;
+  width: 68px;
+  height: 68px;
+  padding: 0;
   border: 0;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 2px 8px rgb(0 0 0 / 22%);
-  color: #000;
+  background-color: transparent;
   cursor: pointer;
-  transition: background 0.2s, box-shadow 0.2s;
-}
-
-.arrow:hover {
-  background: #f3f3f3;
-  box-shadow: 0 4px 12px rgb(0 0 0 / 25%);
+  transform: translateY(-34px);
+  transition:
+    left 0.3s ease-in,
+    right 0.3s ease-in;
 }
 
 .arrow svg {
-  width: 24px;
-  height: 24px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 68px;
+  height: 68px;
 }
 
-.previous {
-  left: 8px;
+.arrow:focus-visible {
+  outline: 1px auto rgb(16 16 16);
 }
 
-.next {
-  right: 8px;
+.arrowLeft {
+  left: 0;
 }
 
-@media (max-width: 640px) {
-  .carousel { height: 561px; }
-  .header {
-    padding-right: 24px;
-    padding-left: 24px;
+.arrowRight {
+  right: 0;
+}
+
+.visuallyHidden {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---------- Breakpoints (live: 480 / 768 / 1024 / 1200 / 1350) ---------- */
+
+@media (min-width: 480px) {
+  .slide {
+    min-width: 38vw;
+    max-width: 38vw;
   }
 
-  .card {
-    flex-basis: min(323px, calc(100vw - 48px));
-    width: min(323px, calc(100vw - 48px));
+  .imageContainer {
+    height: 27vw;
+  }
+
+  .productImage {
+    max-width: 144px;
+  }
+}
+
+@media (min-width: 768px) {
+  .slide {
+    min-width: calc(40% - 24px);
+    max-width: calc(40% - 24px);
+  }
+
+  .productImage {
+    max-width: 208px;
+  }
+
+  .name {
+    font-size: 32px;
+    line-height: 40px;
+  }
+}
+
+/* Desktop: arrow-driven paging (transform), like live. Below this, native swipe. */
+@media (min-width: 1024px) {
+  .slider {
+    overflow-x: hidden;
+  }
+
+  .slides {
+    transform: translateX(var(--featured-offset, 0px));
+  }
+
+  .slide {
+    min-width: calc(28.5714% - 24px);
+    max-width: calc(28.5714% - 24px);
+  }
+
+  .imageContainer {
+    height: 19vw;
   }
 
   .arrow {
-    width: 44px;
-    height: 44px;
+    display: block;
+  }
+}
+
+@media (min-width: 1200px) {
+  .imageContainer {
+    height: 16vw;
+  }
+}
+
+@media (min-width: 1350px) {
+  .slide {
+    min-width: calc(22.2222% - 24px);
+    max-width: calc(22.2222% - 24px);
+  }
+
+  .productImage {
+    max-width: 240px;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card,
-  .edgeButton,
+  .slides,
+  .slide,
+  .button,
   .arrow {
     transition: none;
+  }
+
+  .slider {
+    scroll-behavior: auto;
+  }
+}
+
+.product .name {
+  color: #000;
+  text-transform: none;
+}
+
+/* <480: live's tallest card keeps 12.5px under the copy (measured footnote margin on FORERUNNER® 970 @390), giving a 463.5px row. */
+@media (max-width: 479.98px) {
+  .footnote {
+    padding-top: 12.5px;
   }
 }

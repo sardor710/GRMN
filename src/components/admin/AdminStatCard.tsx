@@ -53,48 +53,48 @@ export function AdminStatCard({
   return (
     <div
       onClick={onClick}
-      className={`group relative overflow-hidden border p-5 transition-all duration-200 ${
+      className={`group relative overflow-hidden border p-6 bg-white transition-all duration-200 rounded-none ${
         highlight
-          ? "border-[#007cc3]/50 bg-gradient-to-b from-[#16202e] to-[#121620] shadow-lg shadow-[#007cc3]/5"
-          : "border-[#232836] bg-[#12151e] hover:border-[#384257] hover:bg-[#151924]"
+          ? "border-black shadow-md"
+          : "border-neutral-200 hover:border-black"
       } ${onClick ? "cursor-pointer" : ""}`}
     >
       {/* Subtle top indicator bar */}
       <div
-        className={`absolute top-0 left-0 right-0 h-[2px] transition-opacity ${
+        className={`absolute top-0 left-0 right-0 h-[3px] transition-opacity ${
           highlight
             ? "bg-[#007cc3] opacity-100"
-            : "bg-[#007cc3] opacity-0 group-hover:opacity-100"
+            : "bg-black opacity-0 group-hover:opacity-100"
         }`}
       />
 
       {/* Header: Title & Icon */}
       <div className="flex items-start justify-between gap-2">
         <div>
-          <span className="font-heading uppercase tracking-wider text-[11px] font-bold text-[#8a92a3]">
+          <span className="g-heading uppercase tracking-[0.06em] text-[12px] text-neutral-500 font-normal">
             {title}
           </span>
           {tag && (
-            <span className="ml-2 font-mono text-[9px] font-semibold uppercase px-1.5 py-0.5 rounded bg-[#1e2535] text-[#00a0df] border border-[#00a0df]/20">
+            <span className="ml-2 font-mono text-[9px] font-bold uppercase px-1.5 py-0.5 bg-[#007cc3]/10 text-[#007cc3] border border-[#007cc3]/20">
               {tag}
             </span>
           )}
         </div>
 
         <div className="flex items-center gap-1.5">
-          <div className="flex h-8 w-8 items-center justify-center border border-[#262c3c] bg-[#181c28] text-[#007cc3] transition-colors group-hover:border-[#007cc3]/40 group-hover:text-white">
+          <div className="flex h-8 w-8 items-center justify-center border border-neutral-200 bg-neutral-50 text-black transition-colors group-hover:bg-black group-hover:text-white group-hover:border-black">
             <Icon className="h-4 w-4" />
           </div>
           {onClick && (
-            <ArrowUpRight className="h-3.5 w-3.5 text-[#525b6c] opacity-0 transition-opacity group-hover:opacity-100" />
+            <ArrowUpRight className="h-3.5 w-3.5 text-neutral-400 opacity-0 transition-opacity group-hover:opacity-100" />
           )}
         </div>
       </div>
 
       {/* Value & Sparkline Row */}
-      <div className="mt-3 flex items-end justify-between gap-3">
+      <div className="mt-4 flex items-end justify-between gap-3">
         <div>
-          <h3 className="font-heading text-2xl lg:text-[28px] font-bold tracking-tight text-white leading-none">
+          <h3 className="g-heading text-3xl lg:text-[32px] font-normal tracking-tight text-black leading-none">
             {value}
           </h3>
         </div>
@@ -110,7 +110,7 @@ export function AdminStatCard({
                 d={sparklinePath}
                 fill="none"
                 stroke={sparklineColor}
-                strokeWidth="2.2"
+                strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
               />
@@ -122,15 +122,15 @@ export function AdminStatCard({
       {/* Progress bar if present */}
       {progress && (
         <div className="mt-3">
-          <div className="flex items-center justify-between text-[10px] font-mono text-[#8a92a3] mb-1">
+          <div className="flex items-center justify-between text-[11px] font-mono text-neutral-500 mb-1">
             <span>{progress.label || "Target"}</span>
-            <span className="text-white font-semibold">
+            <span className="text-black font-semibold">
               {Math.round((progress.value / (progress.max || 100)) * 100)}%
             </span>
           </div>
-          <div className="h-1.5 w-full bg-[#1b202c] overflow-hidden">
+          <div className="h-1.5 w-full bg-neutral-100 overflow-hidden">
             <div
-              className="h-full bg-gradient-to-r from-[#007cc3] to-[#00c0f0] transition-all duration-500"
+              className="h-full bg-black transition-all duration-500"
               style={{
                 width: `${Math.min(100, Math.max(0, (progress.value / (progress.max || 100)) * 100))}%`,
               }}
@@ -140,20 +140,20 @@ export function AdminStatCard({
       )}
 
       {/* Footer / Trend change */}
-      <div className="mt-3 flex items-center justify-between text-[11px] font-sans pt-2.5 border-t border-[#1c212e]">
+      <div className="mt-4 flex items-center justify-between text-[12px] font-sans pt-3 border-t border-neutral-100">
         {change ? (
           <div
-            className={`flex items-center gap-1 font-medium font-sans ${
-              isPositive ? "text-[#4ade80]" : "text-rose-400"
+            className={`flex items-center gap-1 font-medium ${
+              isPositive ? "text-emerald-700" : "text-rose-700"
             }`}
           >
-            {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+            {isPositive ? <TrendingUp className="h-3.5 w-3.5" /> : <TrendingDown className="h-3.5 w-3.5" />}
             <span className="font-semibold">{change}</span>
           </div>
         ) : (
-          <span className="text-[#64748b]">Real-time Telemetry</span>
+          <span className="text-neutral-400 font-mono text-[11px]">Real-time Telemetry</span>
         )}
-        {subtitle && <span className="text-[#808b9e] text-[11px]">{subtitle}</span>}
+        {subtitle && <span className="text-neutral-500 text-[11px]">{subtitle}</span>}
       </div>
     </div>
   );

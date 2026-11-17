@@ -1,12 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { ProductDetail } from "@/types";
 import { useCart } from "@/lib/cart";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { GarminBadge } from "@/components/GarminBadge";
+import { VariantPicker } from "@/components/product/VariantPicker";
+import { isPurchasable, selectValue } from "@/lib/cms/product-variants";
+
+// Same price format the storefront used before variants (site-wide currency display is a separate follow-up).
+const money = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD`;
 
 export function ProductTop({ product }: { product: ProductDetail }) {
   const [mainIdx, setMainIdx] = useState(0);
@@ -16,12 +21,55 @@ export function ProductTop({ product }: { product: ProductDetail }) {
   const [added, setAdded] = useState(false);
   const { add } = useCart();
 
+  // ---- variant model (CMS products with options) ----
+  const vm = product.variantModel;
+  const defaultVariant = vm ? vm.variants.find((v) => v.isDefault) || vm.variants[0] : undefined;
+  const [variantId, setVariantId] = useState(defaultVariant?.id);
+  const variant = vm?.variants.find((v) => v.id === variantId) || defaultVariant;
+
+  // Deep link: /p/<id>?sku=<variant sku>
+  useEffect(() => {
+    if (!vm) return;
+    const sku = new URLSearchParams(window.location.search).get("sku");
+    // Only active variants are reachable by link (drafts/archived are not for sale).
+    const match = sku
+      ? vm.variants.find((v) => v.status === "active" && v.sku.toLowerCase() === sku.toLowerCase())
+      : undefined;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from the URL after hydration
+    if (match) setVariantId(match.id);
+  }, [vm]);
+
+  const gallery = useMemo(() => {
+    if (!vm || !variant) return product.gallery;
+    const byId = new Map(vm.images.map((img) => [img.id, img]));
+    const own = variant.imageIds.map((id) => byId.get(id)).filter((img): img is NonNullable<typeof img> => Boolean(img));
+    return own.length ? own.map((img, i) => ({ view: `${img.alt || product.title} ${i + 1}`, src: img.src })) : product.gallery;
+  }, [vm, variant, product.gallery, product.title]);
+  const safeIdx = Math.min(mainIdx, gallery.length - 1);
+
+  const chooseValue = (optionId: string, valueId: string) => {
+    if (!vm) return;
+    const next = selectValue(vm.variants, variant?.selections || {}, optionId, valueId);
+    if (!next) return;
+    setVariantId(next.id);
+    setMainIdx(0);
+    const url = new URL(window.location.href);
+    url.searchParams.set("sku", next.sku);
+    window.history.replaceState(null, "", url);
+  };
+
+  const price = variant?.price ?? product.price;
+  const compareAt = variant?.originalPrice;
+  const partNumber = variant?.sku || product.partNumber;
+
   const handleAdd = () => {
+    if (!isPurchasable(variant)) return;
     add({
       id: product.id,
       name: product.title,
-      price: product.price,
-      image: product.gallery[0]?.src,
+      price,
+      image: gallery[0]?.src,
+      ...(variant ? { sku: variant.sku, variantLabel: variant.title } : {}),
     });
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -52,20 +100,20 @@ export function ProductTop({ product }: { product: ProductDetail }) {
             >
               <ChevronLeftIcon className="h-4 w-4 rotate-90" />
             </button>
-            {product.gallery.map((g, i) => (
+            {gallery.map((g, i) => (
               <button
-                key={g.view}
+                key={`${g.view}-${i}`}
                 onClick={() => setMainIdx(i)}
                 className={`relative h-16 w-16 border ${
-                  i === mainIdx ? "border-black" : "border-neutral-200"
+                  i === safeIdx ? "border-black" : "border-neutral-200"
                 }`}
               >
-                <Image src={g.src} alt={g.view} fill sizes="64px" className="object-contain p-1" />
+                <Image src={g.src} alt={g.view} fill sizes="64px" unoptimized={g.src.startsWith("http")} className="object-contain p-1" />
               </button>
             ))}
             <button
               aria-label="Next"
-              onClick={() => setMainIdx((i) => Math.min(product.gallery.length - 1, i + 1))}
+              onClick={() => setMainIdx((i) => Math.min(gallery.length - 1, i + 1))}
               className="grid h-8 place-items-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
             >
               <ChevronRightIcon className="h-4 w-4 rotate-90" />
@@ -74,10 +122,11 @@ export function ProductTop({ product }: { product: ProductDetail }) {
           <div className="relative flex-1">
             <div className="relative aspect-square w-full">
               <Image
-                src={product.gallery[mainIdx].src}
+                src={gallery[safeIdx].src}
                 alt={product.title}
                 fill
                 priority
+                unoptimized={gallery[safeIdx].src.startsWith("http")}
                 sizes="(max-width: 1024px) 100vw, 560px"
                 className="object-contain"
               />
@@ -90,7 +139,7 @@ export function ProductTop({ product }: { product: ProductDetail }) {
           <h1 className="g-heading text-[32px] leading-tight text-black">{product.title}</h1>
           <p className="mt-2 text-[16px] text-neutral-700">{product.subtitle}</p>
           <p className="mt-3 text-[12px] font-medium uppercase tracking-[0.06em] text-neutral-500">
-            Part Number {product.partNumber}
+            Part Number {partNumber}
           </p>
 
           {product.badge && product.badge !== "NONE" && (
@@ -99,8 +148,13 @@ export function ProductTop({ product }: { product: ProductDetail }) {
             </div>
           )}
 
+          {variant && <p className="mt-1 text-[14px] text-neutral-700">{variant.title}</p>}
+
           <p className="mt-4 text-[28px] font-medium text-black">
-            ${product.price.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD
+            {money(price)}
+            {compareAt !== undefined && compareAt > price && (
+              <span className="ml-3 align-middle text-[18px] font-normal text-neutral-500 line-through">{money(compareAt)}</span>
+            )}
           </p>
           <p className="mt-2 text-[14px] text-neutral-600">
             Starting at $69/mo or 0% APR with <span className="font-semibold">affirm</span>.{" "}
@@ -110,6 +164,10 @@ export function ProductTop({ product }: { product: ProductDetail }) {
             HSA/FSA eligible for qualified customers. <a href="#" className="underline">Learn more</a>
           </p>
 
+          {vm && variant ? (
+            <VariantPicker options={vm.options} variants={vm.variants} selections={variant.selections} onSelect={chooseValue} />
+          ) : (
+          <>
           {/* Case size */}
           <Selector
             label="Case Size"
@@ -146,15 +204,20 @@ export function ProductTop({ product }: { product: ProductDetail }) {
               ))}
             </div>
           </div>
+          </>
+          )}
 
-          <p className="mt-6 text-[14px] text-neutral-700">Available to ship in 1–3 business days.</p>
+          <p className="mt-6 text-[14px] text-neutral-700">
+            {variant && variant.stock <= 0 ? "Currently out of stock." : "Available to ship in 1–3 business days."}
+          </p>
 
           <div className="mt-4 flex items-center gap-3">
             <button
               onClick={handleAdd}
-              className="g-btn bg-[#5bc2e7] text-black transition-colors hover:bg-[#37b4dc]"
+              disabled={!isPurchasable(variant)}
+              className="g-btn bg-[#5bc2e7] text-black transition-colors hover:bg-[#37b4dc] disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-500"
             >
-              {added ? "Added ✓" : "Add to Cart"}
+              {!isPurchasable(variant) ? "Out of Stock" : added ? "Added ✓" : "Add to Cart"}
             </button>
             <button className="g-btn g-btn--outline-dark">Customize</button>
           </div>

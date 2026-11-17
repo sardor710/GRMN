@@ -1,0 +1,92 @@
+{
+ "target": "https://www.garmin.com/en-US/",
+ "clone": "http://localhost:3001/",
+ "sel": "main > g-heading",
+ "cloneSel": "#home-categories-heading",
+ "widths": {
+  "390": {
+   "mismatchPct": 16.04,
+   "size": {
+    "target": [
+     390,
+     30
+    ],
+    "clone": [
+     390,
+     30
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "0-30",
+     "pct": 16
+    }
+   ],
+   "file": "docs/design-references/qa/tiles-cat-heading-390-diff.png",
+   "text": {
+    "matched": 0,
+    "of": 1,
+    "issues": [],
+    "missing": [
+     "SHOP BY CATEGORY"
+    ]
+   }
+  },
+  "768": {
+   "mismatchPct": 10.03,
+   "size": {
+    "target": [
+     768,
+     40
+    ],
+    "clone": [
+     768,
+     40
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "0-40",
+     "pct": 10
+    }
+   ],
+   "file": "docs/design-references/qa/tiles-cat-heading-768-diff.png",
+   "text": {
+    "matched": 0,
+    "of": 1,
+    "issues": [],
+    "missing": [
+     "SHOP BY CATEGORY"
+    ]
+   }
+  },
+  "1440": {
+   "mismatchPct": 5.35,
+   "size": {
+    "target": [
+     1440,
+     40
+    ],
+    "clone": [
+     1440,
+     40
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "0-40",
+     "pct": 5.4
+    }
+   ],
+   "file": "docs/design-references/qa/tiles-cat-heading-1440-diff.png",
+   "text": {
+    "matched": 0,
+    "of": 1,
+    "issues": [],
+    "missing": [
+     "SHOP BY CATEGORY"
+    ]
+   }
+  }
+ }
+}

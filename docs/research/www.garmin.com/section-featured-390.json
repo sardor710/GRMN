@@ -1,0 +1,691 @@
+{
+ "url": "https://www.garmin.com/en-US/",
+ "vw": 390,
+ "tree": {
+  "tag": "div",
+  "r": [
+   0,
+   805,
+   390,
+   589
+  ],
+  "css": {
+   "box-sizing": "border-box",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "font-size": "16px",
+   "line-height": "24px",
+   "color": "rgb(0, 0, 0)",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "h2",
+    "cls": "featured-products__header",
+    "r": [
+     0,
+     805,
+     390,
+     50
+    ],
+    "t": "Featured",
+    "css": {
+     "position": "relative",
+     "top": "0px",
+     "right": "0px",
+     "bottom": "0px",
+     "left": "0px",
+     "box-sizing": "border-box",
+     "margin-top": "0px",
+     "margin-bottom": "0px",
+     "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+     "font-size": "14.4px",
+     "line-height": "18px",
+     "letter-spacing": "0.8px",
+     "text-align": "center",
+     "text-transform": "uppercase",
+     "color": "rgb(255, 255, 255)",
+     "background-color": "rgb(0, 0, 0)",
+     "padding": "16px 64px"
+    },
+    "after": {
+     "display": "block",
+     "position": "absolute",
+     "top": "50px",
+     "right": "165px",
+     "bottom": "-20px",
+     "left": "195px",
+     "z-index": "1",
+     "box-sizing": "border-box",
+     "margin-left": "-30px",
+     "border-top-width": "20px",
+     "border-right-width": "30px",
+     "border-left-width": "30px",
+     "border-top-style": "solid",
+     "border-right-style": "solid",
+     "border-left-style": "solid",
+     "border-right-color": "rgba(0, 0, 0, 0)",
+     "border-left-color": "rgba(0, 0, 0, 0)",
+     "content": "\"\""
+    }
+   },
+   {
+    "tag": "section",
+    "cls": "featured-products__slider",
+    "r": [
+     0,
+     855,
+     390,
+     539
+    ],
+    "css": {
+     "position": "relative",
+     "top": "0px",
+     "right": "0px",
+     "bottom": "0px",
+     "left": "0px",
+     "box-sizing": "border-box",
+     "background-color": "rgb(255, 255, 255)",
+     "overflow-x": "scroll",
+     "overflow-y": "auto",
+     "scroll-behavior": "smooth"
+    },
+    "c": [
+     {
+      "tag": "div",
+      "cls": "featured-products__slides",
+      "r": [
+       0,
+       855,
+       390,
+       539
+      ],
+      "css": {
+       "display": "flex",
+       "position": "relative",
+       "top": "0px",
+       "right": "0px",
+       "bottom": "0px",
+       "left": "0px",
+       "box-sizing": "border-box",
+       "min-width": "100%",
+       "text-align": "center",
+       "white-space": "nowrap",
+       "transition-property": "transform",
+       "transition-duration": "1s"
+      },
+      "c": [
+       {
+        "tag": "g-container",
+        "cls": "g__container--link featured-products__slide js-product-card",
+        "r": [
+         12,
+         898,
+         293,
+         464
+        ],
+        "css": {
+         "display": "flex",
+         "position": "relative",
+         "top": "0px",
+         "right": "0px",
+         "bottom": "0px",
+         "left": "0px",
+         "box-sizing": "border-box",
+         "min-width": "292.5px",
+         "flex-direction": "column",
+         "justify-content": "end",
+         "box-shadow": "rgb(217, 217, 217) 0px 2px 3px 1px",
+         "cursor": "pointer",
+         "margin": "43px 12px 32px 12px"
+        },
+        "c": [
+         {
+          "tag": "g-image",
+          "cls": "g__image g__image--is-background hydrated",
+          "r": [
+           12,
+           898,
+           293,
+           464
+          ],
+          "css": {
+           "display": "block",
+           "position": "absolute",
+           "top": "0px",
+           "right": "0px",
+           "bottom": "0px",
+           "left": "0px"
+          },
+          "c": [
+           {
+            "tag": "figure",
+            "cls": "g__image__figure",
+            "r": [
+             12,
+             898,
+             293,
+             464
+            ],
+            "css": {
+             "margin": "0px"
+            },
+            "c": [
+             {
+              "tag": "picture",
+              "r": [
+               12,
+               900,
+               293,
+               19
+              ],
+              "css": {},
+              "c": [
+               {
+                "tag": "source",
+                "r": [
+                 12,
+                 900,
+                 0,
+                 19
+                ],
+                "css": {},
+                "rep": [
+                 {},
+                 {}
+                ]
+               },
+               {
+                "tag": "img",
+                "cls": "g__image__img",
+                "r": [
+                 12,
+                 898,
+                 293,
+                 464
+                ],
+                "a": {
+                 "src": "https://res.garmin.com/homepage/2025-HOLIDAY/2-HOLIDAY-SALE/Phase-2-EDGE-TO-EDGE-FT.jpg",
+                 "alt": "Holiday Sale | Garmin",
+                 "natural": [
+                  2000,
+                  2000
+                 ],
+                 "sources": [
+                  {
+                   "srcset": "",
+                   "media": "(max-width: 640px)"
+                  },
+                  {
+                   "srcset": "",
+                   "media": "(max-width: 990px)"
+                  },
+                  {
+                   "srcset": "https://res.garmin.com/homepage/2025-HOLIDAY/2-HOLIDAY-SALE/Phase-2-EDGE-TO-EDGE-FT.jpg",
+                   "media": "(min-width: 990px)"
+                  }
+                 ]
+                },
+                "css": {
+                 "width": "292.5px",
+                 "height": "463.5px",
+                 "vertical-align": "top",
+                 "object-fit": "cover"
+                }
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "tag": "g-container",
+          "cls": "g__container hydrated",
+          "r": [
+           12,
+           1242,
+           293,
+           120
+          ],
+          "css": {
+           "display": "block",
+           "position": "relative",
+           "top": "0px",
+           "right": "0px",
+           "bottom": "0px",
+           "left": "0px",
+           "padding-right": "16px",
+           "padding-left": "16px"
+          },
+          "c": [
+           {
+            "tag": "g-heading",
+            "cls": "g__heading g__heading--center g__heading--dark",
+            "r": [
+             28,
+             1242,
+             261,
+             30
+            ],
+            "css": {
+             "margin-top": "16px",
+             "text-transform": "uppercase",
+             "color": "rgb(255, 255, 255)"
+            },
+            "c": [
+             {
+              "tag": "h2",
+              "r": [
+               28,
+               1242,
+               261,
+               30
+              ],
+              "css": {
+               "margin-top": "0px",
+               "margin-bottom": "24px",
+               "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+               "line-height": "30px",
+               "letter-spacing": "0.8px"
+              },
+              "c": [
+               {
+                "tag": "p",
+                "r": [
+                 28,
+                 1242,
+                 261,
+                 30
+                ],
+                "t": "Holiday Sale",
+                "css": {
+                 "margin-top": "0px",
+                 "margin-bottom": "0px"
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "tag": "g-button",
+            "cls": "g-button g-button--center g__button__host",
+            "r": [
+             115,
+             1296,
+             87,
+             34
+            ],
+            "css": {
+             "display": "inline-block",
+             "margin-bottom": "32px",
+             "align-self": "center"
+            },
+            "c": [
+             {
+              "tag": "a",
+              "cls": "g__button g__button--contained g__button--contained--medium",
+              "r": [
+               115,
+               1296,
+               87,
+               34
+              ],
+              "t": "SHOP",
+              "a": {
+               "href": "https://www.garmin.com/en-US/c/promotions/holiday-sale-guide-americas/",
+               "target": "_self"
+              },
+              "css": {
+               "display": "inline-block",
+               "box-sizing": "border-box",
+               "font-size": "14px",
+               "font-weight": "500",
+               "line-height": "16.1px",
+               "text-transform": "uppercase",
+               "vertical-align": "middle",
+               "background-color": "rgb(255, 255, 255)",
+               "transition-property": "background, border, color",
+               "transition-duration": "0.2s, 0.2s, 0.2s",
+               "transition-timing-function": "ease, ease, ease",
+               "transition-delay": "0s, 0s, 0s",
+               "padding": "8px 24px",
+               "border-width": "1px",
+               "border-style": "solid",
+               "overflow": "auto"
+              }
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "tag": "a",
+        "cls": "product-cards__slide featured-products__slide js-product-card",
+        "r": [
+         329,
+         898,
+         293,
+         464
+        ],
+        "a": {
+         "href": "https://www.garmin.com/en-US/p/1613801/pn/010-03013-00/",
+         "aria-label": "VENU® 4"
+        },
+        "css": {
+         "display": "flex",
+         "position": "relative",
+         "top": "0px",
+         "right": "0px",
+         "bottom": "0px",
+         "left": "0px",
+         "box-sizing": "border-box",
+         "min-width": "292.5px",
+         "padding-bottom": "16px",
+         "flex-direction": "column",
+         "color": "rgb(26, 26, 26)",
+         "box-shadow": "rgb(217, 217, 217) 0px 2px 3px 1px",
+         "cursor": "pointer",
+         "transition-property": "color",
+         "transition-duration": "0.2s",
+         "margin": "43px 12px 32px 12px"
+        },
+        "c": [
+         {
+          "tag": "div",
+          "cls": "product-cards__badges",
+          "r": [
+           345,
+           914,
+           261,
+           51
+          ],
+          "css": {
+           "position": "absolute",
+           "top": "16px",
+           "right": "16px",
+           "bottom": "396.5px",
+           "left": "16px",
+           "box-sizing": "border-box"
+          },
+          "c": [
+           {
+            "tag": "div",
+            "cls": "g__badge g__badge--red",
+            "r": [
+             345,
+             914,
+             93,
+             35
+            ],
+            "t": "Save $100",
+            "css": {
+             "box-sizing": "border-box",
+             "margin-bottom": "16px",
+             "font-size": "14px",
+             "line-height": "21px",
+             "text-align": "left",
+             "color": "rgb(255, 255, 255)",
+             "background-color": "rgb(194, 15, 47)",
+             "padding": "7px 14px",
+             "border-radius": "22.75px"
+            }
+           }
+          ]
+         },
+         {
+          "tag": "div",
+          "cls": "product-cards__image__container",
+          "r": [
+           329,
+           914,
+           293,
+           241
+          ],
+          "css": {
+           "box-sizing": "border-box",
+           "margin-top": "16px"
+          },
+          "c": [
+           {
+            "tag": "img",
+            "cls": "product-cards__slide__img",
+            "r": [
+             358,
+             914,
+             234,
+             234
+            ],
+            "a": {
+             "src": "https://res.garmin.com/homepage/77986/77986-FP.jpg",
+             "alt": "Venu 4",
+             "natural": [
+              600,
+              600
+             ]
+            },
+            "css": {
+             "box-sizing": "border-box",
+             "width": "234px",
+             "height": "234px",
+             "max-width": "80%"
+            }
+           }
+          ]
+         },
+         {
+          "tag": "div",
+          "cls": "product-cards__text__container",
+          "r": [
+           329,
+           1155,
+           293,
+           191
+          ],
+          "css": {
+           "display": "flex",
+           "box-sizing": "border-box",
+           "padding-right": "16px",
+           "padding-left": "16px",
+           "flex-direction": "column"
+          },
+          "c": [
+           {
+            "tag": "g-heading",
+            "cls": "g__heading g__heading--center g__heading--light",
+            "r": [
+             345,
+             1171,
+             261,
+             46
+            ],
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box",
+             "margin-top": "16px"
+            },
+            "c": [
+             {
+              "tag": "h2",
+              "r": [
+               345,
+               1171,
+               261,
+               30
+              ],
+              "css": {
+               "box-sizing": "border-box",
+               "margin-top": "0px",
+               "margin-bottom": "16px",
+               "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+               "line-height": "30px",
+               "letter-spacing": "0.8px"
+              },
+              "c": [
+               {
+                "tag": "p",
+                "r": [
+                 345,
+                 1171,
+                 261,
+                 30
+                ],
+                "t": "VENU® 4",
+                "css": {
+                 "box-sizing": "border-box",
+                 "margin-top": "0px",
+                 "margin-bottom": "0px"
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "tag": "div",
+            "cls": "product-cards__slide__copy",
+            "r": [
+             345,
+             1225,
+             261,
+             80
+            ],
+            "css": {
+             "box-sizing": "border-box",
+             "margin-top": "8px",
+             "margin-bottom": "8px",
+             "font-size": "14.4px",
+             "line-height": "20px"
+            },
+            "c": [
+             {
+              "tag": "p",
+              "r": [
+               345,
+               1225,
+               261,
+               80
+              ],
+              "t": "Advanced health and fitness GPS smartwatches with bright, colorful displays, a built-in flashlight, and wellness and smart features.",
+              "css": {
+               "box-sizing": "border-box",
+               "margin-top": "0px",
+               "margin-bottom": "0px"
+              }
+             }
+            ]
+           },
+           {
+            "tag": "div",
+            "cls": "product-cards__slide__copy--footnote",
+            "r": [
+             345,
+             1346,
+             261,
+             0
+            ],
+            "css": {
+             "box-sizing": "border-box",
+             "margin-top": "32.5px",
+             "font-size": "11px",
+             "line-height": "16.5px"
+            }
+           }
+          ]
+         }
+        ],
+        "rep": [
+         {
+          "t": "Save $50 VÍVOACTIVE® 6 Health and fitness GPS smartwatch with a bright, colorful display and essential fitness, wellness and smart features.",
+          "href": "https://www.garmin.com/en-US/p/1555457/pn/010-02985-01/",
+          "src": "https://res.garmin.com/homepage/74037/74037-FC.jpg"
+         },
+         {
+          "t": "Save $250 FĒNIX® 8 Premium multisport GPS smartwatches with solar charging or AMOLED displays.",
+          "href": "https://www.garmin.com/en-US/p/1228171/pn/010-02905-20/",
+          "src": "https://res.garmin.com/homepage/66948/66948-FP.jpg"
+         },
+         {
+          "t": "Save $50 BOUNCE™ 2 Kids smartwatches with messaging and location tracking features.",
+          "href": "https://www.garmin.com/en-US/p/1815501/pn/010-03399-02/",
+          "src": "https://res.garmin.com/homepage/78738/en-US/78738-FEATURE.jpg"
+         },
+         {
+          "t": "Save $100 FORERUNNER® 970 Premium GPS running and triathlon smartwatch with an AMOLED display, built-in LED flashlight and enhanced navigation plus advanced tra",
+          "href": "https://www.garmin.com/en-US/p/1462801/pn/010-02969-02/",
+          "src": "https://res.garmin.com/homepage/MCJT-65125/en-US/2026/65125-26-FR970.jpg"
+         },
+         {
+          "t": "Save $50 LILY® 2 ACTIVE Small fashion smartwatch with essential wellness and smart features plus GPS.",
+          "href": "https://www.garmin.com/en-US/p/1196650/pn/010-02891-02/",
+          "src": "https://res.garmin.com/homepage/68860/en_US/68860-Lily2Active-FC.png"
+         },
+         {
+          "t": "Save $100 INSTINCT® 3 Rugged outdoor GPS smartwatch with a bright AMOLED display.",
+          "href": "https://www.garmin.com/en-US/p/1316397",
+          "src": "https://res.garmin.com/homepage/MCJT-65125/en-US/65125-FP-INSTINCT-3-45.jpg"
+         },
+         {
+          "t": "Save $200 VENU® X1 Sleek, lightweight GPS smartwatch with a bright 2-inch AMOLED display and advanced health and fitness features.",
+          "href": "https://www.garmin.com/en-US/p/1510465/pn/010-02980-00/",
+          "src": "https://res.garmin.com/homepage/76257/76257-FT.jpg"
+         },
+         {
+          "t": "Save $100 EDGE® 1050 Premium GPS cycling computer with a large, vivid touchscreen, advanced cycling metrics and a built-in speaker.",
+          "href": "https://www.garmin.com/en-US/p/1196129/",
+          "src": "https://res.garmin.com/homepage/MCJT-66783/en_US/66783-Edge1050-FC.png"
+         },
+         {
+          "t": "Save $100 INREACH® MINI 3 PLUS Global SOS satellite communicator with touchscreen plus photo, voice and text messaging beyond cell service.",
+          "href": "https://www.garmin.com/en-US/p/1756582/",
+          "src": "https://res.garmin.com/homepage/77074/emea/77074-Feature.jpg"
+         },
+         {
+          "t": "Save $100 APPROACH® S70 Premium golf smartwatch with GPS, an AMOLED display and advanced wellness and on-course features.",
+          "href": "https://www.garmin.com/en-US/p/847706",
+          "src": "https://res.garmin.com/homepage/MCJT-69482/57225-FT.jpg"
+         },
+         {
+          "t": "Save $100 APPROACH® J1 The first smartwatch designed specifically for junior golfers with its bright, colorful display and features to learn and improve.",
+          "href": "https://www.garmin.com/en-US/p/1908217/",
+          "src": "https://res.garmin.com/homepage/74164/74164-FT.jpg"
+         },
+         {
+          "t": "Save $100 GPSMAP® H1 | H1i PLUS Rugged GPS handhelds with touchscreen, buttons, and long battery life; select models offer inReach® Plus technology.",
+          "href": "https://www.garmin.com/en-US/p/1263273/",
+          "src": "https://res.garmin.com/homepage/71658/en_US/71658-FC.png"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "tag": "button",
+      "sel": "#app>main>div:nth-of-type(1)>section>button:nth-of-type(1)",
+      "hidden": true,
+      "rep": [
+       {
+        "t": "Next"
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "svgs": [],
+ "animations": [
+  {
+   "type": "CSSAnimation",
+   "name": "hero__slideshow",
+   "target": "#g__hero-rotator__container>button:nth-of-type(1)>svg>circle",
+   "duration": 6000,
+   "delay": 0,
+   "iterations": null,
+   "easing": "linear"
+  }
+ ]
+}

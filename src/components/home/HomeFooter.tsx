@@ -1,12 +1,15 @@
+"use client";
+
+import { useState } from "react";
 import { footerColumns, legalLinks } from "@/lib/content";
 import {
-  GlobeIcon,
-  FacebookIcon,
-  XIcon,
-  YouTubeIcon,
-  PinterestIcon,
-  InstagramIcon,
-} from "@/components/icons";
+  FooterChevronDownIcon,
+  FooterFacebookIcon,
+  FooterXIcon,
+  FooterYouTubeIcon,
+  FooterPinterestIcon,
+  FooterInstagramIcon,
+} from "./footer-icons";
 import styles from "./HomeFooter.module.css";
 
 const liveLinks: Record<string, string> = {
@@ -50,51 +53,81 @@ const liveLinks: Record<string, string> = {
 };
 
 const socials = [
-  { label: "Facebook", href: "https://www.facebook.com/Garmin", Icon: FacebookIcon },
-  { label: "X", href: "https://twitter.com/garmin", Icon: XIcon },
-  { label: "YouTube", href: "https://www.youtube.com/garmin", Icon: YouTubeIcon },
-  { label: "Pinterest", href: "https://www.pinterest.com/garmin/", Icon: PinterestIcon },
-  { label: "Instagram", href: "https://www.instagram.com/garmin/", Icon: InstagramIcon },
+  { label: "Garmin on Facebook", href: "https://www.facebook.com/Garmin", Icon: FooterFacebookIcon, wide: false },
+  { label: "Garmin on Twitter", href: "https://twitter.com/garmin", Icon: FooterXIcon, wide: false },
+  { label: "Garmin on YouTube", href: "https://www.youtube.com/garmin", Icon: FooterYouTubeIcon, wide: true },
+  { label: "Garmin on Pinterest", href: "https://www.pinterest.com/garmin/", Icon: FooterPinterestIcon, wide: false },
+  { label: "Garmin on Instagram", href: "https://www.instagram.com/garmin/", Icon: FooterInstagramIcon, wide: false },
 ];
 
+// Live uses a "Superscripts-Roboto" face that draws ® as a small raised glyph.
+function renderLabel(label: string) {
+  const parts = label.split("®");
+  if (parts.length === 1) return label;
+  return parts.flatMap((part, index) =>
+    index === 0 ? [part] : [<span key={index} className={styles.reg}>®</span>, part],
+  );
+}
+
 export function HomeFooter() {
+  const [open, setOpen] = useState<string | null>(null);
+
   return (
-    <footer className={styles.footer}>
-      <div className={styles.main}>
-        <div className={styles.columns}>
-          {footerColumns.map((column) => (
-            <div className={styles.column} key={column.heading}>
-              <h2>{column.heading}</h2>
-              <ul>
-                {column.links.map((link) => (
-                  <li key={link.label}><a href={liveLinks[link.label] ?? link.href}>{link.label}</a></li>
-                ))}
-              </ul>
-            </div>
+    <footer className={styles.footer} data-home="footer">
+      <nav className={styles.nav} aria-label="Global Footer Navigation">
+        <ul className={styles.columns}>
+          {footerColumns.map((column) => {
+            const expanded = open === column.heading;
+            const panelId = `gf-${column.heading.toLowerCase().replace(/[^a-z]+/g, "-")}`;
+            return (
+              <li className={styles.column} key={column.heading} data-open={expanded || undefined}>
+                <button
+                  type="button"
+                  className={styles.heading}
+                  aria-expanded={expanded}
+                  aria-controls={panelId}
+                  onClick={() => setOpen(expanded ? null : column.heading)}
+                >
+                  <span>{column.heading}</span>
+                  <FooterChevronDownIcon aria-hidden="true" className={styles.chevron} />
+                </button>
+                <ul className={styles.links} id={panelId}>
+                  {column.links.map((link) => (
+                    <li key={link.label}>
+                      <a href={liveLinks[link.label] ?? link.href}>{renderLabel(link.label)}</a>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+      <div className={styles.company}>
+        <div className={styles.locale}>
+          <a href="https://www.garmin.com/en-US/select-a-location/">United States</a>
+        </div>
+        <ul className={styles.socials}>
+          {socials.map(({ label, href, Icon, wide }) => (
+            <li key={label}>
+              <a href={href} aria-label={label}>
+                <Icon className={wide ? styles.wideIcon : undefined} />
+              </a>
+            </li>
           ))}
-        </div>
-        <div className={styles.mobileColumns}>
-          {footerColumns.map((column) => (
-            <details key={column.heading}>
-              <summary>{column.heading}</summary>
-              <ul>
-                {column.links.map((link) => (
-                  <li key={link.label}><a href={liveLinks[link.label] ?? link.href}>{link.label}</a></li>
-                ))}
-              </ul>
-            </details>
-          ))}
-        </div>
-        <div className={styles.lower}>
-          <a className={styles.location} href="https://www.garmin.com/en-US/select-a-location/"><GlobeIcon aria-hidden="true" /> United States</a>
-          <div className={styles.socials}>
-            {socials.map(({ label, href, Icon }) => <a key={label} href={href} aria-label={label}><Icon aria-hidden="true" /></a>)}
-          </div>
-        </div>
+        </ul>
       </div>
       <div className={styles.legal}>
-        <span>© Garmin Ltd. or its subsidiaries. All rights reserved.</span>
-        <ul>{legalLinks.map((link) => <li key={link.label}><a href={liveLinks[link.label] ?? link.href}>{link.label}</a></li>)}</ul>
+        <div>
+          <p>© Garmin Ltd. or its subsidiaries. All rights reserved.</p>
+        </div>
+        <ul>
+          {legalLinks.map((link) => (
+            <li key={link.label}>
+              <a href={liveLinks[link.label] ?? link.href}>{link.label}</a>
+            </li>
+          ))}
+        </ul>
       </div>
     </footer>
   );

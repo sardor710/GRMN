@@ -1,0 +1,218 @@
+{
+ "target": "https://www.garmin.com/en-US/",
+ "clone": "http://localhost:3001/",
+ "sel": "main > div:nth-child(7)",
+ "cloneSel": "#home-categories",
+ "widths": {
+  "390": {
+   "mismatchPct": 0,
+   "size": {
+    "target": [
+     390,
+     2496
+    ],
+    "clone": [
+     390,
+     2496
+    ]
+   },
+   "hotBands": [],
+   "file": "docs/design-references/qa/categories-390-diff.png",
+   "text": {
+    "matched": 12,
+    "of": 12,
+    "issues": [
+     {
+      "t": "SMARTWATCHES",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "AUTO & HOME",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "SPORTS & FITNESS",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "OUTDOOR RECREATION",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "MARINE",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "AVIATION",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     }
+    ],
+    "missing": []
+   }
+  },
+  "768": {
+   "mismatchPct": 0,
+   "size": {
+    "target": [
+     768,
+     832
+    ],
+    "clone": [
+     768,
+     832
+    ]
+   },
+   "hotBands": [],
+   "file": "docs/design-references/qa/categories-768-diff.png",
+   "text": {
+    "matched": 12,
+    "of": 12,
+    "issues": [
+     {
+      "t": "SMARTWATCHES",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "AUTO & HOME",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "SPORTS & FITNESS",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "OUTDOOR RECREATION",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "MARINE",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "AVIATION",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     }
+    ],
+    "missing": []
+   }
+  },
+  "1440": {
+   "mismatchPct": 0,
+   "size": {
+    "target": [
+     1440,
+     832
+    ],
+    "clone": [
+     1440,
+     832
+    ]
+   },
+   "hotBands": [],
+   "file": "docs/design-references/qa/categories-1440-diff.png",
+   "text": {
+    "matched": 12,
+    "of": 12,
+    "issues": [
+     {
+      "t": "SMARTWATCHES",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "AUTO & HOME",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "SPORTS & FITNESS",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "OUTDOOR RECREATION",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "MARINE",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "AVIATION",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     }
+    ],
+    "missing": []
+   }
+  }
+ }
+}

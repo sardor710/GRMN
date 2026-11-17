@@ -1,0 +1,614 @@
+{
+ "target": "https://www.garmin.com/en-US/",
+ "clone": "http://localhost:3001/",
+ "sel": "main > div:nth-child(2)",
+ "cloneSel": "[data-home-featured]",
+ "widths": {
+  "390": {
+   "mismatchPct": 2.89,
+   "size": {
+    "target": [
+     390,
+     589
+    ],
+    "clone": [
+     390,
+     589
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "320-360",
+     "pct": 6.6
+    },
+    {
+     "y": "280-320",
+     "pct": 6.4
+    },
+    {
+     "y": "40-80",
+     "pct": 5.6
+    },
+    {
+     "y": "360-400",
+     "pct": 5.2
+    },
+    {
+     "y": "440-480",
+     "pct": 4.4
+    },
+    {
+     "y": "240-280",
+     "pct": 4.1
+    }
+   ],
+   "file": "docs/design-references/qa/featured-390-diff.png",
+   "text": {
+    "matched": 42,
+    "of": 42,
+    "issues": [
+     {
+      "t": "Featured",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Holiday Sale",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "VENU® 4",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Advanced health and fitness GPS smartwat",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $50",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "VÍVOACTIVE® 6",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Health and fitness GPS smartwatch with a",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $250",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "FĒNIX® 8",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Premium multisport GPS smartwatches with",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $50",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "BOUNCE™ 2",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Kids smartwatches with messaging and loc",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "FORERUNNER® 970",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Premium GPS running and triathlon smartw",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $50",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "LILY® 2 ACTIVE",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Small fashion smartwatch with essential ",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "INSTINCT® 3",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Rugged outdoor GPS smartwatch with a bri",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $200",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "VENU® X1",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Sleek, lightweight GPS smartwatch with a",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "EDGE® 1050",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Premium GPS cycling computer with a larg",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "INREACH® MINI 3 PLUS",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Global SOS satellite communicator with t",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "APPROACH® S70",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Premium golf smartwatch with GPS, an AMO",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "APPROACH® J1",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "The first smartwatch designed specifical",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "GPSMAP® H1 | H1i PLUS",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Rugged GPS handhelds with touchscreen, b",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     }
+    ],
+    "missing": []
+   }
+  },
+  "768": {
+   "mismatchPct": 0.29,
+   "size": {
+    "target": [
+     768,
+     572
+    ],
+    "clone": [
+     768,
+     572
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "400-440",
+     "pct": 2
+    }
+   ],
+   "file": "docs/design-references/qa/featured-768-diff.png",
+   "text": {
+    "matched": 42,
+    "of": 42,
+    "issues": [
+     {
+      "t": "Featured",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Holiday Sale",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "VENU® 4",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Advanced health and fitness GPS smartwat",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $50",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "VÍVOACTIVE® 6",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Health and fitness GPS smartwatch with a",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $250",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "FĒNIX® 8",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Premium multisport GPS smartwatches with",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $50",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "BOUNCE™ 2",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Kids smartwatches with messaging and loc",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "FORERUNNER® 970",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Premium GPS running and triathlon smartw",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $50",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "LILY® 2 ACTIVE",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Small fashion smartwatch with essential ",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "INSTINCT® 3",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Rugged outdoor GPS smartwatch with a bri",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $200",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "VENU® X1",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Sleek, lightweight GPS smartwatch with a",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "EDGE® 1050",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Premium GPS cycling computer with a larg",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "INREACH® MINI 3 PLUS",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Global SOS satellite communicator with t",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "APPROACH® S70",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Premium golf smartwatch with GPS, an AMO",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "APPROACH® J1",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "The first smartwatch designed specifical",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "GPSMAP® H1 | H1i PLUS",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Rugged GPS handhelds with touchscreen, b",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     }
+    ],
+    "missing": []
+   }
+  },
+  "1440": {
+   "mismatchPct": 0.14,
+   "size": {
+    "target": [
+     1440,
+     595
+    ],
+    "clone": [
+     1440,
+     595
+    ]
+   },
+   "hotBands": [],
+   "file": "docs/design-references/qa/featured-1440-diff.png",
+   "text": {
+    "matched": 43,
+    "of": 43,
+    "issues": [
+     {
+      "t": "Featured",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Holiday Sale",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "VENU® 4",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Advanced health and fitness GPS smartwat",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $50",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "VÍVOACTIVE® 6",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Health and fitness GPS smartwatch with a",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $250",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "FĒNIX® 8",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Premium multisport GPS smartwatches with",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $50",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "BOUNCE™ 2",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Kids smartwatches with messaging and loc",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "FORERUNNER® 970",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Premium GPS running and triathlon smartw",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $50",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "LILY® 2 ACTIVE",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Small fashion smartwatch with essential ",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "INSTINCT® 3",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Rugged outdoor GPS smartwatch with a bri",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $200",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "VENU® X1",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Sleek, lightweight GPS smartwatch with a",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "EDGE® 1050",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Premium GPS cycling computer with a larg",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "INREACH® MINI 3 PLUS",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Global SOS satellite communicator with t",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "APPROACH® S70",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Premium golf smartwatch with GPS, an AMO",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "APPROACH® J1",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "The first smartwatch designed specifical",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Save $100",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "GPSMAP® H1 | H1i PLUS",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Rugged GPS handhelds with touchscreen, b",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Next",
+      "ff": "Arial → GarminSuperscriptRoboto",
+      "fs": "13.3333px → 16px",
+      "lh": "normal → 24px"
+     }
+    ],
+    "missing": []
+   }
+  }
+ }
+}

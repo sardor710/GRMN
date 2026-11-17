@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Oswald, Roboto } from "next/font/google";
 import "./globals.css";
+import "./garmin-fonts.css";
 import { CartProvider } from "@/lib/cart";
 
 const oswald = Oswald({

@@ -1,25 +1,114 @@
+/* Measured: docs/research/www.garmin.com/section-signup-{1440,768,390}.json */
 .section {
-  min-height: 245px;
-  padding: 24px 16px;
-  text-align: center;
+  padding: 48px 0;
   background: #fff;
+  color: #000;
+  font-family: var(--home-body);
+  font-size: 16px;
+  line-height: 24px;
+  text-align: center;
 }
-.section h2 {
-  font-family: var(--home-display);
-  font-size: 32px;
-  line-height: 40px;
-  margin: 0 0 20px;
+
+.section .heading {
+  margin: 0 0 16px;
+  font-family: var(--font-oswald), Oswald, sans-serif;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 30px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
 }
-.section form { max-width: 380px; margin-inline: auto; }
-.section label { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
-.inputRow { display: flex; height: 42px; }
-.inputRow input { width: 100%; min-width: 0; border: 1px solid #777; padding: 8px 12px; font-size: 15px; outline: none; }
-.inputRow input:focus { border-color: #007cc3; }
-.inputRow button { width: 44px; flex: none; display: grid; place-items: center; background: #000; color: #fff; }
-.inputRow button:hover { background: #333; }
-.section p { color: #5b5b5b; font-size: 13px; margin: 12px 0 2px; }
-.section a { color: #5b5b5b; font-size: 13px; text-decoration: underline; }
-@media (max-width: 640px) {
-  .section { min-height: 252px; }
-  .section h2 { font-size: 28px; line-height: 36px; }
+
+.form {
+  width: min(100%, 376px);
+  margin: 0 auto;
+}
+
+.label {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+.label span {
+  padding-left: 4px;
+  color: rgb(146, 0, 0);
+}
+
+.inputRow {
+  display: flex;
+  align-items: center;
+  margin: 0;
+}
+
+.section .inputRow input {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 40px;
+  padding: 10px 8px;
+  border: 1px solid rgb(217, 217, 217);
+  border-radius: 0;
+  background: #fff;
+  color: #000;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  line-height: 18.4px;
+  outline: none;
+}
+
+.section .inputRow input:focus {
+  border-color: #000;
+}
+
+.inputRow button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 9px;
+  border: 1px solid #000;
+  background: #000;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.2s, border 0.2s, color 0.2s;
+}
+
+.inputRow button svg {
+  width: 19.59px;
+  height: 12.59px;
+  fill: #fff;
+}
+
+.section .copy {
+  margin: 0;
+  font-family: var(--font-roboto), Roboto, sans-serif;
+  font-size: 11px;
+  line-height: 16.5px;
+}
+
+.section .copy:first-of-type {
+  margin-top: 20px;
+}
+
+.section .copy a {
+  color: #000;
+  text-decoration: underline;
+  transition: color 0.2s;
+}
+
+@media (min-width: 768px) {
+  .section .heading {
+    font-size: 32px;
+    line-height: 40px;
+  }
+}
+
+.section .copy a {
+  font-family: var(--font-roboto), Roboto, sans-serif;
 }

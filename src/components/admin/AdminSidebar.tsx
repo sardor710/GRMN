@@ -14,6 +14,7 @@ import {
   Settings,
   ExternalLink,
   Globe,
+  LayoutTemplate,
 } from "lucide-react";
 import { GarminLogo } from "@/components/icons";
 
@@ -42,6 +43,7 @@ const navSections: { title: string; items: NavItem[] }[] = [
   {
     title: "Media & Content",
     items: [
+      { label: "Homepage Management", href: "/admin/homepage", icon: LayoutTemplate, badge: "NEW" },
       { label: "Banners & Hero Rotators", href: "/admin/banners", icon: ImageIcon },
       { label: "Editorial & Blogs", href: "/admin/blogs", icon: BookOpen },
       { label: "SEO Optimization", href: "/admin/seo", icon: Globe, badge: "PRO" },
@@ -66,25 +68,25 @@ export function AdminSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-[#232732] bg-[#11141a] text-white font-sans">
+    <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-neutral-200 bg-white text-black font-sans">
       {/* Top Brand Header */}
-      <div className="flex h-16 items-center justify-between border-b border-[#232732] px-5 bg-[#0f1117]">
-        <Link href="/admin" className="flex items-center gap-2.5">
-          <GarminLogo className="h-4 w-auto text-white" />
-          <span className="font-heading tracking-widest text-[11px] font-bold text-[#007cc3] uppercase bg-[#007cc3]/10 px-1.5 py-0.5 border border-[#007cc3]/30">
+      <div className="flex h-16 items-center justify-between border-b border-neutral-200 px-5 bg-white">
+        <Link href="/admin" className="flex items-center gap-2">
+          <GarminLogo className="h-4 w-auto text-black" />
+          <span className="font-heading tracking-widest text-[10px] font-bold text-[#007cc3] uppercase bg-[#007cc3]/10 px-1.5 py-0.5 border border-[#007cc3]/20">
             ADMIN
           </span>
         </Link>
-        <span className="text-[10px] font-mono text-[#8a92a3] uppercase tracking-wider">
-          v2.4.0
+        <span className="text-[11px] font-mono text-neutral-400 uppercase tracking-wider">
+          v2.4
         </span>
       </div>
 
       {/* Navigation menu */}
-      <div className="flex-1 overflow-y-auto px-2.5 py-4 space-y-5 scrollbar-thin">
+      <div className="flex-1 overflow-y-auto px-2 py-4 space-y-5">
         {navSections.map((section) => (
           <div key={section.title}>
-            <p className="px-3 pb-1 text-[10px] font-heading font-bold uppercase tracking-wider text-[#737b8c]">
+            <p className="px-3 pb-1 text-[11px] font-heading font-normal uppercase tracking-[0.08em] text-neutral-400">
               {section.title}
             </p>
             <ul className="space-y-0.5">
@@ -99,22 +101,22 @@ export function AdminSidebar() {
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className={`flex items-center justify-between px-3 py-2 text-[13px] font-medium transition-colors border-l-2 ${
+                      className={`flex items-center justify-between px-3 py-2 text-[13px] transition-colors border-l-2 ${
                         isActive
-                          ? "border-[#007cc3] bg-[#1a202c] text-white font-semibold"
-                          : "border-transparent text-[#b0b8c7] hover:bg-[#181c24] hover:text-white"
+                          ? "border-black bg-neutral-100 text-black font-semibold"
+                          : "border-transparent text-neutral-600 hover:bg-neutral-50 hover:text-black font-normal"
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
                         <Icon
                           className={`h-4 w-4 shrink-0 ${
-                            isActive ? "text-[#007cc3]" : "text-[#737b8c]"
+                            isActive ? "text-black" : "text-neutral-500"
                           }`}
                         />
                         <span>{item.label}</span>
                       </div>
                       {item.badge && (
-                        <span className="font-mono text-[10px] px-1.5 py-0.5 bg-[#232834] text-[#a0a8b7] rounded">
+                        <span className="font-mono text-[9px] px-1.5 py-0.5 bg-[#007cc3]/10 text-[#007cc3] border border-[#007cc3]/20 font-bold">
                           {item.badge}
                         </span>
                       )}
@@ -128,17 +130,17 @@ export function AdminSidebar() {
       </div>
 
       {/* Bottom Storefront shortcut */}
-      <div className="border-t border-[#232732] p-3 bg-[#0f1117]">
+      <div className="border-t border-neutral-200 p-3 bg-neutral-50">
         <Link
           href="/"
           target="_blank"
-          className="flex items-center justify-between border border-[#262c39] bg-[#161a22] px-3 py-2 text-[12px] text-[#c0c7d4] transition-colors hover:bg-[#1f2430] hover:text-white"
+          className="group flex items-center justify-between border border-neutral-300 bg-white px-3 py-2 text-[12px] text-neutral-700 transition-colors hover:border-black hover:text-black"
         >
           <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#007cc3]" />
+            <span className="h-2 w-2 rounded-full bg-[#007cc3]" />
             <span className="font-heading uppercase tracking-wider font-semibold">Live Storefront</span>
           </div>
-          <ExternalLink className="h-3.5 w-3.5 text-[#737b8c]" />
+          <ExternalLink className="h-3.5 w-3.5 text-neutral-400 group-hover:text-black" />
         </Link>
       </div>
     </aside>

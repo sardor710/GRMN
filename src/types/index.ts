@@ -1,3 +1,5 @@
+import type { ProductImage, ProductOption, ProductVariant, SpecGroup } from "@/lib/cms/types";
+
 export interface HeroSlide {
   title: string;
   subtitle: string;
@@ -102,5 +104,10 @@ export interface ProductDetail {
   inTheBox: string[];
   accessories?: AccessoryItem[];
   related: string[]; // product ids
+  /** Present when the CMS product defines options/variants: drives the storefront variant pickers. */
+  variantModel?: { options: ProductOption[]; variants: ProductVariant[]; images: ProductImage[] };
+  /** Sanitized overview HTML (garmin.com import or admin edit). */
+  overviewHtml?: string;
+  specGroups?: SpecGroup[];
 }
 

@@ -1,139 +1,240 @@
-.promoGrid,
-.storyGrid,
-.categoryGrid {
-  display: grid;
-  padding-inline: 16px;
-  gap: 16px;
+/* Measured from www.garmin.com/en-US — see docs/research/www.garmin.com/components/HomeTiles.spec.md */
+
+/* ---------- Promo cards ---------- */
+
+.promoSection {
+  display: flex;
+  justify-content: center;
+  padding-block: 8px;
   background: #fff;
+  color: #000;
 }
 
-.promoGrid,
-.categoryGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.storyGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-
-.promoGrid { padding-block: 8px; }
-.storyGrid { padding-block: 8px; }
+.promoRow {
+  display: flex;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 1200px;
+  padding-inline: 0;
+}
 
 .promoCard {
-  min-width: 0;
-  height: 604px;
-  color: #000;
+  position: relative;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 2px 3px 1px #d9d9d9;
+  box-sizing: border-box;
+  width: calc(100% - 32px);
+  margin: 8px 16px;
   overflow: hidden;
+  border-radius: 2px;
+  background: #fff;
+  color: #000;
+  box-shadow: rgba(0, 0, 0, 0.24) 0 2px 4px 1px;
+  cursor: pointer;
+  transition: box-shadow 0.135s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.promoCard:hover {
+  box-shadow: rgba(60, 64, 67, 0.2) 0 1px 3px 1px, rgba(60, 64, 67, 0.1) 0 2px 8px 4px;
 }
 
 .promoImage {
   position: relative;
-  height: 400px;
-  flex: none;
-  overflow: hidden;
+  flex-shrink: 0;
+  width: 100%;
+  aspect-ratio: 1;
 }
 
-.promoImage img,
-.storyCard img,
-.categoryCard img {
+.promoImage img {
+  display: block;
   object-fit: cover;
-  transition: transform 0.35s ease;
 }
-
-.promoCard:hover img,
-.storyCard:hover img,
-.categoryCard:hover img { transform: scale(1.025); }
 
 .promoContent {
   display: flex;
-  flex: 1;
+  flex: 1 1 auto;
   flex-direction: column;
-  padding: 16px;
 }
 
-.promoContent h2,
-.overlayContent h2,
-.sectionHeading {
+.promoTitle {
+  margin: 16px 16px 24px;
   font-family: var(--home-display);
-  font-size: 32px;
+  font-size: 24px;
   font-weight: 400;
-  line-height: 40px;
+  line-height: 30px;
+  letter-spacing: 0.8px;
   text-transform: uppercase;
+  color: #000;
 }
 
-.promoContent h2 { margin: 0; }
+.promoActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+}
+
 .promoButton,
-.overlayButton {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 34px;
+.tileButton {
+  display: block;
+  box-sizing: border-box;
   padding: 8px 24px;
+  border: 1px solid;
+  font-family: var(--home-body);
   font-size: 14px;
   font-weight: 500;
-  line-height: 16px;
-  transition: color .2s, background .2s, border-color .2s;
-  width: max-content;
+  line-height: 16.1px;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transition: background 0.2s ease, border 0.2s ease, color 0.2s ease;
 }
 
 .promoButton {
-  margin: auto 0 0 auto;
+  margin: 0 16px 16px 0;
+  border-color: #000;
+  background: #fff;
   color: #000;
-  border: 1px solid #000;
 }
-.promoCard:hover .promoButton { background: #000; color: #fff; }
 
-.storyCard,
-.categoryCard {
-  position: relative;
-  min-width: 0;
-  height: 400px;
-  display: block;
-  overflow: hidden;
+.promoButton:hover {
+  background: #000;
   color: #fff;
 }
-.storyCard img,
-.categoryCard img { position: absolute; inset: 0; }
-.overlay {
+
+/* ---------- Story + category tiles ---------- */
+
+.tileGrid {
+  display: flex;
+  flex-wrap: wrap;
+  padding-inline: 8px;
+  background: #fff;
+  color: #000;
+}
+
+.storyTile,
+.categoryTile {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  width: calc(100% - 16px);
+  height: 400px;
+  margin: 8px;
+  overflow: hidden;
+  color: #000;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.storyTile:hover,
+.categoryTile:hover {
+  color: #333;
+}
+
+.tileImage {
+  object-fit: cover;
+}
+
+.gradient {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(0,0,0,.72), transparent 50%);
+  background-image: linear-gradient(0deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 60%);
 }
-.overlayContent {
+
+.tileContent {
   position: absolute;
-  inset-inline: 16px;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 1;
+  padding-bottom: 50px;
+}
+
+.storyContent {
+  max-width: 600px;
+}
+
+.tileTitle {
+  margin: 16px;
+  font-family: var(--home-display);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 30px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: #fff;
+}
+
+.tileTitle.categoryTitle {
+  text-transform: none;
+}
+
+.tileButton {
+  position: absolute;
   bottom: 16px;
-}
-.overlayContent h2 {
+  left: 16px;
+  z-index: 1;
+  border-color: #fff;
+  background: transparent;
   color: #fff;
+}
+
+.tileButton:hover {
+  border-color: #000;
+  background: #fff;
+  color: #000;
+}
+
+.categories {
+  padding-top: 64px;
+  background: #fff;
+}
+
+.sectionHeading {
   margin: 0 0 16px;
-}
-.overlayButton {
-  border: 1px solid #fff;
-  color: #fff;
-}
-.storyCard:hover .overlayButton,
-.categoryCard:hover .overlayButton { background: #fff; color: #000; }
-
-.categories { padding-top: 64px; background: #fff; }
-.sectionHeading { text-align: center; margin: 0 0 16px; color: #000; }
-.categoryGrid { padding-block: 8px; }
-
-@media (max-width: 990px) {
-  .promoGrid,
-  .categoryGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .promoCard { height: auto; min-height: 560px; }
-  .promoImage { height: auto; aspect-ratio: 1; }
+  font-family: var(--home-display);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 30px;
+  letter-spacing: 0.8px;
+  text-align: center;
+  text-transform: uppercase;
+  color: #000;
 }
 
-@media (max-width: 640px) {
-  .promoGrid,
-  .storyGrid,
-  .categoryGrid { grid-template-columns: 1fr; }
-  .promoCard { min-height: 0; }
-  .promoImage { height: auto; aspect-ratio: 1; }
-  .promoContent { min-height: 145px; }
-  .storyCard,
-  .categoryCard { height: 400px; aspect-ratio: auto; }
-  .promoContent h2 { font-size: 24px; line-height: 30px; }
-  .overlayContent h2 { font-size: 28px; line-height: 36px; }
-  .sectionHeading { font-size: 24px; line-height: 30px; }
+@media (min-width: 480px) {
+  .promoRow {
+    padding-inline: 8px;
+  }
+
+  .promoCard {
+    width: calc(50% - 16px);
+    margin: 8px;
+  }
+}
+
+@media (min-width: 768px) {
+  .promoTitle,
+  .tileTitle,
+  .sectionHeading {
+    font-size: 32px;
+    line-height: 40px;
+  }
+
+  .tileGrid {
+    padding-inline: 16px;
+  }
+
+  .storyTile {
+    width: calc(50% - 16px);
+  }
+
+  .categoryTile {
+    width: calc(33.333% - 16px);
+  }
+}
+
+@media (min-width: 1200px) {
+  .promoCard {
+    width: calc(33.333% - 16px);
+  }
 }

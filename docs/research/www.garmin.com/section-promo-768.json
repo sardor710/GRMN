@@ -1,0 +1,382 @@
+{
+ "url": "https://www.garmin.com/en-US/",
+ "vw": 768,
+ "tree": {
+  "tag": "div",
+  "cls": "container white",
+  "r": [
+   0,
+   1740,
+   768,
+   1148
+  ],
+  "css": {
+   "display": "flex",
+   "box-sizing": "border-box",
+   "flex-direction": "column",
+   "justify-content": "center",
+   "align-items": "center",
+   "background-color": "rgb(255, 255, 255)",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "font-size": "16px",
+   "line-height": "24px",
+   "color": "rgb(0, 0, 0)",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "div",
+    "cls": "container--constraint",
+    "r": [
+     0,
+     1740,
+     768,
+     1148
+    ],
+    "css": {
+     "display": "flex",
+     "box-sizing": "border-box",
+     "max-width": "1200px",
+     "flex-wrap": "wrap"
+    },
+    "c": [
+     {
+      "tag": "g-card-container",
+      "cls": "g__card-container g__card-container--white hydrated",
+      "r": [
+       0,
+       1740,
+       768,
+       1148
+      ],
+      "css": {
+       "display": "flex",
+       "box-sizing": "border-box",
+       "flex-wrap": "wrap",
+       "background-color": "rgb(255, 255, 255)"
+      },
+      "c": [
+       {
+        "tag": "div",
+        "cls": "g__card-container g__card-container__constraint",
+        "r": [
+         0,
+         1748,
+         768,
+         1132
+        ],
+        "css": {
+         "display": "flex",
+         "box-sizing": "border-box",
+         "max-width": "1200px",
+         "margin-top": "8px",
+         "margin-bottom": "8px",
+         "padding-right": "8px",
+         "padding-left": "8px",
+         "flex-wrap": "wrap"
+        },
+        "c": [
+         {
+          "tag": "g-card",
+          "cls": "g__card g__card--white g__card--third",
+          "r": [
+           16,
+           1756,
+           360,
+           570
+          ],
+          "css": {
+           "display": "block",
+           "position": "relative",
+           "top": "0px",
+           "right": "0px",
+           "bottom": "0px",
+           "left": "0px",
+           "box-sizing": "border-box",
+           "background-color": "rgb(255, 255, 255)",
+           "box-shadow": "rgba(0, 0, 0, 0.24) 0px 2px 4px 1px",
+           "cursor": "pointer",
+           "transition-property": "box-shadow",
+           "transition-duration": "0.135s",
+           "transition-timing-function": "cubic-bezier(0.4, 0, 0.2, 1)",
+           "margin": "8px",
+           "border-radius": "2px"
+          },
+          "c": [
+           {
+            "tag": "a",
+            "cls": "g__card__link",
+            "r": [
+             16,
+             1756,
+             360,
+             570
+            ],
+            "a": {
+             "href": "https://www.garmin.com/en-US/c/sports-fitness/running-smartwatches/",
+             "target": "_self"
+            },
+            "css": {
+             "box-sizing": "border-box",
+             "transition-property": "color",
+             "transition-duration": "0.2s"
+            },
+            "c": [
+             {
+              "tag": "button",
+              "cls": "g__card__button-overlay",
+              "r": [
+               16,
+               1756,
+               360,
+               570
+              ],
+              "t": "Forerunner® — Running Smartwatches for Any Level",
+              "a": {
+               "type": "button"
+              },
+              "css": {
+               "display": "block",
+               "position": "absolute",
+               "top": "0px",
+               "right": "0px",
+               "bottom": "0px",
+               "left": "0px",
+               "text-indent": "-99999px",
+               "background-color": "rgba(0, 0, 0, 0)"
+              }
+             },
+             {
+              "tag": "div",
+              "cls": "g__card__wrapper",
+              "r": [
+               16,
+               1756,
+               360,
+               570
+              ],
+              "css": {
+               "display": "flex",
+               "box-sizing": "border-box",
+               "flex-direction": "column"
+              },
+              "c": [
+               {
+                "tag": "div",
+                "cls": "image",
+                "r": [
+                 16,
+                 1756,
+                 360,
+                 360
+                ],
+                "css": {
+                 "box-sizing": "border-box",
+                 "flex-shrink": "0"
+                },
+                "c": [
+                 {
+                  "tag": "img",
+                  "r": [
+                   16,
+                   1756,
+                   360,
+                   360
+                  ],
+                  "a": {
+                   "src": "https://res.garmin.com/homepage/90797/90797-PODS-THIRD-FORERUNNER.jpg",
+                   "alt": "A group of three runners running in urban environment - Forerunner",
+                   "natural": [
+                    1600,
+                    1600
+                   ]
+                  },
+                  "css": {
+                   "display": "block",
+                   "box-sizing": "border-box",
+                   "width": "360px",
+                   "height": "360px"
+                  }
+                 }
+                ]
+               },
+               {
+                "tag": "div",
+                "cls": "g__card__content",
+                "r": [
+                 16,
+                 2116,
+                 360,
+                 210
+                ],
+                "css": {
+                 "display": "flex",
+                 "z-index": "2",
+                 "box-sizing": "border-box",
+                 "flex-direction": "column"
+                },
+                "c": [
+                 {
+                  "tag": "div",
+                  "cls": "heading heading-only",
+                  "r": [
+                   32,
+                   2132,
+                   328,
+                   120
+                  ],
+                  "css": {
+                   "box-sizing": "border-box",
+                   "margin": "16px 16px 24px 16px"
+                  },
+                  "c": [
+                   {
+                    "tag": "g-heading",
+                    "cls": "g__heading g__heading--left g__heading--white",
+                    "r": [
+                     32,
+                     2132,
+                     328,
+                     120
+                    ],
+                    "css": {
+                     "box-sizing": "border-box",
+                     "margin-top": "16px",
+                     "text-transform": "uppercase"
+                    },
+                    "c": [
+                     {
+                      "tag": "h2",
+                      "r": [
+                       32,
+                       2132,
+                       328,
+                       120
+                      ],
+                      "css": {
+                       "box-sizing": "border-box",
+                       "margin-top": "0px",
+                       "margin-bottom": "0px",
+                       "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+                       "font-size": "32px",
+                       "line-height": "40px",
+                       "letter-spacing": "0.8px"
+                      },
+                      "more": 1
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "tag": "g-flex",
+                  "cls": "g__flex hydrated",
+                  "r": [
+                   16,
+                   2276,
+                   360,
+                   50
+                  ],
+                  "css": {
+                   "display": "flex",
+                   "box-sizing": "border-box",
+                   "justify-content": "flex-end"
+                  },
+                  "c": [
+                   {
+                    "tag": "g-button",
+                    "cls": "g__button__host g__button__host--medium hydrated",
+                    "r": [
+                     273,
+                     2276,
+                     103,
+                     50
+                    ],
+                    "css": {
+                     "display": "flex",
+                     "z-index": "2",
+                     "box-sizing": "border-box",
+                     "justify-content": "flex-end",
+                     "align-self": "flex-end"
+                    },
+                    "c": [
+                     {
+                      "tag": "a",
+                      "cls": "g__button g__button--contained g__button--contained--medium",
+                      "r": [
+                       273,
+                       2276,
+                       87,
+                       34
+                      ],
+                      "t": "Shop",
+                      "a": {
+                       "href": "https://www.garmin.com/en-US/c/sports-fitness/running-smartwatches/",
+                       "target": "_self"
+                      },
+                      "css": {
+                       "display": "block",
+                       "box-sizing": "border-box",
+                       "margin-right": "16px",
+                       "margin-bottom": "16px",
+                       "font-size": "14px",
+                       "font-weight": "500",
+                       "line-height": "16.1px",
+                       "text-align": "center",
+                       "text-transform": "uppercase",
+                       "vertical-align": "middle",
+                       "background-color": "rgb(255, 255, 255)",
+                       "transition-property": "background, border, color",
+                       "transition-duration": "0.2s, 0.2s, 0.2s",
+                       "transition-timing-function": "ease, ease, ease",
+                       "transition-delay": "0s, 0s, 0s",
+                       "padding": "8px 24px",
+                       "border-width": "1px",
+                       "border-style": "solid",
+                       "overflow": "auto"
+                      }
+                     }
+                    ]
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ],
+          "rep": [
+           {
+            "t": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH FĒNIX® 9 — THE ULTIMATE SMARTWATCH SHOP",
+            "src": "https://res.garmin.com/homepage/87582/87582-PODS-THIRD.jpg"
+           },
+           {
+            "t": "SMARTWATCHES FOR KIDS SMARTWATCHES FOR KIDS SHOP",
+            "src": "https://res.garmin.com/homepage/90797/90797-PODS-THIRD-BOUNCE.jpg"
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "svgs": [],
+ "animations": [
+  {
+   "type": "CSSAnimation",
+   "name": "hero__slideshow",
+   "target": "#g__hero-rotator__container>button:nth-of-type(1)>svg>circle",
+   "duration": 6000,
+   "delay": 0,
+   "iterations": null,
+   "easing": "linear"
+  }
+ ]
+}

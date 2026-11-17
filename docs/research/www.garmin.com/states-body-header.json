@@ -1,0 +1,235 @@
+[
+ {
+  "sel": "#js__skip-link",
+  "label": "Skip navigation links",
+  "transition": "top 0.25s",
+  "focus-visible": {
+   "#js__skip-link": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(255, 255, 255) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  }
+ },
+ {
+  "sel": "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(1)>a",
+  "label": "Navigate to Garmin.com",
+  "transition": "color 0.2s",
+  "focus-visible": {
+   "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(1)>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  }
+ },
+ {
+  "sel": "#js__gh__nav>ul>li:nth-of-type(1)>span",
+  "label": "Smartwatches",
+  "transition": "all",
+  "focus-visible": {
+   "#js__gh__nav>ul>li:nth-of-type(1)>span": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)"
+   }
+  },
+  "jsHover": {
+   "#js__gh__nav>ul>li:nth-of-type(1)": {
+    "background-position": "0% 0% → 0px 0px",
+    "box-shadow": "none → rgb(0, 0, 0) 0px -3.2px 0px 0px inset"
+   },
+   "#js__gh__nav>ul>li:nth-of-type(1)>div": {
+    "visibility": "hidden → visible"
+   }
+  }
+ },
+ {
+  "sel": "#js__gh__nav>ul>li:nth-of-type(1)>div>div:nth-of-type(1)>div>a:nth-of-type(1)",
+  "label": "A",
+  "transition": "color 0.2s",
+  "hover": {
+   "#js__gh__nav>ul>li:nth-of-type(1)>div>div:nth-of-type(1)>div>a:nth-of-type(1)": {
+    "text-decoration-line": "none → underline"
+   }
+  },
+  "focus-visible": {
+   "#js__gh__nav>ul>li:nth-of-type(1)>div>div:nth-of-type(1)>div>a:nth-of-type(1)": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  }
+ },
+ {
+  "sel": "#js__gh__nav>ul>li:nth-of-type(1)>div>div:nth-of-type(4)>div:nth-of-type(1)>a",
+  "label": "A",
+  "transition": "color 0.2s",
+  "focus-visible": {
+   "#js__gh__nav>ul>li:nth-of-type(1)>div>div:nth-of-type(4)>div:nth-of-type(1)>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  }
+ },
+ {
+  "sel": "#js__gh__nav>ul>li:nth-of-type(7)>a",
+  "label": "Sale",
+  "transition": "color 0.2s",
+  "focus-visible": {
+   "#js__gh__nav>ul>li:nth-of-type(7)>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  },
+  "jsHover": {
+   "#js__gh__nav>ul>li:nth-of-type(7)": {
+    "background-position": "0% 0% → 0px 0px",
+    "box-shadow": "none → rgb(0, 0, 0) 0px -3.2px 0px 0px inset"
+   }
+  }
+ },
+ {
+  "sel": "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>a",
+  "label": "Help",
+  "transition": "box-shadow",
+  "hover": {
+   "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>a": {
+    "box-shadow": "none → rgb(0, 0, 0) 0px -3.2px 0px 0px inset"
+   }
+  },
+  "focus-visible": {
+   "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  }
+ },
+ {
+  "sel": "#js__search-button",
+  "label": "Search",
+  "transition": "all",
+  "focus-visible": {
+   "#js__search-button": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)"
+   }
+  },
+  "jsHover": {
+   "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>a": {
+    "box-shadow": "rgb(0, 0, 0) 0px -3.2px 0px 0px inset → none"
+   }
+  }
+ },
+ {
+  "sel": "#js__search-close",
+  "label": "Close",
+  "transition": "all",
+  "focus-visible": {
+   "#js__search-close": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)"
+   }
+  }
+ },
+ {
+  "sel": "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>div:nth-of-type(2)",
+  "label": "Account ",
+  "transition": "box-shadow",
+  "hover": {
+   "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>div:nth-of-type(2)": {
+    "box-shadow": "none → rgb(0, 0, 0) 0px -3.2px 0px 0px inset"
+   },
+   "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>div:nth-of-type(2)>div": {
+    "visibility": "hidden → visible"
+   },
+   "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>div:nth-of-type(2)>div>a:nth-of-type(1)": {
+    "visibility": "hidden → visible"
+   },
+   "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>div:nth-of-type(2)>div>a:nth-of-type(2)": {
+    "visibility": "hidden → visible"
+   },
+   "#js__account-link__SignIn": {
+    "visibility": "hidden → visible"
+   }
+  },
+  "focus-visible": {
+   "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>div:nth-of-type(2)": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)"
+   }
+  },
+  "jsHover": {
+   "#js__account-link__SignIn": {
+    "visibility": "hidden → visible"
+   }
+  }
+ },
+ {
+  "sel": "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>span",
+  "label": "Total items in cart: 0",
+  "transition": "all",
+  "focus-visible": {
+   "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>span": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)"
+   }
+  },
+  "jsHover": {
+   "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>div:nth-of-type(2)": {
+    "box-shadow": "rgb(0, 0, 0) 0px -3.2px 0px 0px inset → none"
+   },
+   "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>div:nth-of-type(2)>div": {
+    "visibility": "visible → hidden"
+   },
+   "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>div:nth-of-type(2)>div>a:nth-of-type(1)": {
+    "visibility": "visible → hidden"
+   },
+   "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>div:nth-of-type(2)>div>a:nth-of-type(2)": {
+    "visibility": "visible → hidden"
+   },
+   "#js__account-link__SignIn": {
+    "visibility": "visible → hidden"
+   }
+  }
+ },
+ {
+  "sel": "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>span>a",
+  "label": "Cart",
+  "transition": "color 0.2s",
+  "focus-visible": {
+   "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>span>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  }
+ },
+ {
+  "sel": "#js__gh__header>div:nth-of-type(2)>a",
+  "label": "HOLIDAY SALE",
+  "transition": "color 0.2s",
+  "focus-visible": {
+   "#js__gh__header>div:nth-of-type(2)>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(255, 255, 255) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  }
+ }
+]

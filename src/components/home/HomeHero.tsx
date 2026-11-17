@@ -3,12 +3,31 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { homeHeroSlides } from "@/lib/homepage-content";
+import type { HeroBanner } from "@/lib/cms/types";
 import { ChevronLeftIcon, ChevronRightIcon, PauseIcon, PlayIcon } from "@/components/icons";
 import styles from "./HomeHero.module.css";
 
-const duration = 5000;
+const duration = 6000; // live hero__slideshow animation: 6000ms
 
-export function HomeHero() {
+interface HomeHeroProps {
+  banners?: HeroBanner[];
+}
+
+export function HomeHero({ banners }: HomeHeroProps) {
+  const activeSlides = banners && banners.length > 0
+    ? banners.filter((b) => b.active !== false).sort((a, b) => a.order - b.order).map((b) => ({
+        key: b.key || b.id,
+        title: b.title,
+        subtitle: b.subtitle,
+        disclaimer: b.disclaimer,
+        href: b.href,
+        image: b.image || `/homepage/hero/${b.key}-1-D.jpg`,
+      }))
+    : homeHeroSlides.map((s) => ({ ...s, disclaimer: undefined as string | undefined, image: `/homepage/hero/${s.key}-1-D.jpg` }));
+
+  // The track has positioning classes for at most 10 slides (HomeHero.module.css .index0-.index9).
+  const slides = activeSlides.length > 0 ? activeSlides.slice(0, 10) : homeHeroSlides.map((s) => ({ ...s, disclaimer: undefined as string | undefined, image: `/homepage/hero/${s.key}-1-D.jpg` }));
+
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const remaining = useRef(duration);
@@ -18,16 +37,16 @@ export function HomeHero() {
   const goTo = useCallback((nextIndex: number) => {
     remaining.current = duration;
     changingSlide.current = true;
-    setIndex((nextIndex + homeHeroSlides.length) % homeHeroSlides.length);
-  }, []);
+    setIndex((nextIndex + slides.length) % slides.length);
+  }, [slides.length]);
 
   useEffect(() => {
-    if (paused) return;
+    if (paused || slides.length <= 1) return;
     const started = Date.now();
     const timeout = window.setTimeout(() => {
       remaining.current = duration;
       changingSlide.current = true;
-      setIndex((current) => (current + 1) % homeHeroSlides.length);
+      setIndex((current) => (current + 1) % slides.length);
     }, remaining.current);
     return () => {
       window.clearTimeout(timeout);
@@ -37,7 +56,9 @@ export function HomeHero() {
         remaining.current = Math.max(0, remaining.current - (Date.now() - started));
       }
     };
-  }, [index, paused]);
+  }, [index, paused, slides.length]);
+
+  const currentSlide = slides[index] || slides[0];
 
   return (
     <section
@@ -61,23 +82,25 @@ export function HomeHero() {
       onTouchCancel={() => { touchStart.current = null; }}
     >
       <div className={`${styles.track} ${styles[`index${index}`]}`}>
-        {homeHeroSlides.map((slide, slideIndex) => (
+        {slides.map((slide, slideIndex) => (
           <div key={slide.key} className={styles.slide} aria-hidden={slideIndex !== index}>
             <picture className={styles.picture}>
-              <source media="(max-width: 640px)" srcSet={`/homepage/hero/${slide.key}-3-M.jpg`} />
-              <source media="(max-width: 990px)" srcSet={`/homepage/hero/${slide.key}-2-T.jpg`} />
+              <source media="(max-width: 640px)" srcSet={slide.image.includes("/homepage/hero/") ? `/homepage/hero/${slide.key}-3-M.jpg` : slide.image} />
+              <source media="(max-width: 990px)" srcSet={slide.image.includes("/homepage/hero/") ? `/homepage/hero/${slide.key}-2-T.jpg` : slide.image} />
               <Image
-                src={`/homepage/hero/${slide.key}-1-D.jpg`}
+                src={slide.image}
                 alt=""
                 fill
                 priority={slideIndex === 0}
                 sizes="100vw"
                 className={styles.image}
+                unoptimized
               />
             </picture>
             <div className={styles.caption}>
               <h1>{slide.title}</h1>
-              <p>{slide.subtitle}</p>
+              <p className={slide.disclaimer ? styles.subtitleTight : undefined}>{slide.subtitle}</p>
+              {slide.disclaimer && <p className={styles.disclaimer}>{slide.disclaimer}</p>}
               <a href={slide.href} className={styles.shop} tabIndex={slideIndex === index ? 0 : -1}>SHOP</a>
             </div>
           </div>
@@ -97,7 +120,7 @@ export function HomeHero() {
         </svg>
         {paused ? <PlayIcon aria-hidden="true" /> : <PauseIcon aria-hidden="true" />}
       </button>
-      <span className={styles.srOnly} aria-live="polite">Slide {index + 1} of {homeHeroSlides.length}: {homeHeroSlides[index].title}</span>
+      <span className={styles.srOnly} aria-live="polite">Slide {index + 1} of {slides.length}: {currentSlide?.title}</span>
     </section>
   );
 }

@@ -1,0 +1,957 @@
+{
+ "url": "https://www.garmin.com/en-US/",
+ "vw": 1440,
+ "tree": {
+  "tag": "footer",
+  "cls": "gf__footer en-US",
+  "r": [
+   0,
+   3339,
+   1440,
+   501
+  ],
+  "css": {
+   "display": "flex",
+   "box-sizing": "border-box",
+   "flex-wrap": "wrap",
+   "color": "rgb(255, 255, 255)",
+   "background-color": "rgb(0, 0, 0)",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "font-size": "16px",
+   "line-height": "24px",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "nav",
+    "cls": "gf__nav",
+    "r": [
+     0,
+     3339,
+     1440,
+     376
+    ],
+    "a": {
+     "aria-label": "Global Footer Navigation",
+     "role": "navigation"
+    },
+    "css": {
+     "box-sizing": "border-box",
+     "background-color": "rgb(0, 0, 0)"
+    },
+    "c": [
+     {
+      "tag": "ul",
+      "cls": "gf__list en-US",
+      "r": [
+       0,
+       3355,
+       1440,
+       344
+      ],
+      "css": {
+       "display": "flex",
+       "position": "relative",
+       "top": "0px",
+       "right": "0px",
+       "bottom": "0px",
+       "left": "0px",
+       "box-sizing": "border-box",
+       "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+       "letter-spacing": "0.8px",
+       "padding": "24px"
+      },
+      "c": [
+       {
+        "tag": "li",
+        "cls": "gf__list__item en-US js__gf__list__item",
+        "r": [
+         24,
+         3379,
+         308,
+         296
+        ],
+        "a": {
+         "aria-expanded": "false"
+        },
+        "css": {
+         "display": "block",
+         "position": "relative",
+         "top": "0px",
+         "right": "0px",
+         "bottom": "0px",
+         "left": "0px",
+         "box-sizing": "border-box",
+         "margin-right": "48px",
+         "flex-grow": "1",
+         "flex-basis": "0%",
+         "font-size": "20px",
+         "text-transform": "uppercase",
+         "list-style-type": "none"
+        },
+        "c": [
+         {
+          "tag": "button",
+          "cls": "gf__list__item__link en-US js__gf__list__item__link",
+          "r": [
+           24,
+           3379,
+           160,
+           32
+          ],
+          "css": {
+           "display": "flex",
+           "line-height": "32px",
+           "background-color": "rgba(0, 0, 0, 0)",
+           "padding": "0px"
+          },
+          "c": [
+           {
+            "tag": "span",
+            "cls": "gf__list__item__link__text en-US",
+            "r": [
+             24,
+             3379,
+             160,
+             32
+            ],
+            "t": "CUSTOMER SERVICE",
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box",
+             "flex-grow": "1"
+            }
+           },
+           {
+            "tag": "svg",
+            "sel": "#js__gf__menu>li:nth-of-type(1)>button>svg",
+            "hidden": true
+           }
+          ]
+         },
+         {
+          "tag": "div",
+          "cls": "gf__list__wrapper en-US js__gf__list__wrapper",
+          "r": [
+           24,
+           3411,
+           308,
+           192
+          ],
+          "css": {
+           "box-sizing": "border-box"
+          },
+          "c": [
+           {
+            "tag": "ul",
+            "cls": "gf__list",
+            "r": [
+             24,
+             3411,
+             308,
+             192
+            ],
+            "css": {
+             "position": "relative",
+             "top": "0px",
+             "right": "0px",
+             "bottom": "0px",
+             "left": "0px",
+             "box-sizing": "border-box",
+             "margin-top": "0px",
+             "margin-bottom": "0px",
+             "padding-left": "0px",
+             "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+             "font-weight": "500",
+             "list-style-type": "circle"
+            },
+            "c": [
+             {
+              "tag": "li",
+              "cls": "gf__list__item en-US js__gf__list__item",
+              "r": [
+               24,
+               3411,
+               308,
+               24
+              ],
+              "css": {
+               "display": "block",
+               "position": "relative",
+               "top": "0px",
+               "right": "0px",
+               "bottom": "0px",
+               "left": "0px",
+               "box-sizing": "border-box",
+               "flex-grow": "1",
+               "flex-basis": "0%",
+               "font-size": "12.8px",
+               "list-style-type": "none",
+               "background-color": "rgb(0, 0, 0)"
+              },
+              "c": [
+               {
+                "tag": "span",
+                "cls": "js__gf__list__item__link en-US gf__list__item__link__wrapper",
+                "r": [
+                 24,
+                 3411,
+                 308,
+                 24
+                ],
+                "css": {
+                 "display": "flex",
+                 "box-sizing": "border-box"
+                },
+                "c": [
+                 {
+                  "tag": "a",
+                  "cls": "gf__list__item__link en-US",
+                  "r": [
+                   24,
+                   3411,
+                   97,
+                   24
+                  ],
+                  "t": "Support Center",
+                  "a": {
+                   "href": "https://support.garmin.com/en-US/"
+                  },
+                  "css": {
+                   "display": "block",
+                   "box-sizing": "border-box",
+                   "cursor": "pointer",
+                   "transition-property": "color",
+                   "transition-duration": "0.2s"
+                  }
+                 }
+                ]
+               }
+              ],
+              "rep": [
+               {
+                "t": "Contact Us"
+               },
+               {
+                "t": "Shipping, Returns & Refunds"
+               },
+               {
+                "t": "Order Support"
+               },
+               {
+                "t": "Warranty Information"
+               },
+               {
+                "t": "Data Management"
+               },
+               {
+                "t": "Deals & Promotions"
+               },
+               {
+                "t": "Find a Dealer"
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ],
+        "rep": [
+         {
+          "t": "COMPANY About Us Blog Investors Newsroom Retail Store Corporate Sustainability Career Opportunities Early Careers"
+         },
+         {
+          "t": "PLATFORMS Garmin Connect Garmin Express Connect IQ flyGarmin Garmin Explore Navionics Chart Installer"
+         }
+        ]
+       },
+       {
+        "tag": "li",
+        "cls": "gf__list__item en-US js__gf__list__item",
+        "r": [
+         1092,
+         3379,
+         308,
+         296
+        ],
+        "a": {
+         "aria-expanded": "false"
+        },
+        "css": {
+         "display": "block",
+         "position": "relative",
+         "top": "0px",
+         "right": "0px",
+         "bottom": "0px",
+         "left": "0px",
+         "box-sizing": "border-box",
+         "margin-right": "16px",
+         "flex-grow": "1",
+         "flex-basis": "0%",
+         "font-size": "20px",
+         "text-transform": "uppercase",
+         "list-style-type": "none"
+        },
+        "c": [
+         {
+          "tag": "button",
+          "cls": "gf__list__item__link en-US js__gf__list__item__link",
+          "r": [
+           1092,
+           3379,
+           117,
+           32
+          ],
+          "css": {
+           "display": "flex",
+           "line-height": "32px",
+           "background-color": "rgba(0, 0, 0, 0)",
+           "padding": "0px"
+          },
+          "c": [
+           {
+            "tag": "span",
+            "cls": "gf__list__item__link__text en-US",
+            "r": [
+             1092,
+             3379,
+             117,
+             32
+            ],
+            "t": "FOR BUSINESS",
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box",
+             "flex-grow": "1"
+            }
+           },
+           {
+            "tag": "svg",
+            "sel": "#js__gf__menu>li:nth-of-type(4)>button>svg",
+            "hidden": true
+           }
+          ]
+         },
+         {
+          "tag": "div",
+          "cls": "gf__list__wrapper en-US js__gf__list__wrapper",
+          "r": [
+           1092,
+           3411,
+           308,
+           264
+          ],
+          "css": {
+           "box-sizing": "border-box"
+          },
+          "c": [
+           {
+            "tag": "ul",
+            "cls": "gf__list",
+            "r": [
+             1092,
+             3411,
+             308,
+             264
+            ],
+            "css": {
+             "position": "relative",
+             "top": "0px",
+             "right": "0px",
+             "bottom": "0px",
+             "left": "0px",
+             "box-sizing": "border-box",
+             "margin-top": "0px",
+             "margin-bottom": "0px",
+             "padding-left": "0px",
+             "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+             "font-weight": "500",
+             "list-style-type": "circle"
+            },
+            "c": [
+             {
+              "tag": "li",
+              "cls": "gf__list__item en-US js__gf__list__item",
+              "r": [
+               1092,
+               3411,
+               308,
+               24
+              ],
+              "css": {
+               "display": "block",
+               "position": "relative",
+               "top": "0px",
+               "right": "0px",
+               "bottom": "0px",
+               "left": "0px",
+               "box-sizing": "border-box",
+               "flex-grow": "1",
+               "flex-basis": "0%",
+               "font-size": "12.8px",
+               "list-style-type": "none",
+               "background-color": "rgb(0, 0, 0)"
+              },
+              "c": [
+               {
+                "tag": "span",
+                "cls": "js__gf__list__item__link en-US gf__list__item__link__wrapper",
+                "r": [
+                 1092,
+                 3411,
+                 308,
+                 24
+                ],
+                "css": {
+                 "display": "flex",
+                 "box-sizing": "border-box"
+                },
+                "c": [
+                 {
+                  "tag": "a",
+                  "cls": "gf__list__item__link en-US",
+                  "r": [
+                   1092,
+                   3411,
+                   92,
+                   24
+                  ],
+                  "t": "Garmin Health",
+                  "a": {
+                   "href": "https://www.garmin.com/en-US/health/"
+                  },
+                  "css": {
+                   "display": "block",
+                   "box-sizing": "border-box",
+                   "cursor": "pointer",
+                   "transition-property": "color",
+                   "transition-duration": "0.2s"
+                  }
+                 }
+                ]
+               }
+              ],
+              "rep": [
+               {
+                "t": "Dealer Resource Center"
+               },
+               {
+                "t": "Developers"
+               },
+               {
+                "t": "inReach Professional"
+               },
+               {
+                "t": "Marine First Responder Solutions"
+               },
+               {
+                "t": "SeaStar® Information Service"
+               },
+               {
+                "t": "Automotive OEM"
+               },
+               {
+                "t": "RV OEM"
+               },
+               {
+                "t": "Sensors"
+               },
+               {
+                "t": "Ambassadors & Affiliates"
+               },
+               {
+                "t": "Corporate Sponsorships"
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "tag": "div",
+    "cls": "gf__image gf__image--screen-lg",
+    "r": [
+     0,
+     3715,
+     1424,
+     0
+    ],
+    "css": {
+     "float": "right",
+     "box-sizing": "border-box",
+     "margin-right": "16px",
+     "margin-bottom": "16px"
+    },
+    "c": [
+     {
+      "tag": "ul",
+      "cls": "gf__image__list",
+      "r": [
+       0,
+       3715,
+       1424,
+       0
+      ],
+      "css": {
+       "display": "flex",
+       "box-sizing": "border-box",
+       "margin-top": "0px",
+       "margin-bottom": "0px",
+       "padding-left": "0px",
+       "justify-content": "flex-end",
+       "text-align": "center"
+      }
+     }
+    ]
+   },
+   {
+    "tag": "div",
+    "cls": "gf__company",
+    "r": [
+     24,
+     3731,
+     1392,
+     58
+    ],
+    "css": {
+     "display": "flex",
+     "box-sizing": "border-box",
+     "margin-right": "24px",
+     "margin-left": "24px",
+     "padding-bottom": "16px",
+     "justify-content": "space-between",
+     "align-items": "center",
+     "background-color": "rgb(0, 0, 0)",
+     "border-bottom-width": "4px",
+     "border-bottom-style": "solid"
+    },
+    "c": [
+     {
+      "tag": "div",
+      "cls": "gf__locale",
+      "r": [
+       24,
+       3747,
+       87,
+       22
+      ],
+      "css": {
+       "box-sizing": "border-box",
+       "margin-top": "16px",
+       "font-size": "12.8px",
+       "font-weight": "500",
+       "line-height": "19.2px"
+      },
+      "c": [
+       {
+        "tag": "a",
+        "cls": "gf__locale__link en-US",
+        "r": [
+         24,
+         3748,
+         87,
+         18
+        ],
+        "t": "United States",
+        "a": {
+         "href": "https://www.garmin.com/en-US/select-a-location/"
+        },
+        "css": {
+         "box-sizing": "border-box",
+         "font-size": "14.4px",
+         "line-height": "21.6px",
+         "cursor": "pointer",
+         "transition-property": "color",
+         "transition-duration": "0.2s"
+        }
+       }
+      ]
+     },
+     {
+      "tag": "div",
+      "sel": "body>footer>div:nth-of-type(2)>div:nth-of-type(2)",
+      "hidden": true
+     },
+     {
+      "tag": "div",
+      "cls": "gf__social",
+      "r": [
+       1147,
+       3736,
+       269,
+       27
+      ],
+      "css": {
+       "box-sizing": "border-box",
+       "min-width": "200px"
+      },
+      "c": [
+       {
+        "tag": "ul",
+        "cls": "gf__social__list",
+        "r": [
+         1147,
+         3736,
+         269,
+         27
+        ],
+        "css": {
+         "display": "flex",
+         "box-sizing": "border-box",
+         "margin-top": "0px",
+         "margin-bottom": "0px",
+         "padding-left": "0px",
+         "justify-content": "flex-end"
+        },
+        "c": [
+         {
+          "tag": "li",
+          "cls": "gf__social__list__item",
+          "r": [
+           1163,
+           3736,
+           20,
+           27
+          ],
+          "css": {
+           "box-sizing": "border-box",
+           "margin-right": "16px",
+           "margin-left": "16px",
+           "list-style-type": "none"
+          },
+          "c": [
+           {
+            "tag": "a",
+            "r": [
+             1163,
+             3741,
+             20,
+             19
+            ],
+            "a": {
+             "href": "https://www.facebook.com/Garmin"
+            },
+            "css": {
+             "box-sizing": "border-box",
+             "text-decoration-line": "underline",
+             "cursor": "pointer",
+             "transition-property": "color",
+             "transition-duration": "0.2s"
+            },
+            "c": [
+             {
+              "tag": "svg",
+              "r": [
+               1163,
+               3736,
+               20,
+               20
+              ],
+              "css": {
+               "box-sizing": "border-box",
+               "width": "20px",
+               "height": "20px",
+               "fill": "rgb(255, 255, 255)",
+               "overflow": "hidden"
+              },
+              "svg": "svg1"
+             }
+            ]
+           }
+          ],
+          "rep": [
+           {},
+           {},
+           {},
+           {}
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "tag": "style",
+    "sel": "body>footer>style",
+    "hidden": true
+   },
+   {
+    "tag": "div",
+    "cls": "gf__legal en-US",
+    "r": [
+     0,
+     3789,
+     1440,
+     51
+    ],
+    "css": {
+     "display": "flex",
+     "box-sizing": "border-box",
+     "padding-right": "24px",
+     "padding-left": "24px",
+     "flex-wrap": "wrap",
+     "flex-grow": "1",
+     "flex-basis": "100%",
+     "justify-content": "space-between",
+     "background-color": "rgb(0, 0, 0)"
+    },
+    "c": [
+     {
+      "tag": "div",
+      "cls": "gf__legal__container",
+      "r": [
+       24,
+       3789,
+       299,
+       51
+      ],
+      "css": {
+       "box-sizing": "border-box"
+      },
+      "c": [
+       {
+        "tag": "p",
+        "cls": "gf__legal__container__copyright",
+        "r": [
+         24,
+         3801,
+         299,
+         19
+        ],
+        "t": "© Garmin Ltd. or its subsidiaries. All rights reserved.",
+        "css": {
+         "box-sizing": "border-box",
+         "margin-top": "12.8px",
+         "margin-bottom": "6.4px",
+         "font-size": "12.8px",
+         "font-weight": "500",
+         "line-height": "19.2px"
+        }
+       }
+      ]
+     },
+     {
+      "tag": "ul",
+      "cls": "gfl__list en-US",
+      "r": [
+       944,
+       3805,
+       472,
+       19
+      ],
+      "css": {
+       "display": "flex",
+       "box-sizing": "border-box",
+       "padding-left": "0px",
+       "flex-wrap": "wrap",
+       "justify-content": "center",
+       "align-items": "center",
+       "font-size": "12.8px",
+       "line-height": "19.2px",
+       "text-align": "center"
+      },
+      "c": [
+       {
+        "tag": "li",
+        "cls": "gfl__list__item js__gfl__list__item",
+        "r": [
+         960,
+         3805,
+         51,
+         19
+        ],
+        "css": {
+         "box-sizing": "border-box",
+         "margin-right": "16px",
+         "margin-left": "16px",
+         "font-weight": "500",
+         "list-style-type": "none"
+        },
+        "c": [
+         {
+          "tag": "span",
+          "cls": "js__gfl__list__item__link gfl__list__item__link__wrapper",
+          "r": [
+           960,
+           3807,
+           51,
+           15
+          ],
+          "css": {
+           "box-sizing": "border-box"
+          },
+          "c": [
+           {
+            "tag": "a",
+            "cls": "gfl__list__item__link",
+            "r": [
+             960,
+             3807,
+             51,
+             15
+            ],
+            "t": "Site Map",
+            "a": {
+             "href": "https://www.garmin.com/en-US/siteindex/"
+            },
+            "css": {
+             "box-sizing": "border-box",
+             "cursor": "pointer",
+             "transition-property": "color",
+             "transition-duration": "0.2s"
+            }
+           }
+          ]
+         }
+        ],
+        "rep": [
+         {
+          "t": "Terms of Use"
+         },
+         {
+          "t": "Privacy"
+         },
+         {
+          "t": "Security"
+         }
+        ]
+       },
+       {
+        "tag": "li",
+        "cls": "gfl__list__item js__gfl__list__item",
+        "r": [
+         1303,
+         3805,
+         113,
+         19
+        ],
+        "css": {
+         "box-sizing": "border-box",
+         "margin-left": "16px",
+         "font-weight": "500",
+         "list-style-type": "none"
+        },
+        "c": [
+         {
+          "tag": "span",
+          "cls": "js__gfl__list__item__link gfl__list__item__link__wrapper",
+          "r": [
+           1303,
+           3807,
+           113,
+           15
+          ],
+          "css": {
+           "box-sizing": "border-box"
+          },
+          "c": [
+           {
+            "tag": "a",
+            "cls": "gfl__list__item__link",
+            "r": [
+             1303,
+             3807,
+             113,
+             15
+            ],
+            "t": "Digital Accessibility",
+            "a": {
+             "href": "https://www.garmin.com/en-US/digital-accessibility/"
+            },
+            "css": {
+             "box-sizing": "border-box",
+             "cursor": "pointer",
+             "transition-property": "color",
+             "transition-duration": "0.2s"
+            }
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "svgs": [
+  {
+   "key": "svg1",
+   "hint": "Garmin on Facebook",
+   "count": 1,
+   "markup": "<svg viewBox=\"0 0 24 24\"><title>Garmin on Facebook</title><path d=\"M23.998 12c0-6.628-5.372-12-11.999-12C5.372 0 0 5.372 0 12c0 5.988 4.388 10.952 10.124 11.852v-8.384H7.078v-3.469h3.046V9.356c0-3.008 1.792-4.669 4.532-4.669 1.313 0 2.686.234 2.686.234v2.953H15.83c-1.49 0-1.955.925-1.955 1.874V12h3.328l-.532 3.469h-2.796v8.384c5.736-.9 10.124-5.864 10.124-11.853z\"></path></svg>",
+   "size": [
+    20,
+    20
+   ],
+   "currentColor": false
+  },
+  {
+   "key": "svg2",
+   "hint": "Garmin on Twitter",
+   "count": 1,
+   "markup": "<svg fill=\"none\" height=\"20\" viewBox=\"0 0 20 20\" width=\"20\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\"><title>Garmin on Twitter</title><clipPath id=\"a\"><path d=\"m0 0h20v20h-20z\"></path></clipPath><g clip-path=\"url(#a)\"><path d=\"m11.8246 8.49921 7.1397-8.299259h-1.6919l-6.1994 7.206129-4.95137-7.206129h-5.710863l7.487493 10.896949-7.487493 8.7031h1.691963l6.54668-7.61 5.22909 7.61h5.7108l-7.7651-11.30079zm-2.31737 2.69369-.75864-1.0851-6.03622-8.63416h2.59876l4.87127 6.96805.7587 1.08509 6.3321 9.05742h-2.5988l-5.16717-7.3909z\" fill=\"#fff\"></path></g></svg>",
+   "size": [
+    20,
+    20
+   ],
+   "currentColor": false
+  },
+  {
+   "key": "svg3",
+   "hint": "Garmin on YouTube",
+   "count": 1,
+   "markup": "<svg viewBox=\"0 0 29 20\"><title>Garmin on YouTube</title><path d=\"M11.2818 13.6884L11.2809 5.69892L18.9639 9.70745L11.2818 13.6884ZM28.71 4.31421C28.71 4.31421 28.4263 2.35482 27.5573 1.49198C26.4543 0.358999 25.2182 0.353668 24.6518 0.28791C20.5936 0 14.5063 0 14.5063 0H14.4937C14.4937 0 8.40637 0 4.34819 0.28791C3.78087 0.353668 2.54566 0.358999 1.44184 1.49198C0.57275 2.35482 0.29 4.31421 0.29 4.31421C0.29 4.31421 0 6.61572 0 8.91634V11.0739C0 13.3754 0.29 15.676 0.29 15.676C0.29 15.676 0.57275 17.6354 1.44184 18.4982C2.54566 19.6312 3.99475 19.5957 4.64 19.7139C6.96 19.9325 14.5 20 14.5 20C14.5 20 20.5936 19.9911 24.6518 19.7032C25.2182 19.6366 26.4543 19.6312 27.5573 18.4982C28.4263 17.6354 28.71 15.676 28.71 15.676C28.71 15.676 29 13.3754 29 11.0739V8.91634C29 6.61572 28.71 4.31421 28.71 4.31421V4.31421Z\" fill=\"#fff\"></path></svg>",
+   "size": [
+    29,
+    20
+   ],
+   "currentColor": false
+  },
+  {
+   "key": "svg4",
+   "hint": "Garmin on Pinterest",
+   "count": 1,
+   "markup": "<svg viewBox=\"0 0 24 24\"><title>Garmin on Pinterest</title><path d=\"M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.162-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.72-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.099.12.112.225.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.401.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.354-.629-2.758-1.379l-.749 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.607 0 11.985-5.365 11.985-11.987C23.97 5.39 18.592.026 11.985.026L12.017 0z\"></path></svg>",
+   "size": [
+    20,
+    20
+   ],
+   "currentColor": false
+  },
+  {
+   "key": "svg5",
+   "hint": "Garmin on Instagram",
+   "count": 1,
+   "markup": "<svg viewBox=\"0 0 24 24\"><title>Garmin on Instagram</title><path d=\"M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913a5.885 5.885 0 001.384 2.126A5.868 5.868 0 004.14 23.37c.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558a5.898 5.898 0 002.126-1.384 5.86 5.86 0 001.384-2.126c.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913a5.89 5.89 0 00-1.384-2.126A5.847 5.847 0 0019.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.419.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227a3.81 3.81 0 01-.899 1.382 3.744 3.744 0 01-1.38.896c-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421a3.716 3.716 0 01-1.379-.899 3.644 3.644 0 01-.9-1.38c-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.678a6.162 6.162 0 100 12.324 6.162 6.162 0 100-12.324zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405a1.441 1.441 0 01-2.88 0 1.44 1.44 0 012.88 0z\"></path></svg>",
+   "size": [
+    20,
+    20
+   ],
+   "currentColor": false
+  }
+ ],
+ "animations": [
+  {
+   "type": "CSSAnimation",
+   "name": "hero__slideshow",
+   "target": "#g__hero-rotator__container>button:nth-of-type(1)>svg>circle",
+   "duration": 6000,
+   "delay": 0,
+   "iterations": null,
+   "easing": "linear"
+  }
+ ]
+}

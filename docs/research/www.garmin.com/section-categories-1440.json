@@ -1,0 +1,364 @@
+{
+ "url": "https://www.garmin.com/en-US/",
+ "vw": 1440,
+ "tree": {
+  "tag": "div",
+  "cls": "g__tile-container g__tile-container--white",
+  "r": [
+   0,
+   2262,
+   1440,
+   832
+  ],
+  "css": {
+   "display": "flex",
+   "box-sizing": "border-box",
+   "padding-right": "16px",
+   "padding-left": "16px",
+   "flex-wrap": "wrap",
+   "background-color": "rgb(255, 255, 255)",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "font-size": "16px",
+   "line-height": "24px",
+   "color": "rgb(0, 0, 0)",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "g-tile",
+    "cls": "g__tile--clickable g__tile--third hydrated",
+    "r": [
+     24,
+     2270,
+     453,
+     400
+    ],
+    "css": {
+     "display": "block",
+     "box-sizing": "border-box",
+     "margin": "8px"
+    },
+    "c": [
+     {
+      "tag": "a",
+      "cls": "g__tile g__tile--dark g__tile--vertical-bottom",
+      "r": [
+       24,
+       2270,
+       453,
+       400
+      ],
+      "a": {
+       "href": "https://www.garmin.com/en-US/c/wearables-smartwatches/",
+       "target": "_self"
+      },
+      "css": {
+       "display": "flex",
+       "position": "relative",
+       "top": "0px",
+       "right": "0px",
+       "bottom": "0px",
+       "left": "0px",
+       "box-sizing": "border-box",
+       "align-items": "flex-end",
+       "cursor": "pointer",
+       "transition-property": "color",
+       "transition-duration": "0.2s"
+      },
+      "c": [
+       {
+        "tag": "figure",
+        "cls": "g__tile__background",
+        "r": [
+         24,
+         2270,
+         453,
+         400
+        ],
+        "css": {
+         "position": "absolute",
+         "top": "0px",
+         "right": "0px",
+         "bottom": "0px",
+         "left": "0px",
+         "box-sizing": "border-box",
+         "margin": "0px"
+        },
+        "c": [
+         {
+          "tag": "picture",
+          "r": [
+           24,
+           2655,
+           453,
+           19
+          ],
+          "css": {
+           "box-sizing": "border-box"
+          },
+          "c": [
+           {
+            "tag": "source",
+            "r": [
+             24,
+             2655,
+             0,
+             19
+            ],
+            "css": {
+             "box-sizing": "border-box"
+            },
+            "rep": [
+             {},
+             {}
+            ]
+           },
+           {
+            "tag": "img",
+            "cls": "g__tile__background__image",
+            "r": [
+             24,
+             2270,
+             453,
+             400
+            ],
+            "a": {
+             "src": "https://res.garmin.com/homepage/74662/74662-smartwatch-pod.jpg",
+             "alt": "Woman doing yogo on a balcony overlooking a wooded area",
+             "natural": [
+              1000,
+              1100
+             ],
+             "sources": [
+              {
+               "srcset": "",
+               "media": "(max-width: 640px)"
+              },
+              {
+               "srcset": "",
+               "media": "(max-width: 990px)"
+              },
+              {
+               "srcset": "https://res.garmin.com/homepage/74662/74662-smartwatch-pod.jpg",
+               "media": "(min-width: 990px)"
+              }
+             ]
+            },
+            "css": {
+             "box-sizing": "border-box",
+             "width": "453.33px",
+             "height": "400px",
+             "object-fit": "cover"
+            }
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "tag": "div",
+        "cls": "gradient gradient--bottom--dark",
+        "r": [
+         24,
+         2270,
+         453,
+         400
+        ],
+        "css": {
+         "position": "absolute",
+         "top": "0px",
+         "right": "0px",
+         "bottom": "0px",
+         "left": "0px",
+         "box-sizing": "border-box",
+         "background-image": "linear-gradient(0deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0) 60%)"
+        }
+       },
+       {
+        "tag": "div",
+        "cls": "g__tile__content g__tile__content--absolute-cta",
+        "r": [
+         24,
+         2548,
+         453,
+         122
+        ],
+        "css": {
+         "display": "flex",
+         "z-index": "1",
+         "box-sizing": "border-box",
+         "padding-bottom": "50px",
+         "flex-direction": "column"
+        },
+        "c": [
+         {
+          "tag": "div",
+          "cls": "g__tile__content-text heading-only",
+          "r": [
+           24,
+           2548,
+           453,
+           72
+          ],
+          "css": {
+           "box-sizing": "border-box"
+          },
+          "c": [
+           {
+            "tag": "g-heading",
+            "cls": "g__heading g__heading--left g__heading--dark",
+            "r": [
+             24,
+             2564,
+             453,
+             40
+            ],
+            "css": {
+             "box-sizing": "border-box",
+             "margin-bottom": "8px",
+             "color": "rgb(255, 255, 255)"
+            },
+            "c": [
+             {
+              "tag": "h2",
+              "r": [
+               40,
+               2564,
+               421,
+               40
+              ],
+              "css": {
+               "box-sizing": "border-box",
+               "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+               "font-size": "32px",
+               "line-height": "40px",
+               "letter-spacing": "0.8px",
+               "margin": "16px"
+              },
+              "c": [
+               {
+                "tag": "p",
+                "r": [
+                 40,
+                 2564,
+                 421,
+                 40
+                ],
+                "t": "SMARTWATCHES",
+                "css": {
+                 "box-sizing": "border-box",
+                 "margin-top": "0px",
+                 "margin-bottom": "0px"
+                }
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "tag": "g-button",
+          "cls": "g__button__host g__button__host--medium hydrated",
+          "r": [
+           24,
+           2620,
+           453,
+           0
+          ],
+          "css": {
+           "display": "flex",
+           "z-index": "1",
+           "box-sizing": "border-box",
+           "flex-direction": "column"
+          },
+          "c": [
+           {
+            "tag": "a",
+            "cls": "g__button g__button--contained g__button--contained--medium",
+            "r": [
+             40,
+             2620,
+             87,
+             34
+            ],
+            "t": "SHOP",
+            "a": {
+             "href": "https://www.garmin.com/en-US/c/wearables-smartwatches/",
+             "target": "_self"
+            },
+            "css": {
+             "display": "block",
+             "position": "absolute",
+             "top": "349.91px",
+             "right": "334.31px",
+             "bottom": "0px",
+             "left": "0px",
+             "box-sizing": "border-box",
+             "margin-right": "16px",
+             "margin-bottom": "16px",
+             "margin-left": "16px",
+             "align-self": "flex-start",
+             "font-size": "14px",
+             "font-weight": "500",
+             "line-height": "16.1px",
+             "text-align": "center",
+             "text-transform": "uppercase",
+             "vertical-align": "middle",
+             "color": "rgb(255, 255, 255)",
+             "transition-property": "background, border, color",
+             "transition-duration": "0.2s, 0.2s, 0.2s",
+             "transition-timing-function": "ease, ease, ease",
+             "transition-delay": "0s, 0s, 0s",
+             "padding": "8px 24px",
+             "border-width": "1px",
+             "border-style": "solid",
+             "overflow": "auto"
+            }
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "rep": [
+     {
+      "t": "AUTO & HOME SHOP",
+      "src": "https://res.garmin.com/homepage/74662/74662-automotive-pod.jpg"
+     },
+     {
+      "t": "SPORTS & FITNESS SHOP",
+      "src": "https://res.garmin.com/homepage/74662/74662-sports-and-fitness-pod.jpg"
+     },
+     {
+      "t": "OUTDOOR RECREATION SHOP",
+      "src": "https://res.garmin.com/homepage/MCJT-69482/46074-outdoor_recreation.jpg"
+     },
+     {
+      "t": "MARINE SHOP",
+      "src": "https://res.garmin.com/homepage/74662/74662-marine-pod.jpg"
+     },
+     {
+      "t": "AVIATION SHOP",
+      "src": "https://res.garmin.com/homepage/MCJT-69482/46074-aviation.jpg"
+     }
+    ]
+   }
+  ]
+ },
+ "svgs": [],
+ "animations": [
+  {
+   "type": "CSSAnimation",
+   "name": "hero__slideshow",
+   "target": "#g__hero-rotator__container>button:nth-of-type(1)>svg>circle",
+   "duration": 6000,
+   "delay": 0,
+   "iterations": null,
+   "easing": "linear"
+  }
+ ]
+}

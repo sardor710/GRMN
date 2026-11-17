@@ -128,15 +128,17 @@ export default function AdminUsersPage() {
   );
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[#232732] pb-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-200 pb-5">
         <div>
-          <h1 className="font-heading uppercase tracking-wider text-2xl font-bold text-white flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <ShieldCheck className="h-6 w-6 text-[#007cc3]" />
-            <span>Administrators & Role Permissions</span>
-          </h1>
-          <p className="text-[13px] text-[#8a92a3] mt-1 font-sans">
+            <h1 className="g-heading text-2xl uppercase tracking-tight text-neutral-900">
+              Administrators & Role Permissions
+            </h1>
+          </div>
+          <p className="text-sm text-neutral-500 mt-1">
             Manage team access levels, RBAC security roles, and operational credentials.
           </p>
         </div>
@@ -144,7 +146,7 @@ export default function AdminUsersPage() {
         <button
           type="button"
           onClick={handleOpenAdd}
-          className="flex items-center gap-1.5 bg-[#007cc3] px-4 py-2 text-[12px] font-heading uppercase tracking-wider font-bold text-white transition-colors hover:bg-[#006cae]"
+          className="inline-flex items-center gap-2 bg-black px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>Add Administrator</span>
@@ -157,16 +159,16 @@ export default function AdminUsersPage() {
           const info = ROLE_INFO[roleKey];
           const count = admins.filter((a) => a.role === roleKey).length;
           return (
-            <div key={roleKey} className="border border-[#262c39] bg-[#141720] p-4">
+            <div key={roleKey} className="border border-neutral-200 bg-white p-4 rounded-none shadow-sm">
               <div className="flex items-center justify-between">
-                <span className="font-heading uppercase tracking-wider text-[11px] font-bold text-[#8a92a3]">
+                <span className="text-xs font-semibold uppercase tracking-wider text-neutral-600">
                   {info.label}
                 </span>
-                <span className="font-heading font-bold text-white text-xs bg-[#191d28] border border-[#262c39] px-2 py-0.5">
+                <span className="text-xs font-semibold text-neutral-900 bg-neutral-100 border border-neutral-200 px-2 py-0.5 rounded-none">
                   {count} USERS
                 </span>
               </div>
-              <p className="text-[11px] text-[#8a92a3] mt-2 line-clamp-2">
+              <p className="text-xs text-neutral-500 mt-2 line-clamp-2">
                 {info.desc}
               </p>
             </div>
@@ -175,78 +177,78 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Admins Table */}
-      <div className="border border-[#262c39] bg-[#141720] overflow-hidden">
-        <div className="p-3.5 border-b border-[#232732] flex items-center justify-between">
-          <div className="relative w-80">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#737b8c]" />
+      <div className="border border-neutral-200 bg-white rounded-none shadow-sm overflow-hidden">
+        <div className="p-4 border-b border-neutral-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="relative w-full sm:w-80">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by name, email, or role..."
-              className="h-9 w-full border border-[#262c39] bg-[#101217] pl-9 pr-3 text-[13px] text-white placeholder-[#606775] focus:border-[#007cc3] focus:outline-none"
+              className="h-10 w-full border border-neutral-300 bg-white pl-9 pr-3 text-sm text-neutral-900 placeholder-neutral-400 focus:border-black focus:outline-none rounded-none"
             />
           </div>
-          <span className="font-heading uppercase tracking-wider text-[11px] font-bold text-[#8a92a3]">
+          <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
             {filteredAdmins.length} Active Accounts
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-[13px]">
+          <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-[#232732] bg-[#0f1117] text-[#737b8c] text-[11px] font-heading uppercase tracking-wider">
-                <th className="py-3 px-4 font-bold">Admin User</th>
-                <th className="py-3 px-4 font-bold">Assigned Role</th>
-                <th className="py-3 px-4 font-bold">Account Status</th>
-                <th className="py-3 px-4 font-bold">Last Active</th>
-                <th className="py-3 px-4 font-bold text-right">Actions</th>
+              <tr className="border-b border-neutral-200 bg-neutral-50 text-neutral-600 text-xs font-semibold uppercase tracking-wider">
+                <th className="py-3.5 px-4 font-semibold">Admin User</th>
+                <th className="py-3.5 px-4 font-semibold">Assigned Role</th>
+                <th className="py-3.5 px-4 font-semibold">Account Status</th>
+                <th className="py-3.5 px-4 font-semibold">Last Active</th>
+                <th className="py-3.5 px-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#232732] text-[#c0c7d4]">
+            <tbody className="divide-y divide-neutral-200 text-neutral-800">
               {loading ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-[#737b8c]">
+                  <td colSpan={5} className="py-12 text-center text-neutral-400">
                     Loading administrators...
                   </td>
                 </tr>
               ) : filteredAdmins.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="py-8 text-center text-[#737b8c]">
+                  <td colSpan={5} className="py-12 text-center text-neutral-400">
                     No admins matched your search.
                   </td>
                 </tr>
               ) : (
                 filteredAdmins.map((admin) => (
-                  <tr key={admin.id} className="hover:bg-[#191d28]">
-                    <td className="py-3 px-4">
+                  <tr key={admin.id} className="hover:bg-neutral-50/80 transition-colors">
+                    <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 bg-[#101217] border border-[#262c39] flex items-center justify-center font-heading font-bold text-white text-xs">
+                        <div className="h-9 w-9 bg-neutral-100 border border-neutral-200 flex items-center justify-center font-heading font-semibold text-neutral-900 text-sm rounded-none">
                           {admin.name.charAt(0)}
                         </div>
                         <div>
-                          <p className="font-medium text-white">{admin.name}</p>
-                          <p className="text-[11px] text-[#8a92a3]">{admin.email}</p>
+                          <p className="font-semibold text-neutral-900">{admin.name}</p>
+                          <p className="text-xs text-neutral-500">{admin.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3 px-4">
-                      <span className="font-heading uppercase tracking-wider text-[10px] font-bold px-2 py-0.5 bg-[#142334] text-[#60a5fa] border border-[#60a5fa]/30">
+                    <td className="py-3.5 px-4">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 bg-neutral-100 text-neutral-800 border border-neutral-200 rounded-none">
                         {ROLE_INFO[admin.role]?.label || admin.role}
                       </span>
                     </td>
-                    <td className="py-3 px-4">
+                    <td className="py-3.5 px-4">
                       <span
-                        className={`font-heading uppercase tracking-wider text-[10px] font-bold px-2 py-0.5 ${
+                        className={`text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-none ${
                           admin.status === "active"
-                            ? "bg-[#1e2a22] text-[#4ade80] border border-[#4ade80]/30"
-                            : "bg-[#2c1919] text-rose-400 border border-rose-500/30"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-rose-50 text-rose-700 border border-rose-200"
                         }`}
                       >
                         {admin.status}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-[12px] text-[#8a92a3]">
+                    <td className="py-3.5 px-4 text-xs text-neutral-600">
                       {admin.lastLogin
                         ? new Date(admin.lastLogin).toLocaleDateString([], {
                             month: "short",
@@ -256,12 +258,12 @@ export default function AdminUsersPage() {
                           })
                         : "Never"}
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <button
                           type="button"
                           onClick={() => handleOpenEdit(admin)}
-                          className="p-1.5 text-[#8a92a3] hover:bg-[#1f2430] hover:text-white"
+                          className="p-2 text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors rounded-none"
                           title="Edit Admin"
                         >
                           <Edit className="h-4 w-4" />
@@ -270,7 +272,7 @@ export default function AdminUsersPage() {
                           <button
                             type="button"
                             onClick={() => handleDelete(admin.id)}
-                            className="p-1.5 text-[#8a92a3] hover:bg-rose-500/10 hover:text-rose-400"
+                            className="p-2 text-neutral-500 hover:text-rose-600 hover:bg-rose-50 transition-colors rounded-none"
                             title="Delete Admin"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -293,9 +295,9 @@ export default function AdminUsersPage() {
         title={editingAdmin ? "Edit Administrator Profile" : "Add Administrator Account"}
         subtitle="Manage user role, access permissions, and authentication credentials"
       >
-        <form onSubmit={handleSubmit} className="space-y-4 font-sans">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
               Full Name *
             </label>
             <input
@@ -304,12 +306,12 @@ export default function AdminUsersPage() {
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="e.g. Marcus Vance"
-              className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] text-white focus:border-[#007cc3] focus:outline-none"
+              className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
             />
           </div>
 
           <div>
-            <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
               Email Address *
             </label>
             <input
@@ -318,12 +320,12 @@ export default function AdminUsersPage() {
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
               placeholder="marcus@garmin.com"
-              className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] text-white focus:border-[#007cc3] focus:outline-none"
+              className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
             />
           </div>
 
           <div>
-            <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
               {editingAdmin ? "Change Password (leave empty to keep current)" : "Password *"}
             </label>
             <input
@@ -332,19 +334,19 @@ export default function AdminUsersPage() {
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
               placeholder="••••••••"
-              className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] text-white focus:border-[#007cc3] focus:outline-none"
+              className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
             />
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Role & Permissions
               </label>
               <select
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value as AdminRole })}
-                className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] font-heading uppercase font-bold text-white focus:border-[#007cc3] focus:outline-none"
+                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-semibold uppercase text-neutral-900 focus:border-black focus:outline-none rounded-none"
               >
                 <option value="super_admin">Super Admin (Full Access)</option>
                 <option value="product_manager">Product Manager</option>
@@ -354,13 +356,13 @@ export default function AdminUsersPage() {
             </div>
 
             <div>
-              <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Account Status
               </label>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as AdminStatus })}
-                className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] font-heading uppercase font-bold text-white focus:border-[#007cc3] focus:outline-none"
+                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-semibold uppercase text-neutral-900 focus:border-black focus:outline-none rounded-none"
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive / Suspended</option>
@@ -368,17 +370,17 @@ export default function AdminUsersPage() {
             </div>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-[#232732]">
+          <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200">
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 text-[12px] font-heading uppercase tracking-wider font-bold text-[#8a92a3] hover:text-white"
+              className="border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-700 hover:bg-neutral-50 rounded-none transition-colors"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="bg-[#007cc3] px-5 py-2 text-[12px] font-heading uppercase tracking-wider font-bold text-white hover:bg-[#006cae]"
+              className="bg-black px-6 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none"
             >
               {editingAdmin ? "Save Changes" : "Create Administrator"}
             </button>

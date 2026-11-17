@@ -1,0 +1,142 @@
+{
+ "target": "https://www.garmin.com/en-US/",
+ "clone": "http://localhost:3001/",
+ "sel": "main > authorable-email-signup",
+ "cloneSel": "[data-home",
+ "widths": {
+  "390": {
+   "mismatchPct": 0.65,
+   "size": {
+    "target": [
+     390,
+     252
+    ],
+    "clone": [
+     390,
+     252
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "160-200",
+     "pct": 2.6
+    }
+   ],
+   "file": "docs/design-references/qa/signup-390-diff.png",
+   "text": {
+    "matched": 4,
+    "of": 4,
+    "issues": [
+     {
+      "t": "Sign up for News",
+      "ff": "Superscripts-Oswald → Oswald"
+     },
+     {
+      "t": "Sign up for News",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "14.4px → 16px",
+      "fw": "700 → 400",
+      "lh": "21.6px → 24px",
+      "pos": "6,96 → 194,93",
+      "size": "46×90 → 1×1"
+     },
+     {
+      "t": "Get product news and promotions based on",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Learn about email privacy.",
+      "ff": "Superscripts-Roboto → Roboto"
+     }
+    ],
+    "missing": []
+   }
+  },
+  "768": {
+   "mismatchPct": 0.45,
+   "size": {
+    "target": [
+     768,
+     245
+    ],
+    "clone": [
+     768,
+     245
+    ]
+   },
+   "hotBands": [],
+   "file": "docs/design-references/qa/signup-768-diff.png",
+   "text": {
+    "matched": 4,
+    "of": 4,
+    "issues": [
+     {
+      "t": "Sign up for News",
+      "ff": "Superscripts-Oswald → Oswald"
+     },
+     {
+      "t": "Sign up for News",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "14.4px → 16px",
+      "fw": "700 → 400",
+      "lh": "21.6px → 24px",
+      "pos": "195,106 → 383,103",
+      "size": "46×90 → 1×1"
+     },
+     {
+      "t": "Get product news and promotions based on",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Learn about email privacy.",
+      "ff": "Superscripts-Roboto → Roboto"
+     }
+    ],
+    "missing": []
+   }
+  },
+  "1440": {
+   "mismatchPct": 0.23,
+   "size": {
+    "target": [
+     1440,
+     245
+    ],
+    "clone": [
+     1440,
+     245
+    ]
+   },
+   "hotBands": [],
+   "file": "docs/design-references/qa/signup-1440-diff.png",
+   "text": {
+    "matched": 4,
+    "of": 4,
+    "issues": [
+     {
+      "t": "Sign up for News",
+      "ff": "Superscripts-Oswald → Oswald"
+     },
+     {
+      "t": "Sign up for News",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "14.4px → 16px",
+      "fw": "700 → 400",
+      "lh": "21.6px → 24px",
+      "pos": "531,106 → 719,103",
+      "size": "46×90 → 1×1"
+     },
+     {
+      "t": "Get product news and promotions based on",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Learn about email privacy.",
+      "ff": "Superscripts-Roboto → Roboto"
+     }
+    ],
+    "missing": []
+   }
+  }
+ }
+}

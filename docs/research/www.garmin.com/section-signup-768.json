@@ -1,0 +1,414 @@
+{
+ "url": "https://www.garmin.com/en-US/",
+ "vw": 768,
+ "tree": {
+  "tag": "authorable-email-signup",
+  "cls": "authorable-email-signup hydrated",
+  "r": [
+   0,
+   4256,
+   768,
+   245
+  ],
+  "css": {
+   "box-sizing": "border-box",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "font-size": "16px",
+   "line-height": "24px",
+   "color": "rgb(0, 0, 0)",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "div",
+    "cls": "authorable-email-signup__container authorable-email-signup__container--center authorable-email-signup__container--light",
+    "r": [
+     0,
+     4256,
+     768,
+     245
+    ],
+    "css": {
+     "box-sizing": "border-box",
+     "padding-top": "48px",
+     "padding-bottom": "48px",
+     "background-color": "rgb(255, 255, 255)"
+    },
+    "c": [
+     {
+      "tag": "g-heading",
+      "cls": "authorable-email-signup__container__heading g__heading g__heading--center",
+      "r": [
+       0,
+       4304,
+       768,
+       40
+      ],
+      "css": {
+       "box-sizing": "border-box",
+       "margin-top": "16px",
+       "text-align": "center",
+       "text-transform": "uppercase"
+      },
+      "c": [
+       {
+        "tag": "h2",
+        "r": [
+         0,
+         4304,
+         768,
+         40
+        ],
+        "t": "Sign up for News",
+        "css": {
+         "box-sizing": "border-box",
+         "margin-top": "0px",
+         "margin-bottom": "16px",
+         "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+         "font-size": "32px",
+         "line-height": "40px",
+         "letter-spacing": "0.8px"
+        }
+       }
+      ]
+     },
+     {
+      "tag": "div",
+      "r": [
+       0,
+       4360,
+       768,
+       40
+      ],
+      "css": {
+       "box-sizing": "border-box"
+      },
+      "c": [
+       {
+        "tag": "g-input",
+        "cls": "authorable-email-signup__container__input g__input g__input--with-button",
+        "r": [
+         196,
+         4360,
+         376,
+         40
+        ],
+        "css": {
+         "display": "block",
+         "box-sizing": "border-box",
+         "max-width": "min(100%, 376px)",
+         "margin-right": "196px",
+         "margin-left": "196px"
+        },
+        "c": [
+         {
+          "tag": "label",
+          "cls": "g__input__label",
+          "r": [
+           195,
+           4359,
+           1,
+           1
+          ],
+          "css": {
+           "display": "block",
+           "position": "absolute",
+           "top": "4359.83px",
+           "right": "573px",
+           "bottom": "-3334.83px",
+           "left": "196px",
+           "box-sizing": "border-box",
+           "margin": "-1px",
+           "overflow": "hidden"
+          },
+          "c": [
+           {
+            "tag": "span",
+            "cls": "g__input__label__text",
+            "r": [
+             195,
+             4362,
+             46,
+             90
+            ],
+            "t": "Sign up for News",
+            "css": {
+             "box-sizing": "border-box",
+             "font-size": "14.4px",
+             "font-weight": "700",
+             "line-height": "21.6px"
+            },
+            "c": [
+             {
+              "tag": "span",
+              "cls": "g__input__required",
+              "r": [
+               231,
+               4434,
+               11,
+               18
+              ],
+              "t": "*",
+              "css": {
+               "box-sizing": "border-box",
+               "padding-left": "4px",
+               "color": "rgb(146, 0, 0)"
+              }
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "tag": "div",
+          "cls": "g__input__wrapper",
+          "r": [
+           196,
+           4360,
+           376,
+           40
+          ],
+          "css": {
+           "display": "flex",
+           "box-sizing": "border-box",
+           "margin-top": "4.8px",
+           "margin-bottom": "4.8px",
+           "align-items": "center"
+          },
+          "c": [
+           {
+            "tag": "input",
+            "r": [
+             196,
+             4360,
+             336,
+             40
+            ],
+            "a": {
+             "type": "email",
+             "placeholder": "john@example.com"
+            },
+            "css": {
+             "display": "block",
+             "width": "336.41px",
+             "height": "40px",
+             "line-height": "18.4px",
+             "padding": "10px 8px",
+             "border-width": "1px",
+             "border-style": "solid",
+             "border-color": "rgb(217, 217, 217)"
+            }
+           },
+           {
+            "tag": "div",
+            "cls": "g__input__button-wrapper",
+            "r": [
+             532,
+             4360,
+             40,
+             40
+            ],
+            "css": {
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "g-button",
+              "cls": "g__button__host g__button__host--medium hydrated",
+              "r": [
+               532,
+               4360,
+               40,
+               40
+              ],
+              "css": {
+               "display": "inline-block",
+               "box-sizing": "border-box"
+              },
+              "c": [
+               {
+                "tag": "button",
+                "cls": "g__button g__button--contained g__button--contained--medium",
+                "r": [
+                 532,
+                 4360,
+                 40,
+                 40
+                ],
+                "a": {
+                 "aria-label": "Submit"
+                },
+                "css": {
+                 "font-size": "14px",
+                 "font-weight": "500",
+                 "line-height": "16.1px",
+                 "text-transform": "uppercase",
+                 "vertical-align": "middle",
+                 "color": "rgb(255, 255, 255)",
+                 "background-color": "rgb(0, 0, 0)",
+                 "cursor": "pointer",
+                 "transition-property": "background, border, color",
+                 "transition-duration": "0.2s, 0.2s, 0.2s",
+                 "transition-timing-function": "ease, ease, ease",
+                 "transition-delay": "0s, 0s, 0s",
+                 "padding": "9.01px",
+                 "border-width": "1px",
+                 "border-style": "solid",
+                 "overflow": "auto"
+                },
+                "c": [
+                 {
+                  "tag": "span",
+                  "cls": "g__input__button--append__icon",
+                  "r": [
+                   542,
+                   4371,
+                   20,
+                   17
+                  ],
+                  "css": {
+                   "box-sizing": "border-box"
+                  },
+                  "c": [
+                   {
+                    "tag": "svg",
+                    "r": [
+                     542,
+                     4374,
+                     20,
+                     13
+                    ],
+                    "css": {
+                     "display": "inline-block",
+                     "box-sizing": "border-box",
+                     "width": "19.59px",
+                     "height": "12.59px",
+                     "vertical-align": "middle",
+                     "fill": "rgb(255, 255, 255)",
+                     "overflow": "hidden"
+                    },
+                    "svg": "svg1"
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "tag": "div",
+      "cls": "authorable-email-signup__container__consent",
+      "r": [
+       0,
+       4420,
+       768,
+       33
+      ],
+      "css": {
+       "box-sizing": "border-box"
+      },
+      "c": [
+       {
+        "tag": "g-copy",
+        "cls": "authorable-email-signup__container__consent__copy authorable-email-signup__container__consent__copy--no-error g__copy",
+        "r": [
+         0,
+         4420,
+         768,
+         17
+        ],
+        "t": "Get product news and promotions based on your preferences, devices and services.",
+        "a": {
+         "type": "footnote"
+        },
+        "css": {
+         "display": "block",
+         "box-sizing": "border-box",
+         "margin-top": "20px",
+         "font-size": "11px",
+         "line-height": "16.5px",
+         "text-align": "center"
+        }
+       },
+       {
+        "tag": "g-copy",
+        "cls": "authorable-email-signup__container__consent__link g__copy g__copy--center",
+        "r": [
+         0,
+         4436,
+         768,
+         17
+        ],
+        "a": {
+         "type": "footnote"
+        },
+        "css": {
+         "display": "block",
+         "box-sizing": "border-box",
+         "font-size": "11px",
+         "line-height": "16.5px",
+         "text-align": "center"
+        },
+        "c": [
+         {
+          "tag": "a",
+          "r": [
+           320,
+           4437,
+           128,
+           13
+          ],
+          "t": "Learn about email privacy.",
+          "a": {
+           "href": "https://www.garmin.com/en-US/privacy/global/"
+          },
+          "css": {
+           "box-sizing": "border-box",
+           "text-decoration-line": "underline",
+           "cursor": "pointer",
+           "transition-property": "color",
+           "transition-duration": "0.2s"
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "svgs": [
+  {
+   "key": "svg1",
+   "hint": "Submit",
+   "count": 1,
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 11.2 18.1\"><path d=\"M11.2 9l-9.1 9.1L0 16l6.9-7L0 2.1 2.1 0l9.1 9z\"></path></svg>",
+   "size": [
+    20,
+    13
+   ],
+   "currentColor": false
+  }
+ ],
+ "animations": [
+  {
+   "type": "CSSAnimation",
+   "name": "hero__slideshow",
+   "target": "#g__hero-rotator__container>button:nth-of-type(1)>svg>circle",
+   "duration": 6000,
+   "delay": 0,
+   "iterations": null,
+   "easing": "linear"
+  }
+ ]
+}

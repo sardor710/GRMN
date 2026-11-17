@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useCart } from "@/lib/cart";
+import { lineKeyOf, useCart } from "@/lib/cart";
 import { CartIcon } from "@/components/icons";
 
 const money = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
@@ -56,7 +56,7 @@ export function CartView() {
           </div>
           <ul className="divide-y divide-neutral-200">
             {items.map((item) => (
-              <li key={item.id} className="grid grid-cols-1 gap-4 py-6 sm:grid-cols-[1fr_120px_120px] sm:items-center">
+              <li key={lineKeyOf(item)} className="grid grid-cols-1 gap-4 py-6 sm:grid-cols-[1fr_120px_120px] sm:items-center">
                 <div className="flex items-center gap-4">
                   <div className="relative h-20 w-20 shrink-0 border border-neutral-200">
                     {item.image ? (
@@ -68,11 +68,20 @@ export function CartView() {
                     )}
                   </div>
                   <div>
-                    <Link href={`/p/${item.id}`} className="g-heading text-[17px] text-black hover:text-[#007cc3]">
+                    <Link
+                      href={item.sku ? `/p/${item.id}?sku=${encodeURIComponent(item.sku)}` : `/p/${item.id}`}
+                      className="g-heading text-[17px] text-black hover:text-[#007cc3]"
+                    >
                       {item.name}
                     </Link>
+                    {item.sku && (
+                      <p className="mt-0.5 text-[12px] text-neutral-600">
+                        {item.variantLabel && <span>{item.variantLabel} · </span>}
+                        <span className="uppercase tracking-[0.04em]">Part {item.sku}</span>
+                      </p>
+                    )}
                     <button
-                      onClick={() => remove(item.id)}
+                      onClick={() => remove(lineKeyOf(item))}
                       className="mt-1 block text-[12px] text-[#007cc3] underline"
                     >
                       Remove
@@ -83,7 +92,7 @@ export function CartView() {
                   <div className="flex items-center border border-neutral-300">
                     <button
                       aria-label="Decrease"
-                      onClick={() => setQty(item.id, item.qty - 1)}
+                      onClick={() => setQty(lineKeyOf(item), item.qty - 1)}
                       className="grid h-9 w-9 place-items-center text-lg text-neutral-600 hover:bg-neutral-100"
                     >
                       −
@@ -91,7 +100,7 @@ export function CartView() {
                     <span className="w-8 text-center text-[15px]">{item.qty}</span>
                     <button
                       aria-label="Increase"
-                      onClick={() => setQty(item.id, item.qty + 1)}
+                      onClick={() => setQty(lineKeyOf(item), item.qty + 1)}
                       className="grid h-9 w-9 place-items-center text-lg text-neutral-600 hover:bg-neutral-100"
                     >
                       +

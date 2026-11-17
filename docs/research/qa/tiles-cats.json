@@ -1,0 +1,273 @@
+{
+ "target": "https://www.garmin.com/en-US/",
+ "clone": "http://localhost:3001/",
+ "sel": "main > div:nth-child(7)",
+ "cloneSel": "#home-categories",
+ "widths": {
+  "390": {
+   "mismatchPct": 0.62,
+   "size": {
+    "target": [
+     390,
+     2496
+    ],
+    "clone": [
+     390,
+     2496
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "1560-1600",
+     "pct": 8.1
+    },
+    {
+     "y": "720-760",
+     "pct": 7.8
+    },
+    {
+     "y": "320-360",
+     "pct": 7.4
+    },
+    {
+     "y": "1160-1200",
+     "pct": 4.7
+    },
+    {
+     "y": "1120-1160",
+     "pct": 4.4
+    },
+    {
+     "y": "2400-2440",
+     "pct": 4
+    }
+   ],
+   "file": "docs/design-references/qa/tiles-cats-390-diff.png",
+   "text": {
+    "matched": 12,
+    "of": 12,
+    "issues": [
+     {
+      "t": "SMARTWATCHES",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "AUTO & HOME",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "SPORTS & FITNESS",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "OUTDOOR RECREATION",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "MARINE",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "AVIATION",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     }
+    ],
+    "missing": []
+   }
+  },
+  "768": {
+   "mismatchPct": 1.53,
+   "size": {
+    "target": [
+     768,
+     832
+    ],
+    "clone": [
+     768,
+     832
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "320-360",
+     "pct": 10.1
+    },
+    {
+     "y": "720-760",
+     "pct": 9.8
+    },
+    {
+     "y": "280-320",
+     "pct": 7.7
+    },
+    {
+     "y": "680-720",
+     "pct": 2
+    }
+   ],
+   "file": "docs/design-references/qa/tiles-cats-768-diff.png",
+   "text": {
+    "matched": 12,
+    "of": 12,
+    "issues": [
+     {
+      "t": "SMARTWATCHES",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "AUTO & HOME",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "SPORTS & FITNESS",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "OUTDOOR RECREATION",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "MARINE",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "AVIATION",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     }
+    ],
+    "missing": []
+   }
+  },
+  "1440": {
+   "mismatchPct": 1,
+   "size": {
+    "target": [
+     1440,
+     832
+    ],
+    "clone": [
+     1440,
+     832
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "320-360",
+     "pct": 8
+    },
+    {
+     "y": "720-760",
+     "pct": 7.9
+    },
+    {
+     "y": "280-320",
+     "pct": 4.6
+    }
+   ],
+   "file": "docs/design-references/qa/tiles-cats-1440-diff.png",
+   "text": {
+    "matched": 12,
+    "of": 12,
+    "issues": [
+     {
+      "t": "SMARTWATCHES",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "AUTO & HOME",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "SPORTS & FITNESS",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "OUTDOOR RECREATION",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "MARINE",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "AVIATION",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     }
+    ],
+    "missing": []
+   }
+  }
+ }
+}

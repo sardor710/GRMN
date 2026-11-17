@@ -138,16 +138,17 @@ export default function AdminDashboardPage() {
           {
             id: "act-4",
             adminName: "Alexander Hayes",
-            action: "Order Placed",
+            action: "Order placed",
             target: "MARQ Captain (Gen 2) · $2,200",
             timestamp: new Date(Date.now() - 3600000 * 26).toISOString(),
           },
         ],
         recentClients: clients,
-        products: products,
+        products,
       });
     } catch (err) {
       console.error("Failed to load dashboard data:", err);
+      showToast("Failed to fetch latest analytics.");
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -158,43 +159,30 @@ export default function AdminDashboardPage() {
     loadDashboard();
   }, [loadDashboard]);
 
-  // Quick Restock
+  // Quick restock action
   const handleRestockProduct = async (productId: string, addedStock: number) => {
     if (!data) return;
-    const target = data.products.find((p) => p.id === productId);
-    if (!target) return;
-
-    const newStock = (target.stock || 0) + addedStock;
-
     try {
+      const target = data.products.find((p) => p.id === productId);
+      if (!target) return;
+
       const res = await fetch("/api/admin/products", {
-        method: "PUT",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...target,
-          stock: newStock,
+          stock: target.stock + addedStock,
         }),
       });
 
       if (res.ok) {
         setData((prev) => {
-          if (!prev) return prev;
-          const updated = prev.products.map((p) =>
-            p.id === productId ? { ...p, stock: newStock } : p
-          );
+          if (!prev) return null;
           return {
             ...prev,
-            products: updated,
-            recentActivities: [
-              {
-                id: `act-${Date.now()}`,
-                adminName: "Garmin Admin",
-                action: "Restocked inventory",
-                target: `${target.name} (+${addedStock} units)`,
-                timestamp: new Date().toISOString(),
-              },
-              ...prev.recentActivities,
-            ],
+            products: prev.products.map((p) =>
+              p.id === productId ? { ...p, stock: p.stock + addedStock } : p
+            ),
           };
         });
         showToast(`Restocked ${target.name} (+${addedStock} units)`);
@@ -262,8 +250,8 @@ export default function AdminDashboardPage() {
     <div className="space-y-6 font-sans">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-[#121620] border border-[#007cc3] text-white px-4 py-3 rounded shadow-2xl">
-          <Check className="h-4 w-4 text-[#00a0df]" />
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-black text-white px-5 py-3 rounded-none border border-neutral-800 shadow-2xl">
+          <Check className="h-4 w-4 text-[#007cc3]" />
           <span className="text-xs font-semibold">{toastMessage}</span>
         </div>
       )}
@@ -280,7 +268,7 @@ export default function AdminDashboardPage() {
       />
 
       {/* 4 Essential High-Density KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {/* Total Revenue */}
         <AdminStatCard
           title="Total Gross Revenue"
@@ -301,7 +289,7 @@ export default function AdminDashboardPage() {
           isPositive={true}
           icon={ShoppingBag}
           sparkline={[22, 28, 32, 29, 38, 46, 54, 65]}
-          sparklineColor="#22c55e"
+          sparklineColor="#15803d"
           subtitle={`${data?.pendingOrders || 0} pending fulfillment`}
         />
 
@@ -313,7 +301,7 @@ export default function AdminDashboardPage() {
           isPositive={true}
           icon={Users}
           sparkline={[14, 18, 22, 26, 31, 35, 42]}
-          sparklineColor="#8b5cf6"
+          sparklineColor="#007cc3"
           subtitle="6 VIP collectors"
         />
 
@@ -328,7 +316,7 @@ export default function AdminDashboardPage() {
           subtitle="Stock Health: 96%"
           icon={Package}
           sparkline={[95, 96, 94, 98, 96, 97]}
-          sparklineColor="#06b6d4"
+          sparklineColor="#000000"
         />
       </div>
 
@@ -349,15 +337,15 @@ export default function AdminDashboardPage() {
           />
 
           {/* Recent Orders Table */}
-          <div className="border border-[#232836] bg-[#12151e] p-5 rounded font-sans">
+          <div className="border border-neutral-200 bg-white p-6 rounded-none font-sans">
             {/* Header & Filter Tabs */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#1e2330] pb-4 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-100 pb-4 mb-4">
               <div>
-                <h3 className="font-heading uppercase tracking-wider text-sm font-bold text-white flex items-center gap-2">
+                <h3 className="g-heading uppercase tracking-wide text-[18px] text-black font-normal flex items-center gap-2">
                   <ShoppingBag className="h-4 w-4 text-[#007cc3]" />
                   <span>Recent Customer Orders</span>
                 </h3>
-                <p className="text-[12px] text-[#8a92a3] mt-0.5">
+                <p className="text-[13px] text-neutral-500 mt-0.5">
                   Latest customer transactions and fulfillment statuses
                 </p>
               </div>
@@ -374,10 +362,10 @@ export default function AdminDashboardPage() {
                     key={tab.id}
                     type="button"
                     onClick={() => setOrderFilter(tab.id as "all" | "processing" | "delivered" | "vip")}
-                    className={`px-2.5 py-1 text-[10px] font-heading uppercase tracking-wider font-bold rounded transition-colors ${
+                    className={`px-3 py-1.5 text-[11px] font-heading uppercase tracking-wider font-semibold rounded-none transition-colors ${
                       orderFilter === tab.id
-                        ? "bg-[#007cc3] text-white"
-                        : "bg-[#171b26] text-[#8a92a3] hover:text-white border border-[#232836]"
+                        ? "bg-black text-white"
+                        : "bg-neutral-100 text-neutral-600 hover:text-black border border-neutral-200"
                     }`}
                   >
                     {tab.label}
@@ -387,14 +375,14 @@ export default function AdminDashboardPage() {
             </div>
 
             {/* Search Input */}
-            <div className="relative mb-3">
-              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#737b8c]" />
+            <div className="relative mb-4">
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
               <input
                 type="text"
                 value={orderSearch}
                 onChange={(e) => setOrderSearch(e.target.value)}
                 placeholder="Search by order number or customer name..."
-                className="h-8 w-full border border-[#232836] bg-[#0c0e14] pl-9 pr-3 text-xs text-white placeholder-[#555f73] focus:border-[#007cc3] focus:outline-none rounded"
+                className="h-9 w-full border border-neutral-300 bg-neutral-50 pl-9 pr-3 text-[13px] text-black placeholder-neutral-400 focus:border-black focus:bg-white focus:outline-none rounded-none"
               />
             </div>
 
@@ -402,67 +390,67 @@ export default function AdminDashboardPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left text-[13px]">
                 <thead>
-                  <tr className="border-b border-[#1e2330] bg-[#0c0e14] text-[#737b8c] text-[10px] font-heading uppercase tracking-wider">
-                    <th className="py-2.5 px-3 font-bold">Order No</th>
-                    <th className="py-2.5 px-3 font-bold">Customer</th>
-                    <th className="py-2.5 px-3 font-bold">Total</th>
-                    <th className="py-2.5 px-3 font-bold">Fulfillment</th>
-                    <th className="py-2.5 px-3 font-bold">Date</th>
-                    <th className="py-2.5 px-3 font-bold text-right">Details</th>
+                  <tr className="border-b border-neutral-200 bg-neutral-50 text-neutral-500 text-[11px] font-heading uppercase tracking-wider">
+                    <th className="py-3 px-4 font-semibold">Order No</th>
+                    <th className="py-3 px-4 font-semibold">Customer</th>
+                    <th className="py-3 px-4 font-semibold">Total</th>
+                    <th className="py-3 px-4 font-semibold">Fulfillment</th>
+                    <th className="py-3 px-4 font-semibold">Date</th>
+                    <th className="py-3 px-4 font-semibold text-right">Details</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#1e2330] text-[#c0c7d4]">
+                <tbody className="divide-y divide-neutral-100 text-neutral-800">
                   {loading || !data ? (
                     <tr>
-                      <td colSpan={6} className="py-6 text-center text-[#737b8c] font-mono text-xs">
+                      <td colSpan={6} className="py-6 text-center text-neutral-400 font-mono text-xs">
                         Loading orders...
                       </td>
                     </tr>
                   ) : filteredOrders.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="py-6 text-center text-[#737b8c] font-mono text-xs">
+                      <td colSpan={6} className="py-6 text-center text-neutral-400 font-mono text-xs">
                         No orders found.
                       </td>
                     </tr>
                   ) : (
                     filteredOrders.slice(0, 5).map((ord) => (
-                      <tr key={ord.id} className="hover:bg-[#171c26] transition-colors">
-                        <td className="py-3 px-3 font-mono text-xs font-bold text-white">
+                      <tr key={ord.id} className="hover:bg-neutral-50/70 transition-colors">
+                        <td className="py-3.5 px-4 font-mono text-xs font-bold text-black">
                           {ord.orderNumber}
                         </td>
-                        <td className="py-3 px-3">
-                          <p className="font-medium text-white text-[13px]">{ord.clientName}</p>
-                          <p className="text-[11px] text-[#737b8c] truncate max-w-[180px]">
+                        <td className="py-3.5 px-4">
+                          <p className="font-medium text-black text-[13px]">{ord.clientName}</p>
+                          <p className="text-[11px] text-neutral-500 truncate max-w-[180px]">
                             {ord.clientEmail}
                           </p>
                         </td>
-                        <td className="py-3 px-3 font-heading font-bold text-white text-sm">
+                        <td className="py-3.5 px-4 font-heading font-normal text-black text-[15px]">
                           {currencySymbol}
                           {(ord.total * currencyRate).toFixed(2)}
                         </td>
-                        <td className="py-3 px-3">
+                        <td className="py-3.5 px-4">
                           <span
-                            className={`font-heading uppercase tracking-wider px-2 py-0.5 text-[9px] font-bold rounded border ${
+                            className={`font-heading uppercase tracking-wider px-2 py-0.5 text-[9px] font-bold rounded-none border ${
                               ord.fulfillmentStatus === "delivered"
-                                ? "bg-emerald-950/40 text-emerald-400 border-emerald-500/30"
+                                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
                                 : ord.fulfillmentStatus === "shipped"
-                                ? "bg-blue-950/40 text-blue-400 border-blue-500/30"
-                                : "bg-amber-950/40 text-amber-400 border-amber-500/30"
+                                ? "bg-blue-50 text-blue-800 border-blue-200"
+                                : "bg-amber-50 text-amber-800 border-amber-200"
                             }`}
                           >
                             {ord.fulfillmentStatus}
                           </span>
                         </td>
-                        <td className="py-3 px-3 text-[11px] font-mono text-[#8a92a3]">
+                        <td className="py-3.5 px-4 text-[12px] font-mono text-neutral-500">
                           {new Date(ord.createdAt).toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
                           })}
                         </td>
-                        <td className="py-3 px-3 text-right">
+                        <td className="py-3.5 px-4 text-right">
                           <Link
                             href="/admin/orders"
-                            className="inline-flex items-center p-1 text-[#737b8c] hover:text-white transition-colors"
+                            className="inline-flex items-center p-1 text-neutral-400 hover:text-black transition-colors"
                           >
                             <ArrowUpRight className="h-4 w-4" />
                           </Link>
@@ -476,7 +464,7 @@ export default function AdminDashboardPage() {
           </div>
         </div>
 
-        {/* Right 1 Column: Categories, Low Stock Alerts, Recent Activity */}
+        {/* Right 1 Column: Categories, Low Stock Alerts, VIP Clients, Activity Feed */}
         <div className="space-y-6">
           {/* Category Share */}
           <CategoryBreakdown
@@ -492,11 +480,11 @@ export default function AdminDashboardPage() {
           />
 
           {/* Top VIP Clients Widget */}
-          <div className="border border-[#232836] bg-[#12151e] p-5 rounded font-sans">
-            <div className="flex items-center justify-between border-b border-[#1e2330] pb-3 mb-4">
+          <div className="border border-neutral-200 bg-white p-6 rounded-none font-sans">
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-[#007cc3]" />
-                <h3 className="font-heading uppercase tracking-wider text-sm font-bold text-white">
+                <h3 className="g-heading uppercase tracking-wide text-[18px] text-black font-normal">
                   VIP Clients
                 </h3>
               </div>
@@ -509,27 +497,27 @@ export default function AdminDashboardPage() {
               </Link>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {loading || !data ? (
-                <p className="text-xs text-[#737b8c]">Loading accounts...</p>
+                <p className="text-xs text-neutral-400">Loading accounts...</p>
               ) : (
                 data.recentClients.slice(0, 4).map((c) => (
                   <div
                     key={c.id}
-                    className="flex items-center justify-between bg-[#171b26] p-2.5 border border-[#232938] rounded transition-all hover:border-[#384257]"
+                    className="flex items-center justify-between bg-neutral-50 p-3 border border-neutral-200 rounded-none transition-all hover:border-black"
                   >
-                    <div className="flex items-center gap-2.5">
-                      <div className="h-8 w-8 bg-[#232834] flex items-center justify-center font-heading font-bold text-white text-xs border border-[#2f3545] rounded">
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 bg-neutral-200 flex items-center justify-center font-heading font-bold text-black text-xs rounded-none">
                         {c.name.charAt(0)}
                       </div>
                       <div>
-                        <p className="text-[13px] font-bold text-white">{c.name}</p>
-                        <p className="text-[11px] text-[#8a92a3]">
+                        <p className="text-[13px] font-medium text-black">{c.name}</p>
+                        <p className="text-[11px] text-neutral-500">
                           {c.country} · {c.ordersCount} orders
                         </p>
                       </div>
                     </div>
-                    <span className="font-heading font-bold text-white text-[13px]">
+                    <span className="font-heading font-normal text-black text-[14px]">
                       {currencySymbol}
                       {Math.round(c.totalSpent * currencyRate).toLocaleString()}
                     </span>
@@ -540,30 +528,30 @@ export default function AdminDashboardPage() {
           </div>
 
           {/* Chronological Audit Log */}
-          <div className="border border-[#232836] bg-[#12151e] p-5 rounded font-sans">
-            <div className="flex items-center justify-between border-b border-[#1e2330] pb-3 mb-4">
+          <div className="border border-neutral-200 bg-white p-6 rounded-none font-sans">
+            <div className="flex items-center justify-between border-b border-neutral-100 pb-3 mb-4">
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-[#007cc3]" />
-                <h3 className="font-heading uppercase tracking-wider text-sm font-bold text-white">
+                <h3 className="g-heading uppercase tracking-wide text-[18px] text-black font-normal">
                   Activity Feed
                 </h3>
               </div>
-              <span className="text-[10px] font-mono text-[#737b8c]">Audit Log</span>
+              <span className="text-[10px] font-mono text-neutral-400 uppercase">Audit Log</span>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               {loading || !data ? (
-                <p className="text-xs text-[#737b8c]">Loading feed...</p>
+                <p className="text-xs text-neutral-400">Loading feed...</p>
               ) : (
                 data.recentActivities.map((act) => (
                   <div key={act.id} className="flex items-start gap-2.5 text-[12px]">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-[#007cc3] mt-0.5 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-[#007cc3] mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-[#c0c7d4]">
-                        <span className="font-semibold text-white">{act.adminName}</span> {act.action.toLowerCase()}:{" "}
-                        <span className="text-[#e2e8f0] font-medium">{act.target}</span>
+                      <p className="text-neutral-700">
+                        <span className="font-semibold text-black">{act.adminName}</span> {act.action.toLowerCase()}:{" "}
+                        <span className="text-black font-medium">{act.target}</span>
                       </p>
-                      <p className="text-[10px] text-[#737b8c] font-mono mt-0.5">
+                      <p className="text-[10px] text-neutral-400 font-mono mt-0.5">
                         {new Date(act.timestamp).toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",

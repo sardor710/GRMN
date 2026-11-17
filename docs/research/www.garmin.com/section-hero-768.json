@@ -1,0 +1,1164 @@
+{
+ "url": "https://www.garmin.com/en-US/",
+ "vw": 768,
+ "tree": {
+  "tag": "g-hero-rotator",
+  "cls": "g__hero-rotator hydrated",
+  "r": [
+   0,
+   99,
+   768,
+   1068
+  ],
+  "css": {
+   "box-sizing": "border-box",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "font-size": "16px",
+   "line-height": "24px",
+   "color": "rgb(0, 0, 0)",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "section",
+    "cls": "g__hero-rotator__wrapper",
+    "r": [
+     0,
+     99,
+     768,
+     1068
+    ],
+    "css": {
+     "position": "relative",
+     "top": "0px",
+     "right": "0px",
+     "bottom": "0px",
+     "left": "0px",
+     "box-sizing": "border-box",
+     "background-color": "rgb(0, 0, 0)",
+     "overflow": "hidden"
+    },
+    "c": [
+     {
+      "tag": "div",
+      "cls": "g__hero-rotator__slides",
+      "r": [
+       0,
+       99,
+       768,
+       1068
+      ],
+      "css": {
+       "display": "flex",
+       "box-sizing": "border-box",
+       "text-align": "center"
+      },
+      "c": [
+       {
+        "tag": "g-banner",
+        "cls": "hydrated g__hero-rotator__slide g__hero-rotator__slide--active",
+        "r": [
+         0,
+         99,
+         768,
+         1068
+        ],
+        "css": {
+         "display": "block",
+         "box-sizing": "border-box",
+         "flex-shrink": "0",
+         "transition-property": "opacity",
+         "transition-duration": "0.5s",
+         "transition-timing-function": "ease-out"
+        },
+        "c": [
+         {
+          "tag": "a",
+          "cls": "g__banner g__banner--link light-content",
+          "r": [
+           0,
+           99,
+           768,
+           1012
+          ],
+          "a": {
+           "href": "https://www.garmin.com/en-US/c/promotions/holiday-sale-guide-americas/",
+           "aria-label": "Holiday Sale 2026",
+           "role": "link"
+          },
+          "css": {
+           "display": "block",
+           "box-sizing": "border-box",
+           "cursor": "pointer",
+           "transition-property": "color",
+           "transition-duration": "0.2s",
+           "overflow": "hidden"
+          },
+          "c": [
+           {
+            "tag": "div",
+            "cls": "g__banner--wrapper",
+            "r": [
+             0,
+             99,
+             768,
+             1012
+            ],
+            "css": {
+             "position": "relative",
+             "top": "0px",
+             "right": "0px",
+             "bottom": "0px",
+             "left": "0px",
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "g-full-image",
+              "cls": "g__full-image g__full-image--ignore-max-height hydrated",
+              "r": [
+               0,
+               99,
+               768,
+               816
+              ],
+              "css": {
+               "box-sizing": "border-box"
+              },
+              "c": [
+               {
+                "tag": "figure",
+                "cls": "g__full-image--figure",
+                "r": [
+                 0,
+                 99,
+                 768,
+                 816
+                ],
+                "css": {
+                 "box-sizing": "border-box",
+                 "margin": "0px"
+                },
+                "after": {
+                 "display": "block",
+                 "position": "absolute",
+                 "top": "0px",
+                 "right": "0px",
+                 "bottom": "0px",
+                 "left": "0px",
+                 "box-sizing": "border-box",
+                 "content": "\"\""
+                },
+                "c": [
+                 {
+                  "tag": "picture",
+                  "cls": "g__full-image--picture",
+                  "r": [
+                   0,
+                   99,
+                   768,
+                   816
+                  ],
+                  "css": {
+                   "display": "block",
+                   "box-sizing": "border-box"
+                  },
+                  "c": [
+                   {
+                    "tag": "source",
+                    "r": [
+                     384,
+                     99,
+                     0,
+                     0
+                    ],
+                    "css": {
+                     "box-sizing": "border-box"
+                    },
+                    "rep": [
+                     {},
+                     {}
+                    ]
+                   },
+                   {
+                    "tag": "img",
+                    "cls": "g__full-image--image",
+                    "r": [
+                     0,
+                     99,
+                     768,
+                     816
+                    ],
+                    "a": {
+                     "src": "https://res.garmin.com/homepage/2025-HOLIDAY/2-HOLIDAY-SALE/HOLIDAY-SALE-2-T.jpg",
+                     "natural": [
+                      1600,
+                      1700
+                     ],
+                     "sources": [
+                      {
+                       "srcset": "https://res.garmin.com/homepage/2025-HOLIDAY/2-HOLIDAY-SALE/HOLIDAY-SALE-3-M.jpg",
+                       "media": "(max-width: 640px)"
+                      },
+                      {
+                       "srcset": "https://res.garmin.com/homepage/2025-HOLIDAY/2-HOLIDAY-SALE/HOLIDAY-SALE-2-T.jpg",
+                       "media": "(max-width: 990px)"
+                      },
+                      {
+                       "srcset": "https://res.garmin.com/homepage/2025-HOLIDAY/2-HOLIDAY-SALE/HOLIDAY-SALE-1-D.jpg",
+                       "media": "(min-width: 990px)"
+                      }
+                     ]
+                    },
+                    "css": {
+                     "display": "block",
+                     "box-sizing": "border-box",
+                     "width": "768px",
+                     "height": "816px",
+                     "object-fit": "cover"
+                    }
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "tag": "div",
+              "cls": "g__banner--caption left",
+              "r": [
+               0,
+               915,
+               768,
+               196
+              ],
+              "css": {
+               "position": "relative",
+               "top": "0px",
+               "right": "0px",
+               "bottom": "0px",
+               "left": "0px",
+               "box-sizing": "border-box",
+               "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+               "letter-spacing": "0.8px"
+              },
+              "c": [
+               {
+                "tag": "header",
+                "cls": "g__banner--caption-header lower-left-disclaimer third",
+                "r": [
+                 0,
+                 915,
+                 768,
+                 196
+                ],
+                "css": {
+                 "display": "flex",
+                 "box-sizing": "border-box",
+                 "padding-top": "24px",
+                 "padding-right": "16px",
+                 "padding-left": "16px",
+                 "flex-direction": "column",
+                 "align-items": "center",
+                 "background-color": "rgb(0, 0, 0)"
+                },
+                "c": [
+                 {
+                  "tag": "div",
+                  "cls": "g__banner--caption-title",
+                  "r": [
+                   275,
+                   939,
+                   218,
+                   50
+                  ],
+                  "css": {
+                   "box-sizing": "border-box",
+                   "max-width": "100%",
+                   "margin-bottom": "16px",
+                   "letter-spacing": "1.6px"
+                  },
+                  "c": [
+                   {
+                    "tag": "g-heading",
+                    "cls": "g__heading g__heading--left g__heading--light",
+                    "r": [
+                     275,
+                     939,
+                     218,
+                     50
+                    ],
+                    "css": {
+                     "box-sizing": "border-box",
+                     "margin-top": "16px",
+                     "color": "rgb(255, 255, 255)"
+                    },
+                    "c": [
+                     {
+                      "tag": "h1",
+                      "r": [
+                       275,
+                       939,
+                       218,
+                       50
+                      ],
+                      "css": {
+                       "box-sizing": "border-box",
+                       "margin-top": "0px",
+                       "margin-bottom": "0px",
+                       "font-size": "40px",
+                       "line-height": "50px",
+                       "letter-spacing": "0.8px"
+                      },
+                      "more": 1
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "tag": "div",
+                  "cls": "g__banner--caption-subtitle",
+                  "r": [
+                   277,
+                   1005,
+                   213,
+                   48
+                  ],
+                  "css": {
+                   "box-sizing": "border-box"
+                  },
+                  "c": [
+                   {
+                    "tag": "g-copy",
+                    "cls": "g-copy g__copy g__copy--left",
+                    "r": [
+                     277,
+                     1005,
+                     213,
+                     24
+                    ],
+                    "a": {
+                     "type": "primary"
+                    },
+                    "css": {
+                     "display": "block",
+                     "box-sizing": "border-box",
+                     "max-width": "100%",
+                     "margin-bottom": "24px",
+                     "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+                     "color": "rgb(255, 255, 255)",
+                     "overflow": "auto"
+                    },
+                    "c": [
+                     {
+                      "tag": "div",
+                      "r": [
+                       277,
+                       1005,
+                       213,
+                       24
+                      ],
+                      "css": {
+                       "box-sizing": "border-box"
+                      },
+                      "more": 1
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "tag": "g-button",
+                  "cls": "g__banner--caption-button g__button__host g__button__host--medium",
+                  "r": [
+                   339,
+                   1053,
+                   90,
+                   34
+                  ],
+                  "css": {
+                   "display": "block",
+                   "box-sizing": "border-box",
+                   "margin-bottom": "24px"
+                  },
+                  "c": [
+                   {
+                    "tag": "a",
+                    "cls": "g__button g__button--contained g__button--contained--medium",
+                    "r": [
+                     339,
+                     1053,
+                     90,
+                     34
+                    ],
+                    "t": "SHOP",
+                    "a": {
+                     "href": "https://www.garmin.com/en-US/c/promotions/holiday-sale-guide-americas/"
+                    },
+                    "css": {
+                     "display": "inline-block",
+                     "box-sizing": "border-box",
+                     "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+                     "font-size": "14px",
+                     "font-weight": "500",
+                     "line-height": "16.1px",
+                     "text-transform": "uppercase",
+                     "vertical-align": "middle",
+                     "color": "rgb(255, 255, 255)",
+                     "transition-property": "background, border, color",
+                     "transition-duration": "0.2s, 0.2s, 0.2s",
+                     "transition-timing-function": "ease, ease, ease",
+                     "transition-delay": "0s, 0s, 0s",
+                     "padding": "8px 24px",
+                     "border-width": "1px",
+                     "border-style": "solid",
+                     "overflow": "auto"
+                    }
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "tag": "g-banner",
+        "cls": "hydrated g__hero-rotator__slide",
+        "r": [
+         768,
+         99,
+         768,
+         1068
+        ],
+        "css": {
+         "display": "block",
+         "box-sizing": "border-box",
+         "flex-shrink": "0",
+         "opacity": "0",
+         "transition-property": "opacity",
+         "transition-duration": "0.5s",
+         "transition-timing-function": "ease-out"
+        },
+        "c": [
+         {
+          "tag": "a",
+          "cls": "g__banner g__banner--link light-content",
+          "r": [
+           768,
+           99,
+           768,
+           1061
+          ],
+          "a": {
+           "href": "https://apps.garmin.com/apps/collection?ids=eb219952-db4f-44de-b9a3-5373055947e9,f4506dd2-72f6-43f5-a99f-46bc2ded5546,29e14918-662b-44f1-b7fd-dbb7d39514f1,bcc6cbe4-bf73-40a1-9e76-6cf59b1c7881,374f6bb3",
+           "aria-label": "Play/Pause Control Slideshow",
+           "role": "link"
+          },
+          "css": {
+           "display": "block",
+           "box-sizing": "border-box",
+           "cursor": "pointer",
+           "transition-property": "color",
+           "transition-duration": "0.2s",
+           "overflow": "hidden"
+          },
+          "c": [
+           {
+            "tag": "div",
+            "cls": "g__banner--wrapper",
+            "r": [
+             768,
+             99,
+             768,
+             1061
+            ],
+            "css": {
+             "position": "relative",
+             "top": "0px",
+             "right": "0px",
+             "bottom": "0px",
+             "left": "0px",
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "g-full-image",
+              "cls": "g__full-image g__full-image--ignore-max-height hydrated",
+              "r": [
+               768,
+               99,
+               768,
+               816
+              ],
+              "css": {
+               "box-sizing": "border-box"
+              },
+              "c": [
+               {
+                "tag": "figure",
+                "cls": "g__full-image--figure",
+                "r": [
+                 768,
+                 99,
+                 768,
+                 816
+                ],
+                "css": {
+                 "box-sizing": "border-box",
+                 "margin": "0px"
+                },
+                "after": {
+                 "display": "block",
+                 "position": "absolute",
+                 "top": "0px",
+                 "right": "0px",
+                 "bottom": "0px",
+                 "left": "0px",
+                 "box-sizing": "border-box",
+                 "content": "\"\""
+                },
+                "c": [
+                 {
+                  "tag": "picture",
+                  "cls": "g__full-image--picture",
+                  "r": [
+                   768,
+                   99,
+                   768,
+                   816
+                  ],
+                  "css": {
+                   "display": "block",
+                   "box-sizing": "border-box"
+                  },
+                  "c": [
+                   {
+                    "tag": "source",
+                    "r": [
+                     1152,
+                     99,
+                     0,
+                     0
+                    ],
+                    "css": {
+                     "box-sizing": "border-box"
+                    },
+                    "rep": [
+                     {},
+                     {}
+                    ]
+                   },
+                   {
+                    "tag": "img",
+                    "cls": "g__full-image--image",
+                    "r": [
+                     768,
+                     99,
+                     768,
+                     816
+                    ],
+                    "a": {
+                     "src": "https://res.garmin.com/homepage/90676/90676-T.jpg",
+                     "natural": [
+                      1600,
+                      1700
+                     ],
+                     "sources": [
+                      {
+                       "srcset": "https://res.garmin.com/homepage/90676/90676-M.jpg",
+                       "media": "(max-width: 640px)"
+                      },
+                      {
+                       "srcset": "https://res.garmin.com/homepage/90676/90676-T.jpg",
+                       "media": "(max-width: 990px)"
+                      },
+                      {
+                       "srcset": "https://res.garmin.com/homepage/90676/90676-D.jpg",
+                       "media": "(min-width: 990px)"
+                      }
+                     ]
+                    },
+                    "css": {
+                     "display": "block",
+                     "box-sizing": "border-box",
+                     "width": "768px",
+                     "height": "816px",
+                     "object-fit": "cover"
+                    }
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             },
+             {
+              "tag": "div",
+              "cls": "g__banner--caption left",
+              "r": [
+               768,
+               915,
+               768,
+               245
+              ],
+              "css": {
+               "position": "relative",
+               "top": "0px",
+               "right": "0px",
+               "bottom": "0px",
+               "left": "0px",
+               "box-sizing": "border-box",
+               "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+               "letter-spacing": "0.8px"
+              },
+              "c": [
+               {
+                "tag": "header",
+                "cls": "g__banner--caption-header fourth",
+                "r": [
+                 768,
+                 915,
+                 768,
+                 245
+                ],
+                "css": {
+                 "display": "flex",
+                 "box-sizing": "border-box",
+                 "padding-top": "24px",
+                 "padding-right": "16px",
+                 "padding-left": "16px",
+                 "flex-direction": "column",
+                 "align-items": "center",
+                 "background-color": "rgb(0, 0, 0)"
+                },
+                "c": [
+                 {
+                  "tag": "div",
+                  "cls": "g__banner--caption-title",
+                  "r": [
+                   887,
+                   939,
+                   530,
+                   50
+                  ],
+                  "css": {
+                   "box-sizing": "border-box",
+                   "max-width": "100%",
+                   "margin-bottom": "16px",
+                   "letter-spacing": "1.6px"
+                  },
+                  "c": [
+                   {
+                    "tag": "g-heading",
+                    "cls": "g__heading g__heading--left g__heading--light",
+                    "r": [
+                     887,
+                     939,
+                     530,
+                     50
+                    ],
+                    "css": {
+                     "box-sizing": "border-box",
+                     "margin-top": "16px",
+                     "color": "rgb(255, 255, 255)"
+                    },
+                    "c": [
+                     {
+                      "tag": "h1",
+                      "r": [
+                       887,
+                       939,
+                       530,
+                       50
+                      ],
+                      "css": {
+                       "box-sizing": "border-box",
+                       "margin-top": "0px",
+                       "margin-bottom": "0px",
+                       "font-size": "40px",
+                       "line-height": "50px",
+                       "letter-spacing": "0.8px"
+                      },
+                      "more": 1
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "tag": "div",
+                  "cls": "g__banner--caption-subtitle has-disclaimer-below",
+                  "r": [
+                   1021,
+                   1005,
+                   262,
+                   40
+                  ],
+                  "css": {
+                   "box-sizing": "border-box"
+                  },
+                  "c": [
+                   {
+                    "tag": "g-copy",
+                    "cls": "g-copy g__copy g__copy--left",
+                    "r": [
+                     1021,
+                     1005,
+                     262,
+                     24
+                    ],
+                    "a": {
+                     "type": "primary"
+                    },
+                    "css": {
+                     "display": "block",
+                     "box-sizing": "border-box",
+                     "max-width": "100%",
+                     "margin-bottom": "16px",
+                     "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+                     "color": "rgb(255, 255, 255)",
+                     "overflow": "auto"
+                    },
+                    "c": [
+                     {
+                      "tag": "div",
+                      "r": [
+                       1021,
+                       1005,
+                       262,
+                       24
+                      ],
+                      "css": {
+                       "box-sizing": "border-box"
+                      },
+                      "more": 1
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "tag": "div",
+                  "cls": "g__banner--caption-disclaimer-text g__banner--caption-disclaimer-text--below-copy",
+                  "r": [
+                   784,
+                   1045,
+                   736,
+                   57
+                  ],
+                  "css": {
+                   "box-sizing": "border-box"
+                  },
+                  "c": [
+                   {
+                    "tag": "g-copy",
+                    "cls": "g-copy g__copy g__copy--left",
+                    "r": [
+                     784,
+                     1045,
+                     736,
+                     33
+                    ],
+                    "a": {
+                     "type": "primary"
+                    },
+                    "css": {
+                     "display": "block",
+                     "box-sizing": "border-box",
+                     "margin-bottom": "24px",
+                     "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+                     "font-size": "11px",
+                     "line-height": "16.5px",
+                     "color": "rgb(255, 255, 255)",
+                     "overflow": "auto"
+                    },
+                    "c": [
+                     {
+                      "tag": "div",
+                      "r": [
+                       784,
+                       1045,
+                       736,
+                       33
+                      ],
+                      "css": {
+                       "box-sizing": "border-box"
+                      },
+                      "more": 1
+                     }
+                    ]
+                   }
+                  ]
+                 },
+                 {
+                  "tag": "g-button",
+                  "cls": "g__banner--caption-button g__button__host g__button__host--medium",
+                  "r": [
+                   1107,
+                   1102,
+                   90,
+                   34
+                  ],
+                  "css": {
+                   "display": "block",
+                   "box-sizing": "border-box",
+                   "margin-bottom": "24px"
+                  },
+                  "c": [
+                   {
+                    "tag": "a",
+                    "cls": "g__button g__button--contained g__button--contained--medium",
+                    "r": [
+                     1107,
+                     1102,
+                     90,
+                     34
+                    ],
+                    "t": "SHOP",
+                    "a": {
+                     "href": "https://apps.garmin.com/apps/collection?ids=eb219952-db4f-44de-b9a3-5373055947e9,f4506dd2-72f6-43f5-a99f-46bc2ded5546,29e14918-662b-44f1-b7fd-dbb7d39514f1,bcc6cbe4-bf73-40a1-9e76-6cf59b1c7881,374f6bb3"
+                    },
+                    "css": {
+                     "display": "inline-block",
+                     "box-sizing": "border-box",
+                     "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+                     "font-size": "14px",
+                     "font-weight": "500",
+                     "line-height": "16.1px",
+                     "text-transform": "uppercase",
+                     "vertical-align": "middle",
+                     "color": "rgb(255, 255, 255)",
+                     "transition-property": "background, border, color",
+                     "transition-duration": "0.2s, 0.2s, 0.2s",
+                     "transition-timing-function": "ease, ease, ease",
+                     "transition-delay": "0s, 0s, 0s",
+                     "padding": "8px 24px",
+                     "border-width": "1px",
+                     "border-style": "solid",
+                     "overflow": "auto"
+                    }
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ],
+        "rep": [
+         {
+          "t": "FĒNIX® 9 Play harder with the ultimate smartwatch. Watch the launch video. SHOP",
+          "src": "https://res.garmin.com/homepage/87582/87582-2-T.jpg"
+         },
+         {
+          "t": "CIRQA™ SMART BAND Track all day. Look later. No subscription required. SHOP",
+          "src": "https://res.garmin.com/homepage/85883/85883-2-T.jpg"
+         },
+         {
+          "t": "DESCENT™ X10 Essential dive computer for your underwater world SHOP",
+          "src": "https://res.garmin.com/homepage/87964/87964-2-T.jpg"
+         },
+         {
+          "t": "FORERUNNER® 70 & 170 Running smartwatches with everything you need to get started SHOP",
+          "src": "https://res.garmin.com/homepage/84290/84290-2-T.jpg"
+         },
+         {
+          "t": "Save $100 VENU® 4 A healthier lifestyle is just a smartwatch away SHOP",
+          "src": "https://res.garmin.com/homepage/77986/77986-2-T.jpg"
+         },
+         {
+          "t": "HOLIDAY GIFT GUIDE Where \"best gift ever\" begins SHOP",
+          "src": "https://res.garmin.com/homepage/2025-HOLIDAY/1-HOLIDAY-GIFT-GUIDE/HOLIDAY-GIFT-GUIDE-2-T.jpg"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "tag": "button",
+      "cls": "g__hero-rotator__controls remove-button-styling",
+      "r": [
+       705,
+       113,
+       50,
+       45
+      ],
+      "a": {
+       "aria-label": "Play/Pause Control Slideshow",
+       "type": "button"
+      },
+      "css": {
+       "display": "block",
+       "position": "absolute",
+       "top": "13.33px",
+       "right": "13.33px",
+       "bottom": "1009.77px",
+       "left": "704.67px",
+       "z-index": "1",
+       "background-color": "rgba(0, 0, 0, 0)"
+      },
+      "c": [
+       {
+        "tag": "svg",
+        "r": [
+         711,
+         114,
+         40,
+         40
+        ],
+        "a": {
+         "role": "button"
+        },
+        "css": {
+         "box-sizing": "border-box",
+         "width": "40px",
+         "height": "40px",
+         "overflow": "hidden"
+        },
+        "svg": "svg1"
+       },
+       {
+        "tag": "span",
+        "cls": "visually-hidden",
+        "r": [
+         729,
+         156,
+         1,
+         1
+        ],
+        "t": "Play/Pause",
+        "css": {
+         "display": "block",
+         "position": "absolute",
+         "top": "44px",
+         "right": "26px",
+         "bottom": "2px",
+         "left": "25px",
+         "box-sizing": "border-box",
+         "visibility": "hidden",
+         "margin": "-1px",
+         "overflow": "hidden"
+        }
+       }
+      ]
+     },
+     {
+      "tag": "button",
+      "cls": "g__hero-rotator__nav__previous remove-button-styling",
+      "r": [
+       7,
+       420,
+       40,
+       40
+      ],
+      "a": {
+       "type": "button",
+       "title": "Previous"
+      },
+      "css": {
+       "display": "block",
+       "position": "absolute",
+       "top": "320.42px",
+       "right": "721.34px",
+       "bottom": "707.67px",
+       "left": "6.67px",
+       "text-indent": "-9999px",
+       "background-color": "rgba(0, 0, 0, 0)",
+       "opacity": "0",
+       "transition-property": "opacity",
+       "transition-duration": "0.2s",
+       "transition-timing-function": "cubic-bezier(0.55, 0.085, 0.68, 0.53)"
+      },
+      "c": [
+       {
+        "tag": "svg",
+        "r": [
+         13,
+         421,
+         28,
+         38
+        ],
+        "css": {
+         "display": "block",
+         "box-sizing": "border-box",
+         "width": "28px",
+         "height": "38px",
+         "max-width": "100%",
+         "max-height": "100%",
+         "opacity": "0.6",
+         "pointer-events": "none",
+         "transition-property": "opacity",
+         "transition-duration": "0.2s",
+         "transition-timing-function": "cubic-bezier(0.55, 0.085, 0.68, 0.53)",
+         "fill": "none",
+         "overflow": "hidden"
+        },
+        "svg": "svg2"
+       },
+       {
+        "tag": "span",
+        "cls": "visually-hidden",
+        "r": [
+         -9973,
+         458,
+         1,
+         1
+        ],
+        "t": "Previous",
+        "css": {
+         "display": "block",
+         "position": "absolute",
+         "top": "39px",
+         "right": "10020px",
+         "bottom": "2px",
+         "left": "-9979px",
+         "box-sizing": "border-box",
+         "visibility": "hidden",
+         "margin": "-1px",
+         "overflow": "hidden"
+        }
+       }
+      ]
+     },
+     {
+      "tag": "button",
+      "cls": "g__hero-rotator__nav__next remove-button-styling",
+      "r": [
+       721,
+       420,
+       40,
+       40
+      ],
+      "a": {
+       "type": "button",
+       "title": "Next "
+      },
+      "css": {
+       "display": "block",
+       "position": "absolute",
+       "top": "320.42px",
+       "right": "6.67px",
+       "bottom": "707.67px",
+       "left": "721.34px",
+       "text-indent": "-9999px",
+       "background-color": "rgba(0, 0, 0, 0)",
+       "opacity": "0",
+       "transition-property": "opacity",
+       "transition-duration": "0.2s",
+       "transition-timing-function": "cubic-bezier(0.55, 0.085, 0.68, 0.53)"
+      },
+      "c": [
+       {
+        "tag": "svg",
+        "r": [
+         727,
+         421,
+         28,
+         38
+        ],
+        "css": {
+         "display": "block",
+         "box-sizing": "border-box",
+         "width": "28px",
+         "height": "38px",
+         "max-width": "100%",
+         "max-height": "100%",
+         "opacity": "0.6",
+         "pointer-events": "none",
+         "transition-property": "opacity",
+         "transition-duration": "0.2s",
+         "transition-timing-function": "cubic-bezier(0.55, 0.085, 0.68, 0.53)",
+         "fill": "none",
+         "overflow": "hidden"
+        },
+        "svg": "svg3"
+       },
+       {
+        "tag": "span",
+        "cls": "visually-hidden",
+        "r": [
+         -9259,
+         458,
+         1,
+         1
+        ],
+        "t": "Next",
+        "css": {
+         "display": "block",
+         "position": "absolute",
+         "top": "39px",
+         "right": "10020px",
+         "bottom": "2px",
+         "left": "-9979px",
+         "box-sizing": "border-box",
+         "visibility": "hidden",
+         "margin": "-1px",
+         "overflow": "hidden"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "svgs": [
+  {
+   "key": "svg1",
+   "hint": "Control Slideshow",
+   "count": 1,
+   "markup": "<svg role=\"button\" xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 100 100\" width=\"40px\" height=\"40px\"><title>Control Slideshow</title><circle cx=\"50\" cy=\"50\" r=\"40\"></circle><path v-if=\"playStatus\" d=\"M39.3 32.2h7.1v35.7h-7.1zM53.6 32.2h7.1v35.7h-7.1z\"></path></svg>",
+   "size": [
+    40,
+    40
+   ],
+   "currentColor": false
+  },
+  {
+   "key": "svg2",
+   "hint": "",
+   "count": 1,
+   "markup": "<svg width=\"29\" height=\"50\" viewBox=\"0 0 29 50\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M28.7036 44.1667L23.2732 50L-8.74598e-05 25L23.2732 -4.74743e-07L28.7036 5.83334L10.8608 25L28.7036 44.1667Z\" fill=\"white\"></path></svg>",
+   "size": [
+    28,
+    38
+   ],
+   "currentColor": false
+  },
+  {
+   "key": "svg3",
+   "hint": "",
+   "count": 1,
+   "markup": "<svg width=\"29\" height=\"50\" viewBox=\"0 0 29 50\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\"><path fill-rule=\"evenodd\" clip-rule=\"evenodd\" d=\"M0 5.83333L5.43043 0L28.7037 25L5.43043 50L0 44.1667L17.8428 25L0 5.83333Z\" fill=\"white\"></path></svg>",
+   "size": [
+    28,
+    38
+   ],
+   "currentColor": false
+  }
+ ],
+ "animations": [
+  {
+   "type": "CSSAnimation",
+   "name": "hero__slideshow",
+   "target": "#g__hero-rotator__container>button:nth-of-type(1)>svg>circle",
+   "duration": 6000,
+   "delay": 0,
+   "iterations": null,
+   "easing": "linear"
+  }
+ ]
+}

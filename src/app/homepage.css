@@ -1,22 +1,6 @@
-@font-face {
-  font-family: GarminHomeOswald;
-  src: url('/homepage/fonts/oswald.otf') format('opentype');
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: GarminHomeRoboto;
-  src: url('/homepage/fonts/roboto.otf') format('opentype');
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-}
-
 .garmin-home {
-  --home-display: GarminHomeOswald, var(--font-oswald), Oswald, sans-serif;
-  --home-body: GarminHomeRoboto, var(--font-roboto), Roboto, sans-serif;
+  --home-display: var(--garmin-display);
+  --home-body: var(--garmin-body);
   font-family: var(--home-body);
   color: #000;
   background: #fff;

@@ -1,0 +1,32 @@
+import * as js from "./garmin-parse.js";
+import type { CMSProduct, SpecGroup } from "@/lib/cms/types";
+
+export type GarminDraft = Partial<CMSProduct> & Pick<CMSProduct, "name" | "sku" | "price">;
+
+export interface GarminParseResult {
+  product: GarminDraft;
+  remoteImages: { id: string; url: string; alt: string }[];
+  warnings: string[];
+}
+
+export const GarminParseError = js.GarminParseError as unknown as new (message: string) => Error;
+export const GARMIN_PAGE_HOSTS: string[] = js.GARMIN_PAGE_HOSTS;
+
+export function validateGarminUrl(raw: string): { ok: true; url: URL } | { ok: false; error: string } {
+  return js.validateGarminUrl(raw) as { ok: true; url: URL } | { ok: false; error: string };
+}
+
+export function sanitizeOverviewHtml(html: string): string {
+  return js.sanitizeOverviewHtml(html);
+}
+
+export function parseSpecsTable(html: string): SpecGroup[] {
+  return js.parseSpecsTable(html) as SpecGroup[];
+}
+
+export function parseGarminProduct(
+  html: string,
+  opts: { sourceUrl: string; rateKztPerUsd: number; now?: string },
+): GarminParseResult {
+  return js.parseGarminProduct(html, opts) as GarminParseResult;
+}

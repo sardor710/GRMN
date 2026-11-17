@@ -1,0 +1,122 @@
+{
+ "target": "https://www.garmin.com/en-US/",
+ "clone": "http://localhost:3001/",
+ "sel": "main > div:nth-child(4)",
+ "cloneSel": "#home-stories",
+ "widths": {
+  "390": {
+   "mismatchPct": 0,
+   "size": {
+    "target": [
+     390,
+     832
+    ],
+    "clone": [
+     390,
+     832
+    ]
+   },
+   "hotBands": [],
+   "file": "docs/design-references/qa/stories-390-diff.png",
+   "text": {
+    "matched": 4,
+    "of": 4,
+    "issues": [
+     {
+      "t": "Monitor Patients With Garmin Health",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "LEARN MORE",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Stories: How We Connect People to Their ",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Learn More",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     }
+    ],
+    "missing": []
+   }
+  },
+  "768": {
+   "mismatchPct": 0,
+   "size": {
+    "target": [
+     768,
+     416
+    ],
+    "clone": [
+     768,
+     416
+    ]
+   },
+   "hotBands": [],
+   "file": "docs/design-references/qa/stories-768-diff.png",
+   "text": {
+    "matched": 4,
+    "of": 4,
+    "issues": [
+     {
+      "t": "Monitor Patients With Garmin Health",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "LEARN MORE",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Stories: How We Connect People to Their ",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Learn More",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     }
+    ],
+    "missing": []
+   }
+  },
+  "1440": {
+   "mismatchPct": 0,
+   "size": {
+    "target": [
+     1440,
+     416
+    ],
+    "clone": [
+     1440,
+     416
+    ]
+   },
+   "hotBands": [],
+   "file": "docs/design-references/qa/stories-1440-diff.png",
+   "text": {
+    "matched": 4,
+    "of": 4,
+    "issues": [
+     {
+      "t": "Monitor Patients With Garmin Health",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "LEARN MORE",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "Stories: How We Connect People to Their ",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Learn More",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     }
+    ],
+    "missing": []
+   }
+  }
+ }
+}

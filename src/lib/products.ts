@@ -1,5 +1,7 @@
 import type { Product, WatchFamily, ProductDetail, AccessoryItem } from "@/types";
 import { getProducts as getCMSProducts } from "@/lib/cms/store";
+import type { CMSProduct } from "@/lib/cms/types";
+import { usesCmsDetail } from "@/lib/cms/product-variants";
 
 export const watchFamilies: WatchFamily[] = [
   { name: "fēnix®", tagline: "Push the limits of multisport performance.", image: "/images/families/fenix.png" },
@@ -294,6 +296,7 @@ function buildFallbackDetail(p: Product): ProductDetail {
     { label: "Activities", value: p.activities.join(", ") },
   ];
   let inTheBox = [p.name, "Charging/data cable", "Documentation"];
+  let gallery = [{ view: "Front", src: p.image }];
 
   try {
     const cmsProducts = getCMSProducts();
@@ -304,6 +307,14 @@ function buildFallbackDetail(p: Product): ProductDetail {
       }
       if (found.inTheBox && found.inTheBox.length > 0) {
         inTheBox = found.inTheBox;
+      }
+      // Photos uploaded in the admin show on the legacy page too (default photo first).
+      if (found.images && found.images.length > 0) {
+        const ordered = [
+          ...found.images.filter((i) => i.id === found.defaultImageId),
+          ...found.images.filter((i) => i.id !== found.defaultImageId),
+        ];
+        gallery = ordered.map((img, i) => ({ view: `${img.alt || p.name} ${i + 1}`, src: img.src }));
       }
     }
   } catch (e) {
@@ -321,7 +332,7 @@ function buildFallbackDetail(p: Product): ProductDetail {
       { label: "SMARTWATCHES", href: "/c/wearables-smartwatches" },
       { label: p.family.toUpperCase(), href: "/c/wearables-smartwatches" },
     ],
-    gallery: [{ view: "Front", src: p.image }],
+    gallery,
     caseSizes: ["43 MM", "47 MM", "51 MM"],
     defaultCaseSize: "47 MM",
     versions: [p.name.toUpperCase()],
@@ -343,7 +354,54 @@ function buildFallbackDetail(p: Product): ProductDetail {
   };
 }
 
+/** Storefront detail for CMS products that use the media/options/variants model. */
+export function buildDetailFromCms(p: CMSProduct): ProductDetail {
+  const images = p.images || [];
+  const ordered = [
+    ...images.filter((i) => i.id === p.defaultImageId),
+    ...images.filter((i) => i.id !== p.defaultImageId),
+  ];
+  const gallery = ordered.length
+    ? ordered.map((img, i) => ({ view: `${img.alt || p.name} ${i + 1}`, src: img.src }))
+    : [{ view: p.name, src: p.image || "/images/products/1228429.jpg" }];
+  const variants = p.variants || [];
+  const defaultVariant = variants.find((v) => v.isDefault) || variants[0];
+  const hasVariants = Boolean(p.options?.length && variants.length);
+  return {
+    id: p.id,
+    title: p.name,
+    subtitle: p.description,
+    partNumber: defaultVariant?.sku || p.sku,
+    price: p.price,
+    badge: p.badge && p.badge !== "NONE" ? p.badge : undefined,
+    breadcrumb: [
+      { label: (p.category || "Products").toUpperCase(), href: "/c/wearables-smartwatches" },
+      ...(p.family ? [{ label: p.family.toUpperCase(), href: "/c/wearables-smartwatches" }] : []),
+    ],
+    gallery,
+    caseSizes: [],
+    defaultCaseSize: "",
+    versions: [],
+    defaultVersion: "",
+    colors: [],
+    features: p.features || [],
+    specs: p.specs || [],
+    inTheBox: p.inTheBox || [],
+    related: getAllProducts()
+      .filter((x) => x.id !== p.id && x.family === p.family)
+      .slice(0, 4)
+      .map((x) => x.id),
+    ...(hasVariants ? { variantModel: { options: p.options || [], variants, images } } : {}),
+    ...(p.overviewHtml ? { overviewHtml: p.overviewHtml } : {}),
+    ...(p.specGroups?.length ? { specGroups: p.specGroups } : {}),
+  };
+}
+
 export function getProductDetail(id: string): ProductDetail | undefined {
+  const cms = getCMSProduct(id);
+  // Only products with variants or an overview get the CMS page; legacy products keep their hand-built page
+  // (re-saving one in the admin must not change its storefront).
+  if (cms && usesCmsDetail(cms)) return buildDetailFromCms(cms);
   const dynamicProduct = getProduct(id);
 
   if (id === "1228429") {

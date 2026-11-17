@@ -55,6 +55,73 @@ export interface ProductFeatureItem {
   image?: string;
 }
 
+// ---- Product media, options and variants (mirror Postgres product_options / option_values /
+// product_variants / variant_option_values / prices / media_assets / product_media) ----
+export type OptionDisplay = "buttons" | "swatch" | "dropdown";
+
+export interface ProductOptionValue {
+  id: string;
+  key: string;
+  label: string;
+  swatchColor?: string;
+  swatchImage?: string;
+}
+
+export interface ProductOption {
+  id: string;
+  key: string;
+  name: string;
+  display: OptionDisplay;
+  values: ProductOptionValue[];
+}
+
+export interface ProductImage {
+  id: string;
+  src: string;
+  alt: string;
+  source: "upload" | "import" | "url";
+  width?: number;
+  height?: number;
+}
+
+export interface SourcePrice {
+  currency: "USD";
+  list: number;
+  sale?: number;
+  rateKztPerUsd: number;
+}
+
+export type VariantStatus = "draft" | "active" | "archived";
+
+export interface ProductVariant {
+  id: string;
+  sku: string;
+  title: string;
+  /** optionId → valueId */
+  selections: Record<string, string>;
+  price: number;
+  originalPrice?: number;
+  stock: number;
+  status: VariantStatus;
+  isDefault: boolean;
+  imageIds: string[];
+  sourcePartNumber?: string;
+  sourcePrice?: SourcePrice;
+}
+
+export interface SpecGroup {
+  title: string;
+  items: ProductSpecItem[];
+}
+
+export interface ProductSource {
+  provider: "garmin";
+  url: string;
+  productId: string;
+  partNumber: string;
+  importedAt: string;
+}
+
 export interface CMSProduct {
   id: string;
   name: string;
@@ -78,6 +145,14 @@ export interface CMSProduct {
   inTheBox: string[];
   compatibleAccessories: string[]; // Cross-selling product IDs or SKUs
   features?: ProductFeatureItem[];
+  // Media, options & variants (all optional; legacy fields above are mirrored from the default variant)
+  images?: ProductImage[];
+  defaultImageId?: string;
+  options?: ProductOption[];
+  variants?: ProductVariant[];
+  overviewHtml?: string;
+  specGroups?: SpecGroup[];
+  source?: ProductSource;
   // SEO Metadata
   seoTitle?: string;
   seoDescription?: string;
@@ -181,7 +256,14 @@ export interface PageSEOAudit {
 }
 
 export type PaymentStatus = 'paid' | 'pending' | 'refunded';
-export type FulfillmentStatus = 'processing' | 'shipped' | 'delivered' | 'cancelled';
+export type FulfillmentStatus =
+  | 'new'
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'canceled'
+  | 'returned'
+  | 'cancelled';
 
 export interface OrderItem {
   productId: string;
@@ -189,6 +271,25 @@ export interface OrderItem {
   price: number;
   quantity: number;
   image?: string;
+  sku?: string;
+  variantLabel?: string;
+}
+
+export type OrderRouteStage =
+  | 'created'
+  | 'processing'
+  | 'shipped'
+  | 'out_for_delivery'
+  | 'delivered';
+
+export interface OrderMilestone {
+  stage: OrderRouteStage;
+  label: string;
+  date: string;
+  description: string;
+  completed: boolean;
+  current?: boolean;
+  location?: string;
 }
 
 export interface Order {
@@ -202,6 +303,14 @@ export interface Order {
   paymentStatus: PaymentStatus;
   fulfillmentStatus: FulfillmentStatus;
   shippingAddress: string;
+  clientPhone?: string;
+  comments?: string;
+  notes?: string;
+  trackingNumber?: string;
+  carrier?: string;
+  estimatedDeliveryDate?: string;
+  milestones?: OrderMilestone[];
+  coordinates?: { lat: number; lng: number };
   createdAt: string;
 }
 
@@ -218,6 +327,8 @@ export interface StoreSettings {
   stripeEnabled: boolean;
   seoTitle: string;
   seoDescription: string;
+  /** KZT per 1 USD, remembered by the garmin.com importer */
+  importRateKztPerUsd?: number;
 }
 
 export interface ActivityLog {
@@ -238,4 +349,90 @@ export interface CMSData {
   orders: Order[];
   settings: StoreSettings;
   activities: ActivityLog[];
+  homepage?: HomepageConfig;
 }
+
+// ----------------- HOMEPAGE MANAGEMENT TYPES -----------------
+
+export interface HeroBanner {
+  id: string;
+  key: string;
+  title: string;
+  subtitle: string;
+  /** Small legal copy under the subtitle (e.g. licensing notice). */
+  disclaimer?: string;
+  image: string;
+  href: string;
+  active: boolean;
+  order: number;
+}
+
+export interface ProductCarouselItem {
+  id: string;
+  title: string;
+  description: string;
+  price: string;
+  originalPrice?: string;
+  badge?: "NEW" | "SALE" | string;
+  image: string;
+  href: string;
+  order: number;
+  /** Optional per-item render variant; "promo" renders an edge-to-edge image tile with a CTA button. */
+  variant?: "product" | "promo";
+  imageAlt?: string;
+}
+
+export interface PromoCarouselItem {
+  id: string;
+  title: string;
+  description: string;
+  image: string;
+  href: string;
+  ctaText: string;
+  order: number;
+  /** Optional per-item render variant; "promo" renders an edge-to-edge image tile with a CTA button. */
+  variant?: "product" | "promo";
+  imageAlt?: string;
+}
+
+export type CarouselType = "product" | "promo";
+
+export interface CarouselBlock {
+  id: string;
+  title: string;
+  subtitle?: string;
+  type: CarouselType; // "product" (with price and tag) | "promo" (with photo and hyperlink button)
+  active: boolean;
+  order: number;
+  items: (ProductCarouselItem | PromoCarouselItem)[];
+}
+
+export interface HomepageTileBlock {
+  id: string;
+  title: string;
+  image: string;
+  href: string;
+  cta: string;
+  order: number;
+}
+
+export interface HomepageConfig {
+  heroBanners: HeroBanner[];
+  carousels: CarouselBlock[];
+  promoTiles: HomepageTileBlock[];
+  storyTiles: HomepageTileBlock[];
+  categoryTiles: HomepageTileBlock[];
+  updatedAt?: string;
+}
+
+export interface ImageDimensionSpec {
+  label: string;
+  recommendedWidth: number;
+  recommendedHeight: number;
+  aspectRatio: string;
+  maxSizeBytes: number;
+  maxSizeFormatted: string;
+  supportedFormats: string[];
+  description: string;
+}
+

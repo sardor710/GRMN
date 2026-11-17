@@ -1,0 +1,177 @@
+{
+ "target": "https://www.garmin.com/en-US/",
+ "clone": "http://localhost:3001/",
+ "sel": "main > div:nth-child(4)",
+ "cloneSel": "#home-stories",
+ "widths": {
+  "390": {
+   "mismatchPct": 2.9,
+   "size": {
+    "target": [
+     390,
+     832
+    ],
+    "clone": [
+     390,
+     832
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "280-320",
+     "pct": 20.5
+    },
+    {
+     "y": "720-760",
+     "pct": 20
+    },
+    {
+     "y": "680-720",
+     "pct": 13.1
+    },
+    {
+     "y": "360-400",
+     "pct": 2.3
+    },
+    {
+     "y": "760-800",
+     "pct": 2.3
+    }
+   ],
+   "file": "docs/design-references/qa/tiles-stories-390-diff.png",
+   "text": {
+    "matched": 4,
+    "of": 4,
+    "issues": [
+     {
+      "t": "Monitor Patients With Garmin Health",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "LEARN MORE",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "Stories: How We Connect People to Their ",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "Learn More",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     }
+    ],
+    "missing": []
+   }
+  },
+  "768": {
+   "mismatchPct": 4.22,
+   "size": {
+    "target": [
+     768,
+     416
+    ],
+    "clone": [
+     768,
+     416
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "280-320",
+     "pct": 16.9
+    },
+    {
+     "y": "240-280",
+     "pct": 12.7
+    },
+    {
+     "y": "320-360",
+     "pct": 8.8
+    },
+    {
+     "y": "200-240",
+     "pct": 3.1
+    },
+    {
+     "y": "360-400",
+     "pct": 2.4
+    }
+   ],
+   "file": "docs/design-references/qa/tiles-stories-768-diff.png",
+   "text": {
+    "matched": 4,
+    "of": 4,
+    "issues": [
+     {
+      "t": "Monitor Patients With Garmin Health",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "LEARN MORE",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "Stories: How We Connect People to Their ",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "Learn More",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     }
+    ],
+    "missing": []
+   }
+  },
+  "1440": {
+   "mismatchPct": 3.51,
+   "size": {
+    "target": [
+     1440,
+     416
+    ],
+    "clone": [
+     1440,
+     416
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "280-320",
+     "pct": 16.8
+    },
+    {
+     "y": "320-360",
+     "pct": 12.7
+    },
+    {
+     "y": "240-280",
+     "pct": 5.6
+    }
+   ],
+   "file": "docs/design-references/qa/tiles-stories-1440-diff.png",
+   "text": {
+    "matched": 4,
+    "of": 4,
+    "issues": [
+     {
+      "t": "Monitor Patients With Garmin Health",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "LEARN MORE",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     },
+     {
+      "t": "Stories: How We Connect People to Their ",
+      "ff": "Superscripts-Oswald → GarminHomeOswald"
+     },
+     {
+      "t": "Learn More",
+      "ff": "Superscripts-Roboto → GarminHomeRoboto"
+     }
+    ],
+    "missing": []
+   }
+  }
+ }
+}

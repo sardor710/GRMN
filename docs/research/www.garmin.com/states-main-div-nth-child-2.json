@@ -1,0 +1,75 @@
+[
+ {
+  "sel": "#app>main>div:nth-of-type(1)>section>div>g-container",
+  "label": "HOLIDAY SALE SHOP",
+  "transition": "all",
+  "hover": {
+   "#app>main>div:nth-of-type(1)>section>div>g-container": {
+    "box-shadow": "rgb(217, 217, 217) 0px 2px 3px 1px → rgba(77, 77, 77, 0.2) 0px 1px 3px 1px, rgba(77, 77, 77, 0.1) 0px 2px 8px 4px"
+   }
+  },
+  "focus-visible": {
+   "#app>main>div:nth-of-type(1)>section>div>g-container": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)"
+   }
+  }
+ },
+ {
+  "sel": "#app>main>div:nth-of-type(1)>section>div>g-container>g-container>g-button>a",
+  "label": "SHOP",
+  "transition": "background 0.2s, border 0.2s, color 0.2s",
+  "hover": {
+   "#app>main>div:nth-of-type(1)>section>div>g-container>g-container>g-button>a": {
+    "color": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+    "background-color": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+    "outline-color": "rgb(0, 0, 0) → rgb(255, 255, 255)"
+   }
+  },
+  "focus-visible": {
+   "#app>main>div:nth-of-type(1)>section>div>g-container>g-container>g-button>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  },
+  "jsHover": {
+   "#app>main>div:nth-of-type(1)>section>div>g-container": {
+    "box-shadow": "rgb(217, 217, 217) 0px 2px 3px 1px → rgba(77, 77, 77, 0.2) 0px 1px 3px 1px, rgba(77, 77, 77, 0.1) 0px 2px 8px 4px"
+   }
+  }
+ },
+ {
+  "sel": "#app>main>div:nth-of-type(1)>section>div>a:nth-of-type(1)",
+  "label": "VENU® 4",
+  "transition": "color 0.2s",
+  "hover": {
+   "#app>main>div:nth-of-type(1)>section>div>a:nth-of-type(1)": {
+    "box-shadow": "rgb(217, 217, 217) 0px 2px 3px 1px → rgba(77, 77, 77, 0.2) 0px 1px 3px 1px, rgba(77, 77, 77, 0.1) 0px 2px 8px 4px"
+   }
+  },
+  "focus-visible": {
+   "#app>main>div:nth-of-type(1)>section>div>a:nth-of-type(1)": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(26, 26, 26) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  }
+ },
+ {
+  "sel": "#app>main>div:nth-of-type(1)>section>button:nth-of-type(2)",
+  "label": "BUTTON",
+  "transition": "left 0.3s ease-in, right 0.3s ease-in",
+  "focus-visible": {
+   "#app>main>div:nth-of-type(1)>section>button:nth-of-type(2)": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)"
+   }
+  }
+ }
+]

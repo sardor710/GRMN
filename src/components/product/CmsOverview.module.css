@@ -1,0 +1,109 @@
+/* Styles for sanitized overview HTML produced by the garmin.com importer (see overviewFromGarmin). */
+.overview {
+  color: #000;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+.overview :global(h2) {
+  margin: 48px 0 16px;
+  font-family: var(--garmin-display);
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 40px;
+  letter-spacing: 0.8px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.overview :global(h3) {
+  margin: 16px 0 8px;
+  font-family: var(--garmin-display);
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 25px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.overview :global(p) {
+  margin: 0 0 12px;
+  color: #333;
+}
+
+.overview :global(a) {
+  color: #007cc3;
+  text-decoration: underline;
+}
+
+.overview :global(img) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.overview :global(.ov-intro) {
+  max-width: 820px;
+  margin: 0 auto 32px;
+  text-align: center;
+}
+
+.overview :global(.ov-lifestyle),
+.overview :global(.ov-video) {
+  position: relative;
+  margin: 32px calc(50% - 50vw);
+}
+
+.overview :global(.ov-lifestyle img),
+.overview :global(.ov-video img) {
+  width: 100%;
+}
+
+.overview :global(.ov-lifestyle figcaption) {
+  padding: 16px;
+  font-family: var(--garmin-display);
+  font-size: 24px;
+  letter-spacing: 0.8px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.overview :global(.ov-features) {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 32px 24px;
+  margin: 24px 0 40px;
+}
+
+.overview :global(.ov-feature img) {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+}
+
+.overview :global(.ov-highlight) {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.overview :global(.ov-highlight img) {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.overview :global(.ov-highlight p) {
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.64px;
+  text-transform: uppercase;
+}
+
+.overview :global(.ov-disclaimer) {
+  font-size: 12px;
+  line-height: 18px;
+  color: #666;
+}

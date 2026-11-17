@@ -47,3 +47,6 @@ next-env.d.ts
 
 # Local temp files
 temp/
+
+# uploaded and imported product media (served by /uploads route)
+/storage/

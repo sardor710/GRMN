@@ -1,0 +1,379 @@
+{
+ "target": "https://www.garmin.com/en-US/",
+ "clone": "http://localhost:3001/",
+ "sel": "main > g-hero-rotator",
+ "cloneSel": "main > section:first-child",
+ "widths": {
+  "390": {
+   "mismatchPct": 1.53,
+   "size": {
+    "target": [
+     390,
+     706
+    ],
+    "clone": [
+     390,
+     702
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "480-520",
+     "pct": 15.7
+    },
+    {
+     "y": "0-40",
+     "pct": 5.3
+    },
+    {
+     "y": "520-560",
+     "pct": 2.9
+    }
+   ],
+   "file": "docs/design-references/qa/hero-390-diff.png",
+   "text": {
+    "matched": 24,
+    "of": 31,
+    "issues": [
+     {
+      "t": "HOLIDAY SALE",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "tt": "none → uppercase"
+     },
+     {
+      "t": "Save big on great holiday gifts",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "ls": "normal → 0.8px",
+      "pos": "88,495 → 76,491",
+      "size": "213×24 → 238×24"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "pos": "150,543 → 150,539"
+     },
+     {
+      "t": "U.S. ARMED FORCES WATCH FACES",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "tt": "none → uppercase"
+     },
+     {
+      "t": "Choose your branch, show your pride",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "ls": "normal → 0.8px",
+      "pos": "454,535 → 440,531",
+      "size": "262×24 → 290×24"
+     },
+     {
+      "t": "Officially licensed by the U.S. Departme",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "ls": "normal → 0.8px",
+      "pos": "406,575 → 406,571"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "pos": "540,648 → 540,644"
+     },
+     {
+      "t": "FĒNIX® 9",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "tt": "none → uppercase"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "pos": "930,567 → 930,563"
+     },
+     {
+      "t": "CIRQA™ SMART BAND",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "tt": "none → uppercase"
+     },
+     {
+      "t": "Track all day. Look later. No subscripti",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "ls": "normal → 0.8px",
+      "pos": "1276,495 → 1266,491",
+      "size": "179×48 → 199×48"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "pos": "1320,567 → 1320,563"
+     },
+     {
+      "t": "DESCENT™ X10",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "tt": "none → uppercase"
+     },
+     {
+      "t": "Essential dive computer for your underwa",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "ls": "normal → 0.8px",
+      "pos": "1577,495 → 1576,491",
+      "size": "357×24 → 358×48"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "pos": "1710,543 → 1710,563"
+     },
+     {
+      "t": "FORERUNNER® 70 & 170",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "tt": "none → uppercase"
+     },
+     {
+      "t": "Running smartwatches with everything you",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "ls": "normal → 0.8px",
+      "pos": "1966,495 → 1966,491"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "pos": "2100,567 → 2100,563"
+     },
+     {
+      "t": "VENU® 4",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "tt": "none → uppercase",
+      "pos": "2484,490 → 2484,439"
+     },
+     {
+      "t": "A healthier lifestyle is just a smartwat",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "ls": "normal → 0.8px",
+      "pos": "2373,546 → 2356,491",
+      "size": "324×24 → 358×48"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "pos": "2490,594 → 2490,563"
+     },
+     {
+      "t": "HOLIDAY GIFT GUIDE",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "tt": "none → uppercase"
+     },
+     {
+      "t": "Where \"best gift ever\" begins",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "ls": "normal → 0.8px",
+      "pos": "2823,495 → 2812,491",
+      "size": "203×24 → 227×24"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "pos": "2880,543 → 2880,539"
+     }
+    ],
+    "missing": [
+     "Play harder with the ultimate smartwatch. Watch the .",
+     "launch video",
+     "Save $100",
+     "Control Slideshow",
+     "Play/Pause",
+     "Previous",
+     "Next"
+    ]
+   }
+  },
+  "768": {
+   "mismatchPct": 0.57,
+   "size": {
+    "target": [
+     768,
+     1068
+    ],
+    "clone": [
+     768,
+     1064
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "880-920",
+     "pct": 5
+    },
+    {
+     "y": "920-960",
+     "pct": 4.3
+    },
+    {
+     "y": "0-40",
+     "pct": 3.5
+    }
+   ],
+   "file": "docs/design-references/qa/hero-768-diff.png",
+   "text": {
+    "matched": 24,
+    "of": 31,
+    "issues": [
+     {
+      "t": "HOLIDAY SALE",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "tt": "none → uppercase"
+     },
+     {
+      "t": "Save big on great holiday gifts",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "fs": "16px → 18px",
+      "lh": "24px → 27px",
+      "ls": "normal → 0.8px",
+      "pos": "277,906 → 252,906",
+      "size": "213×24 → 265×27"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "pos": "339,954 → 339,957"
+     },
+     {
+      "t": "U.S. ARMED FORCES WATCH FACES",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "tt": "none → uppercase"
+     },
+     {
+      "t": "Choose your branch, show your pride",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "fs": "16px → 18px",
+      "lh": "24px → 27px",
+      "ls": "normal → 0.8px",
+      "pos": "1021,906 → 991,906",
+      "size": "262×24 → 322×27"
+     },
+     {
+      "t": "Officially licensed by the U.S. Departme",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "ls": "normal → 0.8px",
+      "pos": "784,946 → 784,949"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "pos": "1107,1003 → 1107,1006"
+     },
+     {
+      "t": "FĒNIX® 9",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "tt": "none → uppercase"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "pos": "1875,978 → 1875,957"
+     },
+     {
+      "t": "CIRQA™ SMART BAND",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "tt": "none → uppercase"
+     },
+     {
+      "t": "Track all day. Look later. No subscripti",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "fs": "16px → 18px",
+      "lh": "24px → 27px",
+      "ls": "normal → 0.8px",
+      "pos": "2599,906 → 2577,906",
+      "size": "179×48 → 221×54"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "pos": "2643,978 → 2643,984"
+     },
+     {
+      "t": "DESCENT™ X10",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "tt": "none → uppercase"
+     },
+     {
+      "t": "Essential dive computer for your underwa",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "fs": "16px → 18px",
+      "lh": "24px → 27px",
+      "ls": "normal → 0.8px",
+      "pos": "3278,906 → 3236,906",
+      "size": "357×24 → 441×27"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "pos": "3411,954 → 3411,957"
+     },
+     {
+      "t": "FORERUNNER® 70 & 170",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "tt": "none → uppercase"
+     },
+     {
+      "t": "Running smartwatches with everything you",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "fs": "16px → 18px",
+      "lh": "24px → 27px",
+      "ls": "normal → 0.8px",
+      "pos": "4003,906 → 3951,906",
+      "size": "443×24 → 546×27"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "pos": "4179,954 → 4179,957"
+     },
+     {
+      "t": "VENU® 4",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "tt": "none → uppercase",
+      "pos": "4929,891 → 4929,840"
+     },
+     {
+      "t": "A healthier lifestyle is just a smartwat",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "fs": "16px → 18px",
+      "lh": "24px → 27px",
+      "ls": "normal → 0.8px",
+      "pos": "4830,957 → 4791,906",
+      "size": "324×24 → 402×27"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "pos": "4947,1005 → 4947,957"
+     },
+     {
+      "t": "HOLIDAY GIFT GUIDE",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "tt": "none → uppercase"
+     },
+     {
+      "t": "Where \"best gift ever\" begins",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "fs": "16px → 18px",
+      "lh": "24px → 27px",
+      "ls": "normal → 0.8px",
+      "pos": "5658,906 → 5634,906",
+      "size": "203×24 → 252×27"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "pos": "5715,954 → 5715,957"
+     }
+    ],
+    "missing": [
+     "Play harder with the ultimate smartwatch. Watch the .",
+     "launch video",
+     "Save $100",
+     "Control Slideshow",
+     "Play/Pause",
+     "Previous",
+     "Next"
+    ]
+   }
+  }
+ }
+}

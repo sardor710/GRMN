@@ -9,7 +9,11 @@ import type {
   Order,
   StoreSettings,
   ActivityLog,
+  HomepageConfig,
 } from "./types";
+import { generateOrderNumber, generateOrderMilestones } from "./order-lifecycle";
+import { createDefaultHomepageConfig } from "./homepage-schema";
+import { syncLegacyFields } from "./product-variants";
 import dataJson from "./data.json";
 import { initialCMSData } from "./seed";
 
@@ -166,10 +170,12 @@ export function saveProduct(product: Partial<CMSProduct> & { name: string; price
 
   let saved: CMSProduct;
   if (existingIdx >= 0) {
-    saved = { ...data.products[existingIdx], ...product };
+    saved = syncLegacyFields({ ...data.products[existingIdx], ...product });
     data.products[existingIdx] = saved;
   } else {
-    saved = {
+    saved = syncLegacyFields({
+      // keep every optional field the editor sends (images, options, variants, SEO…)
+      ...product,
       id: product.id || `prod-${Date.now()}`,
       name: product.name,
       sku: product.sku || `GRM-${Date.now().toString().slice(-6)}`,
@@ -189,7 +195,7 @@ export function saveProduct(product: Partial<CMSProduct> & { name: string; price
       status: product.status || "published",
       isFeatured: product.isFeatured ?? false,
       specs: product.specs || [
-        { label: "Lens Material", value: "Corning® Gorilla® Glass 3" },
+        { label: "Lens Material", value: "CorningВ® GorillaВ® Glass 3" },
         { label: "Bezel Material", value: "Stainless Steel" },
         { label: "Display", value: '1.4" AMOLED' },
         { label: "Battery Life", value: "Up to 14 days" },
@@ -202,7 +208,7 @@ export function saveProduct(product: Partial<CMSProduct> & { name: string; price
       compatibleAccessories: product.compatibleAccessories || [],
       features: product.features || [],
       createdAt: new Date().toISOString(),
-    };
+    });
     data.products.unshift(saved);
   }
 
@@ -366,7 +372,16 @@ export function deleteBlog(id: string): boolean {
 
 // ----------------- ORDERS -----------------
 export function getOrders(): Order[] {
-  return loadData().orders;
+  const data = loadData();
+  return (data.orders || []).map((o) => {
+    if (!o.orderNumber) {
+      o.orderNumber = generateOrderNumber();
+    }
+    if (!o.milestones || o.milestones.length === 0) {
+      o.milestones = generateOrderMilestones(o);
+    }
+    return o;
+  });
 }
 
 export function saveOrder(order: Partial<Order> & { clientName: string; total: number }): Order {
@@ -376,21 +391,33 @@ export function saveOrder(order: Partial<Order> & { clientName: string; total: n
   let saved: Order;
   if (existingIdx >= 0) {
     saved = { ...data.orders[existingIdx], ...order };
+    if (!saved.milestones || saved.milestones.length === 0 || order.fulfillmentStatus !== undefined) {
+      saved.milestones = generateOrderMilestones(saved);
+    }
     data.orders[existingIdx] = saved;
   } else {
+    const generatedNum = order.orderNumber || generateOrderNumber();
     saved = {
       id: order.id || `ord-${Date.now()}`,
-      orderNumber: order.orderNumber || `GRM-${Math.floor(10000 + Math.random() * 90000)}`,
+      orderNumber: generatedNum,
       clientName: order.clientName,
       clientEmail: order.clientEmail || "customer@example.com",
+      clientPhone: order.clientPhone || "+65 8000 0000",
       total: order.total,
       itemsCount: order.itemsCount || (order.items ? order.items.length : 1),
       items: order.items || [],
       paymentStatus: order.paymentStatus || "paid",
       fulfillmentStatus: order.fulfillmentStatus || "processing",
       shippingAddress: order.shippingAddress || "12 Marina Boulevard, Singapore",
-      createdAt: new Date().toISOString(),
+      comments: order.comments || "",
+      notes: order.notes || "",
+      trackingNumber: order.trackingNumber || "",
+      carrier: order.carrier || "Garmin Express Priority",
+      estimatedDeliveryDate: order.estimatedDeliveryDate,
+      coordinates: order.coordinates || { lat: 1.280095, lng: 103.854675 },
+      createdAt: order.createdAt || new Date().toISOString(),
     };
+    saved.milestones = order.milestones || generateOrderMilestones(saved);
     data.orders.unshift(saved);
   }
 
@@ -460,3 +487,27 @@ export function getDashboardStats() {
     recentClients: data.clients.slice(0, 4),
   };
 }
+
+// ----------------- HOMEPAGE CONFIG -----------------
+export function getHomepageConfig(): HomepageConfig {
+  const data = loadData();
+  if (!data.homepage || !Array.isArray(data.homepage.heroBanners) || !Array.isArray(data.homepage.carousels)) {
+    const defaultConfig = createDefaultHomepageConfig();
+    data.homepage = defaultConfig;
+    saveData(data);
+    return defaultConfig;
+  }
+  return data.homepage;
+}
+
+export function saveHomepageConfig(config: HomepageConfig): HomepageConfig {
+  const data = loadData();
+  data.homepage = {
+    ...config,
+    updatedAt: new Date().toISOString(),
+  };
+  saveData(data);
+  logActivity("Admin", "Updated", "Homepage Layout & Content Blocks");
+  return data.homepage;
+}
+

@@ -151,15 +151,17 @@ export default function AdminBlogsPage() {
   const categories = Array.from(new Set(blogs.map((b) => b.category)));
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[#232732] pb-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-200 pb-5">
         <div>
-          <h1 className="font-heading uppercase tracking-wider text-2xl font-bold text-white flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <BookOpen className="h-6 w-6 text-[#007cc3]" />
-            <span>Editorial Stories & Training Guides</span>
-          </h1>
-          <p className="text-[13px] text-[#8a92a3] mt-1 font-sans">
+            <h1 className="g-heading text-2xl uppercase tracking-tight text-neutral-900">
+              Editorial Stories & Training Guides
+            </h1>
+          </div>
+          <p className="text-sm text-neutral-500 mt-1">
             Publish blog articles, athlete training tips, technology spotlights, and press releases.
           </p>
         </div>
@@ -167,7 +169,7 @@ export default function AdminBlogsPage() {
         <button
           type="button"
           onClick={handleOpenAdd}
-          className="flex items-center gap-1.5 bg-[#007cc3] px-4 py-2 text-[12px] font-heading uppercase tracking-wider font-bold text-white transition-colors hover:bg-[#006cae]"
+          className="inline-flex items-center gap-2 bg-black px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>Write New Article</span>
@@ -175,24 +177,24 @@ export default function AdminBlogsPage() {
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="flex flex-col gap-3 border border-[#262c39] bg-[#141720] p-3.5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 border border-neutral-200 bg-white p-4 sm:flex-row sm:items-center sm:justify-between rounded-none shadow-sm">
         <div className="relative w-full sm:w-80">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#737b8c]" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search article titles or categories..."
-            className="h-9 w-full border border-[#262c39] bg-[#101217] pl-9 pr-3 text-[13px] text-white placeholder-[#606775] focus:border-[#007cc3] focus:outline-none"
+            className="h-10 w-full border border-neutral-300 bg-white pl-9 pr-3 text-sm text-neutral-900 placeholder-neutral-400 focus:border-black focus:outline-none rounded-none"
           />
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <span className="text-[11px] font-heading uppercase tracking-wider font-bold text-[#737b8c] mr-1">Category:</span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">Category:</span>
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="h-9 border border-[#262c39] bg-[#101217] px-3 text-[13px] text-white focus:border-[#007cc3] focus:outline-none"
+            className="h-10 border border-neutral-300 bg-white px-3 text-sm font-semibold uppercase text-neutral-900 focus:border-black focus:outline-none rounded-none"
           >
             <option value="all">All Categories</option>
             {categories.map((cat) => (
@@ -205,38 +207,38 @@ export default function AdminBlogsPage() {
       </div>
 
       {/* Articles Table */}
-      <div className="border border-[#262c39] bg-[#141720] overflow-hidden">
+      <div className="border border-neutral-200 bg-white rounded-none shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-[13px]">
+          <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-[#232732] bg-[#0f1117] text-[#737b8c] text-[11px] font-heading uppercase tracking-wider">
-                <th className="py-3 px-4 font-bold">Article Details</th>
-                <th className="py-3 px-4 font-bold">Category</th>
-                <th className="py-3 px-4 font-bold">Author</th>
-                <th className="py-3 px-4 font-bold">Read Time</th>
-                <th className="py-3 px-4 font-bold">Status</th>
-                <th className="py-3 px-4 font-bold text-right">Actions</th>
+              <tr className="border-b border-neutral-200 bg-neutral-50 text-neutral-600 text-xs font-semibold uppercase tracking-wider">
+                <th className="py-3.5 px-4 font-semibold">Article Details</th>
+                <th className="py-3.5 px-4 font-semibold">Category</th>
+                <th className="py-3.5 px-4 font-semibold">Author</th>
+                <th className="py-3.5 px-4 font-semibold">Read Time</th>
+                <th className="py-3.5 px-4 font-semibold">Status</th>
+                <th className="py-3.5 px-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#232732] text-[#c0c7d4]">
+            <tbody className="divide-y divide-neutral-200 text-neutral-800">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-[#737b8c]">
+                  <td colSpan={6} className="py-12 text-center text-neutral-400">
                     Loading articles...
                   </td>
                 </tr>
               ) : filteredBlogs.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-8 text-center text-[#737b8c]">
+                  <td colSpan={6} className="py-12 text-center text-neutral-400">
                     No articles found matching your query.
                   </td>
                 </tr>
               ) : (
                 filteredBlogs.map((b) => (
-                  <tr key={b.id} className="hover:bg-[#191d28]">
-                    <td className="py-3 px-4">
+                  <tr key={b.id} className="hover:bg-neutral-50/80 transition-colors">
+                    <td className="py-3.5 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="h-10 w-16 relative bg-[#0f1117] border border-[#262c39] shrink-0 overflow-hidden">
+                        <div className="h-10 w-16 relative bg-neutral-100 border border-neutral-200 shrink-0 overflow-hidden rounded-none">
                           <Image
                             src={b.coverImage || "/images/blog/triathlon.jpg"}
                             alt={b.title}
@@ -245,36 +247,36 @@ export default function AdminBlogsPage() {
                           />
                         </div>
                         <div>
-                          <p className="font-medium text-white line-clamp-1">{b.title}</p>
-                          <p className="text-[11px] text-[#8a92a3] line-clamp-1 font-mono">/blog/{b.slug}</p>
+                          <p className="font-semibold text-neutral-900 line-clamp-1">{b.title}</p>
+                          <p className="text-xs text-neutral-400 line-clamp-1 font-mono">/blog/{b.slug}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="py-3 px-4">
-                      <span className="font-heading uppercase tracking-wider text-[10px] font-bold px-2 py-0.5 bg-[#142334] text-[#60a5fa] border border-[#60a5fa]/30">
+                    <td className="py-3.5 px-4">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 bg-neutral-100 text-neutral-700 border border-neutral-200 rounded-none">
                         {b.category}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-[#c0c7d4] text-[12px]">{b.author}</td>
-                    <td className="py-3 px-4 text-[#8a92a3] text-[12px] font-mono">{b.readingTime}</td>
-                    <td className="py-3 px-4">
+                    <td className="py-3.5 px-4 text-neutral-700 text-xs font-medium">{b.author}</td>
+                    <td className="py-3.5 px-4 text-neutral-500 text-xs font-mono">{b.readingTime}</td>
+                    <td className="py-3.5 px-4">
                       <span
-                        className={`font-heading uppercase tracking-wider text-[10px] font-bold px-2 py-0.5 ${
+                        className={`text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-none ${
                           b.status === "published"
-                            ? "bg-[#1e2a22] text-[#4ade80] border border-[#4ade80]/30"
-                            : "bg-[#191d28] text-[#8a92a3] border border-[#262c39]"
+                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            : "bg-neutral-100 text-neutral-600 border border-neutral-200"
                         }`}
                       >
                         {b.status}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-right">
+                    <td className="py-3.5 px-4 text-right">
                       <div className="flex items-center justify-end gap-1">
                         <a
                           href={`/blog/${b.slug}`}
                           target="_blank"
                           rel="noreferrer"
-                          className="p-1.5 text-[#8a92a3] hover:text-white"
+                          className="p-2 text-neutral-400 hover:text-black transition-colors rounded-none"
                           title="View on Store"
                         >
                           <ExternalLink className="h-4 w-4" />
@@ -282,7 +284,7 @@ export default function AdminBlogsPage() {
                         <button
                           type="button"
                           onClick={() => handleOpenEdit(b)}
-                          className="p-1.5 text-[#8a92a3] hover:bg-[#1f2430] hover:text-white"
+                          className="p-2 text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors rounded-none"
                           title="Edit Article"
                         >
                           <Edit className="h-4 w-4" />
@@ -290,7 +292,7 @@ export default function AdminBlogsPage() {
                         <button
                           type="button"
                           onClick={() => handleDelete(b.id)}
-                          className="p-1.5 text-[#8a92a3] hover:bg-rose-500/10 hover:text-rose-400"
+                          className="p-2 text-neutral-500 hover:text-rose-600 hover:bg-rose-50 transition-colors rounded-none"
                           title="Delete Article"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -313,9 +315,9 @@ export default function AdminBlogsPage() {
         title={editingBlog ? "Edit Article" : "Write Editorial Story"}
         subtitle="Manage blog title, markdown content body, cover images, and category"
       >
-        <form onSubmit={handleSubmit} className="space-y-4 font-sans">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
               Article Title *
             </label>
             <input
@@ -324,13 +326,13 @@ export default function AdminBlogsPage() {
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="e.g. How to Train for Your First Marathon with Garmin"
-              className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] text-white focus:border-[#007cc3] focus:outline-none font-heading tracking-wider"
+              className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
             />
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 URL Slug
               </label>
               <input
@@ -338,11 +340,11 @@ export default function AdminBlogsPage() {
                 value={formData.slug}
                 onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                 placeholder="train-for-first-marathon"
-                className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] font-mono text-[#60a5fa] focus:border-[#007cc3] focus:outline-none"
+                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-mono text-[#007cc3] focus:border-black focus:outline-none rounded-none"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Category
               </label>
               <input
@@ -350,14 +352,14 @@ export default function AdminBlogsPage() {
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 placeholder="Running & Fitness"
-                className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] text-white focus:border-[#007cc3] focus:outline-none"
+                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Cover Image URL
               </label>
               <input
@@ -365,11 +367,11 @@ export default function AdminBlogsPage() {
                 value={formData.coverImage}
                 onChange={(e) => setFormData({ ...formData, coverImage: e.target.value })}
                 placeholder="/images/blog/triathlon.jpg"
-                className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] text-white focus:border-[#007cc3] focus:outline-none font-mono"
+                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none font-mono rounded-none"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Reading Time
               </label>
               <input
@@ -377,11 +379,11 @@ export default function AdminBlogsPage() {
                 value={formData.readingTime}
                 onChange={(e) => setFormData({ ...formData, readingTime: e.target.value })}
                 placeholder="5 min read"
-                className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] text-white focus:border-[#007cc3] focus:outline-none"
+                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Author Name
               </label>
               <input
@@ -389,13 +391,13 @@ export default function AdminBlogsPage() {
                 value={formData.author}
                 onChange={(e) => setFormData({ ...formData, author: e.target.value })}
                 placeholder="Garmin Editorial Team"
-                className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] text-white focus:border-[#007cc3] focus:outline-none"
+                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
               Summary / Excerpt *
             </label>
             <textarea
@@ -404,12 +406,12 @@ export default function AdminBlogsPage() {
               value={formData.excerpt}
               onChange={(e) => setFormData({ ...formData, excerpt: e.target.value })}
               placeholder="Short teaser paragraph for cards and social previews..."
-              className="mt-1 w-full border border-[#262c39] bg-[#101217] p-2.5 text-[13px] text-white focus:border-[#007cc3] focus:outline-none"
+              className="w-full border border-neutral-300 bg-white p-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
             />
           </div>
 
           <div>
-            <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
               Full Article Body (Markdown) *
             </label>
             <textarea
@@ -418,13 +420,13 @@ export default function AdminBlogsPage() {
               value={formData.content}
               onChange={(e) => setFormData({ ...formData, content: e.target.value })}
               placeholder="Write the full story, training insights, and heart rate pacing methods..."
-              className="mt-1 w-full border border-[#262c39] bg-[#101217] p-3 text-[13px] text-white focus:border-[#007cc3] focus:outline-none"
+              className="w-full border border-neutral-300 bg-white p-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none font-mono"
             />
           </div>
 
           {/* Search & Social SEO Suite */}
-          <div className="pt-4 border-t border-[#232732] space-y-3">
-            <h4 className="font-['Oswald'] text-sm uppercase tracking-wider text-white">
+          <div className="pt-4 border-t border-neutral-200 space-y-3">
+            <h4 className="g-heading text-sm uppercase tracking-wider text-neutral-900 font-semibold">
               Search &amp; Social SEO Optimization
             </h4>
             <SEOEditor
@@ -449,12 +451,12 @@ export default function AdminBlogsPage() {
             />
           </div>
 
-          <div className="flex justify-between items-center pt-4 border-t border-[#232732]">
+          <div className="flex justify-between items-center pt-4 border-t border-neutral-200">
             <div>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as BlogStatus })}
-                className="h-9 border border-[#262c39] bg-[#101217] px-3 text-[12px] font-heading uppercase font-bold text-white focus:border-[#007cc3] focus:outline-none"
+                className="h-10 border border-neutral-300 bg-white px-3 text-xs font-semibold uppercase text-neutral-900 focus:border-black focus:outline-none rounded-none"
               >
                 <option value="published">Published</option>
                 <option value="draft">Draft</option>
@@ -465,13 +467,13 @@ export default function AdminBlogsPage() {
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 text-[12px] font-heading uppercase tracking-wider font-bold text-[#8a92a3] hover:text-white"
+                className="border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-700 hover:bg-neutral-50 rounded-none transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="bg-[#007cc3] px-5 py-2 text-[12px] font-heading uppercase tracking-wider font-bold text-white hover:bg-[#006cae]"
+                className="bg-black px-6 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none"
               >
                 {editingBlog ? "Save Article" : "Publish Article"}
               </button>

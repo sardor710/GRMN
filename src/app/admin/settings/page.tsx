@@ -58,19 +58,21 @@ export default function AdminSettingsPage() {
   };
 
   if (loading || !settings) {
-    return <div className="py-12 text-center text-[#737b8c]">Loading store settings...</div>;
+    return <div className="py-12 text-center text-neutral-400">Loading store settings...</div>;
   }
 
   return (
-    <div className="space-y-6 max-w-4xl font-sans">
+    <div className="space-y-6 max-w-4xl">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[#232732] pb-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-200 pb-5">
         <div>
-          <h1 className="font-heading uppercase tracking-wider text-2xl font-bold text-white flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <Settings className="h-6 w-6 text-[#007cc3]" />
-            <span>Store Configuration & Global Settings</span>
-          </h1>
-          <p className="text-[13px] text-[#8a92a3] mt-1 font-sans">
+            <h1 className="g-heading text-2xl uppercase tracking-tight text-neutral-900">
+              Store Configuration & Global Settings
+            </h1>
+          </div>
+          <p className="text-sm text-neutral-500 mt-1">
             Global store metadata, currency formatting, Garmin Pay toggles, and SEO defaults.
           </p>
         </div>
@@ -79,13 +81,13 @@ export default function AdminSettingsPage() {
           type="button"
           onClick={handleSubmit}
           disabled={saving}
-          className="flex items-center gap-1.5 bg-[#007cc3] px-5 py-2 text-[12px] font-heading uppercase tracking-wider font-bold text-white transition-colors hover:bg-[#006cae] disabled:opacity-50"
+          className="inline-flex items-center gap-2 bg-black px-6 py-2.5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none shadow-xs disabled:opacity-50"
         >
           {saving ? (
             <span>Saving...</span>
           ) : savedSuccess ? (
-            <span className="flex items-center gap-1">
-              <CheckCircle2 className="h-4 w-4 text-[#4ade80]" /> Saved!
+            <span className="flex items-center gap-1.5 text-emerald-300">
+              <CheckCircle2 className="h-4 w-4" /> Saved!
             </span>
           ) : (
             <>
@@ -97,23 +99,23 @@ export default function AdminSettingsPage() {
       </div>
 
       {savedSuccess && (
-        <div className="border border-[#4ade80]/30 bg-[#1e2a22] p-3 text-[13px] text-[#4ade80] flex items-center gap-2">
-          <CheckCircle2 className="h-4 w-4 shrink-0" />
+        <div className="border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 flex items-center gap-2.5 rounded-none shadow-xs">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
           <span>Store settings have been updated and persisted to configuration.</span>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* General Store Details */}
-        <div className="border border-[#262c39] bg-[#141720] p-5 space-y-4">
-          <div className="flex items-center gap-2 border-b border-[#232732] pb-3">
+        <div className="border border-neutral-200 bg-white p-6 space-y-4 rounded-none shadow-sm">
+          <div className="flex items-center gap-2 border-b border-neutral-200 pb-3">
             <Globe className="h-4 w-4 text-[#007cc3]" />
-            <h3 className="font-heading uppercase tracking-wider text-sm font-bold text-white">General Information</h3>
+            <h3 className="g-heading text-base uppercase tracking-tight text-neutral-900 font-semibold">General Information</h3>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Storefront Name *
               </label>
               <input
@@ -121,11 +123,11 @@ export default function AdminSettingsPage() {
                 required
                 value={settings.storeName}
                 onChange={(e) => setSettings({ ...settings, storeName: e.target.value })}
-                className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] text-white focus:border-[#007cc3] focus:outline-none"
+                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Support Contact Email *
               </label>
               <input
@@ -133,47 +135,47 @@ export default function AdminSettingsPage() {
                 required
                 value={settings.contactEmail}
                 onChange={(e) => setSettings({ ...settings, contactEmail: e.target.value })}
-                className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] text-white focus:border-[#007cc3] focus:outline-none"
+                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Support Helpline Phone
               </label>
               <input
                 type="text"
                 value={settings.supportPhone}
                 onChange={(e) => setSettings({ ...settings, supportPhone: e.target.value })}
-                className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] text-white focus:border-[#007cc3] focus:outline-none"
+                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
               />
             </div>
             <div>
-              <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Free Shipping Threshold ($)
               </label>
               <input
                 type="number"
                 value={settings.freeShippingThreshold}
                 onChange={(e) => setSettings({ ...settings, freeShippingThreshold: Number(e.target.value) })}
-                className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] text-white focus:border-[#007cc3] focus:outline-none"
+                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
               />
             </div>
           </div>
         </div>
 
         {/* Currency & Tax */}
-        <div className="border border-[#262c39] bg-[#141720] p-5 space-y-4">
-          <div className="flex items-center gap-2 border-b border-[#232732] pb-3">
+        <div className="border border-neutral-200 bg-white p-6 space-y-4 rounded-none shadow-sm">
+          <div className="flex items-center gap-2 border-b border-neutral-200 pb-3">
             <CreditCard className="h-4 w-4 text-[#007cc3]" />
-            <h3 className="font-heading uppercase tracking-wider text-sm font-bold text-white">Currency & Tax Rates</h3>
+            <h3 className="g-heading text-base uppercase tracking-tight text-neutral-900 font-semibold">Currency & Tax Rates</h3>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Currency Code
               </label>
               <select
@@ -183,7 +185,7 @@ export default function AdminSettingsPage() {
                   const sym = curr === "SGD" ? "S$" : curr === "USD" ? "$" : curr === "EUR" ? "€" : "£";
                   setSettings({ ...settings, currency: curr, currencySymbol: sym });
                 }}
-                className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] font-heading uppercase font-bold text-white focus:border-[#007cc3] focus:outline-none"
+                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-semibold uppercase text-neutral-900 focus:border-black focus:outline-none rounded-none"
               >
                 <option value="SGD">SGD (Singapore Dollar)</option>
                 <option value="USD">USD (US Dollar)</option>
@@ -193,19 +195,19 @@ export default function AdminSettingsPage() {
             </div>
 
             <div>
-              <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Currency Symbol
               </label>
               <input
                 type="text"
                 value={settings.currencySymbol}
                 onChange={(e) => setSettings({ ...settings, currencySymbol: e.target.value })}
-                className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] font-heading font-bold text-white focus:border-[#007cc3] focus:outline-none"
+                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-semibold text-neutral-900 focus:border-black focus:outline-none rounded-none"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 GST / Sales Tax Rate (%)
               </label>
               <input
@@ -213,89 +215,89 @@ export default function AdminSettingsPage() {
                 step="0.1"
                 value={settings.taxRate}
                 onChange={(e) => setSettings({ ...settings, taxRate: Number(e.target.value) })}
-                className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] text-white focus:border-[#007cc3] focus:outline-none"
+                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
               />
             </div>
           </div>
         </div>
 
         {/* Feature Switches & Gateway Toggles */}
-        <div className="border border-[#262c39] bg-[#141720] p-5 space-y-4">
-          <div className="flex items-center gap-2 border-b border-[#232732] pb-3">
-            <h3 className="font-heading uppercase tracking-wider text-sm font-bold text-white">Payment Gateways & Operations</h3>
+        <div className="border border-neutral-200 bg-white p-6 space-y-4 rounded-none shadow-sm">
+          <div className="flex items-center gap-2 border-b border-neutral-200 pb-3">
+            <h3 className="g-heading text-base uppercase tracking-tight text-neutral-900 font-semibold">Payment Gateways & Operations</h3>
           </div>
 
           <div className="space-y-3">
-            <label className="flex items-center justify-between border border-[#262c39] bg-[#101217] p-3 cursor-pointer">
+            <label className="flex items-center justify-between border border-neutral-200 bg-neutral-50/70 p-4 cursor-pointer hover:bg-neutral-100/70 transition-colors rounded-none">
               <div>
-                <p className="font-heading uppercase tracking-wider text-[12px] font-bold text-white">Garmin Pay™ Contactless Sandbox</p>
-                <p className="text-[11px] text-[#8a92a3]">Enable test payment transactions for watch tokenization</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-neutral-900">Garmin Pay™ Contactless Sandbox</p>
+                <p className="text-xs text-neutral-500 mt-0.5">Enable test payment transactions for watch tokenization</p>
               </div>
               <input
                 type="checkbox"
                 checked={settings.garminPaySandbox}
                 onChange={(e) => setSettings({ ...settings, garminPaySandbox: e.target.checked })}
-                className="h-4 w-4 accent-[#007cc3]"
+                className="h-4 w-4 accent-black rounded-none"
               />
             </label>
 
-            <label className="flex items-center justify-between border border-[#262c39] bg-[#101217] p-3 cursor-pointer">
+            <label className="flex items-center justify-between border border-neutral-200 bg-neutral-50/70 p-4 cursor-pointer hover:bg-neutral-100/70 transition-colors rounded-none">
               <div>
-                <p className="font-heading uppercase tracking-wider text-[12px] font-bold text-white">Stripe / Credit Card Gateway</p>
-                <p className="text-[11px] text-[#8a92a3]">Accept Visa, Mastercard, and American Express</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-neutral-900">Stripe / Credit Card Gateway</p>
+                <p className="text-xs text-neutral-500 mt-0.5">Accept Visa, Mastercard, and American Express</p>
               </div>
               <input
                 type="checkbox"
                 checked={settings.stripeEnabled}
                 onChange={(e) => setSettings({ ...settings, stripeEnabled: e.target.checked })}
-                className="h-4 w-4 accent-[#007cc3]"
+                className="h-4 w-4 accent-black rounded-none"
               />
             </label>
 
-            <label className="flex items-center justify-between border border-[#262c39] bg-[#101217] p-3 cursor-pointer">
+            <label className="flex items-center justify-between border border-neutral-200 bg-neutral-50/70 p-4 cursor-pointer hover:bg-neutral-100/70 transition-colors rounded-none">
               <div>
-                <p className="font-heading uppercase tracking-wider text-[12px] font-bold text-white">Maintenance Mode</p>
-                <p className="text-[11px] text-[#8a92a3]">Show maintenance splash page to storefront visitors</p>
+                <p className="text-xs font-semibold uppercase tracking-wider text-neutral-900">Maintenance Mode</p>
+                <p className="text-xs text-neutral-500 mt-0.5">Show maintenance splash page to storefront visitors</p>
               </div>
               <input
                 type="checkbox"
                 checked={settings.maintenanceMode}
                 onChange={(e) => setSettings({ ...settings, maintenanceMode: e.target.checked })}
-                className="h-4 w-4 accent-[#007cc3]"
+                className="h-4 w-4 accent-black rounded-none"
               />
             </label>
           </div>
         </div>
 
         {/* Global SEO Settings */}
-        <div className="border border-[#262c39] bg-[#141720] p-5 space-y-4">
-          <div className="flex items-center gap-2 border-b border-[#232732] pb-3">
+        <div className="border border-neutral-200 bg-white p-6 space-y-4 rounded-none shadow-sm">
+          <div className="flex items-center gap-2 border-b border-neutral-200 pb-3">
             <Search className="h-4 w-4 text-[#007cc3]" />
-            <h3 className="font-heading uppercase tracking-wider text-sm font-bold text-white">Search Engine Optimization (SEO)</h3>
+            <h3 className="g-heading text-base uppercase tracking-tight text-neutral-900 font-semibold">Search Engine Optimization (SEO)</h3>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Default SEO Meta Title
               </label>
               <input
                 type="text"
                 value={settings.seoTitle}
                 onChange={(e) => setSettings({ ...settings, seoTitle: e.target.value })}
-                className="mt-1 h-9 w-full border border-[#262c39] bg-[#101217] px-3 text-[13px] text-white focus:border-[#007cc3] focus:outline-none"
+                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
               />
             </div>
 
             <div>
-              <label className="block text-[11px] font-heading uppercase tracking-wider font-bold text-[#8a92a3]">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Default SEO Meta Description
               </label>
               <textarea
                 rows={3}
                 value={settings.seoDescription}
                 onChange={(e) => setSettings({ ...settings, seoDescription: e.target.value })}
-                className="mt-1 w-full border border-[#262c39] bg-[#101217] p-2.5 text-[13px] text-white focus:border-[#007cc3] focus:outline-none"
+                className="w-full border border-neutral-300 bg-white p-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
               />
             </div>
           </div>

@@ -173,21 +173,23 @@ export default function AdminSEOPage() {
 
   const scoreBadgeColor =
     auditReport.overallScore >= 85
-      ? "text-emerald-400 bg-emerald-950/40 border-emerald-500/30"
+      ? "text-emerald-700 bg-emerald-50 border-emerald-200"
       : auditReport.overallScore >= 70
-      ? "text-blue-400 bg-blue-950/40 border-blue-500/30"
-      : "text-amber-400 bg-amber-950/40 border-amber-500/30";
+      ? "text-[#007cc3] bg-sky-50 border-sky-200"
+      : "text-amber-700 bg-amber-50 border-amber-200";
 
   return (
-    <div className="space-y-6 font-sans">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-[#232732] pb-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-200 pb-5">
         <div>
-          <h1 className="font-heading uppercase tracking-wider text-2xl font-bold text-white flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <Globe className="h-6 w-6 text-[#007cc3]" />
-            <span>SEO Optimization &amp; Search Console</span>
-          </h1>
-          <p className="text-[13px] text-[#8a92a3] mt-1 font-sans">
+            <h1 className="g-heading text-2xl uppercase tracking-tight text-neutral-900">
+              SEO Optimization &amp; Search Console
+            </h1>
+          </div>
+          <p className="text-sm text-neutral-500 mt-1">
             Manage Google search rankings, structured JSON-LD schemas, XML sitemaps, and real-time metadata across your entire store.
           </p>
         </div>
@@ -196,21 +198,21 @@ export default function AdminSEOPage() {
           type="button"
           onClick={handleBulkOptimize}
           disabled={bulkOptimizing}
-          className="flex items-center gap-2 px-4 py-2.5 bg-[#007cc3] hover:bg-[#006cae] text-white rounded text-xs font-bold uppercase tracking-wider transition-all shadow-md active:scale-95 disabled:opacity-50"
+          className="inline-flex items-center gap-2 bg-black px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none shadow-xs disabled:opacity-50"
         >
           {bulkOptimizing ? (
             <RefreshCw className="h-4 w-4 animate-spin" />
           ) : (
             <Sparkles className="h-4 w-4" />
           )}
-          <span>⚡ Auto-Optimize All Missing SEO</span>
+          <span>Auto-Optimize All Missing SEO</span>
         </button>
       </div>
 
       {/* Toast Notification */}
       {successToast && (
-        <div className="p-3.5 rounded bg-emerald-950/70 border border-emerald-500/40 text-emerald-300 text-xs font-semibold flex items-center gap-2 animate-fadeIn">
-          <Check className="h-4 w-4 text-emerald-400" />
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2 rounded-none">
+          <Check className="h-4 w-4 text-emerald-600" />
           <span>{successToast}</span>
         </div>
       )}
@@ -218,81 +220,81 @@ export default function AdminSEOPage() {
       {/* Top Metrics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         {/* Overall SEO Health Score */}
-        <div className="p-4 rounded border border-[#262c39] bg-[#141720] flex items-center gap-4">
-          <div className={`flex flex-col items-center justify-center h-14 w-14 rounded border ${scoreBadgeColor}`}>
-            <span className="font-['Oswald'] text-xl font-bold leading-none">{auditReport.overallScore}</span>
-            <span className="text-[9px] uppercase tracking-wider font-semibold opacity-80">Grade {auditReport.grade}</span>
+        <div className="p-4 border border-neutral-200 bg-white rounded-none shadow-sm flex items-center gap-4">
+          <div className={`flex flex-col items-center justify-center h-14 w-14 border rounded-none ${scoreBadgeColor}`}>
+            <span className="g-heading text-xl font-normal leading-none">{auditReport.overallScore}</span>
+            <span className="text-[10px] uppercase tracking-wider font-semibold opacity-80">Grade {auditReport.grade}</span>
           </div>
           <div>
-            <span className="text-xs uppercase tracking-wider text-neutral-400 font-semibold block">
+            <span className="text-xs uppercase tracking-wider text-neutral-500 font-semibold block">
               Store SEO Score
             </span>
-            <span className="text-xs font-bold text-white uppercase mt-0.5 block">
+            <span className="text-xs font-semibold text-neutral-900 uppercase mt-0.5 block">
               {auditReport.overallScore >= 80 ? "High Search Visibility" : "Optimization Needed"}
             </span>
           </div>
         </div>
 
         {/* Total Indexed Pages */}
-        <div className="p-4 rounded border border-[#262c39] bg-[#141720]">
-          <span className="text-xs uppercase tracking-wider text-neutral-400 font-semibold block">
+        <div className="p-4 border border-neutral-200 bg-white rounded-none shadow-sm">
+          <span className="text-xs uppercase tracking-wider text-neutral-500 font-semibold block">
             Indexed Pages & Posts
           </span>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="font-['Oswald'] text-2xl font-bold text-white">{auditReport.stats.totalPages}</span>
-            <span className="text-[11px] text-neutral-400">active URLs</span>
+            <span className="g-heading text-2xl font-normal text-neutral-900">{auditReport.stats.totalPages}</span>
+            <span className="text-xs text-neutral-400">active URLs</span>
           </div>
         </div>
 
         {/* Fully Optimized Pages */}
-        <div className="p-4 rounded border border-[#262c39] bg-[#141720]">
-          <span className="text-xs uppercase tracking-wider text-neutral-400 font-semibold block">
+        <div className="p-4 border border-neutral-200 bg-white rounded-none shadow-sm">
+          <span className="text-xs uppercase tracking-wider text-neutral-500 font-semibold block">
             Fully Optimized
           </span>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="font-['Oswald'] text-2xl font-bold text-emerald-400">
+            <span className="g-heading text-2xl font-normal text-emerald-700">
               {auditReport.stats.excellent + auditReport.stats.good}
             </span>
-            <span className="text-[11px] text-neutral-400">Score &ge; 70</span>
+            <span className="text-xs text-neutral-400">Score &ge; 70</span>
           </div>
         </div>
 
         {/* Pages Needing Work */}
-        <div className="p-4 rounded border border-[#262c39] bg-[#141720]">
-          <span className="text-xs uppercase tracking-wider text-neutral-400 font-semibold block">
+        <div className="p-4 border border-neutral-200 bg-white rounded-none shadow-sm">
+          <span className="text-xs uppercase tracking-wider text-neutral-500 font-semibold block">
             Needs Attention
           </span>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="font-['Oswald'] text-2xl font-bold text-amber-400">
+            <span className="g-heading text-2xl font-normal text-amber-600">
               {auditReport.stats.needsWork + auditReport.stats.critical}
             </span>
-            <span className="text-[11px] text-neutral-400">pages</span>
+            <span className="text-xs text-neutral-400">pages</span>
           </div>
         </div>
 
         {/* Missing Descriptions */}
-        <div className="p-4 rounded border border-[#262c39] bg-[#141720]">
-          <span className="text-xs uppercase tracking-wider text-neutral-400 font-semibold block">
-            Missing Focus Keywords
+        <div className="p-4 border border-neutral-200 bg-white rounded-none shadow-sm">
+          <span className="text-xs uppercase tracking-wider text-neutral-500 font-semibold block">
+            Missing Keywords
           </span>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="font-['Oswald'] text-2xl font-bold text-neutral-300">
+            <span className="g-heading text-2xl font-normal text-neutral-900">
               {auditReport.stats.missingKeywords}
             </span>
-            <span className="text-[11px] text-neutral-400">unassigned</span>
+            <span className="text-xs text-neutral-400">unassigned</span>
           </div>
         </div>
       </div>
 
       {/* Main Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-[#262c39] pb-3">
+      <div className="flex items-center gap-2 border-b border-neutral-200 pb-3 flex-wrap">
         <button
           type="button"
           onClick={() => setActiveTab("audit")}
-          className={`px-4 py-2 rounded text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-colors ${
+          className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition-colors rounded-none ${
             activeTab === "audit"
-              ? "bg-[#00a0df] text-white"
-              : "bg-[#141720] text-neutral-400 hover:text-white border border-[#262c39]"
+              ? "bg-black text-white"
+              : "bg-white text-neutral-600 hover:text-black border border-neutral-200"
           }`}
         >
           <Layers className="h-3.5 w-3.5" /> Pages &amp; Catalog Audit
@@ -301,10 +303,10 @@ export default function AdminSEOPage() {
         <button
           type="button"
           onClick={() => setActiveTab("sitemap")}
-          className={`px-4 py-2 rounded text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-colors ${
+          className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition-colors rounded-none ${
             activeTab === "sitemap"
-              ? "bg-[#00a0df] text-white"
-              : "bg-[#141720] text-neutral-400 hover:text-white border border-[#262c39]"
+              ? "bg-black text-white"
+              : "bg-white text-neutral-600 hover:text-black border border-neutral-200"
           }`}
         >
           <FileCode className="h-3.5 w-3.5" /> XML Sitemap (`/sitemap.xml`)
@@ -313,10 +315,10 @@ export default function AdminSEOPage() {
         <button
           type="button"
           onClick={() => setActiveTab("robots")}
-          className={`px-4 py-2 rounded text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-colors ${
+          className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition-colors rounded-none ${
             activeTab === "robots"
-              ? "bg-[#00a0df] text-white"
-              : "bg-[#141720] text-neutral-400 hover:text-white border border-[#262c39]"
+              ? "bg-black text-white"
+              : "bg-white text-neutral-600 hover:text-black border border-neutral-200"
           }`}
         >
           <Shield className="h-3.5 w-3.5" /> Robots.txt Directives
@@ -325,10 +327,10 @@ export default function AdminSEOPage() {
         <button
           type="button"
           onClick={() => setActiveTab("schema")}
-          className={`px-4 py-2 rounded text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition-colors ${
+          className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider flex items-center gap-2 transition-colors rounded-none ${
             activeTab === "schema"
-              ? "bg-[#00a0df] text-white"
-              : "bg-[#141720] text-neutral-400 hover:text-white border border-[#262c39]"
+              ? "bg-black text-white"
+              : "bg-white text-neutral-600 hover:text-black border border-neutral-200"
           }`}
         >
           <Globe className="h-3.5 w-3.5" /> Google Rich Results (JSON-LD)
@@ -339,28 +341,28 @@ export default function AdminSEOPage() {
       {activeTab === "audit" && (
         <div className="space-y-4">
           {/* Filters Bar */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-3 rounded border border-[#262c39] bg-[#141720]">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 p-4 border border-neutral-200 bg-white rounded-none shadow-sm">
             {/* Search Input */}
             <div className="relative flex-1 max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-neutral-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-400" />
               <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search page title or URL path..."
-                className="w-full bg-[#0c0d12] border border-[#262c39] focus:border-[#00a0df] rounded pl-9 pr-3 py-1.5 text-xs text-white focus:outline-none"
+                className="w-full bg-white border border-neutral-300 focus:border-black rounded-none pl-9 pr-3 py-2 text-sm text-neutral-900 focus:outline-none placeholder-neutral-400"
               />
             </div>
 
             {/* Category Filter Pills */}
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <button
                 type="button"
                 onClick={() => setTypeFilter("all")}
-                className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                className={`px-3 py-1.5 rounded-none text-xs font-semibold uppercase tracking-wider transition-colors ${
                   typeFilter === "all"
-                    ? "bg-[#262c39] text-white font-bold"
-                    : "text-neutral-400 hover:text-white"
+                    ? "bg-black text-white"
+                    : "bg-white border border-neutral-200 text-neutral-600 hover:text-black"
                 }`}
               >
                 All ({auditReport.pages.length})
@@ -368,10 +370,10 @@ export default function AdminSEOPage() {
               <button
                 type="button"
                 onClick={() => setTypeFilter("product")}
-                className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                className={`px-3 py-1.5 rounded-none text-xs font-semibold uppercase tracking-wider transition-colors ${
                   typeFilter === "product"
-                    ? "bg-[#262c39] text-white font-bold"
-                    : "text-neutral-400 hover:text-white"
+                    ? "bg-black text-white"
+                    : "bg-white border border-neutral-200 text-neutral-600 hover:text-black"
                 }`}
               >
                 Products ({products.length})
@@ -379,10 +381,10 @@ export default function AdminSEOPage() {
               <button
                 type="button"
                 onClick={() => setTypeFilter("blog")}
-                className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                className={`px-3 py-1.5 rounded-none text-xs font-semibold uppercase tracking-wider transition-colors ${
                   typeFilter === "blog"
-                    ? "bg-[#262c39] text-white font-bold"
-                    : "text-neutral-400 hover:text-white"
+                    ? "bg-black text-white"
+                    : "bg-white border border-neutral-200 text-neutral-600 hover:text-black"
                 }`}
               >
                 Blogs ({blogs.length})
@@ -390,10 +392,10 @@ export default function AdminSEOPage() {
               <button
                 type="button"
                 onClick={() => setTypeFilter("needs_work")}
-                className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                className={`px-3 py-1.5 rounded-none text-xs font-semibold uppercase tracking-wider transition-colors ${
                   typeFilter === "needs_work"
-                    ? "bg-amber-900/60 text-amber-300 font-bold border border-amber-500/40"
-                    : "text-amber-400 hover:text-white"
+                    ? "bg-amber-100 text-amber-900 border border-amber-300"
+                    : "bg-white border border-neutral-200 text-amber-700 hover:text-amber-900"
                 }`}
               >
                 Needs Work ({auditReport.stats.needsWork + auditReport.stats.critical})
@@ -402,29 +404,29 @@ export default function AdminSEOPage() {
           </div>
 
           {/* Audit Data Table */}
-          <div className="rounded border border-[#262c39] bg-[#141720] overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="border-b border-[#262c39] bg-[#0e1017] text-neutral-400 uppercase font-semibold text-[11px] tracking-wider">
+          <div className="border border-neutral-200 bg-white rounded-none shadow-sm overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead className="border-b border-neutral-200 bg-neutral-50 text-neutral-600 uppercase font-semibold text-xs tracking-wider">
                 <tr>
-                  <th className="py-3 px-4">Page / Title</th>
-                  <th className="py-3 px-4">Type</th>
-                  <th className="py-3 px-4">URL Slug</th>
-                  <th className="py-3 px-4">SEO Health</th>
-                  <th className="py-3 px-4">Google Preview Snippet</th>
-                  <th className="py-3 px-4 text-right">Actions</th>
+                  <th className="py-3.5 px-4 font-semibold">Page / Title</th>
+                  <th className="py-3.5 px-4 font-semibold">Type</th>
+                  <th className="py-3.5 px-4 font-semibold">URL Slug</th>
+                  <th className="py-3.5 px-4 font-semibold">SEO Health</th>
+                  <th className="py-3.5 px-4 font-semibold">Google Preview Snippet</th>
+                  <th className="py-3.5 px-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-[#1e2330]">
+              <tbody className="divide-y divide-neutral-200 text-neutral-800">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="py-10 text-center text-neutral-400">
-                      <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2 text-[#00a0df]" />
+                    <td colSpan={6} className="py-12 text-center text-neutral-400">
+                      <RefreshCw className="h-5 w-5 animate-spin mx-auto mb-2 text-[#007cc3]" />
                       Loading SEO audit data...
                     </td>
                   </tr>
                 ) : filteredPages.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-neutral-400">
+                    <td colSpan={6} className="py-12 text-center text-neutral-400">
                       No matching pages found.
                     </td>
                   </tr>
@@ -432,39 +434,39 @@ export default function AdminSEOPage() {
                   filteredPages.map((page) => {
                     const pillColor =
                       page.score >= 85
-                        ? "text-emerald-400 bg-emerald-950/40 border-emerald-500/30"
+                        ? "text-emerald-700 bg-emerald-50 border-emerald-200"
                         : page.score >= 70
-                        ? "text-blue-400 bg-blue-950/40 border-blue-500/30"
+                        ? "text-[#007cc3] bg-sky-50 border-sky-200"
                         : page.score >= 50
-                        ? "text-amber-400 bg-amber-950/40 border-amber-500/30"
-                        : "text-red-400 bg-red-950/40 border-red-500/30";
+                        ? "text-amber-700 bg-amber-50 border-amber-200"
+                        : "text-rose-700 bg-rose-50 border-rose-200";
 
                     return (
-                      <tr key={`${page.type}-${page.id}`} className="hover:bg-[#191d28] transition-colors">
+                      <tr key={`${page.type}-${page.id}`} className="hover:bg-neutral-50/80 transition-colors">
                         {/* Title & Name */}
                         <td className="py-3.5 px-4">
-                          <span className="font-bold text-white block truncate max-w-[220px]">
+                          <span className="font-semibold text-neutral-900 block truncate max-w-[240px]">
                             {page.title}
                           </span>
-                          <span className="text-[11px] text-neutral-400 truncate block max-w-[220px]">
+                          <span className="text-xs text-neutral-400 truncate block max-w-[240px]">
                             {page.seoTitle || "No custom title"}
                           </span>
                         </td>
 
                         {/* Type */}
                         <td className="py-3.5 px-4">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#1e2433] border border-[#2d374d] text-neutral-300">
+                          <span className="px-2 py-0.5 rounded-none text-[11px] font-semibold uppercase tracking-wider bg-neutral-100 border border-neutral-200 text-neutral-700">
                             {page.type}
                           </span>
                         </td>
 
                         {/* URL */}
-                        <td className="py-3.5 px-4 font-mono text-neutral-300">
+                        <td className="py-3.5 px-4 font-mono text-xs text-neutral-600">
                           <a
                             href={page.url}
                             target="_blank"
                             rel="noreferrer"
-                            className="hover:text-[#00a0df] flex items-center gap-1 group"
+                            className="hover:text-[#007cc3] flex items-center gap-1 group"
                           >
                             <span className="truncate max-w-[140px]">{page.url}</span>
                             <ArrowUpRight className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -474,11 +476,11 @@ export default function AdminSEOPage() {
                         {/* SEO Health Score */}
                         <td className="py-3.5 px-4">
                           <div className="flex items-center gap-2">
-                            <span className={`px-2 py-0.5 text-[11px] font-bold rounded border ${pillColor}`}>
+                            <span className={`px-2 py-0.5 text-xs font-semibold rounded-none border ${pillColor}`}>
                               {page.score}/100
                             </span>
                             {page.issuesCount > 0 && (
-                              <span className="text-[11px] text-amber-400">
+                              <span className="text-xs text-amber-700">
                                 {page.issuesCount} tips
                               </span>
                             )}
@@ -487,9 +489,9 @@ export default function AdminSEOPage() {
 
                         {/* Google Snippet Preview */}
                         <td className="py-3.5 px-4 max-w-[260px]">
-                          <p className="text-[11px] text-neutral-300 line-clamp-2 leading-tight font-normal">
+                          <p className="text-xs text-neutral-600 line-clamp-2 leading-relaxed">
                             {page.seoDescription || (
-                              <span className="text-amber-400 italic">Missing description</span>
+                              <span className="text-amber-600 italic">Missing description</span>
                             )}
                           </p>
                         </td>
@@ -507,9 +509,9 @@ export default function AdminSEOPage() {
                                 if (blog) setEditingItem({ type: "blog", data: blog });
                               }
                             }}
-                            className="px-2.5 py-1.5 bg-[#1e2330] hover:bg-[#282f42] text-white border border-[#343b4e] rounded text-[11px] font-semibold inline-flex items-center gap-1 transition-colors"
+                            className="px-3 py-1.5 bg-white hover:bg-neutral-100 text-neutral-800 border border-neutral-300 rounded-none text-xs font-semibold uppercase tracking-wider inline-flex items-center gap-1.5 transition-colors"
                           >
-                            <Edit3 className="h-3 w-3 text-[#00a0df]" />
+                            <Edit3 className="h-3.5 w-3.5 text-[#007cc3]" />
                             <span>Edit SEO</span>
                           </button>
                         </td>
@@ -525,71 +527,71 @@ export default function AdminSEOPage() {
 
       {/* TAB 2: SITEMAP INSPECTOR */}
       {activeTab === "sitemap" && (
-        <div className="space-y-4 p-5 rounded border border-[#262c39] bg-[#141720]">
-          <div className="flex items-center justify-between">
+        <div className="space-y-4 p-6 border border-neutral-200 bg-white rounded-none shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="font-['Oswald'] text-lg uppercase tracking-wider text-white">Dynamic XML Sitemap</h3>
-              <p className="text-xs text-neutral-400 mt-0.5">
-                Automatically generated by Next.js at <code>/sitemap.xml</code> with dynamic priority weighting and change frequencies.
+              <h3 className="g-heading text-lg uppercase tracking-tight text-neutral-900">Dynamic XML Sitemap</h3>
+              <p className="text-sm text-neutral-500 mt-1">
+                Automatically generated by Next.js at <code className="bg-neutral-100 px-1 py-0.5 text-xs text-neutral-800">/sitemap.xml</code> with dynamic priority weighting and change frequencies.
               </p>
             </div>
             <a
               href="/sitemap.xml"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e2330] hover:bg-[#282f42] text-white border border-[#343b4e] rounded text-xs font-semibold transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-neutral-100 text-neutral-800 border border-neutral-300 rounded-none text-xs font-semibold uppercase tracking-wider transition-colors"
             >
               <span>View Raw XML</span>
-              <ArrowUpRight className="h-3.5 w-3.5 text-[#00a0df]" />
+              <ArrowUpRight className="h-3.5 w-3.5 text-[#007cc3]" />
             </a>
           </div>
 
-          <div className="p-4 rounded bg-[#0c0d12] border border-[#262c39] font-mono text-xs text-neutral-300 space-y-2 overflow-x-auto">
-            <div className="text-neutral-500">&lt;!-- Sample output structure for search engine crawlers --&gt;</div>
-            <div className="text-[#00a0df]">&lt;urlset xmlns=&quot;http://www.sitemaps.org/schemas/sitemap/0.9&quot;&gt;</div>
+          <div className="p-4 rounded-none bg-neutral-50 border border-neutral-200 font-mono text-xs text-neutral-800 space-y-2 overflow-x-auto">
+            <div className="text-neutral-400">&lt;!-- Sample output structure for search engine crawlers --&gt;</div>
+            <div className="text-[#007cc3]">&lt;urlset xmlns=&quot;http://www.sitemaps.org/schemas/sitemap/0.9&quot;&gt;</div>
             <div className="pl-4 space-y-2">
               <div>
-                <span className="text-amber-400">&lt;url&gt;</span><br />
+                <span className="text-amber-700">&lt;url&gt;</span><br />
                 &nbsp;&nbsp;&lt;loc&gt;https://www.garmin.com/&lt;/loc&gt;<br />
                 &nbsp;&nbsp;&lt;changefreq&gt;daily&lt;/changefreq&gt;<br />
                 &nbsp;&nbsp;&lt;priority&gt;1.0&lt;/priority&gt;<br />
-                <span className="text-amber-400">&lt;/url&gt;</span>
+                <span className="text-amber-700">&lt;/url&gt;</span>
               </div>
               <div>
-                <span className="text-amber-400">&lt;url&gt;</span><br />
+                <span className="text-amber-700">&lt;url&gt;</span><br />
                 &nbsp;&nbsp;&lt;loc&gt;https://www.garmin.com/p/1228429&lt;/loc&gt;<br />
                 &nbsp;&nbsp;&lt;changefreq&gt;daily&lt;/changefreq&gt;<br />
                 &nbsp;&nbsp;&lt;priority&gt;0.95&lt;/priority&gt;<br />
-                <span className="text-amber-400">&lt;/url&gt;</span>
+                <span className="text-amber-700">&lt;/url&gt;</span>
               </div>
             </div>
-            <div className="text-[#00a0df]">&lt;/urlset&gt;</div>
+            <div className="text-[#007cc3]">&lt;/urlset&gt;</div>
           </div>
         </div>
       )}
 
       {/* TAB 3: ROBOTS.TXT INSPECTOR */}
       {activeTab === "robots" && (
-        <div className="space-y-4 p-5 rounded border border-[#262c39] bg-[#141720]">
-          <div className="flex items-center justify-between">
+        <div className="space-y-4 p-6 border border-neutral-200 bg-white rounded-none shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="font-['Oswald'] text-lg uppercase tracking-wider text-white">Robots.txt Crawler Directives</h3>
-              <p className="text-xs text-neutral-400 mt-0.5">
-                Active directives at <code>/robots.txt</code> safeguarding admin routes and private customer data.
+              <h3 className="g-heading text-lg uppercase tracking-tight text-neutral-900">Robots.txt Crawler Directives</h3>
+              <p className="text-sm text-neutral-500 mt-1">
+                Active directives at <code className="bg-neutral-100 px-1 py-0.5 text-xs text-neutral-800">/robots.txt</code> safeguarding admin routes and private customer data.
               </p>
             </div>
             <a
               href="/robots.txt"
               target="_blank"
               rel="noreferrer"
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1e2330] hover:bg-[#282f42] text-white border border-[#343b4e] rounded text-xs font-semibold transition-colors"
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-neutral-100 text-neutral-800 border border-neutral-300 rounded-none text-xs font-semibold uppercase tracking-wider transition-colors"
             >
               <span>View Live /robots.txt</span>
-              <ArrowUpRight className="h-3.5 w-3.5 text-[#00a0df]" />
+              <ArrowUpRight className="h-3.5 w-3.5 text-[#007cc3]" />
             </a>
           </div>
 
-          <pre className="p-4 rounded bg-[#0c0d12] border border-[#262c39] font-mono text-xs text-emerald-400 leading-relaxed overflow-x-auto">
+          <pre className="p-4 rounded-none bg-neutral-50 border border-neutral-200 font-mono text-xs text-neutral-800 leading-relaxed overflow-x-auto">
 {`User-agent: *
 Allow: /
 Disallow: /admin/
@@ -611,20 +613,20 @@ Sitemap: https://www.garmin.com/sitemap.xml`}
 
       {/* TAB 4: SCHEMA VALIDATOR */}
       {activeTab === "schema" && (
-        <div className="space-y-4 p-5 rounded border border-[#262c39] bg-[#141720]">
+        <div className="space-y-4 p-6 border border-neutral-200 bg-white rounded-none shadow-sm">
           <div>
-            <h3 className="font-['Oswald'] text-lg uppercase tracking-wider text-white">Google Rich Results Structured Schemas</h3>
-            <p className="text-xs text-neutral-400 mt-0.5">
+            <h3 className="g-heading text-lg uppercase tracking-tight text-neutral-900">Google Rich Results Structured Schemas</h3>
+            <p className="text-sm text-neutral-500 mt-1">
               Live JSON-LD schema objects automatically embedded in every product and blog article page for Google star ratings, pricing, and stock status.
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-            <div className="p-4 rounded bg-[#0c0d12] border border-[#262c39]">
-              <span className="font-bold text-xs uppercase tracking-wider text-[#00a0df] block mb-2">
+            <div className="p-4 rounded-none bg-neutral-50 border border-neutral-200">
+              <span className="font-semibold text-xs uppercase tracking-wider text-[#007cc3] block mb-2">
                 schema.org/Product (Storefront Detail)
               </span>
-              <pre className="font-mono text-[11px] text-neutral-300 overflow-x-auto leading-tight">
+              <pre className="font-mono text-xs text-neutral-800 overflow-x-auto leading-relaxed">
 {`{
   "@context": "https://schema.org/",
   "@type": "Product",
@@ -647,11 +649,11 @@ Sitemap: https://www.garmin.com/sitemap.xml`}
               </pre>
             </div>
 
-            <div className="p-4 rounded bg-[#0c0d12] border border-[#262c39]">
-              <span className="font-bold text-xs uppercase tracking-wider text-[#00a0df] block mb-2">
+            <div className="p-4 rounded-none bg-neutral-50 border border-neutral-200">
+              <span className="font-semibold text-xs uppercase tracking-wider text-[#007cc3] block mb-2">
                 schema.org/Article (Blog Posts)
               </span>
-              <pre className="font-mono text-[11px] text-neutral-300 overflow-x-auto leading-tight">
+              <pre className="font-mono text-xs text-neutral-800 overflow-x-auto leading-relaxed">
 {`{
   "@context": "https://schema.org",
   "@type": "Article",
@@ -720,11 +722,11 @@ Sitemap: https://www.garmin.com/sitemap.xml`}
               }}
             />
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#262c39]">
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-neutral-200">
               <button
                 type="button"
                 onClick={() => setEditingItem(null)}
-                className="px-4 py-2 bg-[#1e2330] hover:bg-[#282f42] text-neutral-300 rounded text-xs font-semibold transition-colors"
+                className="border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-700 hover:bg-neutral-50 rounded-none transition-colors"
               >
                 Cancel
               </button>
@@ -740,7 +742,7 @@ Sitemap: https://www.garmin.com/sitemap.xml`}
                     ogImage: editingItem.data.ogImage,
                   })
                 }
-                className="px-5 py-2 bg-[#00a0df] hover:bg-[#008cc4] text-white rounded text-xs font-bold uppercase tracking-wider transition-all"
+                className="bg-black px-6 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none"
               >
                 Save SEO Metadata
               </button>

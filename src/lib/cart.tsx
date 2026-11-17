@@ -2,12 +2,22 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 
-interface CartItem {
+export interface CartItem {
+  /** Product id */
   id: string;
   name: string;
   price: number;
   qty: number;
   image?: string;
+  /** Variant SKU when the product has options */
+  sku?: string;
+  /** Human label of the chosen variant, e.g. "43 mm / Black" */
+  variantLabel?: string;
+}
+
+/** One cart line per product + variant. Old saved carts (no sku) keep using the product id. */
+export function lineKeyOf(item: Pick<CartItem, "id" | "sku">): string {
+  return item.sku ? `${item.id}::${item.sku}` : item.id;
 }
 
 interface CartContextValue {
@@ -45,24 +55,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const add = useCallback((item: Omit<CartItem, "qty">, qty = 1) => {
     setItems((prev) => {
-      const existing = prev.find((i) => i.id === item.id);
+      const key = lineKeyOf(item);
+      const existing = prev.find((i) => lineKeyOf(i) === key);
       if (existing) {
-        return prev.map((i) => (i.id === item.id ? { ...i, qty: i.qty + qty } : i));
+        return prev.map((i) => (lineKeyOf(i) === key ? { ...i, qty: i.qty + qty } : i));
       }
       return [...prev, { ...item, qty }];
     });
   }, []);
 
-  const setQty = useCallback((id: string, qty: number) => {
+  const setQty = useCallback((key: string, qty: number) => {
     setItems((prev) =>
       qty <= 0
-        ? prev.filter((i) => i.id !== id)
-        : prev.map((i) => (i.id === id ? { ...i, qty } : i)),
+        ? prev.filter((i) => lineKeyOf(i) !== key)
+        : prev.map((i) => (lineKeyOf(i) === key ? { ...i, qty } : i)),
     );
   }, []);
 
-  const remove = useCallback((id: string) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
+  const remove = useCallback((key: string) => {
+    setItems((prev) => prev.filter((i) => lineKeyOf(i) !== key));
   }, []);
 
   const clear = useCallback(() => setItems([]), []);

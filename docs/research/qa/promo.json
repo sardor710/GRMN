@@ -1,0 +1,212 @@
+{
+ "target": "https://www.garmin.com/en-US/",
+ "clone": "http://localhost:3001/",
+ "sel": "main > div.container.white",
+ "cloneSel": "#home-promo",
+ "widths": {
+  "390": {
+   "mismatchPct": 0,
+   "size": {
+    "target": [
+     390,
+     1558
+    ],
+    "clone": [
+     390,
+     1558
+    ]
+   },
+   "hotBands": [],
+   "file": "docs/design-references/qa/promo-390-diff.png",
+   "text": {
+    "matched": 6,
+    "of": 9,
+    "issues": [
+     {
+      "t": "Forerunner® — Running Smartwatches for A",
+      "ff": "Arial → GarminSuperscriptOswald",
+      "fs": "13.3333px → 24px",
+      "lh": "normal → 30px",
+      "ls": "normal → 0.8px",
+      "tt": "none → uppercase",
+      "pos": "16,16 → 32,390",
+      "size": "358×508 → 326×60"
+     },
+     {
+      "t": "Shop",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH",
+      "ff": "Arial → GarminSuperscriptOswald",
+      "fs": "13.3333px → 24px",
+      "lh": "normal → 30px",
+      "ls": "normal → 0.8px",
+      "tt": "none → uppercase",
+      "pos": "16,540 → 32,914",
+      "size": "358×508 → 326×60"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "SMARTWATCHES FOR KIDS",
+      "ff": "Arial → GarminSuperscriptOswald",
+      "fs": "13.3333px → 24px",
+      "lh": "normal → 30px",
+      "ls": "normal → 0.8px",
+      "tt": "none → uppercase",
+      "pos": "16,1064 → 32,1438",
+      "size": "358×478 → 326×30"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     }
+    ],
+    "missing": [
+     "Forerunner® — Running Smartwatches for Any Level",
+     "FĒNIX® 9 — THE ULTIMATE SMARTWATCH",
+     "SMARTWATCHES FOR KIDS"
+    ]
+   }
+  },
+  "768": {
+   "mismatchPct": 0,
+   "size": {
+    "target": [
+     768,
+     1148
+    ],
+    "clone": [
+     768,
+     1148
+    ]
+   },
+   "hotBands": [],
+   "file": "docs/design-references/qa/promo-768-diff.png",
+   "text": {
+    "matched": 6,
+    "of": 9,
+    "issues": [
+     {
+      "t": "Forerunner® — Running Smartwatches for A",
+      "ff": "Arial → GarminSuperscriptOswald",
+      "fs": "13.3333px → 32px",
+      "lh": "normal → 40px",
+      "ls": "normal → 0.8px",
+      "tt": "none → uppercase",
+      "pos": "16,16 → 32,392",
+      "size": "360×570 → 328×120"
+     },
+     {
+      "t": "Shop",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH",
+      "ff": "Arial → GarminSuperscriptOswald",
+      "fs": "13.3333px → 32px",
+      "lh": "normal → 40px",
+      "ls": "normal → 0.8px",
+      "tt": "none → uppercase",
+      "pos": "392,16 → 408,392",
+      "size": "360×570 → 328×80"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "SMARTWATCHES FOR KIDS",
+      "ff": "Arial → GarminSuperscriptOswald",
+      "fs": "13.3333px → 32px",
+      "lh": "normal → 40px",
+      "ls": "normal → 0.8px",
+      "tt": "none → uppercase",
+      "pos": "16,602 → 32,978",
+      "size": "360×530 → 328×80"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     }
+    ],
+    "missing": [
+     "Forerunner® — Running Smartwatches for Any Level",
+     "FĒNIX® 9 — THE ULTIMATE SMARTWATCH",
+     "SMARTWATCHES FOR KIDS"
+    ]
+   }
+  },
+  "1440": {
+   "mismatchPct": 0,
+   "size": {
+    "target": [
+     1440,
+     621
+    ],
+    "clone": [
+     1440,
+     621
+    ]
+   },
+   "hotBands": [],
+   "file": "docs/design-references/qa/promo-1440-diff.png",
+   "text": {
+    "matched": 6,
+    "of": 9,
+    "issues": [
+     {
+      "t": "Forerunner® — Running Smartwatches for A",
+      "ff": "Arial → GarminSuperscriptOswald",
+      "fs": "13.3333px → 32px",
+      "lh": "normal → 40px",
+      "ls": "normal → 0.8px",
+      "tt": "none → uppercase",
+      "pos": "136,16 → 152,411",
+      "size": "379×589 → 347×120"
+     },
+     {
+      "t": "Shop",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "FĒNIX® 9 — THE ULTIMATE SMARTWATCH",
+      "ff": "Arial → GarminSuperscriptOswald",
+      "fs": "13.3333px → 32px",
+      "lh": "normal → 40px",
+      "ls": "normal → 0.8px",
+      "tt": "none → uppercase",
+      "pos": "531,16 → 547,411",
+      "size": "379×589 → 347×80"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     },
+     {
+      "t": "SMARTWATCHES FOR KIDS",
+      "ff": "Arial → GarminSuperscriptOswald",
+      "fs": "13.3333px → 32px",
+      "lh": "normal → 40px",
+      "ls": "normal → 0.8px",
+      "tt": "none → uppercase",
+      "pos": "925,16 → 941,411",
+      "size": "379×589 → 347×40"
+     },
+     {
+      "t": "SHOP",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     }
+    ],
+    "missing": [
+     "Forerunner® — Running Smartwatches for Any Level",
+     "FĒNIX® 9 — THE ULTIMATE SMARTWATCH",
+     "SMARTWATCHES FOR KIDS"
+    ]
+   }
+  }
+ }
+}

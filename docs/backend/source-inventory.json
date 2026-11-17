@@ -1,0 +1,5582 @@
+{
+  "snapshotDate": "2026-11-10",
+  "classification": "Owner-confirmed real source records; values intentionally omitted; payment execution demo",
+  "method": "Static AST and byte reads only; no application modules executed",
+  "entities": {
+    "admins": {
+      "kind": "array",
+      "count": 1,
+      "duplicateIdGroups": 0
+    },
+    "clients": {
+      "kind": "array",
+      "count": 6,
+      "duplicateIdGroups": 0
+    },
+    "products": {
+      "kind": "array",
+      "count": 20,
+      "duplicateIdGroups": 0
+    },
+    "discounts": {
+      "kind": "array",
+      "count": 4,
+      "duplicateIdGroups": 0
+    },
+    "banners": {
+      "kind": "array",
+      "count": 4,
+      "duplicateIdGroups": 0
+    },
+    "blogs": {
+      "kind": "array",
+      "count": 12,
+      "duplicateIdGroups": 0
+    },
+    "orders": {
+      "kind": "array",
+      "count": 12,
+      "duplicateIdGroups": 0
+    },
+    "settings": {
+      "kind": "object",
+      "count": 1,
+      "duplicateIdGroups": 0
+    },
+    "activities": {
+      "kind": "array",
+      "count": 6,
+      "duplicateIdGroups": 0
+    }
+  },
+  "jsonFieldPaths": {
+    "activities": [
+      "array"
+    ],
+    "activities[]": [
+      "object"
+    ],
+    "activities[].action": [
+      "string"
+    ],
+    "activities[].adminName": [
+      "string"
+    ],
+    "activities[].id": [
+      "string"
+    ],
+    "activities[].target": [
+      "string"
+    ],
+    "activities[].timestamp": [
+      "string"
+    ],
+    "admins": [
+      "array"
+    ],
+    "admins[]": [
+      "object"
+    ],
+    "admins[].avatar": [
+      "string"
+    ],
+    "admins[].createdAt": [
+      "string"
+    ],
+    "admins[].email": [
+      "string"
+    ],
+    "admins[].id": [
+      "string"
+    ],
+    "admins[].lastLogin": [
+      "string"
+    ],
+    "admins[].name": [
+      "string"
+    ],
+    "admins[].password": [
+      "string"
+    ],
+    "admins[].role": [
+      "string"
+    ],
+    "admins[].status": [
+      "string"
+    ],
+    "banners": [
+      "array"
+    ],
+    "banners[]": [
+      "object"
+    ],
+    "banners[].active": [
+      "boolean"
+    ],
+    "banners[].createdAt": [
+      "string"
+    ],
+    "banners[].ctaLabel": [
+      "string"
+    ],
+    "banners[].ctaUrl": [
+      "string"
+    ],
+    "banners[].id": [
+      "string"
+    ],
+    "banners[].image": [
+      "string"
+    ],
+    "banners[].order": [
+      "number"
+    ],
+    "banners[].position": [
+      "string"
+    ],
+    "banners[].subtitle": [
+      "string"
+    ],
+    "banners[].title": [
+      "string"
+    ],
+    "blogs": [
+      "array"
+    ],
+    "blogs[]": [
+      "object"
+    ],
+    "blogs[].author": [
+      "string"
+    ],
+    "blogs[].category": [
+      "string"
+    ],
+    "blogs[].content": [
+      "string"
+    ],
+    "blogs[].coverImage": [
+      "string"
+    ],
+    "blogs[].createdAt": [
+      "string"
+    ],
+    "blogs[].excerpt": [
+      "string"
+    ],
+    "blogs[].focusKeywords": [
+      "array"
+    ],
+    "blogs[].focusKeywords[]": [
+      "string"
+    ],
+    "blogs[].id": [
+      "string"
+    ],
+    "blogs[].publishedAt": [
+      "string"
+    ],
+    "blogs[].readingTime": [
+      "string"
+    ],
+    "blogs[].seoDescription": [
+      "string"
+    ],
+    "blogs[].seoTitle": [
+      "string"
+    ],
+    "blogs[].slug": [
+      "string"
+    ],
+    "blogs[].status": [
+      "string"
+    ],
+    "blogs[].title": [
+      "string"
+    ],
+    "clients": [
+      "array"
+    ],
+    "clients[]": [
+      "object"
+    ],
+    "clients[].avatar": [
+      "string"
+    ],
+    "clients[].country": [
+      "string"
+    ],
+    "clients[].createdAt": [
+      "string"
+    ],
+    "clients[].email": [
+      "string"
+    ],
+    "clients[].id": [
+      "string"
+    ],
+    "clients[].name": [
+      "string"
+    ],
+    "clients[].notes": [
+      "string"
+    ],
+    "clients[].ordersCount": [
+      "number"
+    ],
+    "clients[].phone": [
+      "string"
+    ],
+    "clients[].status": [
+      "string"
+    ],
+    "clients[].totalSpent": [
+      "number"
+    ],
+    "discounts": [
+      "array"
+    ],
+    "discounts[]": [
+      "object"
+    ],
+    "discounts[].applyType": [
+      "string"
+    ],
+    "discounts[].code": [
+      "string"
+    ],
+    "discounts[].createdAt": [
+      "string"
+    ],
+    "discounts[].description": [
+      "string"
+    ],
+    "discounts[].expiresAt": [
+      "string"
+    ],
+    "discounts[].id": [
+      "string"
+    ],
+    "discounts[].isStackable": [
+      "boolean"
+    ],
+    "discounts[].minSpend": [
+      "number"
+    ],
+    "discounts[].perCustomerLimit": [
+      "number"
+    ],
+    "discounts[].startDate": [
+      "string"
+    ],
+    "discounts[].status": [
+      "string"
+    ],
+    "discounts[].targetCategories": [
+      "array"
+    ],
+    "discounts[].targetCategories[]": [
+      "string"
+    ],
+    "discounts[].targetSkus": [
+      "array"
+    ],
+    "discounts[].targetSkus[]": [
+      "string"
+    ],
+    "discounts[].type": [
+      "string"
+    ],
+    "discounts[].usageCount": [
+      "number"
+    ],
+    "discounts[].usageLimit": [
+      "number"
+    ],
+    "discounts[].value": [
+      "number"
+    ],
+    "orders": [
+      "array"
+    ],
+    "orders[]": [
+      "object"
+    ],
+    "orders[].carrier": [
+      "string"
+    ],
+    "orders[].clientEmail": [
+      "string"
+    ],
+    "orders[].clientName": [
+      "string"
+    ],
+    "orders[].clientPhone": [
+      "string"
+    ],
+    "orders[].comments": [
+      "string"
+    ],
+    "orders[].coordinates": [
+      "object"
+    ],
+    "orders[].coordinates.lat": [
+      "number"
+    ],
+    "orders[].coordinates.lng": [
+      "number"
+    ],
+    "orders[].createdAt": [
+      "string"
+    ],
+    "orders[].fulfillmentStatus": [
+      "string"
+    ],
+    "orders[].id": [
+      "string"
+    ],
+    "orders[].items": [
+      "array"
+    ],
+    "orders[].itemsCount": [
+      "number"
+    ],
+    "orders[].items[]": [
+      "object"
+    ],
+    "orders[].items[].image": [
+      "string"
+    ],
+    "orders[].items[].name": [
+      "string"
+    ],
+    "orders[].items[].price": [
+      "number"
+    ],
+    "orders[].items[].productId": [
+      "string"
+    ],
+    "orders[].items[].quantity": [
+      "number"
+    ],
+    "orders[].notes": [
+      "string"
+    ],
+    "orders[].orderNumber": [
+      "string"
+    ],
+    "orders[].paymentStatus": [
+      "string"
+    ],
+    "orders[].shippingAddress": [
+      "string"
+    ],
+    "orders[].total": [
+      "number"
+    ],
+    "orders[].trackingNumber": [
+      "string"
+    ],
+    "products": [
+      "array"
+    ],
+    "products[]": [
+      "object"
+    ],
+    "products[].activities": [
+      "array"
+    ],
+    "products[].activities[]": [
+      "string"
+    ],
+    "products[].badge": [
+      "string"
+    ],
+    "products[].caseSize": [
+      "string"
+    ],
+    "products[].category": [
+      "string"
+    ],
+    "products[].compatibleAccessories": [
+      "array"
+    ],
+    "products[].compatibleAccessories[]": [
+      "string"
+    ],
+    "products[].createdAt": [
+      "string"
+    ],
+    "products[].description": [
+      "string"
+    ],
+    "products[].family": [
+      "string"
+    ],
+    "products[].features": [
+      "array"
+    ],
+    "products[].features[]": [
+      "object"
+    ],
+    "products[].features[].body": [
+      "string"
+    ],
+    "products[].features[].title": [
+      "string"
+    ],
+    "products[].focusKeywords": [
+      "array"
+    ],
+    "products[].focusKeywords[]": [
+      "string"
+    ],
+    "products[].id": [
+      "string"
+    ],
+    "products[].image": [
+      "string"
+    ],
+    "products[].inTheBox": [
+      "array"
+    ],
+    "products[].inTheBox[]": [
+      "string"
+    ],
+    "products[].isFeatured": [
+      "boolean"
+    ],
+    "products[].level": [
+      "string"
+    ],
+    "products[].name": [
+      "string"
+    ],
+    "products[].originalPrice": [
+      "number"
+    ],
+    "products[].price": [
+      "number"
+    ],
+    "products[].priceSuffix": [
+      "string"
+    ],
+    "products[].seoDescription": [
+      "string"
+    ],
+    "products[].seoTitle": [
+      "string"
+    ],
+    "products[].sku": [
+      "string"
+    ],
+    "products[].specs": [
+      "array"
+    ],
+    "products[].specs[]": [
+      "object"
+    ],
+    "products[].specs[].label": [
+      "string"
+    ],
+    "products[].specs[].value": [
+      "string"
+    ],
+    "products[].status": [
+      "string"
+    ],
+    "products[].stock": [
+      "number"
+    ],
+    "products[].subCategory": [
+      "string"
+    ],
+    "settings": [
+      "object"
+    ],
+    "settings.contactEmail": [
+      "string"
+    ],
+    "settings.currency": [
+      "string"
+    ],
+    "settings.currencySymbol": [
+      "string"
+    ],
+    "settings.freeShippingThreshold": [
+      "number"
+    ],
+    "settings.garminPaySandbox": [
+      "boolean"
+    ],
+    "settings.maintenanceMode": [
+      "boolean"
+    ],
+    "settings.seoDescription": [
+      "string"
+    ],
+    "settings.seoTitle": [
+      "string"
+    ],
+    "settings.storeName": [
+      "string"
+    ],
+    "settings.stripeEnabled": [
+      "boolean"
+    ],
+    "settings.supportPhone": [
+      "string"
+    ],
+    "settings.taxRate": [
+      "number"
+    ]
+  },
+  "interfaces": {
+    "src/lib/cms/types.ts#AdminUser": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "name",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "email",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "password",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "role",
+        "optional": false,
+        "type": "AdminRole"
+      },
+      {
+        "field": "status",
+        "optional": false,
+        "type": "AdminStatus"
+      },
+      {
+        "field": "avatar",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "createdAt",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "lastLogin",
+        "optional": true,
+        "type": "string"
+      }
+    ],
+    "src/lib/cms/types.ts#Client": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "name",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "email",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "phone",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "country",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "status",
+        "optional": false,
+        "type": "ClientStatus"
+      },
+      {
+        "field": "totalSpent",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "ordersCount",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "avatar",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "notes",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "createdAt",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/lib/cms/types.ts#ProductSpecItem": [
+      {
+        "field": "label",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "value",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/lib/cms/types.ts#ProductFeatureItem": [
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "body",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "image",
+        "optional": true,
+        "type": "string"
+      }
+    ],
+    "src/lib/cms/types.ts#CMSProduct": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "name",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "sku",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "price",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "originalPrice",
+        "optional": true,
+        "type": "number"
+      },
+      {
+        "field": "priceSuffix",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "description",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "badge",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "family",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "category",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "subCategory",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "activities",
+        "optional": false,
+        "type": "string[]"
+      },
+      {
+        "field": "level",
+        "optional": false,
+        "type": "'Entry' | 'Advanced' | 'Premium' | 'Youth'"
+      },
+      {
+        "field": "caseSize",
+        "optional": false,
+        "type": "'Small' | 'Medium' | 'Large'"
+      },
+      {
+        "field": "stock",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "status",
+        "optional": false,
+        "type": "ProductStatus"
+      },
+      {
+        "field": "isFeatured",
+        "optional": true,
+        "type": "boolean"
+      },
+      {
+        "field": "specs",
+        "optional": false,
+        "type": "ProductSpecItem[]"
+      },
+      {
+        "field": "inTheBox",
+        "optional": false,
+        "type": "string[]"
+      },
+      {
+        "field": "compatibleAccessories",
+        "optional": false,
+        "type": "string[]"
+      },
+      {
+        "field": "features",
+        "optional": true,
+        "type": "ProductFeatureItem[]"
+      },
+      {
+        "field": "seoTitle",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "seoDescription",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "focusKeywords",
+        "optional": true,
+        "type": "string[]"
+      },
+      {
+        "field": "canonicalUrl",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "noIndex",
+        "optional": true,
+        "type": "boolean"
+      },
+      {
+        "field": "ogImage",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "createdAt",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/lib/cms/types.ts#Discount": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "code",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "description",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "type",
+        "optional": false,
+        "type": "DiscountType"
+      },
+      {
+        "field": "value",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "minSpend",
+        "optional": true,
+        "type": "number"
+      },
+      {
+        "field": "usageLimit",
+        "optional": true,
+        "type": "number"
+      },
+      {
+        "field": "perCustomerLimit",
+        "optional": true,
+        "type": "number"
+      },
+      {
+        "field": "usageCount",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "applyType",
+        "optional": false,
+        "type": "DiscountApplyType"
+      },
+      {
+        "field": "targetCategories",
+        "optional": true,
+        "type": "string[]"
+      },
+      {
+        "field": "targetSkus",
+        "optional": true,
+        "type": "string[]"
+      },
+      {
+        "field": "startDate",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "expiresAt",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "isStackable",
+        "optional": true,
+        "type": "boolean"
+      },
+      {
+        "field": "status",
+        "optional": false,
+        "type": "DiscountStatus"
+      },
+      {
+        "field": "createdAt",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/lib/cms/types.ts#Banner": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "subtitle",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "ctaLabel",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "ctaUrl",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "image",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "position",
+        "optional": false,
+        "type": "BannerPosition"
+      },
+      {
+        "field": "active",
+        "optional": false,
+        "type": "boolean"
+      },
+      {
+        "field": "order",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "createdAt",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/lib/cms/types.ts#CMSBlog": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "slug",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "excerpt",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "content",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "coverImage",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "category",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "readingTime",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "author",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "status",
+        "optional": false,
+        "type": "BlogStatus"
+      },
+      {
+        "field": "publishedAt",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "seoTitle",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "seoDescription",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "focusKeywords",
+        "optional": true,
+        "type": "string[]"
+      },
+      {
+        "field": "canonicalUrl",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "noIndex",
+        "optional": true,
+        "type": "boolean"
+      },
+      {
+        "field": "ogImage",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "createdAt",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/lib/cms/types.ts#SEOCheckItem": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "label",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "status",
+        "optional": false,
+        "type": "'pass' | 'warning' | 'fail'"
+      },
+      {
+        "field": "message",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "impact",
+        "optional": false,
+        "type": "'high' | 'medium' | 'low'"
+      }
+    ],
+    "src/lib/cms/types.ts#SEOScoreReport": [
+      {
+        "field": "score",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "grade",
+        "optional": false,
+        "type": "'A+' | 'A' | 'B' | 'C' | 'D' | 'F'"
+      },
+      {
+        "field": "status",
+        "optional": false,
+        "type": "'excellent' | 'good' | 'needs_work' | 'critical'"
+      },
+      {
+        "field": "checks",
+        "optional": false,
+        "type": "SEOCheckItem[]"
+      },
+      {
+        "field": "suggestions",
+        "optional": false,
+        "type": "string[]"
+      }
+    ],
+    "src/lib/cms/types.ts#PageSEOAudit": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "type",
+        "optional": false,
+        "type": "'product' | 'blog' | 'page'"
+      },
+      {
+        "field": "url",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "seoTitle",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "seoDescription",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "score",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "status",
+        "optional": false,
+        "type": "'excellent' | 'good' | 'needs_work' | 'critical'"
+      },
+      {
+        "field": "issuesCount",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "lastUpdated",
+        "optional": true,
+        "type": "string"
+      }
+    ],
+    "src/lib/cms/types.ts#OrderItem": [
+      {
+        "field": "productId",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "name",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "price",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "quantity",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "image",
+        "optional": true,
+        "type": "string"
+      }
+    ],
+    "src/lib/cms/types.ts#OrderMilestone": [
+      {
+        "field": "stage",
+        "optional": false,
+        "type": "OrderRouteStage"
+      },
+      {
+        "field": "label",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "date",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "description",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "completed",
+        "optional": false,
+        "type": "boolean"
+      },
+      {
+        "field": "current",
+        "optional": true,
+        "type": "boolean"
+      },
+      {
+        "field": "location",
+        "optional": true,
+        "type": "string"
+      }
+    ],
+    "src/lib/cms/types.ts#Order": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "orderNumber",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "clientName",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "clientEmail",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "total",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "itemsCount",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "items",
+        "optional": false,
+        "type": "OrderItem[]"
+      },
+      {
+        "field": "paymentStatus",
+        "optional": false,
+        "type": "PaymentStatus"
+      },
+      {
+        "field": "fulfillmentStatus",
+        "optional": false,
+        "type": "FulfillmentStatus"
+      },
+      {
+        "field": "shippingAddress",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "clientPhone",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "comments",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "notes",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "trackingNumber",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "carrier",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "estimatedDeliveryDate",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "milestones",
+        "optional": true,
+        "type": "OrderMilestone[]"
+      },
+      {
+        "field": "coordinates",
+        "optional": true,
+        "type": "{ lat: number; lng: number }"
+      },
+      {
+        "field": "createdAt",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/lib/cms/types.ts#StoreSettings": [
+      {
+        "field": "storeName",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "contactEmail",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "supportPhone",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "currency",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "currencySymbol",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "freeShippingThreshold",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "taxRate",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "maintenanceMode",
+        "optional": false,
+        "type": "boolean"
+      },
+      {
+        "field": "garminPaySandbox",
+        "optional": false,
+        "type": "boolean"
+      },
+      {
+        "field": "stripeEnabled",
+        "optional": false,
+        "type": "boolean"
+      },
+      {
+        "field": "seoTitle",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "seoDescription",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/lib/cms/types.ts#ActivityLog": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "adminName",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "action",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "target",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "timestamp",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/lib/cms/types.ts#CMSData": [
+      {
+        "field": "admins",
+        "optional": false,
+        "type": "AdminUser[]"
+      },
+      {
+        "field": "clients",
+        "optional": false,
+        "type": "Client[]"
+      },
+      {
+        "field": "products",
+        "optional": false,
+        "type": "CMSProduct[]"
+      },
+      {
+        "field": "discounts",
+        "optional": false,
+        "type": "Discount[]"
+      },
+      {
+        "field": "banners",
+        "optional": false,
+        "type": "Banner[]"
+      },
+      {
+        "field": "blogs",
+        "optional": false,
+        "type": "CMSBlog[]"
+      },
+      {
+        "field": "orders",
+        "optional": false,
+        "type": "Order[]"
+      },
+      {
+        "field": "settings",
+        "optional": false,
+        "type": "StoreSettings"
+      },
+      {
+        "field": "activities",
+        "optional": false,
+        "type": "ActivityLog[]"
+      },
+      {
+        "field": "homepage",
+        "optional": true,
+        "type": "HomepageConfig"
+      }
+    ],
+    "src/lib/cms/types.ts#HeroBanner": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "key",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "subtitle",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "href",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "active",
+        "optional": false,
+        "type": "boolean"
+      },
+      {
+        "field": "order",
+        "optional": false,
+        "type": "number"
+      }
+    ],
+    "src/lib/cms/types.ts#ProductCarouselItem": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "description",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "price",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "originalPrice",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "badge",
+        "optional": true,
+        "type": "\"NEW\" | \"SALE\" | string"
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "href",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "order",
+        "optional": false,
+        "type": "number"
+      }
+    ],
+    "src/lib/cms/types.ts#PromoCarouselItem": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "description",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "href",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "ctaText",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "order",
+        "optional": false,
+        "type": "number"
+      }
+    ],
+    "src/lib/cms/types.ts#CarouselBlock": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "subtitle",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "type",
+        "optional": false,
+        "type": "CarouselType"
+      },
+      {
+        "field": "active",
+        "optional": false,
+        "type": "boolean"
+      },
+      {
+        "field": "order",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "items",
+        "optional": false,
+        "type": "(ProductCarouselItem | PromoCarouselItem)[]"
+      }
+    ],
+    "src/lib/cms/types.ts#HomepageTileBlock": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "href",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "cta",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "order",
+        "optional": false,
+        "type": "number"
+      }
+    ],
+    "src/lib/cms/types.ts#HomepageConfig": [
+      {
+        "field": "heroBanners",
+        "optional": false,
+        "type": "HeroBanner[]"
+      },
+      {
+        "field": "carousels",
+        "optional": false,
+        "type": "CarouselBlock[]"
+      },
+      {
+        "field": "promoTiles",
+        "optional": false,
+        "type": "HomepageTileBlock[]"
+      },
+      {
+        "field": "storyTiles",
+        "optional": false,
+        "type": "HomepageTileBlock[]"
+      },
+      {
+        "field": "categoryTiles",
+        "optional": false,
+        "type": "HomepageTileBlock[]"
+      },
+      {
+        "field": "updatedAt",
+        "optional": true,
+        "type": "string"
+      }
+    ],
+    "src/lib/cms/types.ts#ImageDimensionSpec": [
+      {
+        "field": "label",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "recommendedWidth",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "recommendedHeight",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "aspectRatio",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "maxSizeBytes",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "maxSizeFormatted",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "supportedFormats",
+        "optional": false,
+        "type": "string[]"
+      },
+      {
+        "field": "description",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/types/index.ts#HeroSlide": [
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "subtitle",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "cta",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "href",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "alt",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/types/index.ts#FeaturedCard": [
+      {
+        "field": "badge",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "description",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "href",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "fineprint",
+        "optional": true,
+        "type": "string"
+      }
+    ],
+    "src/types/index.ts#PromoPod": [
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "href",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "cta",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/types/index.ts#HalfPod": [
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "href",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "cta",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/types/index.ts#CategoryTile": [
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "href",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/types/index.ts#NavItem": [
+      {
+        "field": "label",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "href",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "columns",
+        "optional": true,
+        "type": "NavColumn[]"
+      }
+    ],
+    "src/types/index.ts#NavColumn": [
+      {
+        "field": "heading",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "links",
+        "optional": false,
+        "type": "{ label: string; href: string }[]"
+      }
+    ],
+    "src/types/index.ts#FooterColumn": [
+      {
+        "field": "heading",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "links",
+        "optional": false,
+        "type": "{ label: string; href: string }[]"
+      }
+    ],
+    "src/types/index.ts#Product": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "name",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "price",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "priceSuffix",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "description",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "badge",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "family",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "activities",
+        "optional": false,
+        "type": "string[]"
+      },
+      {
+        "field": "level",
+        "optional": false,
+        "type": "\"Entry\" | \"Advanced\" | \"Premium\" | \"Youth\""
+      },
+      {
+        "field": "caseSize",
+        "optional": false,
+        "type": "\"Small\" | \"Medium\" | \"Large\""
+      }
+    ],
+    "src/types/index.ts#WatchFamily": [
+      {
+        "field": "name",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "tagline",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/types/index.ts#AccessoryItem": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "name",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "category",
+        "optional": false,
+        "type": "\"Bands & Straps\" | \"Heart Rate & Sensors\" | \"Cables & Power\" | \"Mounts & Protection\" | \"Satellite & Navigation\""
+      },
+      {
+        "field": "price",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "partNumber",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "description",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "badge",
+        "optional": true,
+        "type": "string"
+      }
+    ],
+    "src/types/index.ts#ProductDetail": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "subtitle",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "partNumber",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "price",
+        "optional": false,
+        "type": "number"
+      },
+      {
+        "field": "badge",
+        "optional": true,
+        "type": "string"
+      },
+      {
+        "field": "breadcrumb",
+        "optional": false,
+        "type": "{ label: string; href: string }[]"
+      },
+      {
+        "field": "gallery",
+        "optional": false,
+        "type": "{ view: string; src: string }[]"
+      },
+      {
+        "field": "caseSizes",
+        "optional": false,
+        "type": "string[]"
+      },
+      {
+        "field": "defaultCaseSize",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "versions",
+        "optional": false,
+        "type": "string[]"
+      },
+      {
+        "field": "defaultVersion",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "colors",
+        "optional": false,
+        "type": "{ label: string; src: string }[]"
+      },
+      {
+        "field": "features",
+        "optional": false,
+        "type": "{ title: string; body: string; image?: string }[]"
+      },
+      {
+        "field": "specs",
+        "optional": false,
+        "type": "{ label: string; value: string }[]"
+      },
+      {
+        "field": "inTheBox",
+        "optional": false,
+        "type": "string[]"
+      },
+      {
+        "field": "accessories",
+        "optional": true,
+        "type": "AccessoryItem[]"
+      },
+      {
+        "field": "related",
+        "optional": false,
+        "type": "string[]"
+      }
+    ],
+    "src/types/marq.ts#MarqLifestyleSlide": [
+      {
+        "field": "edition",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "model",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "accent",
+        "optional": false,
+        "type": "\"red\" | \"green\" | \"gold\" | \"yellow\" | \"blue\" | \"cyan\""
+      },
+      {
+        "field": "href",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "poster",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "video",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "watch",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/types/marq.ts#MarqMaterialPanel": [
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "body",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "background",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "watch",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "imageSide",
+        "optional": false,
+        "type": "\"left\" | \"right\""
+      }
+    ],
+    "src/types/marq.ts#MarqProductCard": [
+      {
+        "field": "edition",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "model",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "accent",
+        "optional": false,
+        "type": "\"red\" | \"green\" | \"gold\" | \"yellow\" | \"blue\" | \"cyan\""
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "href",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "isNew",
+        "optional": true,
+        "type": "boolean"
+      }
+    ],
+    "src/types/marq.ts#MarqCallout": [
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "subtitle",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/lib/account-addresses.ts#ShippingAddress": [
+      {
+        "field": "id",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "name",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "street",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "city",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "state",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "zip",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "country",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "phone",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "isPrimary",
+        "optional": false,
+        "type": "boolean"
+      }
+    ],
+    "src/lib/account-addresses.ts#UserProfile": [
+      {
+        "field": "name",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "email",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "phone",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "country",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "city",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "birthDate",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/lib/blog.ts#BlogPost": [
+      {
+        "field": "slug",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "category",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "categories",
+        "optional": false,
+        "type": "string[]"
+      },
+      {
+        "field": "date",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "excerpt",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "readTime",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/lib/blog.ts#BlogCategory": [
+      {
+        "field": "key",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "label",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/lib/homepage-content.ts#HomeHeroSlide": [
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "subtitle",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "href",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "key",
+        "optional": false,
+        "type": "string"
+      }
+    ],
+    "src/lib/homepage-content.ts#HomeFeaturedCard": [
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "description",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "href",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "badge",
+        "optional": true,
+        "type": "\"NEW\" | \"SALE\""
+      },
+      {
+        "field": "edgeToEdge",
+        "optional": true,
+        "type": "boolean"
+      }
+    ],
+    "src/lib/homepage-content.ts#HomeTile": [
+      {
+        "field": "title",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "image",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "href",
+        "optional": false,
+        "type": "string"
+      },
+      {
+        "field": "cta",
+        "optional": false,
+        "type": "string"
+      }
+    ]
+  },
+  "staticDefinitions": {
+    "src/lib/products.ts#watchFamilies": {
+      "kind": "array",
+      "count": 5,
+      "fields": [
+        "image",
+        "name",
+        "tagline"
+      ]
+    },
+    "src/lib/products.ts#products": {
+      "kind": "array",
+      "count": 17,
+      "fields": [
+        "activities",
+        "badge",
+        "caseSize",
+        "description",
+        "family",
+        "id",
+        "image",
+        "level",
+        "name",
+        "price",
+        "priceSuffix"
+      ]
+    },
+    "src/lib/products.ts#activityFilters": {
+      "kind": "array",
+      "count": 12,
+      "fields": []
+    },
+    "src/lib/products.ts#levelFilters": {
+      "kind": "array",
+      "count": 4,
+      "fields": []
+    },
+    "src/lib/products.ts#caseSizeFilters": {
+      "kind": "array",
+      "count": 3,
+      "fields": [
+        "label",
+        "value"
+      ]
+    },
+    "src/lib/products.ts#catalogues": {
+      "kind": "array",
+      "count": 2,
+      "fields": [
+        "filter",
+        "heading",
+        "hero",
+        "showFamilies",
+        "slug",
+        "title"
+      ]
+    },
+    "src/lib/products.ts#fenix8Accessories": {
+      "kind": "array",
+      "count": 7,
+      "fields": [
+        "badge",
+        "category",
+        "description",
+        "id",
+        "image",
+        "name",
+        "partNumber",
+        "price"
+      ]
+    },
+    "src/lib/products.ts#fenix8Detail": {
+      "kind": "object",
+      "count": 1,
+      "fields": [
+        "accessories",
+        "badge",
+        "breadcrumb",
+        "caseSizes",
+        "colors",
+        "defaultCaseSize",
+        "defaultVersion",
+        "features",
+        "gallery",
+        "id",
+        "inTheBox",
+        "partNumber",
+        "price",
+        "related",
+        "specs",
+        "subtitle",
+        "title",
+        "versions"
+      ]
+    },
+    "src/lib/content.ts#topNav": {
+      "kind": "array",
+      "count": 7,
+      "fields": [
+        "columns",
+        "href",
+        "label"
+      ]
+    },
+    "src/lib/content.ts#heroSlides": {
+      "kind": "array",
+      "count": 6,
+      "fields": [
+        "alt",
+        "cta",
+        "href",
+        "image",
+        "subtitle",
+        "title"
+      ]
+    },
+    "src/lib/content.ts#featuredCards": {
+      "kind": "array",
+      "count": 10,
+      "fields": [
+        "badge",
+        "description",
+        "fineprint",
+        "href",
+        "image",
+        "title"
+      ]
+    },
+    "src/lib/content.ts#promoPods": {
+      "kind": "array",
+      "count": 3,
+      "fields": [
+        "cta",
+        "href",
+        "image",
+        "title"
+      ]
+    },
+    "src/lib/content.ts#halfPods": {
+      "kind": "array",
+      "count": 2,
+      "fields": [
+        "cta",
+        "href",
+        "image",
+        "title"
+      ]
+    },
+    "src/lib/content.ts#categoryTiles": {
+      "kind": "array",
+      "count": 6,
+      "fields": [
+        "href",
+        "image",
+        "title"
+      ]
+    },
+    "src/lib/content.ts#footerColumns": {
+      "kind": "array",
+      "count": 4,
+      "fields": [
+        "heading",
+        "links"
+      ]
+    },
+    "src/lib/content.ts#legalLinks": {
+      "kind": "array",
+      "count": 5,
+      "fields": [
+        "href",
+        "label"
+      ]
+    },
+    "src/lib/blog.ts#blogCategories": {
+      "kind": "array",
+      "count": 8,
+      "fields": [
+        "key",
+        "label"
+      ]
+    },
+    "src/lib/blog.ts#blogPosts": {
+      "kind": "array",
+      "count": 12,
+      "fields": [
+        "categories",
+        "category",
+        "date",
+        "excerpt",
+        "image",
+        "readTime",
+        "slug",
+        "title"
+      ]
+    },
+    "src/lib/marq.ts#lifestyleSlides": {
+      "kind": "array",
+      "count": 7,
+      "fields": [
+        "accent",
+        "edition",
+        "href",
+        "model",
+        "poster",
+        "video",
+        "watch"
+      ]
+    },
+    "src/lib/marq.ts#accentColor": {
+      "kind": "object",
+      "count": 1,
+      "fields": [
+        "blue",
+        "cyan",
+        "gold",
+        "green",
+        "red",
+        "yellow"
+      ]
+    },
+    "src/lib/marq.ts#materialPanels": {
+      "kind": "array",
+      "count": 3,
+      "fields": [
+        "background",
+        "body",
+        "imageSide",
+        "title",
+        "watch"
+      ]
+    },
+    "src/lib/marq.ts#productCards": {
+      "kind": "array",
+      "count": 8,
+      "fields": [
+        "accent",
+        "edition",
+        "href",
+        "image",
+        "isNew",
+        "model"
+      ]
+    },
+    "src/lib/marq.ts#marqAssets": {
+      "kind": "object",
+      "count": 1,
+      "fields": [
+        "IMG",
+        "VID"
+      ]
+    },
+    "src/lib/homepage-content.ts#homeHeroSlides": {
+      "kind": "array",
+      "count": 6,
+      "fields": [
+        "href",
+        "key",
+        "subtitle",
+        "title"
+      ]
+    },
+    "src/lib/homepage-content.ts#homeFeaturedCards": {
+      "kind": "array",
+      "count": 10,
+      "fields": [
+        "badge",
+        "description",
+        "edgeToEdge",
+        "href",
+        "image",
+        "title"
+      ]
+    },
+    "src/lib/homepage-content.ts#homePromoTiles": {
+      "kind": "array",
+      "count": 3,
+      "fields": [
+        "cta",
+        "href",
+        "image",
+        "title"
+      ]
+    },
+    "src/lib/homepage-content.ts#homeStoryTiles": {
+      "kind": "array",
+      "count": 2,
+      "fields": [
+        "cta",
+        "href",
+        "image",
+        "title"
+      ]
+    },
+    "src/lib/homepage-content.ts#homeCategoryTiles": {
+      "kind": "array",
+      "count": 6,
+      "fields": [
+        "cta",
+        "href",
+        "image",
+        "title"
+      ]
+    },
+    "src/lib/cms/seed.ts#initialCMSData": {
+      "kind": "object",
+      "count": 1,
+      "fields": [
+        "activities",
+        "admins",
+        "banners",
+        "blogs",
+        "clients",
+        "discounts",
+        "orders",
+        "products",
+        "settings"
+      ]
+    },
+    "src/components/AccountDashboard.tsx#TABS": {
+      "kind": "array",
+      "count": 4,
+      "fields": []
+    },
+    "src/components/AccountDashboard.tsx#initialProfile": {
+      "kind": "object",
+      "count": 1,
+      "fields": [
+        "birthDate",
+        "city",
+        "country",
+        "email",
+        "name",
+        "phone"
+      ]
+    },
+    "src/components/AccountDashboard.tsx#initialAddresses": {
+      "kind": "array",
+      "count": 2,
+      "fields": [
+        "city",
+        "country",
+        "id",
+        "isPrimary",
+        "name",
+        "phone",
+        "state",
+        "street",
+        "title",
+        "zip"
+      ]
+    },
+    "src/components/AccountDashboard.tsx#initialAccountOrders": {
+      "kind": "array",
+      "count": 4,
+      "fields": [
+        "carrier",
+        "clientEmail",
+        "clientName",
+        "clientPhone",
+        "comments",
+        "createdAt",
+        "fulfillmentStatus",
+        "id",
+        "items",
+        "itemsCount",
+        "orderNumber",
+        "paymentStatus",
+        "shippingAddress",
+        "total",
+        "trackingNumber"
+      ]
+    },
+    "src/components/AccountDashboard.tsx#devices": {
+      "kind": "array",
+      "count": 2,
+      "fields": [
+        "image",
+        "name",
+        "registered",
+        "serial"
+      ]
+    },
+    "src/components/AccountDashboard.tsx#subscriptions": {
+      "kind": "array",
+      "count": 2,
+      "fields": [
+        "active",
+        "name",
+        "plan",
+        "price",
+        "renews"
+      ]
+    }
+  },
+  "consumers": {
+    "src/app/admin/admins/page.tsx": [
+      "@/lib/cms/types"
+    ],
+    "src/app/admin/banners/page.tsx": [
+      "@/lib/cms/types"
+    ],
+    "src/app/admin/blogs/page.tsx": [
+      "@/lib/cms/types"
+    ],
+    "src/app/admin/clients/page.tsx": [
+      "@/lib/cms/types"
+    ],
+    "src/app/admin/discounts/page.tsx": [
+      "@/lib/cms/types"
+    ],
+    "src/app/admin/homepage/page.tsx": [
+      "@/lib/cms/homepage-schema",
+      "@/lib/cms/types"
+    ],
+    "src/app/admin/layout.tsx": [
+      "@/lib/cms/auth"
+    ],
+    "src/app/admin/orders/page.tsx": [
+      "@/lib/cms/order-filters",
+      "@/lib/cms/order-lifecycle",
+      "@/lib/cms/types"
+    ],
+    "src/app/admin/page.tsx": [
+      "@/lib/cms/types"
+    ],
+    "src/app/admin/products/page.tsx": [
+      "@/lib/cms/types"
+    ],
+    "src/app/admin/seo/page.tsx": [
+      "@/lib/cms/types"
+    ],
+    "src/app/admin/settings/page.tsx": [
+      "@/lib/cms/types"
+    ],
+    "src/app/api/account/orders/route.ts": [
+      "@/lib/cms/store"
+    ],
+    "src/app/api/admin/admins/route.ts": [
+      "@/lib/cms/store"
+    ],
+    "src/app/api/admin/auth/login/route.ts": [
+      "@/lib/cms/auth",
+      "@/lib/cms/store"
+    ],
+    "src/app/api/admin/auth/logout/route.ts": [
+      "@/lib/cms/auth"
+    ],
+    "src/app/api/admin/auth/me/route.ts": [
+      "@/lib/cms/auth"
+    ],
+    "src/app/api/admin/banners/route.ts": [
+      "@/lib/cms/store"
+    ],
+    "src/app/api/admin/blogs/route.ts": [
+      "@/lib/cms/store"
+    ],
+    "src/app/api/admin/clients/route.ts": [
+      "@/lib/cms/store"
+    ],
+    "src/app/api/admin/discounts/route.ts": [
+      "@/lib/cms/store"
+    ],
+    "src/app/api/admin/homepage/route.ts": [
+      "@/lib/cms/homepage-schema",
+      "@/lib/cms/store"
+    ],
+    "src/app/api/admin/orders/route.ts": [
+      "@/lib/cms/store"
+    ],
+    "src/app/api/admin/products/route.ts": [
+      "@/lib/cms/store"
+    ],
+    "src/app/api/admin/settings/route.ts": [
+      "@/lib/cms/store"
+    ],
+    "src/app/blog/[slug]/page.tsx": [
+      "@/lib/blog",
+      "@/lib/cms/store",
+      "@/lib/cms/types"
+    ],
+    "src/app/c/[...slug]/page.tsx": [
+      "@/lib/products"
+    ],
+    "src/app/garmin-pay/page.tsx": [
+      "@/lib/products"
+    ],
+    "src/app/layout.tsx": [
+      "@/lib/cart"
+    ],
+    "src/app/p/[id]/page.tsx": [
+      "@/lib/products"
+    ],
+    "src/app/page.tsx": [
+      "@/lib/cms/store"
+    ],
+    "src/app/sitemap.ts": [
+      "@/lib/cms/store"
+    ],
+    "src/components/AccountDashboard.tsx": [
+      "@/lib/account-addresses",
+      "@/lib/cms/order-lifecycle",
+      "@/lib/cms/types"
+    ],
+    "src/components/BlogExplorer.tsx": [
+      "@/lib/blog"
+    ],
+    "src/components/CartView.tsx": [
+      "@/lib/cart"
+    ],
+    "src/components/CatalogueGrid.tsx": [
+      "@/lib/products"
+    ],
+    "src/components/CategoryGrid.tsx": [
+      "@/lib/content"
+    ],
+    "src/components/CompareTool.tsx": [
+      "@/lib/products"
+    ],
+    "src/components/FeaturedCarousel.tsx": [
+      "@/lib/content"
+    ],
+    "src/components/HeroRotator.tsx": [
+      "@/lib/content"
+    ],
+    "src/components/OrderDetailsModal.tsx": [
+      "@/lib/cms/order-lifecycle",
+      "@/lib/cms/types"
+    ],
+    "src/components/ProductTop.tsx": [
+      "@/lib/cart"
+    ],
+    "src/components/PromoPods.tsx": [
+      "@/lib/content"
+    ],
+    "src/components/RelatedProducts.tsx": [
+      "@/lib/products"
+    ],
+    "src/components/SiteFooter.tsx": [
+      "@/lib/content"
+    ],
+    "src/components/SiteHeader.tsx": [
+      "@/lib/cart",
+      "@/lib/content"
+    ],
+    "src/components/WearablesHero.tsx": [
+      "@/lib/products"
+    ],
+    "src/components/admin/BestSellersLeaderboard.tsx": [
+      "@/lib/cms/types"
+    ],
+    "src/components/admin/LowStockAlerts.tsx": [
+      "@/lib/cms/types"
+    ],
+    "src/components/admin/SEOEditor.tsx": [
+      "@/lib/cms/types"
+    ],
+    "src/components/home/HomeFeatured.tsx": [
+      "@/lib/cms/types",
+      "@/lib/homepage-content"
+    ],
+    "src/components/home/HomeFooter.tsx": [
+      "@/lib/content"
+    ],
+    "src/components/home/HomeHeader.tsx": [
+      "@/lib/cart",
+      "@/lib/content",
+      "@/lib/homepage-content"
+    ],
+    "src/components/home/HomeHero.tsx": [
+      "@/lib/cms/types",
+      "@/lib/homepage-content"
+    ],
+    "src/components/home/HomeTiles.tsx": [
+      "@/lib/cms/types",
+      "@/lib/homepage-content"
+    ],
+    "src/components/marq/MarqLifestyleCarousel.tsx": [
+      "@/lib/marq"
+    ],
+    "src/components/marq/MarqMaterials.tsx": [
+      "@/lib/marq"
+    ],
+    "src/components/marq/MarqProductCarousel.tsx": [
+      "@/lib/marq"
+    ],
+    "src/components/product/ProductAccessories.tsx": [
+      "@/lib/cart"
+    ],
+    "src/components/seo/JsonLd.tsx": [
+      "@/lib/cms/types"
+    ],
+    "src/lib/cms/seed.ts": [
+      "@/lib/blog"
+    ],
+    "src/lib/export/excel.ts": [
+      "@/lib/cms/types"
+    ],
+    "src/lib/products.ts": [
+      "@/lib/cms/store"
+    ],
+    "src/lib/seo/analyzer.ts": [
+      "@/lib/cms/types"
+    ]
+  },
+  "apiRoutes": [
+    {
+      "file": "src/app/api/account/orders/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "directAuthReference": false
+    },
+    {
+      "file": "src/app/api/admin/admins/route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE"
+      ],
+      "directAuthReference": false
+    },
+    {
+      "file": "src/app/api/admin/auth/login/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "directAuthReference": false
+    },
+    {
+      "file": "src/app/api/admin/auth/logout/route.ts",
+      "methods": [
+        "POST"
+      ],
+      "directAuthReference": false
+    },
+    {
+      "file": "src/app/api/admin/auth/me/route.ts",
+      "methods": [
+        "GET"
+      ],
+      "directAuthReference": true
+    },
+    {
+      "file": "src/app/api/admin/banners/route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE"
+      ],
+      "directAuthReference": false
+    },
+    {
+      "file": "src/app/api/admin/blogs/route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE"
+      ],
+      "directAuthReference": false
+    },
+    {
+      "file": "src/app/api/admin/clients/route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE"
+      ],
+      "directAuthReference": false
+    },
+    {
+      "file": "src/app/api/admin/discounts/route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE"
+      ],
+      "directAuthReference": false
+    },
+    {
+      "file": "src/app/api/admin/homepage/route.ts",
+      "methods": [
+        "GET",
+        "PUT",
+        "POST"
+      ],
+      "directAuthReference": false
+    },
+    {
+      "file": "src/app/api/admin/orders/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "directAuthReference": false
+    },
+    {
+      "file": "src/app/api/admin/products/route.ts",
+      "methods": [
+        "GET",
+        "POST",
+        "DELETE"
+      ],
+      "directAuthReference": false
+    },
+    {
+      "file": "src/app/api/admin/settings/route.ts",
+      "methods": [
+        "GET",
+        "POST"
+      ],
+      "directAuthReference": false
+    }
+  ],
+  "aggregateFindings": {
+    "duplicateProductSkuGroups": 0,
+    "duplicateClientEmailGroups": 0,
+    "duplicateOrderNumberGroups": 0,
+    "ordersWithoutLineItems": 0,
+    "ordersWithUnresolvedProductReferences": 7,
+    "ordersWithLineSubtotalDifferentFromTotal": 0,
+    "ordersWithExplicitCurrency": 0,
+    "productsWithExplicitCurrency": 0,
+    "adminRowsWithPasswordField": 1
+  },
+  "assets": {
+    "files": 437,
+    "totalBytes": 81573174,
+    "byExtension": {
+      "": 3,
+      ".eot": 1,
+      ".jpg": 200,
+      ".mp4": 29,
+      ".otf": 2,
+      ".png": 114,
+      ".svg": 85,
+      ".ttf": 1,
+      ".woff": 1,
+      ".woff2": 1
+    }
+  },
+  "checksums": {
+    "src/app/account/page.tsx": {
+      "bytes": 563,
+      "sha256": "29527ef803437196c32bf883922cf33761effc2628187e3ea055bdd3ef0fb75c"
+    },
+    "src/app/admin/admins/page.tsx": {
+      "bytes": 15867,
+      "sha256": "a3b743bd0a040e49176fe2e0a5dac886a6c304d8c82f361cfb09ecf352b38568"
+    },
+    "src/app/admin/banners/page.tsx": {
+      "bytes": 14721,
+      "sha256": "524bc1613fee3c1ed6f3561e87ad2b1b238f18e3afdf2e371c89835910a1718f"
+    },
+    "src/app/admin/blogs/page.tsx": {
+      "bytes": 19766,
+      "sha256": "4cc9905511a2cd93aaa680e84ac28deab4a49386ce75e1e0dcbcbea432f856a9"
+    },
+    "src/app/admin/clients/page.tsx": {
+      "bytes": 16830,
+      "sha256": "32aac109ae91b5b17596bd87944119139db6985eb8aa158da4c618b9a04e0d39"
+    },
+    "src/app/admin/discounts/page.tsx": {
+      "bytes": 30748,
+      "sha256": "f0905a20a6a0adb4fed593137602c37d8bf8663bb52abfc6a0deeab7e9e352a9"
+    },
+    "src/app/admin/homepage/page.tsx": {
+      "bytes": 68001,
+      "sha256": "7e73eb5b4cb3337448fe97ed143d0581eaa8b377b4282723058fc60e6e4e4ad6"
+    },
+    "src/app/admin/layout.tsx": {
+      "bytes": 734,
+      "sha256": "c19d55ef11f93f18d358f72611ddba5467ad2accf8eb5a664b1f8fc1ea56457e"
+    },
+    "src/app/admin/login/page.tsx": {
+      "bytes": 6529,
+      "sha256": "cc282af138d032e9eaa470c039bf4b9c251586f82612998b6cc01429180c10f4"
+    },
+    "src/app/admin/orders/page.tsx": {
+      "bytes": 54837,
+      "sha256": "0f1ec050639289226dcef261c611d8512afaeb2645501aab024ecec71300d821"
+    },
+    "src/app/admin/page.tsx": {
+      "bytes": 22728,
+      "sha256": "a69d018fcb5e8fe375efea82bbe6704c1fcc98877cf3ab57ab55372c01334d16"
+    },
+    "src/app/admin/products/page.tsx": {
+      "bytes": 49478,
+      "sha256": "721b5606ab50632cc8c6d4d6379b8383a1a00f2604355a9adce618e05cd58596"
+    },
+    "src/app/admin/seo/page.tsx": {
+      "bytes": 32379,
+      "sha256": "cb437b094f5652ea366298ce8a824d422490283825acc75e0096dfbae5603bca"
+    },
+    "src/app/admin/settings/page.tsx": {
+      "bytes": 13616,
+      "sha256": "bf2b21a2c5bc105ddb5c5af56992ff0e07d50e3abbc91175d3bb4c0ebf6a1308"
+    },
+    "src/app/api/account/orders/route.ts": {
+      "bytes": 609,
+      "sha256": "61453905d85518150a3d44676f8e8513a6e77921294b49a14af4cbf572982e63"
+    },
+    "src/app/api/admin/admins/route.ts": {
+      "bytes": 1424,
+      "sha256": "6b051d13b7bd8765ea7568fdafcc589d6a1ff313377008b0c5d4c92d7dbd9ffa"
+    },
+    "src/app/api/admin/auth/login/route.ts": {
+      "bytes": 1972,
+      "sha256": "8e88ed12e6bd92f616604a4aac119e68c3b584b04ef578cd8cfa6597b56909e8"
+    },
+    "src/app/api/admin/auth/logout/route.ts": {
+      "bytes": 260,
+      "sha256": "912846da9ce1b3a3762704d9ba0a1648373acd365786c5b2cc0cb057224c6abb"
+    },
+    "src/app/api/admin/auth/me/route.ts": {
+      "bytes": 518,
+      "sha256": "0dfa82d1b4b169504a7b369f96a9e07ebdc0a339ad1c08b99e1feb42d4200ee3"
+    },
+    "src/app/api/admin/banners/route.ts": {
+      "bytes": 1236,
+      "sha256": "b7e71f70917b5cccd313c352c503424c7fbe4085a47e39be1ba45f6dca0a9457"
+    },
+    "src/app/api/admin/blogs/route.ts": {
+      "bytes": 1234,
+      "sha256": "2f8b7ace2a06f68043b498edf7ccf066fe804e045424b1c03d930d5fab55ca90"
+    },
+    "src/app/api/admin/clients/route.ts": {
+      "bytes": 1260,
+      "sha256": "8a675ca3cd06d3424db208ba5c8af4923f92f8c3ea55433fe280e37e268dfd17"
+    },
+    "src/app/api/admin/discounts/route.ts": {
+      "bytes": 1585,
+      "sha256": "16177c28d5af5f361db1e1031f245ce42854fa914589e75915e67d08f4e31e86"
+    },
+    "src/app/api/admin/homepage/route.ts": {
+      "bytes": 2047,
+      "sha256": "15478f1a4dbdbc4bedc45e6133eb6d4832acf029e3bae44a54fac89ac7279233"
+    },
+    "src/app/api/admin/orders/route.ts": {
+      "bytes": 755,
+      "sha256": "e6f7fa8dfd4c0e3b2ef58a189c0cee20acfc7a894358019b0f94a0dfaea39d0b"
+    },
+    "src/app/api/admin/products/route.ts": {
+      "bytes": 1492,
+      "sha256": "4730129031a8ee39a921605b297443aae7ba94e966977041451b5fc925da48b0"
+    },
+    "src/app/api/admin/settings/route.ts": {
+      "bytes": 584,
+      "sha256": "c0926e29055f86fbcfa708c63db8d494a31d7dfa568e2ae971e87e53950593fe"
+    },
+    "src/app/blog/[slug]/page.tsx": {
+      "bytes": 6998,
+      "sha256": "e6c191b16a8d62c3794a26bc5245b5800583cd6103a9a9c3e1059286658608cd"
+    },
+    "src/app/blog/page.tsx": {
+      "bytes": 1171,
+      "sha256": "6f3e9be61e4b493932be693f688b3a417a7e463066da08c2fee00cbcc5b345b5"
+    },
+    "src/app/c/[...slug]/page.tsx": {
+      "bytes": 2419,
+      "sha256": "736cc9bd9e4a8d3d9c2d588328626f8a62331bba1e8e4b9c15afe84e501c8389"
+    },
+    "src/app/cart/page.tsx": {
+      "bytes": 525,
+      "sha256": "0f95b6b30cf7da5a703c6256e5ab898a0e13f50213f695eaa9a32797301b5512"
+    },
+    "src/app/compare/page.tsx": {
+      "bytes": 544,
+      "sha256": "62133c508171f002d19ee12d9361a7440738376986bcaabe569e517104c2759e"
+    },
+    "src/app/favicon.ico": {
+      "bytes": 25931,
+      "sha256": "2b8ad2d33455a8f736fc3a8ebf8f0bdea8848ad4c0db48a2833bd0f9cd775932"
+    },
+    "src/app/garmin-pay/page.tsx": {
+      "bytes": 7474,
+      "sha256": "f049a46f4afb21e496b436319aee29b73fc2a29b965ca7c7b9680bd8c9d2a188"
+    },
+    "src/app/globals.css": {
+      "bytes": 8100,
+      "sha256": "155b7a201d033cb5eb7503288d2ad3c24d5e09631473354723e7d42a68d572ac"
+    },
+    "src/app/homepage.css": {
+      "bytes": 977,
+      "sha256": "5f98f37442c674c1e8790f56073b16b26056ed69c1a4690eecac5728aaeaa161"
+    },
+    "src/app/layout.tsx": {
+      "bytes": 1325,
+      "sha256": "5511d2cbd56c0482920f82999c872a3427675aad3e11a8a3610b36a577e6f729"
+    },
+    "src/app/minisite/fenix-8/fenix-8.css": {
+      "bytes": 281159,
+      "sha256": "1a7467a41e5eed6c871e75416c2dfa2635b4591f2f4bf65e88f812a347cb1016"
+    },
+    "src/app/minisite/fenix-8/page.tsx": {
+      "bytes": 915,
+      "sha256": "87472ac9fc618bdaf4ac41d5aeaaaffde27e39a41db646795c4c34de6ac43d31"
+    },
+    "src/app/minisite/garmin-pay/garmin-pay.css": {
+      "bytes": 14583,
+      "sha256": "d8bf1c3557f6d5d9186dc74bdac35ba7ee1fa468a4696e92b534ab8f7178eb00"
+    },
+    "src/app/minisite/garmin-pay/page.tsx": {
+      "bytes": 869,
+      "sha256": "d4707f78b46aef907f049df66d89cc37ada5693c5a2d78e4125d45eabfa3817f"
+    },
+    "src/app/minisite/marq/page.tsx": {
+      "bytes": 2299,
+      "sha256": "be097c8c41db2c3a0ab7331e20098b69bcedbd9267d8b5cde8a49e12df74d75e"
+    },
+    "src/app/minisite/marq2/page.tsx": {
+      "bytes": 2300,
+      "sha256": "60a235985067bc118c2ce68e3afed6b88cb188deba1167d631f8b5768f106e93"
+    },
+    "src/app/minisite/why-garmin/page.tsx": {
+      "bytes": 2183,
+      "sha256": "b269ac59c86a4db4ce37d39f9408048542f2f6c297a148dc1148c2445879bcc9"
+    },
+    "src/app/minisite/why-garmin/why-garmin.css": {
+      "bytes": 31199,
+      "sha256": "f6bc1a2505e2959e422a8c2ee760fe5e91ffb05fe7d1cec8a74accffd4f8f1c9"
+    },
+    "src/app/newsletter/page.tsx": {
+      "bytes": 643,
+      "sha256": "dc699d2c441df9e320fcca40096c6d2275865a8ed6c2fb55338853201819a071"
+    },
+    "src/app/p/[id]/page.tsx": {
+      "bytes": 3955,
+      "sha256": "a77e91ead612b8fb111dc0a02faf6b32d8979493bdf15327bbf27807c43b1e07"
+    },
+    "src/app/page.tsx": {
+      "bytes": 984,
+      "sha256": "1e5011dec2885addfd88ac83a644bafd913ce3c43ca3584919a666468d7f3229"
+    },
+    "src/app/robots.ts": {
+      "bytes": 625,
+      "sha256": "3f96dc65847e5f6359d58bf46bce0935e02fb4a640274eed59d5b3e77ca175e8"
+    },
+    "src/app/sitemap.ts": {
+      "bytes": 2681,
+      "sha256": "4ea07d72e01a16614297a5d9a4626640057e5f4e74c63f88fe34b9c11f8124d1"
+    },
+    "src/components/AccountDashboard.tsx": {
+      "bytes": 56333,
+      "sha256": "994bc7e55de8e7c2978058c381ddecf3620f226fd5db84b6d0df1ebcf20d180a"
+    },
+    "src/components/BlogExplorer.tsx": {
+      "bytes": 4577,
+      "sha256": "a06848f23fca38d2d1bc0697d664d04198632ae6bf09bcdc8413f37f8fc6d3e3"
+    },
+    "src/components/CartView.tsx": {
+      "bytes": 6518,
+      "sha256": "9718fdbf975b3f7ee6edf91c2dc57f7ae6348f2a0aec91b27c4c391b351e2cd7"
+    },
+    "src/components/CatalogueGrid.tsx": {
+      "bytes": 6059,
+      "sha256": "d990144920e1b53377507a5529a8fa4a553e6d44e2c9fface42278be2bcc7f17"
+    },
+    "src/components/CategoryGrid.tsx": {
+      "bytes": 1458,
+      "sha256": "53bf12284af17f410c3838f778dcd22dc9425f978b9eb85ab6c3e8eb8a13d0fd"
+    },
+    "src/components/CompareTool.tsx": {
+      "bytes": 4751,
+      "sha256": "5d3eb627182b447db04b359c144d8be9c52e86a21a9ffda1709727e7df16ee46"
+    },
+    "src/components/EmailSignup.tsx": {
+      "bytes": 1976,
+      "sha256": "0b29f02dcda963314943f4a3d3de240a2deee93a4b0584c59ac57a10fe38dc74"
+    },
+    "src/components/FeaturedCarousel.tsx": {
+      "bytes": 2891,
+      "sha256": "5eedbdff0d754856e0b3f87918fbf78fd0d17eb270ae1ff391b4139f4d9ebae6"
+    },
+    "src/components/GarminBadge.tsx": {
+      "bytes": 5523,
+      "sha256": "84ea67eece97cfce4bda69f78ece4a69887a7e2b2d7810ff04552972be367478"
+    },
+    "src/components/HeroRotator.tsx": {
+      "bytes": 3904,
+      "sha256": "7bb43187d1ca17363303f6e76e043e96d1a291080ee27eb4c76e83b9a6b2687e"
+    },
+    "src/components/NewsletterSignup.tsx": {
+      "bytes": 3954,
+      "sha256": "625db9389ef279a047602e80c77ca359b55b2d09c86faa81343b2c7f7c4b2151"
+    },
+    "src/components/OrderDetailsModal.tsx": {
+      "bytes": 19416,
+      "sha256": "3e1a840e38e620850d61074477d85081149590b8676a2d8c143b045342d22c26"
+    },
+    "src/components/ProductCard.tsx": {
+      "bytes": 1816,
+      "sha256": "8b856c2d3c5ece1b60f083c5bd48d061421cf67694d91afefc38429b491af755"
+    },
+    "src/components/ProductTabs.tsx": {
+      "bytes": 5151,
+      "sha256": "17759bd9bbd70bbb1947d18275c2f10633d90c34865e1bf6fcac848e5b391566"
+    },
+    "src/components/ProductTop.tsx": {
+      "bytes": 7086,
+      "sha256": "77d10aa164695c0cf6cc4da8076b816026c56571ac3a585c6f4174ef534a88a8"
+    },
+    "src/components/PromoPods.tsx": {
+      "bytes": 2419,
+      "sha256": "87fd2ef2c67b201c4a9e70019659e3d0698ce9baabdd92d982f7b1d211a4b8db"
+    },
+    "src/components/RelatedProducts.tsx": {
+      "bytes": 754,
+      "sha256": "290878819798d063910c32dacc488aacb217cecb8aa21773288f90742de7eea4"
+    },
+    "src/components/SectionHeading.tsx": {
+      "bytes": 214,
+      "sha256": "bf7ec711ad9215891ec8b64626261039a76ae12d90035ee1bab0e1b5749df1d4"
+    },
+    "src/components/SiteFooter.tsx": {
+      "bytes": 2770,
+      "sha256": "e412829830abb679556c5b8a9baf5eb4d2c1cabe8d699cf7955951b1e5490d63"
+    },
+    "src/components/SiteHeader.tsx": {
+      "bytes": 5283,
+      "sha256": "93b49c1a4f196dec62386b22fccc4abc82229d0264591fad1cf5c93b89061ae6"
+    },
+    "src/components/StarburstBadge.tsx": {
+      "bytes": 268,
+      "sha256": "f59221c3b85d1c3cbee6efed1c7fab63e1452c5f167f79cec62be357838b6341"
+    },
+    "src/components/WearablesHero.tsx": {
+      "bytes": 1437,
+      "sha256": "f5ed183e83e5020d8c2d3b06dfe57a816d290dac7d5748e16a6ef8f35a731e62"
+    },
+    "src/components/admin/AdminHeader.tsx": {
+      "bytes": 8073,
+      "sha256": "090b416a10923510149dd53020d49dbd38f0783166386069f9bd5579d225b05b"
+    },
+    "src/components/admin/AdminLayoutShell.tsx": {
+      "bytes": 1000,
+      "sha256": "9f6eb8be22aad7e92f4ddef7f9f4942dc3792eee4836abbb1748246d6c6129c4"
+    },
+    "src/components/admin/AdminModal.tsx": {
+      "bytes": 2304,
+      "sha256": "4e9f7931eb80d51dc735ab16c76f0ac052baea08783dbf5979441251af5ea07e"
+    },
+    "src/components/admin/AdminSidebar.tsx": {
+      "bytes": 5238,
+      "sha256": "037e7fc861d75f12825ef93bcdcd4c8d9ba979d60619993a4ef1666fa4952c3f"
+    },
+    "src/components/admin/AdminStatCard.tsx": {
+      "bytes": 5193,
+      "sha256": "53a49c4853e6cb039f8e407c136bfa2923a1f94db8f2051f7c90a5c7553756e3"
+    },
+    "src/components/admin/BestSellersLeaderboard.tsx": {
+      "bytes": 7013,
+      "sha256": "3fe7e76cb2e20d99c6b6187e180dab284b047e6eb46b8ea3295ae0a7e8a16092"
+    },
+    "src/components/admin/CategoryBreakdown.tsx": {
+      "bytes": 2710,
+      "sha256": "618d74d610224f487751a844f1a28c8570b108f069db901674e3f48c716e0747"
+    },
+    "src/components/admin/DashboardHeader.tsx": {
+      "bytes": 4410,
+      "sha256": "578dfa904b91f6a2dc71d0c6a5328f0a2b44eddabe319806eba6ab9667f32e6b"
+    },
+    "src/components/admin/LowStockAlerts.tsx": {
+      "bytes": 4378,
+      "sha256": "cd308d9f27269e1c4e594d3338f5495f1592dffe580606c5a8f342ce0e69380f"
+    },
+    "src/components/admin/SEOEditor.tsx": {
+      "bytes": 24279,
+      "sha256": "7e52a3e80a02182e813c915e76dcf711dafffb583cca6bc5ac34e2aa1a38bd99"
+    },
+    "src/components/admin/SalesChart.tsx": {
+      "bytes": 5118,
+      "sha256": "444e5c8eecbb78ada2621c113e98c95690491886556c2ba07e2b750d675671f7"
+    },
+    "src/components/blog-icons.tsx": {
+      "bytes": 2629,
+      "sha256": "ec87478ca8da6bb07bee27f65d142ba278ef8c3c92ba14c833afaac916b55524"
+    },
+    "src/components/fenix-8/Fenix8Client.tsx": {
+      "bytes": 16104,
+      "sha256": "318015f7824e1c5893a231746e81f7f581af57d4dcb3cef7abe29187f74d8926"
+    },
+    "src/components/fenix-8/sections.ts": {
+      "bytes": 41291,
+      "sha256": "6df7626a268765d99bf64a19efdf976b77ab50f34c1c525c954d30fcb8baf29f"
+    },
+    "src/components/garmin-pay/GarminPayClient.tsx": {
+      "bytes": 12466,
+      "sha256": "6b5287b916b50e2f5a3ca6cb316bc56d05aff3ebe6b810cbdcc69bcf51963969"
+    },
+    "src/components/home/HomeFeatured.module.css": {
+      "bytes": 4796,
+      "sha256": "6720d91f12466f54a7de1bfc604c37877cfc54cdb1355ac8041c2d909ae61bad"
+    },
+    "src/components/home/HomeFeatured.tsx": {
+      "bytes": 7116,
+      "sha256": "63871a421f6d0bb8414947c12ba6fcfa3565669d6c0757a8f2cd62fa70155b3f"
+    },
+    "src/components/home/HomeFooter.module.css": {
+      "bytes": 2873,
+      "sha256": "ceb1c6d1dc2d2654ed908ec645fce9b666f9bcf7d4a6c39a0f51e770bbe471fc"
+    },
+    "src/components/home/HomeFooter.tsx": {
+      "bytes": 5018,
+      "sha256": "7e23d11caa5efdea75199cd6b203cf09fd2ad2f5e889cae70873a15456dec703"
+    },
+    "src/components/home/HomeHeader.module.css": {
+      "bytes": 4463,
+      "sha256": "fab573c9f6e321038552abc52961da6cd890058e7060a679d413bbdfaa53a809"
+    },
+    "src/components/home/HomeHeader.tsx": {
+      "bytes": 6145,
+      "sha256": "7c1f13c77619dba2dd6fb26ffa2478d1c96f9a6d480389ba84ffdccd7ae78b62"
+    },
+    "src/components/home/HomeHero.module.css": {
+      "bytes": 4711,
+      "sha256": "cfc55aa88f68aac7eb216d3190e4619ac0c8a90a674b8636517173549efa0bd2"
+    },
+    "src/components/home/HomeHero.tsx": {
+      "bytes": 5206,
+      "sha256": "cc79e0f57c67c3cd6f900836da8518703ca82491116a873adcee9b732d512149"
+    },
+    "src/components/home/HomeSignup.module.css": {
+      "bytes": 1065,
+      "sha256": "25824eaf7a0b6f64487e52bae4608861a7187c4d9d182e51f53788618e47baf0"
+    },
+    "src/components/home/HomeSignup.tsx": {
+      "bytes": 1186,
+      "sha256": "12b95cb42f77809f0292c7da9a5c474f736a595deeb108a9411e0593414fd2ed"
+    },
+    "src/components/home/HomeTiles.module.css": {
+      "bytes": 3022,
+      "sha256": "e5105164a5aa581abe549879b696851e4e7350e4253b4156c3828c168ca93c10"
+    },
+    "src/components/home/HomeTiles.tsx": {
+      "bytes": 2658,
+      "sha256": "163ea3967a84bbe6d89fc51888360ad2c2e08dedecde7a3f3a000925d52d3d36"
+    },
+    "src/components/icons.tsx": {
+      "bytes": 5613,
+      "sha256": "88fe96204c8c5fadf135a669050e1c1cb227c2cb5d1c3ccaef58a501522eb3a0"
+    },
+    "src/components/marq/Marq2Hero.tsx": {
+      "bytes": 3842,
+      "sha256": "1e93c571a15ed88cb85d338c6d07ab8df3306ae1bfe70a679e64974c737375ea"
+    },
+    "src/components/marq/MarqBands.tsx": {
+      "bytes": 2081,
+      "sha256": "636e229e08565232f61151ac44ac477a92a5a3938b789ebc57e3551fc56b0534"
+    },
+    "src/components/marq/MarqDamascusHero.tsx": {
+      "bytes": 2481,
+      "sha256": "556ee8299fd8ddeb642212a7a64f22732b17c38e48071f6204c580ec17ef1f36"
+    },
+    "src/components/marq/MarqDesign.tsx": {
+      "bytes": 2419,
+      "sha256": "59d4dca477e56689777eacc32ea4395e1aed6c0bb50dee581435ad5feeda2d42"
+    },
+    "src/components/marq/MarqFeatureCallouts.tsx": {
+      "bytes": 815,
+      "sha256": "4cc274d115aa9b79359612c25feea6a4b85bc65d41bab5213cfab2118e2465a2"
+    },
+    "src/components/marq/MarqFireDamascusMerged.tsx": {
+      "bytes": 7267,
+      "sha256": "04a2b7b0a03df27c0939985fee4e082163fa520dacf918b1915df1e045dcec43"
+    },
+    "src/components/marq/MarqHero.tsx": {
+      "bytes": 1887,
+      "sha256": "70242989ad1b4317e133abf4f8bc11a4658c4bae211b3538792fdfc8f27c3142"
+    },
+    "src/components/marq/MarqLegacy.tsx": {
+      "bytes": 1714,
+      "sha256": "1aeb85fb02249792f3c141a428213054b18f2c0fc85c73b52aabeb0d11b02eb6"
+    },
+    "src/components/marq/MarqLifestyleCarousel.tsx": {
+      "bytes": 10227,
+      "sha256": "e2c687e97a44acff764f19c5472d009bdb94dd9f731dd8f9ecb6bc6ae40ff670"
+    },
+    "src/components/marq/MarqMaterials.tsx": {
+      "bytes": 1847,
+      "sha256": "9084cd7b29c0347c85d1693fc673f97033e016a2b3057674437e75e573687280"
+    },
+    "src/components/marq/MarqProductCarousel.tsx": {
+      "bytes": 3595,
+      "sha256": "9afe14a0bf26b0a49f5624fcebde2a62e783763c55471256c31bdabc707604e1"
+    },
+    "src/components/marq/MarqQuality.tsx": {
+      "bytes": 1879,
+      "sha256": "57d7adfc9ee2d0d408e48ccaec17932e021bacd0bbba4f8d9f8d2c112b5a221e"
+    },
+    "src/components/marq/MarqScrollVideo.tsx": {
+      "bytes": 2859,
+      "sha256": "6ad1e418d9317dfe56edb1553ee6137758cba15d8d887c335a5afc552d8dec78"
+    },
+    "src/components/marq/MarqSignup.tsx": {
+      "bytes": 1410,
+      "sha256": "c10c38d7ad8301b573addcca953d23a5a10640010852d0b72771c1af96d2e17e"
+    },
+    "src/components/marq/MarqSubNav.tsx": {
+      "bytes": 1241,
+      "sha256": "f7bad58e9597fcfc8d26d45d13442edabc34a307d3613b2bf2392b03cdab48dd"
+    },
+    "src/components/marq/MarqTextIntro.tsx": {
+      "bytes": 1215,
+      "sha256": "dfa90057044ec9513032fea2f61bd92be18cb31735b18d10621da4c6efc61aa1"
+    },
+    "src/components/product/ProductAccessories.tsx": {
+      "bytes": 5607,
+      "sha256": "f7e713565c416affdbfdf03969fad5aed5b053ce65dc197bde17f47cad46e617"
+    },
+    "src/components/product/ProductOverview.tsx": {
+      "bytes": 35580,
+      "sha256": "833566e4ac61b2c3bdb5ddc2b72dded3e178be5ef7ddb7add208c342967371f6"
+    },
+    "src/components/seo/JsonLd.tsx": {
+      "bytes": 3001,
+      "sha256": "e07dd5eb5cfbc6e396d59e44181554c0ab07a5f87625ba5226d5856f73a3e80e"
+    },
+    "src/components/ui/button.tsx": {
+      "bytes": 3271,
+      "sha256": "d8af2a7cdec17d67f740d367af0804d54802de5cea6471f1ab11259a1442c7fa"
+    },
+    "src/components/why-garmin/CommentsCarousel.tsx": {
+      "bytes": 4085,
+      "sha256": "6df3357abe0e13d54408bc91e55c24f4cec89851d0626dc4aa00a616d62fe286"
+    },
+    "src/components/why-garmin/ContentSlider.tsx": {
+      "bytes": 2787,
+      "sha256": "209a73efc3c3984385a9ee53558f86bf6bf6f414100d451cdccffdaad923f698"
+    },
+    "src/components/why-garmin/Disclaimer.tsx": {
+      "bytes": 423,
+      "sha256": "6b4af5e244a7ea34e97c9773c72b7fb92adfa7c91f4dc1ec205d2df003d6c614"
+    },
+    "src/components/why-garmin/ExerciseSection.tsx": {
+      "bytes": 7635,
+      "sha256": "9845d4b2ca985220f0599ed3cd454cac2ccbed54cf3ef91668f9937cd8fd34b3"
+    },
+    "src/components/why-garmin/HealthSection.tsx": {
+      "bytes": 5365,
+      "sha256": "a6b8c30e654e89cb863a81f78af173a54e0d5029707a83cb109e0164b31ee747"
+    },
+    "src/components/why-garmin/LearnMore.tsx": {
+      "bytes": 2489,
+      "sha256": "3ea0d7cc4bd6f19e3128879173d2bd155dc854a6d2cd2ee9df317f29e5b0b672"
+    },
+    "src/components/why-garmin/LifeSection.tsx": {
+      "bytes": 4292,
+      "sha256": "03a5cc97d31ae084c94381672e186582025f706f2a6afb51bec0cba55a4e18e9"
+    },
+    "src/components/why-garmin/ScrollVideo.tsx": {
+      "bytes": 1267,
+      "sha256": "d2488928549dc6a289c2665b6aba7e97d9d9f8d11565280ffa2f33b93678fef2"
+    },
+    "src/components/why-garmin/StickyNav.tsx": {
+      "bytes": 2343,
+      "sha256": "b313b6ff06451121983eb815bce504e7979df9f40aa2173a2388aef1c1b6d52f"
+    },
+    "src/components/why-garmin/WhyGarminHero.tsx": {
+      "bytes": 1647,
+      "sha256": "70d27d9d4002598904913a1e2ec29445ed63e2decc1fbd73f94a9c091747f889"
+    },
+    "src/components/why-garmin/data.ts": {
+      "bytes": 15041,
+      "sha256": "3125f6d9c2a63723d447952b0544a821fe55f241896064428c806a0de2a489b6"
+    },
+    "src/hooks/.gitkeep": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/hooks/useReveal.ts": {
+      "bytes": 1013,
+      "sha256": "1eb02fa750138659cc74f21eb17d91a3fc87bba6c63581ec78062240ec7d1086"
+    },
+    "src/lib/account-addresses.ts": {
+      "bytes": 3434,
+      "sha256": "0971c4757f08316c2769ab11881761a2d65d8d97753d4584e2fee524d9f98ff2"
+    },
+    "src/lib/blog.ts": {
+      "bytes": 7006,
+      "sha256": "4bdf70f53835e69f875a127b82a1cb5d7f6364245f3c89fc2f8d920afc065872"
+    },
+    "src/lib/cart.tsx": {
+      "bytes": 2293,
+      "sha256": "218585c282597627eb34455de71b1a62b24d9393f23058c55a3e26f3b645a305"
+    },
+    "src/lib/cms/auth.ts": {
+      "bytes": 1182,
+      "sha256": "049065ec6a5d447f0d3c60a259abd9b66bcd3f1c4c35f06d400cf40f1c0ccb7b"
+    },
+    "src/lib/cms/data.json": {
+      "bytes": 87784,
+      "sha256": "f94ea435c26ec7fecdd690b4d888127398448b474ba3fac0e8cfa11bd9d43e01"
+    },
+    "src/lib/cms/homepage-schema.js": {
+      "bytes": 10871,
+      "sha256": "4900545098cf2e57e2352bbf75451a9c96572c238f4a3e7c0ee5a94b44da55c9"
+    },
+    "src/lib/cms/homepage-schema.ts": {
+      "bytes": 1096,
+      "sha256": "6e4ce9e4a0954bad96f48e53cee5232dc5c2f17e6cdd4925fc9df522205ad58b"
+    },
+    "src/lib/cms/order-filters.js": {
+      "bytes": 3657,
+      "sha256": "f80c90ee973b9b88603601fbe992e52682598a4f68acc18bc6d2bcc1e6eb27ff"
+    },
+    "src/lib/cms/order-filters.ts": {
+      "bytes": 4213,
+      "sha256": "0911d2974a8a2eda230e05ce4a2769a5814b6c71ef8aa498b16015fd2ca6b014"
+    },
+    "src/lib/cms/order-lifecycle.ts": {
+      "bytes": 5265,
+      "sha256": "b825ceff75e09b6855a95240bcccb23d5a3f523292bee0e82b5d69d414de28a3"
+    },
+    "src/lib/cms/seed.ts": {
+      "bytes": 26390,
+      "sha256": "ab687d79052f472ce673e591ce5007df0de8f19e864bcd4ee454337033b0b7ce"
+    },
+    "src/lib/cms/store.ts": {
+      "bytes": 17555,
+      "sha256": "22bdd1a5a6559e551e0638bd46fb00f966ac1b689ec44883a657d6a82e7c2572"
+    },
+    "src/lib/cms/types.ts": {
+      "bytes": 7333,
+      "sha256": "103e444a2c782326d141345053ad480e82927bd541cda531860a1d3712a3621c"
+    },
+    "src/lib/content.ts": {
+      "bytes": 10889,
+      "sha256": "06dd27d962b02a31f7115ae2155d244438c75f0e5d94bd8da5485ccf69f34a24"
+    },
+    "src/lib/export/excel.ts": {
+      "bytes": 9446,
+      "sha256": "2a9a8120a27a3667225da3f31fccfbadf99e33a9626a075bf81462582d8fcd64"
+    },
+    "src/lib/garmin-logo-path.ts": {
+      "bytes": 3442,
+      "sha256": "1da397e025473ea36e94d0abfe8a343ef9f4457fd2e24183533a6bfac5536658"
+    },
+    "src/lib/homepage-content.ts": {
+      "bytes": 5413,
+      "sha256": "92d21e0a67761c13a07b0d3726bfc41426a83712b5c3041f84d5b894ac90c0c0"
+    },
+    "src/lib/marq.ts": {
+      "bytes": 4188,
+      "sha256": "9575670972dce95e60e33d5357bf43112b4995fd49f98b373d0a9d5b4dd3563b"
+    },
+    "src/lib/products.ts": {
+      "bytes": 18839,
+      "sha256": "15760eae92ac024d423bb8fb9bc25bd6465c69f756303d79baec375426b48848"
+    },
+    "src/lib/seo/analyzer.ts": {
+      "bytes": 18275,
+      "sha256": "7363f85cab568e5f1d08b3c26619531e400d15eea82fbddf4110b4de989568f4"
+    },
+    "src/lib/utils.ts": {
+      "bytes": 172,
+      "sha256": "74a147991a119f1c4cdc25a4d9b22713632fa32eb136e55ab6939b006d71b9d6"
+    },
+    "src/types/.gitkeep": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/types/index.ts": {
+      "bytes": 2210,
+      "sha256": "5fe8ec6067ec911ce92d823db98a1eba714852863df8ff3489834c7e7df6a8a7"
+    },
+    "src/types/marq.ts": {
+      "bytes": 1388,
+      "sha256": "fba3b3ed74c12bb50d590c58b0d8c7fd3be322b8dc4a0df9d148213213137c1a"
+    },
+    "public/homepage/categories/auto.jpg": {
+      "bytes": 162195,
+      "sha256": "b7456f2a9410ce17d317f8eba691d96fa28fea226fd772825a7172e93f2a4774"
+    },
+    "public/homepage/categories/aviation.jpg": {
+      "bytes": 139798,
+      "sha256": "ee9e170d2c48b5fe58b7c9ce20b06070de1c8dcf3eb978e9d76827dd0181a721"
+    },
+    "public/homepage/categories/marine.jpg": {
+      "bytes": 133130,
+      "sha256": "9efca38028c3c875be90d053fcd4edf5607285e2ee00cdd0dfc5c807a1c5fe17"
+    },
+    "public/homepage/categories/outdoor.jpg": {
+      "bytes": 140744,
+      "sha256": "fbc9cb0e1b7fa4d04076715a3d1d03894f4958845ec64b4b193b2ac8afa8a18c"
+    },
+    "public/homepage/categories/smartwatches.jpg": {
+      "bytes": 186745,
+      "sha256": "77cf2bdb95c2b98de570616ccdda8b997cc36320aa63aa7bd4af8d30af183b18"
+    },
+    "public/homepage/categories/sports.jpg": {
+      "bytes": 180179,
+      "sha256": "2bc1422af326978fddcb4cdb87407a7301bb4abac47d936d2d12727996cba73c"
+    },
+    "public/homepage/featured/approach.jpg": {
+      "bytes": 58663,
+      "sha256": "250a062e644ab98b4040937276457c10f835927be3cd8a1a2f9d688ec363a0fe"
+    },
+    "public/homepage/featured/bounce2.jpg": {
+      "bytes": 54290,
+      "sha256": "59f717a211f6d75eadb5efca6d344f3c4573e48454ccbc7a1b62ef676bc841d7"
+    },
+    "public/homepage/featured/cirqa.jpg": {
+      "bytes": 67030,
+      "sha256": "2d465a52d8e60f7d9110046ebb80349af5d9f9fa745fe52a416c558edf75f287"
+    },
+    "public/homepage/featured/descent.jpg": {
+      "bytes": 35243,
+      "sha256": "b37439cde94a10064dd46021c62cb1a10c3f04fa077d7845ecd8fdb69e435ce1"
+    },
+    "public/homepage/featured/fenix9.jpg": {
+      "bytes": 96238,
+      "sha256": "64b260e04740aaa32aa54263a69c72d86e4b042728a409f324ed04e00139bad4"
+    },
+    "public/homepage/featured/forerunner.jpg": {
+      "bytes": 51761,
+      "sha256": "6c74c50ae17595d6db9ee95082626bdfe0f2e803249ae548fd599e0e6c0bbd80"
+    },
+    "public/homepage/featured/holiday.jpg": {
+      "bytes": 104597,
+      "sha256": "5a69717c7fec2eda0a01967f87f3e15d67087fb3938fe6dfef7cea8203c69931"
+    },
+    "public/homepage/featured/tacx.jpg": {
+      "bytes": 26934,
+      "sha256": "62da64c169a020a0ba8b028b50b5b06c00808db2bda2f5b3d16ee2f2c85d6022"
+    },
+    "public/homepage/featured/venu4.jpg": {
+      "bytes": 48386,
+      "sha256": "70ae35db55b23645597f8ab2576d2a8c30df4a2f6cb24af48eb9fb0c78e310c5"
+    },
+    "public/homepage/featured/vivoactive.jpg": {
+      "bytes": 20711,
+      "sha256": "43506f1dbabbdaa7e9a30068711b8c5dea4cfa3eb63e00852b1a81122a424bec"
+    },
+    "public/homepage/fonts/oswald.otf": {
+      "bytes": 2920,
+      "sha256": "c1404ff1ade5b21b8ca762e38c29c2b457080c655363f3fc1bc764c7a23c9b3d"
+    },
+    "public/homepage/fonts/roboto.otf": {
+      "bytes": 2932,
+      "sha256": "e4b8d515a2c4d72d1052e7f83efe5ea4c62a68f2c29613fc7240df43d4b9fe4a"
+    },
+    "public/homepage/hero/cirqa-1-D.jpg": {
+      "bytes": 303736,
+      "sha256": "158de9ca106ef80732dfb763b6a2cbf27db5dd077b53979c8c56792587aae835"
+    },
+    "public/homepage/hero/cirqa-2-T.jpg": {
+      "bytes": 292703,
+      "sha256": "aed146f9e033908995d8aa003367e0c3fbc87cd1e00add69e52f863576e3576c"
+    },
+    "public/homepage/hero/cirqa-3-M.jpg": {
+      "bytes": 81255,
+      "sha256": "efbd980caa8d4bb7e2ada05892ffe783a67a99176a9b210ab91a1306106532fb"
+    },
+    "public/homepage/hero/descent-1-D.jpg": {
+      "bytes": 428095,
+      "sha256": "6a093a32bbdaca972580c7a929264a0f98f6575ceedfc4fef3eee1827b7ef004"
+    },
+    "public/homepage/hero/descent-2-T.jpg": {
+      "bytes": 501914,
+      "sha256": "cc1ae7d83c268a14ca694c1ccc598a19160ed621e9b87f2c0026a0011fd5d972"
+    },
+    "public/homepage/hero/descent-3-M.jpg": {
+      "bytes": 173607,
+      "sha256": "c309f85e115687f147a282be1a55f8eee49fbd76fc728cf76283919ff1166cda"
+    },
+    "public/homepage/hero/fenix9-1-D.jpg": {
+      "bytes": 496078,
+      "sha256": "8846be6f1db05dc7e6895fe5a8173eb8ddb9b905bca4ba451adf4b5342419e4d"
+    },
+    "public/homepage/hero/fenix9-2-T.jpg": {
+      "bytes": 584732,
+      "sha256": "9cb94f5381bd42a41a82ba2c1ac0ec1e72f14daf274f57e2f72add753b39853d"
+    },
+    "public/homepage/hero/fenix9-3-M.jpg": {
+      "bytes": 155552,
+      "sha256": "e348b139d27584fee373cd7b23c8a3fed9e60be32e52b093a66c6b52dc1ec26f"
+    },
+    "public/homepage/hero/forerunner-1-D.jpg": {
+      "bytes": 500492,
+      "sha256": "1bb32b0273ddca964783038a766c119aea02f5f9d7edeaf9b75e486493e365c3"
+    },
+    "public/homepage/hero/forerunner-2-T.jpg": {
+      "bytes": 423566,
+      "sha256": "b4419731fbefa0fb57ed1f162606d509d5de79561cfacef98b5d58e488028564"
+    },
+    "public/homepage/hero/forerunner-3-M.jpg": {
+      "bytes": 134637,
+      "sha256": "7843993556d83acdc352534227750ca1731196be443abeaaae2e7741268e6a97"
+    },
+    "public/homepage/hero/holiday-1-D.jpg": {
+      "bytes": 370482,
+      "sha256": "f3cae7668a5bdd4075d44c723d924eb6a708f17581c8fda2443272ae7e012bba"
+    },
+    "public/homepage/hero/holiday-2-T.jpg": {
+      "bytes": 412268,
+      "sha256": "d159fd003629dffdc3f9140a7a6e0cd2bda09e39a8683d3cadacf3976e3ccaac"
+    },
+    "public/homepage/hero/holiday-3-M.jpg": {
+      "bytes": 181611,
+      "sha256": "914e9f86cab5e553c8728620d8ab889f8c77aedb29d296bd2ebbc52bc9bba3fd"
+    },
+    "public/homepage/hero/venu4-1-D.jpg": {
+      "bytes": 202124,
+      "sha256": "017bd5d99b5ab3586046d2ae31e57e6c216bd02db46fd47f0d3e2c2e634ff133"
+    },
+    "public/homepage/hero/venu4-2-T.jpg": {
+      "bytes": 247558,
+      "sha256": "fa358d99dbcc9530464b1cf5583938f026aefa32934f6f94a62fd8bd10dddc90"
+    },
+    "public/homepage/hero/venu4-3-M.jpg": {
+      "bytes": 77129,
+      "sha256": "7bb46c9ab69ab08a46856f107e4ab1f3db678d26b1262e3e95f17579b97e7248"
+    },
+    "public/homepage/pods/bounce.jpg": {
+      "bytes": 573794,
+      "sha256": "435f1ec79597d6c34054cd255aeab6902ed9f6114abf19c03d81f3aa1807193c"
+    },
+    "public/homepage/pods/fenix9.jpg": {
+      "bytes": 630610,
+      "sha256": "524b320f4de82d5880836a5935c8c1d0d9b0547dc2eb6b876a1f6768844ecf2a"
+    },
+    "public/homepage/pods/forerunner.jpg": {
+      "bytes": 491670,
+      "sha256": "fa0dd653dda5f91314040bcd9467de466d2d3c77440dcd5f6e58f575c2229fa3"
+    },
+    "public/homepage/pods/health.jpg": {
+      "bytes": 151644,
+      "sha256": "e76d936a17853e111bd6b9d2c150609c54b41275f8664b16b0d52099ec3ba4a1"
+    },
+    "public/homepage/pods/stories.jpg": {
+      "bytes": 197395,
+      "sha256": "a88aebf2eae95acbc585fa1fe7d91821a7913afab294fd268f8fccc1fc9b4fe3"
+    },
+    "public/images/.gitkeep": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "public/images/23647-new-arrivals-image-9afb5a41-9113-4731-a3f3-c4fe8aaceffc.png": {
+      "bytes": 35731,
+      "sha256": "fe57aad7d379dc4e83180b47f49058d99c64e5b6da966bc74b20206b60295ecf"
+    },
+    "public/images/46074-aviation.jpg": {
+      "bytes": 139798,
+      "sha256": "ee9e170d2c48b5fe58b7c9ce20b06070de1c8dcf3eb978e9d76827dd0181a721"
+    },
+    "public/images/46074-outdoor_recreation.jpg": {
+      "bytes": 140744,
+      "sha256": "fbc9cb0e1b7fa4d04076715a3d1d03894f4958845ec64b4b193b2ac8afa8a18c"
+    },
+    "public/images/65125-26-tread2.jpg": {
+      "bytes": 51776,
+      "sha256": "5d52103d222ead3912394496d6a003e3c123ab2afacd1885f281bab077d2e4b1"
+    },
+    "public/images/66948-1-D.jpg": {
+      "bytes": 213582,
+      "sha256": "1a0f649cb47908c041c3762f12ddfab6b74ea8ebfea77d67f4d885f65f396773"
+    },
+    "public/images/66948-FP.jpg": {
+      "bytes": 60444,
+      "sha256": "27f65300418859ab3b6be19e961a74e0740a96d6b0b6936b21ee92dcce6ef15f"
+    },
+    "public/images/73460-FP.jpg": {
+      "bytes": 64787,
+      "sha256": "950dccb6c837a30507c88c6b3c6dbcdd1f777fcd1c40071a0eb965861fef3784"
+    },
+    "public/images/74164-FT.jpg": {
+      "bytes": 58663,
+      "sha256": "250a062e644ab98b4040937276457c10f835927be3cd8a1a2f9d688ec363a0fe"
+    },
+    "public/images/74662-automotive-pod.jpg": {
+      "bytes": 162195,
+      "sha256": "b7456f2a9410ce17d317f8eba691d96fa28fea226fd772825a7172e93f2a4774"
+    },
+    "public/images/74662-marine-pod.jpg": {
+      "bytes": 141867,
+      "sha256": "e9fa3cdd2a8d1346c36424b4cd364b1b5f4a4b98668c53767476ff57b8f37f42"
+    },
+    "public/images/74662-smartwatch-pod.jpg": {
+      "bytes": 186745,
+      "sha256": "77cf2bdb95c2b98de570616ccdda8b997cc36320aa63aa7bd4af8d30af183b18"
+    },
+    "public/images/74662-sports-and-fitness-pod.jpg": {
+      "bytes": 180179,
+      "sha256": "2bc1422af326978fddcb4cdb87407a7301bb4abac47d936d2d12727996cba73c"
+    },
+    "public/images/75802-FP.jpg": {
+      "bytes": 32007,
+      "sha256": "bf98a9ffd9eb0646e47b53f93b158b5cedbd238ca13d456baa3d4ba74aabfeda"
+    },
+    "public/images/77986-1-D.jpg": {
+      "bytes": 202124,
+      "sha256": "017bd5d99b5ab3586046d2ae31e57e6c216bd02db46fd47f0d3e2c2e634ff133"
+    },
+    "public/images/77986-FP.jpg": {
+      "bytes": 48386,
+      "sha256": "70ae35db55b23645597f8ab2576d2a8c30df4a2f6cb24af48eb9fb0c78e310c5"
+    },
+    "public/images/78850-FT.jpg": {
+      "bytes": 25847,
+      "sha256": "26100af968686b82f075a80778fdd151e21563539d0c2a574878002a085cc709"
+    },
+    "public/images/80687-1-D.jpg": {
+      "bytes": 356483,
+      "sha256": "89b1322157d675416e0fb4b154df88701011e27c4a66f3b5cbdf2dcc76f27468"
+    },
+    "public/images/80687-FP.jpg": {
+      "bytes": 71225,
+      "sha256": "aab820a6014c7a3b7ccbc244ba43fc6e8e6f238616969464ad907af69e1f8a31"
+    },
+    "public/images/80687-TN-NEW.jpg": {
+      "bytes": 52904,
+      "sha256": "75b657fe0559e0e16947be39770005c22727f83c90a9a46e70187bc86e4faa4b"
+    },
+    "public/images/82292-TN-blank.jpg": {
+      "bytes": 11580,
+      "sha256": "c79876920c4f6dc194973f8b4634d7c380d3d9bced334fe0fd24138cf515a0cb"
+    },
+    "public/images/82420-1-D.jpg": {
+      "bytes": 322600,
+      "sha256": "fb72164dcbc58eb65aae8db24a6ef4a5c69d5655b11f4ca2e0a9c71c81c03855"
+    },
+    "public/images/82420-FT.jpg": {
+      "bytes": 37182,
+      "sha256": "2e6b4bfed2c6515bd676c335206ab8dd541c8a916df259e8adc685c7d78b4787"
+    },
+    "public/images/82420-TN-NEW.jpg": {
+      "bytes": 36751,
+      "sha256": "171bc4e8769930ecc7959d80f53b2d3f65b45107c5c326bd0921dc93a9114a37"
+    },
+    "public/images/84290-1-D.jpg": {
+      "bytes": 500492,
+      "sha256": "1bb32b0273ddca964783038a766c119aea02f5f9d7edeaf9b75e486493e365c3"
+    },
+    "public/images/84290-FP.jpg": {
+      "bytes": 51761,
+      "sha256": "6c74c50ae17595d6db9ee95082626bdfe0f2e803249ae548fd599e0e6c0bbd80"
+    },
+    "public/images/84290-TN-NEW.jpg": {
+      "bytes": 40122,
+      "sha256": "b942856a19c9fa61e31ac2bd9cc7933df75aad6ac973511b6fa201a1dbcb6561"
+    },
+    "public/images/85088-TN-NEW.jpg": {
+      "bytes": 31580,
+      "sha256": "fda887e9d7b03736aca2605d0fd10cd32ab58630eee7b60bc318d0269c5a57bc"
+    },
+    "public/images/90797-POD-HALF-HEALTH.jpg": {
+      "bytes": 151644,
+      "sha256": "e76d936a17853e111bd6b9d2c150609c54b41275f8664b16b0d52099ec3ba4a1"
+    },
+    "public/images/90797-POD-HALF-STORIES.jpg": {
+      "bytes": 197395,
+      "sha256": "a88aebf2eae95acbc585fa1fe7d91821a7913afab294fd268f8fccc1fc9b4fe3"
+    },
+    "public/images/90797-PODS-THIRD-BOUNCE.jpg": {
+      "bytes": 573794,
+      "sha256": "435f1ec79597d6c34054cd255aeab6902ed9f6114abf19c03d81f3aa1807193c"
+    },
+    "public/images/90797-PODS-THIRD-FENIX.jpg": {
+      "bytes": 477767,
+      "sha256": "b7c62fc8db12d32f648076832dc3518fc94c23179a4fbd82ba87ae02e7120dd0"
+    },
+    "public/images/90797-PODS-THIRD-FORERUNNER.jpg": {
+      "bytes": 491670,
+      "sha256": "fa0dd653dda5f91314040bcd9467de466d2d3c77440dcd5f6e58f575c2229fa3"
+    },
+    "public/images/90910-Feature-Tile.jpg": {
+      "bytes": 35762,
+      "sha256": "b7ded5389cdc37e5920fafa89cfe02539c1e3489d5aefe64de17f63762d0576b"
+    },
+    "public/images/90910-TN.jpg": {
+      "bytes": 41934,
+      "sha256": "17302009ea033afe10377cb43961d803252a1c6e5bc375e08b3cec127fb9b3c5"
+    },
+    "public/images/CatalystRadar-D.jpg": {
+      "bytes": 272357,
+      "sha256": "91e77922a214ac57ef251066b703741209db6e72933a019ada269eecfd44b740"
+    },
+    "public/images/CatalystRadar-FC.png": {
+      "bytes": 52932,
+      "sha256": "8d62149788d1b4c53301242d75c6538b9c53ed8d359f74303eaf827b07d39e9e"
+    },
+    "public/images/SALE-TN-600x525.jpg": {
+      "bytes": 12094,
+      "sha256": "914abdcda19b29962db24f6a532cee89c2a53a09b3abc43ddb2b0750b2444bf3"
+    },
+    "public/images/accessories/charging-cable.jpg": {
+      "bytes": 14239,
+      "sha256": "014d51708b5d9d45b020a83021a7082dd88dcc74949b01f9d1fcec0e1bd8a2bb"
+    },
+    "public/images/accessories/hrm-dual.jpg": {
+      "bytes": 27240,
+      "sha256": "77b82ed7654b4b551e071def5f74438938abaa1ef27d414513403f81536da76a"
+    },
+    "public/images/accessories/hrm-pro-plus.jpg": {
+      "bytes": 27754,
+      "sha256": "b0e7ba185bd84a1234fdc9dde7a95da956e8ca7fa781a7bd7dee3c39325c3445"
+    },
+    "public/images/accessories/inreach-mini-2.jpg": {
+      "bytes": 14823,
+      "sha256": "9a1f2531dcf3f833201f00f3080d346d77e87ae78786ccd0bf80aa8fec02b09e"
+    },
+    "public/images/accessories/quickfit-22-silicone.jpg": {
+      "bytes": 16538,
+      "sha256": "7548b6eb94c27064e796fdd0e05821fbb46cc1712c9ff86d02288705c7c1515a"
+    },
+    "public/images/accessories/quickfit-26-silicone.jpg": {
+      "bytes": 16937,
+      "sha256": "a0d7f58787b5ae6de499732e73a4de900560f432fea26d063c2ace5787d5c599"
+    },
+    "public/images/accessories/speed-cadence-bundle.jpg": {
+      "bytes": 12316,
+      "sha256": "74d240af9a0e0e71e6d338d227f2970be6071f07dd375bded0b712d3dd5a25c3"
+    },
+    "public/images/blog/chasing-outdoors-sidney-smith.jpg": {
+      "bytes": 653809,
+      "sha256": "22ce161f157647f8387b1efe1da0798432336421f1c268bcddc6bc88933ba817"
+    },
+    "public/images/blog/garmin-for-truck-drivers.jpg": {
+      "bytes": 1722517,
+      "sha256": "8cf641f3eed75cdea3cacf58eedefbca51cd4c1acb10e7d1cb22a78d64be25f1"
+    },
+    "public/images/blog/health-glimpse-biometrics.jpg": {
+      "bytes": 93977,
+      "sha256": "ac9b3cfbe05be95e542ea9a7652f62733d9dc7fd8ecd8d211007a1067823415f"
+    },
+    "public/images/blog/hero.jpg": {
+      "bytes": 233921,
+      "sha256": "8721d6aa03c1e8082ca80ca4e43c49e5492da1dbcb789678ccfb6853ef3a3b27"
+    },
+    "public/images/blog/inreach-sailboat-rescue.jpg": {
+      "bytes": 237160,
+      "sha256": "cfc7f839b1312837292c54147329cd7d25e029700731d42173ce780bb279a56b"
+    },
+    "public/images/blog/outdoor-maps-plus.jpg": {
+      "bytes": 263197,
+      "sha256": "b61590f4aeeb500d4ff73261bf7589238688c4b021ed975f3e6c335998c910c5"
+    },
+    "public/images/blog/situational-awareness-water.jpg": {
+      "bytes": 443869,
+      "sha256": "af24a3b337ca176b462bcb238b71794c06bd26cdee622051a1d2ea86632e3cab"
+    },
+    "public/images/blog/smartwatch-features-for-women.jpg": {
+      "bytes": 344068,
+      "sha256": "e14a53423f0527d6fc187d8eb1af0b13eb21f48c3f371742eb07bbbd0d6e1063"
+    },
+    "public/images/blog/smartwatches-work-with-phone.jpg": {
+      "bytes": 309902,
+      "sha256": "c558ec03c0d858670c75db7bc90a9dc5373d156a597bf487caa41afdf22074a8"
+    },
+    "public/images/blog/train-for-triathlon.jpg": {
+      "bytes": 628977,
+      "sha256": "f387c1963ca227858d3c2730329e5144cbf0412331c63ae2eeed89c637a38531"
+    },
+    "public/images/blog/what-does-your-boat-need.jpg": {
+      "bytes": 465168,
+      "sha256": "7f05632dd0d917aec6806eed2a4061d52af5ed75207a195f176a96354ad6ff6d"
+    },
+    "public/images/blog/which-running-smartwatch.jpg": {
+      "bytes": 901747,
+      "sha256": "8f9e09afb8b23f243d1d240634ac6354c3f364bc24a50758bc58beaa711aba59"
+    },
+    "public/images/blog/which-smartwatch-is-right.jpg": {
+      "bytes": 913732,
+      "sha256": "dab55045e4e966da0ddbb6b7b261908d411518fd746b632a7038ac35c7c4a797"
+    },
+    "public/images/families/fenix.png": {
+      "bytes": 115991,
+      "sha256": "1fbd32973cacb79b75b6d921f0aa96d484246d28b97b56a34226cd04eaf9c527"
+    },
+    "public/images/families/forerunner.png": {
+      "bytes": 146526,
+      "sha256": "de8b1e0cfa4b77b2f10d53c5cd5cac6598747482c2e8d2086efe244b13fbc1b4"
+    },
+    "public/images/families/instinct.png": {
+      "bytes": 64191,
+      "sha256": "5a5a240106e14e80b734225a0628152b467301c00e42c9b08c46efc2df94dbfb"
+    },
+    "public/images/families/venu.png": {
+      "bytes": 30600,
+      "sha256": "20e37dacaf0dada17d2ddc922f5f9d1dfd0a4dd2e43cabae9d4100e8afee79ca"
+    },
+    "public/images/families/vivoactive.png": {
+      "bytes": 58285,
+      "sha256": "dda7baef0eb4d77281989e700b212090aba535d61370b4de7cd2a5605eddd74a"
+    },
+    "public/images/products/1196650.jpg": {
+      "bytes": 26467,
+      "sha256": "9164b2825a3efe9a6a9120ff9a50f00c3a4c097c4b8ee8ad7c78efca1cd2f608"
+    },
+    "public/images/products/1228429.jpg": {
+      "bytes": 46929,
+      "sha256": "a82bfef3826d85ba60b7cdbda9ddf614529b3e48f65f8e2431cf166eedb56b68"
+    },
+    "public/images/products/1316397.jpg": {
+      "bytes": 36712,
+      "sha256": "b652e4387c3368f700be12ba3056d4ede0f20e9e7c5cf0830efcc96a8fce6d84"
+    },
+    "public/images/products/1462801.jpg": {
+      "bytes": 38691,
+      "sha256": "f4017dd3af250157a53cd7ee7babdff54d73ddf6627a074154096ae37470a736"
+    },
+    "public/images/products/1463821.jpg": {
+      "bytes": 45061,
+      "sha256": "0efda83792880803f7d10ec78453b82e521cb3bbf88729826b42f0eb7dc47f8c"
+    },
+    "public/images/products/1510465.jpg": {
+      "bytes": 47668,
+      "sha256": "75f96e58e72fdaa3f7283a6cd0913aca93c56738024d3f01ddefe655b788bb07"
+    },
+    "public/images/products/1555457.jpg": {
+      "bytes": 24553,
+      "sha256": "094f151c9b6aede34ca8372529a852f27e98642e49d57bd3eb1c9f15f5f3d09c"
+    },
+    "public/images/products/1614061.jpg": {
+      "bytes": 32744,
+      "sha256": "d3af2b11a46388536cccd524ba4bd4cf16ba7638407251461c3903689643f97a"
+    },
+    "public/images/products/1765781.jpg": {
+      "bytes": 46795,
+      "sha256": "75436c0fc62907b9a58f051aa6fc1d8206d3cc431f7dfad8966c4e1b9eb4d98c"
+    },
+    "public/images/products/1800201.jpg": {
+      "bytes": 48279,
+      "sha256": "8c34b382f8428eda0115ef6aa13a35e7a71fec7d922e88024ceb6f47fd4cab3a"
+    },
+    "public/images/products/1815501.jpg": {
+      "bytes": 28423,
+      "sha256": "bd3ee6a47ff13f7046f407b26b8239732c4b6733d12b086f2ca9681027954444"
+    },
+    "public/images/products/1828641.jpg": {
+      "bytes": 37092,
+      "sha256": "4c03695e722220088354dca3274d0c55d0968be36b8e879a7e38f802ab4b4125"
+    },
+    "public/images/products/1908217.jpg": {
+      "bytes": 41276,
+      "sha256": "e68a585b4ca2557099b4e45c90a9d9df9b49682a959f60463ad1e5978a1b26bc"
+    },
+    "public/images/products/1941179.jpg": {
+      "bytes": 31233,
+      "sha256": "280d410b2ff230afc93b6296d62a1b039f0c509700b22af005ce8b19a5b3f21b"
+    },
+    "public/images/products/785411.jpg": {
+      "bytes": 13638,
+      "sha256": "ce218e28acc7da1b128294999643884f9b9f9ba68b554206833afa52f700b280"
+    },
+    "public/images/products/847706.jpg": {
+      "bytes": 43574,
+      "sha256": "dcd82fbd347de9b9c6d4dc605bd8b3262ae0be87195999985fdafb3016fc24eb"
+    },
+    "public/images/products/851039.jpg": {
+      "bytes": 43364,
+      "sha256": "3e97fc18d8d0b9d622b2716aa1e2c8570aa9582ecdb152ec9bf3963a3b862dcb"
+    },
+    "public/images/products/fenix8-cf.jpg": {
+      "bytes": 46929,
+      "sha256": "a82bfef3826d85ba60b7cdbda9ddf614529b3e48f65f8e2431cf166eedb56b68"
+    },
+    "public/images/products/fenix8-hero.jpg": {
+      "bytes": 204370,
+      "sha256": "61eeb9f4987556f6b96ea23dfaab68254d2ac5a33703d44e44a42e72543f02b2"
+    },
+    "public/images/products/fenix8-lf.jpg": {
+      "bytes": 38970,
+      "sha256": "7609901318fb1cdeaf5dec077b4fa399245e3cc902fcc87f9f669eacc5b728ff"
+    },
+    "public/images/products/fenix8-pd-01.jpg": {
+      "bytes": 25232,
+      "sha256": "94287ada3343fc8483bd7cd681aebedb326789973d6e3aecca2494209560c19a"
+    },
+    "public/images/products/fenix8-pd-02.jpg": {
+      "bytes": 30758,
+      "sha256": "1dbc0c74e1efb7b94fe2f1de7bcb8b41eb50b1d1e67c21ae4c98c9f5932c4dff"
+    },
+    "public/images/products/fenix8-rf.jpg": {
+      "bytes": 32260,
+      "sha256": "ab4e0cc3842919062cdd3df63cd3c3a6d33868cce2fcaef3ca9b5754cf5f43d9"
+    },
+    "public/images/products/fenix8-rugged.jpg": {
+      "bytes": 54964,
+      "sha256": "152b519c2900a84ff4e69f4709f5ee3c7ed35eab85b6c3eb116e334471bdffc5"
+    },
+    "public/images/products/fenix8/1228493-strength_stage.jpg": {
+      "bytes": 61753,
+      "sha256": "710c86be61aec86fa51b751d43cff3fe6e68d7400f3bb84561d5234ca22af10b"
+    },
+    "public/images/products/fenix8/66911-1-D.jpg": {
+      "bytes": 204370,
+      "sha256": "61eeb9f4987556f6b96ea23dfaab68254d2ac5a33703d44e44a42e72543f02b2"
+    },
+    "public/images/products/fenix8/66911-1-M.jpg": {
+      "bytes": 162132,
+      "sha256": "987041ec1257423e5eef1336184ef538511bdb624237a3be5227c3997b903d87"
+    },
+    "public/images/products/fenix8/66911-1.jpg": {
+      "bytes": 54893,
+      "sha256": "b1f2b2077edf9a216c6665f8b73822839b4e7ccf8c65525c8d3873f2f97f5709"
+    },
+    "public/images/products/fenix8/66911-2-D.jpg": {
+      "bytes": 159808,
+      "sha256": "f060fa759345d7e7941889b972c66edd8989b3d3217d52d479c6e1312653eb61"
+    },
+    "public/images/products/fenix8/66911-2-M.jpg": {
+      "bytes": 98134,
+      "sha256": "c32e4f42e28d75a15da7efa8f8cf6e9743c4b3a7a4cfe174abab81ee447a7394"
+    },
+    "public/images/products/fenix8/66911-2.jpg": {
+      "bytes": 47812,
+      "sha256": "7b48c08decf20ca26380d5701c4b5347ebeb17b9a6da64d011c5bfafae4049b1"
+    },
+    "public/images/products/fenix8/66911-3-D.jpg": {
+      "bytes": 154468,
+      "sha256": "37e8b76a30d1c7217baf71e780bc86ff94463e8a786d4397d33573fd9f48a8d2"
+    },
+    "public/images/products/fenix8/66911-3-M.jpg": {
+      "bytes": 77167,
+      "sha256": "fac486a2ac0c015100377133f5252cdafb8d0e7ab897e85102a189177dbf73fa"
+    },
+    "public/images/products/fenix8/66911-3.jpg": {
+      "bytes": 47908,
+      "sha256": "88883469e514375f6d742ac209d692ed3c6696090bcc1fe8634c29fedd70170a"
+    },
+    "public/images/products/fenix8/66911-4-D.jpg": {
+      "bytes": 138778,
+      "sha256": "fd82f12e62e3b62b63332ed1aad93d655c17212fd20c56c4bc9db0d01512a782"
+    },
+    "public/images/products/fenix8/66911-4-M.jpg": {
+      "bytes": 61200,
+      "sha256": "c11827b0a779ec3da259be83ae2b4254859e7f4e57ca313b9485f56a4360387a"
+    },
+    "public/images/products/fenix8/66911-5-D.jpg": {
+      "bytes": 287986,
+      "sha256": "473f7ede1d07e06135e825e2c3aa674490ba9049ce43247cffe2bf592b6246a2"
+    },
+    "public/images/products/fenix8/66911-5-M.jpg": {
+      "bytes": 146131,
+      "sha256": "fe75110b9e9531425afa6f85f0dd54bb5db8fecfb38477e4601f301048b1d868"
+    },
+    "public/images/products/fenix8/66911-5.jpg": {
+      "bytes": 63431,
+      "sha256": "ce6e8e4cdabaf5d3a5a5b7f430ac042ff0ca38c9a3b32f9875ee6205859b2ae4"
+    },
+    "public/images/products/fenix8/66911-6-D.jpg": {
+      "bytes": 193918,
+      "sha256": "8fafff23b5d7abe71980e0776fa93833eed144e3de951f3645ab1f4c0b2aa4fc"
+    },
+    "public/images/products/fenix8/66911-6-M.jpg": {
+      "bytes": 133914,
+      "sha256": "1aa7b747af21e5aedad53596bd75261bab9c377f58c93a1000d315a85d6395ba"
+    },
+    "public/images/products/fenix8/66911-6.jpg": {
+      "bytes": 68774,
+      "sha256": "baaec79a77750e7f60a03fbb1a7f4baf1fb84bf93a250f92b9cebf2572bab668"
+    },
+    "public/images/products/fenix8/66911-FAN-D.jpg": {
+      "bytes": 171755,
+      "sha256": "9b518b17d68ace7210b97ee77ecee024065aed35941dcd82f24343d1b2c17613"
+    },
+    "public/images/products/fenix8/66911-FAN-M.jpg": {
+      "bytes": 106889,
+      "sha256": "33aac1c3146bf83b8aa1a044f4fa8c5815c1025c6b8f8c8e201ce5d536c8454a"
+    },
+    "public/images/products/fenix8/66911-VID-D.jpg": {
+      "bytes": 91642,
+      "sha256": "d08eab6e4c71b50e558addbbcc6de904d1ba1950b2749459a4766d4ad073b20e"
+    },
+    "public/images/products/fenix8/66911-VID-M.jpg": {
+      "bytes": 72091,
+      "sha256": "95d2346d04e151a53559b0948ea8ff94e41d14cc9b7c3e9d89ba1636ee9d54b2"
+    },
+    "public/images/products/fenix8/COURSE-PLANNER.svg": {
+      "bytes": 2977,
+      "sha256": "5c56a1a89f7988cac9aed5eaebc261092dfafe17cdbe0a6d23c80db2c142b765"
+    },
+    "public/images/products/fenix8/NUTRITION-IN-GARMIN-CONNECT.svg": {
+      "bytes": 2110,
+      "sha256": "3a9f8abd591236aad05558aa8216abf2fdef33b469ae64eb683737be4f072d8d"
+    },
+    "public/images/products/fenix8/Natural-Cycle.svg": {
+      "bytes": 1808,
+      "sha256": "6966ac4830e44b775aad73614ff013af98d169da59b01a858a6e3dde6d214700"
+    },
+    "public/images/products/fenix8/WhatsApp.svg": {
+      "bytes": 2455,
+      "sha256": "0364d594d90c40343afda4dcd0551bc3b84f59c5d810ea49683a8e9f972c4467"
+    },
+    "public/images/products/fenix8/health-status.svg": {
+      "bytes": 939,
+      "sha256": "325f762745a6faedcf04a2b995f89476234872f17a190bedaedb489fa53aa6b6"
+    },
+    "public/images/products/fenix8/icons/30-Second-Recording.svg": {
+      "bytes": 4591,
+      "sha256": "50370c08daedcc79bf527c781df413219b1607317c6b8e43458d70db6d7e910e"
+    },
+    "public/images/products/fenix8/icons/BREATHING-VARIATIONS-THROUGHOUT-THE-NIGHT.svg": {
+      "bytes": 1363,
+      "sha256": "262dac07385aba4a33dbc4be415d65dd602c513a6633bbd56dbd6e9281b0d71a"
+    },
+    "public/images/products/fenix8/icons/BodyBattery.svg": {
+      "bytes": 1214,
+      "sha256": "4108c16dc7cdc313d5dda8c177bcef2d73e1c0d9d85690dbd77e1d501d9cc27a"
+    },
+    "public/images/products/fenix8/icons/COMPASS.svg": {
+      "bytes": 315,
+      "sha256": "b9bf2605f0f6ed404246e1d5521f42ad255c9eaccbb990169ac15d5aa0383137"
+    },
+    "public/images/products/fenix8/icons/CONNECT-IQ-STORE.svg": {
+      "bytes": 5978,
+      "sha256": "260f58dc54123caca9bdac1f8a2b231ba880f0f9497d40e25d09984cb05018e2"
+    },
+    "public/images/products/fenix8/icons/COURSE-PLANNER.svg": {
+      "bytes": 2977,
+      "sha256": "5c56a1a89f7988cac9aed5eaebc261092dfafe17cdbe0a6d23c80db2c142b765"
+    },
+    "public/images/products/fenix8/icons/CREATE-COURSES-AND-SEE-ROAD-SURFACE-TYPE.svg": {
+      "bytes": 1799,
+      "sha256": "0448e61369fea0e6f127136a06114bec780aad1818d0f120a1c6fbe2c27a59ab"
+    },
+    "public/images/products/fenix8/icons/Dynamic_PacePro.svg": {
+      "bytes": 462,
+      "sha256": "073e3c2a203caf2ea943ab5d2fadf3311adaed17d51b46529336e5360f251094"
+    },
+    "public/images/products/fenix8/icons/ENDURANCE-SCORE.svg": {
+      "bytes": 4370,
+      "sha256": "9a965a14fd08307f89f447c39a98bf921cc07bcc11e1a1aa03d815baf95ed41d"
+    },
+    "public/images/products/fenix8/icons/EVENING-REPORT.svg": {
+      "bytes": 1514,
+      "sha256": "cd7e25a001305ab8e883b59cb832238a1ce6144d435e72bc969379a3c075570f"
+    },
+    "public/images/products/fenix8/icons/GARMIN-MESSENGER-APP.svg": {
+      "bytes": 6107,
+      "sha256": "13a875c816c1e7d280ae4593d060de2574d8e5d6e1fde2eb56bf9b90b316edf9"
+    },
+    "public/images/products/fenix8/icons/GLOBAL.svg": {
+      "bytes": 3038,
+      "sha256": "13c097fc01f982d50e4aaf1aefa4a17cf932c30bca6b7a42d50f85884288d726"
+    },
+    "public/images/products/fenix8/icons/GRADE-ADJUSTED-PACE.svg": {
+      "bytes": 5238,
+      "sha256": "880f6303a73d3f670f31484646288bd01e264de9d0708b257ce21fd221c2b71e"
+    },
+    "public/images/products/fenix8/icons/Garmin_Coach.svg": {
+      "bytes": 382,
+      "sha256": "3d8fdf6ffd7424ac9e0cefea120d83b251e3ab537fb47e5475f83b5599e7648f"
+    },
+    "public/images/products/fenix8/icons/Garmin_Connect.svg": {
+      "bytes": 5884,
+      "sha256": "b05fa566b534485fe2c7bd222e2336694967605182c06b7ca0bfcf43e73833ea"
+    },
+    "public/images/products/fenix8/icons/Garmin_Pay.svg": {
+      "bytes": 1255,
+      "sha256": "d580a72bf8863dafb05675d533942257a7c54f1d934af2f8fa4464c28a660cab"
+    },
+    "public/images/products/fenix8/icons/HEAT-AND-ALTITUDE-ACCLIMATION.svg": {
+      "bytes": 1790,
+      "sha256": "7d7e7683283ebdf3cfd2d32a4fa09b41b3b5efae5f7fef6d93620388693885bb"
+    },
+    "public/images/products/fenix8/icons/HIIT-WORKOUTS.svg": {
+      "bytes": 6366,
+      "sha256": "0a5e949bcf39c3e160bf9826859974772c794405283eb04bd005457e2caac032"
+    },
+    "public/images/products/fenix8/icons/HILL-SCORE.svg": {
+      "bytes": 3987,
+      "sha256": "5bd45467293f6af3e068635c43db40e4729a244f934756a6ba02797cfd831460"
+    },
+    "public/images/products/fenix8/icons/HRV-STATUS.svg": {
+      "bytes": 5341,
+      "sha256": "01847b57a58c2d459995d38a8aa1d0c162ffd68e9c371ab38e40f83deef0e0f3"
+    },
+    "public/images/products/fenix8/icons/Health_And_Fitness_Tracking.svg": {
+      "bytes": 969,
+      "sha256": "78ffe7a0f4ae3b9cb0b4a3298e764a6127ac5744856da6cd332e97d69b8f06c2"
+    },
+    "public/images/products/fenix8/icons/LIFESTYLE.svg": {
+      "bytes": 1293,
+      "sha256": "32a95b109f5e8352eabff0bba50cc89e6b48052e22e4690bbece9adb5addb6d0"
+    },
+    "public/images/products/fenix8/icons/MCT.svg": {
+      "bytes": 973,
+      "sha256": "0c2924d41b4ec5a002615e938d641272ba20010741d2a912facdabc74bc261e7"
+    },
+    "public/images/products/fenix8/icons/MORNING-REPORT.svg": {
+      "bytes": 5251,
+      "sha256": "f1e2a336fa2afb1d34fe962ab3987572e9a49c3db4850b06aad105bd1acdb0d8"
+    },
+    "public/images/products/fenix8/icons/MOVE-ALERTS.svg": {
+      "bytes": 5521,
+      "sha256": "9b18bd3f437b50d5b668550c84d2a143e8fb5a1c86840b66e720ad0408ea3240"
+    },
+    "public/images/products/fenix8/icons/MTB-DYNAMICS---MOUNTAIN-BIKE-DYNAMICS.svg": {
+      "bytes": 11772,
+      "sha256": "a47f57afa472414c2f94795ea243f2e50d86eb60317fd4e3338ab0a90f08a4de"
+    },
+    "public/images/products/fenix8/icons/Measure_Data.svg": {
+      "bytes": 878,
+      "sha256": "b723f6fafa90b4749e7d9479f1ddead6cd56ca8970c6842169ed16a2b32ac448"
+    },
+    "public/images/products/fenix8/icons/Messaging.svg": {
+      "bytes": 1936,
+      "sha256": "15aa554a50e8893d6f25b165944aaee94b06f794cff769151012683f015948f0"
+    },
+    "public/images/products/fenix8/icons/MultiBand.svg": {
+      "bytes": 1521,
+      "sha256": "d2b771d46b492102c82ba28912952947f705ab71b9835e753c2b2d3236e2f4e3"
+    },
+    "public/images/products/fenix8/icons/Multiple-Dive-Modes.svg": {
+      "bytes": 5048,
+      "sha256": "20480a63737b324a86f0278adc56def99348541bfe3f9b35150ce47659640558"
+    },
+    "public/images/products/fenix8/icons/Music.svg": {
+      "bytes": 371,
+      "sha256": "ca2b879c5d2805f69e92dc0f2819f120d6fcbd05a150cbc4d764e904de783669"
+    },
+    "public/images/products/fenix8/icons/NEXTFORK-MAP-GUIDE.svg": {
+      "bytes": 5627,
+      "sha256": "e2502400781980ce520cb401e255f59f59c78e734c433bfa321e097c6c9efe00"
+    },
+    "public/images/products/fenix8/icons/Nap-Detection.svg": {
+      "bytes": 1781,
+      "sha256": "4a1b10e4736497004f730246085c81350fe85572e9389f84d41769bbdfd13035"
+    },
+    "public/images/products/fenix8/icons/Natural-Cycle.svg": {
+      "bytes": 1808,
+      "sha256": "6966ac4830e44b775aad73614ff013af98d169da59b01a858a6e3dde6d214700"
+    },
+    "public/images/products/fenix8/icons/ON-DEVICE-BIKE-BELL.svg": {
+      "bytes": 1352,
+      "sha256": "6adeff734b453b69cb4f1fd06421ef38e1960698adbc89dee3a5139b0bf2b072"
+    },
+    "public/images/products/fenix8/icons/On-screen_workouts.svg": {
+      "bytes": 1051,
+      "sha256": "6cfa0991a8f67ff5467af1878b587378cbded31a99fcd66e661c534d50fc17e1"
+    },
+    "public/images/products/fenix8/icons/Outdoor-Maps.svg": {
+      "bytes": 1269,
+      "sha256": "a662f68537e58ec911bde750dc5d183d0f3c2b4756993436d24fa9f14dff44f6"
+    },
+    "public/images/products/fenix8/icons/Pulseox.svg": {
+      "bytes": 737,
+      "sha256": "80f40914ad3d91d53a090ba47448bec7a26fff30df3ba07218a82f8cb46019d3"
+    },
+    "public/images/products/fenix8/icons/RACE-WIDGET.svg": {
+      "bytes": 1353,
+      "sha256": "d0f757ab3fcde57ad464bf4e94cd7c165051899845935a065fea77eb09830fd9"
+    },
+    "public/images/products/fenix8/icons/RUCKING-ACTIVITY.svg": {
+      "bytes": 2001,
+      "sha256": "d616369ea34cba406780cc7b8b7ebca339646505f46c2fcf36a442f0c7c1c3cc"
+    },
+    "public/images/products/fenix8/icons/RUNNING-ECONOMY.svg": {
+      "bytes": 2973,
+      "sha256": "c6bcd12dc3f479581e2fc2365252dc5608b8536de19c73565a350c0eeb97967c"
+    },
+    "public/images/products/fenix8/icons/RUNNING-TOLERANCE.svg": {
+      "bytes": 3580,
+      "sha256": "c73a5488a20e3ab75d013d9e2c0f2da1ea7cd2c32dd957d646f507766b2d9f84"
+    },
+    "public/images/products/fenix8/icons/Race-Predictor.svg": {
+      "bytes": 5359,
+      "sha256": "988b71637de7fb7d4398338f175293c29fbb0e3ade6de8fe42ba640b51172994"
+    },
+    "public/images/products/fenix8/icons/Report.svg": {
+      "bytes": 4291,
+      "sha256": "38d775cdf39db83f96f726226db85f1889a81e8854ff2af170e1a1e65bcb04dc"
+    },
+    "public/images/products/fenix8/icons/SKIVIEW-MAPS.svg": {
+      "bytes": 6029,
+      "sha256": "ac59b91932818e2e7c2631205c1894cc77c12296e47e4b09c00081251fd72358"
+    },
+    "public/images/products/fenix8/icons/SLEEP-COACH.svg": {
+      "bytes": 4741,
+      "sha256": "7c1a342e1f0b5a059272130be88e501a6217168139ae3b2b5646d868cb6f5b67"
+    },
+    "public/images/products/fenix8/icons/STEP-SPEED-LOSS.svg": {
+      "bytes": 4132,
+      "sha256": "9c45595225a89b950272e57997ca0ded33a6408bef276f9912fe5f4825218b30"
+    },
+    "public/images/products/fenix8/icons/Share.svg": {
+      "bytes": 5298,
+      "sha256": "488b68170edf407fc8dbe43881e7ccdee106acf3187a46742b4422ef25d7ad42"
+    },
+    "public/images/products/fenix8/icons/Simulate_Inclines.svg": {
+      "bytes": 738,
+      "sha256": "b82a0490ca0cd7a820425dc534f047f4e8693c8fc74d93dd8300c73425e00044"
+    },
+    "public/images/products/fenix8/icons/TRAINING-READINESS.svg": {
+      "bytes": 5066,
+      "sha256": "c16bb79b22f0a498037295bed3d3557ebeeba7d08bb654a8a6878d19213a4451"
+    },
+    "public/images/products/fenix8/icons/UP-AHEAD.svg": {
+      "bytes": 8069,
+      "sha256": "3f2780e48eef2612a72780f703f71b69009f48ffb76d345b0427ed61bc51a46b"
+    },
+    "public/images/products/fenix8/icons/Weight-Trend.svg": {
+      "bytes": 1373,
+      "sha256": "53bcabd4b1ad21a6fd25fef55b879b6af26b3fc197bd4437f7ec8a4f68cd74a4"
+    },
+    "public/images/products/fenix8/icons/WhatsApp.svg": {
+      "bytes": 2455,
+      "sha256": "0364d594d90c40343afda4dcd0551bc3b84f59c5d810ea49683a8e9f972c4467"
+    },
+    "public/images/products/fenix8/icons/Workout-Recommendations_Daily-Workout-Suggestions.svg": {
+      "bytes": 1554,
+      "sha256": "275faa2f7697a1a02adbc59e2df93c0ad2269a8241ad9e8f38a1f8f46a83d449"
+    },
+    "public/images/products/fenix8/icons/WristHeartRate.svg": {
+      "bytes": 854,
+      "sha256": "884fbac67ccf29a0f2e61d4b6340987c11cae91250d9d1f0d3e7035c4d60676b"
+    },
+    "public/images/products/fenix8/icons/XC-SKI-POWER.svg": {
+      "bytes": 2001,
+      "sha256": "ab7cec85ae6789ee260d427a26427efc96de096ae0a1dd14c2b739c092a55f23"
+    },
+    "public/images/products/fenix8/icons/assistance.svg": {
+      "bytes": 7085,
+      "sha256": "d9fbe453b4e3cbea378d7efe45b62f3419e10a23f2b16d2ac40f8187f4f756d5"
+    },
+    "public/images/products/fenix8/icons/full-color-courseview-maps-tee-hero.svg": {
+      "bytes": 9461,
+      "sha256": "b87c7b735d1b2bcb42bf4ccc335ea59010bb70da7df87ac1e6a3db3a2df0470c"
+    },
+    "public/images/products/fenix8/icons/health-snapshot.svg": {
+      "bytes": 4594,
+      "sha256": "a8dd28e1ea167a46304038d37d05ac4c8157a0658538d1a237fe73bea889060b"
+    },
+    "public/images/products/fenix8/icons/health-status.svg": {
+      "bytes": 939,
+      "sha256": "325f762745a6faedcf04a2b995f89476234872f17a190bedaedb489fa53aa6b6"
+    },
+    "public/images/products/fenix8/icons/hyrdation.svg": {
+      "bytes": 804,
+      "sha256": "6fb95b132a4a084fc36df9668f3ea4a608bad9ffb551404db7fb4919999de4b8"
+    },
+    "public/images/products/fenix8/icons/jet-lag-advisor.svg": {
+      "bytes": 8477,
+      "sha256": "f6e1d4f3fa691dc6c1ba165d01b89865ab008b73f3908c1e8d0932022bff8121"
+    },
+    "public/images/products/fenix8/icons/power-manager.svg": {
+      "bytes": 8178,
+      "sha256": "5b440ac00540430d5a0ffade3f5c84ba7b70a2f52af5adbf5417b78acdb948ad"
+    },
+    "public/images/products/fenix8/icons/recovery-time.svg": {
+      "bytes": 5130,
+      "sha256": "1e6b7e4ce1a0cb55148d364e0448fd39fc2ea71eb6825781958252840274ed53"
+    },
+    "public/images/products/fenix8/icons/respiration.svg": {
+      "bytes": 783,
+      "sha256": "f68bc8b014ea044cd74a5e4259898899763ee3d570e9f9ef07d745749c11d141"
+    },
+    "public/images/products/fenix8/icons/ski.svg": {
+      "bytes": 8911,
+      "sha256": "6021673f94c1a5249451b25e3d5078071eef43af60b850cd2f99803e91ed8438"
+    },
+    "public/images/products/fenix8/icons/sports-score.svg": {
+      "bytes": 1543,
+      "sha256": "804eb411cd2832aa9acb75bf28312ac5a3a5d672e959767a30fec01429dfbf0e"
+    },
+    "public/images/products/fenix8/icons/stocks.svg": {
+      "bytes": 2141,
+      "sha256": "4f2150fdd74cbfdfc5ff0cffef25a6cd74354447df7a7eeb1560466f1173d7b5"
+    },
+    "public/images/products/fenix8/icons/surf.svg": {
+      "bytes": 4769,
+      "sha256": "3795a24472d2e376b46a02a28ae363ef5b7bf1fc15e5d630767a4741db70ba6d"
+    },
+    "public/images/products/fenix8/icons/track-fitness.svg": {
+      "bytes": 1092,
+      "sha256": "f0354b5649fc9f64e3e0318f9fb2e572a6728ab5cd4fa2314f46f3e2aedb92fc"
+    },
+    "public/images/products/fenix8/icons/training-status.svg": {
+      "bytes": 5856,
+      "sha256": "a2aeda65c54f346b38e42d49ccbc38581048f10110f76109c8f25fd09a97ac54"
+    },
+    "public/images/products/fenix8/icons/wrist-based-running-dynamics.svg": {
+      "bytes": 6605,
+      "sha256": "12421f45501a6c908b573833547cf30c5f1592ea4dd014644d8a0318dc621cb6"
+    },
+    "public/images/products/fenix8/sports-score.svg": {
+      "bytes": 1543,
+      "sha256": "804eb411cd2832aa9acb75bf28312ac5a3a5d672e959767a30fec01429dfbf0e"
+    },
+    "public/images/wearables-banner-bg.jpg": {
+      "bytes": 383571,
+      "sha256": "9fd0b2900a4e36b71da52ae48618c1c351bac9dad17a981eaac0dfc0a281c796"
+    },
+    "public/marq/images/cloud.jpg": {
+      "bytes": 144056,
+      "sha256": "fe1e61f855280899d4cf3c99fed034c8426808cc22585b9f7ca18e36def3bf48"
+    },
+    "public/marq/images/damascus-bg-spark-2.png": {
+      "bytes": 245247,
+      "sha256": "5f8536c746208f78e44eff1425fe5e8c88915a12725891e8440a9def71f10c70"
+    },
+    "public/marq/images/damascus-bg-spark.png": {
+      "bytes": 240608,
+      "sha256": "99ac62fbb9954fcf26847e4c2880b8ff3a31feee78860feff66a77085bca933c"
+    },
+    "public/marq/images/damascus-bg.jpg": {
+      "bytes": 79412,
+      "sha256": "28d2708c13190bb4da7da667e046a0389ba4eea1fe31cc8dbd12048d08128cd1"
+    },
+    "public/marq/images/kv-bg.jpg": {
+      "bytes": 27743,
+      "sha256": "097bc864d6ae2426f8e9c126a66814349f544b5974316bcccd942377c4efa8d4"
+    },
+    "public/marq/images/kv-mountain.png": {
+      "bytes": 258268,
+      "sha256": "dd950026fcc5c3e35d7c86abdcc41675f66da4280de38a347a89a3e36a080efb"
+    },
+    "public/marq/images/legacy.jpg": {
+      "bytes": 71526,
+      "sha256": "2aba76af87f9e13f8fff739fa166b50a5e656e709d99babfc64e1f2b67c3b232"
+    },
+    "public/marq/images/marq-bands-bg.jpg": {
+      "bytes": 204691,
+      "sha256": "862c6fcf3a2709acefb0466c68e097a77a3b0248e05b841327151e080ae90c53"
+    },
+    "public/marq/images/marq-collection.png": {
+      "bytes": 676186,
+      "sha256": "a663a2df82b2d4ddb3176acf9b3297393199907b7cfd1c10f18f4a6f2dc4c000"
+    },
+    "public/marq/images/marq-spec-adventurer.png": {
+      "bytes": 110640,
+      "sha256": "1d75dbfa03f628e1478298cf5dfccad3e50c9405ceb6b3a316d2401e0dec739d"
+    },
+    "public/marq/images/marq-spec-athlete.png": {
+      "bytes": 89203,
+      "sha256": "9ae847bb047654966a8184ee8d0807c6635c39a90acd2f8bf3805f434d3502fa"
+    },
+    "public/marq/images/marq-spec-aviator.png": {
+      "bytes": 108159,
+      "sha256": "c73f76f021ac9b56835f83376afad8718852e52572963821017ae587a50c318d"
+    },
+    "public/marq/images/marq-spec-bg.jpg": {
+      "bytes": 189196,
+      "sha256": "a926b1aa398f3db2ce2a462022060a0ff990fcd309c234e2a090f771047c35c9"
+    },
+    "public/marq/images/marq-spec-captain.png": {
+      "bytes": 108418,
+      "sha256": "5a88a675b4520616346ab619b2aa4974c96d6f1f25b3270d4f901b5f6312abeb"
+    },
+    "public/marq/images/marq-spec-carbon-athlete.png": {
+      "bytes": 124705,
+      "sha256": "db6347990cfefd15c1fde902910dda808f1110abdaa50217d45d1a3413564550"
+    },
+    "public/marq/images/marq-spec-carbon-golfer.png": {
+      "bytes": 137531,
+      "sha256": "9734aff8e511d198edcbafb901cb242470f7e260728682704a2ea61d04fefe1f"
+    },
+    "public/marq/images/marq-spec-damascus.png": {
+      "bytes": 496262,
+      "sha256": "528f191c914693dd2966b3ffbd6f13db05c8c55453371f30e2622b7169204726"
+    },
+    "public/marq/images/marq-spec-golfer.png": {
+      "bytes": 116640,
+      "sha256": "a084440e58eed46fa8c659d23466b89d646d9e1d2589ddfbb194e91442eaf5a2"
+    },
+    "public/marq/images/marq2-product-adventurer.jpg": {
+      "bytes": 116064,
+      "sha256": "89cbef16b08fde9462b32b7e4bf792eabc48558b7275ac23e18bbe30468ea478"
+    },
+    "public/marq/images/marq2-product-athlete.jpg": {
+      "bytes": 108212,
+      "sha256": "62ba9aeb0da9297b74cd8c0820ee003dc9fae71897451755fd7ce16565084d20"
+    },
+    "public/marq/images/marq2-product-aviator.jpg": {
+      "bytes": 88738,
+      "sha256": "9e70675628f1fdf7520ab6cdef27963c9a1586c0b214d227e00417b192eb491d"
+    },
+    "public/marq/images/marq2-product-captain.jpg": {
+      "bytes": 107120,
+      "sha256": "ea7e702728d90c1d7209228c020b08cc2375526831626258f86e31771e5eafda"
+    },
+    "public/marq/images/marq2-product-carbon-athlete.jpg": {
+      "bytes": 141423,
+      "sha256": "884639b328570e5b3902bf964c7fb4fe279506aa3137b440cc88693332934b0d"
+    },
+    "public/marq/images/marq2-product-carbon-golfer.jpg": {
+      "bytes": 159087,
+      "sha256": "770206b5a82b26f0e3a6e72e044c09b92cc2fc90a0e03876f9d9d2096fdd4ca2"
+    },
+    "public/marq/images/marq2-product-golfer.jpg": {
+      "bytes": 115652,
+      "sha256": "637b6ebe78e0712007ec056db52ab5f2e0e03b8a46c221bc36835ce4ff3b9bb4"
+    },
+    "public/marq/images/material-bg-01.jpg": {
+      "bytes": 77155,
+      "sha256": "a184127f54dfa1944080d2aa6e6a994587b3cbd0c819e3260e669206d33f52e7"
+    },
+    "public/marq/images/material-bg-02.jpg": {
+      "bytes": 135087,
+      "sha256": "bebfc3edcf469ae8d62b09bd681e70711e96185119712980a690efd7faf78f36"
+    },
+    "public/marq/images/material-bg-03.jpg": {
+      "bytes": 149283,
+      "sha256": "6070d3372844a139667b032c8a65a01cbef1d17496072015a4c276e19b5068a0"
+    },
+    "public/marq/images/material-watch-01.png": {
+      "bytes": 636083,
+      "sha256": "2d4f732c3695dc36b2b28a7641f4ebf61764271ef5b18a283043df7de6b8ee17"
+    },
+    "public/marq/images/material-watch-02.png": {
+      "bytes": 379003,
+      "sha256": "49ea089f84fa9312c84a7bed591a057f7a3993d991093febf4dc09df5f1319e8"
+    },
+    "public/marq/images/material-watch-03.png": {
+      "bytes": 465809,
+      "sha256": "99f001f4a5cdce705b4f0abe15e89d703574858989e210a253a8f85dcc44778f"
+    },
+    "public/marq/images/overview-bg-01.jpg": {
+      "bytes": 135129,
+      "sha256": "f99dddb47f02c34643aa797019a45a76439af55f82709d61f2b09657252e64e2"
+    },
+    "public/marq/images/overview-bg-02.jpg": {
+      "bytes": 118702,
+      "sha256": "11e403010d348bdc5fb3e87eba5aeeaba5770190c1b167b23aa031f4e27561cb"
+    },
+    "public/marq/images/product-name.png": {
+      "bytes": 95477,
+      "sha256": "51f5251ba0869cf6917cd1c7072f5db7a5e0ff8819d97f2fc3db1ee65001124d"
+    },
+    "public/marq/images/sapphire.jpg": {
+      "bytes": 121878,
+      "sha256": "a745b1325e85eaec71f42c34a7b50592e1469aab1207183b5e389a490c302de7"
+    },
+    "public/marq/images/stone-bg.jpg": {
+      "bytes": 60301,
+      "sha256": "7def0812752a4b73a15ca8f71840b98ee3dbedd47839f4facf8b8ab3a0c8c4d7"
+    },
+    "public/marq/video/adventurer.mp4": {
+      "bytes": 1113637,
+      "sha256": "3ec36f7c62281295c6bb613768e7ac6107a5a52c70637ff3f7d6c69e588b8ccc"
+    },
+    "public/marq/video/athlete.mp4": {
+      "bytes": 972460,
+      "sha256": "2aa73e684686f229f794c542c3d9eff0be7e778424cc5ef30b87c5c011123563"
+    },
+    "public/marq/video/aviator.mp4": {
+      "bytes": 1146939,
+      "sha256": "67c21e3b5c3577bdc99e5d44f11097bc469bf6053559e67df6817fc7b3826ff5"
+    },
+    "public/marq/video/captain.mp4": {
+      "bytes": 1263342,
+      "sha256": "cf42cab7c6dfeb571adae475eadb6f404f5990696631e4d1c3b3227b1ffdf38a"
+    },
+    "public/marq/video/carbon-athlete.mp4": {
+      "bytes": 1455358,
+      "sha256": "272ccf995839b61893e0246bd0aa901ffbdab394f649dcf466aea44f7379f658"
+    },
+    "public/marq/video/carbon-golfer.mp4": {
+      "bytes": 2032135,
+      "sha256": "3fab999d8014ebbe9cbd20365806b8f7fa7d10f2c6bda726a3b24a56bd295a03"
+    },
+    "public/marq/video/damascus.mp4": {
+      "bytes": 3694594,
+      "sha256": "721cfcdb64f0d3ffbc1de2b914d8c075608597ec425b8eb96d992f3db98c6374"
+    },
+    "public/marq/video/fire.mp4": {
+      "bytes": 1064900,
+      "sha256": "f1617af04b35a19bc09f67101dc0d6d4123c5a078011314b7ce62faaaefb4251"
+    },
+    "public/marq/video/golfer.mp4": {
+      "bytes": 1176120,
+      "sha256": "43e5d9b2de817bb51690aa107e73b53ca4f056c54f0e3421daae869ec9bec635"
+    },
+    "public/minisite/fenix-8/font/fontello.eot": {
+      "bytes": 7796,
+      "sha256": "d210c84bfa95398221bbc38694ff870cdde654288402f76714399d515b4a3c90"
+    },
+    "public/minisite/fenix-8/font/fontello.svg": {
+      "bytes": 3313,
+      "sha256": "1a703a0142bfae8bfba60d7a99c5ba9167ca3e30fab82aa627b2131269b15cd6"
+    },
+    "public/minisite/fenix-8/font/fontello.ttf": {
+      "bytes": 7628,
+      "sha256": "3a63cd5929625c653f4161dbb24f46ec45ac805c40d377b53ce89adac683bc63"
+    },
+    "public/minisite/fenix-8/font/fontello.woff": {
+      "bytes": 4324,
+      "sha256": "add64e5fd4c1762911034ee59d9fd8408565b5f8caa6550d3493b3acaf4fdf3c"
+    },
+    "public/minisite/fenix-8/font/fontello.woff2": {
+      "bytes": 3624,
+      "sha256": "718ed84b893dd813a9b5e4ce51f33a7ed32acaa29af936cc57753b026f206dee"
+    },
+    "public/minisite/fenix-8/images/bands-bg.jpg": {
+      "bytes": 276906,
+      "sha256": "198c9825b3857ea53bd24aaf35eb7f4216c0f48b12418f7e4a55c260abc894a2"
+    },
+    "public/minisite/fenix-8/images/button.png": {
+      "bytes": 9364,
+      "sha256": "a2b10db53a5377a123db157b93f3f51a81d6c1910f1a8b5e463d3471c0247434"
+    },
+    "public/minisite/fenix-8/images/design-bg-m-2.jpg": {
+      "bytes": 38948,
+      "sha256": "59fbd70aa023404747fafc51aeeb72cb472a2a88353425a0503723bcc42ad15b"
+    },
+    "public/minisite/fenix-8/images/design-bg-m.jpg": {
+      "bytes": 63658,
+      "sha256": "07a5b09de2952e5be30f5fb1433757557c94469b09b1c6870f2baf3f09eb48d6"
+    },
+    "public/minisite/fenix-8/images/design-bg.jpg": {
+      "bytes": 82181,
+      "sha256": "2add7189f4da6738074d5e8c534278d6b482d01864c7707661472887b9df3c8a"
+    },
+    "public/minisite/fenix-8/images/dynamic-map-bg.jpg": {
+      "bytes": 150344,
+      "sha256": "1e433bca22fdb27cd78dfdc3b5fda70e0021accd3deba33c4b7206f40dd2c359"
+    },
+    "public/minisite/fenix-8/images/dynamic-map-product.png": {
+      "bytes": 99889,
+      "sha256": "22e8920abde6adbce7ff85563860f01568fc68d6abd5e9970940ecfe1366a0aa"
+    },
+    "public/minisite/fenix-8/images/fb-fenix8.jpg": {
+      "bytes": 168301,
+      "sha256": "e0672fefe1a70c4142498908a8d05c2e6d33cc61eff14621b93038befd09ce4e"
+    },
+    "public/minisite/fenix-8/images/fenix8-amoled-product-main.png": {
+      "bytes": 161025,
+      "sha256": "421ebbce6017464e1da17efc1268661de8d9f8dec5ce8bbc922d1ab2d9a88c22"
+    },
+    "public/minisite/fenix-8/images/fenix8-solar-product-main.png": {
+      "bytes": 125838,
+      "sha256": "3d512b79db3649d1b77318bc7063a8812e03d7da878683c73791d8f3fcd9c5d4"
+    },
+    "public/minisite/fenix-8/images/flashlight-bg.jpg": {
+      "bytes": 166732,
+      "sha256": "7c762892f900a8354b1db52346f90cbe58c9a18a942295c26dd30cf1bfe0c6df"
+    },
+    "public/minisite/fenix-8/images/garmin-message-app.png": {
+      "bytes": 61522,
+      "sha256": "ca98341d6dfd0cff2d45dd915c425661989215ac642fde592dfc2bf7570b48d9"
+    },
+    "public/minisite/fenix-8/images/garmin_logo_on_b.svg": {
+      "bytes": 156268,
+      "sha256": "fefbfd4e39c2632d1691dd85c7bdb39db1ab183e07689c32591a21e9d0846cb6"
+    },
+    "public/minisite/fenix-8/images/garmin_logo_on_w.svg": {
+      "bytes": 156268,
+      "sha256": "d40da0b52f13f8c20961a356e3bf6fabb6db52b15f3f9541b2ceb7da73f083ee"
+    },
+    "public/minisite/fenix-8/images/health-bg01-m.png": {
+      "bytes": 196089,
+      "sha256": "880cbaa50b9bb21a920e5a9ed5072c1e26314854ade2e7223a721e698a7cf49c"
+    },
+    "public/minisite/fenix-8/images/health-bg01.jpg": {
+      "bytes": 30315,
+      "sha256": "2da6e6d10ece7e4a4bf6f48cfd79bd03ccf88503a329f34148f8c6c5a4cb176b"
+    },
+    "public/minisite/fenix-8/images/health-bg02-m.png": {
+      "bytes": 185853,
+      "sha256": "de5e38fd339fff9308d706d983c815206f8624ffcbfe29ac70c90bbdf53e3d03"
+    },
+    "public/minisite/fenix-8/images/health-bg02.jpg": {
+      "bytes": 117830,
+      "sha256": "36dfd6d0c3cc14dfb6941b51c02f8a82386274e507af4a8f2c0256c3f2804df1"
+    },
+    "public/minisite/fenix-8/images/health-bg03-m.png": {
+      "bytes": 192636,
+      "sha256": "081a013042a1cafd2220dd2950b70256ccf0cf77d1a521d66734bf632a00c95e"
+    },
+    "public/minisite/fenix-8/images/health-bg03.jpg": {
+      "bytes": 151175,
+      "sha256": "6e028664fdc8aeab8cb433fdf334394519756d019b4abcd84d317957ec94eb8e"
+    },
+    "public/minisite/fenix-8/images/health-bg04-m.png": {
+      "bytes": 152191,
+      "sha256": "62bc14781fb3c5eef9e5cc1e9e4bd74b94c4ceae54ff3c8410ee8207dc029fa9"
+    },
+    "public/minisite/fenix-8/images/health-bg04.jpg": {
+      "bytes": 23910,
+      "sha256": "4e87f04d4bc102d47802fd7bb106399e0ab53eda347f00b033ee56c2878f3137"
+    },
+    "public/minisite/fenix-8/images/health-bg05-m.png": {
+      "bytes": 162116,
+      "sha256": "dfa8f9bb8524b14b2f11e7486cbd2546683716be5528b38192c3a2d304809cac"
+    },
+    "public/minisite/fenix-8/images/health-bg05.jpg": {
+      "bytes": 28337,
+      "sha256": "2519d7f9dcc9a491feede8fa85ba34623100bc5224a5db26da6d6fea1e6fd5b3"
+    },
+    "public/minisite/fenix-8/images/icon-accident.png": {
+      "bytes": 3801,
+      "sha256": "ecbaaea5a788530dc3abb7bbcfe6a6734de2c41390e34cab4773de962c272214"
+    },
+    "public/minisite/fenix-8/images/icon-find.png": {
+      "bytes": 4257,
+      "sha256": "45f2b2d27058a72edd0b3d65e38315f0921addd0746d9f724227b9793bd16cce"
+    },
+    "public/minisite/fenix-8/images/icon-jetlag.png": {
+      "bytes": 3719,
+      "sha256": "6959dc1a22c97dca27109a3e52415f49d1aca4b141f254b5e2f83bb5f76f60dc"
+    },
+    "public/minisite/fenix-8/images/icon-music.png": {
+      "bytes": 2724,
+      "sha256": "a61806c01aaa54309f1faeb6429031d79a6f94b04d5ff2f898b5d95ac532d14a"
+    },
+    "public/minisite/fenix-8/images/icon-notification.png": {
+      "bytes": 866,
+      "sha256": "aabe7b2e26658c22ec7fb33594096228e7c9ec53abb5eca9a32559ec68620cb9"
+    },
+    "public/minisite/fenix-8/images/icon-pay.png": {
+      "bytes": 3052,
+      "sha256": "bf1ebac1f09f233e89e59dd64d800badc88a13e8ffd4c2f7a4c02e22798d9229"
+    },
+    "public/minisite/fenix-8/images/icon-rightarrow.png": {
+      "bytes": 1988,
+      "sha256": "ab60b3610e543476712ebd55d29f52910c114efd6492d039c3ec24e030e559eb"
+    },
+    "public/minisite/fenix-8/images/icon/icon-line.svg": {
+      "bytes": 507,
+      "sha256": "38da9aea98a103cfc18b065d2309bfdd4d01012de9a43395eb02d934dcae00b8"
+    },
+    "public/minisite/fenix-8/images/infinite-1024.png": {
+      "bytes": 11453,
+      "sha256": "e8c46f780ee1184cd8578803a1f00ccc4f09b7177bfeb313997eeeb03405d53f"
+    },
+    "public/minisite/fenix-8/images/kv-bg.jpg": {
+      "bytes": 358984,
+      "sha256": "8c877c15e2d7dd6ad53a23e44dcfb5e136d2dc819210cbe4f9b06810d3b18e6a"
+    },
+    "public/minisite/fenix-8/images/light.png": {
+      "bytes": 143490,
+      "sha256": "bc25e0c17bad8df2099219ba42a66eb02da101653538292432148b91d0387a20"
+    },
+    "public/minisite/fenix-8/images/main-wording.png": {
+      "bytes": 3267,
+      "sha256": "65bfefd1f1063eee8e3615d9e698b0c3acbe6bf073d934200822500313b6de54"
+    },
+    "public/minisite/fenix-8/images/map-01.png": {
+      "bytes": 104061,
+      "sha256": "26ee52dc3518d00dff0d08a6d7ce03a9acd5033a3c2fa06d5fd96728b935a840"
+    },
+    "public/minisite/fenix-8/images/map-02.png": {
+      "bytes": 174120,
+      "sha256": "b40dd9c03205ca70b78d785d02c0447b89baf0bab0afad0874ca0db5feb2fa0a"
+    },
+    "public/minisite/fenix-8/images/map-03.png": {
+      "bytes": 127315,
+      "sha256": "45a35301598eb879474be396484bc8bc19e63c0d46975e310eff82b52312c69b"
+    },
+    "public/minisite/fenix-8/images/map-04.png": {
+      "bytes": 122330,
+      "sha256": "2624d5e08dbc2ac70183d66cf2b383c1f7f169aba9b9c8a2f6cfe51795d18601"
+    },
+    "public/minisite/fenix-8/images/mapline-bg.jpg": {
+      "bytes": 163362,
+      "sha256": "5a8a50aae87c97d066f2f50b6985f299a31b825af120b0f17052c3b96f88cdfb"
+    },
+    "public/minisite/fenix-8/images/outdoor-bg-m.jpg": {
+      "bytes": 108418,
+      "sha256": "90e3c9305de812827b2fbdb594c9c55079512cbc452ceae1e1850af27fa5c9af"
+    },
+    "public/minisite/fenix-8/images/outdoor-bg.jpg": {
+      "bytes": 489673,
+      "sha256": "13b0d910c0532b74b3e52838eb009ba500f7706be9b74448506bc514e63fd259"
+    },
+    "public/minisite/fenix-8/images/overview-01-m.png": {
+      "bytes": 45886,
+      "sha256": "ee26c0b0a07dabf3b3b69a07367babb1e81e9d203a7edd4b251457188678e11e"
+    },
+    "public/minisite/fenix-8/images/overview-01.png": {
+      "bytes": 51040,
+      "sha256": "46e9f4d0ee98e9e7ba9e3a1f0342f57dc730cf53f425f19c0d4ff403be942bf5"
+    },
+    "public/minisite/fenix-8/images/overview-02.png": {
+      "bytes": 46328,
+      "sha256": "b7f0dffd07d6aa5a2d97b8feaea599ea69aeb792c997f2789c2709c22034686e"
+    },
+    "public/minisite/fenix-8/images/overview-03.png": {
+      "bytes": 41259,
+      "sha256": "db1d56aa5e16ab32e4589d905c23efb891b4041f9bd1380ef9f4ab7af8bb8078"
+    },
+    "public/minisite/fenix-8/images/overview-04-m.png": {
+      "bytes": 4933,
+      "sha256": "15c731dde6729a702def42c17a525a01b3e7134e1b0ef33b2c1c30e24b54bf4c"
+    },
+    "public/minisite/fenix-8/images/overview-04.png": {
+      "bytes": 4938,
+      "sha256": "8b7f523967bab74fa8c60e59b6501fa38fd43ce43b283951d3ced9437502e088"
+    },
+    "public/minisite/fenix-8/images/overview-05.png": {
+      "bytes": 12485,
+      "sha256": "fa8ea3df8be6d0a50ecf7b76116663aacc42580a8ca31c9830dcd4e7351da672"
+    },
+    "public/minisite/fenix-8/images/overview-bg-sports-m.jpg": {
+      "bytes": 71419,
+      "sha256": "ff19229fdbfb00428788adb2da7fbf5b074b9937462d7f83e5111c8f30f773ce"
+    },
+    "public/minisite/fenix-8/images/overview-bg-sports.jpg": {
+      "bytes": 13752,
+      "sha256": "14095ba65e57a2e1d93fd15640622b969505359d07d965105c984af0b4035568"
+    },
+    "public/minisite/fenix-8/images/overview-bg-training.jpg": {
+      "bytes": 31484,
+      "sha256": "a790d66f2eee667cbad19fcd61d63cc0159f5cb32188b0016668adb30f6a0188"
+    },
+    "public/minisite/fenix-8/images/overview-bg-voice-m.jpg": {
+      "bytes": 39844,
+      "sha256": "b382113a686f23229f34b27b19842f1fb343502e6bdcd49c5d31d28348417554"
+    },
+    "public/minisite/fenix-8/images/overview-bg-voice.jpg": {
+      "bytes": 14627,
+      "sha256": "97026de40fb6822fa563a5db75620974681cdb7a152c15cd91829fece6af2347"
+    },
+    "public/minisite/fenix-8/images/prodoct-climbpro.png": {
+      "bytes": 116019,
+      "sha256": "da194db27985990ae9e5dad052c79d8fc52241950815111a2dfb9266902abfc3"
+    },
+    "public/minisite/fenix-8/images/prodoct-flashlight.png": {
+      "bytes": 385508,
+      "sha256": "46fdb102ba16013e12059b05c7644ce04dc8aa88c66f6f3f80765978fb143959"
+    },
+    "public/minisite/fenix-8/images/prodoct-pacepro.png": {
+      "bytes": 131099,
+      "sha256": "e9d18faa86ab562e7c19422547855827bddab87254de834c0a3d5df77650835e"
+    },
+    "public/minisite/fenix-8/images/product-health.png": {
+      "bytes": 152400,
+      "sha256": "6b4a592af83bdae0c49dfc9f966e405980aa25c88d1d1fb62eb0b91ee8af28e6"
+    },
+    "public/minisite/fenix-8/images/product-map.png": {
+      "bytes": 117264,
+      "sha256": "9a32f27c77b09b95e64eb6a4bb50516582b1a94f7eaa22f54602e1fa43fe8bda"
+    },
+    "public/minisite/fenix-8/images/share-app-bg.jpg": {
+      "bytes": 170841,
+      "sha256": "d7809fff382777236bf7a1c5fa066e1ec3e7fa93214258c846371c2a6eaedd09"
+    },
+    "public/minisite/fenix-8/images/share-bg-m.jpg": {
+      "bytes": 91758,
+      "sha256": "ce0d220cad0f56629aefb6e6ec0e7ba08adfd483ec41e80a2d42e49c37d909fb"
+    },
+    "public/minisite/fenix-8/images/share-bg.jpg": {
+      "bytes": 298880,
+      "sha256": "e01a2ea0e0bfa5711c062c3a281aead59d11f0ef2a13de8401c1dc3382b4bfc7"
+    },
+    "public/minisite/fenix-8/images/smartlife-bg.jpg": {
+      "bytes": 97335,
+      "sha256": "ce5f225cf777dfa26acc1b54d8d76ea1618bbdda73ef5df494913e8b957c7557"
+    },
+    "public/minisite/fenix-8/images/spec-fenix-8-amoled-43mm-black.png": {
+      "bytes": 64524,
+      "sha256": "e5e8c10751d09299315b6b9f9f8af3b964e49841f606becc3d076e77cb189c41"
+    },
+    "public/minisite/fenix-8/images/spec-fenix-8-amoled-43mm-gold.png": {
+      "bytes": 73769,
+      "sha256": "86ac4762c0ac92cc89f60db030c9a4346c66293e7162919546ba6c5ae85c5803"
+    },
+    "public/minisite/fenix-8/images/spec-fenix-8-amoled-43mm-white.png": {
+      "bytes": 63817,
+      "sha256": "0f2031cd0a5fcf0077dda0950d23d3147df93c63135bf39964875fb7f11d378b"
+    },
+    "public/minisite/fenix-8/images/spec-fenix-8-amoled-47mm-black.png": {
+      "bytes": 79740,
+      "sha256": "56dd6f01231551f3da2f44b3a3898e43b49ea1c279ecfff6f9eaac9df741cba4"
+    },
+    "public/minisite/fenix-8/images/spec-fenix-8-amoled-47mm-blackred.png": {
+      "bytes": 69926,
+      "sha256": "8917632a2b7d0a217f9e64f94dc90b4367ebb01e6ce367344e35291fd095e4fb"
+    },
+    "public/minisite/fenix-8/images/spec-fenix-8-amoled-47mm-orange.png": {
+      "bytes": 86088,
+      "sha256": "7a279ae1c7cb6abd3ba0eeb538c28d3d5eab5c0a8e6a02b7b5bc9c626a9f8631"
+    },
+    "public/minisite/fenix-8/images/spec-fenix-8-amoled-51mm-black.png": {
+      "bytes": 84259,
+      "sha256": "fdefc72653a82a985f4c43cd49d18cc4f2d8b31c065dbd782913a85a93447dd8"
+    },
+    "public/minisite/fenix-8/images/spec-fenix-8-amoled-51mm-orange.png": {
+      "bytes": 94483,
+      "sha256": "108698819a6943b6ff32eb6adeeb6d70707ca9ff22347abdfd6e3c50f0e59ae7"
+    },
+    "public/minisite/fenix-8/images/spec-fenix-8-solar-47mm-black.png": {
+      "bytes": 69207,
+      "sha256": "24eb3c2e16f6f19ac99eac35fe783bcc4aed5a1bf57d196aef9d51b8cd3257a9"
+    },
+    "public/minisite/fenix-8/images/spec-fenix-8-solar-51mm-black.png": {
+      "bytes": 75093,
+      "sha256": "e8440467f6ebd1cf39ed92c90fe87bc43fd7aa090c2647fbb36c22e2da491ed5"
+    },
+    "public/minisite/fenix-8/images/sport-bg.jpg": {
+      "bytes": 221499,
+      "sha256": "861596c63d5e37f52db90b18375908984c0fa0aeb3315ee891eff7a10a621e96"
+    },
+    "public/minisite/fenix-8/images/sport-icon-01.png": {
+      "bytes": 1295,
+      "sha256": "05df3bb742b7a8efad1dd5f88462e6515d115f80ce319d52621559f6fd8a6185"
+    },
+    "public/minisite/fenix-8/images/sport-icon-02.png": {
+      "bytes": 1573,
+      "sha256": "d7f2e0e07be05ee1e9ddc14395885b4456c12efaa899b540279a1e41e0990477"
+    },
+    "public/minisite/fenix-8/images/sport-icon-03.png": {
+      "bytes": 1186,
+      "sha256": "f6f286b631c529f0e47eaa8250e3b15512c5d7ff452ce6520ba7c078a6070b25"
+    },
+    "public/minisite/fenix-8/images/sport-icon-04.png": {
+      "bytes": 664,
+      "sha256": "6c2c27f1bbfa074f6e97e2254cd226e911c14d74e593a27752358efdc5f4efa1"
+    },
+    "public/minisite/fenix-8/images/training-app-bg-m.png": {
+      "bytes": 106058,
+      "sha256": "7a34e594776e0ce7f44b0b33bb9fd89f9a44ef59352158165665e3f02b57bc29"
+    },
+    "public/minisite/fenix-8/images/training-app-bg.png": {
+      "bytes": 73219,
+      "sha256": "ebc90b8357e0c18910b8cd29460dbd1cebad13fd1c95cb9c9250d59840b07bfe"
+    },
+    "public/minisite/fenix-8/images/training-bg-m.jpg": {
+      "bytes": 90722,
+      "sha256": "4fd262aa1787f52d9a6e7c941ea0de626d6b714a6aeade5aea712b20dcf6ab0f"
+    },
+    "public/minisite/fenix-8/images/training-bg.jpg": {
+      "bytes": 252452,
+      "sha256": "0b5617910f9c2379b6e5653e7d4d45d0263e8a6894d00eeb7aa225d6fbd5a8e6"
+    },
+    "public/minisite/fenix-8/images/training-product.png": {
+      "bytes": 112415,
+      "sha256": "41eec829e322326afd9a47f77bf211b7d4222a4450e21bb0d87aff03e0ef4406"
+    },
+    "public/minisite/fenix-8/images/voice-icon-01.png": {
+      "bytes": 743,
+      "sha256": "cc417469f6f52156ae41a0a6bc492d1cb47e053677f558ab45069a06bb7248d5"
+    },
+    "public/minisite/fenix-8/images/voice-icon-02.png": {
+      "bytes": 799,
+      "sha256": "2cba22197a33847a3538779c8ee27ad11c3de8c94c2a4633d2c6e4dabe39ec12"
+    },
+    "public/minisite/fenix-8/images/voice-icon-03.png": {
+      "bytes": 857,
+      "sha256": "fcd9fa806410b151d46535ab4400d2689819355b1cd2be0c2b588f2143ae5cbb"
+    },
+    "public/minisite/fenix-8/video/amoled-screen.mp4": {
+      "bytes": 2503070,
+      "sha256": "292228f5586bf26809a36b76647afda8df3e45f36907185c04614ed7c3f57c44"
+    },
+    "public/minisite/fenix-8/video/minisite-kv.mp4": {
+      "bytes": 2780237,
+      "sha256": "45890dc01a920c86380f4a8b5a9a9719f12a7a4a3b7544d29567a1f8486862fe"
+    },
+    "public/minisite/fenix-8/video/solar-screen.mp4": {
+      "bytes": 2797209,
+      "sha256": "31ad4d3acc37a9c9566d9cfd6a384be8a570d6ee4ed6c5ad7c5ee4912c73b219"
+    },
+    "public/minisite/fenix-8/video/voice-control.mp4": {
+      "bytes": 2158475,
+      "sha256": "6c38e14f9b2fe205e6edc4f34bde54da098c125dff191758cd8eb552499111ed"
+    },
+    "public/minisite/fenix-8/video/voice-listen.mp4": {
+      "bytes": 1337549,
+      "sha256": "6f2d2524edc4108ce0bc7bdff92b2d168ad5cf62bf70d5a843d544493f3b9fa1"
+    },
+    "public/minisite/fenix-8/video/voice-memo.mp4": {
+      "bytes": 1693949,
+      "sha256": "2f82341431fafba1f94090458e3a8ad171938988263fe6f718498fa41922cdca"
+    },
+    "public/minisite/garmin-pay/images/garmin-pay.jpg": {
+      "bytes": 65648,
+      "sha256": "545eb55df555867b8266163b050c027521354e1ecd683709cd9899d38f1bac3b"
+    },
+    "public/minisite/garmin-pay/images/hero.jpg": {
+      "bytes": 131348,
+      "sha256": "c612872b03c34e3de0177d32fb543922ed1490fa429ad0ba8432ae4501fd0c3b"
+    },
+    "public/minisite/garmin-pay/images/icon-privacy-and-security.svg": {
+      "bytes": 804,
+      "sha256": "de624cedb8794ec803fe3d0648b3faee8b3dad6225e7996130176f4d89207845"
+    },
+    "public/minisite/garmin-pay/images/icon-where-it-works.svg": {
+      "bytes": 1556,
+      "sha256": "356daf2bb70ff745ecd226c5e7194c1c9c8ecaa8bea5e215190c3bf39a28cc0f"
+    },
+    "public/minisite/garmin-pay/images/maxresdefault.jpg": {
+      "bytes": 52968,
+      "sha256": "645b90a9ea979ab99e549971f02fd9149619155d9b6c5c9cf62e617448618f4a"
+    },
+    "public/minisite/garmin-pay/images/purchases.jpg": {
+      "bytes": 65679,
+      "sha256": "776ea73160c415c032f83111242b9899ddced0eee0ed46fcdb31f31781a7db23"
+    },
+    "public/minisite/garmin-pay/images/quickAndEasy.jpg": {
+      "bytes": 34146,
+      "sha256": "e65330f7bde5e28611c2e9df6cc8ba2d038f5048edd7e0e21f27f86a4b6eca18"
+    },
+    "public/minisite/garmin-pay/images/share-image.jpg": {
+      "bytes": 107295,
+      "sha256": "60f34829d00cbd08f26d8083b549291d302df57e1a22b0207e8664c52ffbb5dc"
+    },
+    "public/minisite/garmin-pay/images/tip-for-banks.jpg": {
+      "bytes": 98886,
+      "sha256": "c268d47778be2df80b5331d817340022b36b4a867abcf306a2cab4b15c0dc025"
+    },
+    "public/minisite/why-garmin/images/bg-clock.jpg": {
+      "bytes": 113363,
+      "sha256": "884df87247d83a572e0097b23f650d53c11f1813f1f47f6bcf9eca240befd3a3"
+    },
+    "public/minisite/why-garmin/images/bg-solar.jpg": {
+      "bytes": 122993,
+      "sha256": "bb7593dc7d1d30cf58a0ff502b639c955be55b71f36f6526f46a52aa0da42048"
+    },
+    "public/minisite/why-garmin/images/exercise-battery.png": {
+      "bytes": 118843,
+      "sha256": "574dd4d475aa4575247018c111a15317c04c086b9efff83f29a3e854af9da118"
+    },
+    "public/minisite/why-garmin/images/exercise-waterproof.jpg": {
+      "bytes": 106074,
+      "sha256": "98557995109494f3ed7958b2646cc2cb3b31256c2a2e7fa937ff838e13dfa538"
+    },
+    "public/minisite/why-garmin/images/life-smart-notifications.png": {
+      "bytes": 26283,
+      "sha256": "c7fb215cb8676956d9f4904b8b14978daaa03b0dd72a281012f6ca364e3b0e7a"
+    },
+    "public/minisite/why-garmin/images/screen-animation.png": {
+      "bytes": 70583,
+      "sha256": "8b98c798deb2ea711523a883b88771da0a177036161e273dff2aea60218d1f02"
+    },
+    "public/minisite/why-garmin/images/screen-battery-life.png": {
+      "bytes": 40038,
+      "sha256": "63bac90d9f88b705250373b9dd5dd18e236a3b31ac25e5365ef82dcf59766c4c"
+    },
+    "public/minisite/why-garmin/images/screen-bike.png": {
+      "bytes": 97696,
+      "sha256": "267b226264fdade8bc91c6881d233ec2c364f3549d0f068618171d512360bfcf"
+    },
+    "public/minisite/why-garmin/images/screen-body-battery-venu.png": {
+      "bytes": 37752,
+      "sha256": "e4e474c86449ff17514df042456416d172ab9f20eb7f9a4ef1f4349a773c72d7"
+    },
+    "public/minisite/why-garmin/images/screen-calories.png": {
+      "bytes": 29176,
+      "sha256": "7da8cef827aa1a208b6db57be75fa8da85b3c6350f5044d175c237ea4c1e9d45"
+    },
+    "public/minisite/why-garmin/images/screen-coach.png": {
+      "bytes": 30946,
+      "sha256": "acf6585ea09e77c898a422b73b55aa5f3e158c7e7ea34e902c9fcca547b5849d"
+    },
+    "public/minisite/why-garmin/images/screen-course-view.png": {
+      "bytes": 207860,
+      "sha256": "64df969b05adf26ab1134323d96c293063d3cc2cb4fa8a77ee2d38727deacac7"
+    },
+    "public/minisite/why-garmin/images/screen-daily-suggested.png": {
+      "bytes": 44012,
+      "sha256": "63a2d9855675324eb76352a5ad647c663e177f2ab34ba86af37f90c105cd06d2"
+    },
+    "public/minisite/why-garmin/images/screen-flashlight.png": {
+      "bytes": 40966,
+      "sha256": "f886ae1dc154760d1f6cabd50d499b61ad0ca78c452c8c03d578e63f21c98a7a"
+    },
+    "public/minisite/why-garmin/images/screen-hr-instinct.png": {
+      "bytes": 33160,
+      "sha256": "f5146e040729ed35ed0ae043ddaa4fd4b27b57c64294b47635bbe5578cababac"
+    },
+    "public/minisite/why-garmin/images/screen-hrv.png": {
+      "bytes": 34998,
+      "sha256": "42f0f135f66aa4560c799f677bd7d2967e3aa8168d8442efe8b8f22e6ec565eb"
+    },
+    "public/minisite/why-garmin/images/screen-message.png": {
+      "bytes": 132516,
+      "sha256": "5b84996251988a44d67141e025e5d43b74a446203fe2655f0c30242ca3d744ad"
+    },
+    "public/minisite/why-garmin/images/screen-morning-report.png": {
+      "bytes": 187412,
+      "sha256": "a288f0ac1431f544bee5b082c7642fc47a37611c80c389b0c02cba7fd0478339"
+    },
+    "public/minisite/why-garmin/images/screen-music.png": {
+      "bytes": 89688,
+      "sha256": "a402db8005daf8c042c012ee9e36c62351a7985dcdc1f5d37cca1116857b2992"
+    },
+    "public/minisite/why-garmin/images/screen-pace-pro.png": {
+      "bytes": 34007,
+      "sha256": "9d4b5b42973eaf2376b1da8d62d3adbd20e7a946d1e5c8ab17433fea13ec79a4"
+    },
+    "public/minisite/why-garmin/images/screen-race-predictor.png": {
+      "bytes": 30431,
+      "sha256": "1bba8ade7803e5deca0525fe77c61e17e5ee84b99d05b9dffa496a0f8012f8fe"
+    },
+    "public/minisite/why-garmin/images/screen-readiness.png": {
+      "bytes": 98687,
+      "sha256": "a328b698cf3ce784cbbcd69dcd345d16dc6003542d458ee6aa2ae95cfd29a378"
+    },
+    "public/minisite/why-garmin/images/screen-recovery.png": {
+      "bytes": 40630,
+      "sha256": "8336b83a073a99bb0aecf2096e9ad13ade2563b358336d7af96a032447e471cb"
+    },
+    "public/minisite/why-garmin/images/screen-run-statute.png": {
+      "bytes": 30436,
+      "sha256": "36680678d16026c30c310c4bcd50d5ccf56d871cecb99596f308b8080456a684"
+    },
+    "public/minisite/why-garmin/images/screen-sleep-score-venu.png": {
+      "bytes": 25638,
+      "sha256": "4df97234729446621a91a8cc0084a34eeb47436a2d3cd71435c230ee0289a148"
+    },
+    "public/minisite/why-garmin/images/screen-sleep.png": {
+      "bytes": 25638,
+      "sha256": "4df97234729446621a91a8cc0084a34eeb47436a2d3cd71435c230ee0289a148"
+    },
+    "public/minisite/why-garmin/images/screen-steps.png": {
+      "bytes": 34810,
+      "sha256": "bd7afee1f7e09a862759dc8e451096489d46021068231bf504cab0ad228066e0"
+    },
+    "public/minisite/why-garmin/images/screen-stress-b.png": {
+      "bytes": 145492,
+      "sha256": "4a6709c33af3c78cd61c444f0f4cbb82949cfc2b132062c929bd01d8313cb304"
+    },
+    "public/minisite/why-garmin/images/screen-stress.png": {
+      "bytes": 37313,
+      "sha256": "863c94bea62cb11a6b3b1d5074e44369caa2c7e859017f26fe3454113760507d"
+    },
+    "public/minisite/why-garmin/images/screen-training-effect.png": {
+      "bytes": 46533,
+      "sha256": "99e1687c3cad0eb015c06c82a6277e0f6733ad6619ee0327431aa655c104d88e"
+    },
+    "public/minisite/why-garmin/images/screen-training-status.png": {
+      "bytes": 35242,
+      "sha256": "1f91533eadcad280656815d4e29d35bfdb1c33fba0476194a07f7ed71bc39787"
+    },
+    "public/minisite/why-garmin/images/screen-virtual-caddie.png": {
+      "bytes": 112478,
+      "sha256": "d892f62cafb47022894dfeb189c0de872f49ffa8a76fed57f025c000c0c70b7c"
+    },
+    "public/minisite/why-garmin/images/screen-vo2.png": {
+      "bytes": 157341,
+      "sha256": "eb626394662c96913e34c192b76a6907bbbf7852df2d0a529723f198538f4367"
+    },
+    "public/minisite/why-garmin/images/screen-voice-note.png": {
+      "bytes": 90639,
+      "sha256": "e31ca4f7f89f3bea746e37dae630e7572e36b57d011908738548f864ac323bf2"
+    },
+    "public/minisite/why-garmin/images/screen-woman.png": {
+      "bytes": 39522,
+      "sha256": "27d83283bef4ff205b28329b49f76bac98befb041ef21754281450acd519cf97"
+    },
+    "public/minisite/why-garmin/images/share-image.jpg": {
+      "bytes": 114636,
+      "sha256": "8a7720a9bef6607f06a5aeee0c77bab455aa673fa4929108cedbc9953db8374d"
+    },
+    "public/minisite/why-garmin/video/exercise-battery.mp4": {
+      "bytes": 648826,
+      "sha256": "5207feba3d6f9d9ab5e578c542f10d32be415252a8e92d33ccd9464d1be97f67"
+    },
+    "public/minisite/why-garmin/video/exercise-flashlight.mp4": {
+      "bytes": 656059,
+      "sha256": "8b0254d93b3ae8cc13422a9e5d1f73dc4331a59038548e6009a482c62591fc4c"
+    },
+    "public/minisite/why-garmin/video/exercise-gps.mp4": {
+      "bytes": 591113,
+      "sha256": "07e36c5fcde3356afe76f2a78cde5a8343207d53ff7d88437c25d0eeba6892f9"
+    },
+    "public/minisite/why-garmin/video/exercise-sports.mp4": {
+      "bytes": 1088613,
+      "sha256": "2d98d6e0049e48c7c1a6ca2876e22467a8759a72dd017f2061d951ad6f840deb"
+    },
+    "public/minisite/why-garmin/video/exercise-suggestion.mp4": {
+      "bytes": 510548,
+      "sha256": "25c682e7338075bfbcf3d431ceef1ebd09bf2d11264c130bf99cfc78283929fa"
+    },
+    "public/minisite/why-garmin/video/health-body-battery.mp4": {
+      "bytes": 378179,
+      "sha256": "9ed2b8844d0ca83426db52978ddf66f8fbbddfbdd7f248e4a9890be10c294897"
+    },
+    "public/minisite/why-garmin/video/health-hydration.mp4": {
+      "bytes": 527859,
+      "sha256": "12eb157fd7c625d64e60fbfc5d47611f22724b1aa926262611e74bb206fca911"
+    },
+    "public/minisite/why-garmin/video/health-news.mp4": {
+      "bytes": 571873,
+      "sha256": "117bd785904552d5368cf93f6869f667aab14dcef4e94e187658073dfe724223"
+    },
+    "public/minisite/why-garmin/video/health-sleep.mp4": {
+      "bytes": 1029745,
+      "sha256": "40efa854c39773a7821b678704b3038c2fc6c9c78f7a38c9c168596d0c9f959f"
+    },
+    "public/minisite/why-garmin/video/hero-m.mp4": {
+      "bytes": 669125,
+      "sha256": "2195a758a92fcbd13df152f53449cb458dd30b4aea3755ae40128bc4e4efbfb9"
+    },
+    "public/minisite/why-garmin/video/hero.mp4": {
+      "bytes": 1472978,
+      "sha256": "ada777ed236c2e2880fec0292066dcaf59775e0c74f68eb52774904d2132dfec"
+    },
+    "public/minisite/why-garmin/video/life-garmin-pay.mp4": {
+      "bytes": 390751,
+      "sha256": "5cbffddb98f534a8f28d6f2c256b0ed32fbb33bb58887b4c4c4d2be79c0d3251"
+    },
+    "public/minisite/why-garmin/video/life-music.mp4": {
+      "bytes": 395779,
+      "sha256": "275c61e3016286cafa2fdee189802fab8cf746667d3d3843dd61d67b4e3b23bc"
+    },
+    "public/minisite/why-garmin/video/life-smart-notifications.mp4": {
+      "bytes": 447787,
+      "sha256": "36ac378e4c949854ad3f4db06c83e2427d5ad35e6d7951a980c738f39b5348c2"
+    },
+    "public/seo/.gitkeep": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "public/seo/apple-touch-icon.png": {
+      "bytes": 966,
+      "sha256": "3fae180ce7589df59d3e9188c2ae81d5b66666b5dd553952a07c71216f2133d3"
+    },
+    "public/seo/favicon-16x16.png": {
+      "bytes": 248,
+      "sha256": "cd555b39aed0c5263ff047435b2ef1e2b0802dad7b15bbfc109ed0464efd6e53"
+    },
+    "public/seo/favicon-32x32.png": {
+      "bytes": 365,
+      "sha256": "ae9c2dfa23e6f7b5b26a6c12d7196dc2385874e4065a6c6511ab3a5db284ff29"
+    },
+    "public/seo/safari-pinned-tab.svg": {
+      "bytes": 1036,
+      "sha256": "ff8eca2b7f932102b135b014677f9596697bc03ff0b3298703b23d76a125e68a"
+    },
+    "public/videos/.gitkeep": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "tests/account-addresses.test.mjs": {
+      "bytes": 5345,
+      "sha256": "d076735f1fb821555b6c1126fccea1d80782d050b3f4e5023221b639fb5c8491"
+    },
+    "tests/homepage-cms.test.mjs": {
+      "bytes": 4633,
+      "sha256": "42750faa1b3e0a1ba2d4eb81c2a7f278b359706b6f6641c67e974d62cccec6e3"
+    },
+    "tests/order-filters.test.mjs": {
+      "bytes": 2928,
+      "sha256": "81395f8c7ee3d8be9677837aa5e441a1b965bbf54ffeffcc28f727c5459355b7"
+    },
+    "tests/order-lifecycle.test.mjs": {
+      "bytes": 3954,
+      "sha256": "f3d2f289f57b28b2a4be63e0a849fa12cf4434d9802a5691b8358e1bf8921cfe"
+    },
+    "package.json": {
+      "bytes": 1551,
+      "sha256": "3eb0a30b5b05e8138ed7d48a2b297ea3cfb23772377f3d222643cae248cd20f6"
+    },
+    "package-lock.json": {
+      "bytes": 357448,
+      "sha256": "037f1c52f6e0c21d136745fd2d5a00dc8198020cc1854ed3094ce509e4ea00f6"
+    },
+    "next.config.ts": {
+      "bytes": 165,
+      "sha256": "9172ad6e1e3f22351955468a8585f81cb7c7eab784828ddad068d065ab2125cb"
+    },
+    "Dockerfile": {
+      "bytes": 4098,
+      "sha256": "bfb2e9078c3b49c22ec19bad51aada2c9a13e5e718f5e2a4fa80f7d6d7fd9e31"
+    },
+    "Dockerfile.dev": {
+      "bytes": 267,
+      "sha256": "26642fca5c9ba0306797ba1c677e695044f3cd6bb7f7da3bd2e3fc9393a55e55"
+    },
+    "docker-compose.yml": {
+      "bytes": 1288,
+      "sha256": "03419c552dd3366d21d4f950c26164039ddd4bedc8328a728dcf8a8c85abf86f"
+    },
+    ".dockerignore": {
+      "bytes": 808,
+      "sha256": "9d17890bf9e6ec156973b6f04844704cf93017d1ec793fc986b3650805ffda91"
+    }
+  }
+}

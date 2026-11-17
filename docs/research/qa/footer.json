@@ -1,0 +1,836 @@
+{
+ "target": "https://www.garmin.com/en-US/",
+ "clone": "http://localhost:3001/",
+ "sel": "body > footer",
+ "cloneSel": ".garmin-home > footer",
+ "widths": {
+  "390": {
+   "mismatchPct": 0.95,
+   "size": {
+    "target": [
+     390,
+     593
+    ],
+    "clone": [
+     390,
+     593
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "560-593",
+     "pct": 3.8
+    },
+    {
+     "y": "40-80",
+     "pct": 3.2
+    },
+    {
+     "y": "440-480",
+     "pct": 2.1
+    }
+   ],
+   "file": "docs/design-references/qa/footer-390-diff.png",
+   "text": {
+    "matched": 48,
+    "of": 49,
+    "issues": [
+     {
+      "t": "CUSTOMER SERVICE",
+      "ff": "Superscripts-Oswald → Oswald"
+     },
+     {
+      "t": "Support Center",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Contact Us",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Shipping, Returns & Refunds",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Order Support",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Warranty Information",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Data Management",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Deals & Promotions",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Find a Dealer",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "COMPANY",
+      "ff": "Superscripts-Oswald → Oswald"
+     },
+     {
+      "t": "About Us",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Blog",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Investors",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Newsroom",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Retail Store",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Corporate Sustainability",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Career Opportunities",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Early Careers",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "PLATFORMS",
+      "ff": "Superscripts-Oswald → Oswald"
+     },
+     {
+      "t": "Garmin Connect",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Garmin Express",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Connect IQ",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "flyGarmin",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Garmin Explore",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Navionics Chart Installer",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "FOR BUSINESS",
+      "ff": "Superscripts-Oswald → Oswald"
+     },
+     {
+      "t": "Garmin Health",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Dealer Resource Center",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Developers",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "inReach Professional",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Marine First Responder Solutions",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Automotive OEM",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "RV OEM",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Sensors",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Ambassadors & Affiliates",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Corporate Sponsorships",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "United States",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Garmin on Facebook",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Garmin on Twitter",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Garmin on YouTube",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Garmin on Pinterest",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "Garmin on Instagram",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-6641 → 0,-6579"
+     },
+     {
+      "t": "© Garmin Ltd. or its subsidiaries. All r",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Site Map",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Terms of Use",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Privacy",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Security",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Digital Accessibility",
+      "ff": "Superscripts-Roboto → Roboto"
+     }
+    ],
+    "missing": [
+     "SeaStar® Information Service"
+    ]
+   }
+  },
+  "768": {
+   "mismatchPct": 0.53,
+   "size": {
+    "target": [
+     768,
+     558
+    ],
+    "clone": [
+     768,
+     558
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "520-558",
+     "pct": 2.1
+    }
+   ],
+   "file": "docs/design-references/qa/footer-768-diff.png",
+   "text": {
+    "matched": 48,
+    "of": 49,
+    "issues": [
+     {
+      "t": "CUSTOMER SERVICE",
+      "ff": "Superscripts-Oswald → Oswald"
+     },
+     {
+      "t": "Support Center",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Contact Us",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Shipping, Returns & Refunds",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Order Support",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Warranty Information",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Data Management",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Deals & Promotions",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Find a Dealer",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "COMPANY",
+      "ff": "Superscripts-Oswald → Oswald"
+     },
+     {
+      "t": "About Us",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Blog",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Investors",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Newsroom",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Retail Store",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Corporate Sustainability",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Career Opportunities",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Early Careers",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "PLATFORMS",
+      "ff": "Superscripts-Oswald → Oswald"
+     },
+     {
+      "t": "Garmin Connect",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Garmin Express",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Connect IQ",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "flyGarmin",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Garmin Explore",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Navionics Chart Installer",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "FOR BUSINESS",
+      "ff": "Superscripts-Oswald → Oswald"
+     },
+     {
+      "t": "Garmin Health",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Dealer Resource Center",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Developers",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "inReach Professional",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Marine First Responder Solutions",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Automotive OEM",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "RV OEM",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Sensors",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Ambassadors & Affiliates",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Corporate Sponsorships",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "United States",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Garmin on Facebook",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Garmin on Twitter",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Garmin on YouTube",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Garmin on Pinterest",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "Garmin on Instagram",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,-4501 → 0,-4485"
+     },
+     {
+      "t": "© Garmin Ltd. or its subsidiaries. All r",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Site Map",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Terms of Use",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Privacy",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Security",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Digital Accessibility",
+      "ff": "Superscripts-Roboto → Roboto"
+     }
+    ],
+    "missing": [
+     "SeaStar® Information Service"
+    ]
+   }
+  },
+  "1440": {
+   "mismatchPct": 1.34,
+   "size": {
+    "target": [
+     1440,
+     501
+    ],
+    "clone": [
+     1440,
+     501
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "440-480",
+     "pct": 9.6
+    },
+    {
+     "y": "200-240",
+     "pct": 2.2
+    }
+   ],
+   "file": "docs/design-references/qa/footer-1440-diff.png",
+   "text": {
+    "matched": 48,
+    "of": 49,
+    "issues": [
+     {
+      "t": "CUSTOMER SERVICE",
+      "ff": "Superscripts-Oswald → Oswald"
+     },
+     {
+      "t": "Support Center",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Contact Us",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Shipping, Returns & Refunds",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Order Support",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Warranty Information",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Data Management",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Deals & Promotions",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Find a Dealer",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "COMPANY",
+      "ff": "Superscripts-Oswald → Oswald"
+     },
+     {
+      "t": "About Us",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Blog",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Investors",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Newsroom",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Retail Store",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Corporate Sustainability",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Career Opportunities",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Early Careers",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "PLATFORMS",
+      "ff": "Superscripts-Oswald → Oswald"
+     },
+     {
+      "t": "Garmin Connect",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Garmin Express",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Connect IQ",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "flyGarmin",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Garmin Explore",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Navionics Chart Installer",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "FOR BUSINESS",
+      "ff": "Superscripts-Oswald → Oswald"
+     },
+     {
+      "t": "Garmin Health",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Dealer Resource Center",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Developers",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "inReach Professional",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Marine First Responder Solutions",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Automotive OEM",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "RV OEM",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Sensors",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Ambassadors & Affiliates",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Corporate Sponsorships",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "United States",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Garmin on Facebook",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)"
+     },
+     {
+      "t": "Garmin on Twitter",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)"
+     },
+     {
+      "t": "Garmin on YouTube",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)"
+     },
+     {
+      "t": "Garmin on Pinterest",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)"
+     },
+     {
+      "t": "Garmin on Instagram",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)"
+     },
+     {
+      "t": "© Garmin Ltd. or its subsidiaries. All r",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Site Map",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Terms of Use",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Privacy",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Security",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Digital Accessibility",
+      "ff": "Superscripts-Roboto → Roboto"
+     }
+    ],
+    "missing": [
+     "SeaStar® Information Service"
+    ]
+   }
+  }
+ }
+}
