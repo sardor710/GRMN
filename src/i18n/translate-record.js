@@ -1,0 +1,139 @@
+// Pure CMS translation overlay resolver. A record keeps its English fields as the
+// source of truth and may carry `translations: { ru?: Partial<...>, kk?: Partial<...> }`.
+//
+// FieldSpec (declarative, recursive):
+//   scalars:     string fields replaced by the overlay when it is a non-blank string
+//   stringLists: string[] fields merged by index (blank entries fall back, extra rows ignored)
+//   lists:       arrays of objects merged by index, each item resolved with the nested spec
+//   keyed:       arrays of objects whose overlay is a Record<itemId, Partial<item>>, nested spec
+//   idPatches:   overlay maps Record<id, string> patching `field` on items found by walking
+//                `path` (array fields) of the base record, e.g. valueLabels -> options.values.label
+
+function isBlank(value) {
+  return typeof value !== 'string' || value.trim() === '';
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function clone(value) {
+  return structuredClone(value);
+}
+
+function applyIdPatch(node, path, field, map) {
+  if (path.length === 0) {
+    if (isPlainObject(node) && typeof node.id === 'string' && Object.hasOwn(map, node.id)) {
+      const next = map[node.id];
+      if (!isBlank(next)) node[field] = next;
+    }
+    return;
+  }
+  const [head, ...rest] = path;
+  const list = isPlainObject(node) ? node[head] : undefined;
+  if (!Array.isArray(list)) return;
+  for (const child of list) applyIdPatch(child, rest, field, map);
+}
+
+function mergeInto(target, overlay, spec) {
+  if (!isPlainObject(overlay)) return;
+
+  for (const key of spec.scalars ?? []) {
+    if (!isBlank(overlay[key])) target[key] = overlay[key];
+  }
+
+  for (const key of spec.stringLists ?? []) {
+    const rows = overlay[key];
+    if (!Array.isArray(rows) || !Array.isArray(target[key])) continue;
+    target[key] = target[key].map((base, i) => (isBlank(rows[i]) ? base : rows[i]));
+  }
+
+  for (const [key, nested] of Object.entries(spec.lists ?? {})) {
+    const rows = overlay[key];
+    if (!Array.isArray(rows) || !Array.isArray(target[key])) continue;
+    target[key].forEach((item, i) => mergeInto(item, rows[i], nested));
+  }
+
+  for (const [key, nested] of Object.entries(spec.keyed ?? {})) {
+    const byId = overlay[key];
+    if (!isPlainObject(byId) || !Array.isArray(target[key])) continue;
+    for (const item of target[key]) {
+      if (isPlainObject(item) && typeof item.id === 'string' && Object.hasOwn(byId, item.id)) {
+        mergeInto(item, byId[item.id], nested);
+      }
+    }
+  }
+
+  for (const patch of spec.idPatches ?? []) {
+    const map = overlay[patch.map];
+    if (!isPlainObject(map)) continue;
+    applyIdPatch(target, patch.path, patch.field, map);
+  }
+}
+
+export function localizeRecord(record, locale, spec) {
+  const out = clone(record);
+  const overlay = locale === 'en' ? undefined : record?.translations?.[locale];
+  delete out.translations;
+  if (overlay) mergeInto(out, overlay, spec);
+  return out;
+}
+
+export function localizeList(records, locale, fn) {
+  return records.map((record) => fn(record, locale));
+}
+
+export function isRecordTranslated(record, locale, requiredFields) {
+  if (locale === 'en') return true;
+  const overlay = record?.translations?.[locale];
+  if (!isPlainObject(overlay)) return false;
+  return requiredFields.every((field) => {
+    const value = overlay[field];
+    if (typeof value === 'string') return value.trim() !== '';
+    if (Array.isArray(value)) return value.length > 0;
+    return value != null;
+  });
+}
+
+export const PRODUCT_SPEC = Object.freeze({
+  scalars: ['name', 'description', 'overviewHtml', 'seoTitle', 'seoDescription', 'priceSuffix'],
+  stringLists: ['inTheBox'],
+  lists: {
+    specs: { scalars: ['label', 'value'] },
+    features: { scalars: ['title', 'body'] },
+    specGroups: { scalars: ['title'], lists: { items: { scalars: ['label', 'value'] } } },
+  },
+  idPatches: [
+    { map: 'optionNames', path: ['options'], field: 'name' },
+    { map: 'valueLabels', path: ['options', 'values'], field: 'label' },
+    { map: 'variantTitles', path: ['variants'], field: 'title' },
+    { map: 'imageAlts', path: ['images'], field: 'alt' },
+  ],
+});
+
+export const BLOG_SPEC = Object.freeze({
+  scalars: ['title', 'excerpt', 'content', 'category', 'readingTime', 'seoTitle', 'seoDescription'],
+});
+
+export const BANNER_SPEC = Object.freeze({ scalars: ['title', 'subtitle', 'ctaLabel'] });
+
+export const SETTINGS_SPEC = Object.freeze({ scalars: ['seoTitle', 'seoDescription'] });
+
+export const HOMEPAGE_SPEC = Object.freeze({
+  keyed: {
+    heroBanners: { scalars: ['title', 'subtitle', 'disclaimer'] },
+    carousels: {
+      scalars: ['title', 'subtitle'],
+      keyed: { items: { scalars: ['title', 'description', 'badge', 'ctaText', 'imageAlt'] } },
+    },
+    promoTiles: { scalars: ['title', 'cta'] },
+    storyTiles: { scalars: ['title', 'cta'] },
+    categoryTiles: { scalars: ['title', 'cta'] },
+  },
+});
+
+export const localizeProduct = (record, locale) => localizeRecord(record, locale, PRODUCT_SPEC);
+export const localizeBlog = (record, locale) => localizeRecord(record, locale, BLOG_SPEC);
+export const localizeBanner = (record, locale) => localizeRecord(record, locale, BANNER_SPEC);
+export const localizeHomepage = (record, locale) => localizeRecord(record, locale, HOMEPAGE_SPEC);
+export const localizeSettings = (record, locale) => localizeRecord(record, locale, SETTINGS_SPEC);

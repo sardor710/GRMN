@@ -29,6 +29,10 @@ export interface Client {
   createdAt: string;
 }
 
+// ---- Translation overlay: English fields stay the source; ru/kk overlays are optional and
+// partial (blank/missing fields fall back to English). Maps 1:1 onto future *_translations tables. ----
+export type Translations<T> = Partial<Record<'ru' | 'kk', Partial<T>>>;
+
 export type ProductStatus = 'published' | 'draft' | 'archived';
 
 export type ProductBadgeOption =
@@ -161,6 +165,31 @@ export interface CMSProduct {
   noIndex?: boolean;
   ogImage?: string;
   createdAt: string;
+  translations?: Translations<ProductTranslatable>;
+}
+
+export interface ProductTranslatable
+  extends Pick<
+    CMSProduct,
+    | 'name'
+    | 'description'
+    | 'overviewHtml'
+    | 'specs'
+    | 'specGroups'
+    | 'inTheBox'
+    | 'features'
+    | 'seoTitle'
+    | 'seoDescription'
+    | 'priceSuffix'
+  > {
+  /** optionId → translated option name */
+  optionNames?: Record<string, string>;
+  /** optionValueId → translated value label */
+  valueLabels?: Record<string, string>;
+  /** variantId → translated variant title */
+  variantTitles?: Record<string, string>;
+  /** imageId → translated alt text */
+  imageAlts?: Record<string, string>;
 }
 
 export type DiscountType = 'percentage' | 'fixed';
@@ -200,7 +229,10 @@ export interface Banner {
   active: boolean;
   order: number;
   createdAt: string;
+  translations?: Translations<BannerTranslatable>;
 }
+
+export type BannerTranslatable = Pick<Banner, 'title' | 'subtitle' | 'ctaLabel'>;
 
 export type BlogStatus = 'published' | 'draft';
 
@@ -224,7 +256,14 @@ export interface CMSBlog {
   noIndex?: boolean;
   ogImage?: string;
   createdAt: string;
+  translations?: Translations<BlogTranslatable>;
 }
+
+/** Blog category is a plain label string (no separate tag/category records), so it is translated inline. */
+export type BlogTranslatable = Pick<
+  CMSBlog,
+  'title' | 'excerpt' | 'content' | 'category' | 'readingTime' | 'seoTitle' | 'seoDescription'
+>;
 
 export interface SEOCheckItem {
   id: string;
@@ -329,7 +368,10 @@ export interface StoreSettings {
   seoDescription: string;
   /** KZT per 1 USD, remembered by the garmin.com importer */
   importRateKztPerUsd?: number;
+  translations?: Translations<SettingsTranslatable>;
 }
+
+export type SettingsTranslatable = Pick<StoreSettings, 'seoTitle' | 'seoDescription'>;
 
 export interface ActivityLog {
   id: string;
@@ -423,6 +465,33 @@ export interface HomepageConfig {
   storyTiles: HomepageTileBlock[];
   categoryTiles: HomepageTileBlock[];
   updatedAt?: string;
+  translations?: Translations<HomepageTranslatable>;
+}
+
+/** Homepage overlay: every block and carousel item has a stable `id`, so overlays are keyed by id. */
+export type HomepageTileTranslatable = Partial<Pick<HomepageTileBlock, 'title' | 'cta'>>;
+
+export interface CarouselItemTranslatable {
+  title?: string;
+  description?: string;
+  /** e.g. "Save $100" */
+  badge?: string;
+  /** CTA label of promo items */
+  ctaText?: string;
+  imageAlt?: string;
+}
+
+export interface HomepageTranslatable {
+  /** heroBanner.id → text. `disclaimer` is the legal copy. */
+  heroBanners?: Record<string, Partial<Pick<HeroBanner, 'title' | 'subtitle' | 'disclaimer'>>>;
+  /** carousel.id → text + items keyed by item.id */
+  carousels?: Record<
+    string,
+    { title?: string; subtitle?: string; items?: Record<string, CarouselItemTranslatable> }
+  >;
+  promoTiles?: Record<string, HomepageTileTranslatable>;
+  storyTiles?: Record<string, HomepageTileTranslatable>;
+  categoryTiles?: Record<string, HomepageTileTranslatable>;
 }
 
 export interface ImageDimensionSpec {
