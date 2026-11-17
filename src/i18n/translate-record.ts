@@ -42,7 +42,8 @@ export function isRecordTranslated(
   return js.isRecordTranslated(record, locale, requiredFields);
 }
 
-export function localizeProduct(record: CMSProduct, locale: Locale): CMSProduct {
+/** Generic so partial product shapes (e.g. the admin preview of unsaved form state) localize too. */
+export function localizeProduct<T extends Partial<CMSProduct> = CMSProduct>(record: T, locale: Locale): T {
   return localizeRecord(record, locale, PRODUCT_SPEC);
 }
 

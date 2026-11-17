@@ -213,3 +213,17 @@ test('translationStatus: complete / partial / empty', () => {
   assert.equal(translationStatus(home, 'ru', HOMEPAGE_SPEC), 'partial');
   assert.equal(translationStatus(home, 'kk', HOMEPAGE_SPEC), 'empty');
 });
+
+test('editor overlay helper writes one path immutably and keeps the other locale', async () => {
+  const { setOverlayValue, getOverlayString } = await import('../src/lib/cms/translation-edit.ts');
+  const before = { kk: { name: 'A' } };
+  let t = setOverlayValue(before, 'ru', ['specs', 2, 'label'], 'L');
+  t = setOverlayValue(t, 'ru', ['inTheBox', 1], 'X');
+  t = setOverlayValue(t, 'ru', ['optionNames', 'opt-a'], 'N');
+  assert.deepEqual(t, { kk: { name: 'A' }, ru: { specs: [{}, {}, { label: 'L' }], inTheBox: ['', 'X'], optionNames: { 'opt-a': 'N' } } });
+  assert.deepEqual(before, { kk: { name: 'A' } });
+  assert.equal(getOverlayString(t, 'ru', ['specs', 2, 'label']), 'L');
+  assert.equal(getOverlayString(t, 'ru', ['specs', 9, 'label']), '');
+  // what the editor sends round-trips through the server normalizer
+  assert.deepEqual(normalizeTranslations(t, PRODUCT_SPEC), t);
+});

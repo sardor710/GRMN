@@ -2,7 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { ProductImage, ProductOption, ProductVariant } from "@/lib/cms/types";
+import type {
+  ProductImage,
+  ProductOption,
+  ProductTranslatable,
+  ProductVariant,
+  Translations,
+} from "@/lib/cms/types";
+import type { Locale } from "@/i18n/config";
+import { localizeProduct } from "@/i18n/translate-record";
 import { availableValueIds, resolveVariant } from "@/lib/cms/product-variants";
 import { GarminBadge } from "@/components/GarminBadge";
 import { EditorDialog } from "./EditorDialog";
@@ -23,17 +31,26 @@ export interface PreviewProduct {
   defaultImageId: string;
   options: ProductOption[];
   variants: ProductVariant[];
+  translations?: Translations<ProductTranslatable>;
 }
 
 interface ProductPreviewModalProps {
   open: boolean;
   onClose: () => void;
   product: PreviewProduct;
+  /** Language the preview opens in (the editor's current content tab). */
+  initialLocale?: Locale;
 }
+
+const PREVIEW_LOCALES: { id: Locale; label: string }[] = [
+  { id: "en", label: "EN" },
+  { id: "ru", label: "RU" },
+  { id: "kk", label: "KK" },
+];
 
 // TODO(M5): switch to ProductTop + buildDetailFromCms once the storefront helper exists, so the preview
 // is rendered by the exact storefront components instead of this faithful re-creation.
-export function ProductPreviewModal({ open, onClose, product }: ProductPreviewModalProps) {
+export function ProductPreviewModal({ open, onClose, product, initialLocale = "en" }: ProductPreviewModalProps) {
   return (
     <EditorDialog
       open={open}
@@ -48,8 +65,35 @@ export function ProductPreviewModal({ open, onClose, product }: ProductPreviewMo
       }
     >
       {/* Remount on every open so the default variant is re-selected from the latest form state. */}
-      {open && <PreviewBody product={product} />}
+      {open && <LocalizedPreview product={product} initialLocale={initialLocale} />}
     </EditorDialog>
+  );
+}
+
+/** Language selector; the body renders the storefront-localized product (overlay applied, English fallback). */
+function LocalizedPreview({ product, initialLocale }: { product: PreviewProduct; initialLocale: Locale }) {
+  const [locale, setLocale] = useState<Locale>(initialLocale);
+  const localized = useMemo(() => localizeProduct(product, locale), [product, locale]);
+  return (
+    <div className="space-y-6">
+      <div role="radiogroup" aria-label="Preview language" className="inline-flex border border-neutral-300">
+        {PREVIEW_LOCALES.map((l) => (
+          <button
+            key={l.id}
+            type="button"
+            role="radio"
+            aria-checked={locale === l.id}
+            onClick={() => setLocale(l.id)}
+            className={`px-3 py-1.5 text-[11px] font-heading uppercase tracking-wider font-semibold ${
+              locale === l.id ? "bg-black text-white" : "bg-white text-neutral-600 hover:text-black"
+            }`}
+          >
+            {l.label}
+          </button>
+        ))}
+      </div>
+      <PreviewBody product={localized} />
+    </div>
   );
 }
 

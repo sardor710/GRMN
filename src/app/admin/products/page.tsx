@@ -38,11 +38,19 @@ import {
   OptionsEditor,
   ProductImagesEditor,
   ProductPreviewModal,
+  ProductTranslationPanel,
   VariantsTable,
   formatKzt,
   newId,
   type ProductDraft,
+  type ProductTranslations,
 } from "@/components/admin/product-editor";
+import { LocaleTabs, type ContentLocale } from "@/components/admin/LocaleTabs";
+import { translationStatus } from "@/lib/cms/translation-input";
+import { PRODUCT_SPEC } from "@/i18n/translate-record";
+
+/** RU/KK tab is "complete" once the product title and description are translated (storefront indexing rule). */
+const PRODUCT_REQUIRED_FIELDS = ["name", "description"] as const;
 
 const PRIMARY_CATEGORIES = [
   "Smartwatches & Wearables",
@@ -160,6 +168,8 @@ const blankForm = () => ({
   canonicalUrl: "",
   noIndex: false,
   ogImage: "",
+  // ru/kk overlays (sent whole on save; the API merges them per locale)
+  translations: {} as ProductTranslations,
 });
 
 type ProductForm = ReturnType<typeof blankForm>;
@@ -179,6 +189,7 @@ export default function AdminProductsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<CMSProduct | null>(null);
   const [activeTab, setActiveTab] = useState<EditorTab>("general");
+  const [contentLocale, setContentLocale] = useState<ContentLocale>("en");
   const [accessorySearch, setAccessorySearch] = useState("");
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -226,6 +237,7 @@ export default function AdminProductsPage() {
 
   const resetEditorState = () => {
     setActiveTab("general");
+    setContentLocale("en");
     setSaveError("");
     setSkuConflicts([]);
     setImportedId(null);
@@ -281,6 +293,7 @@ export default function AdminProductsPage() {
       canonicalUrl: prod.canonicalUrl || "",
       noIndex: prod.noIndex || false,
       ogImage: prod.ogImage || "",
+      translations: prod.translations || {},
     });
     resetEditorState();
     setIsModalOpen(true);
@@ -446,11 +459,13 @@ export default function AdminProductsPage() {
     setSkuConflicts([]);
     if (formData.images.length === 0 && !formData.image) {
       setSaveError("Add at least one product photo.");
+      setContentLocale("en");
       setActiveTab("media");
       return;
     }
     if (formData.variants.some((v) => !v.sku.trim())) {
       setSaveError("Every variant needs a SKU.");
+      setContentLocale("en");
       setActiveTab("variants");
       return;
     }
@@ -485,8 +500,12 @@ export default function AdminProductsPage() {
         const conflicts = data.conflicts.map((c) => c.toUpperCase());
         setSkuConflicts(conflicts);
         const variantHit = formData.variants.some((v) => conflicts.includes(v.sku.trim().toUpperCase()));
+        setContentLocale("en");
         setActiveTab(variantHit ? "variants" : "general");
       }
+      // e.g. "translations.kk.name is longer than 300 characters" → open that language tab
+      const badLocale = /^translations\.(ru|kk)\b/.exec(data.error || "")?.[1] as "ru" | "kk" | undefined;
+      if (badLocale) setContentLocale(badLocale);
       setSaveError(data.error || `Save failed (HTTP ${res.status}).`);
     } catch (err) {
       console.error("Failed to save product:", err);
@@ -761,6 +780,25 @@ export default function AdminProductsPage() {
             </div>
           </div>
 
+          <LocaleTabs
+            value={contentLocale}
+            onChange={setContentLocale}
+            status={{
+              ru: translationStatus(formData, "ru", PRODUCT_SPEC, PRODUCT_REQUIRED_FIELDS),
+              kk: translationStatus(formData, "kk", PRODUCT_SPEC, PRODUCT_REQUIRED_FIELDS),
+            }}
+          />
+
+          {contentLocale !== "en" ? (
+            <ProductTranslationPanel
+              key={contentLocale}
+              locale={contentLocale}
+              product={formData}
+              translations={formData.translations}
+              onChange={(translations) => setFormData((prev) => ({ ...prev, translations }))}
+            />
+          ) : (
+          <>
           {/* Navigation Tabs */}
           <div className="flex items-center gap-1 overflow-x-auto border-b border-neutral-200 pb-2">
             {[
@@ -1433,6 +1471,8 @@ export default function AdminProductsPage() {
               />
             </div>
           )}
+          </>
+          )}
 
           {/* Submit Actions */}
           {saveError && (
@@ -1444,7 +1484,10 @@ export default function AdminProductsPage() {
           <div className="flex justify-between items-center pt-4 border-t border-neutral-200">
             <div className="flex items-center gap-2">
               <span className="text-[12px] text-neutral-500">
-                Active: <span className="text-black uppercase font-heading font-semibold">{activeTab}</span>
+                Active:{" "}
+                <span className="text-black uppercase font-heading font-semibold">
+                  {contentLocale === "en" ? activeTab : `${contentLocale} translation`}
+                </span>
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -1500,7 +1543,9 @@ export default function AdminProductsPage() {
           defaultImageId: formData.defaultImageId,
           options: formData.options,
           variants: formData.variants,
+          translations: formData.translations,
         }}
+        initialLocale={contentLocale}
       />
     </div>
   );
