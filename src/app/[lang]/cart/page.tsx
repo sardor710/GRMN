@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CartView } from "@/components/CartView";
-import { initPageLocale } from "@/i18n/page-locale";
+import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 
-export const metadata: Metadata = {
-  title: "Shopping Cart | Garmin",
-};
+export async function generateMetadata({ params }: PageProps<"/[lang]/cart">): Promise<Metadata> {
+  const t = await getMetaTranslations(params);
+  return { title: t("cartTitle") };
+}
 
 export default async function CartPage({ params }: PageProps<"/[lang]/cart">) {
   await initPageLocale(params);

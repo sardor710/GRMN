@@ -1,11 +1,16 @@
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { Product } from "@/types";
 import { GarminBadge } from "@/components/GarminBadge";
+import { formatMoney } from "@/i18n/format";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
 const swatchColors = ["#111", "#c9c4bd", "#e8792b", "#c9d94b", "#6b7280", "#b8a6d9"];
 
 export function ProductCard({ product }: { product: Product }) {
+  const t = useTranslations("ProductCard");
+  const locale = useAppLocale();
   return (
     <Link
       href={`/p/${product.id}`}
@@ -40,10 +45,10 @@ export function ProductCard({ product }: { product: Product }) {
       <p className="mt-2 text-[14px] leading-snug text-[#5b5b5b]">{product.description}</p>
       <p className="mt-3 text-[15px] text-black">
         <span className="font-medium">
-          ${product.price.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD
+          {t("price", { price: formatMoney(product.price, locale) })}
         </span>
         {product.priceSuffix && (
-          <span className="text-[#5b5b5b]"> {product.priceSuffix}</span>
+          <span className="text-[#5b5b5b]"> {product.priceSuffix === "and up" ? t("andUp") : product.priceSuffix}</span>
         )}
       </p>
     </Link>

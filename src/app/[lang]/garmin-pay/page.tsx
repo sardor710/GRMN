@@ -3,13 +3,12 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ProductCard } from "@/components/ProductCard";
 import { products } from "@/lib/products";
-import { initPageLocale } from "@/i18n/page-locale";
+import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 
-export const metadata: Metadata = {
-  title: "Garmin Pay™ | A Contactless Payment Solution",
-  description:
-    "No wallet? No phone? No problem. Make contactless payments on the go with your compatible Garmin smartwatch or bike computer.",
-};
+export async function generateMetadata({ params }: PageProps<"/[lang]/garmin-pay">): Promise<Metadata> {
+  const t = await getMetaTranslations(params);
+  return { title: t("garminPayTitle"), description: t("garminPayDescription") };
+}
 
 const iconStrip = [
   {

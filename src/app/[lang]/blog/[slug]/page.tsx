@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Image from "next/image";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -9,28 +10,30 @@ import { blogPosts, getPost, articleBody } from "@/lib/blog";
 import { getBlogs } from "@/lib/cms/store";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import type { CMSBlog } from "@/lib/cms/types";
-import { initPageLocale } from "@/i18n/page-locale";
+import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
+import { formatDate } from "@/i18n/format";
 
 export function generateStaticParams() {
   return blogPosts.map((p) => ({ slug: p.slug }));
 }
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/blog/[slug]">): Promise<Metadata> {
+  const t = await getMetaTranslations(params);
   const { slug } = await params;
   const post = getPost(slug);
   const cmsBlogs = getBlogs();
   const cmsBlog = cmsBlogs.find((b) => b.slug === slug);
 
   if (!post && !cmsBlog) {
-    return { title: "Garmin Blog & Fitness Guides" };
+    return { title: t("blogFallbackTitle") };
   }
 
-  const title = cmsBlog?.seoTitle || (post ? `${post.title} | Garmin Blog` : "Garmin Blog");
+  const title = cmsBlog?.seoTitle || (post ? t("blogPostTitle", { title: post.title }) : t("blogShortTitle"));
   const description =
     cmsBlog?.seoDescription ||
     cmsBlog?.excerpt ||
     post?.excerpt ||
-    "Explore training tips, GPS navigation guides, and smartwatch features on the official Garmin Blog.";
+    t("blogPostDescription");
   const image = cmsBlog?.ogImage || cmsBlog?.coverImage || post?.image || "/images/blog/triathlon.jpg";
   const url = `https://www.garmin.com/blog/${slug}`;
 
@@ -69,7 +72,8 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/blog/[slug
 }
 
 export default async function ArticlePage({ params }: PageProps<"/[lang]/blog/[slug]">) {
-  await initPageLocale(params);
+  const locale = await initPageLocale(params);
+  const t = await getTranslations("BlogArticle");
   const { slug } = await params;
   const post = getPost(slug);
   const cmsBlogs = getBlogs();
@@ -101,8 +105,8 @@ export default async function ArticlePage({ params }: PageProps<"/[lang]/blog/[s
   const body = post ? articleBody(post) : [activeBlog.content];
   const categories = post ? post.categories : [activeBlog.category];
   const displayImage = activeBlog.coverImage || post?.image || "/images/blog/triathlon.jpg";
-  const displayDate = post?.date || new Date(activeBlog.publishedAt || activeBlog.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-  const displayReadTime = post?.readTime || activeBlog.readingTime || "4 min read";
+  const displayDate = post?.date || formatDate(activeBlog.publishedAt || activeBlog.createdAt, locale, "long");
+  const displayReadTime = post?.readTime || activeBlog.readingTime || t("defaultReadTime");
 
   const related = blogPosts.filter((p) => p.slug !== slug && p.category === (post?.category || activeBlog.category)).slice(0, 3);
   const fallbackRelated = related.length ? related : blogPosts.filter((p) => p.slug !== slug).slice(0, 3);
@@ -141,7 +145,7 @@ export default async function ArticlePage({ params }: PageProps<"/[lang]/blog/[s
             <span>·</span>
             <span>{displayReadTime}</span>
             <span>·</span>
-            <span>By {activeBlog.author}</span>
+            <span>{t("byline", { author: activeBlog.author })}</span>
           </div>
           <div className="mt-8 space-y-5">
             {body.map((para, i) => (
@@ -155,7 +159,7 @@ export default async function ArticlePage({ params }: PageProps<"/[lang]/blog/[s
           </div>
           <div className="mt-10 border-t border-neutral-200 pt-6">
             <Link href="/blog" className="text-[14px] text-[#007cc3] underline">
-              ← Back to all articles
+              {t("backToAll")}
             </Link>
           </div>
         </article>
@@ -163,7 +167,7 @@ export default async function ArticlePage({ params }: PageProps<"/[lang]/blog/[s
         {/* Related */}
         <section className="bg-neutral-50 py-14">
           <div className="mx-auto max-w-[1280px] px-4">
-            <SectionHeading>Related Articles</SectionHeading>
+            <SectionHeading>{t("related")}</SectionHeading>
             <div className="mt-8 grid grid-cols-1 gap-8 md:grid-cols-3">
               {fallbackRelated.map((p) => (
                 <Link key={p.slug} href={`/blog/${p.slug}`} className="group flex flex-col">

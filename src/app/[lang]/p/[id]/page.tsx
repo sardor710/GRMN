@@ -7,7 +7,7 @@ import { ProductTabs } from "@/components/ProductTabs";
 import { RelatedProducts } from "@/components/RelatedProducts";
 import { getProductDetail, getAllProducts, getCMSProduct } from "@/lib/products";
 import { ProductJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
-import { initPageLocale } from "@/i18n/page-locale";
+import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 
 export const dynamic = "force-dynamic";
 
@@ -16,21 +16,22 @@ export function generateStaticParams() {
 }
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/p/[id]">): Promise<Metadata> {
+  const t = await getMetaTranslations(params);
   const { id } = await params;
   const cmsProduct = getCMSProduct(id);
   const detail = getProductDetail(id);
 
   if (!detail && !cmsProduct) {
-    return { title: "Garmin Smartwatches & GPS Devices" };
+    return { title: t("productFallbackTitle") };
   }
 
-  const name = cmsProduct?.name || detail?.title || "Garmin Product";
-  const title = cmsProduct?.seoTitle || `${name} | Official Garmin Smartwatch`;
+  const name = cmsProduct?.name || detail?.title || t("productFallbackName");
+  const title = cmsProduct?.seoTitle || t("productTitle", { name });
   const description =
     cmsProduct?.seoDescription ||
     cmsProduct?.description ||
     detail?.subtitle ||
-    `Discover ${name} with advanced GPS tracking, health metrics, and long battery life.`;
+    t("productDescription", { name });
   const image = cmsProduct?.ogImage || cmsProduct?.image || detail?.gallery[0]?.src || "/images/products/1228429.jpg";
   const url = `https://www.garmin.com/p/${id}`;
 

@@ -1,6 +1,387 @@
 {
   "Meta": {
     "title": "Официальный сайт Garmin | GPS-технологии для любого образа жизни",
-    "description": "Garmin использует GPS-технологии в продуктах для авиации, морского дела, фитнеса, активного отдыха, отслеживания и мобильных приложений."
+    "description": "Garmin использует GPS-технологии в продуктах для авиации, морского дела, фитнеса, активного отдыха, отслеживания и мобильных приложений.",
+    "cartTitle": "Корзина | Garmin",
+    "compareTitle": "Сравнение смарт-часов | Garmin",
+    "accountTitle": "Мой аккаунт | Garmin",
+    "newsletterTitle": "Подписка на новости | Garmin",
+    "newsletterDescription": "Получайте новости и акции Garmin с учётом ваших предпочтений.",
+    "blogTitle": "Блог Garmin | Новости о наших продуктах и технологиях",
+    "blogDescription": "Последние новости о продуктах и технологиях Garmin.",
+    "blogFallbackTitle": "Блог Garmin и фитнес-гиды",
+    "blogShortTitle": "Блог Garmin",
+    "blogPostTitle": "{title} | Блог Garmin",
+    "blogPostDescription": "Советы по тренировкам, руководства по GPS-навигации и возможности смарт-часов в официальном блоге Garmin.",
+    "productFallbackTitle": "Смарт-часы и GPS-устройства Garmin",
+    "productFallbackName": "Продукт Garmin",
+    "productTitle": "{name} | Официальные смарт-часы Garmin",
+    "productDescription": "Откройте для себя {name}: продвинутое GPS-отслеживание, показатели здоровья и долгая работа от батареи.",
+    "catalogueTitle": "{title} | Garmin",
+    "garminPayTitle": "Garmin Pay™ | Бесконтактная оплата",
+    "garminPayDescription": "Без кошелька? Без телефона? Не проблема. Оплачивайте покупки бесконтактно с совместимых смарт-часов или велокомпьютера Garmin."
+  },
+  "BlogArticle": {
+    "byline": "Автор: {author}",
+    "defaultReadTime": "4 мин чтения",
+    "backToAll": "← Все статьи",
+    "related": "Похожие статьи"
+  },
+  "BlogExplorer": {
+    "heading": "Блог",
+    "intro": "Последние новости о наших продуктах и технологиях.",
+    "searchPlaceholder": "Поиск по блогу",
+    "clearFilters": "Сбросить фильтры",
+    "empty": "Статьи не найдены.",
+    "categories": {
+      "automotive": "Авто",
+      "aviation": "Авиация",
+      "fitness": "Фитнес",
+      "fish-and-hunt": "Рыбалка и охота",
+      "marine": "Море",
+      "outdoor": "Активный отдых",
+      "health": "Здоровье и новости",
+      "saved-by-garmin": "Спасены благодаря Garmin"
+    }
+  },
+  "BlogPage": {
+    "eyebrow": "Блог Garmin",
+    "heroAlt": "Блог Garmin"
+  },
+  "CatalogueGrid": {
+    "compare": "Сравнить",
+    "clearAll": "Сбросить все фильтры ({count})",
+    "activity": "Активность",
+    "level": "Уровень",
+    "caseSize": "Размер корпуса",
+    "sortBy": "Сортировка",
+    "empty": "Нет товаров, соответствующих фильтрам.",
+    "sort": {
+      "featured": "Рекомендуемые",
+      "priceAsc": "Цена: по возрастанию",
+      "priceDesc": "Цена: по убыванию",
+      "name": "Название: от А до Я"
+    },
+    "groups": {
+      "battery": "Время работы в режиме смарт-часов",
+      "hardware": "Оборудование",
+      "connectivity": "Подключение",
+      "series": "Серия",
+      "otherDevices": "Другие устройства"
+    },
+    "activities": {
+      "boating": "Яхтинг",
+      "cycling": "Велоспорт",
+      "diving": "Дайвинг",
+      "flying": "Полёты",
+      "golfing": "Гольф",
+      "hiking": "Походы",
+      "running": "Бег",
+      "strength": "Силовые тренировки",
+      "swimming": "Плавание",
+      "tacticalTraining": "Тактическая подготовка",
+      "triathlon": "Триатлон",
+      "walking": "Ходьба"
+    },
+    "levels": {
+      "entry": "Начальный",
+      "advanced": "Продвинутый",
+      "premium": "Премиум",
+      "youth": "Детский"
+    },
+    "caseSizes": {
+      "small": "Маленький (35–43 мм)",
+      "medium": "Средний (44–49 мм)",
+      "large": "Большой (≥ 50 мм)"
+    }
+  },
+  "CataloguePage": {
+    "smartwatches": {
+      "title": "Смарт-часы",
+      "heading": "ВСЕ СМАРТ-ЧАСЫ"
+    },
+    "running": {
+      "title": "GPS-часы для бега",
+      "heading": "ВСЕ СМАРТ-ЧАСЫ ДЛЯ БЕГА",
+      "heroLabel": "СПОРТ И ФИТНЕС",
+      "heroBlurb": "Смарт-часы для бега"
+    }
+  },
+  "CategoryGrid": {
+    "heading": "Покупки по категориям",
+    "shop": "КУПИТЬ",
+    "tiles": {
+      "smartwatches": "СМАРТ-ЧАСЫ",
+      "autoHome": "АВТО И ДОМ",
+      "sportsFitness": "СПОРТ И ФИТНЕС",
+      "outdoorRecreation": "АКТИВНЫЙ ОТДЫХ",
+      "marine": "МОРСКАЯ ТЕХНИКА",
+      "aviation": "АВИАЦИЯ"
+    }
+  },
+  "Footer": {
+    "navLabel": "Навигация в подвале сайта",
+    "region": "США",
+    "social": "Garmin в {network}",
+    "copyright": "© Garmin Ltd. или её дочерние компании. Все права защищены.",
+    "columns": {
+      "customerService": "ОБСЛУЖИВАНИЕ КЛИЕНТОВ",
+      "company": "КОМПАНИЯ",
+      "platforms": "ПЛАТФОРМЫ",
+      "forBusiness": "ДЛЯ БИЗНЕСА"
+    },
+    "links": {
+      "supportCenter": "Центр поддержки",
+      "contactUs": "Связаться с нами",
+      "shippingReturnsRefunds": "Доставка, возврат и возмещение",
+      "orderSupport": "Поддержка заказов",
+      "warrantyInformation": "Гарантия",
+      "dataManagement": "Управление данными",
+      "dealsPromotions": "Скидки и акции",
+      "findADealer": "Найти дилера",
+      "aboutUs": "О нас",
+      "blog": "Блог",
+      "investors": "Инвесторам",
+      "newsroom": "Пресс-центр",
+      "retailStore": "Фирменный магазин",
+      "corporateSustainability": "Устойчивое развитие",
+      "careerOpportunities": "Карьера",
+      "earlyCareers": "Начало карьеры",
+      "garminConnect": "Garmin Connect",
+      "garminExpress": "Garmin Express",
+      "connectIq": "Connect IQ",
+      "flygarmin": "flyGarmin",
+      "garminExplore": "Garmin Explore",
+      "navionicsChartInstaller": "Navionics Chart Installer",
+      "garminHealth": "Garmin Health",
+      "dealerResourceCenter": "Ресурсный центр для дилеров",
+      "developers": "Разработчикам",
+      "inreachProfessional": "inReach Professional",
+      "marineFirstResponderSolutions": "Решения для морских спасательных служб",
+      "seastarInformationService": "Информационный сервис SeaStar®",
+      "automotiveOem": "OEM для автопроизводителей",
+      "rvOem": "OEM для автодомов",
+      "sensors": "Датчики",
+      "ambassadorsAffiliates": "Амбассадоры и партнёры",
+      "corporateSponsorships": "Корпоративное спонсорство"
+    },
+    "legal": {
+      "siteMap": "Карта сайта",
+      "termsOfUse": "Условия использования",
+      "privacy": "Конфиденциальность",
+      "security": "Безопасность",
+      "digitalAccessibility": "Цифровая доступность"
+    }
+  },
+  "Header": {
+    "homeLabel": "Перейти на Garmin.com",
+    "siteNav": "Навигация по сайту",
+    "mobileNav": "Мобильная навигация по сайту",
+    "menuLabel": "Меню «{label}»",
+    "help": "Помощь",
+    "search": "Поиск",
+    "account": "Аккаунт",
+    "cartLabel": "Корзина, {count, plural, one {# товар} few {# товара} many {# товаров} other {# товара}}",
+    "toggleMenu": "Открыть или закрыть меню",
+    "searchHeading": "Поиск по Garmin",
+    "searchPlaceholder": "Поиск товаров",
+    "closeSearch": "Закрыть поиск",
+    "noResults": "Рекомендуемые товары не найдены.",
+    "takeover": "ПРАЗДНИЧНАЯ РАСПРОДАЖА",
+    "nav": {
+      "smartwatches": "Смарт-часы",
+      "sportsFitness": "Спорт и фитнес",
+      "outdoorRecreation": "Активный отдых",
+      "autoHome": "Авто и дом",
+      "marine": "Морская техника",
+      "aviation": "Авиация",
+      "sale": "Распродажа"
+    },
+    "groups": {
+      "products": "Продукты",
+      "maps": "Карты",
+      "accessoriesPlans": "Аксессуары и планы",
+      "discover": "Узнать больше",
+      "communities": "Сообщества",
+      "oemSolutions": "OEM-решения",
+      "appsPlans": "Приложения и планы",
+      "chartsMaps": "Карты и схемы",
+      "markets": "Сегменты",
+      "appsServices": "Приложения и сервисы",
+      "aviationDatabases": "Авиационные базы данных"
+    },
+    "links": {
+      "allSmartwatches": "Все смарт-часы",
+      "healthFitnessTracking": "Здоровье и фитнес-трекинг",
+      "designYourOwnWatch": "Создайте свои часы",
+      "watchesForWomen": "Женские часы",
+      "fashionHybridSmartwatches": "Стильные и гибридные смарт-часы",
+      "marqLuxuryWatchCollection": "Коллекция люксовых часов MARQ",
+      "running": "Бег",
+      "multisportTriathlete": "Мультиспорт и триатлон",
+      "adventure": "Приключения",
+      "swimming": "Плавание",
+      "diving": "Дайвинг",
+      "golf": "Гольф",
+      "kidsSmartwatches": "Детские смарт-часы",
+      "outdoorMaps": "Туристические карты",
+      "golfCourseLocator": "Поиск гольф-полей",
+      "accessories": "Аксессуары",
+      "apps": "Приложения",
+      "servicePlans": "Сервисные планы",
+      "garminPay": "Garmin Pay",
+      "garminTechnology": "Технологии Garmin",
+      "watchFinder": "Подбор часов",
+      "cirqaSmartBand": "Смарт-браслет CIRQA™",
+      "cycling": "Велоспорт",
+      "tacxIndoorCycling": "Велотренажёры Tacx®",
+      "scalesMonitors": "Весы и мониторы",
+      "cyclingMaps": "Велосипедные карты",
+      "smartwatchAccessories": "Аксессуары для смарт-часов",
+      "cyclingAccessories": "Велоаксессуары",
+      "indoorTrainingAccessories": "Аксессуары для домашних тренировок",
+      "garminCoach": "Garmin Coach",
+      "garminMarathonSeries": "Garmin Marathon Series",
+      "garminPros": "Garmin Pros",
+      "studentAthletes": "Студенты-спортсмены",
+      "handhelds": "Портативные навигаторы",
+      "satelliteCommunicators": "Спутниковые коммуникаторы",
+      "offRoadMotorsports": "Бездорожье и мотоспорт",
+      "adventureWatches": "Часы для приключений",
+      "sportsmanTactical": "Охота и тактика",
+      "dogTrackingTraining": "Трекинг и дрессировка собак",
+      "optics": "Оптика",
+      "equine": "Конный спорт",
+      "delormeAtlasGazetteer": "DeLorme Atlas & Gazetteer",
+      "inreachAccount": "Аккаунт inReach",
+      "womenOfAdventure": "Women of Adventure",
+      "carsRvCameras": "Автомобили, автодома и камеры",
+      "motorcycles": "Мотоциклы",
+      "trucks": "Грузовики",
+      "carAudio": "Автозвук",
+      "homeAudio": "Домашнее аудио",
+      "mapUpdates": "Обновления карт",
+      "purchaseNewMaps": "Купить новые карты",
+      "inDashMaps": "Карты для штатных систем",
+      "offRoadMaps": "Карты бездорожья",
+      "automotive": "Автопроизводителям",
+      "rv": "Автодома",
+      "stealthbox": "Stealthbox®",
+      "chartplottersFishfinders": "Картплоттеры и эхолоты",
+      "liveSonar": "Сонары реального времени",
+      "audio": "Аудио",
+      "transducers": "Датчики эхолота",
+      "trollingMotors": "Троллинговые моторы",
+      "iceFishingBundlesKits": "Комплекты для зимней рыбалки",
+      "radar": "Радары",
+      "autopilots": "Автопилоты",
+      "lighting": "Освещение",
+      "handheldsSmartwatches": "Портативные устройства и смарт-часы",
+      "vhfAis": "УКВ и АИС",
+      "sonarBlackBoxes": "Блоки сонаров",
+      "antennasSensors": "Антенны и датчики",
+      "cameras": "Камеры",
+      "sailing": "Парусный спорт",
+      "digitalSwitching": "Цифровая коммутация",
+      "engineCutoffMob": "Отключение двигателя / «Человек за бортом»",
+      "newCharts": "Новые карты",
+      "builtInUpdates": "Встроенные обновления",
+      "updatingCharts": "Обновление карт",
+      "navionicsBoatingApp": "Приложение Navionics Boating",
+      "integration": "Интеграция",
+      "softwareUpdates": "Обновления ПО",
+      "systemBuilder": "Конструктор систем",
+      "activecaptain": "ActiveCaptain",
+      "navigationRadios": "Навигация и радиостанции",
+      "flightDisplaysInstruments": "Пилотажные дисплеи и приборы",
+      "engineIndicationSystems": "Системы индикации двигателя",
+      "integratedFlightDecks": "Интегрированные кабины",
+      "datalinksConnectivity": "Каналы передачи данных и связь",
+      "audioPanels": "Аудиопанели",
+      "weather": "Погода",
+      "traffic": "Воздушная обстановка",
+      "adsBTransponders": "ADS-B и транспондеры",
+      "portableGpsWearables": "Портативные GPS и носимые устройства",
+      "generalAviation": "Авиация общего назначения",
+      "businessAviation": "Деловая авиация",
+      "experimental": "Экспериментальные ВС",
+      "helicopters": "Вертолёты",
+      "governmentDefense": "Госсектор и оборона",
+      "garminPilot": "Garmin Pilot",
+      "safetyManagementSystem": "Система управления безопасностью",
+      "aerodata": "AeroData",
+      "flygarmin": "flyGarmin",
+      "fltplanServices": "Сервисы FltPlan",
+      "aviationDatabaseUpdates": "Обновления авиационных баз данных",
+      "autonomi": "Autonomí",
+      "planesync": "PlaneSync",
+      "promotions": "Акции",
+      "support": "Поддержка",
+      "training": "Обучение"
+    },
+    "promos": {
+      "holidaySale": {
+        "title": "ПРАЗДНИЧНАЯ РАСПРОДАЖА",
+        "copy": "Большие скидки на праздничные подарки"
+      },
+      "fenix9": {
+        "title": "FĒNIX® 9",
+        "copy": "Совершенные смарт-часы"
+      },
+      "edge1060": {
+        "title": "EDGE® 1060",
+        "copy": "Премиальный велокомпьютер с голосовым управлением"
+      },
+      "garminDrive": {
+        "title": "НАВИГАТОРЫ GARMIN DRIVE™",
+        "copy": "Новые сверхширокие дисплеи упрощают вождение"
+      },
+      "axis": {
+        "title": "ПИЛОТАЖНЫЕ ДИСПЛЕИ AXIS™",
+        "copy": "Интегрированные пилотажные дисплеи для экспериментальных и сертифицированных поршневых самолётов"
+      }
+    }
+  },
+  "HomeFeatured": {
+    "featured": "РЕКОМЕНДУЕМ",
+    "shop": "Купить",
+    "previous": "Назад",
+    "next": "Вперёд"
+  },
+  "HomeHero": {
+    "label": "Избранные продукты Garmin",
+    "shop": "КУПИТЬ",
+    "previous": "Предыдущий слайд",
+    "next": "Следующий слайд",
+    "play": "Запустить слайд-шоу",
+    "pause": "Приостановить слайд-шоу",
+    "status": "Слайд {current} из {total}: {title}"
+  },
+  "HomeSignup": {
+    "heading": "Подпишитесь на новости",
+    "placeholder": "ivan@example.com",
+    "submit": "Отправить",
+    "copy": "Получайте новости о продуктах и акциях с учётом ваших предпочтений, устройств и сервисов.",
+    "privacy": "Узнайте о конфиденциальности email-рассылок."
+  },
+  "HomeTiles": {
+    "promoLabel": "Избранные коллекции",
+    "storiesLabel": "Истории Garmin",
+    "categoriesHeading": "ПОКУПКИ ПО КАТЕГОРИЯМ"
+  },
+  "NotFound": {
+    "heading": "Страница не найдена",
+    "body": "Страница, которую вы ищете, не существует.",
+    "home": "На главную"
+  },
+  "ProductCard": {
+    "price": "{price} USD",
+    "andUp": "и выше"
+  },
+  "RelatedProducts": {
+    "heading": "Вам также может понравиться"
+  },
+  "WearablesHero": {
+    "heading": "Самые популярные смарт-часы"
   }
 }

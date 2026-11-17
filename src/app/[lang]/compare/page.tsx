@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CompareTool } from "@/components/CompareTool";
-import { initPageLocale } from "@/i18n/page-locale";
+import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 
-export const metadata: Metadata = {
-  title: "Compare Smartwatches | Garmin",
-};
+export async function generateMetadata({ params }: PageProps<"/[lang]/compare">): Promise<Metadata> {
+  const t = await getMetaTranslations(params);
+  return { title: t("compareTitle") };
+}
 
 export default async function ComparePage({ params }: PageProps<"/[lang]/compare">) {
   await initPageLocale(params);

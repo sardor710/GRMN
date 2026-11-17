@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useTranslations } from "next-intl";
 import type { Product } from "@/types";
 import { activityFilters, levelFilters, caseSizeFilters } from "@/lib/products";
 import { ProductCard } from "@/components/ProductCard";
@@ -9,20 +10,15 @@ import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
 type SortKey = "featured" | "price-asc" | "price-desc" | "name";
 
+/** Message keys in the `CatalogueGrid` namespace. */
 const sortLabels: Record<SortKey, string> = {
-  featured: "Featured Products",
-  "price-asc": "Price: Low to High",
-  "price-desc": "Price: High to Low",
-  name: "Name: A to Z",
+  featured: "sort.featured",
+  "price-asc": "sort.priceAsc",
+  "price-desc": "sort.priceDesc",
+  name: "sort.name",
 };
 
-const collapsedGroups = [
-  "Battery Life in Smartwatch Mode",
-  "Hardware",
-  "Connectivity",
-  "Series",
-  "Other Devices",
-];
+const collapsedGroups = ["groups.battery", "groups.hardware", "groups.connectivity", "groups.series", "groups.otherDevices"];
 
 function FilterAccordion({
   title,
@@ -73,6 +69,8 @@ function Check({
 }
 
 export function CatalogueGrid({ products }: { products: Product[] }) {
+  const t = useTranslations("CatalogueGrid");
+  const tk = useTranslations();
   const localize = useLocalizeHref();
   const [activities, setActivities] = useState<Set<string>>(new Set());
   const [levels, setLevels] = useState<Set<string>>(new Set());
@@ -111,48 +109,48 @@ export function CatalogueGrid({ products }: { products: Product[] }) {
     <div className="mx-auto flex max-w-[1400px] flex-col gap-8 px-4 lg:flex-row">
       {/* Sidebar */}
       <aside className="w-full shrink-0 lg:w-[240px]">
-        <a href={localize("/compare")} className="g-btn g-btn--solid w-full">Compare</a>
+        <a href={localize("/compare")} className="g-btn g-btn--solid w-full">{t("compare")}</a>
         {activeCount > 0 && (
           <button
             onClick={clearAll}
             className="mt-3 text-[13px] text-[#007cc3] underline"
           >
-            Clear all filters ({activeCount})
+            {t("clearAll", { count: activeCount })}
           </button>
         )}
         <div className="mt-4">
-          <FilterAccordion title="Activity" defaultOpen>
+          <FilterAccordion title={t("activity")} defaultOpen>
             {activityFilters.map((a) => (
               <Check
-                key={a}
-                label={a}
-                checked={activities.has(a)}
-                onChange={() => toggle(activities, a, setActivities)}
+                key={a.value}
+                label={tk(a.labelKey)}
+                checked={activities.has(a.value)}
+                onChange={() => toggle(activities, a.value, setActivities)}
               />
             ))}
           </FilterAccordion>
-          <FilterAccordion title="Level">
+          <FilterAccordion title={t("level")}>
             {levelFilters.map((l) => (
               <Check
-                key={l}
-                label={l}
-                checked={levels.has(l)}
-                onChange={() => toggle(levels, l, setLevels)}
+                key={l.value}
+                label={tk(l.labelKey)}
+                checked={levels.has(l.value)}
+                onChange={() => toggle(levels, l.value, setLevels)}
               />
             ))}
           </FilterAccordion>
-          <FilterAccordion title="Case Size">
+          <FilterAccordion title={t("caseSize")}>
             {caseSizeFilters.map((c) => (
               <Check
                 key={c.value}
-                label={c.label}
+                label={tk(c.labelKey)}
                 checked={sizes.has(c.value)}
                 onChange={() => toggle(sizes, c.value, setSizes)}
               />
             ))}
           </FilterAccordion>
           {collapsedGroups.map((g) => (
-            <FilterAccordion key={g} title={g} />
+            <FilterAccordion key={g} title={t(g)} />
           ))}
         </div>
       </aside>
@@ -161,7 +159,7 @@ export function CatalogueGrid({ products }: { products: Product[] }) {
       <div className="flex-1">
         <div className="mb-6 flex items-center justify-end gap-3">
           <label htmlFor="sort" className="text-[14px] text-neutral-700">
-            Sort By
+            {t("sortBy")}
           </label>
           <select
             id="sort"
@@ -171,14 +169,14 @@ export function CatalogueGrid({ products }: { products: Product[] }) {
           >
             {(Object.keys(sortLabels) as SortKey[]).map((k) => (
               <option key={k} value={k}>
-                {sortLabels[k]}
+                {t(sortLabels[k])}
               </option>
             ))}
           </select>
         </div>
 
         {filtered.length === 0 ? (
-          <p className="py-16 text-center text-neutral-500">No products match your filters.</p>
+          <p className="py-16 text-center text-neutral-500">{t("empty")}</p>
         ) : (
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
             {filtered.map((p) => (

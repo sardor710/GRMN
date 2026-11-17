@@ -33,7 +33,8 @@ export interface HalfPod {
 }
 
 export interface CategoryTile {
-  title: string;
+  /** Message key (`CategoryGrid.tiles.*`). */
+  titleKey: string;
   image: string;
   href: string;
 }
@@ -50,8 +51,11 @@ export interface NavColumn {
 }
 
 export interface FooterColumn {
-  heading: string;
-  links: { label: string; href: string }[];
+  /** Stable id for the accordion panel (independent of the translated heading). */
+  id: string;
+  /** Message keys (`Footer.*`), resolved with `t()` where rendered. */
+  headingKey: string;
+  links: { labelKey: string; href: string }[];
 }
 
 export interface Product {

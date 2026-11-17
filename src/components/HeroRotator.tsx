@@ -2,12 +2,14 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { heroSlides } from "@/lib/content";
 import { ChevronLeftIcon, ChevronRightIcon, PauseIcon, PlayIcon } from "@/components/icons";
 
 const DURATION = 5000;
 
 export function HeroRotator() {
+  const t = useTranslations("HomeHero");
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
   const timer = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -67,14 +69,14 @@ export function HeroRotator() {
 
       {/* Prev / Next arrows */}
       <button
-        aria-label="Previous slide"
+        aria-label={t("previous")}
         onClick={() => go(index - 1)}
         className="absolute left-2 top-1/2 z-20 -translate-y-1/2 p-2 text-white/90 transition-colors hover:text-white"
       >
         <ChevronLeftIcon className="h-8 w-8 lg:h-10 lg:w-10" />
       </button>
       <button
-        aria-label="Next slide"
+        aria-label={t("next")}
         onClick={() => go(index + 1)}
         className="absolute right-2 top-1/2 z-20 -translate-y-1/2 p-2 text-white/90 transition-colors hover:text-white"
       >
@@ -83,7 +85,7 @@ export function HeroRotator() {
 
       {/* Pause / progress */}
       <button
-        aria-label={paused ? "Play" : "Pause"}
+        aria-label={paused ? t("play") : t("pause")}
         onClick={() => setPaused((p) => !p)}
         className="absolute right-5 top-4 z-20 grid h-9 w-9 place-items-center text-white"
       >

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import type { CarouselBlock, ProductCarouselItem, PromoCarouselItem } from "@/lib/cms/types";
 import styles from "./HomeFeatured.module.css";
 import { useLocalizeHref } from "@/i18n/useLocalizeHref";
@@ -63,6 +64,7 @@ function ArrowIcon({ direction }: { direction: "left" | "right" }) {
 
 function PromoTile({ item, eager }: { item: PromoCarouselItem; eager: boolean }) {
   const localize = useLocalizeHref();
+  const t = useTranslations("HomeFeatured");
   return (
     <a className={`${styles.slide} ${styles.promo}`} href={localize(item.href || "#")}>
       <Image
@@ -76,7 +78,7 @@ function PromoTile({ item, eager }: { item: PromoCarouselItem; eager: boolean })
       />
       <div className={styles.promoText}>
         <h3 className={styles.name}>{item.title}</h3>
-        <span className={styles.button}>{item.ctaText || "Shop"}</span>
+        <span className={styles.button}>{item.ctaText || t("shop")}</span>
       </div>
     </a>
   );
@@ -113,6 +115,7 @@ function ProductCard({ item, eager }: { item: ProductCarouselItem; eager: boolea
 }
 
 function FeaturedCarousel({ carousel }: { carousel: CarouselBlock }) {
+  const t = useTranslations("HomeFeatured");
   const viewport = useRef<HTMLElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState(0);
@@ -168,14 +171,14 @@ function FeaturedCarousel({ carousel }: { carousel: CarouselBlock }) {
           )}
         </div>
         {offset > 0 && (
-          <button type="button" title="Previous" className={`${styles.arrow} ${styles.arrowLeft}`} onClick={() => advance(-1)}>
-            <span className={styles.visuallyHidden}>Previous</span>
+          <button type="button" title={t("previous")} className={`${styles.arrow} ${styles.arrowLeft}`} onClick={() => advance(-1)}>
+            <span className={styles.visuallyHidden}>{t("previous")}</span>
             <ArrowIcon direction="left" />
           </button>
         )}
         {offset < maxOffset && (
-          <button type="button" title="Next" className={`${styles.arrow} ${styles.arrowRight}`} onClick={() => advance(1)}>
-            <span className={styles.visuallyHidden}>Next</span>
+          <button type="button" title={t("next")} className={`${styles.arrow} ${styles.arrowRight}`} onClick={() => advance(1)}>
+            <span className={styles.visuallyHidden}>{t("next")}</span>
             <ArrowIcon direction="right" />
           </button>
         )}

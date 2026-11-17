@@ -1,6 +1,387 @@
 {
   "Meta": {
     "title": "Garmin ресми сайты | Кез келген өмір салтына арналған GPS технологиялары",
-    "description": "Garmin авиация, теңіз, фитнес, белсенді демалыс, бақылау және мобильді қосымшаларға арналған өнімдерінде GPS технологияларын қолданады."
+    "description": "Garmin авиация, теңіз, фитнес, белсенді демалыс, бақылау және мобильді қосымшаларға арналған өнімдерінде GPS технологияларын қолданады.",
+    "cartTitle": "Себет | Garmin",
+    "compareTitle": "Смарт-сағаттарды салыстыру | Garmin",
+    "accountTitle": "Менің аккаунтым | Garmin",
+    "newsletterTitle": "Жаңалықтарға жазылу | Garmin",
+    "newsletterDescription": "Қалауларыңызға сай Garmin жаңалықтары мен акцияларын алыңыз.",
+    "blogTitle": "Garmin блогы | Өнімдеріміз бен технологияларымыз туралы жаңалықтар",
+    "blogDescription": "Garmin өнімдері мен технологиялары туралы соңғы жаңалықтар.",
+    "blogFallbackTitle": "Garmin блогы және фитнес нұсқаулықтары",
+    "blogShortTitle": "Garmin блогы",
+    "blogPostTitle": "{title} | Garmin блогы",
+    "blogPostDescription": "Garmin ресми блогында жаттығу кеңестері, GPS навигация нұсқаулықтары және смарт-сағат мүмкіндіктері.",
+    "productFallbackTitle": "Garmin смарт-сағаттары мен GPS құрылғылары",
+    "productFallbackName": "Garmin өнімі",
+    "productTitle": "{name} | Garmin ресми смарт-сағаты",
+    "productDescription": "{name}: озық GPS-бақылау, денсаулық көрсеткіштері және ұзақ батарея жұмысы.",
+    "catalogueTitle": "{title} | Garmin",
+    "garminPayTitle": "Garmin Pay™ | Контактсыз төлем",
+    "garminPayDescription": "Әмиян жоқ па? Телефон жоқ па? Мәселе емес. Үйлесімді Garmin смарт-сағатымен немесе велокомпьютерімен жолда контактсыз төлеңіз."
+  },
+  "BlogArticle": {
+    "byline": "Авторы: {author}",
+    "defaultReadTime": "4 мин оқу",
+    "backToAll": "← Барлық мақалалар",
+    "related": "Ұқсас мақалалар"
+  },
+  "BlogExplorer": {
+    "heading": "Блог",
+    "intro": "Өнімдеріміз бен технологияларымыз туралы соңғы жаңалықтар.",
+    "searchPlaceholder": "Блогтан іздеу",
+    "clearFilters": "Сүзгілерді тазалау",
+    "empty": "Мақалалар табылмады.",
+    "categories": {
+      "automotive": "Көлік",
+      "aviation": "Авиация",
+      "fitness": "Фитнес",
+      "fish-and-hunt": "Балық аулау және аңшылық",
+      "marine": "Теңіз",
+      "outdoor": "Белсенді демалыс",
+      "health": "Денсаулық және жаңалықтар",
+      "saved-by-garmin": "Garmin арқасында құтқарылғандар"
+    }
+  },
+  "BlogPage": {
+    "eyebrow": "Garmin блогы",
+    "heroAlt": "Garmin блогы"
+  },
+  "CatalogueGrid": {
+    "compare": "Салыстыру",
+    "clearAll": "Барлық сүзгілерді тазалау ({count})",
+    "activity": "Белсенділік",
+    "level": "Деңгей",
+    "caseSize": "Корпус өлшемі",
+    "sortBy": "Сұрыптау",
+    "empty": "Сүзгілерге сәйкес тауарлар жоқ.",
+    "sort": {
+      "featured": "Ұсынылғандар",
+      "priceAsc": "Баға: өсу бойынша",
+      "priceDesc": "Баға: кему бойынша",
+      "name": "Атауы: А-дан Я-ға дейін"
+    },
+    "groups": {
+      "battery": "Смарт-сағат режиміндегі батарея жұмысы",
+      "hardware": "Жабдық",
+      "connectivity": "Байланыс",
+      "series": "Серия",
+      "otherDevices": "Басқа құрылғылар"
+    },
+    "activities": {
+      "boating": "Қайықпен жүзу",
+      "cycling": "Велоспорт",
+      "diving": "Дайвинг",
+      "flying": "Ұшу",
+      "golfing": "Гольф",
+      "hiking": "Жаяу серуен",
+      "running": "Жүгіру",
+      "strength": "Күш жаттығулары",
+      "swimming": "Жүзу",
+      "tacticalTraining": "Тактикалық дайындық",
+      "triathlon": "Триатлон",
+      "walking": "Жаяу жүру"
+    },
+    "levels": {
+      "entry": "Бастапқы",
+      "advanced": "Озық",
+      "premium": "Премиум",
+      "youth": "Балалар"
+    },
+    "caseSizes": {
+      "small": "Кіші (35–43 мм)",
+      "medium": "Орташа (44–49 мм)",
+      "large": "Үлкен (≥ 50 мм)"
+    }
+  },
+  "CataloguePage": {
+    "smartwatches": {
+      "title": "Смарт-сағаттар",
+      "heading": "БАРЛЫҚ СМАРТ-САҒАТТАР"
+    },
+    "running": {
+      "title": "Жүгіруге арналған GPS сағаттар",
+      "heading": "ЖҮГІРУГЕ АРНАЛҒАН БАРЛЫҚ СМАРТ-САҒАТТАР",
+      "heroLabel": "СПОРТ ЖӘНЕ ФИТНЕС",
+      "heroBlurb": "Жүгіруге арналған смарт-сағаттар"
+    }
+  },
+  "CategoryGrid": {
+    "heading": "Санаттар бойынша сатып алу",
+    "shop": "САТЫП АЛУ",
+    "tiles": {
+      "smartwatches": "СМАРТ-САҒАТТАР",
+      "autoHome": "КӨЛІК ЖӘНЕ ҮЙ",
+      "sportsFitness": "СПОРТ ЖӘНЕ ФИТНЕС",
+      "outdoorRecreation": "БЕЛСЕНДІ ДЕМАЛЫС",
+      "marine": "ТЕҢІЗ ТЕХНИКАСЫ",
+      "aviation": "АВИАЦИЯ"
+    }
+  },
+  "Footer": {
+    "navLabel": "Сайттың төменгі навигациясы",
+    "region": "АҚШ",
+    "social": "{network} желісіндегі Garmin",
+    "copyright": "© Garmin Ltd. немесе оның еншілес компаниялары. Барлық құқықтар қорғалған.",
+    "columns": {
+      "customerService": "КЛИЕНТТЕРГЕ ҚЫЗМЕТ",
+      "company": "КОМПАНИЯ",
+      "platforms": "ПЛАТФОРМАЛАР",
+      "forBusiness": "БИЗНЕСКЕ"
+    },
+    "links": {
+      "supportCenter": "Қолдау орталығы",
+      "contactUs": "Бізбен байланыс",
+      "shippingReturnsRefunds": "Жеткізу, қайтару және өтемақы",
+      "orderSupport": "Тапсырыс бойынша қолдау",
+      "warrantyInformation": "Кепілдік туралы ақпарат",
+      "dataManagement": "Деректерді басқару",
+      "dealsPromotions": "Жеңілдіктер мен акциялар",
+      "findADealer": "Дилерді табу",
+      "aboutUs": "Біз туралы",
+      "blog": "Блог",
+      "investors": "Инвесторларға",
+      "newsroom": "Баспасөз орталығы",
+      "retailStore": "Фирмалық дүкен",
+      "corporateSustainability": "Тұрақты даму",
+      "careerOpportunities": "Мансап",
+      "earlyCareers": "Мансаптың басы",
+      "garminConnect": "Garmin Connect",
+      "garminExpress": "Garmin Express",
+      "connectIq": "Connect IQ",
+      "flygarmin": "flyGarmin",
+      "garminExplore": "Garmin Explore",
+      "navionicsChartInstaller": "Navionics Chart Installer",
+      "garminHealth": "Garmin Health",
+      "dealerResourceCenter": "Дилерлерге арналған ресурс орталығы",
+      "developers": "Әзірлеушілерге",
+      "inreachProfessional": "inReach Professional",
+      "marineFirstResponderSolutions": "Теңіз құтқару қызметтеріне арналған шешімдер",
+      "seastarInformationService": "SeaStar® ақпараттық сервисі",
+      "automotiveOem": "Автоөндірушілерге арналған OEM",
+      "rvOem": "Автоүйлерге арналған OEM",
+      "sensors": "Датчиктер",
+      "ambassadorsAffiliates": "Амбассадорлар мен серіктестер",
+      "corporateSponsorships": "Корпоративтік демеушілік"
+    },
+    "legal": {
+      "siteMap": "Сайт картасы",
+      "termsOfUse": "Пайдалану шарттары",
+      "privacy": "Құпиялылық",
+      "security": "Қауіпсіздік",
+      "digitalAccessibility": "Цифрлық қолжетімділік"
+    }
+  },
+  "Header": {
+    "homeLabel": "Garmin.com сайтына өту",
+    "siteNav": "Сайт навигациясы",
+    "mobileNav": "Сайттың мобильді навигациясы",
+    "menuLabel": "«{label}» мәзірі",
+    "help": "Көмек",
+    "search": "Іздеу",
+    "account": "Аккаунт",
+    "cartLabel": "Себет, {count, plural, one {# тауар} other {# тауар}}",
+    "toggleMenu": "Мәзірді ашу немесе жабу",
+    "searchHeading": "Garmin бойынша іздеу",
+    "searchPlaceholder": "Тауарларды іздеу",
+    "closeSearch": "Іздеуді жабу",
+    "noResults": "Ұсынылған тауарлар табылмады.",
+    "takeover": "МЕРЕКЕЛІК ЖЕҢІЛДІКТЕР",
+    "nav": {
+      "smartwatches": "Смарт-сағаттар",
+      "sportsFitness": "Спорт және фитнес",
+      "outdoorRecreation": "Белсенді демалыс",
+      "autoHome": "Көлік және үй",
+      "marine": "Теңіз техникасы",
+      "aviation": "Авиация",
+      "sale": "Жеңілдіктер"
+    },
+    "groups": {
+      "products": "Өнімдер",
+      "maps": "Карталар",
+      "accessoriesPlans": "Аксессуарлар және жоспарлар",
+      "discover": "Толығырақ",
+      "communities": "Қауымдастықтар",
+      "oemSolutions": "OEM шешімдері",
+      "appsPlans": "Қосымшалар және жоспарлар",
+      "chartsMaps": "Карталар мен сызбалар",
+      "markets": "Сегменттер",
+      "appsServices": "Қосымшалар және сервистер",
+      "aviationDatabases": "Авиациялық дерекқорлар"
+    },
+    "links": {
+      "allSmartwatches": "Барлық смарт-сағаттар",
+      "healthFitnessTracking": "Денсаулық пен фитнес-трекинг",
+      "designYourOwnWatch": "Өз сағатыңызды жасаңыз",
+      "watchesForWomen": "Әйелдер сағаттары",
+      "fashionHybridSmartwatches": "Сәнді және гибридті смарт-сағаттар",
+      "marqLuxuryWatchCollection": "MARQ люкс сағаттар коллекциясы",
+      "running": "Жүгіру",
+      "multisportTriathlete": "Мультиспорт және триатлон",
+      "adventure": "Саяхат",
+      "swimming": "Жүзу",
+      "diving": "Дайвинг",
+      "golf": "Гольф",
+      "kidsSmartwatches": "Балаларға арналған смарт-сағаттар",
+      "outdoorMaps": "Туристік карталар",
+      "golfCourseLocator": "Гольф алаңдарын іздеу",
+      "accessories": "Аксессуарлар",
+      "apps": "Қосымшалар",
+      "servicePlans": "Сервистік жоспарлар",
+      "garminPay": "Garmin Pay",
+      "garminTechnology": "Garmin технологиялары",
+      "watchFinder": "Сағат таңдау",
+      "cirqaSmartBand": "CIRQA™ смарт-білезігі",
+      "cycling": "Велоспорт",
+      "tacxIndoorCycling": "Tacx® велотренажерлары",
+      "scalesMonitors": "Таразылар мен мониторлар",
+      "cyclingMaps": "Велосипед карталары",
+      "smartwatchAccessories": "Смарт-сағат аксессуарлары",
+      "cyclingAccessories": "Велоаксессуарлар",
+      "indoorTrainingAccessories": "Үйде жаттығуға арналған аксессуарлар",
+      "garminCoach": "Garmin Coach",
+      "garminMarathonSeries": "Garmin Marathon Series",
+      "garminPros": "Garmin Pros",
+      "studentAthletes": "Студент-спортшылар",
+      "handhelds": "Портативті навигаторлар",
+      "satelliteCommunicators": "Спутниктік коммуникаторлар",
+      "offRoadMotorsports": "Жолсыздық және мотоспорт",
+      "adventureWatches": "Саяхатқа арналған сағаттар",
+      "sportsmanTactical": "Аңшылық және тактика",
+      "dogTrackingTraining": "Иттерді бақылау және үйрету",
+      "optics": "Оптика",
+      "equine": "Ат спорты",
+      "delormeAtlasGazetteer": "DeLorme Atlas & Gazetteer",
+      "inreachAccount": "inReach аккаунты",
+      "womenOfAdventure": "Women of Adventure",
+      "carsRvCameras": "Көліктер, автоүйлер және камералар",
+      "motorcycles": "Мотоциклдер",
+      "trucks": "Жүк көліктері",
+      "carAudio": "Көлік аудиожүйесі",
+      "homeAudio": "Үй аудиожүйесі",
+      "mapUpdates": "Карта жаңартулары",
+      "purchaseNewMaps": "Жаңа карталар сатып алу",
+      "inDashMaps": "Штаттық жүйелерге арналған карталар",
+      "offRoadMaps": "Жолсыздық карталары",
+      "automotive": "Автоөндірушілерге",
+      "rv": "Автоүйлер",
+      "stealthbox": "Stealthbox®",
+      "chartplottersFishfinders": "Картплоттерлер мен эхолоттар",
+      "liveSonar": "Нақты уақыт сонарлары",
+      "audio": "Аудио",
+      "transducers": "Эхолот датчиктері",
+      "trollingMotors": "Троллинг моторлары",
+      "iceFishingBundlesKits": "Қысқы балық аулауға арналған жинақтар",
+      "radar": "Радарлар",
+      "autopilots": "Автопилоттар",
+      "lighting": "Жарықтандыру",
+      "handheldsSmartwatches": "Портативті құрылғылар мен смарт-сағаттар",
+      "vhfAis": "УКВ және АИЖ",
+      "sonarBlackBoxes": "Сонар блоктары",
+      "antennasSensors": "Антенналар мен датчиктер",
+      "cameras": "Камералар",
+      "sailing": "Желкенді спорт",
+      "digitalSwitching": "Цифрлық коммутация",
+      "engineCutoffMob": "Қозғалтқышты өшіру / «Адам суда»",
+      "newCharts": "Жаңа карталар",
+      "builtInUpdates": "Кірістірілген жаңартулар",
+      "updatingCharts": "Карталарды жаңарту",
+      "navionicsBoatingApp": "Navionics Boating қосымшасы",
+      "integration": "Интеграция",
+      "softwareUpdates": "Бағдарлама жаңартулары",
+      "systemBuilder": "Жүйе конструкторы",
+      "activecaptain": "ActiveCaptain",
+      "navigationRadios": "Навигация және радиостанциялар",
+      "flightDisplaysInstruments": "Ұшу дисплейлері мен аспаптары",
+      "engineIndicationSystems": "Қозғалтқыш индикациясы жүйелері",
+      "integratedFlightDecks": "Біріктірілген кабиналар",
+      "datalinksConnectivity": "Деректер арналары және байланыс",
+      "audioPanels": "Аудиопанельдер",
+      "weather": "Ауа райы",
+      "traffic": "Әуе қозғалысы",
+      "adsBTransponders": "ADS-B және транспондерлер",
+      "portableGpsWearables": "Портативті GPS және тағылатын құрылғылар",
+      "generalAviation": "Жалпы мақсаттағы авиация",
+      "businessAviation": "Іскерлік авиация",
+      "experimental": "Эксперименттік ӘК",
+      "helicopters": "Тікұшақтар",
+      "governmentDefense": "Мемлекеттік сектор және қорғаныс",
+      "garminPilot": "Garmin Pilot",
+      "safetyManagementSystem": "Қауіпсіздікті басқару жүйесі",
+      "aerodata": "AeroData",
+      "flygarmin": "flyGarmin",
+      "fltplanServices": "FltPlan сервистері",
+      "aviationDatabaseUpdates": "Авиациялық дерекқорларды жаңарту",
+      "autonomi": "Autonomí",
+      "planesync": "PlaneSync",
+      "promotions": "Акциялар",
+      "support": "Қолдау",
+      "training": "Оқыту"
+    },
+    "promos": {
+      "holidaySale": {
+        "title": "МЕРЕКЕЛІК ЖЕҢІЛДІКТЕР",
+        "copy": "Мерекелік сыйлықтарға үлкен жеңілдіктер"
+      },
+      "fenix9": {
+        "title": "FĒNIX® 9",
+        "copy": "Мінсіз смарт-сағат"
+      },
+      "edge1060": {
+        "title": "EDGE® 1060",
+        "copy": "Дауыспен басқарылатын премиум велокомпьютер"
+      },
+      "garminDrive": {
+        "title": "GARMIN DRIVE™ НАВИГАТОРЛАРЫ",
+        "copy": "Жаңа өте кең дисплейлер жүргізуді жеңілдетеді"
+      },
+      "axis": {
+        "title": "AXIS™ ҰШУ ДИСПЛЕЙЛЕРІ",
+        "copy": "Эксперименттік және сертификатталған поршеньді ұшақтарға арналған біріктірілген ұшу дисплейлері"
+      }
+    }
+  },
+  "HomeFeatured": {
+    "featured": "ҰСЫНАМЫЗ",
+    "shop": "Сатып алу",
+    "previous": "Артқа",
+    "next": "Алға"
+  },
+  "HomeHero": {
+    "label": "Garmin-нің таңдаулы өнімдері",
+    "shop": "САТЫП АЛУ",
+    "previous": "Алдыңғы слайд",
+    "next": "Келесі слайд",
+    "play": "Слайд-шоуды қосу",
+    "pause": "Слайд-шоуды кідірту",
+    "status": "{total} слайдтың {current}-сі: {title}"
+  },
+  "HomeSignup": {
+    "heading": "Жаңалықтарға жазылыңыз",
+    "placeholder": "aidar@example.com",
+    "submit": "Жіберу",
+    "copy": "Қалауларыңызға, құрылғыларыңыз бен сервистеріңізге сай өнім жаңалықтары мен акциялар туралы хабар алыңыз.",
+    "privacy": "Электрондық пошта құпиялылығы туралы біліңіз."
+  },
+  "HomeTiles": {
+    "promoLabel": "Таңдаулы коллекциялар",
+    "storiesLabel": "Garmin оқиғалары",
+    "categoriesHeading": "САНАТТАР БОЙЫНША САТЫП АЛУ"
+  },
+  "NotFound": {
+    "heading": "Бет табылмады",
+    "body": "Сіз іздеген бет жоқ.",
+    "home": "Басты бетке өту"
+  },
+  "ProductCard": {
+    "price": "{price} USD",
+    "andUp": "бастап"
+  },
+  "RelatedProducts": {
+    "heading": "Сізге мыналар да ұнауы мүмкін"
+  },
+  "WearablesHero": {
+    "heading": "Ең танымал смарт-сағаттар"
   }
 }

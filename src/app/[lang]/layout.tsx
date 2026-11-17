@@ -9,7 +9,16 @@ import { LOCALES } from "@/i18n/config";
 import { bodyClassName, htmlClassName, siteIcons } from "../fonts";
 
 /** Message namespaces that client components read. Server-only namespaces stay off the client. */
-const CLIENT_NAMESPACES: readonly string[] = [];
+const CLIENT_NAMESPACES: readonly string[] = [
+  "BlogExplorer",
+  "CatalogueGrid",
+  "Footer",
+  "Header",
+  "HomeFeatured",
+  "HomeHero",
+  "HomeSignup",
+  "ProductCard",
+];
 
 export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }));

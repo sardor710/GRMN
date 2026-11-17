@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { footerColumns, legalLinks } from "@/lib/content";
 import {
   FooterChevronDownIcon,
@@ -13,52 +14,53 @@ import {
 import styles from "./HomeFooter.module.css";
 import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
+/** garmin.com destinations, keyed by the link's message key. */
 const liveLinks: Record<string, string> = {
-  "Support Center": "https://support.garmin.com/en-US/",
-  "Contact Us": "https://support.garmin.com/en-US/ql/?focus=topics",
-  "Shipping, Returns & Refunds": "https://www.garmin.com/en-US/shop/shipping/",
-  "Order Support": "https://www.garmin.com/en-US/account/orderhistory/search/",
-  "Warranty Information": "https://www.garmin.com/en-US/legal/consumer-limited-warranty/",
-  "Data Management": "https://www.garmin.com/en-US/account/datamanagement/",
-  "Deals & Promotions": "https://www.garmin.com/en-US/c/promotions/",
-  "Find a Dealer": "https://www.garmin.com/en-US/dealerlocator",
-  "About Us": "https://www.garmin.com/en-US/company/about-garmin/",
-  "Investors": "https://www.garmin.com/en-US/investors/",
-  "Newsroom": "https://www.garmin.com/en-US/newsroom/",
-  "Retail Store": "https://www.garmin.com/en-US/company/locations/stores/",
-  "Corporate Sustainability": "https://www.garmin.com/en-US/sustainability/overview/",
-  "Career Opportunities": "https://www.garmin.com/en-US/careers/",
-  "Early Careers": "https://www.garmin.com/en-US/careers/early-careers/",
-  "Garmin Connect": "https://connect.garmin.com/",
-  "Garmin Express": "https://www.garmin.com/en-US/software/express/windows/",
-  "Connect IQ": "https://apps.garmin.com/en-US",
-  "flyGarmin": "https://fly.garmin.com/fly-garmin/",
-  "Garmin Explore": "https://explore.garmin.com/",
-  "Navionics Chart Installer": "https://www.garmin.com/en-US/marine/update-now/third-party-marine-maps/#chart-installer",
-  "Garmin Health": "https://www.garmin.com/en-US/health/",
-  "Dealer Resource Center": "https://dealers.garmin.com/drc/login",
-  "Developers": "https://developer.garmin.com/",
-  "inReach Professional": "https://www.garmin.com/en-US/inreach-professional/",
-  "Marine First Responder Solutions": "https://www.garmin.com/en-US/c/marine-first-responder-solutions/",
-  "SeaStar® Information Service": "https://www.garmin.com/en-US/seastar/",
-  "Automotive OEM": "https://www.garmin.com/en-US/aoem/",
-  "RV OEM": "https://www.garmin.com/en-US/rv-oem/overview/",
-  "Sensors": "https://www.garmin.com/en-US/c/sensors-and-boards/",
-  "Ambassadors & Affiliates": "https://www.garmin.com/en-US/ambassadors-and-affiliates/",
-  "Corporate Sponsorships": "https://www.garmin.com/en-US/forms/sponsorship/",
-  "Site Map": "https://www.garmin.com/en-US/siteindex/",
-  "Terms of Use": "https://www.garmin.com/en-US/legal/terms-of-use",
-  "Privacy": "https://www.garmin.com/en-US/privacy/global/",
-  "Security": "https://www.garmin.com/en-US/legal/security",
-  "Digital Accessibility": "https://www.garmin.com/en-US/digital-accessibility/",
+  "Footer.links.supportCenter": "https://support.garmin.com/en-US/",
+  "Footer.links.contactUs": "https://support.garmin.com/en-US/ql/?focus=topics",
+  "Footer.links.shippingReturnsRefunds": "https://www.garmin.com/en-US/shop/shipping/",
+  "Footer.links.orderSupport": "https://www.garmin.com/en-US/account/orderhistory/search/",
+  "Footer.links.warrantyInformation": "https://www.garmin.com/en-US/legal/consumer-limited-warranty/",
+  "Footer.links.dataManagement": "https://www.garmin.com/en-US/account/datamanagement/",
+  "Footer.links.dealsPromotions": "https://www.garmin.com/en-US/c/promotions/",
+  "Footer.links.findADealer": "https://www.garmin.com/en-US/dealerlocator",
+  "Footer.links.aboutUs": "https://www.garmin.com/en-US/company/about-garmin/",
+  "Footer.links.investors": "https://www.garmin.com/en-US/investors/",
+  "Footer.links.newsroom": "https://www.garmin.com/en-US/newsroom/",
+  "Footer.links.retailStore": "https://www.garmin.com/en-US/company/locations/stores/",
+  "Footer.links.corporateSustainability": "https://www.garmin.com/en-US/sustainability/overview/",
+  "Footer.links.careerOpportunities": "https://www.garmin.com/en-US/careers/",
+  "Footer.links.earlyCareers": "https://www.garmin.com/en-US/careers/early-careers/",
+  "Footer.links.garminConnect": "https://connect.garmin.com/",
+  "Footer.links.garminExpress": "https://www.garmin.com/en-US/software/express/windows/",
+  "Footer.links.connectIq": "https://apps.garmin.com/en-US",
+  "Footer.links.flygarmin": "https://fly.garmin.com/fly-garmin/",
+  "Footer.links.garminExplore": "https://explore.garmin.com/",
+  "Footer.links.navionicsChartInstaller": "https://www.garmin.com/en-US/marine/update-now/third-party-marine-maps/#chart-installer",
+  "Footer.links.garminHealth": "https://www.garmin.com/en-US/health/",
+  "Footer.links.dealerResourceCenter": "https://dealers.garmin.com/drc/login",
+  "Footer.links.developers": "https://developer.garmin.com/",
+  "Footer.links.inreachProfessional": "https://www.garmin.com/en-US/inreach-professional/",
+  "Footer.links.marineFirstResponderSolutions": "https://www.garmin.com/en-US/c/marine-first-responder-solutions/",
+  "Footer.links.seastarInformationService": "https://www.garmin.com/en-US/seastar/",
+  "Footer.links.automotiveOem": "https://www.garmin.com/en-US/aoem/",
+  "Footer.links.rvOem": "https://www.garmin.com/en-US/rv-oem/overview/",
+  "Footer.links.sensors": "https://www.garmin.com/en-US/c/sensors-and-boards/",
+  "Footer.links.ambassadorsAffiliates": "https://www.garmin.com/en-US/ambassadors-and-affiliates/",
+  "Footer.links.corporateSponsorships": "https://www.garmin.com/en-US/forms/sponsorship/",
+  "Footer.legal.siteMap": "https://www.garmin.com/en-US/siteindex/",
+  "Footer.legal.termsOfUse": "https://www.garmin.com/en-US/legal/terms-of-use",
+  "Footer.legal.privacy": "https://www.garmin.com/en-US/privacy/global/",
+  "Footer.legal.security": "https://www.garmin.com/en-US/legal/security",
+  "Footer.legal.digitalAccessibility": "https://www.garmin.com/en-US/digital-accessibility/",
 };
 
 const socials = [
-  { label: "Garmin on Facebook", href: "https://www.facebook.com/Garmin", Icon: FooterFacebookIcon, wide: false },
-  { label: "Garmin on Twitter", href: "https://twitter.com/garmin", Icon: FooterXIcon, wide: false },
-  { label: "Garmin on YouTube", href: "https://www.youtube.com/garmin", Icon: FooterYouTubeIcon, wide: true },
-  { label: "Garmin on Pinterest", href: "https://www.pinterest.com/garmin/", Icon: FooterPinterestIcon, wide: false },
-  { label: "Garmin on Instagram", href: "https://www.instagram.com/garmin/", Icon: FooterInstagramIcon, wide: false },
+  { network: "Facebook", href: "https://www.facebook.com/Garmin", Icon: FooterFacebookIcon, wide: false },
+  { network: "Twitter", href: "https://twitter.com/garmin", Icon: FooterXIcon, wide: false },
+  { network: "YouTube", href: "https://www.youtube.com/garmin", Icon: FooterYouTubeIcon, wide: true },
+  { network: "Pinterest", href: "https://www.pinterest.com/garmin/", Icon: FooterPinterestIcon, wide: false },
+  { network: "Instagram", href: "https://www.instagram.com/garmin/", Icon: FooterInstagramIcon, wide: false },
 ];
 
 // Live uses a "Superscripts-Roboto" face that draws ® as a small raised glyph.
@@ -71,32 +73,33 @@ function renderLabel(label: string) {
 }
 
 export function HomeFooter() {
+  const t = useTranslations();
   const localize = useLocalizeHref();
   const [open, setOpen] = useState<string | null>(null);
 
   return (
     <footer className={styles.footer} data-home="footer">
-      <nav className={styles.nav} aria-label="Global Footer Navigation">
+      <nav className={styles.nav} aria-label={t("Footer.navLabel")}>
         <ul className={styles.columns}>
           {footerColumns.map((column) => {
-            const expanded = open === column.heading;
-            const panelId = `gf-${column.heading.toLowerCase().replace(/[^a-z]+/g, "-")}`;
+            const expanded = open === column.id;
+            const panelId = `gf-${column.id}`;
             return (
-              <li className={styles.column} key={column.heading} data-open={expanded || undefined}>
+              <li className={styles.column} key={column.id} data-open={expanded || undefined}>
                 <button
                   type="button"
                   className={styles.heading}
                   aria-expanded={expanded}
                   aria-controls={panelId}
-                  onClick={() => setOpen(expanded ? null : column.heading)}
+                  onClick={() => setOpen(expanded ? null : column.id)}
                 >
-                  <span>{column.heading}</span>
+                  <span>{t(column.headingKey)}</span>
                   <FooterChevronDownIcon aria-hidden="true" className={styles.chevron} />
                 </button>
                 <ul className={styles.links} id={panelId}>
                   {column.links.map((link) => (
-                    <li key={link.label}>
-                      <a href={localize(liveLinks[link.label] ?? link.href)}>{renderLabel(link.label)}</a>
+                    <li key={link.labelKey}>
+                      <a href={localize(liveLinks[link.labelKey] ?? link.href)}>{renderLabel(t(link.labelKey))}</a>
                     </li>
                   ))}
                 </ul>
@@ -107,12 +110,12 @@ export function HomeFooter() {
       </nav>
       <div className={styles.company}>
         <div className={styles.locale}>
-          <a href="https://www.garmin.com/en-US/select-a-location/">United States</a>
+          <a href="https://www.garmin.com/en-US/select-a-location/">{t("Footer.region")}</a>
         </div>
         <ul className={styles.socials}>
-          {socials.map(({ label, href, Icon, wide }) => (
-            <li key={label}>
-              <a href={href} aria-label={label}>
+          {socials.map(({ network, href, Icon, wide }) => (
+            <li key={network}>
+              <a href={href} aria-label={t("Footer.social", { network })}>
                 <Icon className={wide ? styles.wideIcon : undefined} />
               </a>
             </li>
@@ -121,12 +124,12 @@ export function HomeFooter() {
       </div>
       <div className={styles.legal}>
         <div>
-          <p>© Garmin Ltd. or its subsidiaries. All rights reserved.</p>
+          <p>{t("Footer.copyright")}</p>
         </div>
         <ul>
           {legalLinks.map((link) => (
-            <li key={link.label}>
-              <a href={localize(liveLinks[link.label] ?? link.href)}>{link.label}</a>
+            <li key={link.labelKey}>
+              <a href={localize(liveLinks[link.labelKey] ?? link.href)}>{t(link.labelKey)}</a>
             </li>
           ))}
         </ul>

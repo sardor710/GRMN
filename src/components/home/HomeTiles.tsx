@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import {
   homeCategoryTiles,
   homePromoTiles,
@@ -68,27 +69,28 @@ interface HomeTilesProps {
 }
 
 export function HomeTiles({ promoTiles, storyTiles, categoryTiles }: HomeTilesProps) {
+  const t = useTranslations("HomeTiles");
   const promos = promoTiles && promoTiles.length > 0 ? promoTiles : homePromoTiles;
   const stories = storyTiles && storyTiles.length > 0 ? storyTiles : homeStoryTiles;
   const categories = categoryTiles && categoryTiles.length > 0 ? categoryTiles : homeCategoryTiles;
 
   return (
     <>
-      <section className={styles.promoSection} id="home-promo" data-section="home-promo" aria-label="Featured collections">
+      <section className={styles.promoSection} id="home-promo" data-section="home-promo" aria-label={t("promoLabel")}>
         <div className={styles.promoRow}>
           {promos.map((tile) => (
             <PromoCard key={tile.title} tile={tile} />
           ))}
         </div>
       </section>
-      <section className={`${styles.tileGrid} ${styles.storyGrid}`} id="home-stories" data-section="home-stories" aria-label="Garmin stories">
+      <section className={`${styles.tileGrid} ${styles.storyGrid}`} id="home-stories" data-section="home-stories" aria-label={t("storiesLabel")}>
         {stories.map((tile) => (
           <OverlayTile key={tile.title} tile={tile} kind="story" />
         ))}
       </section>
       <section className={styles.categories} aria-labelledby="home-categories-heading">
         <h2 id="home-categories-heading" className={styles.sectionHeading}>
-          SHOP BY CATEGORY
+          {t("categoriesHeading")}
         </h2>
         <div className={`${styles.tileGrid} ${styles.categoryGrid}`} id="home-categories" data-section="home-categories">
           {categories.map((tile) => (

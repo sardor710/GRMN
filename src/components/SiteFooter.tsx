@@ -7,6 +7,7 @@ import {
   PinterestIcon,
   InstagramIcon,
 } from "@/components/icons";
+import { useTranslations } from "next-intl";
 import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
 const socials = [
@@ -18,6 +19,7 @@ const socials = [
 ];
 
 export function SiteFooter() {
+  const t = useTranslations();
   const localize = useLocalizeHref();
   return (
     <footer className="bg-black text-white">
@@ -25,18 +27,18 @@ export function SiteFooter() {
         {/* Link columns */}
         <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
           {footerColumns.map((col) => (
-            <div key={col.heading}>
+            <div key={col.id}>
               <h3 className="g-heading mb-4 text-[15px] tracking-[0.06em] text-white">
-                {col.heading}
+                {t(col.headingKey)}
               </h3>
               <ul className="space-y-2.5">
                 {col.links.map((link) => (
-                  <li key={link.label}>
+                  <li key={link.labelKey}>
                     <a
                       href={localize(link.href)}
                       className="text-[13px] text-neutral-300 transition-colors hover:text-white"
                     >
-                      {link.label}
+                      {t(link.labelKey)}
                     </a>
                   </li>
                 ))}
@@ -49,7 +51,7 @@ export function SiteFooter() {
         <div className="mt-12 flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
           <button className="flex items-center gap-2 text-[13px] font-medium text-white">
             <GlobeIcon className="h-4 w-4" />
-            United States
+            {t("Footer.region")}
           </button>
           <div className="flex items-center gap-5">
             {socials.map(({ label, Icon }) => (
@@ -64,12 +66,12 @@ export function SiteFooter() {
       {/* Legal bar */}
       <div className="border-t border-white/20">
         <div className="mx-auto flex max-w-[1200px] flex-col gap-3 px-4 py-5 text-[12px] text-neutral-400 sm:flex-row sm:items-center sm:justify-between">
-          <p>© Garmin Ltd. or its subsidiaries. All rights reserved.</p>
+          <p>{t("Footer.copyright")}</p>
           <ul className="flex flex-wrap gap-x-5 gap-y-2">
             {legalLinks.map((link) => (
-              <li key={link.label}>
+              <li key={link.labelKey}>
                 <a href={localize(link.href)} className="transition-colors hover:text-white">
-                  {link.label}
+                  {t(link.labelKey)}
                 </a>
               </li>
             ))}

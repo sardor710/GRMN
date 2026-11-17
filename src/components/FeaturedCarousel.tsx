@@ -2,11 +2,13 @@
 
 import { useRef } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { featuredCards } from "@/lib/content";
 import { StarburstBadge } from "@/components/StarburstBadge";
 import { ChevronRightIcon } from "@/components/icons";
 
 export function FeaturedCarousel() {
+  const t = useTranslations("HomeFeatured");
   const scroller = useRef<HTMLDivElement>(null);
 
   const scrollNext = () => {
@@ -18,7 +20,7 @@ export function FeaturedCarousel() {
       {/* FEATURED bar */}
       <div className="relative bg-black">
         <div className="flex h-12 items-center justify-center">
-          <span className="g-heading text-[13px] tracking-[0.12em] text-white">FEATURED</span>
+          <span className="g-heading text-[13px] tracking-[0.12em] text-white">{t("featured")}</span>
         </div>
         <div className="absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-x-8 border-t-8 border-x-transparent border-t-black" />
       </div>
@@ -65,7 +67,7 @@ export function FeaturedCarousel() {
 
         {/* Advance arrow */}
         <button
-          aria-label="Next"
+          aria-label={t("next")}
           onClick={scrollNext}
           className="absolute right-2 top-1/2 hidden h-12 w-12 -translate-y-1/2 place-items-center rounded-full border border-neutral-200 bg-white shadow-md transition-colors hover:bg-neutral-50 md:grid"
         >

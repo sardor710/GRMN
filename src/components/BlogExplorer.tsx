@@ -2,12 +2,14 @@
 
 import { useMemo, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { blogPosts, blogCategories } from "@/lib/blog";
 import { categoryIcons } from "@/components/blog-icons";
 import { SearchIcon } from "@/components/icons";
 
 export function BlogExplorer() {
+  const t = useTranslations("BlogExplorer");
   const [active, setActive] = useState<string | null>(null);
   const [query, setQuery] = useState("");
 
@@ -42,7 +44,7 @@ export function BlogExplorer() {
               >
                 <Icon className="h-8 w-8" />
                 <span className="text-[11px] font-medium uppercase leading-tight tracking-[0.03em]">
-                  {c.label}
+                  {t(`categories.${c.key}`)}
                 </span>
               </button>
             );
@@ -52,14 +54,14 @@ export function BlogExplorer() {
 
       {/* Heading + search */}
       <div className="mx-auto max-w-[1280px] px-4 py-10 text-center">
-        <h1 className="g-heading text-[40px] text-black">Blog</h1>
-        <p className="mt-2 text-[16px] text-neutral-600">The latest on our products and technology.</p>
+        <h1 className="g-heading text-[40px] text-black">{t("heading")}</h1>
+        <p className="mt-2 text-[16px] text-neutral-600">{t("intro")}</p>
         <div className="mx-auto mt-6 flex max-w-[420px] items-center border border-neutral-300 px-3">
           <SearchIcon className="h-4 w-4 text-neutral-400" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search Blog"
+            placeholder={t("searchPlaceholder")}
             className="h-11 w-full bg-transparent px-2 text-[15px] outline-none placeholder:text-neutral-400"
           />
         </div>
@@ -68,7 +70,7 @@ export function BlogExplorer() {
             onClick={() => { setActive(null); setQuery(""); }}
             className="mt-3 text-[13px] text-[#007cc3] underline"
           >
-            Clear filters
+            {t("clearFilters")}
           </button>
         )}
       </div>
@@ -76,7 +78,7 @@ export function BlogExplorer() {
       {/* Post grid */}
       <div className="mx-auto max-w-[1280px] px-4 pb-16">
         {filtered.length === 0 ? (
-          <p className="py-16 text-center text-neutral-500">No articles found.</p>
+          <p className="py-16 text-center text-neutral-500">{t("empty")}</p>
         ) : (
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             {filtered.map((post) => (

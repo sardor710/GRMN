@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { homeHeroSlides } from "@/lib/homepage-content";
 import type { HeroBanner } from "@/lib/cms/types";
 import { ChevronLeftIcon, ChevronRightIcon, PauseIcon, PlayIcon } from "@/components/icons";
@@ -15,6 +16,7 @@ interface HomeHeroProps {
 }
 
 export function HomeHero({ banners }: HomeHeroProps) {
+  const t = useTranslations("HomeHero");
   const localize = useLocalizeHref();
   const activeSlides = banners && banners.length > 0
     ? banners.filter((b) => b.active !== false).sort((a, b) => a.order - b.order).map((b) => ({
@@ -65,7 +67,7 @@ export function HomeHero({ banners }: HomeHeroProps) {
   return (
     <section
       className={styles.hero}
-      aria-label="Featured Garmin products"
+      aria-label={t("label")}
       aria-roledescription="carousel"
       onTouchStart={(event) => {
         const touch = event.touches[0];
@@ -103,26 +105,26 @@ export function HomeHero({ banners }: HomeHeroProps) {
               <h1>{slide.title}</h1>
               <p className={slide.disclaimer ? styles.subtitleTight : undefined}>{slide.subtitle}</p>
               {slide.disclaimer && <p className={styles.disclaimer}>{slide.disclaimer}</p>}
-              <a href={localize(slide.href)} className={styles.shop} tabIndex={slideIndex === index ? 0 : -1}>SHOP</a>
+              <a href={localize(slide.href)} className={styles.shop} tabIndex={slideIndex === index ? 0 : -1}>{t("shop")}</a>
             </div>
           </div>
         ))}
       </div>
 
-      <button type="button" aria-label="Previous slide" className={`${styles.arrow} ${styles.previous}`} onClick={() => goTo(index - 1)}>
+      <button type="button" aria-label={t("previous")} className={`${styles.arrow} ${styles.previous}`} onClick={() => goTo(index - 1)}>
         <ChevronLeftIcon aria-hidden="true" />
       </button>
-      <button type="button" aria-label="Next slide" className={`${styles.arrow} ${styles.next}`} onClick={() => goTo(index + 1)}>
+      <button type="button" aria-label={t("next")} className={`${styles.arrow} ${styles.next}`} onClick={() => goTo(index + 1)}>
         <ChevronRightIcon aria-hidden="true" />
       </button>
-      <button type="button" aria-label={paused ? "Play slideshow" : "Pause slideshow"} className={styles.playPause} onClick={() => setPaused((value) => !value)}>
+      <button type="button" aria-label={paused ? t("play") : t("pause")} className={styles.playPause} onClick={() => setPaused((value) => !value)}>
         <svg viewBox="0 0 40 40" className={`${styles.progress} ${paused ? styles.progressPaused : ""}`} aria-hidden="true">
           <circle className={styles.progressTrack} cx="20" cy="20" r="18" />
           <circle key={index} className={`${styles.progressFill} ${paused ? styles.progressPaused : ""}`} cx="20" cy="20" r="18" pathLength="100" />
         </svg>
         {paused ? <PlayIcon aria-hidden="true" /> : <PauseIcon aria-hidden="true" />}
       </button>
-      <span className={styles.srOnly} aria-live="polite">Slide {index + 1} of {slides.length}: {currentSlide?.title}</span>
+      <span className={styles.srOnly} aria-live="polite">{t("status", { current: index + 1, total: slides.length, title: currentSlide?.title ?? "" })}</span>
     </section>
   );
 }

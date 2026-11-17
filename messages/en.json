@@ -1,6 +1,387 @@
 {
   "Meta": {
     "title": "Garmin Official Site | GPS Technology for Every Lifestyle",
-    "description": "Garmin uses GPS technology in our products for aviation, marine, fitness, outdoor recreation, tracking and mobile apps."
+    "description": "Garmin uses GPS technology in our products for aviation, marine, fitness, outdoor recreation, tracking and mobile apps.",
+    "cartTitle": "Shopping Cart | Garmin",
+    "compareTitle": "Compare Smartwatches | Garmin",
+    "accountTitle": "My Account | Garmin",
+    "newsletterTitle": "Sign Up for News | Garmin",
+    "newsletterDescription": "Get Garmin product news and promotions based on your preferences.",
+    "blogTitle": "Garmin Blog | The latest on our products and technology",
+    "blogDescription": "The latest on Garmin products and technology.",
+    "blogFallbackTitle": "Garmin Blog & Fitness Guides",
+    "blogShortTitle": "Garmin Blog",
+    "blogPostTitle": "{title} | Garmin Blog",
+    "blogPostDescription": "Explore training tips, GPS navigation guides, and smartwatch features on the official Garmin Blog.",
+    "productFallbackTitle": "Garmin Smartwatches & GPS Devices",
+    "productFallbackName": "Garmin Product",
+    "productTitle": "{name} | Official Garmin Smartwatch",
+    "productDescription": "Discover {name} with advanced GPS tracking, health metrics, and long battery life.",
+    "catalogueTitle": "{title} | Garmin",
+    "garminPayTitle": "Garmin Pay™ | A Contactless Payment Solution",
+    "garminPayDescription": "No wallet? No phone? No problem. Make contactless payments on the go with your compatible Garmin smartwatch or bike computer."
+  },
+  "BlogArticle": {
+    "byline": "By {author}",
+    "defaultReadTime": "4 min read",
+    "backToAll": "← Back to all articles",
+    "related": "Related Articles"
+  },
+  "BlogExplorer": {
+    "heading": "Blog",
+    "intro": "The latest on our products and technology.",
+    "searchPlaceholder": "Search Blog",
+    "clearFilters": "Clear filters",
+    "empty": "No articles found.",
+    "categories": {
+      "automotive": "Automotive",
+      "aviation": "Aviation",
+      "fitness": "Fitness",
+      "fish-and-hunt": "Fish & Hunt",
+      "marine": "Marine",
+      "outdoor": "Outdoor Recreation",
+      "health": "Health & News",
+      "saved-by-garmin": "Saved by Garmin"
+    }
+  },
+  "BlogPage": {
+    "eyebrow": "Garmin Blog",
+    "heroAlt": "Garmin Blog"
+  },
+  "CatalogueGrid": {
+    "compare": "Compare",
+    "clearAll": "Clear all filters ({count})",
+    "activity": "Activity",
+    "level": "Level",
+    "caseSize": "Case Size",
+    "sortBy": "Sort By",
+    "empty": "No products match your filters.",
+    "sort": {
+      "featured": "Featured Products",
+      "priceAsc": "Price: Low to High",
+      "priceDesc": "Price: High to Low",
+      "name": "Name: A to Z"
+    },
+    "groups": {
+      "battery": "Battery Life in Smartwatch Mode",
+      "hardware": "Hardware",
+      "connectivity": "Connectivity",
+      "series": "Series",
+      "otherDevices": "Other Devices"
+    },
+    "activities": {
+      "boating": "Boating",
+      "cycling": "Cycling",
+      "diving": "Diving",
+      "flying": "Flying",
+      "golfing": "Golfing",
+      "hiking": "Hiking",
+      "running": "Running",
+      "strength": "Strength",
+      "swimming": "Swimming",
+      "tacticalTraining": "Tactical training",
+      "triathlon": "Triathlon",
+      "walking": "Walking"
+    },
+    "levels": {
+      "entry": "Entry",
+      "advanced": "Advanced",
+      "premium": "Premium",
+      "youth": "Youth"
+    },
+    "caseSizes": {
+      "small": "Small (35 to 43 mm)",
+      "medium": "Medium (44 to 49 mm)",
+      "large": "Large (≥ 50 mm)"
+    }
+  },
+  "CataloguePage": {
+    "smartwatches": {
+      "title": "Smartwatches",
+      "heading": "ALL SMARTWATCHES"
+    },
+    "running": {
+      "title": "GPS Running Watches",
+      "heading": "ALL RUNNING SMARTWATCHES",
+      "heroLabel": "SPORTS & FITNESS",
+      "heroBlurb": "Running Smartwatches"
+    }
+  },
+  "CategoryGrid": {
+    "heading": "Shop by Category",
+    "shop": "SHOP",
+    "tiles": {
+      "smartwatches": "SMARTWATCHES",
+      "autoHome": "AUTO & HOME",
+      "sportsFitness": "SPORTS & FITNESS",
+      "outdoorRecreation": "OUTDOOR RECREATION",
+      "marine": "MARINE",
+      "aviation": "AVIATION"
+    }
+  },
+  "Footer": {
+    "navLabel": "Global Footer Navigation",
+    "region": "United States",
+    "social": "Garmin on {network}",
+    "copyright": "© Garmin Ltd. or its subsidiaries. All rights reserved.",
+    "columns": {
+      "customerService": "CUSTOMER SERVICE",
+      "company": "COMPANY",
+      "platforms": "PLATFORMS",
+      "forBusiness": "FOR BUSINESS"
+    },
+    "links": {
+      "supportCenter": "Support Center",
+      "contactUs": "Contact Us",
+      "shippingReturnsRefunds": "Shipping, Returns & Refunds",
+      "orderSupport": "Order Support",
+      "warrantyInformation": "Warranty Information",
+      "dataManagement": "Data Management",
+      "dealsPromotions": "Deals & Promotions",
+      "findADealer": "Find a Dealer",
+      "aboutUs": "About Us",
+      "blog": "Blog",
+      "investors": "Investors",
+      "newsroom": "Newsroom",
+      "retailStore": "Retail Store",
+      "corporateSustainability": "Corporate Sustainability",
+      "careerOpportunities": "Career Opportunities",
+      "earlyCareers": "Early Careers",
+      "garminConnect": "Garmin Connect",
+      "garminExpress": "Garmin Express",
+      "connectIq": "Connect IQ",
+      "flygarmin": "flyGarmin",
+      "garminExplore": "Garmin Explore",
+      "navionicsChartInstaller": "Navionics Chart Installer",
+      "garminHealth": "Garmin Health",
+      "dealerResourceCenter": "Dealer Resource Center",
+      "developers": "Developers",
+      "inreachProfessional": "inReach Professional",
+      "marineFirstResponderSolutions": "Marine First Responder Solutions",
+      "seastarInformationService": "SeaStar® Information Service",
+      "automotiveOem": "Automotive OEM",
+      "rvOem": "RV OEM",
+      "sensors": "Sensors",
+      "ambassadorsAffiliates": "Ambassadors & Affiliates",
+      "corporateSponsorships": "Corporate Sponsorships"
+    },
+    "legal": {
+      "siteMap": "Site Map",
+      "termsOfUse": "Terms of Use",
+      "privacy": "Privacy",
+      "security": "Security",
+      "digitalAccessibility": "Digital Accessibility"
+    }
+  },
+  "Header": {
+    "homeLabel": "Navigate to Garmin.com",
+    "siteNav": "Site Navigation",
+    "mobileNav": "Mobile Site Navigation",
+    "menuLabel": "{label} menu",
+    "help": "Help",
+    "search": "Search",
+    "account": "Account",
+    "cartLabel": "Cart, {count, plural, one {# item} other {# items}}",
+    "toggleMenu": "Toggle Menu",
+    "searchHeading": "Search Garmin",
+    "searchPlaceholder": "Search products",
+    "closeSearch": "Close search",
+    "noResults": "No featured products found.",
+    "takeover": "HOLIDAY SALE",
+    "nav": {
+      "smartwatches": "Smartwatches",
+      "sportsFitness": "Sports & Fitness",
+      "outdoorRecreation": "Outdoor Recreation",
+      "autoHome": "Auto & Home",
+      "marine": "Marine",
+      "aviation": "Aviation",
+      "sale": "Sale"
+    },
+    "groups": {
+      "products": "Products",
+      "maps": "Maps",
+      "accessoriesPlans": "Accessories & Plans",
+      "discover": "Discover",
+      "communities": "Communities",
+      "oemSolutions": "OEM Solutions",
+      "appsPlans": "Apps & Plans",
+      "chartsMaps": "Charts & Maps",
+      "markets": "Markets",
+      "appsServices": "Apps & Services",
+      "aviationDatabases": "Aviation Databases"
+    },
+    "links": {
+      "allSmartwatches": "All Smartwatches",
+      "healthFitnessTracking": "Health & Fitness Tracking",
+      "designYourOwnWatch": "Design Your Own Watch",
+      "watchesForWomen": "Watches for Women",
+      "fashionHybridSmartwatches": "Fashion & Hybrid Smartwatches",
+      "marqLuxuryWatchCollection": "MARQ Luxury Watch Collection",
+      "running": "Running",
+      "multisportTriathlete": "Multisport & Triathlete",
+      "adventure": "Adventure",
+      "swimming": "Swimming",
+      "diving": "Diving",
+      "golf": "Golf",
+      "kidsSmartwatches": "Kids Smartwatches",
+      "outdoorMaps": "Outdoor Maps",
+      "golfCourseLocator": "Golf Course Locator",
+      "accessories": "Accessories",
+      "apps": "Apps",
+      "servicePlans": "Service Plans",
+      "garminPay": "Garmin Pay",
+      "garminTechnology": "Garmin Technology",
+      "watchFinder": "Watch Finder",
+      "cirqaSmartBand": "CIRQA™ Smart Band",
+      "cycling": "Cycling",
+      "tacxIndoorCycling": "Tacx® Indoor Cycling",
+      "scalesMonitors": "Scales & Monitors",
+      "cyclingMaps": "Cycling Maps",
+      "smartwatchAccessories": "Smartwatch Accessories",
+      "cyclingAccessories": "Cycling Accessories",
+      "indoorTrainingAccessories": "Indoor Training Accessories",
+      "garminCoach": "Garmin Coach",
+      "garminMarathonSeries": "Garmin Marathon Series",
+      "garminPros": "Garmin Pros",
+      "studentAthletes": "Student Athletes",
+      "handhelds": "Handhelds",
+      "satelliteCommunicators": "Satellite Communicators",
+      "offRoadMotorsports": "Off-Road & Motorsports",
+      "adventureWatches": "Adventure Watches",
+      "sportsmanTactical": "Sportsman & Tactical",
+      "dogTrackingTraining": "Dog Tracking & Training",
+      "optics": "Optics",
+      "equine": "Equine",
+      "delormeAtlasGazetteer": "DeLorme Atlas & Gazetteer",
+      "inreachAccount": "inReach Account",
+      "womenOfAdventure": "Women of Adventure",
+      "carsRvCameras": "Cars, RV & Cameras",
+      "motorcycles": "Motorcycles",
+      "trucks": "Trucks",
+      "carAudio": "Car Audio",
+      "homeAudio": "Home Audio",
+      "mapUpdates": "Map Updates",
+      "purchaseNewMaps": "Purchase New Maps",
+      "inDashMaps": "In-Dash Maps",
+      "offRoadMaps": "Off-Road Maps",
+      "automotive": "Automotive",
+      "rv": "RV",
+      "stealthbox": "Stealthbox®",
+      "chartplottersFishfinders": "Chartplotters & Fishfinders",
+      "liveSonar": "Live Sonar",
+      "audio": "Audio",
+      "transducers": "Transducers",
+      "trollingMotors": "Trolling Motors",
+      "iceFishingBundlesKits": "Ice Fishing Bundles & Kits",
+      "radar": "Radar",
+      "autopilots": "Autopilots",
+      "lighting": "Lighting",
+      "handheldsSmartwatches": "Handhelds & Smartwatches",
+      "vhfAis": "VHF & AIS",
+      "sonarBlackBoxes": "Sonar Black Boxes",
+      "antennasSensors": "Antennas & Sensors",
+      "cameras": "Cameras",
+      "sailing": "Sailing",
+      "digitalSwitching": "Digital Switching",
+      "engineCutoffMob": "Engine Cutoff/MOB",
+      "newCharts": "New Charts",
+      "builtInUpdates": "Built-in Updates",
+      "updatingCharts": "Updating Charts",
+      "navionicsBoatingApp": "Navionics Boating App",
+      "integration": "Integration",
+      "softwareUpdates": "Software Updates",
+      "systemBuilder": "System Builder",
+      "activecaptain": "ActiveCaptain",
+      "navigationRadios": "Navigation & Radios",
+      "flightDisplaysInstruments": "Flight Displays & Instruments",
+      "engineIndicationSystems": "Engine Indication Systems",
+      "integratedFlightDecks": "Integrated Flight Decks",
+      "datalinksConnectivity": "Datalinks & Connectivity",
+      "audioPanels": "Audio Panels",
+      "weather": "Weather",
+      "traffic": "Traffic",
+      "adsBTransponders": "ADS-B & Transponders",
+      "portableGpsWearables": "Portable GPS & Wearables",
+      "generalAviation": "General Aviation",
+      "businessAviation": "Business Aviation",
+      "experimental": "Experimental",
+      "helicopters": "Helicopters",
+      "governmentDefense": "Government & Defense",
+      "garminPilot": "Garmin Pilot",
+      "safetyManagementSystem": "Safety Management System",
+      "aerodata": "AeroData",
+      "flygarmin": "flyGarmin",
+      "fltplanServices": "FltPlan Services",
+      "aviationDatabaseUpdates": "Aviation Database Updates",
+      "autonomi": "Autonomí",
+      "planesync": "PlaneSync",
+      "promotions": "Promotions",
+      "support": "Support",
+      "training": "Training"
+    },
+    "promos": {
+      "holidaySale": {
+        "title": "HOLIDAY SALE",
+        "copy": "Save big on great holiday gifts"
+      },
+      "fenix9": {
+        "title": "FĒNIX® 9",
+        "copy": "The ultimate smartwatch"
+      },
+      "edge1060": {
+        "title": "EDGE® 1060",
+        "copy": "Premium cycling computer with hands-free voice control"
+      },
+      "garminDrive": {
+        "title": "GARMIN DRIVE™ NAVIGATORS",
+        "copy": "Simplify your drive with new ultrawide displays"
+      },
+      "axis": {
+        "title": "AXIS™ FLIGHT DISPLAYS",
+        "copy": "Integrated flight displays for experimental and certified piston aircraft"
+      }
+    }
+  },
+  "HomeFeatured": {
+    "featured": "FEATURED",
+    "shop": "Shop",
+    "previous": "Previous",
+    "next": "Next"
+  },
+  "HomeHero": {
+    "label": "Featured Garmin products",
+    "shop": "SHOP",
+    "previous": "Previous slide",
+    "next": "Next slide",
+    "play": "Play slideshow",
+    "pause": "Pause slideshow",
+    "status": "Slide {current} of {total}: {title}"
+  },
+  "HomeSignup": {
+    "heading": "Sign up for News",
+    "placeholder": "john@example.com",
+    "submit": "Submit",
+    "copy": "Get product news and promotions based on your preferences, devices and services.",
+    "privacy": "Learn about email privacy."
+  },
+  "HomeTiles": {
+    "promoLabel": "Featured collections",
+    "storiesLabel": "Garmin stories",
+    "categoriesHeading": "SHOP BY CATEGORY"
+  },
+  "NotFound": {
+    "heading": "Page not found",
+    "body": "The page you are looking for does not exist.",
+    "home": "Go to homepage"
+  },
+  "ProductCard": {
+    "price": "{price} USD",
+    "andUp": "and up"
+  },
+  "RelatedProducts": {
+    "heading": "You May Also Like"
+  },
+  "WearablesHero": {
+    "heading": "Most Popular Smartwatches"
   }
 }

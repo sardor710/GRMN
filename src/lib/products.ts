@@ -31,40 +31,65 @@ export const products: Product[] = [
   { id: "847706", name: "Approach® S70", price: 649.99, priceSuffix: "and up", description: "Premium golf smartwatch with GPS, an AMOLED display and advanced wellness and on-course features.", image: "/images/products/847706.jpg", family: "Approach", activities: ["Golfing"], level: "Premium", caseSize: "Medium" },
 ];
 
-export const activityFilters = ["Boating", "Cycling", "Diving", "Flying", "Golfing", "Hiking", "Running", "Strength", "Swimming", "Tactical training", "Triathlon", "Walking"];
-export const levelFilters: Product["level"][] = ["Entry", "Advanced", "Premium", "Youth"];
-export const caseSizeFilters: { label: string; value: Product["caseSize"] }[] = [
-  { label: "Small (35 to 43 mm)", value: "Small" },
-  { label: "Medium (44 to 49 mm)", value: "Medium" },
-  { label: "Large (≥ 50 mm)", value: "Large" },
+/** Catalogue filter options. `value` matches product data (English); `labelKey` is the displayed message. */
+export interface FilterOption<T extends string = string> {
+  value: T;
+  labelKey: string;
+}
+
+export const activityFilters: FilterOption[] = [
+  { value: "Boating", labelKey: "CatalogueGrid.activities.boating" },
+  { value: "Cycling", labelKey: "CatalogueGrid.activities.cycling" },
+  { value: "Diving", labelKey: "CatalogueGrid.activities.diving" },
+  { value: "Flying", labelKey: "CatalogueGrid.activities.flying" },
+  { value: "Golfing", labelKey: "CatalogueGrid.activities.golfing" },
+  { value: "Hiking", labelKey: "CatalogueGrid.activities.hiking" },
+  { value: "Running", labelKey: "CatalogueGrid.activities.running" },
+  { value: "Strength", labelKey: "CatalogueGrid.activities.strength" },
+  { value: "Swimming", labelKey: "CatalogueGrid.activities.swimming" },
+  { value: "Tactical training", labelKey: "CatalogueGrid.activities.tacticalTraining" },
+  { value: "Triathlon", labelKey: "CatalogueGrid.activities.triathlon" },
+  { value: "Walking", labelKey: "CatalogueGrid.activities.walking" },
+];
+export const levelFilters: FilterOption<Product["level"]>[] = [
+  { value: "Entry", labelKey: "CatalogueGrid.levels.entry" },
+  { value: "Advanced", labelKey: "CatalogueGrid.levels.advanced" },
+  { value: "Premium", labelKey: "CatalogueGrid.levels.premium" },
+  { value: "Youth", labelKey: "CatalogueGrid.levels.youth" },
+];
+export const caseSizeFilters: FilterOption<Product["caseSize"]>[] = [
+  { value: "Small", labelKey: "CatalogueGrid.caseSizes.small" },
+  { value: "Medium", labelKey: "CatalogueGrid.caseSizes.medium" },
+  { value: "Large", labelKey: "CatalogueGrid.caseSizes.large" },
 ];
 
 export interface CatalogueDef {
   slug: string;
-  title: string;
-  heading: string;
+  /** Message keys (`CataloguePage.*`), resolved with `t()` where rendered. */
+  titleKey: string;
+  headingKey: string;
   showFamilies: boolean;
-  hero?: { image: string; label: string; blurb: string };
+  hero?: { image: string; labelKey: string; blurbKey: string };
   filter: (p: Product) => boolean;
 }
 
 export const catalogues: CatalogueDef[] = [
   {
     slug: "wearables-smartwatches",
-    title: "Smartwatches",
-    heading: "ALL SMARTWATCHES",
+    titleKey: "CataloguePage.smartwatches.title",
+    headingKey: "CataloguePage.smartwatches.heading",
     showFamilies: true,
     filter: () => true,
   },
   {
     slug: "sports-fitness/running-smartwatches",
-    title: "GPS Running Watches",
-    heading: "ALL RUNNING SMARTWATCHES",
+    titleKey: "CataloguePage.running.title",
+    headingKey: "CataloguePage.running.heading",
     showFamilies: false,
     hero: {
       image: "/images/74662-sports-and-fitness-pod.jpg",
-      label: "SPORTS & FITNESS",
-      blurb: "Running Smartwatches",
+      labelKey: "CataloguePage.running.heroLabel",
+      blurbKey: "CataloguePage.running.heroBlurb",
     },
     filter: (p) => p.activities.includes("Running"),
   },
@@ -103,8 +128,8 @@ export function catalogueProducts(def: CatalogueDef): Product[] {
 }
 
 // Back-compat: simple metadata lookup keyed by slug.
-export const catalogueMeta: Record<string, { title: string; heading: string }> = Object.fromEntries(
-  catalogues.map((c) => [c.slug, { title: c.title, heading: c.heading }]),
+export const catalogueMeta: Record<string, { titleKey: string; headingKey: string }> = Object.fromEntries(
+  catalogues.map((c) => [c.slug, { titleKey: c.titleKey, headingKey: c.headingKey }]),
 );
 
 export function getCMSProduct(id: string) {

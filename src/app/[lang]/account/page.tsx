@@ -2,11 +2,12 @@ import type { Metadata } from "next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { AccountDashboard } from "@/components/AccountDashboard";
-import { initPageLocale } from "@/i18n/page-locale";
+import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 
-export const metadata: Metadata = {
-  title: "My Account | Garmin",
-};
+export async function generateMetadata({ params }: PageProps<"/[lang]/account">): Promise<Metadata> {
+  const t = await getMetaTranslations(params);
+  return { title: t("accountTitle") };
+}
 
 export default async function AccountPage({ params }: PageProps<"/[lang]/account">) {
   await initPageLocale(params);
