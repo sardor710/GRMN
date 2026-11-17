@@ -32,13 +32,13 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/c/[...slug
 }
 
 export default async function CataloguePage({ params }: PageProps<"/[lang]/c/[...slug]">) {
-  await initPageLocale(params);
+  const locale = await initPageLocale(params);
   const t = await getTranslations();
   const { slug } = await params;
   const def = getCatalogue(slug.join("/"));
   if (!def) notFound();
 
-  const items = catalogueProducts(def);
+  const items = catalogueProducts(def, locale);
 
   return (
     <div className="flex min-h-screen flex-col bg-white">

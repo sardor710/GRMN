@@ -9,7 +9,10 @@ import { CartIcon } from "@/components/icons";
 import { formatMoney } from "@/i18n/format";
 import { useAppLocale } from "@/i18n/useAppLocale";
 
-export function CartView() {
+/** Localized display names by product id (and variant titles by sku). Never written back to the cart. */
+export type CartCatalog = Record<string, { name: string; variants: Record<string, string> }>;
+
+export function CartView({ catalog = {} }: { catalog?: CartCatalog }) {
   const t = useTranslations("Cart");
   const locale = useAppLocale();
   const money = (n: number) => formatMoney(n, locale);
@@ -64,7 +67,7 @@ export function CartView() {
                 <div className="flex items-center gap-4">
                   <div className="relative h-20 w-20 shrink-0 border border-neutral-200">
                     {item.image ? (
-                      <Image src={item.image} alt={item.name} fill sizes="80px" className="object-contain p-1" />
+                      <Image src={item.image} alt={catalog[item.id]?.name ?? item.name} fill sizes="80px" className="object-contain p-1" />
                     ) : (
                       <div className="grid h-full place-items-center text-neutral-300">
                         <CartIcon className="h-6 w-6" />
@@ -76,11 +79,11 @@ export function CartView() {
                       href={item.sku ? `/p/${item.id}?sku=${encodeURIComponent(item.sku)}` : `/p/${item.id}`}
                       className="g-heading text-[17px] text-black hover:text-[#007cc3]"
                     >
-                      {item.name}
+                      {catalog[item.id]?.name ?? item.name}
                     </Link>
                     {item.sku && (
                       <p className="mt-0.5 text-[12px] text-neutral-600">
-                        {item.variantLabel && <span>{item.variantLabel} · </span>}
+                        {item.variantLabel && <span>{(item.sku && catalog[item.id]?.variants[item.sku]) || item.variantLabel} · </span>}
                         <span className="uppercase tracking-[0.04em]">{t("part", { sku: item.sku })}</span>
                       </p>
                     )}

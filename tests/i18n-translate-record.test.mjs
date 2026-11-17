@@ -221,3 +221,29 @@ test('localizeList maps every record and does not mutate the input', () => {
   assert.equal(list[0].name, 'Phoenix');
   assert.notEqual(out, list);
 });
+
+test('localizeList(products, kk) returns the Kazakh name where an overlay exists and English elsewhere', () => {
+  const withKk = makeProduct({ kk: { name: 'Феникс-kk' } });
+  const withoutKk = { ...makeProduct({ ru: { name: 'Ру' } }), id: 'p2' };
+  const list = deepFreeze([withKk, withoutKk]);
+  const out = localizeList(list, 'kk', localizeProduct);
+  assert.equal(out[0].name, 'Феникс-kk');
+  assert.equal(out[1].name, 'Phoenix');
+  assert.equal(list[0].name, 'Phoenix');
+  assert.equal(out[0].translations, undefined);
+});
+
+test('isRecordTranslated: only non-blank strings and non-empty arrays count as present', () => {
+  const rec = { translations: { kk: { name: { nested: 'x' }, description: 5, title: 'T', content: ['a'] } } };
+  assert.equal(isRecordTranslated(rec, 'kk', ['name']), false);
+  assert.equal(isRecordTranslated(rec, 'kk', ['description']), false);
+  assert.equal(isRecordTranslated(rec, 'kk', ['title', 'content']), true);
+  assert.equal(isRecordTranslated(rec, 'kk', ['missing']), false);
+});
+
+test('translatedLocales: en always, plus locales with all required fields', async () => {
+  const { translatedLocales } = await import('../src/i18n/translate-record.js');
+  const rec = { translations: { ru: { name: 'Н', description: 'О' }, kk: { name: 'К' } } };
+  assert.deepEqual(translatedLocales(rec, ['name', 'description']), ['en', 'ru']);
+  assert.deepEqual(translatedLocales({}, ['name']), ['en']);
+});

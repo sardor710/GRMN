@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { activityFilters, caseSizeFilters, filterLabelKey, levelFilters, products } from "@/lib/products";
+import { activityFilters, caseSizeFilters, filterLabelKey, levelFilters } from "@/lib/products";
 import type { Product } from "@/types";
 import { formatMoney } from "@/i18n/format";
 import { useAppLocale } from "@/i18n/useAppLocale";
@@ -28,7 +28,7 @@ function label(tr: Translate, key: string | undefined, fallback: string): string
   return key ? tr(key) : fallback;
 }
 
-export function CompareTool() {
+export function CompareTool({ products }: { products: Product[] }) {
   const t = useTranslations("Compare");
   const tk = useTranslations();
   const locale = useAppLocale();

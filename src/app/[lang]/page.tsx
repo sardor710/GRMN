@@ -5,7 +5,7 @@ import { HomeFeatured } from "@/components/home/HomeFeatured";
 import { HomeTiles } from "@/components/home/HomeTiles";
 import { HomeSignup } from "@/components/home/HomeSignup";
 import { HomeFooter } from "@/components/home/HomeFooter";
-import { getHomepageConfig } from "@/lib/cms/store";
+import { getHomepageConfigFor } from "@/lib/cms/store";
 import type { Metadata } from "next";
 import { initPageLocale } from "@/i18n/page-locale";
 import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
@@ -18,8 +18,8 @@ export async function generateMetadata({ params }: PageProps<"/[lang]">): Promis
 }
 
 export default async function Home({ params }: PageProps<"/[lang]">) {
-  await initPageLocale(params);
-  const config = getHomepageConfig();
+  const locale = await initPageLocale(params);
+  const config = getHomepageConfigFor(locale);
 
   return (
     <div className="garmin-home min-h-screen bg-white">

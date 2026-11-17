@@ -9,6 +9,8 @@
 //   idPatches:   overlay maps Record<id, string> patching `field` on items found by walking
 //                `path` (array fields) of the base record, e.g. valueLabels -> options.values.label
 
+import { LOCALES } from './config.js';
+
 function isBlank(value) {
   return typeof value !== 'string' || value.trim() === '';
 }
@@ -91,7 +93,7 @@ export function isRecordTranslated(record, locale, requiredFields) {
     const value = overlay[field];
     if (typeof value === 'string') return value.trim() !== '';
     if (Array.isArray(value)) return value.length > 0;
-    return value != null;
+    return false;
   });
 }
 
@@ -137,3 +139,8 @@ export const localizeBlog = (record, locale) => localizeRecord(record, locale, B
 export const localizeBanner = (record, locale) => localizeRecord(record, locale, BANNER_SPEC);
 export const localizeHomepage = (record, locale) => localizeRecord(record, locale, HOMEPAGE_SPEC);
 export const localizeSettings = (record, locale) => localizeRecord(record, locale, SETTINGS_SPEC);
+
+/** Locales a record is translated into for indexing: `en` always, plus each locale whose required fields are present. */
+export function translatedLocales(record, requiredFields) {
+  return LOCALES.filter((locale) => isRecordTranslated(record, locale, requiredFields));
+}

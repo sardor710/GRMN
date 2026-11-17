@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ProductCard } from "@/components/ProductCard";
-import { products } from "@/lib/products";
+import { getProduct } from "@/lib/products";
 import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 
@@ -57,8 +57,8 @@ const details = [
 const compatibleIds = ["1228429", "1614061", "1462801", "1463821", "1510465", "1316397", "1800201", "1828641", "851039"];
 
 export default async function GarminPayPage({ params }: PageProps<"/[lang]/garmin-pay">) {
-  await initPageLocale(params);
-  const compatible = compatibleIds.map((id) => products.find((p) => p.id === id)).filter((p) => p !== undefined);
+  const locale = await initPageLocale(params);
+  const compatible = compatibleIds.map((id) => getProduct(id, locale)).filter((p) => p !== undefined);
 
   return (
     <div className="flex min-h-screen flex-col bg-white">

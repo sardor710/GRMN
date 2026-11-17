@@ -61,3 +61,7 @@ export function localizeHomepage(record: HomepageConfig, locale: Locale): Homepa
 export function localizeSettings(record: StoreSettings, locale: Locale): StoreSettings {
   return localizeRecord(record, locale, SETTINGS_SPEC);
 }
+
+export function translatedLocales(record: { translations?: unknown }, requiredFields: string[]): Locale[] {
+  return js.translatedLocales(record, requiredFields) as Locale[];
+}

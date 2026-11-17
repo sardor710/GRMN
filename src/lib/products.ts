@@ -1,5 +1,6 @@
 import type { Product, WatchFamily, ProductDetail, AccessoryItem } from "@/types";
-import { getProducts as getCMSProducts } from "@/lib/cms/store";
+import { getProducts as getRawCMSProducts, getProductsFor as getCMSProducts } from "@/lib/cms/store";
+import type { Locale } from "@/i18n/config";
 import type { CMSProduct } from "@/lib/cms/types";
 import { usesCmsDetail } from "@/lib/cms/product-variants";
 
@@ -104,9 +105,9 @@ export function getCatalogue(slug: string): CatalogueDef | undefined {
   return catalogues.find((c) => c.slug === slug);
 }
 
-export function getAllProducts(): Product[] {
+export function getAllProducts(locale: Locale = "en"): Product[] {
   try {
-    const cmsProducts = getCMSProducts();
+    const cmsProducts = getCMSProducts(locale);
     if (cmsProducts && cmsProducts.length > 0) {
       return cmsProducts.map((cp) => ({
         id: cp.id,
@@ -128,8 +129,8 @@ export function getAllProducts(): Product[] {
   return products;
 }
 
-export function catalogueProducts(def: CatalogueDef): Product[] {
-  return getAllProducts().filter(def.filter);
+export function catalogueProducts(def: CatalogueDef, locale: Locale = "en"): Product[] {
+  return getAllProducts(locale).filter(def.filter);
 }
 
 // Back-compat: simple metadata lookup keyed by slug.
@@ -137,9 +138,9 @@ export const catalogueMeta: Record<string, { titleKey: string; headingKey: strin
   catalogues.map((c) => [c.slug, { titleKey: c.titleKey, headingKey: c.headingKey }]),
 );
 
-export function getCMSProduct(id: string) {
+export function getCMSProduct(id: string, locale: Locale = "en") {
   try {
-    const cmsProducts = getCMSProducts();
+    const cmsProducts = getCMSProducts(locale);
     return cmsProducts.find((cp) => cp.id === id);
   } catch (err) {
     console.error("Error looking up raw CMS product:", err);
@@ -147,9 +148,18 @@ export function getCMSProduct(id: string) {
   }
 }
 
-export function getProduct(id: string): Product | undefined {
+export function getRawCMSProduct(id: string): CMSProduct | undefined {
   try {
-    const cmsProducts = getCMSProducts();
+    return getRawCMSProducts().find((cp) => cp.id === id);
+  } catch (err) {
+    console.error("Error looking up raw CMS product:", err);
+    return undefined;
+  }
+}
+
+export function getProduct(id: string, locale: Locale = "en"): Product | undefined {
+  try {
+    const cmsProducts = getCMSProducts(locale);
     const found = cmsProducts.find((cp) => cp.id === id);
     if (found) {
       return {
@@ -318,7 +328,7 @@ export const fenix8Detail: ProductDetail = {
 };
 
 // Build a functional detail page for products without hand-authored data.
-function buildFallbackDetail(p: Product): ProductDetail {
+function buildFallbackDetail(p: Product, locale: Locale): ProductDetail {
   let specs = [
     { label: "Family", value: p.family },
     { label: "Level", value: p.level },
@@ -329,7 +339,7 @@ function buildFallbackDetail(p: Product): ProductDetail {
   let gallery = [{ view: "Front", src: p.image }];
 
   try {
-    const cmsProducts = getCMSProducts();
+    const cmsProducts = getCMSProducts(locale);
     const found = cmsProducts.find((cp) => cp.id === p.id);
     if (found) {
       if (found.specs && found.specs.length > 0) {
@@ -377,7 +387,7 @@ function buildFallbackDetail(p: Product): ProductDetail {
     ],
     specs,
     inTheBox,
-    related: getAllProducts()
+    related: getAllProducts(locale)
       .filter((x) => x.id !== p.id && x.family === p.family)
       .slice(0, 4)
       .map((x) => x.id),
@@ -385,7 +395,7 @@ function buildFallbackDetail(p: Product): ProductDetail {
 }
 
 /** Storefront detail for CMS products that use the media/options/variants model. */
-export function buildDetailFromCms(p: CMSProduct): ProductDetail {
+export function buildDetailFromCms(p: CMSProduct, locale: Locale = "en"): ProductDetail {
   const images = p.images || [];
   const ordered = [
     ...images.filter((i) => i.id === p.defaultImageId),
@@ -417,7 +427,7 @@ export function buildDetailFromCms(p: CMSProduct): ProductDetail {
     features: p.features || [],
     specs: p.specs || [],
     inTheBox: p.inTheBox || [],
-    related: getAllProducts()
+    related: getAllProducts(locale)
       .filter((x) => x.id !== p.id && x.family === p.family)
       .slice(0, 4)
       .map((x) => x.id),
@@ -427,12 +437,12 @@ export function buildDetailFromCms(p: CMSProduct): ProductDetail {
   };
 }
 
-export function getProductDetail(id: string): ProductDetail | undefined {
-  const cms = getCMSProduct(id);
+export function getProductDetail(id: string, locale: Locale = "en"): ProductDetail | undefined {
+  const cms = getCMSProduct(id, locale);
   // Only products with variants or an overview get the CMS page; legacy products keep their hand-built page
   // (re-saving one in the admin must not change its storefront).
-  if (cms && usesCmsDetail(cms)) return buildDetailFromCms(cms);
-  const dynamicProduct = getProduct(id);
+  if (cms && usesCmsDetail(cms)) return buildDetailFromCms(cms, locale);
+  const dynamicProduct = getProduct(id, locale);
 
   if (id === "1228429") {
     if (!dynamicProduct) return fenix8Detail;
@@ -445,5 +455,5 @@ export function getProductDetail(id: string): ProductDetail | undefined {
     };
   }
 
-  return dynamicProduct ? buildFallbackDetail(dynamicProduct) : undefined;
+  return dynamicProduct ? buildFallbackDetail(dynamicProduct, locale) : undefined;
 }

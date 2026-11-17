@@ -5,10 +5,11 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { ProductTop } from "@/components/ProductTop";
 import { ProductTabs } from "@/components/ProductTabs";
 import { RelatedProducts } from "@/components/RelatedProducts";
-import { getProductDetail, getAllProducts, getCMSProduct } from "@/lib/products";
+import { getProductDetail, getAllProducts, getCMSProduct, getRawCMSProduct } from "@/lib/products";
 import { ProductJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
-import { ROUTE_LOCALES, localizedSeo, localizedUrl } from "@/i18n/seo";
+import { localizedSeo, localizedUrl } from "@/i18n/seo";
+import { translatedLocales } from "@/i18n/translate-record";
 
 export const dynamic = "force-dynamic";
 
@@ -20,8 +21,8 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/p/[id]">):
   const locale = await initPageLocale(params);
   const t = await getMetaTranslations(params);
   const { id } = await params;
-  const cmsProduct = getCMSProduct(id);
-  const detail = getProductDetail(id);
+  const cmsProduct = getCMSProduct(id, locale);
+  const detail = getProductDetail(id, locale);
 
   if (!detail && !cmsProduct) {
     return { title: t("productFallbackTitle") };
@@ -38,7 +39,7 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/p/[id]">):
   const seo = localizedSeo({
     path: `/p/${id}`,
     locale,
-    indexedLocales: ROUTE_LOCALES.product,
+    indexedLocales: translatedLocales(getRawCMSProduct(id) ?? {}, ["name", "description"]),
     canonicalOverride: cmsProduct?.canonicalUrl || undefined,
     noIndex: cmsProduct?.noIndex,
   });
@@ -76,10 +77,10 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/p/[id]">):
 export default async function ProductPage({ params }: PageProps<"/[lang]/p/[id]">) {
   const locale = await initPageLocale(params);
   const { id } = await params;
-  const detail = getProductDetail(id);
+  const detail = getProductDetail(id, locale);
   if (!detail) notFound();
 
-  const cmsProduct = getCMSProduct(id);
+  const cmsProduct = getCMSProduct(id, locale);
   const fullProduct = cmsProduct || {
     id: detail.id,
     name: detail.title,

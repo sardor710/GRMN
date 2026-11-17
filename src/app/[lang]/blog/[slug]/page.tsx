@@ -7,11 +7,12 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { SectionHeading } from "@/components/SectionHeading";
 import { blogPosts, getPost, articleBody } from "@/lib/blog";
-import { getBlogs } from "@/lib/cms/store";
+import { getBlogs, getBlogsFor } from "@/lib/cms/store";
 import { ArticleJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import type { CMSBlog } from "@/lib/cms/types";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
-import { ROUTE_LOCALES, localizedSeo, localizedUrl } from "@/i18n/seo";
+import { localizedSeo, localizedUrl } from "@/i18n/seo";
+import { translatedLocales } from "@/i18n/translate-record";
 import { formatDate } from "@/i18n/format";
 
 export function generateStaticParams() {
@@ -23,8 +24,8 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/blog/[slug
   const tm = await getMetaTranslations(params);
   const { slug } = await params;
   const post = getPost(slug);
-  const cmsBlogs = getBlogs();
-  const cmsBlog = cmsBlogs.find((b) => b.slug === slug);
+  const cmsBlog = getBlogsFor(locale).find((b) => b.slug === slug);
+  const rawBlog = getBlogs().find((b) => b.slug === slug);
 
   if (!post && !cmsBlog) {
     return { title: tm("blogFallbackTitle") };
@@ -40,7 +41,7 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/blog/[slug
   const seo = localizedSeo({
     path: `/blog/${slug}`,
     locale,
-    indexedLocales: ROUTE_LOCALES.blogPost,
+    indexedLocales: translatedLocales(rawBlog ?? {}, ["title", "content"]),
     canonicalOverride: cmsBlog?.canonicalUrl || undefined,
     noIndex: cmsBlog?.noIndex,
   });
@@ -80,8 +81,7 @@ export default async function ArticlePage({ params }: PageProps<"/[lang]/blog/[s
   const t = await getTranslations("BlogArticle");
   const { slug } = await params;
   const post = getPost(slug);
-  const cmsBlogs = getBlogs();
-  const cmsBlog = cmsBlogs.find((b) => b.slug === slug);
+  const cmsBlog = getBlogsFor(locale).find((b) => b.slug === slug);
 
   if (!post && !cmsBlog) notFound();
 

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { CartView } from "@/components/CartView";
+import { CartView, type CartCatalog } from "@/components/CartView";
+import { getProductsFor } from "@/lib/cms/store";
 import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 
@@ -15,12 +16,20 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/cart">): P
 }
 
 export default async function CartPage({ params }: PageProps<"/[lang]/cart">) {
-  await initPageLocale(params);
+  const locale = await initPageLocale(params);
+  // Display-only lookup: stored cart lines keep their English snapshot; names are localized at render time.
+  const catalog: CartCatalog = {};
+  for (const p of getProductsFor(locale)) {
+    catalog[p.id] = {
+      name: p.name,
+      variants: Object.fromEntries((p.variants ?? []).map((v) => [v.sku, v.title])),
+    };
+  }
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <SiteHeader />
       <main className="flex-1">
-        <CartView />
+        <CartView catalog={catalog} />
       </main>
       <SiteFooter />
     </div>

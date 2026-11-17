@@ -1,11 +1,13 @@
 import { useTranslations } from "next-intl";
+import { useAppLocale } from "@/i18n/useAppLocale";
 import { ProductCard } from "@/components/ProductCard";
 import { getProduct } from "@/lib/products";
 import { SectionHeading } from "@/components/SectionHeading";
 
 export function RelatedProducts({ ids }: { ids: string[] }) {
   const t = useTranslations("RelatedProducts");
-  const items = ids.map(getProduct).filter((p) => p !== undefined);
+  const locale = useAppLocale();
+  const items = ids.map((id) => getProduct(id, locale)).filter((p) => p !== undefined);
   if (items.length === 0) return null;
 
   return (
