@@ -67,3 +67,31 @@ export function buildAlternates({ path, locale, indexedLocales, canonicalOverrid
   const canonical = locale === 'en' && canonicalOverride ? canonicalOverride : prefixed(locale, path);
   return { canonical, languages };
 }
+
+/**
+ * One sitemap entry per indexed locale of each route; every entry lists the full alternate set
+ * (absolute URLs) plus x-default.
+ * @param {string} baseUrl
+ * @param {{ path: string, indexedLocales: string[], lastModified?: Date, priority?: number, changeFrequency?: string }[]} routes
+ */
+export function buildSitemapEntries(baseUrl, routes) {
+  const entries = [];
+  for (const { path, indexedLocales, lastModified, priority, changeFrequency } of routes) {
+    const locales = LOCALES.filter((l) => indexedLocales.includes(l));
+    if (locales.length === 0) continue;
+    /** @type {Record<string, string>} */
+    const languages = {};
+    for (const l of locales) languages[l] = localizedUrl(path, l, baseUrl);
+    languages['x-default'] = absoluteUrl(path, baseUrl);
+    for (const l of locales) {
+      entries.push({
+        url: languages[l],
+        lastModified,
+        changeFrequency,
+        priority,
+        alternates: { languages },
+      });
+    }
+  }
+  return entries;
+}

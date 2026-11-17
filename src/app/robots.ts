@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/i18n/seo";
 
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.garmin.com";
-
   return {
     rules: [
       {
@@ -15,6 +14,8 @@ export default function robots(): MetadataRoute.Robots {
           "/api/admin",
           "/cart",
           "/account",
+          "/*/cart",
+          "/*/account",
         ],
       },
       {
@@ -23,6 +24,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ["/admin/", "/api/admin/"],
       },
     ],
-    sitemap: `${baseUrl}/sitemap.xml`,
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

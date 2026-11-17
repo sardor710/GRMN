@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, MetadataRoute } from "next";
 import { LOCALES, OG_LOCALE, type Locale } from "./config";
 import * as core from "./seo-core.js";
 
@@ -75,4 +75,20 @@ export function localizedSeo(input: LocalizedSeoInput): Pick<Metadata, "alternat
       alternateLocale: LOCALES.filter((l) => l !== locale && indexedLocales.includes(l)).map((l) => OG_LOCALE[l]),
     },
   };
+}
+
+export interface SitemapRoute {
+  /** Unprefixed path, "/" for home. */
+  path: string;
+  indexedLocales: readonly Locale[];
+  lastModified?: Date;
+  priority?: number;
+  changeFrequency?: "always" | "hourly" | "daily" | "weekly" | "monthly" | "yearly" | "never";
+}
+
+export function buildSitemapEntries(baseUrl: string, routes: SitemapRoute[]): MetadataRoute.Sitemap {
+  return core.buildSitemapEntries(
+    baseUrl,
+    routes.map((r) => ({ ...r, indexedLocales: [...r.indexedLocales] })),
+  ) as MetadataRoute.Sitemap;
 }

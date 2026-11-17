@@ -52,3 +52,34 @@ test('absoluteUrl / localizedUrl use the given site origin', () => {
   assert.equal(localizedUrl('/p/x', 'kk', 'https://h.test'), 'https://h.test/kk/p/x');
   assert.equal(localizedUrl('/', 'ru', 'https://h.test'), 'https://h.test/ru');
 });
+
+import { buildSitemapEntries } from '../src/i18n/seo-core.js';
+
+const NOW = new Date('2026-01-01T00:00:00Z');
+const route = (path, indexedLocales) => ({ path, indexedLocales, lastModified: NOW, priority: 0.5, changeFrequency: 'weekly' });
+
+test('buildSitemapEntries: product translated in ru only yields en + ru entries with matching alternates', () => {
+  const entries = buildSitemapEntries('https://x.test', [route('/p/x', ['en', 'ru'])]);
+  assert.deepEqual(entries.map((e) => e.url), ['https://x.test/en/p/x', 'https://x.test/ru/p/x']);
+  for (const e of entries) {
+    assert.deepEqual(e.alternates.languages, {
+      en: 'https://x.test/en/p/x',
+      ru: 'https://x.test/ru/p/x',
+      'x-default': 'https://x.test/p/x',
+    });
+    assert.equal(e.priority, 0.5);
+    assert.equal(e.changeFrequency, 'weekly');
+    assert.equal(e.lastModified, NOW);
+  }
+});
+
+test('buildSitemapEntries: en-only route yields one entry; home has no trailing path', () => {
+  assert.equal(buildSitemapEntries('https://x.test', [route('/minisite/marq', ['en'])]).length, 1);
+  const home = buildSitemapEntries('https://x.test', [route('/', ['en', 'ru', 'kk'])]);
+  assert.deepEqual(home.map((e) => e.url), ['https://x.test/en', 'https://x.test/ru', 'https://x.test/kk']);
+  assert.equal(home[0].alternates.languages['x-default'], 'https://x.test');
+});
+
+test('buildSitemapEntries: routes without indexed locales produce nothing', () => {
+  assert.deepEqual(buildSitemapEntries('https://x.test', [route('/p/x', [])]), []);
+});
