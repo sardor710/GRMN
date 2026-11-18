@@ -210,25 +210,22 @@ export function createPublishingService({ pool, authorize }: Options) {
       return transaction(pool, async client => {
         const current = (await client.query<{ id: string; version: number }>("SELECT id,version FROM merchandising_collections WHERE key=$1 FOR UPDATE", [command.key])).rows[0] ?? notFound();
         if (current.version !== command.expectedVersion) conflict();
-        const version = (await client.query<{ version: number }>("UPDATE merchandising_collections SET status='published',version=version+1 WHERE id=$1 RETURNING version", [current.id])).rows[0].version;
+        // Draft isolation (18A ruling I6): the public reads only this snapshot, so later saves stay drafts.
+        await client.query("DELETE FROM collection_published_products WHERE collection_id=$1", [current.id]);
+        await client.query("INSERT INTO collection_published_products(collection_id,product_id,position) SELECT collection_id,product_id,(row_number() OVER (ORDER BY position,product_id))-1 FROM collection_products WHERE collection_id=$1", [current.id]);
+        const version = (await client.query<{ version: number }>("UPDATE merchandising_collections SET status='published',published_name=name,published_at=now(),version=version+1 WHERE id=$1 RETURNING version", [current.id])).rows[0].version;
         await appendOutboxEvent(client, { topic: "content.published", dedupeKey: `collection:${current.id}:${version}`, aggregate: { type: "collection", id: current.id }, payload: { collectionKey: command.key }, consumers: [CONTENT_INVALIDATE_KIND] });
         await audit(client, principal.userId, "content.collection_published", current.id, { key: command.key });
         return { key: command.key, version };
       });
     },
 
-    /** Public: a published collection with its live, published products in order; missing ones are skipped. */
+    /** Public: the published snapshot of a collection with its live, published products in order; missing ones are skipped. */
     async readCollection(key: string): Promise<{ key: string; name: string; products: CMSItem[] } | null> {
       if (!KEY.test(key)) return null;
-      const collection = (await pool.query<{ id: string; name: string }>("SELECT id,name FROM merchandising_collections WHERE key=$1 AND status='published'", [key])).rows[0];
+      const collection = (await pool.query<{ id: string; published_name: string }>("SELECT id,published_name FROM merchandising_collections WHERE key=$1 AND status='published'", [key])).rows[0];
       if (!collection) return null;
-      const keys = (await pool.query<{ public_key: string }>("SELECT p.public_key FROM collection_products c JOIN products p ON p.id=c.product_id WHERE c.collection_id=$1 ORDER BY c.position,p.id", [collection.id])).rows;
-      const products: CMSItem[] = [];
-      for (const row of keys) {
-        const found = (await cms.publicProducts({ id: row.public_key })).items[0];
-        if (found) products.push(found);
-      }
-      return { key, name: collection.name, products };
+      return { key, name: collection.published_name, products: await cms.publicCollectionProducts(collection.id) };
     },
   };
 }

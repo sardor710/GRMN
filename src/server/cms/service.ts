@@ -197,6 +197,10 @@ export function createCMSService({pool,authorize}:Options) {
     },
     async homepage(headers:Headers){await authorize(headers,"content:write");const row=(await pool.query(`${contentSelect()} WHERE p.kind='homepage' ORDER BY p.id LIMIT 1`)).rows[0];return row?contentDTO(row):{id:"homepage",version:0,config:null};},
     async saveHomepage(headers:Headers,input:unknown){const principal=await authorize(headers,"content:write");return tx(client=>saveContent(client,principal,"homepage",input));},
+    /** Public: the live products of a published collection snapshot, in snapshot order, in one query. */
+    async publicCollectionProducts(collectionId:string):Promise<CMSItem[]>{
+      return (await pool.query(`${productSelect} JOIN collection_published_products c ON c.product_id=p.id WHERE c.collection_id=$1 AND p.status='published' AND v.status='active' ORDER BY c.position`,[collectionId])).rows.map(productDTO);
+    },
     async publicProducts(input:{id?:string;limit?:number;cursor?:string}={}):Promise<CMSPage>{
       if(input.id){const row=(await pool.query(`${productSelect} WHERE p.public_key=$1 AND p.status='published' AND v.status='active'`,[input.id])).rows[0];return{items:row?[productDTO(row)]:[],nextCursor:null};}
       return listing("products",{limit:input.limit??24,cursor:input.cursor},undefined,true);

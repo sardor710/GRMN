@@ -296,16 +296,18 @@ test("SEO metadata save failure returns a safe unavailable response without a su
 });
 
 test("legacy product saves keep variants, sanitize overview HTML and reject SKU conflicts and unsafe media",async()=>{
+  // A fresh operator: earlier tests sign the shared admin out.
+  const operator=await staff("super_admin","variants@example.invalid");
   const variant={id:"v1",sku:"SKU-V1",title:"43 mm",selections:{o1:"a"},price:100,stock:2,status:"active",isDefault:true,imageIds:["i1"]};
   const body={name:"Variant product",price:100,sku:"SKU-BASE",options:[{id:"o1",key:"size",name:"Size",display:"buttons",values:[{id:"a",key:"43",label:"43 mm"}]}],variants:[variant],images:[{id:"i1",src:"/uploads/x.jpg",alt:"x",source:"upload"}],overviewHtml:"<p>Hi</p><script>alert(1)</script>"};
-  const ok=await request("products","POST",admin,body);assert.equal(ok.status,200);
+  const ok=await request("products","POST",operator,body);assert.equal(ok.status,200);
   const saved=(await ok.json()).product;assert.equal(saved.variants[0].selections.o1,"a");assert.equal(saved.images[0].src,"/uploads/x.jpg");assert.doesNotMatch(saved.overviewHtml,/script/);
   rows.products.push({id:"other",name:"Other",price:1,sku:"TAKEN",variants:[]});
   try{
-    const conflict=await request("products","POST",admin,{...body,variants:[{...variant,sku:"TAKEN"}]});assert.equal(conflict.status,409);
+    const conflict=await request("products","POST",operator,{...body,variants:[{...variant,sku:"TAKEN"}]});assert.equal(conflict.status,409);
     assert.deepEqual((await conflict.json()).conflicts.map(sku=>sku.toUpperCase()),["TAKEN"]);
   }finally{rows.products.pop();}
-  assert.equal((await request("products","POST",admin,{...body,variants:[{...variant,sku:" "}]})).status,400);
-  assert.equal((await request("products","POST",admin,{...body,options:[{...body.options[0],values:[{id:"a",key:"43",label:"43",swatchColor:"red;background:url(x)"}]}]})).status,400);
-  assert.equal((await request("products","POST",admin,{...body,images:[{id:"i1",src:"https://evil.invalid/x.jpg",alt:"x",source:"url"}]})).status,400);
+  assert.equal((await request("products","POST",operator,{...body,variants:[{...variant,sku:" "}]})).status,400);
+  assert.equal((await request("products","POST",operator,{...body,options:[{...body.options[0],values:[{id:"a",key:"43",label:"43",swatchColor:"red;background:url(x)"}]}]})).status,400);
+  assert.equal((await request("products","POST",operator,{...body,images:[{id:"i1",src:"https://evil.invalid/x.jpg",alt:"x",source:"url"}]})).status,400);
 });

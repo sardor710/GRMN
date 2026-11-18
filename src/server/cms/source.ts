@@ -68,5 +68,10 @@ export async function readBlogsPage(input:{limit?:number;cursor?:string;search?:
 export async function readBlog(slug:string){return (await read("blogs",{slug})).items[0] as CMSBlog|undefined;}
 export async function readHomepage(){
   const item=(await read("homepage")).items[0] as {config:HomepageConfig}|undefined;
-  if(!item)throw new AuthFailure("UNAVAILABLE",503,"Homepage content is unavailable");return item.config;
+  if(!item)throw new AuthFailure("UNAVAILABLE",503,"Homepage content is unavailable");
+  if(cmsBackend()!=="postgres")return item.config;
+  // 18A ruling I6: carousels bound to a merchandising collection show its published snapshot.
+  const [{resolveHomepageCollections},{createPublishingService},{getDatabase}]=await Promise.all([import("../../lib/cms/homepage-collections.ts"),import("../content/publishing.ts"),import("../db/client.ts")]);
+  const publishing=createPublishingService({pool:getDatabase().pool,authorize:async()=>{throw new AuthFailure("FORBIDDEN",403,"Public reads cannot authorize staff actions");}});
+  return resolveHomepageCollections(item.config,key=>publishing.readCollection(key));
 }

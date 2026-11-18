@@ -52,11 +52,18 @@ export const banners = pgTable("banners", {
 
 export const merchandisingCollections = pgTable("merchandising_collections", {
   id: id(), key: text("key").notNull().unique(), name: text("name").notNull(), status: text("status").notNull().default("draft"), version: integer("version").notNull().default(1),
+  // Draft isolation (18A ruling I6): edits change name/collection_products; publishing copies them into
+  // published_name/collection_published_products, which is all the public read sees.
+  publishedName: text("published_name"), publishedAt: time("published_at"),
 }, t => [check("merchandising_collections_fields_valid", sql`length(btrim(${t.key}))>0 AND length(btrim(${t.name}))>0 AND ${t.status} IN ('draft','published','archived') AND ${t.version}>0`)]);
 export const collectionProducts = pgTable("collection_products", {
   collectionId: uuid("collection_id").notNull().references(() => merchandisingCollections.id, { onDelete: "restrict" }), productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
   position: integer("position").notNull().default(0), presentation: object("presentation").notNull().default({}),
 }, t => [primaryKey({ columns: [t.collectionId, t.productId] }), index("collection_products_order_idx").on(t.collectionId, t.position, t.productId), index("collection_products_product_idx").on(t.productId), check("collection_products_fields_valid", sql`${t.position}>=0 AND jsonb_typeof(${t.presentation})='object'`)]);
+export const collectionPublishedProducts = pgTable("collection_published_products", {
+  collectionId: uuid("collection_id").notNull().references(() => merchandisingCollections.id, { onDelete: "restrict" }), productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
+  position: integer("position").notNull(),
+}, t => [primaryKey({ columns: [t.collectionId, t.productId] }), uniqueIndex("collection_published_products_order_idx").on(t.collectionId, t.position), index("collection_published_products_product_idx").on(t.productId), check("collection_published_products_position_valid", sql`${t.position}>=0`)]);
 export const pageVersionCollections = pgTable("page_version_collections", {
   versionId: uuid("version_id").notNull().references(() => pageVersions.id, { onDelete: "restrict" }), collectionId: uuid("collection_id").notNull().references(() => merchandisingCollections.id, { onDelete: "restrict" }),
 }, t => [primaryKey({ columns: [t.versionId, t.collectionId] }), index("page_version_collections_collection_idx").on(t.collectionId)]);

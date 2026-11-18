@@ -37,7 +37,7 @@ const tile = z.object({id,title:short,image:link,href:link,cta:short,order:count
 const carouselItem = z.object({id,title:short,description:text,price:short.optional(),originalPrice:short.optional(),badge:short.optional(),image:link,href:link,ctaText:short.optional(),order:count,variant:z.enum(["product","promo"]).optional(),imageAlt:short.optional()}).strict();
 export const homepageInput = z.object({
   heroBanners:z.array(z.object({id,key:short,title:short,subtitle:text,disclaimer:text.optional(),image:link,href:link,active:z.boolean(),order:count}).strict()).max(100),
-  carousels:z.array(z.object({id,title:short,subtitle:text.optional(),type:z.enum(["product","promo"]),active:z.boolean(),order:count,items:z.array(carouselItem).max(200)}).strict()).max(100),
+  carousels:z.array(z.object({id,title:short,subtitle:text.optional(),type:z.enum(["product","promo"]),collectionKey:z.string().regex(/^[a-z0-9][a-z0-9_-]{0,63}$/).optional(),active:z.boolean(),order:count,items:z.array(carouselItem).max(200)}).strict()).max(100),
   promoTiles:z.array(tile).max(100),storyTiles:z.array(tile).max(100),categoryTiles:z.array(tile).max(100),updatedAt:short.optional(),
 }).strict();
 export const orderUpdateInput = z.object({id,fulfillmentStatus:z.enum(["new","processing","shipped","delivered","canceled","returned","cancelled"]).optional(),trackingNumber:short.optional(),carrier:short.optional(),estimatedDeliveryDate:short.optional(),notes:text.optional(),paymentStatus:z.enum(["paid","pending","refunded"]).optional()}).strict().refine(value=>Object.keys(value).length>1);

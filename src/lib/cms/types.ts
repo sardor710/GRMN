@@ -409,6 +409,8 @@ export interface CarouselBlock {
   title: string;
   subtitle?: string;
   type: CarouselType; // "product" (with price and tag) | "promo" (with photo and hyperlink button)
+  /** PostgreSQL mode: show this published merchandising collection instead of the inline items. */
+  collectionKey?: string;
   active: boolean;
   order: number;
   items: (ProductCarouselItem | PromoCarouselItem)[];

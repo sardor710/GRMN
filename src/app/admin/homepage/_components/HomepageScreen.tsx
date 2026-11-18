@@ -1208,6 +1208,29 @@ export default function AdminHomepagePage() {
               />
             </div>
 
+            <div>
+              <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider">
+                Merchandising Collection Key (optional)
+              </label>
+              <input
+                type="text"
+                value={editingCarousel.data.collectionKey || ""}
+                onChange={(e) => {
+                  const collectionKey = e.target.value.trim().toLowerCase();
+                  setEditingCarousel({
+                    ...editingCarousel,
+                    data: { ...editingCarousel.data, collectionKey: collectionKey || undefined },
+                  });
+                }}
+                pattern="[a-z0-9][a-z0-9_\-]{0,63}"
+                className="mt-1 w-full rounded border border-neutral-300 px-3 py-2 text-sm font-mono focus:border-[#007cc3] focus:outline-hidden"
+                placeholder="e.g. homepage-featured"
+              />
+              <p className="mt-1 text-[11px] text-neutral-500">
+                PostgreSQL mode: the carousel shows the published products of this collection. The cards below stay as a fallback while the collection is unpublished.
+              </p>
+            </div>
+
             <div className="flex items-center gap-2 pt-2">
               <input
                 type="checkbox"

@@ -201,7 +201,8 @@ test("customer read permissions hide private notes and cannot edit a linked acco
 
 async function editedForm(resource,item){
   const {componentFixture,nodes}=await import("../helpers/component-fixture.mjs");
-  const label=resource==="products"?"Products":"Clients",fixture=componentFixture(`src/app/admin/${resource}/_components/${label}Screen.tsx`,{items:[item]});
+  // The PostgreSQL CMS service pairs with PostgresProductsScreen (the legacy screen is the JSON variants editor).
+  const label=resource==="products"?"PostgresProducts":"Clients",fixture=componentFixture(`src/app/admin/${resource}/_components/${label}Screen.tsx`,{items:[item]});
   nodes(fixture.render()).find(node=>node.props?.title===`Edit ${resource==="products"?"Product":"Client"}`).props.onClick();
   await nodes(fixture.render()).find(node=>node.type==="form").props.onSubmit({preventDefault(){}});
   return fixture.writes[0].body;

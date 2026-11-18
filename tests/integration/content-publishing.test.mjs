@@ -145,6 +145,22 @@ test("homepage collections reference products; archived or unpublished products 
   await rejectsWith(content.saveCollection(admin,{key:"homepage-featured",name:"Featured",productKeys:["no-such-product"],expectedVersion:2}),404,"NOT_FOUND");
 });
 
+test("collection draft isolation: edits to a published collection stay invisible until it is published again",async()=>{
+  const keys=[];
+  for(let i=0;i<3;i++){const saved=await cms.save("products",admin,{name:"Isolated item "+i,sku:"ISO-"+i+"-"+(++serial),price:"100.00",status:"published",description:"x",image:"/images/products/x.jpg"});keys.push(saved.id);}
+  const first=await content.saveCollection(admin,{key:"isolated-featured",name:"Live name",productKeys:keys,expectedVersion:0});
+  const published=await content.publishCollection(admin,{key:"isolated-featured",expectedVersion:first.version});
+  const edited=await content.saveCollection(admin,{key:"isolated-featured",name:"Draft name",productKeys:[keys[2],keys[0]],expectedVersion:published.version});
+  assert.equal(edited.status,"published","a saved edit does not unpublish the live collection");
+  let live=await content.readCollection("isolated-featured");
+  assert.equal(live.name,"Live name","the public keeps the published name");
+  assert.deepEqual(live.products.map(p=>p.id),keys,"the public keeps the published product list and order");
+  await content.publishCollection(admin,{key:"isolated-featured",expectedVersion:edited.version});
+  live=await content.readCollection("isolated-featured");
+  assert.equal(live.name,"Draft name");
+  assert.deepEqual(live.products.map(p=>p.id),[keys[2],keys[0]],"publishing replaces the snapshot");
+});
+
 test("uploads: scoped grant, type, size, content and checksum checks, immutable key, private namespace",async()=>{
   const svc=media.createMediaService({pool:database.pool,authorize,secret,storageDir:storage});
   await rejectsWith(svc.createUploadGrant(admin,{mimeType:"image/svg+xml",byteSize:PNG.length,checksumSha256:sha(PNG),altText:"x",visibility:"public"}),400,"INVALID_INPUT");
