@@ -503,7 +503,7 @@ Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained
 | 18 | Complete (18A, 18B, I6 collection wiring) | — (homepage collections wired with draft isolation, migration 0012, 2026-11-18) |
 | 19 | Merged into 18 | Email/newsletter sending is in the deferred activation backlog |
 | 20 | Merged into 13 | Wishlist built in 13A; other account domains deferred in [account-tab-dispositions.md](account-tab-dispositions.md) |
-| 21 | 21A partial; 21B run (capacity fails); 21C complete | Build the per-product **offer summary** (price sorts) and the **shared cache** (100/500 rps), plus a listing concurrency cap; then re-run 21B. Checkout, contention, failure injection and invariants pass. 21C follow-up: the hold-abuse policy (owner) |
+| 21 | 21A done except price-sort p95 (286 ms asc, 431 ms desc end to end); 21B run and re-run after the follow-up; 21C complete | Optional, owner choice: a shared page/data cache or more app vCPU for the 100/500 rps stress targets (25 rps is clean, 100 rps fails on app CPU). Watch item: partial index for the unpaid-order expiry sweep |
 | 22 | Merged into 21 | — |
 | 23 | Not started (owner-run) | Cutover and recovery rehearsal |
 | 24 | Not started (owner-run) | Authorized production cutover, observation and retirement |
