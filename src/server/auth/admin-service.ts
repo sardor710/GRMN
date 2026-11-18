@@ -8,7 +8,11 @@ import { getSessionIdentity, requireStaffPrincipal, requirePermission } from "./
 import type { AuthRuntime } from "./principal.ts";
 import { sanitizeProductInput } from "../../lib/cms/product-input.ts";
 import { findSkuConflicts } from "../../lib/cms/product-variants.ts";
-import type { CMSProduct } from "../../lib/cms/types";
+import { BLOG_HTML_FIELDS, sanitizeBannerInput, sanitizeBlogInput, sanitizeHomepageInput, sanitizeSettingsInput } from "../../lib/cms/content-input.ts";
+import { mergeTranslationsSafely } from "../../lib/cms/translation-input.ts";
+import { PRODUCT_HTML_FIELDS } from "../../lib/cms/product-input.ts";
+import { BLOG_SPEC, PRODUCT_SPEC } from "../../i18n/translate-record.ts";
+import type { Banner, CMSBlog, CMSProduct, HomepageConfig, StoreSettings } from "../../lib/cms/types";
 import { adminDTO, productInput, bannerInput, blogInput, discountInput, settingsInput, homepageInput, orderUpdateInput, emptyInput, deleteInput, seoPatchInput } from "./admin-schemas.ts";
 
 export type AdminResource = "admins"|"banners"|"blogs"|"clients"|"discounts"|"homepage"|"orders"|"products"|"settings";
@@ -42,6 +46,14 @@ function parse<T>(schema:z.ZodType<T>,input:unknown):T {
   const result=schema.safeParse(input);if(!result.success)throw new AuthFailure("INVALID_INPUT",400,"Invalid or unknown input fields");return result.data;
 }
 function closed(message:string):never{throw new AuthFailure("NOT_IMPLEMENTED",501,message);}
+/** i18n content checks (field limits, ru/kk overlay validation and per-locale merge with the stored record). */
+function checked<R extends {ok:boolean;error?:string},K extends keyof Extract<R,{ok:true}>>(result:R,key:K):Extract<R,{ok:true}>[K]{
+  if(!result.ok)throw new AuthFailure("INVALID_INPUT",400,result.error??"Invalid input");
+  return (result as Extract<R,{ok:true}>)[key];
+}
+function storedById<T extends {id?:string}>(rows:unknown,id:string|undefined):T|undefined{
+  return id&&Array.isArray(rows)?(rows as T[]).find(row=>row?.id===id):undefined;
+}
 export async function adminMe(runtime: AuthRuntime, request: Request) {
   try {
     await requireStaffPrincipal(runtime, request.headers);
@@ -98,6 +110,8 @@ export function createAdminHandlers(input:{runtime:AuthRuntime;store:AdminStore;
           const records=store.get(resource);
           const existing=Array.isArray(records)?records.find(record=>record?.id===update.id):undefined;
           if(!existing)throw new AuthFailure("NOT_FOUND",404,"Content was not found");
+          // ru/kk SEO overlays are validated and merged per locale with the stored record.
+          if(update.translations!==undefined){const merged=mergeTranslationsSafely(existing,update.translations,resource==="products"?PRODUCT_SPEC:BLOG_SPEC,resource==="products"?PRODUCT_HTML_FIELDS:BLOG_HTML_FIELDS);if(!merged.ok)throw new AuthFailure("INVALID_INPUT",400,merged.error);update.translations=merged.translations as typeof update.translations;}
           const saved=store.save(resource,{...existing,...update});
           return adminJSON({success:true,[resource==="products"?"product":"blog"]:adminDTO(resource,saved)});
         }
@@ -111,8 +125,10 @@ export function createAdminHandlers(input:{runtime:AuthRuntime;store:AdminStore;
         }
         if(resource==="homepage") {
           let config;
-          if(request.method==="POST") {parse(z.object({action:z.literal("reset")}).strict(),raw);config=parse(homepageInput,store.homepageDefaults());}
-          else if(request.method==="PUT") config=parse(z.object({config:homepageInput}).strict(),raw).config;
+          const stored=store.get("homepage") as HomepageConfig|undefined;
+          // Reset restores the English blocks; ru/kk overlays are keyed by block id and kept.
+          if(request.method==="POST") {parse(z.object({action:z.literal("reset")}).strict(),raw);config=parse(homepageInput,{...(store.homepageDefaults() as object),...(stored?.translations?{translations:stored.translations}:{})});}
+          else if(request.method==="PUT") config=checked(sanitizeHomepageInput(parse(z.object({config:homepageInput}).strict(),raw).config,stored),"config");
           else closed("Operation is unavailable");
           return adminJSON({success:true,config:parse(homepageInput,store.save("homepage",config))});
         }
@@ -120,9 +136,10 @@ export function createAdminHandlers(input:{runtime:AuthRuntime;store:AdminStore;
         if(resource==="products") {
           const parsed=parse(productInput,raw);
           // Sanitized overview HTML, allowlisted image/swatch URLs and hex swatch colors.
-          const checked=sanitizeProductInput(parsed as Record<string,unknown>);
-          if(!checked.ok)throw new AuthFailure("INVALID_INPUT",400,checked.error);
-          const data=checked.product as typeof parsed;
+          // Also field limits and the ru/kk overlays merged per locale with the stored product.
+          const sanitized=sanitizeProductInput(parsed as Record<string,unknown>,storedById<CMSProduct>(store.get("products"),parsed.id));
+          if(!sanitized.ok)throw new AuthFailure("INVALID_INPUT",400,sanitized.error);
+          const data=sanitized.product as typeof parsed;
           if(data.variants?.some(variant=>!variant.sku.trim()))throw new AuthFailure("INVALID_INPUT",400,"Every variant needs a SKU");
           const products=store.get("products");
           const conflicts=findSkuConflicts({id:data.id??"",sku:data.sku??"",variants:data.variants},(Array.isArray(products)?products:[]) as CMSProduct[]);
@@ -133,10 +150,10 @@ export function createAdminHandlers(input:{runtime:AuthRuntime;store:AdminStore;
           if(data.stock!==undefined||!existing)await requirePermission(runtime,request.headers,"inventory:write");
           return adminJSON({success:true,product:adminDTO(resource,store.save(resource,data))});
         }
-        if(resource==="banners")return adminJSON({success:true,banner:adminDTO(resource,store.save(resource,parse(bannerInput,raw)))});
-        if(resource==="blogs")return adminJSON({success:true,blog:adminDTO(resource,store.save(resource,parse(blogInput,raw)))});
+        if(resource==="banners"){const banner=parse(bannerInput,raw);return adminJSON({success:true,banner:adminDTO(resource,store.save(resource,checked(sanitizeBannerInput(banner,storedById<Banner>(store.get("banners"),banner.id)),"banner")))});}
+        if(resource==="blogs"){const blog=parse(blogInput,raw);return adminJSON({success:true,blog:adminDTO(resource,store.save(resource,checked(sanitizeBlogInput(blog,storedById<CMSBlog>(store.get("blogs"),blog.id)),"blog")))});}
         if(resource==="discounts")return adminJSON({success:true,discount:adminDTO(resource,store.save(resource,parse(discountInput,raw)))});
-        return adminJSON({success:true,settings:adminDTO("settings",store.save("settings",parse(settingsInput,raw)))});
+        return adminJSON({success:true,settings:adminDTO("settings",store.save("settings",checked(sanitizeSettingsInput(parse(settingsInput,raw),store.get("settings") as StoreSettings|undefined),"settings")))});
       }catch(error){return authErrorResponse(error);}
     },
   };

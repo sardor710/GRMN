@@ -25,10 +25,11 @@ const money = z.union([z.string(),z.number()]).transform((value,ctx) => {
   if(minor>BigInt("100000000000000")){ctx.addIssue({code:"custom",message:"Amount exceeds the supported range"});return z.NEVER;}
   return minor.toString();
 });
-const productCommand = productInput.extend({id:identity.optional(),version:version.optional(),price:money,originalPrice:money.nullable().optional(),sku:z.string().trim().min(1).max(128)}).strict();
-const blogCommand = blogInput.extend({id:z.uuid().optional(),version:version.optional(),slug:z.string().trim().max(200).regex(/^[\p{L}\p{N}_-]*$/u).optional(),draft:z.boolean().optional()}).strict();
+// i18n translation overlays are stored by the legacy JSON CMS only; PostgreSQL commands reject them.
+const productCommand = productInput.omit({translations:true}).extend({id:identity.optional(),version:version.optional(),price:money,originalPrice:money.nullable().optional(),sku:z.string().trim().min(1).max(128)}).strict();
+const blogCommand = blogInput.omit({translations:true}).extend({id:z.uuid().optional(),version:version.optional(),slug:z.string().trim().max(200).regex(/^[\p{L}\p{N}_-]*$/u).optional(),draft:z.boolean().optional()}).strict();
 // Task 18A: draft:true saves a new version without changing what is live (draft isolation).
-const bannerCommand = bannerInput.extend({id:z.uuid().optional(),version:version.optional(),draft:z.boolean().optional()}).strict();
+const bannerCommand = bannerInput.omit({translations:true}).extend({id:z.uuid().optional(),version:version.optional(),draft:z.boolean().optional()}).strict();
 const clientCommand = z.object({id:z.uuid().optional(),version:version.optional(),name:z.string().trim().min(1).max(200),phone:z.string().trim().min(1).max(64),email:z.union([z.email().max(254),z.literal("")]).optional(),country:z.string().regex(/^(?:[A-Z]{2})?$/).optional(),status:z.enum(["active","vip","pending","suspended"]).optional(),avatar:z.string().max(2048).optional(),notes:z.string().max(10000).optional()}).strict();
 const querySchema = z.object({limit:z.number().int().min(1).max(100).default(20),cursor:z.string().max(2048).optional(),search:z.string().trim().max(200).default(""),status:z.string().max(30).optional(),family:z.string().max(200).optional(),category:z.string().max(200).optional()}).strict();
 function parse<T>(schema:z.ZodType<T>, value:unknown):T { const result=schema.safeParse(value);if(!result.success)return fail("INVALID_INPUT",400,"Invalid or unknown fields");return result.data; }
@@ -95,7 +96,7 @@ export function createCMSService({pool,authorize}:Options) {
     return{items,nextCursor:more?Buffer.from(json({scope:query.binding,last:selected.at(-1)!.id})).toString("base64url"):null};
   }
   async function saveContent(client:PoolClient,principal:Principal,resource:"blogs"|"banners"|"homepage",raw:unknown):Promise<CMSItem>{
-    const homepage=resource==="homepage",input=homepage?parse(z.object({version:z.number().int().min(0),config:homepageInput}).strict(),raw):resource==="blogs"?parse(blogCommand,raw):parse(bannerCommand,raw);
+    const homepage=resource==="homepage",input=homepage?parse(z.object({version:z.number().int().min(0),config:homepageInput.omit({translations:true})}).strict(),raw):resource==="blogs"?parse(blogCommand,raw):parse(bannerCommand,raw);
     const {draft,...fields}=record(input),kind=homepage?"homepage":resource==="blogs"?"blog":"banner";
     // Task 18A: editor rich text is sanitized before it is stored; the excerpt is shown as text, so it is plain text.
     const data=kind==="blog"?{...fields,content:sanitizeRichText(String(fields.content??"")),...(typeof fields.excerpt==="string"?{excerpt:plainText(fields.excerpt)}:{})}:fields;

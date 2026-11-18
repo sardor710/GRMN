@@ -5,7 +5,7 @@
 ## Progress
 | Status | Done | Last updated | Next action |
 |---|---|---|---|
-| Draft – plan (awaiting owner review) | 0/12 | 2026-11-17 | Owner answers OD1–OD3, then Task 1 |
+| Done – partial (Task 11 skipped by provisional OD3) | 11/12 | 2026-11-17 | Owner confirms OD1–OD3; human proofreads docs/i18n/REVIEW.md |
 
 **Goal:** Serve every public storefront page in English, Russian and Kazakh at its own indexable URL (`/en/…`, `/ru/…`, `/kk/…`), rendered on the server, with a language switcher, hreflang tags, a per-language sitemap, and admin editing of translated CMS content.
 

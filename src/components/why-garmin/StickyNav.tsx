@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
 const BUY_NOW = "/c/wearables-smartwatches";
 const SECTIONS = [
@@ -15,6 +16,7 @@ const SECTIONS = [
  * 102px mobile).
  */
 export function StickyNav() {
+  const localize = useLocalizeHref();
   const [active, setActive] = useState("");
 
   useEffect(() => {
@@ -47,7 +49,7 @@ export function StickyNav() {
       <div className="wrapper flex-box">
         <div className="title-con">
           <p className="uppercase">Why Garmin Watches?</p>
-          <a className="btn-white-fill btn-size-small mobile-buy-now" href={BUY_NOW}>
+          <a className="btn-white-fill btn-size-small mobile-buy-now" href={localize(BUY_NOW)}>
             Buy Now
           </a>
         </div>
@@ -62,7 +64,7 @@ export function StickyNav() {
               {s.label}
             </a>
           ))}
-          <a className="btn-black-fill btn-size-default buy-now" href={BUY_NOW}>
+          <a className="btn-black-fill btn-size-default buy-now" href={localize(BUY_NOW)}>
             Buy Now
           </a>
         </div>

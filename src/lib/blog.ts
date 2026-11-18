@@ -3,7 +3,10 @@ export interface BlogPost {
   title: string;
   category: string; // primary category key
   categories: string[]; // display labels
+  /** English display date, e.g. "July 8, 2026" (also the seed `publishedAt`). */
   date: string;
+  /** Calendar date (YYYY-MM-DD); rendered per locale with formatDate. */
+  isoDate: string;
   image: string;
   excerpt: string;
   readTime: string;
@@ -32,6 +35,7 @@ export const blogPosts: BlogPost[] = [
     category: "outdoor",
     categories: ["Outdoor"],
     date: "July 8, 2026",
+    isoDate: "2026-07-08",
     image: "/images/blog/outdoor-maps-plus.jpg",
     excerpt: "A one-stop subscription that unlocks premium mapping — from satellite imagery to detailed topographic layers — right on your compatible Garmin device.",
     readTime: "5 min read",
@@ -42,6 +46,7 @@ export const blogPosts: BlogPost[] = [
     category: "fitness",
     categories: ["Fitness"],
     date: "July 7, 2026",
+    isoDate: "2026-07-07",
     image: "/images/blog/train-for-triathlon.jpg",
     excerpt: "Swim, bike and run smarter with training plans, multisport profiles and recovery insights built right into your watch.",
     readTime: "6 min read",
@@ -52,6 +57,7 @@ export const blogPosts: BlogPost[] = [
     category: "fitness",
     categories: ["Fitness"],
     date: "July 2, 2026",
+    isoDate: "2026-07-02",
     image: "/images/blog/smartwatch-features-for-women.jpg",
     excerpt: "From menstrual cycle tracking to pregnancy tracking and wellness monitoring, discover the features designed with women in mind.",
     readTime: "4 min read",
@@ -62,6 +68,7 @@ export const blogPosts: BlogPost[] = [
     category: "marine",
     categories: ["Marine"],
     date: "June 29, 2026",
+    isoDate: "2026-06-29",
     image: "/images/blog/situational-awareness-water.jpg",
     excerpt: "Radar, sonar, AIS and connected displays work together to help you see more and boat with confidence.",
     readTime: "5 min read",
@@ -72,6 +79,7 @@ export const blogPosts: BlogPost[] = [
     category: "saved-by-garmin",
     categories: ["Outdoor", "Saved by Garmin"],
     date: "June 26, 2026",
+    isoDate: "2026-06-26",
     image: "/images/blog/inreach-sailboat-rescue.jpg",
     excerpt: "A real Saved by Garmin story: two-way satellite messaging turned a maritime emergency into a safe return home.",
     readTime: "7 min read",
@@ -82,6 +90,7 @@ export const blogPosts: BlogPost[] = [
     category: "fitness",
     categories: ["Fitness", "Outdoor"],
     date: "June 25, 2026",
+    isoDate: "2026-06-25",
     image: "/images/blog/smartwatches-work-with-phone.jpg",
     excerpt: "Pair with iPhone or Android to get smart notifications, music control, safety features and the full Garmin Connect experience.",
     readTime: "4 min read",
@@ -92,6 +101,7 @@ export const blogPosts: BlogPost[] = [
     category: "marine",
     categories: ["Fish & Hunt", "Marine"],
     date: "June 24, 2026",
+    isoDate: "2026-06-24",
     image: "/images/blog/what-does-your-boat-need.jpg",
     excerpt: "Chartplotters, fishfinders, trolling motors and more — build the marine setup that matches how you spend time on the water.",
     readTime: "6 min read",
@@ -102,6 +112,7 @@ export const blogPosts: BlogPost[] = [
     category: "health",
     categories: ["Health & News"],
     date: "June 18, 2026",
+    isoDate: "2026-06-18",
     image: "/images/blog/health-glimpse-biometrics.jpg",
     excerpt: "New research explores the link between the metrics your watch tracks and how you feel day to day.",
     readTime: "8 min read",
@@ -112,6 +123,7 @@ export const blogPosts: BlogPost[] = [
     category: "automotive",
     categories: ["Automotive"],
     date: "June 17, 2026",
+    isoDate: "2026-06-17",
     image: "/images/blog/garmin-for-truck-drivers.jpg",
     excerpt: "Purpose-built navigation with custom truck routing, load-based warnings and live traffic keeps professional drivers moving.",
     readTime: "5 min read",
@@ -122,6 +134,7 @@ export const blogPosts: BlogPost[] = [
     category: "health",
     categories: ["Fitness", "Outdoor"],
     date: "June 16, 2026",
+    isoDate: "2026-06-16",
     image: "/images/blog/which-smartwatch-is-right.jpg",
     excerpt: "From fēnix to Venu to Forerunner — a quick guide to finding the watch that fits your lifestyle and goals.",
     readTime: "6 min read",
@@ -132,6 +145,7 @@ export const blogPosts: BlogPost[] = [
     category: "outdoor",
     categories: ["Fish & Hunt", "Outdoor"],
     date: "June 12, 2026",
+    isoDate: "2026-06-12",
     image: "/images/blog/chasing-outdoors-sidney-smith.jpg",
     excerpt: "How one adventurer relies on Garmin gear to go farther, stay connected and capture every moment in the backcountry.",
     readTime: "7 min read",
@@ -142,6 +156,7 @@ export const blogPosts: BlogPost[] = [
     category: "fitness",
     categories: ["Fitness", "Outdoor"],
     date: "June 11, 2026",
+    isoDate: "2026-06-11",
     image: "/images/blog/which-running-smartwatch.jpg",
     excerpt: "Compare the Forerunner lineup and find the training features that will help you hit your next personal best.",
     readTime: "5 min read",

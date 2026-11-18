@@ -1,5 +1,10 @@
 // Validate/normalize product payloads from the admin before they are stored (and later rendered on the storefront).
 import { sanitizeOverviewHtml } from '../import/garmin-parse.js';
+import { PRODUCT_SPEC } from '../../i18n/translate-record.js';
+import { findBaseLimitViolation, mergeTranslationsSafely } from './translation-input.js';
+
+/** Rich-text fields and their sanitizer; a translation of the field goes through the same function. */
+export const PRODUCT_HTML_FIELDS = Object.freeze({ overviewHtml: sanitizeOverviewHtml });
 
 const HEX_COLOR = /^#[0-9a-f]{3,8}$/i;
 
@@ -13,9 +18,20 @@ export function isAllowedImageSrc(src) {
 
 const brief = (s) => (String(s).length > 80 ? `${String(s).slice(0, 77)}…` : String(s));
 
-/** @returns {{ ok: true, product: object } | { ok: false, error: string }} */
-export function sanitizeProductInput(body) {
+/**
+ * `existing` is the stored product, if any. Locales absent from `body.translations` keep their stored
+ * overlay. When `body.translations` is absent the key stays absent, so the store keeps it unchanged.
+ * @returns {{ ok: true, product: object } | { ok: false, error: string }}
+ */
+export function sanitizeProductInput(body, existing) {
   const product = { ...(body || {}) };
+  const tooLong = findBaseLimitViolation(product, PRODUCT_SPEC);
+  if (tooLong) return { ok: false, error: tooLong };
+  if ('translations' in product) {
+    const merged = mergeTranslationsSafely(existing, product.translations, PRODUCT_SPEC, PRODUCT_HTML_FIELDS);
+    if (!merged.ok) return merged;
+    product.translations = merged.translations;
+  }
   if ('overviewHtml' in product) {
     product.overviewHtml = typeof product.overviewHtml === 'string' ? sanitizeOverviewHtml(product.overviewHtml) : '';
   }

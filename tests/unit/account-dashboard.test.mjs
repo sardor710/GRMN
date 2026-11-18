@@ -55,7 +55,7 @@ async function mount(routes) {
 }
 
 test("the account page mounts the session-owned dashboard and the dashboard holds no demo or contact-selected data", () => {
-  const page = read("src/app/account/page.tsx");
+  const page = read("src/app/[lang]/account/page.tsx");
   assert.match(page, /AccountDashboard/);
   assert.doesNotMatch(page, /data\.json|seed|cms\/store/);
   const source = read("src/components/AccountDashboard.tsx");
@@ -220,7 +220,10 @@ test("a legacy order claim uses the receipt, a fresh order_claim code and reload
 test("review I8: rendered text has no mis-encoded characters", () => {
   const source = read("src/components/AccountDashboard.tsx");
   assert.doesNotMatch(source, /вЂ|В·|Р[°-я]/);
-  assert.match(source, /Loading your account…/);
+  // Interface text lives in the message catalogs since the i18n merge.
+  const en = read("messages/en.json");
+  assert.doesNotMatch(en, /вЂ|В·|Р[°-я]/);
+  assert.match(en, /Loading your account…/);
 });
 
 test("review I1: signing out clears every form so the next person on the device sees none of it", async () => {

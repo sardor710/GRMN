@@ -2,18 +2,85 @@ import { NextResponse, type NextRequest } from "next/server";
 import { cmsBackend } from "./server/cms/source";
 import { getCatalogService } from "./server/catalog/runtime";
 import { isInvalidPublicInput } from "./server/public-input";
+import {
+  LOCALE_REDIRECT_HEADERS,
+  cmsRedirectLookupPaths,
+  decideLocaleRedirect,
+  localizeCmsRedirectTarget,
+  stripLocale,
+} from "./i18n/routing";
+import { LOCALE_COOKIE } from "./i18n/config";
 
-export async function proxy(request:NextRequest){
-  if(cmsBackend()==="legacy")return NextResponse.next();
-  let path:string;
-  try{path=decodeURI(request.nextUrl.pathname);}catch{return NextResponse.next();}
-  try{
-    const rule=await getCatalogService().getRedirect(path);
-    if(!rule)return NextResponse.next();
-    return NextResponse.redirect(new URL(rule.targetPath,request.url),{status:rule.statusCode,headers:{"Cache-Control":"no-store"}});
-  }catch(error){
-    if(isInvalidPublicInput(error))return NextResponse.next();
-    return new NextResponse("Content temporarily unavailable",{status:503,headers:{"Cache-Control":"no-store"}});
+/** next-intl reads the request locale from this header when `setRequestLocale` was not called. */
+const INTL_LOCALE_HEADER = "X-NEXT-INTL-LOCALE";
+
+/**
+ * Backend (non-legacy) CMS redirect rules. A matching rule wins over the locale redirect. Malformed
+ * percent-encoding and invalid sources are treated as "no rule"; a real database failure is a 503.
+ */
+async function cmsRedirect(request: NextRequest): Promise<NextResponse | null> {
+  let path: string;
+  try {
+    path = decodeURI(request.nextUrl.pathname);
+  } catch {
+    return null;
+  }
+  const candidates = cmsRedirectLookupPaths(path);
+  if (!candidates.length) return null;
+  try {
+    const catalog = getCatalogService();
+    for (const candidate of candidates) {
+      const rule = await catalog.getRedirect(candidate);
+      if (!rule) continue;
+      const target = localizeCmsRedirectTarget(rule.targetPath, path);
+      return NextResponse.redirect(new URL(target, request.url), {
+        status: rule.statusCode,
+        headers: { "Cache-Control": "no-store" },
+      });
+    }
+    return null;
+  } catch (error) {
+    if (isInvalidPublicInput(error)) return null;
+    return new NextResponse("Content temporarily unavailable", {
+      status: 503,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 }
-export const config={matcher:["/((?!api|admin|account|_next|images|videos|fonts|homepage|seo|favicon.ico|robots.txt|sitemap.xml).*)"]};
+
+export async function proxy(request: NextRequest) {
+  if (cmsBackend() !== "legacy") {
+    const redirect = await cmsRedirect(request);
+    if (redirect) return redirect;
+  }
+
+  const { pathname, search } = request.nextUrl;
+  const target = decideLocaleRedirect(
+    pathname,
+    search,
+    request.cookies.get(LOCALE_COOKIE)?.value,
+    request.headers.get("accept-language") ?? undefined,
+  );
+  if (target) {
+    const response = NextResponse.redirect(new URL(target, request.url), 307);
+    for (const [name, value] of Object.entries(LOCALE_REDIRECT_HEADERS)) response.headers.set(name, value);
+    return response;
+  }
+
+  const headers = new Headers(request.headers);
+  const { locale } = stripLocale(pathname);
+  if (locale) headers.set(INTL_LOCALE_HEADER, locale);
+  else headers.delete(INTL_LOCALE_HEADER);
+  return NextResponse.next({ request: { headers } });
+}
+
+export const config = {
+  // Never run for the Global Constraints paths (admin, api, uploads, backend media, fonts, Next
+  // internals, SEO files, static asset folders) or any path with a file extension.
+  // decideLocaleRedirect / cmsRedirectLookupPaths re-check this. Account pages are matched (they are
+  // localized) but skip the CMS redirect lookup.
+  // Use [.] rather than \. : path-to-regexp drops the backslash inside a group.
+  matcher: [
+    "/((?!(?:admin|api|uploads|media|fonts|_next|seo|homepage|images|videos)(?:/|$)|robots[.]txt$|sitemap[.]xml$|.*[.][^/]+$).*)",
+  ],
+};

@@ -4,6 +4,7 @@ import { useRef } from "react";
 import Image from "next/image";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { productCards } from "@/lib/marq";
+import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
 const accentVar: Record<string, string> = {
   red: "var(--marq-red)",
@@ -13,6 +14,7 @@ const accentVar: Record<string, string> = {
 
 /** Section 13 — final product carousel over the starry collection background. */
 export function MarqProductCarousel() {
+  const localize = useLocalizeHref();
   const track = useRef<HTMLDivElement>(null);
   const scroll = (dir: number) => {
     track.current?.scrollBy({ left: dir * 260, behavior: "smooth" });
@@ -80,7 +82,7 @@ export function MarqProductCarousel() {
                 style={{ backgroundColor: accentVar[card.accent] }}
               />
               <a
-                href={card.href}
+                href={localize(card.href)}
                 className="mt-3 inline-flex items-center gap-1 text-[13px] font-medium text-white transition-colors hover:text-white/70"
               >
                 Learn More

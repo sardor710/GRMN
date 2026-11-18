@@ -32,8 +32,8 @@ export const COUNTRY_OPTIONS: ReadonlyArray<{ code: string; name: string }> = [
 ];
 export const countryName = (code: string) => COUNTRY_OPTIONS.find(option => option.code === code)?.name ?? code;
 
-export function formatKzt(money: Money | null | undefined): string {
-  return money ? formatMinorMoney(money.amountMinor, "KZT") : "—";
+export function formatKzt(money: Money | null | undefined, locale = "en-US"): string {
+  return money ? formatMinorMoney(money.amountMinor, "KZT", locale) : "—";
 }
 
 export function deliveryAddressLines(delivery: OrderDetailDTO["deliveryAddress"]): string[] {

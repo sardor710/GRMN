@@ -5,7 +5,7 @@ import ts from "typescript";
 function component(name){
   const exports={},fallback={key:"fallback",title:"INERT-STATIC-FALLBACK",subtitle:"",image:"/static.jpg",href:"/",description:"",cta:"Shop"};
   const code=ts.transpileModule(fs.readFileSync(`src/components/home/${name}.tsx`,"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true}}).outputText;
-  new Function("require","exports",code)(target=>target==="react"?{useState:value=>[value,()=>{}],useRef:value=>({current:value}),useCallback:fn=>fn,useEffect:()=>{}}:target==="react/jsx-runtime"?{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})}:target.includes("homepage-content")?{homeHeroSlides:[fallback],homeFeaturedCards:[fallback],homePromoTiles:[fallback],homeStoryTiles:[fallback],homeCategoryTiles:[fallback]}:{},exports);return exports[name];
+  new Function("require","exports",code)(target=>target==="react"?{useState:value=>[value,()=>{}],useRef:value=>({current:value}),useCallback:fn=>fn,useEffect:()=>{}}:target==="react/jsx-runtime"?{jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})}:target.includes("homepage-content")?{homeHeroSlides:[fallback],homeFeaturedCards:[fallback],homePromoTiles:[fallback],homeStoryTiles:[fallback],homeCategoryTiles:[fallback]}:target==="next-intl"?{useTranslations:()=>key=>key}:target.includes("useLocalizeHref")?{useLocalizeHref:()=>href=>href}:{},exports);return exports[name];
 }
 test("explicitly empty or inactive homepage blocks never restore static campaigns",()=>{
   const Hero=component("HomeHero"),Featured=component("HomeFeatured"),Tiles=component("HomeTiles");

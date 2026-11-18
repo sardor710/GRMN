@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 
 /** Sticky product sub-nav (section.p-sticky). Sticks below the site header. */
 export function MarqSubNav() {

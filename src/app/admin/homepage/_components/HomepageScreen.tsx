@@ -34,15 +34,22 @@ import type {
 import { IMAGE_DIMENSION_SPECS } from "@/lib/cms/homepage-schema";
 import {writeAdminRecord} from "@/lib/admin-collection";
 import { AdminModal } from "@/components/admin/AdminModal";
+import { LocaleTabs, type ContentLocale } from "@/components/admin/LocaleTabs";
+import { HomepageTranslationPanel } from "@/components/admin/HomepageTranslationPanel";
+import { translationStatus } from "@/lib/cms/translation-input";
+import { HOMEPAGE_SPEC } from "@/i18n/translate-record";
 
 export default function AdminHomepagePage() {
   const [version,setVersion]=useState<number>();
+  // Only the PostgreSQL config is versioned; translations are edited on the legacy JSON CMS.
+  const translatable = version === undefined;
   const [config, setConfig] = useState<HomepageConfig | null>(null);
   const [dimensionSpecs] = useState<Record<string, ImageDimensionSpec>>(IMAGE_DIMENSION_SPECS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notification, setNotification] = useState<{ type: "success" | "error"; message: string } | null>(null);
   const [activeTab, setActiveTab] = useState<"banners" | "carousels" | "blocks" | "specs">("banners");
+  const [contentLocale, setContentLocale] = useState<ContentLocale>("en");
 
   // Modals state
   const [bannerModalOpen, setBannerModalOpen] = useState(false);
@@ -99,7 +106,10 @@ export default function AdminHomepagePage() {
     if (!config) return;
     try {
       setSaving(true);
-      const data=await writeAdminRecord(fetch,"homepage",{config,...(version===undefined?{}:{version})},"PUT");
+      // ru/kk overlays are stored by the legacy JSON CMS only; the versioned PostgreSQL config rejects them.
+      const blocks: HomepageConfig = { ...config };
+      if (!translatable) delete blocks.translations;
+      const data=await writeAdminRecord(fetch,"homepage",{config:blocks,...(version===undefined?{}:{version})},"PUT");
       setConfig(data.config as HomepageConfig);setVersion(data.version as number|undefined);
       showNotification("success","Homepage configuration saved successfully!");
     } catch (err: unknown) {
@@ -465,6 +475,24 @@ export default function AdminHomepagePage() {
         </div>
       </div>
 
+      {translatable && <LocaleTabs
+        value={contentLocale}
+        onChange={setContentLocale}
+        status={{
+          ru: translationStatus(config, "ru", HOMEPAGE_SPEC),
+          kk: translationStatus(config, "kk", HOMEPAGE_SPEC),
+        }}
+      />}
+
+      {contentLocale !== "en" ? (
+        <HomepageTranslationPanel
+          key={contentLocale}
+          locale={contentLocale}
+          config={config}
+          onChange={(translations) => setConfig({ ...config, translations })}
+        />
+      ) : (
+      <>
       {/* Tabs Header */}
       <div className="flex border-b border-neutral-200">
         <button
@@ -1010,6 +1038,8 @@ export default function AdminHomepagePage() {
             </ul>
           </div>
         </div>
+      )}
+      </>
       )}
 
       {/* ================= MODAL: HERO BANNER EDIT ================= */}

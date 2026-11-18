@@ -3,6 +3,7 @@ import {test} from "node:test";
 import fs from "node:fs";
 import ts from "typescript";
 import {componentFixture,nodes,nodeText} from "../helpers/component-fixture.mjs";
+import * as seoCore from "../../src/i18n/seo-core.js";
 
 const screen=resource=>`src/app/admin/${resource}/_components/${resource[0].toUpperCase()+resource.slice(1)}Screen.tsx`;
 // Products have two screens: the legacy JSON editor (options/variants) and the PostgreSQL catalog screen.
@@ -22,13 +23,13 @@ test("provisional customer form requires phone, not email",()=>{
 test("JSON-LD omits unsupported review/expiry claims and tolerates missing article media",()=>{
   const jsx={jsx:(_type,props)=>props,jsxs:(_type,props)=>props},output={};
   const code=ts.transpileModule(fs.readFileSync("src/components/seo/JsonLd.tsx","utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
-  new Function("require","exports",code)(name=>name.includes("jsx-runtime")?jsx:{serializeJsonLd:JSON.stringify},output);
+  new Function("require","exports",code)(name=>name.includes("jsx-runtime")?jsx:name.includes("i18n/seo")?seoCore:{serializeJsonLd:JSON.stringify},output);
   const product=JSON.parse(output.ProductJsonLd({product:{id:"p",name:"P",image:"",price:1,currency:"KZT",stockManaged:false},url:"https://example.invalid/p"}).dangerouslySetInnerHTML.__html);
   assert.deepEqual({rating:product.aggregateRating,expiry:product.offers.priceValidUntil},{rating:undefined,expiry:undefined});
 });
 test("article structured data tolerates absent optional media",()=>{
   const output={},jsx={jsx:(_type,props)=>props};const code=ts.transpileModule(fs.readFileSync("src/components/seo/JsonLd.tsx","utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
-  new Function("require","exports",code)(name=>name.includes("jsx-runtime")?jsx:{serializeJsonLd:JSON.stringify},output);
+  new Function("require","exports",code)(name=>name.includes("jsx-runtime")?jsx:name.includes("i18n/seo")?seoCore:{serializeJsonLd:JSON.stringify},output);
   const article=JSON.parse(output.ArticleJsonLd({blog:{title:"Title",content:"Content"},url:"https://example.invalid/blog"}).dangerouslySetInnerHTML.__html);assert.ok(!article.image);
 });
 test("legacy page projections do not expose customer notes without field permission",async()=>{

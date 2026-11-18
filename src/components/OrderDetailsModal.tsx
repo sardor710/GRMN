@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import {
   X,
   Package,
@@ -25,9 +26,15 @@ import type { Order, OrderMilestone } from "@/lib/cms/types";
 import {
   generateOrderMilestones,
   calculateOrderRouteProgress,
-  formatOrderDate,
   calculateOrderSubtotal,
 } from "@/lib/cms/order-lifecycle";
+import { formatDateTime, formatMoney } from "@/i18n/format";
+import { useAppLocale } from "@/i18n/useAppLocale";
+
+/** Statuses with an `Account.status.*` message (shared with the account order list). */
+const ORDER_STATUSES = new Set(["new", "processing", "shipped", "delivered", "canceled", "cancelled", "returned"]);
+const PAYMENT_STATUSES = new Set(["paid", "pending", "refunded"]);
+const STAGES = new Set(["created", "processing", "shipped", "out_for_delivery", "delivered"]);
 
 interface OrderDetailsModalProps {
   order: Order | null;
@@ -36,6 +43,12 @@ interface OrderDetailsModalProps {
 }
 
 export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalProps) {
+  const t = useTranslations("OrderDetails");
+  const ts = useTranslations("Account.status");
+  const locale = useAppLocale();
+  // Same ungrouped price look as before ($1099.99); separators follow the locale.
+  const money = (n: number) => formatMoney(n, locale, "USD", { grouping: false });
+  const when = (iso?: string) => formatDateTime(iso, locale) || t("notAvailable");
   const [copiedTracking, setCopiedTracking] = useState(false);
   const [copiedOrderNum, setCopiedOrderNum] = useState(false);
 
@@ -64,6 +77,12 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
   const progressPercent = calculateOrderRouteProgress(order.fulfillmentStatus);
   const subtotal = calculateOrderSubtotal(order.items);
   const isCanceled = order.fulfillmentStatus === "canceled" || order.fulfillmentStatus === "cancelled";
+  const carrier = order.carrier || "Garmin Express Priority";
+  const milestoneLabel = (m: OrderMilestone) => (STAGES.has(m.stage) ? t(`milestones.${m.stage}.label`) : m.label);
+  const milestoneDescription = (m: OrderMilestone) =>
+    STAGES.has(m.stage)
+      ? t(`milestones.${m.stage}.description`, { carrier, tracking: order.trackingNumber || "GRM-TRK-PENDING" })
+      : m.description;
 
   const handleCopyOrderNum = () => {
     if (!order.orderNumber) return;
@@ -100,12 +119,12 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
             <div>
               <div className="flex items-center gap-2">
                 <h2 id="order-details-title" className="text-lg font-bold tracking-tight text-white font-heading uppercase">
-                  Order {order.orderNumber || order.id}
+                  {t("title", { number: order.orderNumber || order.id })}
                 </h2>
                 <button
                   type="button"
                   onClick={handleCopyOrderNum}
-                  title="Copy Order Number"
+                  title={t("copyNumber")}
                   className="text-neutral-400 hover:text-white transition-colors p-1"
                 >
                   {copiedOrderNum ? (
@@ -116,7 +135,7 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
                 </button>
               </div>
               <p className="text-xs text-neutral-400 font-mono">
-                System Reference: {order.id} · Placed {formatOrderDate(order.createdAt)}
+                {t("reference", { id: order.id, date: when(order.createdAt) })}
               </p>
             </div>
           </div>
@@ -135,13 +154,13 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
                   : "bg-neutral-700 text-neutral-200 border border-neutral-600"
               }`}
             >
-              {order.fulfillmentStatus}
+              {ORDER_STATUSES.has(order.fulfillmentStatus) ? ts(order.fulfillmentStatus) : order.fulfillmentStatus}
             </span>
             <button
               type="button"
               onClick={onClose}
               className="text-neutral-400 hover:text-white p-1.5 transition-colors focus:outline-none"
-              aria-label="Close popup"
+              aria-label={t("close")}
             >
               <X className="h-5 w-5" />
             </button>
@@ -156,15 +175,15 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
               <div className="flex items-center gap-2">
                 <Truck className="h-4 w-4 text-[#007cc3]" />
                 <h3 className="text-xs font-bold uppercase tracking-wider text-black">
-                  Fulfillment &amp; Process Route Map
+                  {t("routeMap")}
                 </h3>
               </div>
               <div className="text-xs text-neutral-500 font-mono">
-                Carrier: <span className="font-semibold text-black">{order.carrier || "Garmin Express Priority"}</span>
+                {t.rich("carrier", { carrier, b: (chunks) => <span className="font-semibold text-black">{chunks}</span> })}
                 {order.trackingNumber && (
                   <>
                     {" · "}
-                    <span>Tracking: </span>
+                    <span>{t("tracking")} </span>
                     <button
                       type="button"
                       onClick={handleCopyTracking}
@@ -185,7 +204,7 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
             {isCanceled ? (
               <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2.5">
                 <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
-                <span>This order was canceled. The standard delivery route was halted.</span>
+                <span>{t("canceled")}</span>
               </div>
             ) : (
               <div>
@@ -221,10 +240,10 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
                             m.completed || m.current ? "text-black" : "text-neutral-400"
                           }`}
                         >
-                          {m.label}
+                          {milestoneLabel(m)}
                         </p>
                         <p className="text-[11px] text-neutral-500 font-mono mt-0.5">
-                          {formatOrderDate(m.date)}
+                          {when(m.date)}
                         </p>
                         {m.location && (
                           <p className="text-[10px] text-neutral-400 truncate max-w-[130px] mt-0.5">
@@ -262,13 +281,13 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
                               m.completed || m.current ? "text-black" : "text-neutral-400"
                             }`}
                           >
-                            {m.label}
+                            {milestoneLabel(m)}
                           </p>
                           <span className="text-[10px] text-neutral-500 font-mono">
-                            {formatOrderDate(m.date)}
+                            {when(m.date)}
                           </span>
                         </div>
-                        <p className="text-[11px] text-neutral-600 mt-0.5">{m.description}</p>
+                        <p className="text-[11px] text-neutral-600 mt-0.5">{milestoneDescription(m)}</p>
                       </div>
                     </div>
                   ))}
@@ -282,10 +301,10 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
             <div className="flex items-center justify-between border-b border-neutral-200 pb-2 mb-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-black flex items-center gap-1.5">
                 <Package className="h-4 w-4 text-[#007cc3]" />
-                Purchased Products ({order.items?.length || 0})
+                {t("products", { count: order.items?.length || 0 })}
               </h3>
               <span className="text-xs text-neutral-500 font-mono">
-                Items Total: ${subtotal.toFixed(2)}
+                {t("itemsTotal", { amount: money(subtotal) })}
               </span>
             </div>
 
@@ -306,26 +325,29 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
                       <div>
                         <h4 className="text-sm font-semibold text-black">{item.name}</h4>
                         <p className="text-xs text-neutral-400 font-mono mt-0.5">
-                          SKU / Item ID: {item.productId}
+                          {t("sku", { id: item.productId })}
                         </p>
                         <p className="text-xs text-neutral-600 mt-1">
-                          Qty: <span className="font-semibold text-black">{item.quantity}</span> × $
-                          {(item.price || 0).toFixed(2)}
+                          {t.rich("qty", {
+                            quantity: item.quantity,
+                            price: money(item.price || 0),
+                            b: (chunks) => <span className="font-semibold text-black">{chunks}</span>,
+                          })}
                         </p>
                       </div>
                     </div>
 
                     <div className="text-right sm:self-center">
-                      <span className="text-xs text-neutral-400 block font-mono">Line Total</span>
+                      <span className="text-xs text-neutral-400 block font-mono">{t("lineTotal")}</span>
                       <span className="g-heading text-base font-semibold text-black">
-                        ${((item.price || 0) * (item.quantity || 1)).toFixed(2)}
+                        {money((item.price || 0) * (item.quantity || 1))}
                       </span>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="p-6 text-center text-xs text-neutral-500">
-                  No line items detailed in this order record.
+                  {t("noItems")}
                 </div>
               )}
             </div>
@@ -337,7 +359,7 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
             <div className="border border-neutral-200 bg-white p-4 space-y-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-black border-b border-neutral-100 pb-2 flex items-center gap-1.5">
                 <MapPin className="h-4 w-4 text-[#007cc3]" />
-                Shipping Destination &amp; Recipient
+                {t("shippingHeading")}
               </h4>
               <div className="text-xs space-y-1.5 pt-1">
                 <p className="font-semibold text-black flex items-center gap-1.5">
@@ -362,7 +384,7 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
                 )}
                 {order.comments && (
                   <div className="mt-2 pt-2 border-t border-neutral-100 text-[11px] text-neutral-600 italic">
-                    Note: &ldquo;{order.comments}&rdquo;
+                    {t("note", { comments: order.comments })}
                   </div>
                 )}
               </div>
@@ -372,33 +394,33 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
             <div className="border border-neutral-200 bg-white p-4 space-y-2">
               <h4 className="text-xs font-bold uppercase tracking-wider text-black border-b border-neutral-100 pb-2 flex items-center gap-1.5">
                 <CreditCard className="h-4 w-4 text-[#007cc3]" />
-                Payment &amp; Financial Summary
+                {t("paymentHeading")}
               </h4>
               <div className="text-xs space-y-2 pt-1">
                 <div className="flex items-center justify-between text-neutral-600">
-                  <span>Payment Status:</span>
+                  <span>{t("paymentStatus")}</span>
                   <span className="font-semibold uppercase tracking-wider px-2 py-0.5 text-[10px] bg-emerald-50 text-emerald-800 border border-emerald-200">
-                    {order.paymentStatus}
+                    {PAYMENT_STATUSES.has(order.paymentStatus) ? t(`payment.${order.paymentStatus}`) : order.paymentStatus}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-neutral-600">
-                  <span>Payment Method:</span>
-                  <span className="font-medium text-black">Garmin Pay / Visa (•••• 4242)</span>
+                  <span>{t("paymentMethod")}</span>
+                  <span className="font-medium text-black">{t("paymentMethodValue")}</span>
                 </div>
                 <div className="flex items-center justify-between text-neutral-600">
-                  <span>Subtotal:</span>
-                  <span className="font-mono text-black">${subtotal.toFixed(2)}</span>
+                  <span>{t("subtotal")}</span>
+                  <span className="font-mono text-black">{money(subtotal)}</span>
                 </div>
                 <div className="flex items-center justify-between text-neutral-600">
-                  <span>Shipping:</span>
-                  <span className="text-emerald-700 font-semibold">FREE (Garmin Express)</span>
+                  <span>{t("shipping")}</span>
+                  <span className="text-emerald-700 font-semibold">{t("freeShipping")}</span>
                 </div>
                 <div className="pt-2 border-t border-neutral-200 flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-black">
-                    Grand Total:
+                    {t("grandTotal")}
                   </span>
                   <span className="g-heading text-lg font-bold text-black">
-                    ${order.total.toFixed(2)}
+                    {money(order.total)}
                   </span>
                 </div>
               </div>
@@ -410,7 +432,7 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
         <div className="flex items-center justify-between border-t border-neutral-200 bg-neutral-50 px-6 py-3.5">
           <div className="text-xs text-neutral-500 flex items-center gap-1.5">
             <ShieldCheck className="h-4 w-4 text-emerald-600" />
-            <span>Official Garmin Certified Order Record</span>
+            <span>{t("certified")}</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -420,14 +442,14 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
               className="inline-flex items-center gap-1.5 border border-neutral-300 bg-white hover:bg-neutral-100 text-neutral-800 px-4 py-2 text-xs font-semibold uppercase tracking-wider transition-colors"
             >
               <Printer className="h-3.5 w-3.5" />
-              <span>Print Invoice</span>
+              <span>{t("print")}</span>
             </button>
             <button
               type="button"
               onClick={onClose}
               className="bg-black hover:bg-neutral-800 text-white px-5 py-2 text-xs font-semibold uppercase tracking-wider transition-colors"
             >
-              Close
+              {t("closeButton")}
             </button>
           </div>
         </div>

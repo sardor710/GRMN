@@ -1,7 +1,9 @@
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import { watchFamilies } from "@/lib/catalog-constants";
 
 export function WearablesHero() {
+  const t = useTranslations("WearablesHero");
   return (
     <section className="relative w-full overflow-hidden">
       <Image
@@ -14,7 +16,7 @@ export function WearablesHero() {
       />
       <div className="relative mx-auto max-w-[1280px] px-4 py-12">
         <h1 className="g-heading text-center text-[30px] text-black lg:text-[36px]">
-          Most Popular Smartwatches
+          {t("heading")}
         </h1>
         <div className="mt-8 grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
           {watchFamilies.map((fam) => (

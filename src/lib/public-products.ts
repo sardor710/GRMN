@@ -27,12 +27,3 @@ export const products: Product[] = [
   { id: "785411", name: "vívomove®", price: 269.99, priceSuffix: "and up", description: "Hybrid smartwatches with hidden displays, essential wellness tracking and smart features.", image: "/images/products/785411.jpg", family: "vívomove", activities: ["Walking", "Strength"], level: "Entry", caseSize: "Small" },
   { id: "847706", name: "Approach® S70", price: 649.99, priceSuffix: "and up", description: "Premium golf smartwatch with GPS, an AMOLED display and advanced wellness and on-course features.", image: "/images/products/847706.jpg", family: "Approach", activities: ["Golfing"], level: "Premium", caseSize: "Medium" },
 ];
-
-export const activityFilters = ["Boating", "Cycling", "Diving", "Flying", "Golfing", "Hiking", "Running", "Strength", "Swimming", "Tactical training", "Triathlon", "Walking"];
-export const levelFilters: Product["level"][] = ["Entry", "Advanced", "Premium", "Youth"];
-export const caseSizeFilters: { label: string; value: Product["caseSize"] }[] = [
-  { label: "Small (35 to 43 mm)", value: "Small" },
-  { label: "Medium (44 to 49 mm)", value: "Medium" },
-  { label: "Large (≥ 50 mm)", value: "Large" },
-];
-
