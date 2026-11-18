@@ -112,3 +112,21 @@ EXPOSE 3000
 
 # Start Next.js standalone server
 CMD ["node", "server.js"]
+
+# ---------------------------------------------------------------------------------------------
+# Task 23: the ops image. Same dependencies and source as the build, for the outbox worker and the
+# one-off operator tools (migrations, the guarded target import, staff bootstrap, health checks).
+# It never serves HTTP. `temp/` is the private output root of the import tools (mount a volume).
+FROM node:${NODE_VERSION} AS ops
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=dependencies --chown=node:node /app/node_modules ./node_modules
+COPY --chown=node:node package.json package-lock.json tsconfig.json drizzle.config.ts ./
+COPY --chown=node:node drizzle ./drizzle
+COPY --chown=node:node src ./src
+COPY --chown=node:node scripts ./scripts
+COPY --chown=node:node public ./public
+RUN mkdir -p temp && chown node:node temp
+USER node
+CMD ["node", "--conditions=react-server", "scripts/workers/outbox-worker.mjs"]
+

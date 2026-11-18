@@ -1,0 +1,88 @@
+# Task 23 G4: the production topology (plan Section 11), also used for staging under another
+# project name and env file. One VPS: PostgreSQL (private, WAL-archived), the Next.js app, the
+# outbox worker, an nginx TLS proxy, and the ops tools (profile "tools", run on demand).
+#   docker compose -p grmn-<env> --env-file <env file> -f deploy/compose.yml up -d
+# Secrets come from the env file (never committed; see deploy/env.example). Only the proxy publishes
+# ports, on PROXY_BIND (127.0.0.1 for staging; the public address only for production).
+name: grmn
+services:
+  db:
+    image: postgres:18.6-bookworm
+    environment:
+      POSTGRES_USER: grmn_owner
+      POSTGRES_DB: grmn
+      POSTGRES_PASSWORD: ${DB_OWNER_PASSWORD:?set in the env file}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+      GRMN_MIGRATE_PASSWORD: ${DB_MIGRATE_PASSWORD:?set in the env file}
+      GRMN_APP_PASSWORD: ${DB_APP_PASSWORD:?set in the env file}
+    # PITR (G3): every WAL segment is archived, compressed, to the backup volume; archive_timeout
+    # bounds the data at risk between segments (300 s, inside the proposed 15-minute RPO).
+    command: >-
+      postgres -c archive_mode=on -c archive_timeout=300
+      -c "archive_command=/grmn/archive-wal.sh %p %f"
+      -c shared_buffers=${DB_SHARED_BUFFERS:-512MB} -c max_connections=100 -c random_page_cost=1.1
+      -c shared_preload_libraries=pg_stat_statements
+    shm_size: 512m
+    volumes:
+      - db_data:/var/lib/postgresql
+      - ${BACKUP_DIR:?set in the env file}:/backup
+      - ./db/archive-wal.sh:/grmn/archive-wal.sh:ro
+      - ./db/10-roles.sh:/docker-entrypoint-initdb.d/10-roles.sh:ro
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U grmn_owner -d grmn"], interval: 5s, timeout: 3s, retries: 30}
+    restart: unless-stopped
+    cpus: ${DB_CPUS:-2.5}
+    mem_limit: ${DB_MEM:-4g}
+  app:
+    image: ${APP_IMAGE:?release image, e.g. grmn:<commit>}
+    environment: &app
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      HOSTNAME: 0.0.0.0
+      CMS_BACKEND: ${CMS_BACKEND:-postgres}
+      MAINTENANCE_MODE: ${MAINTENANCE_MODE:-0}
+      AUTH_ENABLED: "1"
+      AUTH_SECRET: ${AUTH_SECRET:?set in the env file}
+      AUTH_BASE_URL: https://${GRMN_DOMAIN:?set in the env file}
+      AUTH_TRUSTED_IP_HEADER: x-grmn-client-ip
+      DATABASE_URL: postgresql://grmn_app:${DB_APP_PASSWORD}@db:5432/grmn
+      DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-10}
+      MEDIA_STORAGE_DIR: /media
+    volumes: [media:/media]
+    depends_on: {db: {condition: service_healthy}}
+    restart: unless-stopped
+    cpus: ${APP_CPUS:-1.5}
+    mem_limit: 2g
+  worker:
+    image: ${OPS_IMAGE:?ops image, e.g. grmn-ops:<commit>}
+    environment:
+      <<: *app
+      DATABASE_POOL_MAX: "6"
+      WORKER_ID: ${WORKER_ID:-worker-1}
+    volumes: [media:/media]
+    depends_on: {db: {condition: service_healthy}}
+    restart: unless-stopped
+    cpus: 0.5
+    mem_limit: 1g
+  proxy:
+    image: nginx:1.29-alpine
+    environment: {GRMN_DOMAIN: "${GRMN_DOMAIN}"}
+    volumes:
+      - ./nginx/default.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - ${TLS_DIR:?directory with fullchain.pem and privkey.pem}:/etc/nginx/certs:ro
+    ports: ["${PROXY_BIND:-127.0.0.1}:${HTTPS_PORT:-443}:443", "${PROXY_BIND:-127.0.0.1}:${HTTP_PORT:-80}:80"]
+    depends_on: [app]
+    restart: unless-stopped
+    cpus: 0.5
+    mem_limit: 256m
+  # One-off operator tools: `docker compose ... run --rm ops <command>`. Migrations use the DDL role.
+  ops:
+    image: ${OPS_IMAGE}
+    profiles: [tools]
+    environment:
+      <<: *app
+      DATABASE_MIGRATION_URL: postgresql://grmn_migrate:${DB_MIGRATE_PASSWORD}@db:5432/grmn
+    volumes: [media:/media, "${OPS_TEMP_DIR:-./temp}:/app/temp", "${BACKUP_DIR}:/backup:ro"]
+    depends_on: {db: {condition: service_healthy}}
+volumes:
+  db_data:
+  media:

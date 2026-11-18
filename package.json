@@ -42,11 +42,14 @@
     "auth:bootstrap": "node --env-file-if-exists=.env.local --conditions=react-server scripts/auth/bootstrap.mjs",
     "db:import:dry-run": "node --conditions=react-server scripts/migration/dry-run.ts",
     "db:import:rehearse": "node --conditions=react-server scripts/migration/rehearse.ts",
+    "db:import:target": "node --conditions=react-server scripts/migration/import-target.ts",
     "db:generate": "node --env-file-if-exists=.env.local --conditions=react-server node_modules/drizzle-kit/bin.cjs generate",
     "db:migrate": "node --env-file-if-exists=.env.local --conditions=react-server node_modules/drizzle-kit/bin.cjs migrate",
     "db:local:up": "docker compose --env-file .env.local -f compose.backend.yml up -d db",
     "db:local:stop": "docker compose --env-file .env.local -f compose.backend.yml stop db",
-    "worker": "node --conditions=react-server scripts/workers/outbox-worker.mjs"
+    "worker": "node --conditions=react-server scripts/workers/outbox-worker.mjs",
+    "ops:store-setup": "node --conditions=react-server scripts/ops/store-setup.ts",
+    "ops:health": "node --conditions=react-server scripts/ops/health-check.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.3.0",

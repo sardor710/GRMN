@@ -46,7 +46,10 @@ GEMINI.md
 
 # Docs / research (large, not needed at runtime)
 docs
-scripts
+# scripts/ is needed by the ops image (worker, migrate, import, bootstrap); the runner image never copies it.
+scripts/clone
+scripts/qa
+temp
 
 # Docker files themselves (no need to copy into image)
 Dockerfile

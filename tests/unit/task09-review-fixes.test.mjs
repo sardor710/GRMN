@@ -10,8 +10,8 @@ function load(file,stubs,env={}){
   new Function("require","exports","process",code)(req,output,{env});return output;
 }
 class FakeResponse{constructor(body,init){this.kind="error";this.status=init?.status;}static next(){return{kind:"next"};}static redirect(url,init){return{kind:"redirect",url:String(url),status:init?.status};}}
-function proxyWith(getRedirect){
-  return load("src/proxy.ts",{"next/server":{NextResponse:FakeResponse},"public-input":{isInvalidPublicInput:e=>e instanceof AuthFailure&&e.status===400},"cms/source":{cmsBackend:()=>"postgres"},"catalog/runtime":{getCatalogService:()=>({getRedirect})}}).proxy;
+function proxyWith(getRedirect,gate=async()=>null){
+  return load("src/proxy.ts",{"next/server":{NextResponse:FakeResponse},"maintenance-runtime":{maintenanceGate:gate},"public-input":{isInvalidPublicInput:e=>e instanceof AuthFailure&&e.status===400},"cms/source":{cmsBackend:()=>"postgres"},"catalog/runtime":{getCatalogService:()=>({getRedirect})}}).proxy;
 }
 const request=path=>({nextUrl:{pathname:path},url:"http://localhost"+path});
 
@@ -22,6 +22,11 @@ test("proxy lets malformed percent-encoding fall through to normal 404 handling"
 test("proxy treats invalid redirect sources (spaces/control chars) as no redirect, not an outage",async()=>{
   const proxy=proxyWith(async()=>{throw new AuthFailure("INVALID_INPUT",400,"Invalid catalog query or cursor");});
   assert.equal((await proxy(request("/blog/foo%20bar"))).kind,"next");
+});
+test("Task 23 G1: a maintenance response from the gate is returned before any redirect lookup",async()=>{
+  let looked=false;const frozen={kind:"maintenance"};
+  const proxy=proxyWith(async()=>{looked=true;return null;},async()=>frozen);
+  assert.equal(await proxy({...request("/p/x"),method:"GET",headers:new Headers()}),frozen);assert.equal(looked,false);
 });
 test("proxy still reports genuine database failures as 503",async()=>{
   const proxy=proxyWith(async()=>{throw Error("connection refused");});

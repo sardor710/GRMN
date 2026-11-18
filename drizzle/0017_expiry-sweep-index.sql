@@ -1,0 +1,2 @@
+CREATE INDEX "orders_awaiting_payment_idx" ON "orders" USING btree ("placed_at","id") WHERE "orders"."order_status"='pending_payment' AND "orders"."checkout_attempt_id" IS NOT NULL AND "orders"."placed_at" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX "inventory_reservations_attempt_idx" ON "inventory_reservations" USING btree ("checkout_attempt_id","status","expires_at");

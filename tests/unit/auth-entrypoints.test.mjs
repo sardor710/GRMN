@@ -13,11 +13,15 @@ test("all admin routes bind the guarded runtime and every private page checks se
     assert.match(source,/const denied = await requireCatalogWriter\(request\);\s+if \(denied\) return denied;/,path);
     assert.doesNotMatch(source,/getCurrentAdmin/,path);
   }
-  for(const entry of readdirSync(new URL("src/app/api/admin/",root),{withFileTypes:true}).filter(entry=>entry.isDirectory()&&!["auth","import","uploads"].includes(entry.name))) {
+  for(const entry of readdirSync(new URL("src/app/api/admin/",root),{withFileTypes:true}).filter(entry=>entry.isDirectory()&&!["auth","import","uploads","maintenance-bypass"].includes(entry.name))) {
     const source=read(`src/app/api/admin/${entry.name}/route.ts`);
     assert.match(source,new RegExp(`handleAdminRequest\\("${entry.name}", request\\)`),entry.name);
     assert.doesNotMatch(source,/cms\/store|request\.json/);
   }
+  // Task 23 G1: the maintenance bypass has its own guard (same-origin, settings:write with fresh MFA).
+  assert.match(read("src/app/api/admin/maintenance-bypass/route.ts"),/handleMaintenanceBypass\(request\)/);
+  assert.match(read("src/server/operations/maintenance-runtime.ts"),/requirePermission\(getAuthRuntime\(\), headers, permission\)/);
+  assert.match(read("src/server/operations/maintenance.ts"),/authorize\(request\.headers, "settings:write"\)/);
   const pages=["",...readdirSync(new URL("src/app/admin/",root),{withFileTypes:true}).filter(entry=>entry.isDirectory()&&entry.name!=="login"&&!entry.name.startsWith("_")).map(entry=>entry.name+"/")];
   for(const page of pages){const source=read(`src/app/admin/${page}page.tsx`);assert.doesNotMatch(source,/use client|cms\/store/);assert.match(source,/await authorizeAdminPage\(/);assert.match(source,/if \(!access\.allowed\)/);}
 });

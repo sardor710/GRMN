@@ -97,6 +97,9 @@ export const orders = pgTable("orders", {
 }, t => [
   unique("orders_attempt_identity_unique").on(t.id, t.checkoutAttemptId),
   index("orders_customer_history_idx").on(t.userId, t.placedAt.desc(), t.id.desc()),
+  // Task 23 G6: the unpaid-order expiry sweep pages (placed_at, id) over orders still awaiting payment
+  // (21B: 3.6 s per run at 1M orders without it).
+  index("orders_awaiting_payment_idx").on(t.placedAt, t.id).where(sql`${t.orderStatus}='pending_payment' AND ${t.checkoutAttemptId} IS NOT NULL AND ${t.placedAt} IS NOT NULL`),
   index("orders_profile_idx").on(t.profileId),
   index("orders_fulfillment_queue_idx").on(t.fulfillmentStatus, t.placedAt, t.id),
   index("orders_payment_queue_idx").on(t.paymentStatus, t.placedAt, t.id),

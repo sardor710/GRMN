@@ -120,6 +120,13 @@
       "when": 1795029164700,
       "tag": "0016_unpaid-limit-index",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1795031376372,
+      "tag": "0017_expiry-sweep-index",
+      "breakpoints": true
     }
   ]
 }
