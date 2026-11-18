@@ -1121,7 +1121,7 @@ The wishlist is in 13A. The other account domains get one disposition list in 13
 
 ### Task 23 — Cutover and recovery rehearsal
 
-**Current status:** NOT STARTED.
+**Current status:** NOT STARTED. Draft runbook: `docs/backend/cutover-runbook.md` (2026-11-18), which lists the prerequisites still to build (G1–G6) and the owner fill-ins.
 
 **Depends on:** 21 (Task 22 merged into it). **Size:** 23A import/cutover rehearsal; 23B timed restore/reconciliation.
 
