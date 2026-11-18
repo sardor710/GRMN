@@ -27,27 +27,53 @@ function media(value:unknown):MediaDTO|null {const v=obj(value),url=publicImage(
 const imageSQL = `SELECT jsonb_build_object('url',COALESCE(m.source_path,m.storage_key),'alt',COALESCE(pm.alt_text,m.alt_text,''),'width',m.width,'height',m.height) AS image FROM product_media pm JOIN media_assets m ON m.id=pm.media_id WHERE pm.product_id=p.id AND (pm.variant_id=v.id OR pm.variant_id IS NULL) AND m.status='ready' AND m.visibility='public' AND m.kind='image' ORDER BY (pm.variant_id IS NOT NULL) DESC,pm.is_primary DESC,pm.position,pm.id`;
 // All eligible variants, classification and media are read in one bounded SQL operation.
 // Only projected fields leave this module. Legacy JSON is compatibility input, never a DTO.
-const base = `WITH eligible AS (
- SELECT p.id,p.public_key,p.name,p.description,p.family,p.badge,p.price_suffix,p.specs,p.features,p.in_the_box,p.seo_title,p.seo_description,p.canonical_url,p.no_index,p.og_image_source,
- to_char(p.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_key,
- CASE WHEN p.legacy_content ? 'category' THEN ARRAY[trim(both '-' from regexp_replace(lower(p.legacy_content->>'category'),'[^[:alnum:]]+','-','g'))] ELSE ARRAY(SELECT c.key FROM product_categories pc JOIN categories c ON c.id=pc.category_id WHERE pc.product_id=p.id AND NOT c.archived) END AS category_keys,
- CASE WHEN jsonb_typeof(p.legacy_content->'activities')='array' THEN ARRAY(SELECT trim(both '-' from regexp_replace(lower(a),'[^[:alnum:]]+','-','g')) FROM jsonb_array_elements_text(p.legacy_content->'activities') a) ELSE ARRAY(SELECT a.key FROM product_activities pa JOIN activities a ON a.id=pa.activity_id WHERE pa.product_id=p.id) END AS activity_keys,
- COALESCE(p.legacy_content->>'level',(SELECT ae.label FROM product_attribute_values av JOIN attribute_definitions ad ON ad.id=av.attribute_id JOIN attribute_enum_values ae ON ae.attribute_id=ad.id AND ae.key=av.enum_value WHERE av.product_id=p.id AND ad.key='level')) AS level,
- COALESCE(p.legacy_content->>'caseSize',(SELECT ae.label FROM product_attribute_values av JOIN attribute_definitions ad ON ad.id=av.attribute_id JOIN attribute_enum_values ae ON ae.attribute_id=ad.id AND ae.key=av.enum_value WHERE av.product_id=p.id AND ad.key='case_size')) AS case_size,
- offers.variants,chosen.offer, (chosen.offer->>'amount')::bigint AS amount,
- CASE WHEN offers.variants @> '[{"availability":"available"}]' THEN 'available' WHEN offers.variants @> '[{"availability":"unavailable"}]' THEN 'unavailable' ELSE 'out_of_stock' END AS availability
+// Task 21A (catalog plans): `eligible` holds only what filtering, sorting and paging need; display
+// columns, classification keys and the variant/gallery/option JSON are computed for the selected page
+// only. Building them for every published product before LIMIT took ~1.5 s per listing at 1,000 products.
+// A variant is eligible when it is active, has an active KZT price in the market and chooses every option.
+// (The database also rejects an incomplete active variant at commit; the option check is defense in depth.
+// A count comparison instead of NOT EXISTS was measured slower: ~1.17 s vs ~0.78 s for a price sort.)
+const eligibleFrom = (stock: boolean) => `FROM product_variants v
+ JOIN prices pr ON pr.variant_id=v.id AND pr.is_active AND pr.currency='KZT' AND pr.market=$1${stock ? `
+ CROSS JOIN LATERAL (SELECT count(*) AS known,COALESCE(sum(ib.on_hand-ib.reserved),0) AS free FROM inventory_balances ib JOIN stock_locations sl ON sl.id=ib.location_id AND sl.archived_at IS NULL WHERE ib.variant_id=v.id) balance` : ""}
+ WHERE v.product_id=p.id AND v.status='active' AND NOT EXISTS(SELECT 1 FROM product_options po WHERE po.product_id=p.id AND NOT EXISTS(SELECT 1 FROM variant_option_values vo WHERE vo.variant_id=v.id AND vo.option_id=po.id))`;
+const eligibleVariant = eligibleFrom(false);
+// The same variants with their stock state.
+const variantsFrom = eligibleFrom(true);
+const stateSQL = `(CASE WHEN balance.known=0 THEN 'unavailable' WHEN balance.free>0 THEN 'available' ELSE 'out_of_stock' END)`;
+// Classification keys of product `p`; `eligible` computes one only when a filter needs it.
+const keySQL = {
+  category_keys: `CASE WHEN p.legacy_content ? 'category' THEN ARRAY[trim(both '-' from regexp_replace(lower(p.legacy_content->>'category'),'[^[:alnum:]]+','-','g'))] ELSE ARRAY(SELECT c.key FROM product_categories pc JOIN categories c ON c.id=pc.category_id WHERE pc.product_id=p.id AND NOT c.archived) END`,
+  activity_keys: `CASE WHEN jsonb_typeof(p.legacy_content->'activities')='array' THEN ARRAY(SELECT trim(both '-' from regexp_replace(lower(a),'[^[:alnum:]]+','-','g')) FROM jsonb_array_elements_text(p.legacy_content->'activities') a) ELSE ARRAY(SELECT a.key FROM product_activities pa JOIN activities a ON a.id=pa.activity_id WHERE pa.product_id=p.id) END`,
+  level: `COALESCE(p.legacy_content->>'level',(SELECT ae.label FROM product_attribute_values av JOIN attribute_definitions ad ON ad.id=av.attribute_id JOIN attribute_enum_values ae ON ae.attribute_id=ad.id AND ae.key=av.enum_value WHERE av.product_id=p.id AND ad.key='level'))`,
+  case_size: `COALESCE(p.legacy_content->>'caseSize',(SELECT ae.label FROM product_attribute_values av JOIN attribute_definitions ad ON ad.id=av.attribute_id JOIN attribute_enum_values ae ON ae.attribute_id=ad.id AND ae.key=av.enum_value WHERE av.product_id=p.id AND ad.key='case_size'))`,
+} as const;
+type KeyColumn = keyof typeof keySQL;
+// Price sorts need the chosen offer's price for every product (available first, then cheapest, then variant
+// id: the same order as `chosen`); other sorts only need to know an eligible variant exists.
+const base = (byPrice: boolean, keys: ReadonlySet<KeyColumn>) => `WITH eligible AS (
+ SELECT p.id,p.public_key,p.name,p.description,to_char(p.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_key,
+ ${[...keys].map(column => `${keySQL[column]} AS ${column},`).join("\n ")}
+ ${byPrice ? "summary.amount" : "NULL::bigint AS amount"}
  FROM products p
+ ${byPrice
+    ? `JOIN LATERAL (SELECT count(*) AS n,(array_agg(pr.amount_minor ORDER BY (${stateSQL}='available') DESC,pr.amount_minor,v.id::text))[1] AS amount ${variantsFrom}) summary ON summary.n>0`
+    : ""}
+ WHERE p.status='published'${byPrice ? "" : ` AND EXISTS(SELECT 1 ${eligibleVariant})`}
+ )`;
+// Display columns of the selected page (`p` is joined by offersSQL).
+const pageColumns = `p.id,p.public_key,p.name,p.description,p.family,p.badge,p.price_suffix,p.specs,p.features,p.in_the_box,p.seo_title,p.seo_description,p.canonical_url,p.no_index,p.og_image_source,
+ selected.created_key,selected.amount,${(Object.keys(keySQL) as KeyColumn[]).map(column => `${keySQL[column]} AS ${column}`).join(",")},
+ offers.variants,chosen.offer,
+ CASE WHEN offers.variants @> '[{"availability":"available"}]' THEN 'available' WHEN offers.variants @> '[{"availability":"unavailable"}]' THEN 'unavailable' ELSE 'out_of_stock' END AS availability`;
+// Built only for the selected rows (`selected`): every eligible variant with options, stock state and gallery, and the chosen offer.
+const offersSQL = `JOIN products p ON p.id=selected.id
  JOIN LATERAL (SELECT jsonb_agg(jsonb_build_object('id',v.id,'sku',v.sku,'name',v.name,'amount',pr.amount_minor::text,'compare',pr.compare_at_minor::text,
  'options',COALESCE((SELECT jsonb_object_agg(po.key,ov.label) FROM variant_option_values vo JOIN product_options po ON po.id=vo.option_id JOIN option_values ov ON ov.id=vo.option_value_id WHERE vo.variant_id=v.id),'{}'),
- 'availability',CASE WHEN balance.known=0 THEN 'unavailable' WHEN balance.free>0 THEN 'available' ELSE 'out_of_stock' END,
+ 'availability',${stateSQL},
  'gallery',CASE WHEN EXISTS(SELECT 1 FROM product_media pm WHERE pm.product_id=p.id AND (pm.variant_id=v.id OR pm.variant_id IS NULL)) THEN COALESCE((SELECT jsonb_agg(im.image) FROM (${imageSQL}) im),'[]') ELSE CASE WHEN p.legacy_content->>'image' IS NOT NULL THEN jsonb_build_array(jsonb_build_object('url',p.legacy_content->>'image','alt',p.name)) ELSE '[]' END END
- ) ORDER BY v.is_default DESC,v.id) AS variants FROM product_variants v
- JOIN prices pr ON pr.variant_id=v.id AND pr.is_active AND pr.currency='KZT' AND pr.market=$1
- CROSS JOIN LATERAL (SELECT count(*) AS known,COALESCE(sum(ib.on_hand-ib.reserved),0) AS free FROM inventory_balances ib JOIN stock_locations sl ON sl.id=ib.location_id AND sl.archived_at IS NULL WHERE ib.variant_id=v.id) balance
- WHERE v.product_id=p.id AND v.status='active' AND NOT EXISTS(SELECT 1 FROM product_options po WHERE po.product_id=p.id AND NOT EXISTS(SELECT 1 FROM variant_option_values vo WHERE vo.variant_id=v.id AND vo.option_id=po.id))) offers ON offers.variants IS NOT NULL
- CROSS JOIN LATERAL (SELECT item AS offer FROM jsonb_array_elements(offers.variants) item ORDER BY (item->>'availability'='available') DESC,(item->>'amount')::bigint,item->>'id' LIMIT 1) chosen
- WHERE p.status='published'
- )`;
+ ) ORDER BY v.is_default DESC,v.id) AS variants ${variantsFrom}) offers ON offers.variants IS NOT NULL
+ CROSS JOIN LATERAL (SELECT item AS offer FROM jsonb_array_elements(offers.variants) item ORDER BY (item->>'availability'='available') DESC,(item->>'amount')::bigint,item->>'id' LIMIT 1) chosen`;
 
 export function createCatalogService({pool,publicMarkets=["default"]}:{pool:Pick<Pool,"query">;publicMarkets?:readonly string[]}) {
   function queryInput(input:unknown){const q=parse(schema,input);if(!publicMarkets.includes(q.market))fail();return q;}
@@ -66,9 +92,10 @@ export function createCatalogService({pool,publicMarkets=["default"]}:{pool:Pick
   }
   async function select(q:ReturnType<typeof queryInput>,page:PageInput={},keys?:string[]):Promise<{rows:Row[];nextCursor:string|null;fx:ExchangeRateSnapshotDTO|null}>{
     const pg=parse(pages,page),fx=await rate(q.displayCurrency),scope=createHash("sha256").update(JSON.stringify([q,fx?.id??null,keys??null])).digest("hex"),args:unknown[]=[q.market],where:string[]=[];
-    const param=(v:unknown)=>{args.push(v);return `$${args.length}`;};
+    const param=(v:unknown)=>{args.push(v);return `$${args.length}`;},keyColumns=new Set<KeyColumn>();
     if(keys)where.push(`public_key=ANY(${param(keys)}::text[])`);
     if(q.search)where.push(`(name ILIKE ${param("%"+q.search.replace(/[\\%_]/g,m=>"\\"+m)+"%")} OR description ILIKE $${args.length})`);
+    if(q.category)keyColumns.add("category_keys");if(q.activities?.length||q.activitiesAll?.length)keyColumns.add("activity_keys");if(q.level||q.levels?.length)keyColumns.add("level");if(q.caseSize||q.caseSizes?.length)keyColumns.add("case_size");
     if(q.category)where.push(`${param(key(q.category))}=ANY(category_keys)`);
     if(q.activities?.length)where.push(`activity_keys && ${param(q.activities.map(key))}::text[]`);
     if(q.activitiesAll?.length)where.push(`activity_keys @> ${param(q.activitiesAll.map(key))}::text[]`);
@@ -78,7 +105,8 @@ export function createCatalogService({pool,publicMarkets=["default"]}:{pool:Pick
     if(q.caseSizes?.length)where.push(`case_size=ANY(${param(q.caseSizes)}::text[])`);
     const field=q.sort==="name_asc"?"name":q.sort==="newest"?"created_key":"amount",desc=q.sort==="price_desc"||q.sort==="newest",cast=field==="amount"?"::bigint":"::text";
     if(pg.cursor){let c;try{if(!/^[A-Za-z0-9_-]+$/.test(pg.cursor))throw Error();c=JSON.parse(Buffer.from(pg.cursor,"base64url").toString("utf8"));if(c.v!==1||c.scope!==scope||!z.uuid().safeParse(c.id).success||typeof c.value!=="string"||c.value.length>1000||Object.keys(c).length!==4||(field==="amount"&&!/^(0|[1-9][0-9]*)$/.test(c.value)))throw Error();}catch{return fail();}where.push(`(${field},id) ${desc?"<":">"} (${param(c.value)}${cast},${param(c.id)}::uuid)`);}
-    const rows=(await pool.query(`${base} SELECT * FROM eligible${where.length?" WHERE "+where.join(" AND "):""} ORDER BY ${field} ${desc?"DESC":"ASC"},id ${desc?"DESC":"ASC"} LIMIT ${param(pg.limit+1)}`,args)).rows;
+    const order=`${field} ${desc?"DESC":"ASC"},id ${desc?"DESC":"ASC"}`;
+    const rows=(await pool.query(`${base(field==="amount",keyColumns)}, selected AS (SELECT * FROM eligible${where.length?" WHERE "+where.join(" AND "):""} ORDER BY ${order} LIMIT ${param(pg.limit+1)}) SELECT ${pageColumns} FROM selected ${offersSQL} ORDER BY selected.${order.replace(",id",",selected.id")}`,args)).rows;
     const more=rows.length>pg.limit,items=rows.slice(0,pg.limit),last=items.at(-1);return{rows:items,fx,nextCursor:more?Buffer.from(JSON.stringify({v:1,scope,id:last!.id,value:String(last![field])})).toString("base64url"):null};
   }
   return {

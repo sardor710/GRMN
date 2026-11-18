@@ -112,3 +112,43 @@ test("active redirects preserve status and unsafe cycles fail closed",async()=>{
  await q("INSERT INTO redirects(id,source_path,target_path,status_code,active) VALUES($1,'/p/retired','/p/current',301,true),($2,'/p/inactive','/p/current',302,false),($3,'/p/cycle-a','/p/cycle-b',307,true),($4,'/p/cycle-b','/p/cycle-a',308,true)",[randomUUID(),randomUUID(),randomUUID(),randomUUID()]);
  assert.deepEqual(await api.getRedirect("/p/retired"),{targetPath:"/p/current",statusCode:301});assert.equal(await api.getRedirect("/p/inactive"),null);await assert.rejects(api.getRedirect("/p/cycle-a"));
 });
+
+test("price sorting and cursors use the chosen offer, so a cheaper out-of-stock variant never reorders a product",async()=>{
+  // Task 21A: listings sort on a light summary and build offers only for the page; both must agree.
+  const api=await reader(),mixed=await product({name:"ChosenSortFixture mixed",amount:"100"}),single=await product({name:"ChosenSortFixture single",amount:"3000"});
+  const extra=randomUUID(),option=randomUUID(),small=randomUUID(),large=randomUUID();
+  const client=await database.pool.connect();try{await client.query("BEGIN");
+    await client.query("INSERT INTO product_options(id,product_id,key,name) VALUES($1,$2,'size','Size')",[option,mixed.id]);
+    for(const [id,key] of [[small,"Small"],[large,"Large"]])await client.query("INSERT INTO option_values(id,product_id,option_id,key,label) VALUES($1,$2,$3,$4,$4)",[id,mixed.id,option,key]);
+    await client.query("INSERT INTO variant_option_values(variant_id,product_id,option_id,option_value_id) VALUES($1,$2,$3,$4)",[mixed.variantId,mixed.id,option,small]);
+    await client.query("INSERT INTO product_variants(id,product_id,sku,name,status) VALUES($1,$2,'CHOSEN-SORT-EXTRA','Extra','active')",[extra,mixed.id]);
+    await client.query("INSERT INTO variant_option_values(variant_id,product_id,option_id,option_value_id) VALUES($1,$2,$3,$4)",[extra,mixed.id,option,large]);
+    await client.query("INSERT INTO prices(id,variant_id,amount_minor) VALUES($1,$2,5000)",[randomUUID(),extra]);await client.query("COMMIT");
+  }catch(error){await client.query("ROLLBACK");throw error;}finally{client.release();}
+  await stock(mixed.variantId,0);await stock(extra,3);await stock(single.variantId,1);
+  for(const [sort,expected] of [["price_asc",[single.key,mixed.key]],["price_desc",[mixed.key,single.key]]]){
+    const keys=[],prices=[];let cursor;
+    do{const page=await api.listProducts(query({search:"ChosenSortFixture",sort}),{limit:1,cursor});keys.push(...page.items.map(item=>item.publicKey));prices.push(...page.items.map(item=>item.price.selling.amountMinor));cursor=page.nextCursor;}while(cursor);
+    assert.deepEqual(keys,expected,sort);
+    assert.deepEqual(prices,sort==="price_asc"?["3000","5000"]:["5000","3000"],`${sort}: the shown price is the sort key`);
+  }
+  const mixedCard=(await api.listProducts(query({search:"ChosenSortFixture mixed"}),{})).items[0];
+  assert.equal(mixedCard.availability,"available");
+});
+
+test("an active variant that does not choose every option cannot be committed",async()=>{
+  // The catalog query's count-based "chooses every option" check (Task 21A) is defense in depth: the
+  // database already rejects an incomplete active variant at commit.
+  const p=await product({name:"IncompleteOptionFixture",amount:"4000"}),option=randomUUID(),color=randomUUID(),value=randomUUID(),other=randomUUID(),partial=randomUUID();
+  const client=await database.pool.connect();
+  try{
+    await client.query("BEGIN");
+    await client.query("INSERT INTO product_options(id,product_id,key,name) VALUES($1,$2,'size','Size'),($3,$2,'color','Color')",[option,p.id,color]);
+    await client.query("INSERT INTO option_values(id,product_id,option_id,key,label) VALUES($1,$2,$3,'M','M'),($4,$2,$5,'Black','Black')",[value,p.id,option,other,color]);
+    await client.query("INSERT INTO variant_option_values(variant_id,product_id,option_id,option_value_id) VALUES($1,$2,$3,$4),($1,$2,$5,$6)",[p.variantId,p.id,option,value,color,other]);
+    await client.query("INSERT INTO product_variants(id,product_id,sku,name,status) VALUES($1,$2,'INCOMPLETE-PARTIAL','Partial','active')",[partial,p.id]);
+    await client.query("INSERT INTO variant_option_values(variant_id,product_id,option_id,option_value_id) VALUES($1,$2,$3,$4)",[partial,p.id,option,value]);
+    await assert.rejects(client.query("COMMIT"),/Active variants require every defined option/);
+  }finally{await client.query("ROLLBACK").catch(()=>{});client.release();}
+  assert.equal((await q("SELECT count(*)::int AS n FROM product_variants WHERE id=$1",[partial])).rows[0].n,0);
+});
