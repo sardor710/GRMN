@@ -56,7 +56,8 @@ async function product({price=10000,stock=10}={}){
 async function load(){
   if(api)return;
   const {createCartService}=await import("../../src/server/cart/service.ts");
-  carts=createCartService({database,secret,identify:async h=>{try{return await requirePrincipal(runtime,h);}catch(error){if(error.status===401)return null;throw error;}}});
+  // The trusted client address comes from a test header here; the runtime reads x-grmn-client-ip.
+  carts=createCartService({database,secret,clientAddress:h=>h.get("x-test-ip"),identify:async h=>{try{return await requirePrincipal(runtime,h);}catch(error){if(error.status===401)return null;throw error;}}});
   checkout=await import("../../src/server/checkout/service.ts");
   payments=await import("../../src/server/payments/service.ts");
   manual=await import("../../src/server/payments/manual.ts");
@@ -312,6 +313,70 @@ test("O07 unpaid manual orders expire with the hold; staff cancelling an unpaid 
   assert.deepEqual(await balance(p.variant),{on_hand:4,reserved:0});
   assert.equal(await count("SELECT count(*)::int AS n FROM order_events WHERE order_id=$1 AND type='order.expired' AND visibility='customer'",[order.orderId]),1);
   assert.equal((await q("SELECT status FROM payment_attempts WHERE order_id=$1",[order.orderId])).rows[0].status,"cancelled");
+});
+
+// ---------------------------------------------------------------------------------------------
+// Hold abuse (owner decision 2026-11-18): at most 3 unpaid manual orders per customer and per client address
+
+/** A storefront checkout through the cart service: the guest capability cookie is followed. */
+async function cartOrder(headers,lines,{ip,idempotencyKey=key()}={}){
+  await load();
+  let h=new Headers(headers),version=0;if(ip)h.set("x-test-ip",ip);
+  for(const [variantId,quantity] of lines){const r=await carts.addLine(h,{variantId,quantity,expectedCartVersion:version});version=r.cart.version;if(r.cookie?.token)h.set("cookie","grmn-cart="+r.cookie.token);}
+  const quote=await carts.quote(h,{cartVersion:version,displayCurrency:"KZT",delivery:KZ});
+  const place=(k=idempotencyKey)=>carts.checkout(h,k,{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"manual"});
+  return{place,headers:h};
+}
+const cancel=async orderId=>refundsApi.cancelOrder(fulfiller,{orderId,expectedOrderVersion:(await orderRow(orderId)).version,idempotencyKey:key(),reason:"Customer did not pay"});
+let ipSerial=0;const freshIp=()=>`198.51.${Math.floor(++ipSerial/250)}.${1+ipSerial%250}`;
+
+test("O07 hold limit: a customer with 3 unpaid manual orders cannot place a 4th until one is paid or cancelled",async()=>{
+  const p=await product({stock:20}),who=await buyer();
+  const placed=[];for(let i=0;i<3;i++)placed.push(await(await cartOrder(who.headers,[[p.variant,1]])).place());
+  const reserved=(await balance(p.variant)).reserved,orders=await count("SELECT count(*)::int AS n FROM orders WHERE user_id=$1",[who.id]);
+  const fourth=await cartOrder(who.headers,[[p.variant,1]]);
+  await rejectsWith(fourth.place(),409,"TOO_MANY_UNPAID_ORDERS");
+  // The refusal rolls everything back: no order, no hold, and the same key can be retried later.
+  assert.equal(await count("SELECT count(*)::int AS n FROM orders WHERE user_id=$1",[who.id]),orders);
+  assert.equal((await balance(p.variant)).reserved,reserved);
+  // A paid order no longer counts.
+  await confirm(placed[0]);
+  const k=key();const ok=await fourth.place(k);assert.equal(ok.status,"pending_payment");
+  assert.equal((await fourth.place(k)).orderId,ok.orderId,"the same key still replays");
+  // A refused checkout leaves the customer's cart active, so the retry reuses it.
+  const fifth=await cartOrder(who.headers,[[p.variant,1]]);
+  await rejectsWith(fifth.place(),409,"TOO_MANY_UNPAID_ORDERS");
+  // A cancelled order no longer counts either.
+  await cancel(placed[1].orderId);
+  assert.equal((await fifth.place()).status,"pending_payment");
+});
+
+test("O07 hold limit: at most 3 unpaid manual orders per client address, guests and customers alike",async()=>{
+  const p=await product({stock:20}),ip=freshIp();
+  for(let i=0;i<3;i++)await(await cartOrder(new Headers(),[[p.variant,1]],{ip})).place();
+  await rejectsWith((await cartOrder(new Headers(),[[p.variant,1]],{ip})).place(),409,"TOO_MANY_UNPAID_ORDERS");
+  // A signed-in customer on the same address is refused too; another address is not affected.
+  const who=await buyer();
+  await rejectsWith((await cartOrder(who.headers,[[p.variant,1]],{ip})).place(),409,"TOO_MANY_UNPAID_ORDERS");
+  assert.equal((await(await cartOrder((await buyer()).headers,[[p.variant,1]],{ip:freshIp()})).place()).status,"pending_payment");
+  // No raw address is stored, only a keyed hash.
+  assert.equal(await count("SELECT count(*)::int AS n FROM checkout_attempts WHERE client_address_hash LIKE '%'||$1||'%'",[ip]),0);
+  assert.ok(await count("SELECT count(*)::int AS n FROM checkout_attempts WHERE client_address_hash ~ '^[0-9a-f]{64}$'")>=4);
+});
+
+test("O07 hold limit: orders whose hold has ended no longer count",async()=>{
+  const p=await product({stock:20}),ip=freshIp();
+  for(let i=0;i<3;i++)await(await cartOrder(new Headers(),[[p.variant,1]],{ip})).place();
+  await payments.expireUnpaidOrders(database.pool,{asOf:new Date(Date.now()+49*3600*1000)});
+  assert.equal((await(await cartOrder(new Headers(),[[p.variant,1]],{ip})).place()).status,"pending_payment");
+});
+
+test("O07 hold limit: concurrent checkouts from one address cannot pass the limit together",async()=>{
+  const p=await product({stock:20}),ip=freshIp();
+  const ready=[];for(let i=0;i<6;i++)ready.push(await cartOrder(new Headers(),[[p.variant,1]],{ip}));
+  const results=await Promise.allSettled(ready.map(r=>r.place()));
+  assert.equal(results.filter(r=>r.status==="fulfilled").length,3);
+  for(const r of results.filter(r=>r.status==="rejected"))assert.equal(r.reason.code,"TOO_MANY_UNPAID_ORDERS",r.reason.message);
 });
 
 // ---------------------------------------------------------------------------------------------

@@ -64,8 +64,13 @@ export const checkoutAttempts = pgTable("checkout_attempts", {
   id: id(), cartId: uuid("cart_id").notNull(), cartVersion: integer("cart_version").notNull(), quoteId: uuid("quote_id").notNull(),
   actorScope: text("actor_scope").notNull(), operation: text("operation").notNull().default("checkout"),
   idempotencyKey: text("idempotency_key").notNull(), requestHash: text("request_hash").notNull(),
-  status: text("status").notNull().default("pending"), createdAt: createdAt(), updatedAt: updatedAt(),
+  status: text("status").notNull().default("pending"),
+  // Hold-abuse limit (2026-11-18): a keyed hash of the trusted client address, never the address itself.
+  clientAddressHash: text("client_address_hash"),
+  createdAt: createdAt(), updatedAt: updatedAt(),
 }, t => [
+  index("checkout_attempts_client_address_idx").on(t.clientAddressHash).where(sql`${t.clientAddressHash} IS NOT NULL`),
+  check("checkout_attempts_client_address_valid", sql`${t.clientAddressHash} IS NULL OR ${t.clientAddressHash} ~ '^[0-9a-f]{64}$'`),
   foreignKey({ columns: [t.quoteId, t.cartId, t.cartVersion], foreignColumns: [checkoutQuotes.id, checkoutQuotes.cartId, checkoutQuotes.cartVersion] }).onDelete("restrict"),
   uniqueIndex("checkout_attempts_key_unique").on(t.actorScope, t.operation, t.idempotencyKey),
   uniqueIndex("checkout_attempts_revision_winner_unique").on(t.cartId, t.cartVersion).where(sql`${t.status}<>'failed'`),

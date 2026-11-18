@@ -1,0 +1,3 @@
+ALTER TABLE "checkout_attempts" ADD COLUMN "client_address_hash" text;--> statement-breakpoint
+CREATE INDEX "checkout_attempts_client_address_idx" ON "checkout_attempts" USING btree ("client_address_hash") WHERE "checkout_attempts"."client_address_hash" IS NOT NULL;--> statement-breakpoint
+ALTER TABLE "checkout_attempts" ADD CONSTRAINT "checkout_attempts_client_address_valid" CHECK ("checkout_attempts"."client_address_hash" IS NULL OR "checkout_attempts"."client_address_hash" ~ '^[0-9a-f]{64}$');

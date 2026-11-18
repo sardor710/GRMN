@@ -18,7 +18,8 @@ import { createManualProvider } from "../payments/manual-provider.ts";
 // order snapshot (GRM- sequence number), a demo payment attempt, an order event, an outbox event,
 // a hashed guest status token and the idempotency result, and convert the cart. The deferred
 // orders_seal trigger checks that lines, address and totals reconcile and commits the attempt.
-// Lock order: checkout attempt, cart, promotion, stock balances (then order rows it creates).
+// Lock order: checkout attempt, cart, unpaid-order limit (advisory, customer then address),
+// promotion, stock balances (then order rows it creates).
 // Any failure rolls everything back, so the key can simply be retried.
 
 /** Consumer of order.placed. Payment session creation (Task 14B) hangs off this job kind. */
@@ -89,12 +90,43 @@ async function replay(client: PoolClient, secret: string, scope: string, key: st
 export const MANUAL_HOLD_HOURS = 48;
 
 /**
+ * Hold abuse (owner decision 2026-11-18): a manual-payment order holds stock for up to the manual
+ * hold, so one customer, and one client address, may have at most this many unpaid manual orders at
+ * a time. An order stops counting once it is paid, cancelled or expired, or its hold has ended.
+ */
+export const MAX_UNPAID_MANUAL_ORDERS = 3;
+const UNPAID_MANUAL = `o.order_status='pending_payment' AND o.payment_status IN ('unpaid','pending','failed') AND o.payment_mode='live'
+  AND EXISTS(SELECT 1 FROM payment_attempts a WHERE a.order_id=o.id AND a.provider='manual')
+  AND EXISTS(SELECT 1 FROM inventory_reservations r WHERE r.checkout_attempt_id=o.checkout_attempt_id AND r.status='active' AND r.expires_at>clock_timestamp())`;
+
+/** The keyed hash stored for the limit: no raw address is kept (the rate-limit convention). */
+function clientAddressHash(secret: string, address: string | null | undefined): string | null {
+  return address ? createHmac("sha256", secret).update(`unpaid-orders:v1:${address}`).digest("hex") : null;
+}
+
+/**
+ * Refuses a manual checkout when the customer or the client address already has the maximum of
+ * unpaid manual orders. A transaction-scoped advisory lock per identity (customer first, then
+ * address) serialises concurrent checkouts, so they cannot pass the limit together; under READ
+ * COMMITTED the count after the lock sees every order committed by the previous holder.
+ */
+async function enforceUnpaidLimit(client: PoolClient, userId: string | null, addressHash: string | null): Promise<void> {
+  if (userId) await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`unpaid-orders:user:${userId}`]);
+  if (addressHash) await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`unpaid-orders:address:${addressHash}`]);
+  const count = async (sql: string, value: string) => (await client.query<{ n: number }>(sql, [value, MAX_UNPAID_MANUAL_ORDERS])).rows[0].n;
+  if (userId && await count(`SELECT count(*)::int AS n FROM (SELECT 1 FROM orders o WHERE o.user_id=$1 AND ${UNPAID_MANUAL} LIMIT $2) x`, userId) >= MAX_UNPAID_MANUAL_ORDERS)
+    fail("TOO_MANY_UNPAID_ORDERS", 409, `You already have ${MAX_UNPAID_MANUAL_ORDERS} orders awaiting payment. Pay for or cancel one before placing another.`);
+  if (addressHash && await count(`SELECT count(*)::int AS n FROM (SELECT 1 FROM checkout_attempts c JOIN orders o ON o.checkout_attempt_id=c.id WHERE c.client_address_hash=$1 AND ${UNPAID_MANUAL} LIMIT $2) x`, addressHash) >= MAX_UNPAID_MANUAL_ORDERS)
+    fail("TOO_MANY_UNPAID_ORDERS", 409, `Too many orders from this connection are awaiting payment. Pay for one before placing another.`);
+}
+
+/**
  * Places a pending order for the actor's quoted cart revision. A repeated key returns the original
  * order. "manual" (O07) is real checkout: staff confirm the payment later, and the stock and coupon
  * are held for the configured manual hold. "demo" is for tests and development only (`allowDemo`
  * false refuses it). kaspi/secondary need a registered real provider (Task 14B; none yet, D03).
  */
-export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActor, idempotencyKey: string, input: unknown, options: { payments?: PaymentProviders; allowDemo?: boolean } = {}): Promise<CheckoutResultDTO> {
+export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActor, idempotencyKey: string, input: unknown, options: { payments?: PaymentProviders; allowDemo?: boolean; clientAddress?: string | null } = {}): Promise<CheckoutResultDTO> {
   if (typeof idempotencyKey !== "string" || !IDEMPOTENCY_KEY.test(idempotencyKey)) invalid();
   const command = parse(checkoutInput, input);
   if (command.paymentMethod === "demo" && options.allowDemo === false) fail("PAYMENT_UNAVAILABLE", 409, "This payment method is not available");
@@ -105,6 +137,7 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
   const paymentMode = provider ? "live" : "demo";
   const payment = provider ? { name: provider.name, environment: provider.environment, merchantAccount: provider.merchantAccount } : { name: "demo", environment: "demo", merchantAccount: "demo" };
   const scope = actorScope(actor) ?? notFound();
+  const addressHash = clientAddressHash(secret, options.clientAddress);
   const requestHash = sha256(canonical({ quoteId: command.quoteId.toLowerCase(), cartVersion: command.cartVersion, paymentMethod: command.paymentMethod, contactEmail: command.contactEmail ?? null }));
 
   return withInventoryTransaction(pool, async client => {
@@ -124,9 +157,9 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
     let claimed: boolean;
     try {
       claimed = Boolean((await client.query(
-        `INSERT INTO checkout_attempts(id,cart_id,cart_version,quote_id,actor_scope,operation,idempotency_key,request_hash)
-         VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT (actor_scope,operation,idempotency_key) DO NOTHING RETURNING id`,
-        [attemptId, owned.cart_id, owned.cart_version, command.quoteId, scope, OPERATION, idempotencyKey, requestHash])).rowCount);
+        `INSERT INTO checkout_attempts(id,cart_id,cart_version,quote_id,actor_scope,operation,idempotency_key,request_hash,client_address_hash)
+         VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (actor_scope,operation,idempotency_key) DO NOTHING RETURNING id`,
+        [attemptId, owned.cart_id, owned.cart_version, command.quoteId, scope, OPERATION, idempotencyKey, requestHash, addressHash])).rowCount);
     } catch (error) {
       if ((error as { code?: unknown }).code === "23505" && (error as { constraint?: unknown }).constraint === "checkout_attempts_revision_winner_unique") fail("CHECKOUT_CONFLICT", 409, "This cart was already checked out");
       throw error;
@@ -136,6 +169,7 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
     // 2. Lock the cart revision; it must still be the active, unchanged cart that was quoted.
     const cart = (await client.query<{ status: string; version: number }>("SELECT status,version FROM carts WHERE id=$1 FOR UPDATE", [owned.cart_id])).rows[0];
     if (!cart || cart.status !== "active" || cart.version !== command.cartVersion) stale();
+    if (command.paymentMethod === "manual") await enforceUnpaidLimit(client, actor.userId, addressHash);
 
     // 3. Revalidate (ignoring this attempt's own coupon hold), then hold the coupon and the stock.
     await revalidateQuote(client, { quoteId: command.quoteId, cartId: owned.cart_id, cartVersion: command.cartVersion, checkoutAttemptId: attemptId });

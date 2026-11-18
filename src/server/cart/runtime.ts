@@ -26,6 +26,8 @@ function getCartHandler() {
       database: getDatabase(), secret: config.secret,
       // O07: the demo adapter is for tests and development only; production checkout is manual.
       allowDemoPayments: process.env.NODE_ENV !== "production",
+      // Hold-abuse limit: unpaid manual orders are also counted per trusted client address.
+      clientAddress: headers => trustedClientAddress(headers),
       identify: async headers => {
         try { return await requirePrincipal(runtime, headers); }
         catch (error) { if (error instanceof AuthFailure && error.status === 401) return null; throw error; }

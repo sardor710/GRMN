@@ -86,9 +86,11 @@ export interface CartServiceOptions {
   quoteTtlSeconds?: number;
   /** O07: whether checkout accepts the simulated demo payment method. The runtime refuses it in production. */
   allowDemoPayments?: boolean;
+  /** The trusted client address for the unpaid-order limit; null skips the per-address limit (no trusted proxy). */
+  clientAddress?: (headers: Headers) => string | null;
 }
 
-export function createCartService({ database, secret, identify, market = "default", quoteTtlSeconds = QUOTE_TTL_SECONDS, allowDemoPayments = true }: CartServiceOptions) {
+export function createCartService({ database, secret, identify, market = "default", quoteTtlSeconds = QUOTE_TTL_SECONDS, allowDemoPayments = true, clientAddress }: CartServiceOptions) {
   if (!/^[a-f0-9]{64}$/i.test(secret)) throw new Error("Cart services require the validated auth secret");
   const digest = (token: string) => createHmac("sha256", secret).update("grmn-cart-capability:v1:" + token).digest("hex");
 
@@ -304,7 +306,7 @@ export function createCartService({ database, secret, identify, market = "defaul
     // The idempotency key comes from the Idempotency-Key header; a retried key returns the same order.
     async checkout(headers: Headers, idempotencyKey: string, input: unknown): Promise<CheckoutResultDTO> {
       const who = await actor(headers);
-      return placeOrder(database.pool, secret, { userId: who.userId, guestTokenHash: who.userId ? null : who.tokenHash }, idempotencyKey, input, { allowDemo: allowDemoPayments });
+      return placeOrder(database.pool, secret, { userId: who.userId, guestTokenHash: who.userId ? null : who.tokenHash }, idempotencyKey, input, { allowDemo: allowDemoPayments, clientAddress: clientAddress?.(headers) ?? null });
     },
 
     // Task 14A: the polling contract after checkout (owning session, or a guest status token).
