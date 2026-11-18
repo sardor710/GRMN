@@ -9,7 +9,7 @@ Updated: **2026-11-18**. This is the current progress index; individual handoffs
 - **Committed on `codex/backend-task-02`:** 02–09 `b92fd0e`, 10A `76bbf3b`, 10B `7d615b9`, 10C `3eecd53`, 11A `6aed380`, 11B `eb1cb5b`, 12A `3432aeb`, 12B `4fe08d2`, 13A `40a16cb`, 13B `d98cc92`, 14A `92b2737`, 14B `7981280`, 16A `9afd247`, 16B `f88c52e`, 18A `69e1d81`, 18B `4ac8955`, 21A `53a5b63`.
 - **Merged (2026-11-18):** `codex/backend-task-02` is merged into `D:/projects/garmin/GRMN` on branch `merge/backend-into-cms-variants`, together with the product variants, garmin.com importer and homepage work from `feat/garmin-clone-cms-variants`. See "Merge into the main checkout" below. **Continue all work in `D:/projects/garmin/GRMN`.** The Codex worktree is historical.
 - **Next (owner):**
-  1. On a machine with ≥1 GB free RAM, run the deferred gates: `npm run test:integration` and the browser smoke `node --conditions=react-server tests/ui/cms-smoke.mjs` (open for 16A–21A and the merge), 
+  1. On a machine with ≥1 GB free RAM, run the deferred gates: `npm run test:integration` and the browser smoke `node --conditions=react-server tests/ui/cms-smoke.mjs` (open for 16A–21A and the merge).
   2. Decide O05 (VPS) and O07 (manual payment confirmation), then run 21B.
   3. Task 23 (cutover rehearsal) is owner-run.
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
