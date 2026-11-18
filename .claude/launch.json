@@ -8,6 +8,13 @@
       "port": 3000
     },
     {
+      "name": "i18n-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "D:/projects/garmin/GRMN-i18n", "run", "dev", "--", "-p", "3110"],
+      "port": 3110,
+      "autoPort": false
+    },
+    {
       "name": "next-prod",
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "start", "--", "-p", "3005"],

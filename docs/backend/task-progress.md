@@ -4,9 +4,9 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 ## Current position
 
-- **Completed:** Tasks **01–11** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring; 11A inventory ledger, audited adjustments, reconciliation, opening import; 11B race-safe reservations) **12** (12A durable outbox and leased worker; 12B scheduled reservation expiry, audited dead-letter replay and job-lag metric) and **13** (13A server cart, login merge and wishlist; 13B quotes, markdowns, coupon quotas and USD display), within the scope and activation limits below.
-- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, 10C in `3eecd53`, 11A in `6aed380`, 11B in `eb1cb5b`, 12A in `3432aeb`, 12B in `4fe08d2`, 13A in `40a16cb`, and 13B in the commit after it (see `git log`).
-- **Next:** Task **14A**: idempotent checkout and pending order. See [the 13B handoff](handoffs/task-13b.md#exact-next-step).
+- **Completed:** Tasks **01–11** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring; 11A inventory ledger, audited adjustments, reconciliation, opening import; 11B race-safe reservations) **12** (12A durable outbox and leased worker; 12B scheduled reservation expiry, audited dead-letter replay and job-lag metric) and **13** (13A server cart, login merge and wishlist; 13B quotes, markdowns, coupon quotas and USD display) and **14** (14A idempotent checkout and pending demo order; 14B payment interface, demo adapter, verified inbox, capture and unpaid-order expiry), within the scope and activation limits below.
+- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, 10C in `3eecd53`, 11A in `6aed380`, 11B in `eb1cb5b`, 12A in `3432aeb`, 12B in `4fe08d2`, 13A in `40a16cb`, 13B in `d98cc92`, 14A in `92b2737`, and 14B in the commit after it (see `git log`).
+- **Next:** Task **16A**: manual fulfillment and order timeline (15 is merged into 14). See [the 14B handoff](handoffs/task-14b.md#exact-next-step).
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
 - **Active implementation:** `C:/Users/Freakman/.codex/worktrees/backend-task-02/GRMN`, branch `codex/backend-task-02`.
 - **Original checkout:** `D:/projects/garmin/GRMN`. Its progress documentation is synchronized, but the backend implementation has **not** been merged or copied there. An AI inspecting only that checkout's application files will see older code. Continue code work in the active worktree above.
@@ -203,6 +203,168 @@ Updated: **2026-11-17**. This is the current progress index; individual handoffs
 
 [Detailed receipt](handoffs/task-13b.md).
 
+### Task 14A
+
+**Complete — idempotent checkout and pending demo order (2026-11-17).** No migration.
+- **Checkout** (`src/server/checkout/service.ts`, `POST /api/cart/checkout` with an `Idempotency-Key` header): one short transaction, no network call. It claims the key, locks the quoted cart revision, revalidates the quote, reserves the coupon quota and the stock, and writes the sealed order snapshot (`GRM-` sequence number), a demo payment attempt, an order event, an `order.placed` outbox event, a hashed guest status token and the idempotency result, then converts the cart.
+- **Guarantees, tested:** the same key returns the same order (also concurrently); the same key with a different body is 409; two keys on one cart revision have one winner; any failure leaves no attempt, hold, order or idempotency record; later product, price and address edits never rewrite the snapshot.
+- **Status polling:** `POST /api/cart/checkout/status` for the owning session or a guest status token. The receipt never says paid (D03, O07 open).
+- **UI:** the cart page quotes on the server, places the order once with a stored key, resumes a lost response on reload, and shows an unpaid receipt. The fake success screen, invented tax and client cart clearing are gone.
+- **Worker:** coupon holds expire on the same schedule as stock holds.
+- **Review:** no Critical findings. Three Important findings were fixed test-first (lost-response recovery, the coupon hold linked to its order, inclusive tax recorded on the order). Order-level expiry of a pending order is a 14B ruling.
+- **Gates:** see the [handoff](handoffs/task-14a.md#commands-and-results).
+
+[Detailed receipt](handoffs/task-14a.md).
+
+### Task 14B
+
+**Complete — payment interface, simulated demo adapter, verified inbox and capture (2026-11-17).** No migration.
+- **Providers** (`src/server/payments/`): a typed provider interface and an explicitly simulated demo adapter (provenance `simulated: true`, no webhooks, reconciliation never reports a payment). The application registers only the demo adapter (D03), so no order can be paid in this build (O07 open).
+- **Inbox:** the raw webhook is stored before verification. A forged, altered or out-of-context body stays as a rejected receipt. A verified event is queued once per provider event id and applied in the same transaction that marks it processed.
+- **Capture:** idempotent on the provider transaction id. It consumes the stock hold and the coupon quota once, re-reserves after an expiry, and otherwise records a fulfillment exception with a refund request. A late capture after an explicit cancellation never reactivates the order. Other open attempts are superseded.
+- **Attempts:** one payable attempt per order; replacement only after a definitive failure. Session start uses the attempt's stable key, so a lost response is retried safely.
+- **Worker:** `payments.session.start`, `payments.inbox.process`, `payments.reconcile` (60 s) and `orders.unpaid.expire`. Expired unpaid orders are cancelled with a customer-visible `order.expired` event.
+- **Return URL** `/api/payments/return` writes nothing.
+- **Review:** no Critical findings. Six Important findings were fixed test-first (capture fact rollback, mismatched captures, authorization regression, superseding attempts, the expiry sweep, the unbounded webhook body). Webhook rate limiting is deferred to Task 21.
+- **Gates:** see the [handoff](handoffs/task-14b.md#commands-and-results).
+
+[Detailed receipt](handoffs/task-14b.md).
+
+### Task 16A
+
+**Code complete, browser smoke pending: manual fulfillment and order timeline (2026-11-17).** No migration.
+- **Service:** `src/server/fulfillment/service.ts`. In PostgreSQL mode `/api/admin/orders` is served by it: reads need `orders:read`, writes need `orders:fulfill`.
+  - Split shipments by item quantity over the order's paid allocations. The shipment states are `ready → dispatched → delivered`, or `ready → cancelled`. Backwards moves are 409 `INVALID_TRANSITION`.
+  - Every write takes a CAS version and an idempotency key scoped to the staff user, and is audited.
+  - It writes no stock movement: capture already consumed the stock.
+- **Eligibility:** a live order with a capture fact, paid or partially refunded, confirmed and not an exception. Otherwise 409 with `LEGACY_ORDER`, `ORDER_NOT_PAID`, `FULFILLMENT_EXCEPTION` or `ORDER_NOT_SHIPPABLE`. Demo and legacy summary orders never ship.
+- **Timelines:**
+  - Staff see every recorded order event, and internal notes need `orders:fulfill`.
+  - Customers see `fulfillment.shipped` and `fulfillment.delivered` and their dispatched or delivered shipments, with no carrier, tracking or notes (D04). Times come from the server clock; no client date is accepted.
+- **UI:**
+  - The admin orders page is a fulfillment screen in PostgreSQL mode: queue, items, shipments, actions, timeline.
+  - The account order detail lists shipments.
+- **Review:** no Critical findings. Three Important findings were fixed test-first: the status denominator now uses restored units, a concurrent key reuse is 409 not 503, and support no longer sees tracking. The fourth (refund-vs-shipping contract) is a 16B ruling.
+- **Gates:**
+  - `npm test` **499/499** and `npm run check` exit 0.
+  - **The browser smoke is NOT yet passed.** Two runs stalled compiling `/account` (CDP navigate timeout), before the new Task16A step, with 0.1–0.3 GB free RAM. See the [handoff](handoffs/task-16a.md#commands-and-results).
+
+[Detailed receipt](handoffs/task-16a.md).
+
+### Task 16B
+
+**Complete: cancellation, returns and refunds (2026-11-18).** It absorbs Task 17 and needs no migration. Task 16 is complete except for the browser smoke runs, which are still open.
+- **Service:** `src/server/fulfillment/aftersales.ts`. Every after-sales action is one more action on `/api/admin/orders`, and every one locks the order first (16A ruling M8).
+- **Cancellation** (`cancel_order`, `orders:fulfill`) depends on the payment and shipping state:
+  - **Unpaid:** the open payment attempts are cancelled, the stock hold and coupon quota are released, and an authorization also gets an internal `void_required` event.
+  - **Paid but not shipped:** ready shipments are cancelled first. Each allocation's unshipped units are then restored with one compensating movement, and the paying capture's remaining balance is reserved for refund item by item. This path also needs `payments:refund`.
+  - **Shipped:** 409 `ORDER_SHIPPED`; shipped units go through a return.
+- **Refunds** (`refund`, `payments:refund` with fresh MFA): item, shipping and adjustment lines are reserved against the paying capture, and the refundable balance is checked under the order lock and by the 0003 trigger.
+  - Discount and tax are split by cumulative quantity share, so refunding every unit, in any split, adds up exactly to the line total.
+  - Refunding unshipped units puts them back on hand (16A ruling I2), unless staff send `restock: false`.
+  - The provider is called outside any transaction with the refund's stable key. A timeout leaves the refund `unknown` and keeps the money reserved; only a definitive failure releases it.
+  - The worker job `payments.refunds.process` (every 60 s) submits and retries refunds. The payment summary follows only the paying capture.
+- **Returns** (`create_return`, `update_return`, `orders:fulfill`): requested → authorized → received → inspected → closed. Only an inspection with a `restock` decision puts accepted units back on hand, once per return line; quarantined and disposed units never do.
+- **UI:** a "Cancel order" button, plus read-only refund and return lists in the fulfillment screen.
+- **Review:** one Critical and four Important findings were fixed test-first:
+  - a failed refund no longer lets the same units be restored twice;
+  - refunds use the paying capture;
+  - the payment summary ignores duplicate captures;
+  - an unpaid order with a mismatched capture cancels like an unpaid order;
+  - cancelling after a partial refund still refunds item by item.
+
+  Two more are rulings: whether item refunds should restore stock (now opt-out with `restock: false`), and automatic refund submission (I6).
+- **Gates:**
+  - `npm test` passed **514/514**, run one test file per process (see the handoff for why).
+  - `npm run check` exited 0.
+  - **The browser smoke was not run:** only 84 MB of RAM was free.
+
+[Detailed receipt](handoffs/task-16b.md).
+
+### Task 18A
+
+**Complete: scheduled publishing and media uploads (2026-11-18).** No migration. 18B is next.
+- **Publishing** (`src/server/content/publishing.ts`, `/api/admin/content`, `content:write`):
+  - version history; publish now or at a scheduled time, optionally until an end time; unpublish;
+  - restore an earlier version as a new version (history is never rewritten);
+  - slug change with a 308 redirect, which the proxy already serves from the `redirects` table.
+  - Every write checks the page version, is audited, and enqueues `content.published` / `content.unpublished` for cache invalidation in the same transaction.
+- **Rules:**
+  - Public reads apply the publication window: lists, slugs, the homepage and the sitemap.
+  - A live page cannot be replaced by a future publication, and the homepage cannot be scheduled.
+  - Editor saves with `draft: true` leave the live version untouched (draft isolation).
+- **Rich text:** blog bodies go through an allowlist sanitizer when saved and again when rendered (balanced tags, linear time). Excerpts are plain text.
+- **Collections:** merchandising collections reference products by public key. The public read skips archived or unpublished products and keeps the order.
+- **Uploads** (`src/server/content/media.ts`, `/api/admin/media`, `/api/admin/media/upload`, `/media/<key>`):
+  - a signed upload grant expires after 15 minutes and covers one file, whose type (PNG, JPEG, GIF or WebP), size (5 MB maximum), SHA-256 checksum and alt text are declared up front;
+  - the upload is checked for exact size, magic bytes and checksum, and stored under an immutable key;
+  - public and private files are stored separately, and private files are never served;
+  - an hourly job, `media.orphans.cleanup`, archives orphaned uploads after a 24-hour grace period and keeps the files so they can be recovered.
+- **Review:** no Critical findings. Five Important findings were fixed test-first: unbalanced tags, quadratic sanitizing, a stale publication window after an editor save, the homepage being scheduled offline, and the editor publish path not invalidating. The sixth, homepage collection wiring, is a ruling deferred to 18B.
+- **Gates:**
+  - `npm test` **532/532**, one test file per process; this covers the route fix, with units re-run at 178/178.
+  - `npm run check`: exit 0, with no file-tracing warnings.
+  - **The browser smoke was not run**: 104–161 MB free.
+
+[Detailed receipt](handoffs/task-18a.md).
+
+### Task 18B
+
+**Complete: reports, exports, settings, USD rate editor and inventory admin UI (2026-11-18).** No migration. This absorbs Task 19, so Task 18 is complete.
+- **Dashboard** (`src/server/reports/service.ts`, `/api/admin/reports`): SQL summaries replace the old browser-side aggregation. It reports captured money minus succeeded refunds:
+  - grouped by currency and by payment environment (sandbox or live);
+  - in local calendar days of an IANA time zone, for at most 92 days;
+  - a refund counts on the day it succeeded, taken from its immutable `refund.succeeded` event.
+
+  It also serves a low-stock list. In PostgreSQL mode the admin dashboard is the new `ReportsScreen`.
+- **Exports** (`src/server/reports/exports.ts`, `/api/admin/exports`):
+  - Who: `exports:create` plus the read permission for the kind; only the requester can download, and both checks repeat on every download.
+  - What: catalog CSVs and dated order CSVs; order exports carry no names, phones, e-mails or addresses.
+  - How: generated asynchronously by the worker job `exports.generate` into private storage, expiring after 24 hours. Exports over 50,000 rows are refused (409).
+  - Each cell is quoted, and anything that could run as a spreadsheet formula is neutralised.
+  - An export that cannot be built ends as `failed`. An hourly sweep (`exports.expire`) expires old exports and deletes their files, crash-safely.
+- **Settings** (`src/server/settings/service.ts`, `/api/admin/settings` in PostgreSQL mode): typed, versioned and audited, and they never return legacy secrets. The payment mode cannot be changed here.
+  - Invalid combinations are 409: USD display without a rate, or an unknown or band-less shipping policy.
+  - The KZT-per-USD editor writes a new exchange-rate version each time.
+  - New `StoreSettingsScreen`.
+- **Stock (11A M7):** the dashboard's low-stock list has a Restock +10 button and a ± count correction, both posting audited adjustments to `/api/admin/inventory`. Each pending action keeps its idempotency key, so a retry cannot double the stock. The product list shows real stock counts.
+- **Review:** no Critical findings. Nine Important findings were fixed test-first:
+  - an export expiry could leave its private file behind after a crash;
+  - impossible dates were accepted;
+  - exports never reached `failed`;
+  - exports were truncated silently;
+  - sandbox money was mixed into revenue;
+  - a refund's day could move;
+  - two client errors came back as 503;
+  - the restock retry could double the stock;
+  - order exports needed no order-read permission.
+- **Gates:**
+  - `npm test` **546/546** (one test file per process) and `npm run check` exit 0.
+  - **The browser smoke was not run**: 116–418 MB free.
+
+[Detailed receipt](handoffs/task-18b.md).
+
+### Task 21A
+
+**Partial, and the chain stopped (2026-11-18).** Migration **0011** adds `rate_limit_buckets` and two indexes.
+- **Indexes:** justified by EXPLAIN of the services' own SQL on a seeded, fully migrated database at scale 0.1 (100,000 orders):
+  - `orders_shown_at_idx`: staff queue 53 → 0.8 ms, export count 15 → 0.03 ms;
+  - `payment_transactions_capture_time_idx`: dashboard 17 → 0.15 ms.
+  - Script: `scripts/perf/explain-report.mjs`. Report: [performance-report.md](performance-report.md).
+- **Shared rate limits** (PostgreSQL, one budget across instances, keyed on the trusted proxy client address): webhooks 600/min, quotes 120/min, checkouts 30/min.
+- **Permission matrix:** the default roles are checked against the Section 9 matrix.
+- **Withdrawn:** the public data cache. Review showed stale-while-revalidate takedowns, no cross-instance invalidation and unbounded disk use. It needs a shared, bounded cache handler, which is an infrastructure decision.
+- **Blocked:**
+  - browser E2E purchase lifecycles: they need ≥1 GB free RAM, and a purchase cannot reach "paid" without O07;
+  - catalog and search plans: they need a seed with catalog relations.
+- **Review:** two Critical findings (rate-limit identity: one shared bucket, spoofable forwarding) and the Important I1, I2 and I8 were fixed test-first. I3–I7 (the cache) were resolved by withdrawing it. I9 was resolved with faithful SQL plus an explicit "not measured" for catalog and search. I10 (browser E2E) is blocked.
+- **Gates:**
+  - `npm test` **555/555**, one test file per process.
+  - `npm run check`: exit 0.
+  - **Browser smoke not run:** 104–345 MB free.
+
+[Detailed receipt](handoffs/task-21a.md).
+
 ## Remaining task list
 
 Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained slices; see "Consolidation of Tasks 12–22" in the plan. Steps that need a real provider are in its deferred activation backlog.
@@ -213,14 +375,14 @@ Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained
 | 11 | Complete (11A, 11B) | — |
 | 12 | Complete (12A, 12B) | — |
 | 13 | Complete (13A, 13B) | — |
-| 14 | Not started | 14A idempotent checkout and pending order; 14B payment interface, demo adapter, verified inbox and capture (absorbs 15) |
+| 14 | Complete (14A, 14B) | — |
 | 15 | Merged into 14 | Real provider work is in the deferred activation backlog |
-| 16 | Not started | 16A manual fulfillment and order timeline; 16B cancellation, returns and refunds with stock compensation (absorbs 17) |
+| 16 | Complete (16A, 16B); smoke open | Browser smoke for 16A and 16B on a machine with ≥1 GB free RAM |
 | 17 | Merged into 16 | — |
-| 18 | Not started | 18A scheduled publishing and media uploads; 18B reports, exports, settings, USD rate editor and inventory admin UI (absorbs 19) |
+| 18 | Complete (18A, 18B); smoke open | Homepage collection wiring with draft isolation (18A ruling I6, deferred) |
 | 19 | Merged into 18 | Email/newsletter sending is in the deferred activation backlog |
 | 20 | Merged into 13 | Wishlist built in 13A; other account domains deferred in [account-tab-dispositions.md](account-tab-dispositions.md) |
-| 21 | Not started | 21A query/cache/rate tuning and end-to-end matrix; 21B load and failure injection (absorbs 22). Last chained task |
+| 21 | 21A partial; chain stopped | 21A: public cache (needs a shared cache handler), browser E2E (needs ≥1 GB RAM and O07), catalog/search plans. 21B: load and failure injection on VPS-class hardware (O05) |
 | 22 | Merged into 21 | — |
 | 23 | Not started (owner-run) | Cutover and recovery rehearsal |
 | 24 | Not started (owner-run) | Authorized production cutover, observation and retirement |

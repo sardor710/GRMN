@@ -67,9 +67,7 @@ export function getAdmins(): AdminUser[] {
 
 export function getAdminByEmail(email: string): AdminUser | undefined {
   const normalized = email.trim().toLowerCase();
-  return loadData().admins.find(
-    (a) => a.email.toLowerCase() === normalized || (normalized === "admin" && a.email === "admin@garmin.com")
-  );
+  return loadData().admins.find((a) => a.email.toLowerCase() === normalized);
 }
 
 export function saveAdmin(admin: Partial<AdminUser> & { email: string; name: string }): AdminUser {

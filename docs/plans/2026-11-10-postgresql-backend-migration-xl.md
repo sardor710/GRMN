@@ -987,30 +987,30 @@ What changed:
 
 ### Task 14 — Idempotent checkout, demo payment and capture
 
-**Current status:** NOT STARTED. **Depends on:** 13. **Size:** 14A checkout transaction and UI; 14B payment interface, demo adapter, inbox and capture. (Absorbs Task 15's owner-scoped core.)
+**Current status:** COMPLETE. 14A (2026-11-17, see docs/backend/handoffs/task-14a.md); 14B (2026-11-17, see docs/backend/handoffs/task-14b.md). **Depends on:** 13. **Size:** 14A checkout transaction and UI; 14B payment interface, demo adapter, inbox and capture. (Absorbs Task 15's owner-scoped core.)
 
 **Files:** checkout/order/payment services, checkout and webhook routes, `CartView` checkout integration, transaction/idempotency/failure tests.
 
-- [ ] **14A:** `createCheckout` inside the exact Section 6 boundary, in one transaction:
+- [x] **14A:** `createCheckout` inside the exact Section 6 boundary, in one transaction:
   - consume the cart revision;
   - `reserveStock` (Task 11B) and reserve the coupon quota;
   - write immutable snapshots, a pending order with a `GRM-` sequence number, a payment attempt, an outbox event and the idempotency result;
   - issue hashed guest status tokens.
   - No network call inside the transaction. Wire a recoverable checkout UI with a polling contract; remove the fake success and clear-cart behaviour.
-- [ ] **14A tests:**
+- [x] **14A tests:**
   - the same key twice gives one order;
   - the same key with a different body gives 409;
   - two keys on the same cart revision have one winner;
   - a failure leaves no partial stock, quota or order;
   - product and address edits never rewrite snapshots.
-- [ ] **14B:**
+- [x] **14B:**
   - A typed payment-provider interface and an explicitly simulated **demo adapter**. Demo results carry environment/provenance and never create real-capture facts.
   - A durable inbox for verified events.
   - Idempotent capture → `consumeReservation` and quota consume.
   - One active payable attempt per order.
   - A reconciliation job on the Task 12 worker.
   - The browser return URL can never mark an order paid.
-- [ ] **14B tests:**
+- [x] **14B tests:**
   - forged, altered or mismatched events;
   - duplicates and reversed order;
   - a lost provider response;
@@ -1028,24 +1028,24 @@ The owner-scoped payment core (interface, demo adapter, verified inbox, capture,
 
 ### Task 16 — Fulfillment, cancellation, returns and refunds (manual)
 
-**Current status:** NOT STARTED. **Depends on:** 14. **Size:** 16A fulfillment and order timeline; 16B cancellation, returns and refunds. (Absorbs Task 17.)
+**Current status:** 16A CODE COMPLETE (2026-11-17; browser smoke pending: host memory). 16B COMPLETE (2026-11-18; browser smoke not run: host memory). Task 16 complete apart from the open smoke runs. **Depends on:** 14. **Size:** 16A fulfillment and order timeline; 16B cancellation, returns and refunds. (Absorbs Task 17.)
 
 **Files:** fulfillment/order-transition/return/refund services, admin orders UI/API, customer order detail, tests.
 
-- [ ] **16A:** permissioned, versioned staff fulfillment:
+- [x] **16A:** permissioned, versioned staff fulfillment:
   - split shipments by item quantity;
   - tracking references and protected internal notes;
   - actual order events in the admin and customer timelines;
   - carrier and routing fields kept out of customer DTOs;
   - legacy summary orders stay flagged and cannot take item operations.
-- [ ] **16A tests:** over-shipping, shipping unpaid or exception orders, a duplicate shipment action, backwards transitions, fabricated milestones, and fulfillment never decrementing consumed stock again.
-- [ ] **16B:**
+- [x] **16A tests:** over-shipping, shipping unpaid or exception orders, a duplicate shipment action, backwards transitions, fabricated milestones, and fulfillment never decrementing consumed stock again.
+- [x] **16B:**
   - Cancellation specific to each state (uncaptured, captured and unshipped, shipped).
   - Exactly one compensating stock movement per allocation.
   - Return authorization, receipt and inspection before any restock.
   - A refundable-balance reservation, with the refund issued outside the transaction through the simulated adapter.
   - Item/tax/discount refund allocation.
-- [ ] **16B tests:**
+- [x] **16B tests:**
   - concurrent refunds never exceed the captured remainder;
   - a timeout keeps the reservation;
   - a duplicate provider response has one effect;
@@ -1061,22 +1061,22 @@ The owner-scoped payment core (interface, demo adapter, verified inbox, capture,
 
 ### Task 18 — Admin content, media, reports and store settings
 
-**Current status:** NOT STARTED. **Depends on:** 16. **Size:** 18A publishing and media; 18B reports, exports, settings and inventory admin UI. (Absorbs Task 19.)
+**Current status:** COMPLETE (18A, 18B; 2026-11-18; browser smoke not run: host memory). **Depends on:** 16. **Size:** 18A publishing and media; 18B reports, exports, settings and inventory admin UI. (Absorbs Task 19.)
 
 **Files:** content/media services, signed upload routes, admin homepage/blog/banner/SEO/dashboard/settings pages, operations queries and export jobs.
 
-- [ ] **18A:** scheduled publishing and product-referenced homepage collections, extending Task 08's versioned CMS. Preserve the current carousel, hero and tile fields.
+- [x] **18A:** scheduled publishing and product-referenced homepage collections, extending Task 08's versioned CMS. Preserve the current carousel, hero and tile fields.
   - Authorized scoped uploads with MIME, content and size validation; checksum confirmation; immutable keys; alt text; orphan cleanup after a grace period. Private files stay separate.
   - Publishing invalidates the cache after commit.
-- [ ] **18A tests:** draft isolation, publish conflict, rich-text sanitization, wrong upload type or size, expired grant, deleted product reference, canonical/noindex/redirect/sitemap behaviour, and restoring a prior published version.
-- [ ] **18B:**
+- [x] **18A tests:** draft isolation, publish conflict, rich-text sanitization, wrong upload type or size, expired grant, deleted product reference, canonical/noindex/redirect/sitemap behaviour, and restoring a prior published version.
+- [x] **18B:**
   - Paginated SQL dashboard summaries (captured minus refunded, per currency and timezone), replacing browser-wide aggregation.
   - Asynchronous, filtered, private, expiring CSV exports with formula-injection protection.
   - Typed settings validation and policy versioning.
   - A permissioned, audited KZT-per-USD rate editor.
   - Wire the admin stock adjustment form and restock button to `/api/admin/inventory` (11A M7).
   - Settings never return secrets; no message is sent.
-- [ ] **18B tests:** report totals after a partial refund, mixed-currency grouping, export permission/revocation/expiry, a CSV formula payload, invalid setting combinations, and stock adjustment through the UI.
+- [x] **18B tests:** report totals after a partial refund, mixed-currency grouping, export permission/revocation/expiry, a CSV formula payload, invalid setting combinations, and stock adjustment through the UI.
 
 **Acceptance/recovery:** editors publish safely with revision history and recoverable media; reports are bounded and auditable; no full personal-data dump reaches dashboard clients.
 
@@ -1090,7 +1090,7 @@ The wishlist is in 13A. The other account domains get one disposition list in 13
 
 ### Task 21 — Performance hardening and release qualification
 
-**Current status:** NOT STARTED. **Depends on:** 18. **Size:** 21A query/cache/rate tuning and the end-to-end matrix; 21B load and failure injection. (Absorbs Task 22.)
+**Current status:** 21A PARTIAL (2026-11-18): indexes, shared rate limits and plan evidence done; the public cache was withdrawn, browser E2E and catalog/search plans are blocked (see handoffs/task-21a.md). 21B NOT STARTED. **Depends on:** 18. **Size:** 21A query/cache/rate tuning and the end-to-end matrix; 21B load and failure injection. (Absorbs Task 22.)
 
 **Files:** index migrations, cache boundaries, rate-limit and pool config, `tests/{e2e,load}/*`, `docs/backend/performance-report.md`, a qualification report.
 
@@ -1190,7 +1190,7 @@ Later possibilities: additional settlement currencies/warehouses (current USD co
 - [x] Task 09: public catalog/content reads complete; 300/300 tests, check and full browser smoke passed (`handoffs/task-09.md`).
 - [x] Task 10: 10A account APIs/ownership (`handoffs/task-10a.md`), 10B claims/phone change/staff credential change (`handoffs/task-10b.md`) and 10C AccountDashboard UI wiring (349/349, `handoffs/task-10c.md`) complete.
 - [x] Task 11: inventory ledger, adjustments, reconciliation, opening import (`handoffs/task-11a.md`) and race-safe reservations (`handoffs/task-11b.md`).
-- [ ] Tasks 12–16 (consolidated 2026-11-17; 15 merged into 14, 17 into 16): worker and expiry, cart/quotes/wishlist, checkout with demo payment, manual fulfillment/returns/refunds. Tasks 12 and 13 are complete (`handoffs/task-12a.md`, `task-12b.md`, `task-13a.md`, `task-13b.md`); Task 14A is next.
+- [ ] Tasks 12–16 (consolidated 2026-11-17; 15 merged into 14, 17 into 16): worker and expiry, cart/quotes/wishlist, checkout with demo payment, manual fulfillment/returns/refunds. Tasks 12 and 13 are complete (`handoffs/task-12a.md`, `task-12b.md`, `task-13a.md`, `task-13b.md`) and Task 14A is complete (`task-14a.md`); Task 14B is next.
 - [ ] Task 18 (19 merged in; 20 merged into 13): CMS media/publishing, reports, exports, settings and inventory admin UI.
 - [ ] Task 21 (22 merged in): measured performance and full qualification — the last chained task.
 - [ ] Task 23: cutover and recovery rehearsal (owner-run, not chained).
@@ -1202,4 +1202,4 @@ Repository findings are sourced from the exact relative paths in Section 2; rech
 
 Primary external documentation was checked on 2026-11-10 and linked next to relevant decisions. It supports platform capabilities, not this store's unmeasured throughput, pricing, legal obligations, or provider eligibility. Versions, plans, regional availability, auth adapters, and provider retry semantics must be revalidated at the owning task.
 
-**Suggested next execution request:** “Read `docs/backend/handoffs/task-13b.md` and execute only Task 14A (idempotent checkout and pending order); save its handoff and stop.” Preserve current source bytes, migrations0000–0005 and unresolved source/ownership/provider blockers. Keep real activation and persistent/production import disabled; no seed fallback, automatic quarantine approval or live dual writes.
+**Suggested next execution request:** “Read `docs/backend/handoffs/task-14a.md` and execute only Task 14B (payment interface, demo adapter, verified inbox and capture); save its handoff and stop.” Preserve current source bytes, migrations0000–0005 and unresolved source/ownership/provider blockers. Keep real activation and persistent/production import disabled; no seed fallback, automatic quarantine approval or live dual writes.

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminByEmail, logActivity } from "@/lib/cms/store";
-import { createSessionToken, ADMIN_COOKIE_NAME } from "@/lib/cms/auth";
+import { createSessionToken, getSessionCookieOptions, ADMIN_COOKIE_NAME } from "@/lib/cms/auth";
 
 export async function POST(request: Request) {
   try {
@@ -55,13 +55,7 @@ export async function POST(request: Request) {
       },
     });
 
-    response.cookies.set(ADMIN_COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7, // 7 days
-    });
+    response.cookies.set(ADMIN_COOKIE_NAME, token, getSessionCookieOptions());
 
     return response;
   } catch (err) {
