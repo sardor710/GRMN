@@ -1,0 +1,2 @@
+DROP INDEX "checkout_attempts_client_address_idx";--> statement-breakpoint
+CREATE INDEX "checkout_attempts_client_address_idx" ON "checkout_attempts" USING btree ("client_address_hash","created_at") WHERE "checkout_attempts"."client_address_hash" IS NOT NULL;

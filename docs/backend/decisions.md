@@ -83,6 +83,7 @@ Owner decision: orders are accepted before a real payment provider exists, and *
 - **Refusals.** Cancelled orders, expired orders (cancelled by the sweep, or the hold has ended but the sweep has not run yet), demo orders and amount mismatches are refused.
 - **Unpaid orders** keep the existing reservation expiry. ⚙️ The hold is configurable in settings, default 48 hours (1–168). Staff can also cancel an unpaid order, which releases the stock.
 - **After payment** the order flows into the existing fulfillment, refund and report code. A refund of a manual payment is recorded as a manual refund (`provider='manual'`): the worker never submits it, and staff complete it with a payout method and reference once the money has been sent back.
+- **Hold abuse (owner decision 2026-11-18, review I2).** A customer, and a trusted client address, may each have at most **3 unpaid manual orders** at a time; a 4th checkout is refused with 409 `TOO_MANY_UNPAID_ORDERS` until one is paid, cancelled or expired, or its hold ends. The address is stored only as a keyed hash on `checkout_attempts` (migration 0014). Guests are limited by address; signed-in customers by both. Without a trusted proxy (development) only the per-customer limit applies. **Cost if wrong:** shoppers behind one shared address (an office, or a mobile carrier's NAT) share the 3. If staff see real customers refused, the per-address number is the one to raise (`MAX_UNPAID_MANUAL_ORDERS` in `checkout/service.ts`).
 
 ## Manual USD display conversion contract
 

@@ -5,7 +5,7 @@ Updated: **2026-11-18**. This is the current progress index; individual handoffs
 ## Current position
 
 - **Completed:** Tasks **01–14**, **16** (16A + 16B, absorbing 17), **18** (18A + 18B, absorbing 19, plus the 18A I6 homepage collection wiring) and **21C** (manual payment confirmation, O07, 2026-11-18). Task 15 is merged into 14, 20 into 13 and 22 into 21. All are complete within the scope and activation limits below.
-- **Partial:** Task **21A**.
+- **Partial:** Task **21A** (its open item, a price-sorted listing under 300 ms: after the 21B follow-up the database part is about 85 ms; end to end at 25 rps the p95 is 286 ms ascending, but 431 ms descending).
   - Done: migration 0011, two indexes backed by EXPLAIN evidence, shared rate limits, the permission matrix check, catalog/search plans at full catalog volume with a listing fix, and (through 21C) a browser purchase that reaches "paid".
   - Withdrawn: the public data cache.
   - Open: a price-sorted listing under 300 ms.
@@ -18,10 +18,18 @@ Updated: **2026-11-18**. This is the current progress index; individual handoffs
   - **Fail:** browsing at 100 rps steady (85% errors) and 500 rps burst (88% errors). About 10 rps is sustainable: the uncached catalog listing uses about 98% of database time, and price sorts about 60%.
   - **Decision:** price-sorted listings need the offer summary, and the 100/500 rps targets also need the shared cache.
   - **Fixed along the way:** same-origin checks failed behind the TLS proxy, and the 21A history seed gave every order one timestamp.
+- **21B follow-up (2026-11-18, owner-approved)** ([handoff](handoffs/task-21b-followup.md), [re-run](performance-report.md#21b-follow-up-re-run-2026-11-18-after-the-offer-summary)):
+  - **Built:**
+    - the offer summary (migration 0015), so price sorts take about 85 ms in the database instead of 3.6 s;
+    - a listing concurrency cap;
+    - the owner's hold-abuse rule: at most **3 unpaid manual orders per customer and per client address** (0014, 0016).
+  - **Re-run:** 25 rps browsing is clean (p95 237 ms, was about 10 rps) and checkout 20/s passes (p95 230 ms). 100/500 rps still fail, now on app CPU rather than the database.
+  - **Not built:** the shared cache. It is not needed at the forecast traffic; the Section 3 envelope needs it or more app vCPU (owner infrastructure choice).
 - **Next:**
-  1. Owner: decide the 21C hold-abuse policy (review I2; [ruling](handoffs/task-21c.md#rulings)) and confirm the O07 defaults (methods, roles, 48-hour hold).
-  2. Owner: approve building the **offer summary** (schema) and the **shared cache** (infrastructure: for example Redis with eviction), plus a listing concurrency cap. Then re-run the 21B runs (`tests/load`, `scripts/perf`).
-  3. Task 23 (cutover rehearsal) is owner-run. Apply migrations 0011, 0012 and 0013 before importing data. Production proxies must forward `Host`/`X-Forwarded-Host` and `X-Forwarded-Proto` (21B fix).
+  1. Owner: confirm the O07 defaults (methods, roles, 48-hour hold). The hold-abuse policy is decided and built.
+  2. Owner, only if the Section 3 stress envelope must be met before launch: a shared page/data cache (for example Redis, the 21A design) or more app instances/vCPU. Then re-run 21B (`tests/load`, `scripts/perf`).
+  3. Watch item: the unpaid-order expiry sweep takes about 3.6 s per run at 1M orders (worker only); add a partial index before volume grows.
+  4. Task 23 (cutover rehearsal) is owner-run. Apply migrations 0011–0016 before importing data. Production proxies must forward `Host`/`X-Forwarded-Host` and `X-Forwarded-Proto` (21B fix).
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
 - No deployment, real import, production database migration or production `.env` exists. The 21C commits are on `beta`; pushing to GitHub is done by the owner.
 
@@ -34,6 +42,8 @@ Step 1, on the fresh VPS clone:
 - `npm run build`: passed with no warnings.
 
 After 21C, all gates pass: unit 192 (+1 skip), legacy 73/73, integration **362/362**, boundaries, lint 0 errors, typecheck, build, and the **browser smoke including the O07 purchase to "paid"**.
+
+After the 21B follow-up, all gates pass: unit 201, legacy 73/73, integration **371/371**, boundaries, lint 0 errors, typecheck, build and the browser smoke.
 
 ## Merge into the main checkout (2026-11-18)
 

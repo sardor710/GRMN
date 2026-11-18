@@ -4,7 +4,7 @@ import type { Pool, PoolClient } from "pg";
 import { z } from "zod";
 import type { CheckoutResultDTO, CheckoutStatusDTO, FulfillmentStatus, Money, OrderStatus, PaymentStatus } from "../../contracts/commerce.ts";
 import { AuthFailure } from "../auth/config.ts";
-import { reserveStock, withInventoryTransaction } from "../inventory/reservations.ts";
+import { MAX_HOLD_SECONDS, reserveStock, withInventoryTransaction } from "../inventory/reservations.ts";
 import { reserveCouponQuota } from "../pricing/coupons.ts";
 import { revalidateQuote, type DeliverySnapshot } from "../pricing/quote.ts";
 import { appendOutboxEvent } from "../operations/outbox.ts";
@@ -95,6 +95,8 @@ export const MANUAL_HOLD_HOURS = 48;
  * a time. An order stops counting once it is paid, cancelled or expired, or its hold has ended.
  */
 export const MAX_UNPAID_MANUAL_ORDERS = 3;
+/** The longest hold a reservation can have (settings allow at most 168 h): older orders cannot still be held. */
+const MAX_HOLD_HOURS = MAX_HOLD_SECONDS / 3600;
 const UNPAID_MANUAL = `o.order_status='pending_payment' AND o.payment_status IN ('unpaid','pending','failed') AND o.payment_mode='live'
   AND EXISTS(SELECT 1 FROM payment_attempts a WHERE a.order_id=o.id AND a.provider='manual')
   AND EXISTS(SELECT 1 FROM inventory_reservations r WHERE r.checkout_attempt_id=o.checkout_attempt_id AND r.status='active' AND r.expires_at>clock_timestamp())`;
@@ -113,10 +115,16 @@ function clientAddressHash(secret: string, address: string | null | undefined): 
 async function enforceUnpaidLimit(client: PoolClient, userId: string | null, addressHash: string | null): Promise<void> {
   if (userId) await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`unpaid-orders:user:${userId}`]);
   if (addressHash) await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`unpaid-orders:address:${addressHash}`]);
-  const count = async (sql: string, value: string) => (await client.query<{ n: number }>(sql, [value, MAX_UNPAID_MANUAL_ORDERS])).rows[0].n;
-  if (userId && await count(`SELECT count(*)::int AS n FROM (SELECT 1 FROM orders o WHERE o.user_id=$1 AND ${UNPAID_MANUAL} LIMIT $2) x`, userId) >= MAX_UNPAID_MANUAL_ORDERS)
+  // 21B re-run: the identity must drive the plan. Planned freely, PostgreSQL started from every manual
+  // payment attempt when its statistics were stale (414 ms per checkout at 1M orders, 87% of database
+  // time). The MATERIALIZED CTE reads only this identity's orders, bounded to the longest possible hold.
+  const count = async (mine: string, value: string) => (await client.query<{ n: number }>(
+    `WITH mine AS MATERIALIZED (${mine} AND o.placed_at>now()-make_interval(hours=>${MAX_HOLD_HOURS}))
+     SELECT count(*)::int AS n FROM (SELECT 1 FROM mine o WHERE ${UNPAID_MANUAL} LIMIT $2) x`, [value, MAX_UNPAID_MANUAL_ORDERS])).rows[0].n;
+  const columns = "o.id,o.checkout_attempt_id,o.order_status,o.payment_status,o.payment_mode";
+  if (userId && await count(`SELECT ${columns} FROM orders o WHERE o.user_id=$1`, userId) >= MAX_UNPAID_MANUAL_ORDERS)
     fail("TOO_MANY_UNPAID_ORDERS", 409, `You already have ${MAX_UNPAID_MANUAL_ORDERS} orders awaiting payment. Pay for or cancel one before placing another.`);
-  if (addressHash && await count(`SELECT count(*)::int AS n FROM (SELECT 1 FROM checkout_attempts c JOIN orders o ON o.checkout_attempt_id=c.id WHERE c.client_address_hash=$1 AND ${UNPAID_MANUAL} LIMIT $2) x`, addressHash) >= MAX_UNPAID_MANUAL_ORDERS)
+  if (addressHash && await count(`SELECT ${columns} FROM checkout_attempts c JOIN orders o ON o.checkout_attempt_id=c.id WHERE c.client_address_hash=$1 AND c.created_at>now()-make_interval(hours=>${MAX_HOLD_HOURS})`, addressHash) >= MAX_UNPAID_MANUAL_ORDERS)
     fail("TOO_MANY_UNPAID_ORDERS", 409, `Too many orders from this connection are awaiting payment. Pay for one before placing another.`);
 }
 

@@ -1529,5 +1529,971 @@
    "distinct_orders": 1,
    "invariants_ok": true
   }
+ },
+ "followup_2026_11_18": {
+  "note": "Re-run after the offer summary (0015), the listing concurrency cap and the unpaid-order limit (0014/0016). Same stack, caps, seed and generator. v2checkout ran with the first unpaid-limit query (slow plan, since fixed); v3checkout is the fixed build. All 12 invariants held after every run.",
+  "runs": {
+   "v2step25": {
+    "endpoints": {
+     "account_orders": {
+      "n": 109,
+      "p50": 32,
+      "p95": 109,
+      "p99": 177,
+      "max": 407,
+      "err%": 0
+     },
+     "cart_get": {
+      "n": 106,
+      "p50": 6,
+      "p95": 29,
+      "p99": 128,
+      "max": 181,
+      "err%": 0
+     },
+     "home": {
+      "n": 354,
+      "p50": 23,
+      "p95": 116,
+      "p99": 405,
+      "max": 707,
+      "err%": 0
+     },
+     "listing_filtered": {
+      "n": 212,
+      "p50": 125,
+      "p95": 324,
+      "p99": 487,
+      "max": 619,
+      "err%": 0
+     },
+     "listing_newest": {
+      "n": 332,
+      "p50": 107,
+      "p95": 252,
+      "p99": 493,
+      "max": 817,
+      "err%": 0
+     },
+     "listing_price_asc": {
+      "n": 192,
+      "p50": 115,
+      "p95": 286,
+      "p99": 495,
+      "max": 591,
+      "err%": 0
+     },
+     "listing_price_desc": {
+      "n": 86,
+      "p50": 110,
+      "p95": 431,
+      "p99": 487,
+      "max": 502,
+      "err%": 0
+     },
+     "product": {
+      "n": 632,
+      "p50": 38,
+      "p95": 184,
+      "p99": 460,
+      "max": 945,
+      "err%": 0
+     },
+     "search": {
+      "n": 228,
+      "p50": 99,
+      "p95": 239,
+      "p99": 452,
+      "max": 579,
+      "err%": 0
+     }
+    },
+    "all": {
+     "n": 2251,
+     "p50": 80,
+     "p95": 237,
+     "p99": 478,
+     "rps": 25.0,
+     "5xx": 0,
+     "unexpected%": 0,
+     "business": 0,
+     "dropped": 0
+    },
+    "cpu%": {
+     "k6": {
+      "avg": 11,
+      "max": 23
+     },
+     "proxy": {
+      "avg": 5,
+      "max": 11
+     },
+     "worker": {
+      "avg": 3,
+      "max": 7
+     },
+     "app": {
+      "avg": 70,
+      "max": 134
+     },
+     "db": {
+      "avg": 140,
+      "max": 214
+     },
+     "other_services_total": {
+      "avg": 4,
+      "max": 13
+     }
+    },
+    "mem_last": {
+     "k6": "107.2MiB",
+     "proxy": "12.32MiB",
+     "worker": "134MiB",
+     "app": "228.2MiB",
+     "db": "546.9MiB"
+    },
+    "db": {
+     "tps_avg": 83,
+     "tps_max": 95,
+     "hit_ratio_min": 0.9995,
+     "deadlocks": 0,
+     "app_conns_max": 22,
+     "app_active_avg": 1.3,
+     "app_active_max": 3,
+     "lock_waits_max": 0,
+     "size_mb": 4428
+    },
+    "worker": {
+     "oldest_ready_ms_max": 0,
+     "ready_max": 0,
+     "ready_last": 0,
+     "overdue_holds_max": 0,
+     "dead_last": 0
+    },
+    "pool": {
+     "intervals": 56,
+     "acquisitions": 7126,
+     "failures": 0,
+     "wait_p95_ms_median": 0.1,
+     "wait_p95_ms_max": 285.01,
+     "wait_p99_ms_max": 364.57,
+     "wait_max_ms": 364.57,
+     "peak_waiting": 2,
+     "pool_total_max": 10
+    },
+    "orders_placed_delta": 0,
+    "invariants_ok": true
+   },
+   "v2step50": {
+    "endpoints": {
+     "account_orders": {
+      "n": 211,
+      "p50": 127,
+      "p95": 424,
+      "p99": 579,
+      "max": 876,
+      "err%": 0
+     },
+     "cart_get": {
+      "n": 208,
+      "p50": 9,
+      "p95": 53,
+      "p99": 141,
+      "max": 268,
+      "err%": 0
+     },
+     "home": {
+      "n": 682,
+      "p50": 105,
+      "p95": 426,
+      "p99": 678,
+      "max": 1049,
+      "err%": 0
+     },
+     "listing_filtered": {
+      "n": 468,
+      "p50": 591,
+      "p95": 2252,
+      "p99": 2721,
+      "max": 3121,
+      "err%": 1.92
+     },
+     "listing_newest": {
+      "n": 631,
+      "p50": 639,
+      "p95": 2155,
+      "p99": 2636,
+      "max": 2891,
+      "err%": 0.95
+     },
+     "listing_price_asc": {
+      "n": 373,
+      "p50": 553,
+      "p95": 2221,
+      "p99": 2592,
+      "max": 3035,
+      "err%": 1.34
+     },
+     "listing_price_desc": {
+      "n": 195,
+      "p50": 692,
+      "p95": 2176,
+      "p99": 2481,
+      "max": 2653,
+      "err%": 1.54
+     },
+     "product": {
+      "n": 1295,
+      "p50": 190,
+      "p95": 705,
+      "p99": 1169,
+      "max": 1887,
+      "err%": 0
+     },
+     "search": {
+      "n": 437,
+      "p50": 609,
+      "p95": 2181,
+      "p99": 2388,
+      "max": 2634,
+      "err%": 1.6
+     }
+    },
+    "all": {
+     "n": 4500,
+     "p50": 248,
+     "p95": 1933,
+     "p99": 2411,
+     "rps": 49.7,
+     "5xx": 30,
+     "unexpected%": 0.67,
+     "business": 0,
+     "dropped": 0
+    },
+    "cpu%": {
+     "k6": {
+      "avg": 15,
+      "max": 39
+     },
+     "proxy": {
+      "avg": 8,
+      "max": 21
+     },
+     "worker": {
+      "avg": 1,
+      "max": 4
+     },
+     "app": {
+      "avg": 98,
+      "max": 132
+     },
+     "db": {
+      "avg": 246,
+      "max": 310
+     },
+     "other_services_total": {
+      "avg": 3,
+      "max": 8
+     }
+    },
+    "mem_last": {
+     "k6": "76.41MiB",
+     "proxy": "12.5MiB",
+     "worker": "57.43MiB",
+     "app": "261.8MiB",
+     "db": "618MiB"
+    },
+    "db": {
+     "tps_avg": 161,
+     "tps_max": 179,
+     "hit_ratio_min": 1,
+     "deadlocks": 0,
+     "app_conns_max": 28,
+     "app_active_avg": 5.9,
+     "app_active_max": 8,
+     "lock_waits_max": 0,
+     "size_mb": 4428
+    },
+    "worker": {
+     "oldest_ready_ms_max": 0,
+     "ready_max": 0,
+     "ready_last": 0,
+     "overdue_holds_max": 0,
+     "dead_last": 0
+    },
+    "pool": {
+     "intervals": 57,
+     "acquisitions": 14264,
+     "failures": 0,
+     "wait_p95_ms_median": 0.1,
+     "wait_p95_ms_max": 405.04,
+     "wait_p99_ms_max": 451.75,
+     "wait_max_ms": 491.81,
+     "peak_waiting": 35,
+     "pool_total_max": 10
+    },
+    "orders_placed_delta": 0,
+    "invariants_ok": true
+   },
+   "v2step100": {
+    "endpoints": {
+     "account_orders": {
+      "n": 443,
+      "p50": 532,
+      "p95": 1463,
+      "p99": 6893,
+      "max": 8116,
+      "err%": 0
+     },
+     "cart_get": {
+      "n": 489,
+      "p50": 77,
+      "p95": 378,
+      "p99": 4888,
+      "max": 7444,
+      "err%": 0
+     },
+     "home": {
+      "n": 1306,
+      "p50": 2629,
+      "p95": 3235,
+      "p99": 7515,
+      "max": 8830,
+      "err%": 19.83
+     },
+     "listing_filtered": {
+      "n": 893,
+      "p50": 2656,
+      "p95": 4551,
+      "p99": 8622,
+      "max": 10016,
+      "err%": 90.37
+     },
+     "listing_newest": {
+      "n": 1296,
+      "p50": 2663,
+      "p95": 4785,
+      "p99": 8569,
+      "max": 10433,
+      "err%": 91.2
+     },
+     "listing_price_asc": {
+      "n": 661,
+      "p50": 2653,
+      "p95": 4506,
+      "p99": 8328,
+      "max": 11456,
+      "err%": 88.8
+     },
+     "listing_price_desc": {
+      "n": 342,
+      "p50": 2650,
+      "p95": 4682,
+      "p99": 9493,
+      "max": 10109,
+      "err%": 90.64
+     },
+     "product": {
+      "n": 2438,
+      "p50": 6581,
+      "p95": 10610,
+      "p99": 11129,
+      "max": 15445,
+      "err%": 44.59
+     },
+     "search": {
+      "n": 901,
+      "p50": 2669,
+      "p95": 4734,
+      "p99": 7835,
+      "max": 10770,
+      "err%": 90.68
+     }
+    },
+    "all": {
+     "n": 8769,
+     "p50": 2718,
+     "p95": 8481,
+     "p99": 10776,
+     "rps": 94.7,
+     "5xx": 5049,
+     "unexpected%": 57.58,
+     "business": 0,
+     "dropped": 232
+    },
+    "cpu%": {
+     "k6": {
+      "avg": 25,
+      "max": 44
+     },
+     "proxy": {
+      "avg": 11,
+      "max": 25
+     },
+     "worker": {
+      "avg": 1,
+      "max": 3
+     },
+     "app": {
+      "avg": 126,
+      "max": 138
+     },
+     "db": {
+      "avg": 122,
+      "max": 236
+     },
+     "other_services_total": {
+      "avg": 5,
+      "max": 14
+     }
+    },
+    "mem_last": {
+     "k6": "260.5MiB",
+     "proxy": "31.68MiB",
+     "worker": "54.32MiB",
+     "app": "368.3MiB",
+     "db": "645MiB"
+    },
+    "db": {
+     "tps_avg": 231,
+     "tps_max": 266,
+     "hit_ratio_min": 0.9998,
+     "deadlocks": 0,
+     "app_conns_max": 32,
+     "app_active_avg": 1.6,
+     "app_active_max": 10,
+     "lock_waits_max": 0,
+     "size_mb": 4428
+    },
+    "worker": {
+     "oldest_ready_ms_max": 0,
+     "ready_max": 0,
+     "ready_last": 0,
+     "overdue_holds_max": 0,
+     "dead_last": 0
+    },
+    "pool": {
+     "intervals": 56,
+     "acquisitions": 21042,
+     "failures": 2653,
+     "wait_p95_ms_median": 94.6,
+     "wait_p95_ms_max": 1998.89,
+     "wait_p99_ms_max": 2013.8,
+     "wait_max_ms": 2067.39,
+     "peak_waiting": 375,
+     "pool_total_max": 10
+    },
+    "orders_placed_delta": 0,
+    "invariants_ok": true
+   },
+   "v2steady": {
+    "endpoints": {
+     "account_orders": {
+      "n": 8980,
+      "p50": 525,
+      "p95": 1253,
+      "p99": 2558,
+      "max": 10292,
+      "err%": 3.14
+     },
+     "cart_get": {
+      "n": 8983,
+      "p50": 82,
+      "p95": 356,
+      "p99": 2011,
+      "max": 9350,
+      "err%": 2.87
+     },
+     "home": {
+      "n": 26858,
+      "p50": 2716,
+      "p95": 4218,
+      "p99": 5308,
+      "max": 13165,
+      "err%": 28.22
+     },
+     "listing_filtered": {
+      "n": 17904,
+      "p50": 2754,
+      "p95": 4725,
+      "p99": 6026,
+      "max": 13173,
+      "err%": 95.48
+     },
+     "listing_newest": {
+      "n": 27198,
+      "p50": 2747,
+      "p95": 4711,
+      "p99": 6152,
+      "max": 13871,
+      "err%": 95.41
+     },
+     "listing_price_asc": {
+      "n": 14417,
+      "p50": 2755,
+      "p95": 4744,
+      "p99": 6136,
+      "max": 11718,
+      "err%": 95.48
+     },
+     "listing_price_desc": {
+      "n": 7022,
+      "p50": 2755,
+      "p95": 4760,
+      "p99": 6191,
+      "max": 12453,
+      "err%": 94.83
+     },
+     "product": {
+      "n": 50234,
+      "p50": 6656,
+      "p95": 10740,
+      "p99": 12035,
+      "max": 20024,
+      "err%": 53.05
+     },
+     "search": {
+      "n": 17756,
+      "p50": 2748,
+      "p95": 4683,
+      "p99": 5920,
+      "max": 12737,
+      "err%": 95.31
+     }
+    },
+    "all": {
+     "n": 179352,
+     "p50": 2906,
+     "p95": 8656,
+     "p99": 11024,
+     "rps": 99.4,
+     "5xx": 115163,
+     "unexpected%": 64.21,
+     "business": 0,
+     "dropped": 648
+    },
+    "cpu%": {
+     "k6": {
+      "avg": 25,
+      "max": 83
+     },
+     "proxy": {
+      "avg": 11,
+      "max": 33
+     },
+     "worker": {
+      "avg": 0,
+      "max": 3
+     },
+     "app": {
+      "avg": 124,
+      "max": 167
+     },
+     "db": {
+      "avg": 100,
+      "max": 231
+     },
+     "other_services_total": {
+      "avg": 7,
+      "max": 216
+     }
+    },
+    "mem_last": {
+     "k6": "507.1MiB",
+     "proxy": "13.27MiB",
+     "worker": "62.11MiB",
+     "app": "400.7MiB",
+     "db": "633.9MiB"
+    },
+    "db": {
+     "tps_avg": 226,
+     "tps_max": 300,
+     "hit_ratio_min": 1,
+     "deadlocks": 0,
+     "app_conns_max": 34,
+     "app_active_avg": 1.0,
+     "app_active_max": 10,
+     "lock_waits_max": 0,
+     "size_mb": 4429
+    },
+    "worker": {
+     "oldest_ready_ms_max": 55,
+     "ready_max": 5,
+     "ready_last": 0,
+     "overdue_holds_max": 0,
+     "dead_last": 0
+    },
+    "pool": {
+     "intervals": 1073,
+     "acquisitions": 400792,
+     "failures": 64859,
+     "wait_p95_ms_median": 207.6,
+     "wait_p95_ms_max": 2087.48,
+     "wait_p99_ms_max": 2439.88,
+     "wait_max_ms": 2503.4,
+     "peak_waiting": 422,
+     "pool_total_max": 10
+    },
+    "orders_placed_delta": 0,
+    "invariants_ok": true
+   },
+   "v2burst": {
+    "endpoints": {
+     "account_orders": {
+      "n": 1416,
+      "p50": 557,
+      "p95": 16659,
+      "p99": 60001,
+      "max": 60026,
+      "err%": 50.64
+     },
+     "cart_get": {
+      "n": 1513,
+      "p50": 78,
+      "p95": 22041,
+      "p99": 60001,
+      "max": 60025,
+      "err%": 47.52
+     },
+     "home": {
+      "n": 4347,
+      "p50": 2486,
+      "p95": 19172,
+      "p99": 60001,
+      "max": 60024,
+      "err%": 80.4
+     },
+     "listing_filtered": {
+      "n": 2966,
+      "p50": 2827,
+      "p95": 25242,
+      "p99": 60001,
+      "max": 60028,
+      "err%": 96.43
+     },
+     "listing_newest": {
+      "n": 4478,
+      "p50": 2774,
+      "p95": 21484,
+      "p99": 60001,
+      "max": 60029,
+      "err%": 96.61
+     },
+     "listing_price_asc": {
+      "n": 2386,
+      "p50": 2771,
+      "p95": 20598,
+      "p99": 60001,
+      "max": 60022,
+      "err%": 96.69
+     },
+     "listing_price_desc": {
+      "n": 1176,
+      "p50": 2720,
+      "p95": 21436,
+      "p99": 60001,
+      "max": 60025,
+      "err%": 96.26
+     },
+     "product": {
+      "n": 8213,
+      "p50": 3075,
+      "p95": 22700,
+      "p99": 60001,
+      "max": 60025,
+      "err%": 92.2
+     },
+     "search": {
+      "n": 2960,
+      "p50": 2764,
+      "p95": 20708,
+      "p99": 60001,
+      "max": 60025,
+      "err%": 96.39
+     }
+    },
+    "all": {
+     "n": 29455,
+     "p50": 2456,
+     "p95": 21446,
+     "p99": 60001,
+     "rps": 89.2,
+     "5xx": 25981,
+     "unexpected%": 88.21,
+     "business": 0,
+     "dropped": 120159
+    },
+    "cpu%": {
+     "k6": {
+      "avg": 29,
+      "max": 110
+     },
+     "proxy": {
+      "avg": 4,
+      "max": 29
+     },
+     "worker": {
+      "avg": 0,
+      "max": 1
+     },
+     "app": {
+      "avg": 139,
+      "max": 174
+     },
+     "db": {
+      "avg": 44,
+      "max": 242
+     },
+     "other_services_total": {
+      "avg": 3,
+      "max": 15
+     }
+    },
+    "mem_last": {
+     "k6": "1.065GiB",
+     "proxy": "43.75MiB",
+     "worker": "86.36MiB",
+     "app": "1.115GiB",
+     "db": "840.1MiB"
+    },
+    "db": {
+     "tps_avg": 67,
+     "tps_max": 251,
+     "hit_ratio_min": 0.9982,
+     "deadlocks": 0,
+     "app_conns_max": 34,
+     "app_active_avg": 0.6,
+     "app_active_max": 5,
+     "lock_waits_max": 0,
+     "size_mb": 4474
+    },
+    "worker": {
+     "oldest_ready_ms_max": 311,
+     "ready_max": 5,
+     "ready_last": 0,
+     "overdue_holds_max": 0,
+     "dead_last": 1
+    },
+    "pool": {
+     "intervals": 102,
+     "acquisitions": 20573,
+     "failures": 9449,
+     "wait_p95_ms_median": 1455.5,
+     "wait_p95_ms_max": 4283.74,
+     "wait_p99_ms_max": 4636.81,
+     "wait_max_ms": 4715.61,
+     "peak_waiting": 365,
+     "pool_total_max": 10
+    },
+    "orders_placed_delta": 3927,
+    "invariants_ok": true
+   },
+   "v2checkout": {
+    "endpoints": {
+     "cart_add": {
+      "n": 5922,
+      "p50": 1566,
+      "p95": 2038,
+      "p99": 2091,
+      "max": 2556,
+      "err%": 6.53
+     },
+     "checkout": {
+      "n": 4808,
+      "p50": 3364,
+      "p95": 4484,
+      "p99": 4783,
+      "max": 5775,
+      "err%": 18.32
+     },
+     "quote": {
+      "n": 5535,
+      "p50": 2799,
+      "p95": 3865,
+      "p99": 3999,
+      "max": 4358,
+      "err%": 13.13
+     }
+    },
+    "all": {
+     "n": 16265,
+     "p50": 2050,
+     "p95": 4091,
+     "p99": 4565,
+     "rps": 53.1,
+     "5xx": 1995,
+     "unexpected%": 12.27,
+     "business": 0,
+     "dropped": 78
+    },
+    "cpu%": {
+     "k6": {
+      "avg": 10,
+      "max": 30
+     },
+     "proxy": {
+      "avg": 3,
+      "max": 8
+     },
+     "worker": {
+      "avg": 5,
+      "max": 15
+     },
+     "app": {
+      "avg": 41,
+      "max": 71
+     },
+     "db": {
+      "avg": 258,
+      "max": 301
+     },
+     "other_services_total": {
+      "avg": 3,
+      "max": 13
+     }
+    },
+    "mem_last": {
+     "k6": "106.6MiB",
+     "proxy": "12.87MiB",
+     "worker": "86.3MiB",
+     "app": "283.6MiB",
+     "db": "928.9MiB"
+    },
+    "db": {
+     "tps_avg": 141,
+     "tps_max": 193,
+     "hit_ratio_min": 0.9993,
+     "deadlocks": 0,
+     "app_conns_max": 15,
+     "app_active_avg": 7.7,
+     "app_active_max": 14,
+     "lock_waits_max": 0,
+     "size_mb": 4473
+    },
+    "worker": {
+     "oldest_ready_ms_max": 1006,
+     "ready_max": 19,
+     "ready_last": 3,
+     "overdue_holds_max": 0,
+     "dead_last": 1
+    },
+    "pool": {
+     "intervals": 61,
+     "acquisitions": 23804,
+     "failures": 1995,
+     "wait_p95_ms_median": 1983.0,
+     "wait_p95_ms_max": 1997.1,
+     "wait_p99_ms_max": 2005.3,
+     "wait_max_ms": 2100.67,
+     "peak_waiting": 167,
+     "pool_total_max": 10
+    },
+    "orders_placed_delta": 3906,
+    "invariants_ok": true
+   },
+   "v3checkout": {
+    "endpoints": {
+     "cart_add": {
+      "n": 6001,
+      "p50": 23,
+      "p95": 94,
+      "p99": 210,
+      "max": 586,
+      "err%": 0
+     },
+     "checkout": {
+      "n": 6001,
+      "p50": 77,
+      "p95": 230,
+      "p99": 482,
+      "max": 859,
+      "err%": 0
+     },
+     "quote": {
+      "n": 6001,
+      "p50": 23,
+      "p95": 93,
+      "p99": 264,
+      "max": 666,
+      "err%": 0
+     }
+    },
+    "all": {
+     "n": 18003,
+     "p50": 33,
+     "p95": 157,
+     "p99": 351,
+     "rps": 60.0,
+     "5xx": 0,
+     "unexpected%": 0,
+     "business": 0,
+     "dropped": 0
+    },
+    "cpu%": {
+     "k6": {
+      "avg": 15,
+      "max": 39
+     },
+     "proxy": {
+      "avg": 5,
+      "max": 11
+     },
+     "worker": {
+      "avg": 8,
+      "max": 26
+     },
+     "app": {
+      "avg": 69,
+      "max": 93
+     },
+     "db": {
+      "avg": 156,
+      "max": 280
+     },
+     "other_services_total": {
+      "avg": 4,
+      "max": 12
+     }
+    },
+    "mem_last": {
+     "k6": "66.77MiB",
+     "proxy": "4.488MiB",
+     "worker": "127.3MiB",
+     "app": "186.3MiB",
+     "db": "1.206GiB"
+    },
+    "db": {
+     "tps_avg": 196,
+     "tps_max": 226,
+     "hit_ratio_min": 0.9893,
+     "deadlocks": 0,
+     "app_conns_max": 15,
+     "app_active_avg": 1.7,
+     "app_active_max": 9,
+     "lock_waits_max": 0,
+     "size_mb": 4536
+    },
+    "worker": {
+     "oldest_ready_ms_max": 1071,
+     "ready_max": 21,
+     "ready_last": 5,
+     "overdue_holds_max": 0,
+     "dead_last": 1
+    },
+    "pool": {
+     "intervals": 61,
+     "acquisitions": 30005,
+     "failures": 0,
+     "wait_p95_ms_median": 0.1,
+     "wait_p95_ms_max": 172.05,
+     "wait_p99_ms_max": 209.97,
+     "wait_max_ms": 327.41,
+     "peak_waiting": 18,
+     "pool_total_max": 10
+    },
+    "orders_placed_delta": 5996,
+    "invariants_ok": true
+   }
+  }
  }
 }

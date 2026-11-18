@@ -1,10 +1,64 @@
 # Performance report (Tasks 21A and 21B)
 
-**Status (2026-11-18):** 21A query plans, index decisions and shared rate limits (on a laptop), and **21B Section 3 load and failure injection on the VPS** (below).
+**Status (2026-11-18):** 21A query plans, index decisions and shared rate limits (on a laptop), **21B Section 3 load and failure injection on the VPS**, and the **21B follow-up re-run** after the offer summary (below).
 
-**21B verdict:** checkout, contention and every correctness invariant **pass**. The public browsing targets **fail** by an order of magnitude: about 10 rps is sustainable with this mix, against 100 rps steady and 500 rps burst. The cause is measured: the uncached catalog listing query uses about 98% of database time, and price-sorted listings alone about 60%. **Decision: price-sorted listings need the offer summary, and the 100/500 rps targets additionally need the shared cache.** See "21B decision" below.
+**21B verdict (first run):** checkout, contention and every correctness invariant **pass**. The public browsing targets **fail** by an order of magnitude: about 10 rps is sustainable with this mix, against 100 rps steady and 500 rps burst. The cause is measured: the uncached catalog listing query uses about 98% of database time, and price-sorted listings alone about 60%. **Decision: price-sorted listings need the offer summary, and the 100/500 rps targets additionally need the shared cache.** See "21B decision" below.
+
+**21B follow-up (same day, after the offer summary and the listing cap):** clean browsing capacity rose from about 10 rps to **25 rps** (p95 237 ms, 0 errors); 50 rps degrades (p95 1.9 s, 0.7% errors). Listing queries fell from 500–3,600 ms to 70–110 ms each. 100 rps and 500 rps still **fail**, now on **app CPU** (the 1.5 vCPU Node process rendering pages), not on the database. Checkout 20/s passes again with p95 230 ms. See "21B follow-up re-run" below.
 
 Nothing here certifies production capacity.
+
+## 21B follow-up re-run (2026-11-18, after the offer summary)
+
+What changed (owner approval, 2026-11-18):
+- **Offer summary** (`catalog_variant_offers`, migration 0015): one row per eligible variant and market with its active KZT price and whether a live location has free stock. Deferred triggers keep it equal to the live definition at every commit. A balance update rewrites it only when that balance crosses between free and not free, so ordinary reservations do not touch it. Listings page and sort from it; prices, stock states and the chosen offer shown on the page are still computed live. Backfill on the 50,000-variant perf database: under 5 s.
+- **Listing concurrency cap:** at most half the pool of listings run at once per process (here 5); a listing waiting more than 2 s is refused with 503 `CATALOG_BUSY`. Product, key and redirect reads are not capped.
+- **Unpaid-order limit** (O07 hold abuse): at most 3 unpaid manual orders per customer and per client address (migrations 0014 and 0016).
+
+Same stack, CPU caps, seed (1M orders) and generator as the first run.
+
+| Run | Achieved rps | p50 / p95 / p99 | Unexpected | DB CPU avg / max (of 250%) | App CPU avg / max (of 150%) | First run, same load |
+|---|---|---|---|---|---|---|
+| Step, 25 rps × 90 s | 25.0 | 80 / **237** / 478 | **0%** | 140 / 214 | 70 / 134 | p95 7,937 ms, 64% errors |
+| Step, 50 rps × 90 s | 49.7 | 248 / 1,933 / 2,411 | 0.67% | 246 / 310 | 98 / 132 | p95 6,786 ms, 77% |
+| Step, 100 rps × 90 s | 94.7 | 2,718 / 8,481 / 10,776 | 58% | 122 / 236 | 126 / 138 | — |
+| **Steady, 100 rps × 30 min** | 99.4 | 2,906 / 8,656 / 11,024 | **64%** | 100 / 231 | 124 / 167 | p95 7,907 ms, 85% |
+| **Burst, 500 rps × 5 min** | 89 (120,159 iterations dropped) | 2,456 / 21,446 / 60,001 | **88%** | 44 / 242 | 139 / 174 | 88% |
+| **Checkout, 20/s × 5 min** (fixed build) | 60.0 | 33 / 157 / 351 | **0%** | 156 / 280 | 69 / 93 | p95 205 ms, 0% |
+
+At 25 rps every endpoint p95 is within 110–430 ms. Price-sorted listings p95 286 ms ascending and 431 ms descending; product pages 184 ms; cart 29 ms. Database time per listing call (`pg_stat_statements`, 25 rps step):
+
+| Listing | First run, mean under load | Follow-up, mean under load |
+|---|---|---|
+| Price sort | 3,603 ms | **83 ms** |
+| Newest / name | 494–719 ms | 80 ms |
+| Filtered and search | 572–626 ms | 70–108 ms |
+
+**Checkout run:**
+- 6,001 of 6,001 orders placed; checkout request p95 **230 ms** (target <800), quote p95 93 ms, cart add p95 94 ms.
+- No pool acquisition failures (worst 5 s pool wait p95 172 ms).
+- All 12 invariants held, including the two new ones: the summary equals the live offers, and no customer has more than 3 unpaid manual orders.
+
+**Regression found and fixed during the re-run:**
+- The first checkout re-run failed: 18% of checkouts errored and the checkout p95 was 4.5 s, with the database at its CPU cap.
+- The cause was the new per-address unpaid count. Its plan started from every manual payment attempt, because the statistics were stale (they estimated 1 row; there were 11,150). It cost 414 ms per checkout and 87% of database time.
+- Fix: a `MATERIALIZED` CTE reads only the identity's orders from the last 168 hours (the longest possible hold), through `checkout_attempts(client_address_hash, created_at)` (0016) and `orders_customer_history_idx`. It now takes **0.3 ms** with the same stale statistics.
+- The 0014 index alone was not enough, because the plan did not depend on the index.
+
+**Where 100/500 rps fail now:**
+- The database is no longer the limit: it averaged 100% of its 250% at 100 rps steady.
+- The app container is at its 1.5 vCPU cap rendering pages, and requests queue in the event loop. Pool waits of about 2 s follow from that queueing, not from slow queries.
+- About 95% of listing requests fail in the steady run, with a p50 of about 2.7 s. That matches the cap's 2 s wait plus event-loop queueing: listings are refused rather than holding connections. The per-status split was not recorded.
+- Product pages are not capped and still fail (53%), because they wait behind the saturated event loop.
+
+**Decision, updated:**
+- The offer summary did what it was for: price sorts went from seconds to about 85 ms, and clean capacity is now 25 rps (about 90,000 page views an hour). That covers the D10 forecast (200–5,000 daily users) many times over.
+- The 100/500 rps Section 3 envelope now needs **render capacity**, not database work. That means either a shared page/data cache (the 21A design: a shared handler, immediate expiry on writes, no caching of cursors, search or misses), or more app instances and vCPU. Measured on this budget, the cache is the cheaper lever.
+- Neither is built. Both are an owner choice on infrastructure, and nothing at the forecast traffic needs them now.
+
+**Watch item:** the worker's unpaid-order expiry sweep (`expireUnpaidOrders`) takes about 3.6 s per run at 1M orders (20% of database time in the checkout run, the same as in the first run). It runs in the worker, not on a request path, but it should get a partial index on unpaid orders before order volume grows further.
+
+Raw numbers: `followup_2026_11_18` in [perf-21b-results.json](perf-21b-results.json).
 
 ## Task 21B: Section 3 load on the VPS (2026-11-18)
 

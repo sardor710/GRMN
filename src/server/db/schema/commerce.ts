@@ -69,7 +69,7 @@ export const checkoutAttempts = pgTable("checkout_attempts", {
   clientAddressHash: text("client_address_hash"),
   createdAt: createdAt(), updatedAt: updatedAt(),
 }, t => [
-  index("checkout_attempts_client_address_idx").on(t.clientAddressHash).where(sql`${t.clientAddressHash} IS NOT NULL`),
+  index("checkout_attempts_client_address_idx").on(t.clientAddressHash, t.createdAt).where(sql`${t.clientAddressHash} IS NOT NULL`),
   check("checkout_attempts_client_address_valid", sql`${t.clientAddressHash} IS NULL OR ${t.clientAddressHash} ~ '^[0-9a-f]{64}$'`),
   foreignKey({ columns: [t.quoteId, t.cartId, t.cartVersion], foreignColumns: [checkoutQuotes.id, checkoutQuotes.cartId, checkoutQuotes.cartVersion] }).onDelete("restrict"),
   uniqueIndex("checkout_attempts_key_unique").on(t.actorScope, t.operation, t.idempotencyKey),
