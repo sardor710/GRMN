@@ -40,7 +40,7 @@ Date: 2026-11-10. Source: the owner's answers in this chat, followed by a read-o
 | O04 | OTP provider/channel, delivery availability/cost, sandbox method, lost/recycled-number recovery | Phone login/signup going live | Evaluate library capability; no live OTP or mock-verified production sessions |
 | O05 | **Hardware recorded 2026-11-18** (see "O05: the VPS" below). Provider/region/budget, off-host storage and operator are still open | Infrastructure purchase/deployment | Portable containers and benchmark design; no hardware minimum promised |
 | O06 | Actual future order rate, peak duration and cache/endpoint mix | Performance acceptance/VPS sizing | Use explicit synthetic stress envelope separately from daily-user forecasts |
-| O07 | Whether manual orders can be accepted before real payment integration, and how staff confirm payment | Checkout launch with demo adapter still present | Demo remains clearly marked and isolated; no new fake-paid status |
+| O07 | **Resolved 2026-11-18: payment is confirmed manually by an admin** (see "O07: manual payment confirmation" below) | — | Built as Task 21C |
 | O08 | Inventory source accuracy and whether one stock location is enough | Live reservation/fulfillment activation | Preserve opening stock with provenance; do not decrement current files |
 | O09 | Retention, RPO/RTO/availability objectives and operational budget | Production release | Existing plan targets remain provisional and must be proved on the actual VPS |
 | O10 | Which stored order references map to current/static/retired products? | Financial import reconciliation | Preserve order-item snapshots and unresolved source reference; no invented sellable product |
@@ -68,6 +68,21 @@ Rulings for this host:
 - Nothing from GRMN is exposed to the internet during development: test databases are disposable embedded PostgreSQL instances on localhost, and the dev server binds `localhost`. No production `.env` is created.
 - 21B load and failure-injection runs should run here, with the other services' load observed alongside, because they compete for the same CPU and memory. No swap means an out-of-memory kill rather than slowdown; size pools and the Next.js heap accordingly.
 - Still open under O05: the provider, region and budget, off-host backup storage, who operates the machine, and whether production GRMN shares this host with the other services or gets its own.
+
+## O07: manual payment confirmation (owner decision, 2026-11-18)
+
+Owner decision: orders are accepted before a real payment provider exists, and **an admin confirms payment by hand**. Items marked ⚙️ are owner defaults that can be changed later.
+
+- **Adapter.** A "manual" payment adapter (`provider='manual'`, environment `live`, account `manual`) is what real checkout uses. The demo adapter stays for tests and development only: production checkout refuses `paymentMethod: "demo"`. Manual orders are `payment_mode='live'`, because the money is real; the provider says how it is collected.
+- **Checkout** places an order awaiting payment (`pending_payment` / `unpaid`). The receipt shows "Awaiting payment", the KZT total, the hold end time and the payment instructions.
+- ⚙️ **Instructions** are free text that staff edit in admin settings (for example Kaspi or bank details), `settings:write` with fresh MFA, audited.
+- **Confirmation** happens from the admin order page. Staff enter ⚙️ the method (`bank_transfer`, `kaspi` or `cash`), a reference and an optional note, plus the amount received. The amount must equal the order total in KZT.
+- **Same capture path as a provider.** Confirmation writes a `payment_transactions` capture (the reference is its external id) through the 14B capture code: stock consumed, coupon consumed, `order.paid`, plus an internal `payment.manual_confirmed` event and an audit entry. There is no new "paid" status.
+- **Idempotent; references are unique.** Repeating a confirmation with the same reference for the same order returns the original result. A reference is compared case-insensitively after trimming and can be used only once across all manual payments. A different reference on an already paid order is refused.
+- **Permission.** A new `payments:confirm` permission, with fresh MFA like the other money actions. ⚙️ It is granted to `super_admin` and a new `owner` role.
+- **Refusals.** Cancelled orders, expired orders (cancelled by the sweep, or the hold has ended but the sweep has not run yet), demo orders and amount mismatches are refused.
+- **Unpaid orders** keep the existing reservation expiry. ⚙️ The hold is configurable in settings, default 48 hours (1–168). Staff can also cancel an unpaid order, which releases the stock.
+- **After payment** the order flows into the existing fulfillment, refund and report code. A refund of a manual payment is recorded as a manual refund (`provider='manual'`): the worker never submits it, and staff complete it with a payout method and reference once the money has been sent back.
 
 ## Manual USD display conversion contract
 

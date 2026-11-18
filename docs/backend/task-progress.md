@@ -4,19 +4,31 @@ Updated: **2026-11-18**. This is the current progress index; individual handoffs
 
 ## Current position
 
-- **Completed:** Tasks **01–14**, **16** (16A + 16B, absorbing 17) and **18** (18A + 18B, absorbing 19, plus the 18A I6 homepage collection wiring). Task 15 is merged into 14, 20 into 13 and 22 into 21. All are complete within the scope and activation limits below.
+- **Completed:** Tasks **01–14**, **16** (16A + 16B, absorbing 17), **18** (18A + 18B, absorbing 19, plus the 18A I6 homepage collection wiring) and **21C** (manual payment confirmation, O07, 2026-11-18). Task 15 is merged into 14, 20 into 13 and 22 into 21. All are complete within the scope and activation limits below.
 - **Partial:** Task **21A**.
-  - Done: migration 0011, two indexes backed by EXPLAIN evidence, shared rate limits, the permission matrix check, and **catalog/search plans at full catalog volume with a listing fix** (2026-11-18, below).
+  - Done: migration 0011, two indexes backed by EXPLAIN evidence, shared rate limits, the permission matrix check, catalog/search plans at full catalog volume with a listing fix, and (through 21C) a browser purchase that reaches "paid".
   - Withdrawn: the public data cache.
-  - Open: a price-sorted listing under 300 ms; browser E2E purchase lifecycles (a purchase cannot reach "paid" without O07).
-  - The autonomous chain stopped here.
-- **Committed on `codex/backend-task-02`:** 02–09 `b92fd0e`, 10A `76bbf3b`, 10B `7d615b9`, 10C `3eecd53`, 11A `6aed380`, 11B `eb1cb5b`, 12A `3432aeb`, 12B `4fe08d2`, 13A `40a16cb`, 13B `d98cc92`, 14A `92b2737`, 14B `7981280`, 16A `9afd247`, 16B `f88c52e`, 18A `69e1d81`, 18B `4ac8955`, 21A `53a5b63`.
-- **Merged (2026-11-18):** `codex/backend-task-02` is merged into `D:/projects/garmin/GRMN` on branch `merge/backend-into-cms-variants`, together with the product variants, garmin.com importer and homepage work from `feat/garmin-clone-cms-variants`. See "Merge into the main checkout" below. **Continue all work in `D:/projects/garmin/GRMN`.** The Codex worktree is historical.
-- **Next (owner):**
-  1. Decide O05 (VPS) and O07 (manual payment confirmation), then run 21B. 21B also decides whether price-sorted listings need a maintained offer summary or the shared cache ([performance report](performance-report.md#catalog-listing-and-search-review-i9-follow-up)).
-  2. Task 23 (cutover rehearsal) is owner-run. Apply migrations 0011 and 0012 before importing data.
+  - Open: a price-sorted listing under 300 ms.
+- **Owner decisions:**
+  - **O05:** the VPS hardware is recorded. It is shared with 14 other containers; see [decisions.md](decisions.md#o05-the-vps-recorded-2026-11-18).
+  - **O07 is resolved:** payment is confirmed manually by an admin, built as **21C** ([handoff](handoffs/task-21c.md)).
+- **Work location:** `beta` on GitHub (`sardor710/GRMN`), cloned on the VPS. The Windows checkouts and the Codex worktree are historical.
+- **Next:**
+  1. Owner: decide the 21C hold-abuse policy (review I2; [ruling](handoffs/task-21c.md#rulings)) and confirm the O07 defaults (methods, roles, 48-hour hold).
+  2. 21B: load and failure injection on this VPS, measured alongside the other services. It also decides whether price-sorted listings need a maintained offer summary or the shared cache ([performance report](performance-report.md#catalog-listing-and-search-review-i9-follow-up)).
+  3. Task 23 (cutover rehearsal) is owner-run. Apply migrations 0011, 0012 and 0013 before importing data.
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
-- No push, deployment, real import, production database migration or backend activation has been performed.
+- No deployment, real import, production database migration or production `.env` exists. The 21C commits are on `beta`; pushing to GitHub is done by the owner.
+
+## VPS gates (2026-11-18)
+
+Step 1, on the fresh VPS clone:
+- `npm ci` succeeded. npm 11 reported 7 packages whose install scripts are not yet allowlisted; the embedded PostgreSQL binaries were usable anyway.
+- `test:unit`: 192 pass, 1 skipped (a Windows-only test).
+- `test:integration`: 348/349. The one failure was a race in the standalone-worker test: worker A was killed before it marked its job done. It passed 3/3 when re-run alone, and the test now waits for the done run.
+- `npm run build`: passed with no warnings.
+
+After 21C, all gates pass: unit 192 (+1 skip), legacy 73/73, integration **362/362**, boundaries, lint 0 errors, typecheck, build, and the **browser smoke including the O07 purchase to "paid"**.
 
 ## Merge into the main checkout (2026-11-18)
 
@@ -410,6 +422,24 @@ Run on the merged branch from PowerShell, with 2.4–3.3 GB free RAM.
 
 [Detailed receipt](handoffs/task-21a.md).
 
+### Task 21C
+
+**Complete: manual payment confirmation, owner decision O07 (2026-11-18).**
+- **Migration 0013:**
+  - the manual provider is allowed in attempts, transactions and refunds (live environment and `manual` account only);
+  - the `owner` role;
+  - settings for the payment instructions and the hold (default 48 hours, 1–168);
+  - a `payments:confirm` seed for `super_admin` and `owner`.
+- **Checkout** uses the manual adapter, and production refuses demo. The receipt shows "Awaiting payment", the KZT total, the instructions and the hold end.
+- **Staff confirmation** (`payments:confirm` with fresh MFA; method, reference, amount received, note) runs through the 14B capture path: a capture fact, stock and coupon consumed, `order.paid`, an internal event and an audit entry.
+  - It is idempotent on the reference, and a reference is never used twice (also under concurrency).
+  - Cancelled, expired, demo and mismatched confirmations are refused.
+- **After payment:** paid orders ship, count in revenue, and refund as **manual refunds** that staff complete with a payout reference.
+- **Review:** no Critical findings. I1 (the prefilled amount) was fixed. I2 (holding stock without paying) is an owner follow-up.
+- **Gates:** integration **362/362**; the browser smoke passed, including the new O07 step.
+
+[Detailed receipt](handoffs/task-21c.md).
+
 ## Remaining task list
 
 Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained slices; see "Consolidation of Tasks 12–22" in the plan. Steps that need a real provider are in its deferred activation backlog.
@@ -427,7 +457,7 @@ Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained
 | 18 | Complete (18A, 18B, I6 collection wiring) | — (homepage collections wired with draft isolation, migration 0012, 2026-11-18) |
 | 19 | Merged into 18 | Email/newsletter sending is in the deferred activation backlog |
 | 20 | Merged into 13 | Wishlist built in 13A; other account domains deferred in [account-tab-dispositions.md](account-tab-dispositions.md) |
-| 21 | 21A partial; chain stopped | 21A: public cache (needs a shared cache handler), browser E2E purchase to "paid" (needs O07), price-sorted listing under 300 ms (offer summary or cache). Catalog/search plans are done. 21B: load and failure injection on VPS-class hardware (O05) |
+| 21 | 21A partial; 21C complete | 21A: public cache (needs a shared cache handler), price-sorted listing under 300 ms (offer summary or cache). Catalog/search plans and the browser purchase to "paid" (via 21C) are done. 21B: load and failure injection on the recorded VPS (O05). 21C follow-up: the hold-abuse policy (owner) |
 | 22 | Merged into 21 | — |
 | 23 | Not started (owner-run) | Cutover and recovery rehearsal |
 | 24 | Not started (owner-run) | Authorized production cutover, observation and retirement |
