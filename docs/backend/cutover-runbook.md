@@ -1,8 +1,8 @@
-# Task 23 runbook: cutover and recovery rehearsal (DRAFT)
+# Task 23 runbook: cutover and recovery
 
-**Status: draft, 2026-11-18. Nothing in this document has been executed.** This draft is the plan for Task 23 (plan Section 10 and Task 23 checklist). It is owner-run: an operator follows it on **staging**, times every step, and records the results in the timing sheet at the end. Task 24 (the real cutover) repeats the same steps on production only after this rehearsal passes and the owner gives an explicit release instruction.
+**Status: rehearsed on VPS staging, 2026-11-18. Both rehearsals passed; results are in [cutover-rehearsal-report.md](cutover-rehearsal-report.md).** The exact commands as rehearsed are in Part 10. This draft is the plan for Task 23 (plan Section 10 and Task 23 checklist). It is owner-run: an operator follows it on **staging**, times every step, and records the results in the timing sheet at the end. Task 24 (the real cutover) repeats the same steps on production only after this rehearsal passes and the owner gives an explicit release instruction.
 
-Fields marked **⟨OWNER⟩** must be filled in before the rehearsal. Steps marked **⟨TO BUILD⟩** need engineering work first (Part 2). Never put passwords, tokens or connection strings in this file: write *where* a secret lives, not its value.
+Fields marked **⟨OWNER⟩** must be filled in before the rehearsal. Never put passwords, tokens or connection strings in this file: write *where* a secret lives, not its value.
 
 ## Part 1. Names, places and objectives (owner fills in)
 
@@ -22,18 +22,18 @@ Fields marked **⟨OWNER⟩** must be filled in before the rehearsal. Steps mark
 | First staff account (bootstrap) and who holds its MFA backup codes | ⟨OWNER⟩ |
 | Customer communication for the window (site banner, social, phone) | ⟨OWNER⟩ |
 
-## Part 2. Must be built before the rehearsal
+## Part 2. Prerequisites (built 2026-11-18, used in the rehearsal)
 
-These were confirmed missing in the code on 2026-11-18. Each is an ordinary engineering task with tests; none changes business rules.
-
-| # | Gap | Why the rehearsal needs it | Size |
-|---|---|---|---|
-| G1 | **Write freeze.** `store_settings.maintenance_mode` is stored and editable in admin, but nothing on the storefront or the API enforces it | Plan step 8: block every customer and admin mutation during the final snapshot. Needs a maintenance response (503 + page) for every write route and for storefront pages, with a staff-only bypass for verification, and the same freeze on the legacy site (or a proxy-level maintenance page in front of it) | Small–medium |
-| G2 | **Import into a persistent database.** `npm run db:import:rehearse` only creates and destroys its own disposable cluster, and refuses an external URL by design. `importSnapshot(pool, …, { offline: true })` exists but has no operator command | Staging and production need a guarded command: explicit target confirmation, the one-writer lock, checkpoints/resume, the reconciliation report, and the offline order-number sequence adjustment | Medium |
-| G3 | **Backups and point-in-time recovery.** There are no backup or restore scripts. Plan Section 11: PITR needs a base backup **plus a continuous WAL archive**; a host snapshot or `pg_dump` alone is not equivalent | 23B times a restore to a chosen point, so the backup tool must already run continuously on staging. Recommended: pgBackRest or WAL-G to the off-host location, with encryption and a retention policy. Media (`MEDIA_STORAGE_DIR` and `public/images`) needs its own versioned backup, for example restic | Medium (plus an owner storage choice) |
-| G4 | **Production deploy files.** The only stack definition is the perf one (`tests/load/compose.perf.yml`), whose proxy trusts a test header | A production compose (app, worker, PostgreSQL, proxy) with persistent volumes, restart policies, separate runtime and migration credentials, and an nginx config that sets `x-grmn-client-ip` **from the peer address** (overwriting any client value) and forwards `Host` and `X-Forwarded-Proto: https`. Never copy the perf `x-perf-client` mapping | Small–medium |
-| G5 | **Monitoring and alerts** (Section 11 list) | Rollback triggers must be observable during the window: 5xx rate, checkout failures, job age and dead letters, pool timeouts, DB CPU, deadlocks, and backup failures | Small to start (logs + a simple check script); grows later |
-| G6 | **Expiry sweep index** (21B follow-up watch item) | `expireUnpaidOrders` takes about 3.6 s per run at 1M orders. Harmless at today's volume; fix before volume grows | Small |
+| # | Prerequisite | Where |
+|---|---|---|
+| G1 | **Write freeze.** `MAINTENANCE_MODE=1`, or the admin maintenance setting, answers 503 for pages and every `/api` route. Staff sign-in, admin pages and reads, payment webhooks and the bypass stay open. Staff with `settings:write` (fresh MFA) take a signed 2-hour bypass to verify the closed store. The legacy site has no bypass | `src/server/operations/maintenance*.ts`, `src/proxy.ts`, `POST /api/admin/maintenance-bypass` |
+| G2 | **Guarded persistent-target import.** It checks the database name, a full migration and the absence of live orders; replay is a no-op | `npm run db:import:target` (`scripts/migration/import-target.ts`) |
+| G3 | **Backups and PITR:** a gzip WAL archive (`archive_timeout` 300 s), verified base backups, media archives, pruning, an off-site copy and PITR into an isolated container | `deploy/db/archive-wal.sh`, `deploy/backup/*.sh` |
+| G4 | **Production deploy files:** app, worker, PostgreSQL, nginx (client IP from the TCP peer), ops tools, separate migrate and app roles, the ops image | `deploy/compose.yml`, `deploy/db/10-roles.sh`, `deploy/nginx/`, `deploy/env.example`, Dockerfile `ops` stage |
+| G5 | **Health check:** dead or stale jobs, expired leases, overdue holds, WAL archiver failures or staleness, base-backup age, invariants; exit 1 on an alert | `npm run ops:health` (`scripts/ops/health-check.mjs`) |
+| G6 | **Expiry sweep indexes** (12.8 s worst-case plan becomes 95 ms) | migration 0017 |
+| G7 | **First store setup** (settings, tax, shipping; store left closed); found missing during the rehearsal | `npm run ops:store-setup` (`scripts/ops/store-setup.ts`) |
+| — | **Cutover verification:** closed-store checks, staff MFA and bypass, pages, purchase to paid and shipped, cancellation releasing stock, publishing reviewed pages, reopening | `scripts/ops/verify-cutover.mjs` |
 
 Owner work that also blocks the rehearsal:
 
@@ -56,7 +56,7 @@ Owner work that also blocks the rehearsal:
 - **One writer.** There are never dual writes. The legacy store stays frozen once PostgreSQL takes writes, and **after the first PostgreSQL business write, PostgreSQL is authoritative** (see Part 8).
 - **Imported history is not invented.** Legacy orders import as `legacy_incomplete` with `legacy_unknown` payment mode, and contacts import as unclaimed provisional profiles. No captures, shipments, stock movements, logins or consent are created.
 - **Stock starts at zero** for imported products, because there is no stock ledger in the legacy source. Opening stock is a deliberate staff step: receipts in admin inventory, each one a ledger movement. Plan it into the window or open with "unavailable" products.
-- **Migrations:** apply every migration **0000–0016** on an empty target with `npm run db:migrate` and `DATABASE_MIGRATION_URL` set to the migration role. 0011 and 0015 build indexes and a backfill inside the migration transaction: run them before the import, never on a live loaded database during traffic.
+- **Migrations:** apply every migration **0000–0017** on an empty target with `npm run db:migrate` and `DATABASE_MIGRATION_URL` set to the migration role. 0011 and 0015 build indexes and a backfill inside the migration transaction: run them before the import, never on a live loaded database during traffic.
 - **Required production environment** (names only):
   - `NODE_ENV=production`, `CMS_BACKEND=postgres`;
   - `DATABASE_URL` (runtime role, pooled) and `DATABASE_MIGRATION_URL` (DDL role, used only by the migration job);
@@ -82,15 +82,15 @@ Use a copy of the real data on staging, never the live site. Start a stopwatch a
    - the browser smoke (`npm run test:cms-ui`).
 
    All must pass. Record the counts.
-3. **Empty staging database** with separate runtime and migration roles. Apply 0000–0016: `DATABASE_MIGRATION_URL=⟨from secret store⟩ npm run db:migrate`. Record the duration.
-4. **Backups (G3) already running** on staging, with the first base backup taken and WAL archiving confirmed. ⟨TO BUILD⟩
+3. **Empty staging database** with separate runtime and migration roles. Apply 0000–0017: `DATABASE_MIGRATION_URL=⟨from secret store⟩ npm run db:migrate`. Record the duration.
+4. **Backups (G3) already running** on staging, with the first base backup taken and WAL archiving confirmed (`deploy/backup/base-backup.sh`).
 5. **Dry run of the export** on a copy of the current source: `npm run db:import:dry-run -- --output temp/⟨new-dir⟩`.
    - Exit 0 means no quarantine. 2 means quarantine remains, which must match the owner's O1 dispositions exactly. 1 is a failure.
    - Keep the private output out of Git. It contains personal data.
 
 ### A1. Freeze (window starts)
 
-1. Post the customer notice. Turn on the maintenance page on the **legacy** site, or at its proxy, so that no customer or admin can write. ⟨TO BUILD: G1⟩
+1. Post the customer notice. Turn on the maintenance page on the **legacy** site, or at its proxy, so that no customer or admin can write. (G1: `MAINTENANCE_MODE=1`)
 2. Confirm the freeze: an admin save and a storefront checkout must both be refused. Note the time: **this is the freeze point** (the RPO for the old system is zero from here).
 3. Stop any legacy cron or import job.
 
@@ -102,7 +102,7 @@ Use a copy of the real data on staging, never the live site. Start a stopwatch a
 
 ### A3. Import
 
-1. Import the archive into the staging database through the guarded persistent-target command. ⟨TO BUILD: G2⟩
+1. Import the archive into the staging database through the guarded persistent-target command. (`db:import:target`, Part 10)
 2. The command must report:
    - every source record accounted for;
    - the quarantine set equal to the O1 dispositions;
@@ -111,11 +111,14 @@ Use a copy of the real data on staging, never the live site. Start a stopwatch a
 
    Record its reconciliation checksum.
 3. Replay the same import once more. It must be a no-op (idempotency).
-4. Bootstrap the first staff account:
+4. **Store setup (G7):** `ops:store-setup <config.json>`, using the owner's reviewed tax, shipping and payment-instruction values. The store is created closed.
+5. Bootstrap the first staff account:
    - `AUTH_BOOTSTRAP_ENABLED=1 npm run auth:bootstrap < ⟨protected JSON file⟩`, run once;
    - remove the variable;
    - enrol MFA immediately and store the backup codes as Part 1 says.
-5. Optional, if opening with stock: enter opening stock as inventory receipts in admin. Then run `scripts/perf/invariants.sql` against the database; all checks must be `t`.
+6. **Review and publish imported content.** Imports are drafts by design, and the homepage returns 500 until it is published. Staff publish the reviewed homepage (and any banners) in admin, or with `verify-cutover.mjs --publish <pageId>:<pageVersion>`.
+7. Opening stock: imported products have none. Enter it as inventory receipts in admin, or open with "unavailable" products.
+8. Optional, if opening with stock: enter opening stock as inventory receipts in admin. Then run `scripts/perf/invariants.sql` against the database; all checks must be `t`.
 
 ### A4. Switch
 
@@ -227,7 +230,7 @@ Record the time and the evidence. Then decide between rollback (Part 8) and a fi
 | Step | Start | End | Duration | Result / evidence (checksums, counts, order numbers) | Operator |
 |---|---|---|---|---|---|
 | A0 gates | | | | | |
-| A0 migrations 0000–0016 | | | | | |
+| A0 migrations 0000–0017 | | | | | |
 | A1 freeze confirmed (freeze point) | | | | | |
 | A2 final export + archive | | | | | |
 | A2 media copy | | | | | |
@@ -241,6 +244,44 @@ Record the time and the evidence. Then decide between rollback (Part 8) and a fi
 | B restore to target time (RTO) | | | | | |
 | B probe check (RPO) | | | | | |
 | B app rollback check | | | | | |
+
+## Part 10. Commands as rehearsed (staging, 2026-11-18)
+
+`DC="docker compose -p grmn-<env> --env-file <private env file> -f deploy/compose.yml"`. The env file follows `deploy/env.example` (chmod 600, outside the repository). `BACKUP_DIR` must be writable by uid 999 (PostgreSQL). `OPS_TEMP_DIR` belongs to uid 1000 (the ops image user): copy files in through a container, not from the host.
+
+```bash
+# A0 images and database
+docker build --target runner -t grmn:$COMMIT . && docker build --target ops -t grmn-ops:$COMMIT .
+$DC up -d db
+$DC run --rm -T ops node --conditions=react-server node_modules/drizzle-kit/bin.cjs migrate
+deploy/backup/base-backup.sh grmn-<env> <env file>
+npm run db:import:dry-run -- --output temp/<dry-run>                 # exit 0 ready, 2 quarantine, 1 error
+# A1 freeze the legacy site: restart it with MAINTENANCE_MODE=1, then confirm a write is refused (503)
+# A2 final snapshot
+npm run db:import:dry-run -- --output temp/<final> && npm run db:import:dry-run -- --archive temp/<final>
+docker run --rm -v $PWD/temp/<final>:/src:ro -v $OPS_TEMP_DIR:/t alpine sh -c 'cp -a /src /t/<final> && chown -R 1000:1000 /t/<final>'
+# A3 import, replay, bootstrap, store setup
+$DC run --rm -T -e IMPORT_DATABASE_URL=postgresql://grmn_migrate:<pw>@db:5432/grmn ops \
+  node --conditions=react-server scripts/migration/import-target.ts --archive temp/<final> --output temp/<import> --confirm-database grmn
+#   (run again with a new --output: must be a no-op)
+<protected JSON> | $DC run --rm -T -e AUTH_BOOTSTRAP_ENABLED=1 ops node --conditions=react-server scripts/auth/bootstrap.mjs
+$DC run --rm -T ops node --conditions=react-server scripts/ops/store-setup.ts temp/store-config.json
+# A4 switch (the store stays closed)
+$DC up -d app worker proxy
+# A5 verification (from a host that resolves the domain to the proxy)
+node scripts/ops/verify-cutover.mjs --base https://<domain> --credentials <operator.json> \
+  --products <key,key> --variant <uuid> --publish <homepage pageId>:<version> --out <receipt>
+$DC exec -T db psql -U grmn_owner -d grmn < scripts/perf/invariants.sql      # every row t
+# A6 reopen
+node scripts/ops/verify-cutover.mjs --base https://<domain> --credentials <operator.json> --open
+$DC run --rm -T ops node --conditions=react-server scripts/ops/health-check.mjs --backup-dir /backup
+# B restore drill (isolated; never the source)
+deploy/backup/restore-pitr.sh <BACKUP_DIR> <base stamp> "<YYYY-MM-DD HH:MM:SS+00>"|latest grmn-restore
+docker exec -i grmn-restore-db psql -U grmn_owner -d grmn < scripts/perf/invariants.sql
+# then remove grmn-restore-db, its volume grmn-restore-data and its network grmn-restore-net
+```
+
+A PITR target must be followed by a commit in the archive; otherwise use `latest` (see the script header).
 
 ## Related documents
 

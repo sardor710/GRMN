@@ -4,7 +4,7 @@ Updated: **2026-11-18**. This is the current progress index; individual handoffs
 
 ## Current position
 
-- **Completed:** Tasks **01–14**, **16** (16A + 16B, absorbing 17), **18** (18A + 18B, absorbing 19, plus the 18A I6 homepage collection wiring) and **21C** (manual payment confirmation, O07, 2026-11-18). Task 15 is merged into 14, 20 into 13 and 22 into 21. All are complete within the scope and activation limits below.
+- **Completed:** Task **23** (rehearsal on staging, 2026-11-18). Tasks **01–14**, **16** (16A + 16B, absorbing 17), **18** (18A + 18B, absorbing 19, plus the 18A I6 homepage collection wiring) and **21C** (manual payment confirmation, O07, 2026-11-18). Task 15 is merged into 14, 20 into 13 and 22 into 21. All are complete within the scope and activation limits below.
 - **Partial:** Task **21A** (its open item, a price-sorted listing under 300 ms: after the 21B follow-up the database part is about 85 ms; end to end at 25 rps the p95 is 286 ms ascending, but 431 ms descending).
   - Done: migration 0011, two indexes backed by EXPLAIN evidence, shared rate limits, the permission matrix check, catalog/search plans at full catalog volume with a listing fix, and (through 21C) a browser purchase that reaches "paid".
   - Withdrawn: the public data cache.
@@ -29,7 +29,14 @@ Updated: **2026-11-18**. This is the current progress index; individual handoffs
   1. Owner: confirm the O07 defaults (methods, roles, 48-hour hold). The hold-abuse policy is decided and built.
   2. Owner, only if the Section 3 stress envelope must be met before launch: a shared page/data cache (for example Redis, the 21A design) or more app instances/vCPU. Then re-run 21B (`tests/load`, `scripts/perf`).
   3. Watch item: the unpaid-order expiry sweep takes about 3.6 s per run at 1M orders (worker only); add a partial index before volume grows.
-  4. Task 23 (cutover rehearsal) is owner-run. **Draft runbook: [cutover-runbook.md](cutover-runbook.md)** (2026-11-18). Before the rehearsal it needs the owner fill-ins (names, hosts, backup location, RPO/RTO), the quarantine dispositions, and these to be built: G1 write freeze, G2 persistent-target import command, G3 backups with PITR, G4 production deploy and proxy files, G5 basic alerts. Apply migrations 0000–0016 before importing data. Production proxies must forward `Host`/`X-Forwarded-Host` and `X-Forwarded-Proto` (21B fix).
+  4. **Task 23 rehearsed on VPS staging (2026-11-18): 23A cutover and 23B restore both passed** ([report](cutover-rehearsal-report.md), [runbook](cutover-runbook.md), [handoff](handoffs/task-23.md)). Task 24 waits on the owner:
+     - dispositions for the 66 quarantined records;
+     - an off-host backup target, cron schedules and an alert channel;
+     - production values: domain and TLS, tax, shipping, payment instructions;
+     - the people: operator, incident owner, staff;
+     - where the live legacy site runs.
+
+     Apply migrations 0000–0017 before importing data.
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
 - No deployment, real import, production database migration or production `.env` exists. The 21C commits are on `beta`; pushing to GitHub is done by the owner.
 
@@ -505,7 +512,7 @@ Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained
 | 20 | Merged into 13 | Wishlist built in 13A; other account domains deferred in [account-tab-dispositions.md](account-tab-dispositions.md) |
 | 21 | 21A done except price-sort p95 (286 ms asc, 431 ms desc end to end); 21B run and re-run after the follow-up; 21C complete | Optional, owner choice: a shared page/data cache or more app vCPU for the 100/500 rps stress targets (25 rps is clean, 100 rps fails on app CPU). Watch item: partial index for the unpaid-order expiry sweep |
 | 22 | Merged into 21 | — |
-| 23 | Not started (owner-run); draft runbook written | [cutover-runbook.md](cutover-runbook.md). Build G1–G5 first, and get the owner fill-ins and quarantine dispositions; then rehearse 23A (cutover) and 23B (timed restore) |
+| 23 | **Rehearsed on staging (2026-11-18), both parts passed** | Built G1–G7 and the verification script. 23A window 5 min 51 s; 23B exact PITR, RTO about 1 min at 1M orders. Owner inputs for Task 24 are in the [report](cutover-rehearsal-report.md#task-24-gate-what-the-owner-still-has-to-provide) |
 | 24 | Not started (owner-run) | Authorized production cutover, observation and retirement |
 
 Real source quarantine, provider configuration, production capacity and recovery qualification remain explicit launch gates. Nothing here certifies production readiness. The [XL task list](../plans/2026-11-10-postgresql-backend-migration-xl.md) remains the binding specification; this file is its progress report.
