@@ -38,7 +38,7 @@ Date: 2026-11-10. Source: the owner's answers in this chat, followed by a read-o
 | O02 | Resolved by owner: quick checkout requires name/phone/delivery address; email optional until full signup/completion | Validate in Task 02 contracts | No missing email fabricated; existing-account login uses verified phone |
 | O03 | Business jurisdiction, selling countries, phone country scope, tax/receipt rules, shipping fee rules and return policy | Real checkout and production policy setup | Preserve current fields and keep rules versioned; no hardcoded tax assumption |
 | O04 | OTP provider/channel, delivery availability/cost, sandbox method, lost/recycled-number recovery | Phone login/signup going live | Evaluate library capability; no live OTP or mock-verified production sessions |
-| O05 | VPS provider/region/OS/budget, off-host storage, administrator/operator | Infrastructure purchase/deployment | Portable containers and benchmark design; no hardware minimum promised |
+| O05 | **Hardware recorded 2026-11-18** (see "O05: the VPS" below). Provider/region/budget, off-host storage and operator are still open | Infrastructure purchase/deployment | Portable containers and benchmark design; no hardware minimum promised |
 | O06 | Actual future order rate, peak duration and cache/endpoint mix | Performance acceptance/VPS sizing | Use explicit synthetic stress envelope separately from daily-user forecasts |
 | O07 | Whether manual orders can be accepted before real payment integration, and how staff confirm payment | Checkout launch with demo adapter still present | Demo remains clearly marked and isolated; no new fake-paid status |
 | O08 | Inventory source accuracy and whether one stock location is enough | Live reservation/fulfillment activation | Preserve opening stock with provenance; do not decrement current files |
@@ -48,6 +48,26 @@ Date: 2026-11-10. Source: the owner's answers in this chat, followed by a read-o
 | O12 | Carrier/account tabs/devices/subscriptions beyond selected launch features | Feature disposition in Task 20 | Preserve source records; do not invent manufacturer/provider integrations or delete real records |
 
 The owner answered the launch currency and checkout-field questions and confirmed USD display-only. On 2026-11-11 they also confirmed existing saved product prices and historical order totals as KZT in tenge; see the scoped import clarification below. Other source groups' monetary semantics and the explicitly listed operational items remain open.
+
+## O05: the VPS (recorded 2026-11-18)
+
+The owner provided a VPS and cloned branch `beta` on it. Observed with `lscpu`, `free`, `df`, `lsblk` and `/etc/os-release`:
+
+| Item | Observed |
+|---|---|
+| Virtualisation | KVM guest (QEMU "Standard PC i440FX"), provider not identified from inside the guest |
+| CPU | 6 vCPU, AMD EPYC (with IBPB), 1 thread per core, AVX2 |
+| RAM | 11.7 GiB total (12,541,485,056 bytes), **no swap**; about 8.8 GiB available at the time of the check |
+| Disk | one 200 GB virtual disk (`sda`, non-rotational per the guest), `/` 193 GB with 24 GB used and 170 GB free |
+| OS | Ubuntu 24.04.5 LTS, kernel 6.8.0-147-generic |
+| Runtime | Node 24.21.0, npm 11.19.0, Docker 29.1.3 |
+
+**The host is shared.** At the time of the check it already runs 14 other containers (ERPNext with MariaDB and Redis, Odoo, a separate PostgreSQL 16, nginx, and VPN services) and listens publicly on 22, 80, 443 and several other ports. GRMN's CPU, RAM and disk budget is therefore what is left over by these services, not the whole machine, and the existing nginx owns ports 80/443.
+
+Rulings for this host:
+- Nothing from GRMN is exposed to the internet during development: test databases are disposable embedded PostgreSQL instances on localhost, and the dev server binds `localhost`. No production `.env` is created.
+- 21B load and failure-injection runs should run here, with the other services' load observed alongside, because they compete for the same CPU and memory. No swap means an out-of-memory kill rather than slowdown; size pools and the Next.js heap accordingly.
+- Still open under O05: the provider, region and budget, off-host backup storage, who operates the machine, and whether production GRMN shares this host with the other services or gets its own.
 
 ## Manual USD display conversion contract
 

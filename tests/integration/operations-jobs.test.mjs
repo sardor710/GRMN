@@ -102,6 +102,10 @@ test("the standalone worker expires due holds on its schedule, and a hold that e
   const a=startWorkerProcess("expiry-a");
   try{
     assert.ok(await waitFor(async()=>await holdStatus(first.reservationId)==="expired",20000),"the running worker never expired the hold: "+a.output());
+    // The hold is expired before the job is marked done; a kill in between leaves the run leased
+    // (seen on the VPS, 2026-11-18). Wait for the run to finish before killing the worker.
+    const {RESERVATION_EXPIRY_KIND}=await registry();
+    assert.ok(await waitFor(async()=>(await q("SELECT count(*)::int AS n FROM job_runs WHERE kind=$1 AND status='done'",[RESERVATION_EXPIRY_KIND])).rows[0].n>=1,20000),"the running worker never finished its expiry job: "+a.output());
   }finally{a.child.kill("SIGKILL");await a.exited;}
   // While no worker runs, another hold passes its expiry and stays held.
   const second=await dueHold(variantId,3);
