@@ -6,9 +6,11 @@ import type { Permission } from "../context.ts";
 import { AuthFailure } from "./config.ts";
 import { bootstrapInput } from "./validation.ts";
 
-export const allPermissions = ["catalog:read", "catalog:write", "inventory:write", "content:write", "customers:read", "customers:write", "orders:read", "orders:fulfill", "payments:refund", "staff:manage", "settings:write", "exports:create"] as const satisfies readonly Permission[];
+export const allPermissions = ["catalog:read", "catalog:write", "inventory:write", "content:write", "customers:read", "customers:write", "orders:read", "orders:fulfill", "payments:refund", "payments:confirm", "staff:manage", "settings:write", "exports:create"] as const satisfies readonly Permission[];
 const defaults: Record<string, readonly Permission[]> = {
   super_admin: allPermissions,
+  // O07 (Task 21C): the business owner. Holds every permission, including payments:confirm.
+  owner: allPermissions,
   product_manager: ["catalog:read", "catalog:write", "inventory:write"],
   editor: ["catalog:read", "content:write"],
   support: ["customers:read", "orders:read"],

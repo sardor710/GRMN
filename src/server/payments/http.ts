@@ -51,8 +51,9 @@ export function createWebhookHandler(input: { pool: () => Pool; providers: () =>
       const name = new URL(request.url).pathname.split("/").filter(Boolean).pop() ?? "";
       const providers = input.providers();
       // Review I6: unknown and simulated providers are refused before any byte of the body is read.
+      // The manual adapter (O07) takes no webhooks either.
       const provider = providers.get(name);
-      if (!provider || provider.simulated) throw new AuthFailure("NOT_FOUND", 404, "Not found");
+      if (!provider || provider.simulated || provider.name === "manual") throw new AuthFailure("NOT_FOUND", 404, "Not found");
       const body = await readCapped(request, MAX_BODY_BYTES);
       const result = await receiveWebhook(input.pool(), providers, name, body, request.headers);
       if (result.status === "rejected") return Response.json({ error: { code: "WEBHOOK_REJECTED", message: "Signature or context is invalid" } }, { status: 401, headers: NO_STORE });

@@ -38,11 +38,11 @@ try{
   for(let i=0;i<25;i++)await cms.save("products",headers,{name:`UI fixture ${i}`,sku:`UI-FIXTURE-${i}`,price:"123.45",status:"published",family:"Test",image:"/images/products/1228429.jpg",activities:[],level:"Entry",caseSize:"Medium"});
   await cms.saveHomepage(headers,{version:0,config:{heroBanners:[{id:"ui-hero",key:"ui",title:"UI HOMEPAGE FIXTURE",subtitle:"Disposable data",href:"/c/wearables-smartwatches",image:"/homepage/featured/holiday.jpg",active:true,order:0}],carousels:[],promoTiles:[],storyTiles:[],categoryTiles:[]}});
   fs.mkdirSync(receipt,{recursive:true});logFile=fs.openSync(path.join(receipt,"ui-next.log"),"w");
-  app=spawn(process.execPath,["node_modules/next/dist/bin/next","dev",...(process.env.CMS_TEST_BUNDLER==="webpack"?["--webpack"]:[]),"--hostname","localhost","--port",String(appPort)],{windowsHide:true,stdio:["ignore",logFile,logFile],env:{...process.env,CMS_BACKEND:"postgres",AUTH_ENABLED:"1",AUTH_SECRET:secret,AUTH_BASE_URL:origin,DATABASE_URL:temporary.url,NODE_ENV:"development",NEXT_TELEMETRY_DISABLED:"1"}});
+  app=spawn(process.execPath,["node_modules/next/dist/bin/next","dev",...(process.env.CMS_TEST_BUNDLER==="webpack"?["--webpack"]:[]),"--hostname","localhost","--port",String(appPort)],{windowsHide:true,detached:process.platform!=="win32",stdio:["ignore",logFile,logFile],env:{...process.env,CMS_BACKEND:"postgres",AUTH_ENABLED:"1",AUTH_SECRET:secret,AUTH_BASE_URL:origin,DATABASE_URL:temporary.url,NODE_ENV:"development",NEXT_TELEMETRY_DISABLED:"1"}});
   await until(async()=>{const response=await fetch(origin+"/api/admin/products");return response.status===401;},"Next did not start",120000);
   const chromePath=process.env.CMS_TEST_CHROME??"C:/Program Files/Google/Chrome/Application/chrome.exe";assert.ok(fs.existsSync(chromePath),"Set CMS_TEST_CHROME to a Chrome executable");
   profile=await mkdtemp(path.join(root,"cms-ui-chrome-"));
-  chrome=spawn(chromePath,["--headless=new","--disable-gpu","--disable-extensions","--no-first-run","--no-default-browser-check","--remote-debugging-port=0",`--user-data-dir=${profile}`,"about:blank"],{windowsHide:true,stdio:"ignore"});
+  chrome=spawn(chromePath,["--headless=new",...(process.platform==="linux"&&process.env.CMS_TEST_CHROME_NO_SANDBOX==="1"?["--no-sandbox"]:[]),"--disable-gpu","--disable-extensions","--no-first-run","--no-default-browser-check","--remote-debugging-port=0",`--user-data-dir=${profile}`,"about:blank"],{windowsHide:true,detached:process.platform!=="win32",stdio:"ignore"});
   const debugPort=await until(async()=>Number((await readFile(path.join(profile,"DevToolsActivePort"),"utf8")).split("\n")[0]),"Chrome did not start");
   const target=await(await fetch(`http://127.0.0.1:${debugPort}/json/new?about:blank`,{method:"PUT"})).json();
   ws=new WebSocket(target.webSocketDebuggerUrl);await new Promise((resolve,reject)=>{ws.addEventListener("open",resolve,{once:true});ws.addEventListener("error",reject,{once:true});});
@@ -165,7 +165,18 @@ try{
   await database.pool.query("INSERT INTO shipping_zones(id,key,name,countries,active) VALUES($1,'ui-smoke-zone','UI zone','[\"KZ\"]'::jsonb,true)",[uiZone]);
   await database.pool.query("INSERT INTO shipping_rates(id,policy_id,zone_id,key,amount_minor) VALUES($1,$2,$3,'standard',1500)",[randomUUID(),uiPolicy,uiZone]);
   await database.pool.query("INSERT INTO store_settings(id,active_tax_configuration_id,active_shipping_policy_id) VALUES(1,$1,$2) ON CONFLICT (id) DO UPDATE SET active_tax_configuration_id=EXCLUDED.active_tax_configuration_id,active_shipping_policy_id=EXCLUDED.active_shipping_policy_id,version=store_settings.version+1",[uiTax,uiPolicy]);
-  const setInput=(name,value)=>evaluate(`(()=>{const input=document.querySelector('input[name=${name}]');if(!input)throw Error('Missing input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`);
+  const setInput=(name,value)=>evaluate(`(()=>{const input=document.querySelector('input[name=${name}],textarea[name=${name}]');if(!input)throw Error('Missing input');Object.getOwnPropertyDescriptor(input.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`);
+  // O07: staff edit the manual payment instructions in admin settings (settings:write, fresh MFA).
+  const staffCookie=()=>send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
+  const customerCookie=encodeURIComponent(customerSession.token+"."+createHmac("sha256",secret).update(customerSession.token).digest("base64"));
+  const instructions="UI SMOKE KASPI +7 700 000 00 00. Put the order number in the reference.";
+  await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});await staffCookie();
+  await navigate("/admin/settings");await until(async()=>/manual payment/i.test(await text()),"The settings page did not offer manual payment").catch(async error=>{await writeFile(path.join(receipt,"admin-settings-body.txt"),await text());throw error;});
+  await until(()=>setInput("manualPaymentInstructions",instructions),"Could not fill the payment instructions");
+  await click("Save payment instructions");await until(async()=>/payment instructions saved/i.test(await text()),"The payment instructions were not saved");
+  assert.equal((await database.pool.query("SELECT manual_payment_instructions FROM store_settings WHERE id=1")).rows[0].manual_payment_instructions,instructions);
+  await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
+  await send("Network.setCookie",{name:"grmn-auth.session_token",value:customerCookie,url:origin,httpOnly:true,sameSite:"Lax"});
   await navigate("/cart");await until(async()=>/review order/i.test(await text()),"Checkout panel missing");
   for(const [name,value] of [["recipientName","UI Checkout Buyer"],["phone","+77000000077"],["city","Almaty"],["line1","UI checkout street 1"]])await until(()=>setInput(name,value),"Could not fill "+name);
   await until(async()=>{try{await click("Review order");return true;}catch{return false;}},"Review order stayed disabled");
@@ -173,32 +184,59 @@ try{
   assert.match(await text(),/8[\s ,.]?415[.,]00 KZT/,"7 500 KZT goods + 12% tax + 15 KZT shipping, all computed on the server");
   await click("Place order");
   await until(async()=>/order grm-\d+ received/i.test(await text()),"The order receipt did not render").catch(async error=>{await writeFile(path.join(receipt,"checkout-body.txt"),await text());throw error;});
+  // O07: the receipt says awaiting payment, shows the KZT total and the staff-edited instructions.
+  await until(async()=>(await text()).includes(instructions),"The receipt did not show the payment instructions").catch(async error=>{await writeFile(path.join(receipt,"receipt-body.txt"),await text());throw error;});
+  assert.match(await text(),/awaiting payment/i);assert.match(await text(),/how to pay/i);assert.match(await text(),/8[\s ,.]?415[.,]00 KZT/);
   assert.match(await text(),/not paid/i);assert.ok(!/thank you for your order/i.test(await text()));
-  const placedOrders=(await database.pool.query("SELECT order_number,order_status,payment_status,payment_mode,total_minor::text AS total FROM orders WHERE user_id=$1 AND checkout_attempt_id IS NOT NULL",[customerId])).rows;
-  assert.equal(placedOrders.length,1,"exactly one order");assert.deepEqual({...placedOrders[0],order_number:undefined},{order_number:undefined,order_status:"pending_payment",payment_status:"unpaid",payment_mode:"demo",total:"841500"});
+  const placedOrders=(await database.pool.query("SELECT id,order_number,order_status,payment_status,payment_mode,total_minor::text AS total FROM orders WHERE user_id=$1 AND checkout_attempt_id IS NOT NULL",[customerId])).rows;
+  assert.equal(placedOrders.length,1,"exactly one order");assert.deepEqual({...placedOrders[0],id:undefined,order_number:undefined},{id:undefined,order_number:undefined,order_status:"pending_payment",payment_status:"unpaid",payment_mode:"live",total:"841500"});
+  assert.equal((await database.pool.query("SELECT provider FROM payment_attempts WHERE order_id=$1",[placedOrders[0].id])).rows[0].provider,"manual","real checkout uses the manual adapter");
   assert.ok((await text()).toUpperCase().includes(placedOrders[0].order_number.toUpperCase()));
   assert.equal((await database.pool.query("SELECT count(*)::int AS n FROM carts WHERE user_id=$1 AND status='converted'",[customerId])).rows[0].n,1,"the server converted the cart");
   await navigate("/cart");await until(async()=>/your cart is empty/i.test(await text()),"The converted cart still shows lines");
-  console.log("PASS Task14A checkout: server KZT quote, one idempotent pending demo order, server-side cart conversion, unpaid receipt");
+  console.log("PASS Task14A checkout: server KZT quote, one idempotent pending manual-payment order, server-side cart conversion, awaiting-payment receipt with staff-edited instructions");
 
-  // Task 16A: in PostgreSQL mode the admin orders page is the fulfillment screen. The unpaid demo
+  // Task 16A: in PostgreSQL mode the admin orders page is the fulfillment screen. The unpaid
   // order is listed with its real timeline and cannot ship (no shipment form).
   await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
   await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
   await navigate("/admin/orders");
   await until(async()=>(await text()).toUpperCase().includes(placedOrders[0].order_number.toUpperCase()),"The fulfillment queue did not list the placed order").catch(async error=>{await writeFile(path.join(receipt,"admin-orders-body.txt"),await text());throw error;});
   await evaluate(`(()=>{const button=[...document.querySelectorAll('section[aria-label="Order queue"] button')].find(b=>b.textContent.toUpperCase().includes(${JSON.stringify(placedOrders[0].order_number.toUpperCase())}));button.click();return true;})()`);
-  await until(async()=>/not paid: only captured orders can ship/i.test(await text()),"The demo order did not show as not shippable");
+  await until(async()=>/not paid: only captured orders can ship/i.test(await text()),"The unpaid order did not show as not shippable");
   assert.ok(/order\.placed/i.test(await text()),"the timeline shows the recorded order.placed event");
   assert.equal(await evaluate("[...document.querySelectorAll('button')].some(b=>/create shipment/i.test(b.textContent))"),false,"an unpaid order offers no shipment action");
-  console.log("PASS Task16A fulfillment: PostgreSQL admin orders queue, real timeline, unpaid demo order refused for shipping");
+  console.log("PASS Task16A fulfillment: PostgreSQL admin orders queue, real timeline, unpaid order refused for shipping");
+
+  // O07 (Task 21C): staff confirm the manual payment from the admin order page; the purchase reaches
+  // "paid" through the 14B capture path and the order can ship. MFA must be fresh (15 minutes).
+  await database.pool.query("UPDATE staff_session_grants SET verified_at=now() WHERE session_id=$1",[session.id]);
+  const paymentReference="UI-KASPI-"+randomUUID().slice(0,8).toUpperCase();
+  await until(async()=>/confirm payment/i.test(await text()),"The admin order page offered no payment confirmation").catch(async error=>{await writeFile(path.join(receipt,"admin-confirm-body.txt"),await text());throw error;});
+  await until(()=>setInput("paymentReference",paymentReference),"Could not fill the payment reference");
+  assert.equal(await evaluate("document.querySelector('input[name=paymentAmount]').value"),"","the amount received is typed by staff, never prefilled (review I1)");
+  await until(()=>setInput("paymentAmount","8415.00"),"Could not fill the amount received");
+  await click("Confirm payment");
+  await until(async()=>(await text()).includes(paymentReference)&&/confirmed/i.test(await text()),"The confirmation did not show on the order page").catch(async error=>{await writeFile(path.join(receipt,"admin-confirmed-body.txt"),await text());throw error;});
+  const paidOrder=(await database.pool.query("SELECT order_status,payment_status FROM orders WHERE id=$1",[placedOrders[0].id])).rows[0];
+  assert.deepEqual(paidOrder,{order_status:"confirmed",payment_status:"paid"},"the purchase reached paid");
+  const captureFact=(await database.pool.query("SELECT provider,kind,external_id,amount_minor::text AS amount FROM payment_transactions WHERE order_id=$1",[placedOrders[0].id])).rows;
+  assert.deepEqual(captureFact,[{provider:"manual",kind:"capture",external_id:paymentReference,amount:"841500"}]);
+  assert.equal((await database.pool.query("SELECT count(*)::int AS n FROM audit_events WHERE action='payment.manually_confirmed' AND target_id=$1",[placedOrders[0].id])).rows[0].n,1);
+  await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>/create shipment/i.test(b.textContent))"),"A paid order offered no shipment action");
+  const customerStatus=await(await fetch(origin+"/api/cart/checkout/status",{method:"POST",headers:{cookie:"grmn-auth.session_token="+customerCookie,origin,"content-type":"application/json"},body:JSON.stringify({orderId:placedOrders[0].id})})).json();
+  assert.equal(customerStatus.paymentStatus,"paid",JSON.stringify(customerStatus));assert.equal(customerStatus.paymentInstructions,null);
+  console.log("PASS O07 manual payment: staff-edited instructions on the receipt, admin confirmation with method and reference, order paid through the capture path and shippable");
 
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");
   console.log("Browser smoke passed: 20/5 cursor pages, server search, versioned product create/update, homepage editor save/render, article create/public render, banner create/archive, provisional customer create, KZT rendering and unchanged source bytes.");
 }finally{
   ws?.close();
-  for(const child of [chrome,app])if(child?.pid){try{await execute("taskkill",["/PID",String(child.pid),"/T","/F"],{windowsHide:true});}catch{child.kill();}}
+  for(const child of [chrome,app])if(child?.pid){
+    if(process.platform==="win32"){try{await execute("taskkill",["/PID",String(child.pid),"/T","/F"],{windowsHide:true});}catch{child.kill();}}
+    else{try{process.kill(-child.pid,"SIGKILL");}catch{child.kill("SIGKILL");}}
+  }
   if(logFile!==undefined)fs.closeSync(logFile);
   if(profile){assert.ok(path.resolve(profile).startsWith(root+path.sep));await rm(profile,{recursive:true,force:true,maxRetries:10,retryDelay:200});}
   try{await database?.close();}finally{await temporary?.stop();}

@@ -2,7 +2,7 @@ import "server-only";
 import type { PoolClient } from "pg";
 import { z } from "zod";
 import { AuthFailure } from "../auth/config.ts";
-import { DEFAULT_HOLD_SECONDS } from "../inventory/reservations.ts";
+import { DEFAULT_HOLD_SECONDS, MAX_HOLD_SECONDS } from "../inventory/reservations.ts";
 
 // Task 13B. Coupon quota on promotion_redemptions, run inside the caller's checkout transaction
 // (Task 14A) next to reserveStock. The promotion row is locked first, so reservations for one
@@ -17,7 +17,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const fail = (code: string, status: number, message: string): never => { throw new AuthFailure(code, status, message); };
 const ended = (): never => fail("COUPON_RESERVATION_ENDED", 409, "This promo code reservation has ended");
 
-const reserveInput = z.strictObject({ checkoutAttemptId: z.string().regex(UUID), holdSeconds: z.number().int().min(1).max(24 * 60 * 60).optional() });
+const reserveInput = z.strictObject({ checkoutAttemptId: z.string().regex(UUID), holdSeconds: z.number().int().min(1).max(MAX_HOLD_SECONDS).optional() });
 const consumeInput = z.strictObject({ checkoutAttemptId: z.string().regex(UUID), orderId: z.string().regex(UUID) });
 const releaseInput = z.strictObject({ checkoutAttemptId: z.string().regex(UUID) });
 const expireInput = z.strictObject({ limit: z.number().int().min(1).max(1000) });

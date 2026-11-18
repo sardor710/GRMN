@@ -203,11 +203,14 @@ async function orderState(client: PoolClient, orderId: string): Promise<CancelRe
 // Reads (also used by the staff order detail)
 
 export async function readRefunds(db: Pool | PoolClient, orderId: string): Promise<RefundDTO[]> {
-  const rows = (await db.query<{ id: string; status: RefundDTO["status"]; amount: string; reason: string | null; created_at: Date; items: RefundDTO["items"] }>(`
-    SELECT r.id,r.status,r.amount_minor::text AS amount,r.reason,r.created_at,
+  const rows = (await db.query<{ id: string; status: RefundDTO["status"]; amount: string; reason: string | null; created_at: Date; items: RefundDTO["items"]; provider: string; provider_refund_id: string | null }>(`
+    SELECT r.id,r.status,r.amount_minor::text AS amount,r.reason,r.created_at,r.provider,r.provider_refund_id,
       COALESCE((SELECT json_agg(json_build_object('kind',i.kind,'orderItemId',i.order_item_id,'quantity',i.quantity,'amountMinor',i.amount_minor::text) ORDER BY i.kind,i.order_item_id) FROM refund_items i WHERE i.refund_id=r.id),'[]'::json) AS items
     FROM refunds r WHERE r.order_id=$1 ORDER BY r.created_at,r.id`, [orderId])).rows;
-  return rows.map(row => ({ id: row.id, status: row.status, amountMinor: row.amount, reason: row.reason, createdAt: row.created_at.toISOString(), items: row.items }));
+  return rows.map(row => ({
+    id: row.id, status: row.status, amountMinor: row.amount, reason: row.reason, createdAt: row.created_at.toISOString(), items: row.items,
+    manual: row.provider === "manual", payoutReference: row.provider === "manual" ? row.provider_refund_id : null,
+  }));
 }
 export async function readReturns(db: Pool | PoolClient, orderId: string, returnId?: string): Promise<ReturnDTO[]> {
   const rows = (await db.query<{ id: string; status: ReturnDTO["status"]; version: number; reason: string; created_at: Date; received_at: Date | null; inspected_at: Date | null; items: ReturnDTO["items"] }>(`
@@ -228,7 +231,7 @@ async function oneRefund(client: PoolClient, orderId: string, refundId: string):
  * Recomputes the payment summary from the paying capture and its succeeded refunds only (review I2):
  * refunding a duplicate, mismatched or late capture never changes what the customer paid for the order.
  */
-async function refreshPayment(client: PoolClient, orderId: string): Promise<void> {
+export async function refreshPayment(client: PoolClient, orderId: string): Promise<void> {
   const paying = await payingCapture(client, orderId);
   if (!paying) return;
   const refundedTotal = (await client.query<{ total: string }>("SELECT COALESCE(sum(amount_minor),0)::text AS total FROM refunds WHERE transaction_id=$1 AND status='succeeded'", [paying.id])).rows[0].total;
@@ -241,7 +244,8 @@ async function refreshPayment(client: PoolClient, orderId: string): Promise<void
 interface SubmitRow { id: string; order_id: string; provider: string; environment: string; merchant_account: string; idempotency_key: string; amount: string; external_id: string; status: RefundDTO["status"] }
 function refundProvider(providers: PaymentProviders, row: Pick<SubmitRow, "provider" | "environment" | "merchant_account">): PaymentProvider | null {
   const provider = providers.get(row.provider);
-  return provider && !provider.simulated && provider.environment === row.environment && provider.merchantAccount === row.merchant_account ? provider : null;
+  // O07: manual refunds are paid out by staff (manual.ts completeRefund), never submitted.
+  return provider && !provider.simulated && provider.name !== "manual" && provider.environment === row.environment && provider.merchantAccount === row.merchant_account ? provider : null;
 }
 
 /**
@@ -298,7 +302,7 @@ export async function submitRefund(pool: Pool, providers: PaymentProviders, refu
 
 /** Worker sweep: submits reserved refunds and retries pending/unknown ones with their stable keys. */
 export async function processRefunds(pool: Pool, providers: PaymentProviders, options: { limit?: number } = {}): Promise<{ checked: number; failed: number }> {
-  const names = [...providers.values()].filter(provider => !provider.simulated).map(provider => provider.name);
+  const names = [...providers.values()].filter(provider => !provider.simulated && provider.name !== "manual").map(provider => provider.name);
   if (!names.length) return { checked: 0, failed: 0 };
   const limit = Math.min(Math.max(Math.trunc(options.limit ?? 100), 1), 1000);
   const ids = (await pool.query<{ id: string }>("SELECT id FROM refunds WHERE status IN ('reserved','pending','unknown') AND provider=ANY($1::text[]) ORDER BY updated_at,id LIMIT $2", [names, limit])).rows;

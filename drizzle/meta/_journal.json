@@ -92,6 +92,13 @@
       "when": 1794991008843,
       "tag": "0012_collection-publication",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795010936565,
+      "tag": "0013_manual-payments",
+      "breakpoints": true
     }
   ]
 }

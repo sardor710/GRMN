@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { AdminOrderDetailDTO, AdminOrderSummaryDTO, ShipmentDTO } from "@/contracts/commerce";
 
 // Task 16A: PostgreSQL-mode staff fulfillment. Every action sends the version it was based on and
 // an idempotency key; the server decides eligibility (paid, not an exception, not legacy) and
 // records the real timeline. No dates are typed here: milestones use the server clock.
+// O07 (Task 21C): staff with payments:confirm confirm a manual payment here (method, reference, the
+// amount received, an optional note), and record the payout of a manual refund.
 
 const STATUSES = ["", "unfulfilled", "processing", "partially_shipped", "shipped", "delivered", "exception"] as const;
 const REASONS: Record<string, string> = {
@@ -17,6 +19,16 @@ const REASONS: Record<string, string> = {
 const formatKzt = (amountMinor: string) => `${(Number(amountMinor) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KZT`;
 const formatDate = (value: string | null) => value ? new Date(value).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : "—";
 const newKey = () => `ui-${crypto.randomUUID()}`;
+const METHODS = [["bank_transfer", "Bank transfer"], ["kaspi", "Kaspi"], ["cash", "Cash"]] as const;
+const METHOD_LABEL: Record<string, string> = Object.fromEntries(METHODS);
+const majorKzt = (amountMinor: string) => (BigInt(amountMinor) / BigInt(100)).toString() + "." + (BigInt(amountMinor) % BigInt(100)).toString().padStart(2, "0");
+/** "8415", "8415.5" or "8415.50" KZT to minor units; null when it is not an amount. */
+function minorKzt(value: string): string | null {
+  const match = /^(\d{1,13})(?:[.,](\d{1,2}))?$/.exec(value.trim().replace(/[\s\u00a0]/g, ""));
+  if (!match) return null;
+  const minor = BigInt(match[1]) * BigInt(100) + BigInt((match[2] ?? "").padEnd(2, "0") || "0");
+  return minor > BigInt(0) ? minor.toString() : null;
+}
 
 async function readError(response: Response): Promise<string> {
   try { const body = await response.json() as { error?: { message?: string; code?: string }; message?: string }; return body.error?.message ?? body.message ?? `Request failed (${response.status})`; }
@@ -34,6 +46,12 @@ export default function FulfillmentScreen() {
   const [carrier, setCarrier] = useState("");
   const [tracking, setTracking] = useState("");
   const [note, setNote] = useState("");
+  const [payMethod, setPayMethod] = useState<string>("kaspi");
+  const [payReference, setPayReference] = useState("");
+  const [payAmount, setPayAmount] = useState("");
+  const detailId = useRef<string | null>(null);
+  const [payNote, setPayNote] = useState("");
+  const [payout, setPayout] = useState<Record<string, { method: string; reference: string }>>({});
 
   const loadOrders = useCallback(async () => {
     setError(null);
@@ -44,17 +62,23 @@ export default function FulfillmentScreen() {
   const loadDetail = useCallback(async (id: string) => {
     const response = await fetch(`/api/admin/orders?id=${id}`, { cache: "no-store" });
     if (!response.ok) { setError(await readError(response)); return; }
-    setDetail(await response.json() as AdminOrderDetailDTO);
+    const next = await response.json() as AdminOrderDetailDTO;
+    setDetail(next);
     setQuantities({});
+    // Review I1: never prefilled. Staff type the amount that actually arrived; the server refuses
+    // anything but the order total, so a short payment cannot be confirmed by just entering a reference.
+    setPayAmount(previous => previous && next.id === detailId.current ? previous : "");
+    detailId.current = next.id;
   }, []);
 
   useEffect(() => { void loadOrders(); }, [loadOrders]);
   useEffect(() => { if (selected) void loadDetail(selected); else setDetail(null); }, [selected, loadDetail]);
 
-  async function post(body: Record<string, unknown>) {
+  // The manual payment actions are keyed by their reference instead of an idempotency key.
+  async function post(body: Record<string, unknown>, keyed = true) {
     setBusy(true); setError(null);
     try {
-      const response = await fetch("/api/admin/orders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...body, idempotencyKey: newKey() }) });
+      const response = await fetch("/api/admin/orders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(keyed ? { ...body, idempotencyKey: newKey() } : body) });
       if (!response.ok) { setError(await readError(response)); return false; }
       return true;
     } finally {
@@ -78,6 +102,21 @@ export default function FulfillmentScreen() {
     const reason = window.prompt("Reason for cancelling this order");
     if (!reason?.trim()) return;
     await post({ action: "cancel_order", orderId: detail.id, expectedOrderVersion: detail.version, reason: reason.trim() });
+  }
+
+  async function confirmPayment() {
+    if (!detail) return;
+    const amountMinor = minorKzt(payAmount);
+    if (!payReference.trim()) { setError("Enter the payment reference."); return; }
+    if (!amountMinor) { setError("Enter the amount received in KZT."); return; }
+    const ok = await post({ action: "confirm_payment", orderId: detail.id, method: payMethod, reference: payReference.trim(), amountMinor, ...(payNote.trim() ? { note: payNote.trim() } : {}) }, false);
+    if (ok) { setPayReference(""); setPayNote(""); setPayAmount(""); }
+  }
+  async function completeRefund(refundId: string) {
+    const entry = payout[refundId] ?? { method: "kaspi", reference: "" };
+    if (!entry.reference.trim()) { setError("Enter the payout reference."); return; }
+    const ok = await post({ action: "complete_manual_refund", refundId, method: entry.method, reference: entry.reference.trim() }, false);
+    if (ok) setPayout(current => { const next = { ...current }; delete next[refundId]; return next; });
   }
 
   return (
@@ -122,6 +161,39 @@ export default function FulfillmentScreen() {
                 <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.paymentMode}</span>
               </div>
               {!detail.fulfillable.allowed && detail.fulfillable.reason && <p className="border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900">{REASONS[detail.fulfillable.reason]}</p>}
+              <div aria-label="Payment" className="border border-neutral-200 p-3">
+                <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-600">Payment</h3>
+                <p className="text-sm">
+                  {detail.payment.method === "manual" ? "Manual payment" : detail.payment.method === "demo" ? "Demo (no money is taken)" : detail.payment.method ?? "—"}
+                  {" · "}{formatKzt(detail.total.amountMinor)}
+                </p>
+                {detail.payment.confirmation && (
+                  <p className="mt-1 text-sm text-neutral-700">
+                    Confirmed {formatDate(detail.payment.confirmation.confirmedAt)}: {METHOD_LABEL[detail.payment.confirmation.method] ?? detail.payment.confirmation.method}, reference{" "}
+                    <span className="font-mono">{detail.payment.confirmation.reference}</span>, {formatKzt(detail.payment.confirmation.amountMinor)}
+                    {detail.payment.confirmation.note ? ` — ${detail.payment.confirmation.note}` : ""}
+                  </p>
+                )}
+                {detail.payment.confirmable && (
+                  <form className="mt-2 grid gap-2 sm:grid-cols-2" onSubmit={event => { event.preventDefault(); void confirmPayment(); }}>
+                    <label className="text-xs text-neutral-700">Method
+                      <select name="paymentMethod" className="mt-1 w-full border border-neutral-300 px-2 py-1 text-sm" value={payMethod} onChange={event => setPayMethod(event.target.value)}>
+                        {METHODS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                      </select>
+                    </label>
+                    <label className="text-xs text-neutral-700">Reference
+                      <input name="paymentReference" required maxLength={120} placeholder="Bank or Kaspi reference, receipt number" className="mt-1 w-full border border-neutral-300 px-2 py-1 text-sm" value={payReference} onChange={event => setPayReference(event.target.value)} />
+                    </label>
+                    <label className="text-xs text-neutral-700">Amount received (KZT) · expected {majorKzt(detail.total.amountMinor)}
+                      <input name="paymentAmount" required inputMode="decimal" placeholder="Type the amount that arrived" className="mt-1 w-full border border-neutral-300 px-2 py-1 text-sm" value={payAmount} onChange={event => setPayAmount(event.target.value)} />
+                    </label>
+                    <label className="text-xs text-neutral-700">Note (optional)
+                      <input name="paymentNote" maxLength={1000} className="mt-1 w-full border border-neutral-300 px-2 py-1 text-sm" value={payNote} onChange={event => setPayNote(event.target.value)} />
+                    </label>
+                    <button type="submit" disabled={busy} className="bg-black px-3 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50 sm:col-span-2">Confirm payment</button>
+                  </form>
+                )}
+              </div>
               {!detail.legacy && detail.status !== "cancelled" && detail.status !== "closed" && (
                 <button type="button" disabled={busy} onClick={() => void cancelOrder()} className="border border-red-700 px-3 py-1 text-xs font-bold uppercase tracking-wider text-red-800 disabled:opacity-50">Cancel order</button>
               )}
@@ -173,7 +245,25 @@ export default function FulfillmentScreen() {
                   <div>
                     <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-600">Refunds</h3>
                     <ul className="space-y-1 text-xs">
-                      {detail.refunds.map(refund => <li key={refund.id} className="flex justify-between gap-2"><span className="uppercase">{refund.status}</span><span>{formatKzt(refund.amountMinor)}</span></li>)}
+                      {detail.refunds.map(refund => (
+                        <li key={refund.id} className="space-y-1">
+                          <div className="flex justify-between gap-2">
+                            <span className="uppercase">{refund.status}{refund.manual ? " · manual" : ""}</span><span>{formatKzt(refund.amountMinor)}</span>
+                          </div>
+                          {refund.payoutReference && <p className="text-neutral-500">Paid out: <span className="font-mono">{refund.payoutReference}</span></p>}
+                          {refund.manual && ["reserved", "pending", "unknown"].includes(refund.status) && (
+                            <div className="flex flex-wrap gap-1">
+                              <select aria-label="Payout method" className="border border-neutral-300 px-1" value={payout[refund.id]?.method ?? "kaspi"}
+                                onChange={event => { const method = event.target.value; setPayout(current => ({ ...current, [refund.id]: { reference: current[refund.id]?.reference ?? "", method } })); }}>
+                                {METHODS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                              </select>
+                              <input aria-label="Payout reference" placeholder="Payout reference" maxLength={120} className="min-w-0 flex-1 border border-neutral-300 px-1" value={payout[refund.id]?.reference ?? ""}
+                                onChange={event => { const reference = event.target.value; setPayout(current => ({ ...current, [refund.id]: { method: current[refund.id]?.method ?? "kaspi", reference } })); }} />
+                              <button type="button" disabled={busy} onClick={() => void completeRefund(refund.id)} className="border border-black px-2 font-bold uppercase disabled:opacity-50">Record payout</button>
+                            </div>
+                          )}
+                        </li>
+                      ))}
                     </ul>
                   </div>
                   <div>

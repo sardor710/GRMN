@@ -234,12 +234,14 @@ export interface CheckoutQuoteDTO {
   policyVersions: { pricing: string; tax: string; shipping: string; promotion: string | null; markdowns: string[]; exchangeRate: string | null };
 }
 
-export type PaymentMethodCode = "demo" | "kaspi" | "secondary";
+/** "manual" (O07): staff confirm the payment by hand. "demo" is for tests and development only. */
+export type PaymentMethodCode = "demo" | "manual" | "kaspi" | "secondary";
 
 /**
  * POST /api/cart/checkout with an `Idempotency-Key` header (16–128 printable ASCII). The contact
  * name and phone and the delivery address come from the quote's delivery snapshot (D06); only an
- * optional email is added here. Only "demo" is accepted until a real provider exists (D03).
+ * optional email is added here. Real checkout uses "manual" (O07); "demo" is refused in production,
+ * and "kaspi"/"secondary" stay 409 until a real provider exists (D03).
  */
 export interface CheckoutCommand {
   quoteId: string;
@@ -277,6 +279,12 @@ export interface CheckoutStatusDTO {
   paymentMode: "demo" | "live";
   total: Money;
   placedAt: string | null;
+  /** How the order is paid: the provider of its latest payment attempt. */
+  paymentMethod: PaymentMethodCode | null;
+  /** O07: the staff-edited payment instructions, while a manual-payment order awaits payment. */
+  paymentInstructions: string | null;
+  /** When the stock hold ends while the order awaits payment; after that the order expires. */
+  payBy: string | null;
 }
 
 export interface OrderSummaryDTO {
@@ -415,6 +423,12 @@ export interface AdminOrderDetailDTO extends AdminOrderSummaryDTO {
   refunds: RefundDTO[];
   /** Task 16B: returns of this order. */
   returns: ReturnDTO[];
+  /** O07: how the order is paid and whether staff can confirm a manual payment now. */
+  payment: {
+    method: PaymentMethodCode | null;
+    confirmable: boolean;
+    confirmation: { method: string; reference: string; amountMinor: string; note: string | null; confirmedAt: string; actorUserId: string | null } | null;
+  };
 }
 export interface ShipmentResultDTO {
   shipment: ShipmentDTO;
@@ -430,6 +444,10 @@ export interface RefundDTO {
   reason: string | null;
   createdAt: string;
   items: { kind: "item" | "shipping" | "adjustment"; orderItemId: string | null; quantity: number | null; amountMinor: string }[];
+  /** O07: a refund of a manual payment. Staff pay it out by hand and record the payout to complete it. */
+  manual: boolean;
+  /** O07: the payout reference staff recorded for a completed manual refund. */
+  payoutReference: string | null;
 }
 export interface ReturnDTO {
   id: string;

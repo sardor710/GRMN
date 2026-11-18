@@ -29,6 +29,9 @@ const updateInput = z.strictObject({
   seoDescription: text(500).optional(),
   activeTaxConfigurationId: z.string().regex(UUID).optional(),
   activeShippingPolicyId: z.string().regex(UUID).optional(),
+  // O07: the receipt's payment instructions for manual-payment orders ("" clears them) and the hold.
+  manualPaymentInstructions: z.union([text(2000).min(1), z.literal("")]).optional(),
+  manualPaymentHoldHours: z.number().int().min(1).max(168).optional(),
 }).refine(value => Object.keys(value).length > 1);
 const rateInput = z.strictObject({ expectedVersion: z.number().int().min(1), kztPerUsd: z.string().regex(/^\d{1,12}(\.\d{1,8})?$/).refine(value => Number(value) > 0) });
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
@@ -42,14 +45,17 @@ export interface SettingsDTO {
   usdDisplayEnabled: boolean; exchangeRate: { id: string; version: number; kztPerUsd: string; createdAt: string } | null;
   activeTaxConfigurationId: string | null; activeShippingPolicyId: string | null; freeShippingThresholdMinor: string | null;
   maintenanceMode: boolean; paymentMode: "demo" | "live"; seoTitle: string | null; seoDescription: string | null;
+  /** O07: what manual-payment customers are told, and how long their order is held. */
+  manualPayment: { instructions: string | null; holdHours: number };
 }
 interface Row {
   version: number; store_name: string | null; contact_email: string | null; support_phone: string | null; usd_display_enabled: boolean; active_exchange_rate_id: string | null;
   active_tax_configuration_id: string | null; active_shipping_policy_id: string | null; free_shipping_threshold: string | null; maintenance_mode: boolean; payment_mode: "demo" | "live";
   seo_title: string | null; seo_description: string | null; rate_version: number | null; kzt_per_usd: string | null; rate_created_at: Date | null;
+  manual_payment_instructions: string | null; manual_payment_hold_hours: number;
 }
 const SELECT = `SELECT s.version,s.store_name,s.contact_email,s.support_phone,s.usd_display_enabled,s.active_exchange_rate_id,s.active_tax_configuration_id,s.active_shipping_policy_id,
-  s.free_shipping_threshold_minor::text AS free_shipping_threshold,s.maintenance_mode,s.payment_mode,s.seo_title,s.seo_description,r.version AS rate_version,r.kzt_per_usd::text AS kzt_per_usd,r.created_at AS rate_created_at
+  s.free_shipping_threshold_minor::text AS free_shipping_threshold,s.maintenance_mode,s.payment_mode,s.seo_title,s.seo_description,s.manual_payment_instructions,s.manual_payment_hold_hours,r.version AS rate_version,r.kzt_per_usd::text AS kzt_per_usd,r.created_at AS rate_created_at
   FROM store_settings s LEFT JOIN exchange_rate_versions r ON r.id=s.active_exchange_rate_id WHERE s.id=1`;
 function dto(row: Row): SettingsDTO {
   return {
@@ -57,6 +63,7 @@ function dto(row: Row): SettingsDTO {
     exchangeRate: row.active_exchange_rate_id && row.kzt_per_usd && row.rate_version && row.rate_created_at ? { id: row.active_exchange_rate_id, version: row.rate_version, kztPerUsd: trimDecimal(row.kzt_per_usd), createdAt: row.rate_created_at.toISOString() } : null,
     activeTaxConfigurationId: row.active_tax_configuration_id, activeShippingPolicyId: row.active_shipping_policy_id, freeShippingThresholdMinor: row.free_shipping_threshold,
     maintenanceMode: row.maintenance_mode, paymentMode: row.payment_mode, seoTitle: row.seo_title, seoDescription: row.seo_description,
+    manualPayment: { instructions: row.manual_payment_instructions, holdHours: row.manual_payment_hold_hours },
   };
 }
 
@@ -110,11 +117,12 @@ export function createSettingsService({ pool, authorize }: Options) {
         const blank = (next: string | undefined, old: string | null) => next === undefined ? old : next === "" ? null : next;
         await client.query(
           `UPDATE store_settings SET version=version+1,store_name=$1,contact_email=$2,support_phone=$3,usd_display_enabled=$4,free_shipping_threshold_minor=$5,maintenance_mode=$6,
-             seo_title=$7,seo_description=$8,active_tax_configuration_id=$9,active_shipping_policy_id=$10 WHERE id=1`,
+             seo_title=$7,seo_description=$8,active_tax_configuration_id=$9,active_shipping_policy_id=$10,manual_payment_instructions=$11,manual_payment_hold_hours=$12 WHERE id=1`,
           [value(command.storeName, current.store_name), blank(command.contactEmail, current.contact_email), blank(command.supportPhone, current.support_phone), usd,
             command.freeShippingThresholdMinor === undefined ? current.free_shipping_threshold : command.freeShippingThresholdMinor, value(command.maintenanceMode, current.maintenance_mode),
             blank(command.seoTitle, current.seo_title), blank(command.seoDescription, current.seo_description),
-            value(command.activeTaxConfigurationId, current.active_tax_configuration_id), value(command.activeShippingPolicyId, current.active_shipping_policy_id)]);
+            value(command.activeTaxConfigurationId, current.active_tax_configuration_id), value(command.activeShippingPolicyId, current.active_shipping_policy_id),
+            blank(command.manualPaymentInstructions, current.manual_payment_instructions), value(command.manualPaymentHoldHours, current.manual_payment_hold_hours)]);
         await audit(client, principal.userId, "settings.updated", { fields: Object.keys(command).filter(name => name !== "expectedVersion"), beforeVersion: current.version });
         return dto((await client.query<Row>(SELECT)).rows[0]);
       });

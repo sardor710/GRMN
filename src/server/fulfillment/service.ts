@@ -2,7 +2,7 @@ import "server-only";
 import { createHash, randomUUID } from "node:crypto";
 import type { Pool, PoolClient } from "pg";
 import { z } from "zod";
-import type { AdminOrderDetailDTO, AdminOrderSummaryDTO, FulfillmentBlock, FulfillmentStatus, Money, OrderStatus, PaymentStatus, ShipmentDTO, ShipmentResultDTO } from "../../contracts/commerce.ts";
+import type { AdminOrderDetailDTO, AdminOrderSummaryDTO, FulfillmentBlock, FulfillmentStatus, Money, OrderStatus, PaymentMethodCode, PaymentStatus, ShipmentDTO, ShipmentResultDTO } from "../../contracts/commerce.ts";
 
 export type { AdminOrderDetailDTO, AdminOrderSummaryDTO, FulfillmentBlock, ShipmentDTO, ShipmentResultDTO, TimelineEventDTO } from "../../contracts/commerce.ts";
 import type { Permission, Principal } from "../context.ts";
@@ -242,6 +242,15 @@ export function createFulfillmentService({ pool, authorize }: Options) {
       ]);
       const lines = await shipmentItems(pool, shipments.rows.map(row => row.id));
       const block = fulfillmentBlock(order);
+      // O07: how the order is paid, whether a manual payment can be confirmed now, and the confirmation.
+      const payment = (await pool.query<{ method: PaymentMethodCode | null; attempt_open: boolean; hold_running: boolean }>(
+        `SELECT (SELECT a.provider FROM payment_attempts a WHERE a.order_id=o.id ORDER BY a.created_at DESC,a.id DESC LIMIT 1) AS method,
+           EXISTS(SELECT 1 FROM payment_attempts a WHERE a.order_id=o.id AND a.provider='manual' AND a.status IN ('created','pending','requires_action','authorized','unknown')) AS attempt_open,
+           EXISTS(SELECT 1 FROM inventory_reservations r WHERE r.checkout_attempt_id=o.checkout_attempt_id AND r.status='active' AND r.expires_at>now()) AS hold_running
+         FROM orders o WHERE o.id=$1`, [orderId])).rows[0];
+      const confirmation = (await pool.query<{ external_id: string; amount: string; evidence: Record<string, unknown>; created_at: Date }>(
+        "SELECT external_id,amount_minor::text AS amount,evidence,created_at FROM payment_transactions WHERE order_id=$1 AND provider='manual' AND kind='capture' ORDER BY created_at,id LIMIT 1", [orderId])).rows[0];
+      const confirmable = payment.method === "manual" && payment.attempt_open && payment.hold_running && order.order_status === "pending_payment" && ["unpaid", "pending", "failed"].includes(order.payment_status);
       const snapshot = address.rows[0];
       const deliveryAddress = snapshot ? Object.fromEntries(Object.entries(snapshot).filter((entry): entry is [string, string] => typeof entry[1] === "string")) : null;
       return {
@@ -262,6 +271,14 @@ export function createFulfillmentService({ pool, authorize }: Options) {
         }),
         refunds: await readRefunds(pool, orderId),
         returns: await readReturns(pool, orderId),
+        payment: {
+          method: payment.method, confirmable,
+          confirmation: confirmation ? {
+            method: String(confirmation.evidence.method ?? ""), reference: confirmation.external_id, amountMinor: confirmation.amount,
+            note: typeof confirmation.evidence.note === "string" ? confirmation.evidence.note : null, confirmedAt: confirmation.created_at.toISOString(),
+            actorUserId: typeof confirmation.evidence.confirmedBy === "string" ? confirmation.evidence.confirmedBy : null,
+          } : null,
+        },
       };
     },
 

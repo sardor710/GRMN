@@ -2,7 +2,7 @@
 export type Permission =
   | "catalog:read" | "catalog:write" | "inventory:write" | "content:write"
   | "customers:read" | "customers:write" | "orders:read" | "orders:fulfill"
-  | "payments:refund" | "staff:manage" | "settings:write" | "exports:create";
+  | "payments:refund" | "payments:confirm" | "staff:manage" | "settings:write" | "exports:create";
 
 export interface Principal {
   userId: string;

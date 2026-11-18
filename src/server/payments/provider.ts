@@ -3,9 +3,12 @@ import "server-only";
 // Task 14B. The typed payment-provider interface. An adapter turns provider traffic into the
 // normalized facts below; it never writes to the database. The payment service decides what a
 // verified fact does to an order. Real providers (Kaspi Pay, a second provider) are deferred
-// (decision D03): the application registers only the explicitly simulated demo adapter.
+// (decision D03): the application registers the simulated demo adapter (tests and development only)
+// and the manual adapter (O07), whose payments staff confirm from the admin order page.
 
-export type ProviderName = "demo" | "kaspi" | "secondary";
+// "manual" (owner decision O07, Task 21C) is real money that staff confirm by hand: it opens a local
+// session, takes no webhooks, has no lookups and its refunds are paid out by staff.
+export type ProviderName = "demo" | "kaspi" | "secondary" | "manual";
 export type ProviderEnvironment = "demo" | "sandbox" | "live";
 export type PaymentEventKind = "authorized" | "captured" | "failed" | "cancelled";
 

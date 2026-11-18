@@ -15,7 +15,8 @@ import { mainLocation } from "./service.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const DEFAULT_HOLD_SECONDS = 15 * 60;
-const MAX_HOLD_SECONDS = 24 * 60 * 60;
+// O07 (Task 21C): manual-payment orders hold stock for up to 168 hours (settings, default 48).
+export const MAX_HOLD_SECONDS = 168 * 60 * 60;
 const MAX_LINES = 100;
 const MAX_LINE_QUANTITY = 10_000;
 const RETRYABLE = new Set(["40P01", "40001"]);

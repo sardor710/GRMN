@@ -10,9 +10,9 @@ test("default roles follow the Section 9 permission matrix",async()=>{
   const source=read("src/server/auth/bootstrap.ts");
   const roles=Object.fromEntries([...source.matchAll(/^\s+(product_manager|editor|support): \[([^\]]*)\]/gm)].map(([,name,list])=>[name,[...list.matchAll(/"([^"]+)"/g)].map(m=>m[1])]));
   const denied={
-    product_manager:["payments:refund","staff:manage","settings:write","exports:create","customers:write","content:write"],
-    editor:["orders:read","orders:fulfill","customers:read","customers:write","payments:refund","staff:manage","settings:write","exports:create","catalog:write","inventory:write"],
-    support:["payments:refund","staff:manage","settings:write","exports:create","catalog:write","inventory:write","content:write"],
+    product_manager:["payments:refund","payments:confirm","staff:manage","settings:write","exports:create","customers:write","content:write"],
+    editor:["orders:read","orders:fulfill","customers:read","customers:write","payments:refund","payments:confirm","staff:manage","settings:write","exports:create","catalog:write","inventory:write"],
+    support:["payments:refund","payments:confirm","staff:manage","settings:write","exports:create","catalog:write","inventory:write","content:write"],
   };
   const required={product_manager:["catalog:read","catalog:write","inventory:write"],editor:["content:write"],support:["orders:read","customers:read"]};
   for(const role of Object.keys(denied)){
@@ -21,6 +21,9 @@ test("default roles follow the Section 9 permission matrix",async()=>{
     for(const permission of required[role])assert.ok(roles[role].includes(permission),`${role} needs ${permission}`);
   }
   assert.match(source,/super_admin: allPermissions/);
+  // O07 (Task 21C): payments are confirmed by super_admin and owner only.
+  assert.match(source,/owner: allPermissions/);
+  assert.match(source,/allPermissions = \[[^\]]*"payments:confirm"/);
 });
 
 test("every guarded staff service asks for an explicit permission, and high-impact ones need fresh MFA",()=>{
@@ -33,6 +36,7 @@ test("every guarded staff service asks for an explicit permission, and high-impa
     "src/server/reports/exports.ts":["exports:create"],
     "src/server/settings/service.ts":["settings:write"],
     "src/server/inventory/service.ts":["inventory:write","catalog:read"],
+    "src/server/payments/manual.ts":["payments:confirm","payments:refund"],
   };
   for(const [file,permissions] of Object.entries(services)){
     const source=read(file);
@@ -40,5 +44,5 @@ test("every guarded staff service asks for an explicit permission, and high-impa
     assert.doesNotMatch(source,/role\s*===|roles\.includes|super_admin/,`${file} must not compare role names`);
   }
   const principal=read("src/server/auth/principal.ts");
-  for(const permission of ["staff:manage","settings:write","payments:refund","exports:create"])assert.ok(principal.includes(`"${permission}"`),`${permission} requires fresh MFA`);
+  for(const permission of ["staff:manage","settings:write","payments:refund","payments:confirm","exports:create"])assert.ok(principal.includes(`"${permission}"`),`${permission} requires fresh MFA`);
 });

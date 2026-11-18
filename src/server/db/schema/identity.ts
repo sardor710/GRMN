@@ -100,7 +100,7 @@ export const roles = pgTable("roles", {
   id: id(),
   code: text("code").notNull().unique(),
   createdAt: createdAt(),
-}, (table) => [check("roles_code_valid", sql`${table.code} IN ('super_admin','editor','product_manager','support')`)]);
+}, (table) => [check("roles_code_valid", sql`${table.code} IN ('super_admin','owner','editor','product_manager','support')`)]);
 
 export const permissions = pgTable("permissions", {
   id: id(),

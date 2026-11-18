@@ -4,16 +4,18 @@ import { authErrorResponse } from "../auth/http.ts";
 import { adminJSON, readAdminJSON } from "../auth/admin-service.ts";
 import type { FulfillmentService } from "./service.ts";
 import type { AfterSalesService } from "./aftersales.ts";
+import type { ManualPaymentService } from "../payments/manual.ts";
 
 // /api/admin/orders in PostgreSQL mode (Task 16A).
 // GET (orders:read): no query or ?fulfillmentStatus=&cursor=&limit= lists the queue; ?id= reads one order.
 // POST (orders:fulfill, same origin): { action: "create_shipment", ... } or
 // { action: "dispatch" | "deliver" | "cancel" | "annotate", shipmentId, ... }; Task 16B adds
-// "cancel_order", "refund", "create_return" and "update_return" (the after-sales service). Permissions live in the services.
+// "cancel_order", "refund", "create_return" and "update_return" (the after-sales service). O07 (Task 21C)
+// adds "confirm_payment" (payments:confirm) and "complete_manual_refund" (payments:refund). Permissions live in the services.
 const bad = (): never => { throw new AuthFailure("INVALID_INPUT", 400, "Invalid or unknown fields"); };
 
-export function createFulfillmentHTTP(input: { service: FulfillmentService; aftersales?: AfterSalesService; baseURL: string }) {
-  const { service, aftersales, baseURL } = input;
+export function createFulfillmentHTTP(input: { service: FulfillmentService; aftersales?: AfterSalesService; manualPayments?: ManualPaymentService; baseURL: string }) {
+  const { service, aftersales, manualPayments, baseURL } = input;
   return async function handleFulfillment(request: Request): Promise<Response> {
     try {
       const url = new URL(request.url);
@@ -33,6 +35,10 @@ export function createFulfillmentHTTP(input: { service: FulfillmentService; afte
       const { action, ...rest } = body as Record<string, unknown>;
       if (action === "create_shipment") return adminJSON(await service.createShipment(request.headers, rest));
       if (action === "dispatch" || action === "deliver" || action === "cancel" || action === "annotate") return adminJSON(await service.updateShipment(request.headers, body));
+      if (manualPayments) {
+        if (action === "confirm_payment") return adminJSON(await manualPayments.confirm(request.headers, rest));
+        if (action === "complete_manual_refund") return adminJSON(await manualPayments.completeRefund(request.headers, rest));
+      }
       if (aftersales) {
         if (action === "cancel_order") return adminJSON(await aftersales.cancelOrder(request.headers, rest));
         if (action === "refund") return adminJSON(await aftersales.refund(request.headers, rest));

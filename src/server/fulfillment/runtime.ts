@@ -9,6 +9,7 @@ import { createFulfillmentService } from "./service.ts";
 import { createFulfillmentHTTP } from "./http.ts";
 import { createAfterSalesService } from "./aftersales.ts";
 import { paymentProviders } from "../payments/providers.ts";
+import { createManualPaymentService } from "../payments/manual.ts";
 
 let handler: ReturnType<typeof createFulfillmentHTTP> | undefined;
 
@@ -30,7 +31,9 @@ function getFulfillmentHandler() {
     };
     // Task 16B: cancellations, refunds (payments:refund needs fresh MFA) and returns.
     const aftersales = createAfterSalesService({ pool: getDatabase().pool, authorize, providers: paymentProviders() });
-    handler = createFulfillmentHTTP({ service, aftersales, baseURL: new URL(process.env.AUTH_BASE_URL!).origin });
+    // O07 (Task 21C): manual payment confirmation (payments:confirm, fresh MFA) and manual refund payouts.
+    const manualPayments = createManualPaymentService({ pool: getDatabase().pool, authorize });
+    handler = createFulfillmentHTTP({ service, aftersales, manualPayments, baseURL: new URL(process.env.AUTH_BASE_URL!).origin });
   }
   return handler;
 }

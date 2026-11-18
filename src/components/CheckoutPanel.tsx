@@ -11,8 +11,9 @@ import {
 
 // Task 14A checkout. The server prices the quote and places the order; this panel only collects
 // the delivery contact (D06: name, phone, address; email optional), shows the server's KZT quote
-// and submits it once with an idempotency key kept for retries. Payments are the demo mode (D03):
-// no money is taken and an order is never shown as paid.
+// and submits it once with an idempotency key kept for retries. Payment is manual (O07): the order
+// awaits payment, the receipt shows the KZT total and the staff-edited instructions, and staff
+// confirm the payment. The browser never decides that an order is paid.
 
 const session = createCheckoutStorage(() => sessionStorage);
 const browserClient = () => createCheckoutClient((url, init) => fetch(url, { ...init, credentials: "same-origin" }));
@@ -62,7 +63,7 @@ export function CheckoutPanel({ cart, disabled, onPlaced }: { cart: CartDTO; dis
     setBusy(true); setError(null);
     const email = form.email.trim();
     try {
-      const command = { quoteId: current.id, cartVersion: current.cartVersion, paymentMethod: "demo" as const, ...(email ? { contactEmail: email } : {}) };
+      const command = { quoteId: current.id, cartVersion: current.cartVersion, paymentMethod: "manual" as const, ...(email ? { contactEmail: email } : {}) };
       const result = await client.placeOrder(command, beginCheckout(session, command));
       forgetCheckoutKey(session);
       const placed = { orderId: result.orderId, orderNumber: result.orderNumber, statusToken: result.statusToken };
@@ -104,7 +105,7 @@ export function CheckoutPanel({ cart, disabled, onPlaced }: { cart: CartDTO; dis
             <div className="flex justify-between"><dt className="text-neutral-600">Tax</dt><dd>{formatKzt(current.tax)}</dd></div>
             <div className="flex justify-between border-t border-neutral-200 pt-2 text-[17px] font-medium"><dt>Total payable</dt><dd>{formatKzt(current.total)}</dd></div>
           </dl>
-          <p className="mt-3 text-[12px] text-neutral-500">Payment is a demo: no money is taken and your order stays awaiting payment. This total is held until {new Date(current.expiresAt).toLocaleTimeString()}.</p>
+          <p className="mt-3 text-[12px] text-neutral-500">No payment is taken online. After you place the order you will see how to pay; we confirm your payment by hand. This total is held until {new Date(current.expiresAt).toLocaleTimeString()}.</p>
           <button type="button" disabled={busy || disabled} onClick={() => { void place(); }} className="g-btn g-btn--solid mt-4 w-full disabled:cursor-not-allowed disabled:opacity-50">
             {retry ? "Retry placing order" : "Place order"}
           </button>
@@ -128,8 +129,19 @@ export function OrderReceived({ order }: { order: PlacedOrder }) {
   return (
     <div className="mx-auto max-w-[640px] px-4 py-24 text-center">
       <h1 className="g-heading text-[30px] text-black">Order {order.orderNumber} received</h1>
-      <p className="mt-3 text-neutral-600">Status: {status ? STATUS_LABEL[status.status] ?? status.status : "Awaiting payment"}{status ? ` · Total ${formatKzt(status.total)}` : ""}</p>
-      <p className="mt-2 text-[14px] text-neutral-500">This is a demo checkout: no payment has been taken, and the order is not paid.</p>
+      <p className="mt-3 text-neutral-600">Status: {status ? (status.status === "confirmed" && status.paymentStatus === "paid" ? "Paid" : STATUS_LABEL[status.status] ?? status.status) : "Awaiting payment"}{status ? ` · Total ${formatKzt(status.total)}` : ""}</p>
+      {status?.paymentMethod === "manual" && status.status === "pending_payment" && (
+        <div className="mx-auto mt-6 max-w-[520px] border border-neutral-200 p-4 text-left">
+          <h2 className="text-[15px] font-medium text-black">How to pay</h2>
+          <p className="mt-1 text-[14px] text-neutral-700">Pay <strong>{formatKzt(status.total)}</strong> and use the order number <span className="font-mono">{order.orderNumber}</span> as the payment reference.</p>
+          {status.paymentInstructions
+            ? <p className="mt-2 whitespace-pre-line text-[14px] text-neutral-700">{status.paymentInstructions}</p>
+            : <p className="mt-2 text-[14px] text-neutral-700">We will contact you with payment details.</p>}
+          {status.payBy && <p className="mt-2 text-[13px] text-neutral-500">Your order is held until {new Date(status.payBy).toLocaleString()}. If we have not received payment by then, it is cancelled.</p>}
+          <p className="mt-2 text-[13px] text-neutral-500">The order is not paid until we confirm your payment.</p>
+        </div>
+      )}
+      {status?.paymentMethod === "demo" && <p className="mt-2 text-[14px] text-neutral-500">This is a demo checkout: no payment has been taken, and the order is not paid.</p>}
       <Link href="/c/wearables-smartwatches" className="g-btn g-btn--solid mt-8">Continue Shopping</Link>
     </div>
   );

@@ -8,7 +8,9 @@ import { reserveStock, withInventoryTransaction } from "../inventory/reservation
 import { reserveCouponQuota } from "../pricing/coupons.ts";
 import { revalidateQuote, type DeliverySnapshot } from "../pricing/quote.ts";
 import { appendOutboxEvent } from "../operations/outbox.ts";
+import type { PaymentMethodCode } from "../../contracts/commerce.ts";
 import type { PaymentProvider, PaymentProviders } from "../payments/provider.ts";
+import { createManualProvider } from "../payments/manual-provider.ts";
 
 // Task 14A. Idempotent checkout inside the exact plan Section 6 boundary, in ONE short
 // transaction with no network call: claim the idempotency key (checkout_attempts), lock the cart
@@ -35,7 +37,7 @@ const stale = (): never => fail("QUOTE_STALE", 409, "Your cart changed; request 
 const checkoutInput = z.strictObject({
   quoteId: z.string().regex(UUID),
   cartVersion: z.number().int().min(1).max(2147483647),
-  paymentMethod: z.enum(["demo", "kaspi", "secondary"]),
+  paymentMethod: z.enum(["demo", "manual", "kaspi", "secondary"]),
   contactEmail: z.string().trim().max(254).email().optional(),
 });
 const statusInput = z.strictObject({ orderId: z.string().regex(UUID), statusToken: z.string().regex(STATUS_TOKEN).optional() });
@@ -83,15 +85,22 @@ async function replay(client: PoolClient, secret: string, scope: string, key: st
   return result(client, secret, scope, record.result.orderId, true);
 }
 
+/** The default stock and coupon hold of a manual-payment order when settings do not say (O07). */
+export const MANUAL_HOLD_HOURS = 48;
+
 /**
  * Places a pending order for the actor's quoted cart revision. A repeated key returns the original
- * order. Payment is the demo adapter unless the caller registers a real provider for the requested
- * method (Task 14B; the application registers none yet, D03), so kaspi/secondary stay 409.
+ * order. "manual" (O07) is real checkout: staff confirm the payment later, and the stock and coupon
+ * are held for the configured manual hold. "demo" is for tests and development only (`allowDemo`
+ * false refuses it). kaspi/secondary need a registered real provider (Task 14B; none yet, D03).
  */
-export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActor, idempotencyKey: string, input: unknown, options: { payments?: PaymentProviders } = {}): Promise<CheckoutResultDTO> {
+export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActor, idempotencyKey: string, input: unknown, options: { payments?: PaymentProviders; allowDemo?: boolean } = {}): Promise<CheckoutResultDTO> {
   if (typeof idempotencyKey !== "string" || !IDEMPOTENCY_KEY.test(idempotencyKey)) invalid();
   const command = parse(checkoutInput, input);
-  const provider: PaymentProvider | null = command.paymentMethod === "demo" ? null : options.payments?.get(command.paymentMethod) ?? null;
+  if (command.paymentMethod === "demo" && options.allowDemo === false) fail("PAYMENT_UNAVAILABLE", 409, "This payment method is not available");
+  const provider: PaymentProvider | null = command.paymentMethod === "demo" ? null
+    : command.paymentMethod === "manual" ? options.payments?.get("manual") ?? createManualProvider()
+    : options.payments?.get(command.paymentMethod) ?? null;
   if (command.paymentMethod !== "demo" && (!provider || provider.simulated || provider.name !== command.paymentMethod)) fail("PAYMENT_UNAVAILABLE", 409, "This payment method is not available yet");
   const paymentMode = provider ? "live" : "demo";
   const payment = provider ? { name: provider.name, environment: provider.environment, merchantAccount: provider.merchantAccount } : { name: "demo", environment: "demo", merchantAccount: "demo" };
@@ -133,8 +142,13 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
     const quote = (await client.query<QuoteSnapshot>(
       "SELECT delivery_snapshot,lines_snapshot,policy_versions,usd_snapshot,subtotal_minor::text,discount_minor::text,shipping_minor::text,tax_minor::text,total_minor::text FROM checkout_quotes WHERE id=$1",
       [command.quoteId])).rows[0];
-    const couponHold = await reserveCouponQuota(client, { checkoutAttemptId: attemptId });
-    const reservation = await reserveStock(client, { checkoutAttemptId: attemptId, lines: quote.lines_snapshot.map(line => ({ variantId: line.variantId, quantity: line.quantity })) });
+    // O07: a manual-payment order holds its stock and coupon while staff wait for the money.
+    const holdSeconds = command.paymentMethod === "manual"
+      ? 3600 * ((await client.query<{ hours: number }>("SELECT manual_payment_hold_hours AS hours FROM store_settings WHERE id=1")).rows[0]?.hours ?? MANUAL_HOLD_HOURS)
+      : undefined;
+    const hold = holdSeconds === undefined ? {} : { holdSeconds };
+    const couponHold = await reserveCouponQuota(client, { checkoutAttemptId: attemptId, ...hold });
+    const reservation = await reserveStock(client, { checkoutAttemptId: attemptId, ...hold, lines: quote.lines_snapshot.map(line => ({ variantId: line.variantId, quantity: line.quantity })) });
 
     // 4. The immutable order snapshot.
     const delivery = quote.delivery_snapshot, orderId = randomUUID();
@@ -210,13 +224,23 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
 /** Order status for polling: the owning session, or a guest's status token. Anything else is 404. */
 export async function readCheckoutStatus(pool: Pool, actor: CheckoutActor, input: unknown): Promise<CheckoutStatusDTO> {
   const command = parse(statusInput, input);
-  const row = (await pool.query<{ id: string; order_number: string; order_status: OrderStatus; payment_status: PaymentStatus; fulfillment_status: FulfillmentStatus; total_minor: string; placed_at: Date | null; payment_mode: string }>(
-    `SELECT o.id,o.order_number,o.order_status,o.payment_status,o.fulfillment_status,o.total_minor::text AS total_minor,o.placed_at,o.payment_mode FROM orders o
+  const row = (await pool.query<{ id: string; order_number: string; order_status: OrderStatus; payment_status: PaymentStatus; fulfillment_status: FulfillmentStatus; total_minor: string; placed_at: Date | null; payment_mode: string;
+    method: PaymentMethodCode | null; pay_by: Date | null; instructions: string | null }>(
+    `SELECT o.id,o.order_number,o.order_status,o.payment_status,o.fulfillment_status,o.total_minor::text AS total_minor,o.placed_at,o.payment_mode,
+       (SELECT a.provider FROM payment_attempts a WHERE a.order_id=o.id ORDER BY a.created_at DESC,a.id DESC LIMIT 1) AS method,
+       (SELECT max(r.expires_at) FROM inventory_reservations r WHERE r.checkout_attempt_id=o.checkout_attempt_id AND r.status='active') AS pay_by,
+       (SELECT s.manual_payment_instructions FROM store_settings s WHERE s.id=1) AS instructions
+     FROM orders o
      WHERE o.id=$1 AND o.payment_mode IN ('demo','live') AND o.checkout_attempt_id IS NOT NULL AND (($2::uuid IS NOT NULL AND o.user_id=$2::uuid) OR EXISTS(
        SELECT 1 FROM order_access_tokens t WHERE t.order_id=o.id AND t.token_hash=$3 AND t.scope='order_status' AND t.revoked_at IS NULL AND t.expires_at>clock_timestamp()))`,
     [command.orderId, actor.userId, command.statusToken ? sha256(command.statusToken) : null])).rows[0] ?? notFound();
+  const awaiting = row.order_status === "pending_payment" && ["unpaid", "pending", "failed"].includes(row.payment_status);
   return {
     orderId: row.id, orderNumber: row.order_number, status: row.order_status, paymentStatus: row.payment_status, fulfillmentStatus: row.fulfillment_status,
     paymentMode: row.payment_mode === "demo" ? "demo" : "live", total: kzt(row.total_minor), placedAt: row.placed_at ? row.placed_at.toISOString() : null,
+    paymentMethod: row.method,
+    // O07: instructions and the hold end only matter while the order still awaits payment.
+    paymentInstructions: awaiting && row.method === "manual" ? row.instructions : null,
+    payBy: awaiting && row.pay_by ? row.pay_by.toISOString() : null,
   };
 }

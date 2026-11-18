@@ -150,7 +150,8 @@ const inContext = (provider: PaymentProvider, event: PaymentEvent) => event.merc
  */
 export async function receiveWebhook(pool: Pool, providers: PaymentProviders, providerName: string, rawBody: Uint8Array, headers: Headers): Promise<{ status: "queued" | "duplicate" | "rejected"; inboxId: string }> {
   const provider = providers.get(providerName);
-  if (!provider || provider.simulated) return notFound();
+  // The demo and manual adapters take no webhooks (D03, O07).
+  if (!provider || provider.simulated || provider.name === "manual") return notFound();
   if (rawBody.byteLength > MAX_WEBHOOK_BYTES) fail("PAYLOAD_TOO_LARGE", 413, "The webhook body is too large");
   const body = Buffer.from(rawBody), inboxId = randomUUID();
   await pool.query("INSERT INTO webhook_inbox(id,provider,environment,merchant_account,raw_body,body_sha256) VALUES($1,$2,$3,$4,$5,$6)",
@@ -219,7 +220,7 @@ async function requestRefund(client: PoolClient, provider: PaymentProvider, orde
  * webhooks arrive through the inbox. Events never move an attempt backwards: a failure or
  * authorization after a capture is ignored, and a capture is recorded at most once.
  */
-export async function applyPaymentEvent(client: PoolClient, provider: PaymentProvider, event: PaymentEvent, source: "webhook" | "reconciliation"): Promise<PaymentOutcome> {
+export async function applyPaymentEvent(client: PoolClient, provider: PaymentProvider, event: PaymentEvent, source: "webhook" | "reconciliation" | "staff", evidence: Record<string, unknown> = {}): Promise<PaymentOutcome> {
   if (provider.simulated) return "ignored";
   const found = (await client.query<{ id: string; order_id: string }>(
     "SELECT id,order_id FROM payment_attempts WHERE provider=$1 AND environment=$2 AND merchant_account=$3 AND merchant_reference=$4",
@@ -254,7 +255,7 @@ export async function applyPaymentEvent(client: PoolClient, provider: PaymentPro
   }
 
   const transactionKind = event.kind === "captured" ? "capture" : "authorization";
-  const inserted = await recordTransaction(client, provider, order, row, event, transactionKind, row.amount_minor, source);
+  const inserted = await recordTransaction(client, provider, order, row, event, transactionKind, row.amount_minor, source, evidence);
   if (!inserted) return "duplicate";
 
   if (event.kind === "authorized") {
@@ -267,13 +268,13 @@ export async function applyPaymentEvent(client: PoolClient, provider: PaymentPro
   return capture(client, provider, order, row, inserted, source);
 }
 
-async function recordTransaction(client: PoolClient, provider: PaymentProvider, order: OrderRow, row: AttemptRow, event: PaymentEvent, kind: "capture" | "authorization", amountMinor: string, source: string): Promise<string | null> {
+async function recordTransaction(client: PoolClient, provider: PaymentProvider, order: OrderRow, row: AttemptRow, event: PaymentEvent, kind: "capture" | "authorization", amountMinor: string, source: string, evidence: Record<string, unknown> = {}): Promise<string | null> {
   return (await client.query<{ id: string }>(
     `INSERT INTO payment_transactions(id,attempt_id,order_id,provider,environment,merchant_account,external_id,kind,currency,amount_minor,dedupe_key,evidence,occurred_at)
      VALUES($1,$2,$3,$4,$5,$6,$7,$8,'KZT',$9,$10,$11,$12) ON CONFLICT DO NOTHING RETURNING id`,
     [randomUUID(), row.id, order.id, provider.name, provider.environment, provider.merchantAccount, event.transactionId, kind, amountMinor,
       `${provider.name}:${provider.environment}:${provider.merchantAccount}:${kind}:${event.transactionId}`,
-      JSON.stringify({ eventId: event.eventId, source, sessionId: event.sessionId, provenance: provenance(provider) }), event.occurredAt])).rows[0]?.id ?? null;
+      JSON.stringify({ ...evidence, eventId: event.eventId, source, sessionId: event.sessionId, provenance: provenance(provider) }), event.occurredAt])).rows[0]?.id ?? null;
 }
 
 async function flagException(client: PoolClient, orderId: string): Promise<void> {
@@ -372,6 +373,54 @@ async function capture(client: PoolClient, provider: PaymentProvider, order: Ord
 }
 
 // ---------------------------------------------------------------------------------------------
+// Manual confirmation (owner decision O07, Task 21C)
+
+export interface ManualCapture { orderId: string; method: string; reference: string; amountMinor: string; note?: string; actorUserId: string }
+const MANUAL_CAPTURE = "SELECT id,order_id,amount_minor::text AS amount_minor,evidence FROM payment_transactions WHERE provider='manual' AND environment='live' AND merchant_account='manual' AND kind='capture' AND external_id=$1";
+
+/**
+ * Applies a staff-confirmed manual payment through the capture path above, in the caller's
+ * transaction. The reference (already normalized) is the capture's external id, so it is used once:
+ * the same order, method and amount replay the original result; anything else is refused before a
+ * fact is written. Only an order awaiting payment whose stock hold is still running can be confirmed,
+ * and only for exactly its KZT total.
+ */
+export async function confirmManualCapture(client: PoolClient, provider: PaymentProvider, input: ManualCapture): Promise<{ transactionId: string; replayed: boolean; outcome: PaymentOutcome }> {
+  if (provider.name !== "manual" || provider.simulated) return unavailable();
+  const order = await lockOrder(client, input.orderId);
+  const earlier = (await client.query<{ id: string; order_id: string; amount_minor: string; evidence: Record<string, unknown> }>(MANUAL_CAPTURE, [input.reference])).rows[0];
+  if (earlier) {
+    if (earlier.order_id !== order.id) fail("REFERENCE_USED", 409, "This payment reference was already used for another order");
+    if (earlier.evidence.method !== input.method || earlier.amount_minor !== input.amountMinor) fail("IDEMPOTENCY_CONFLICT", 409, "This reference was already confirmed with a different method or amount");
+    return { transactionId: earlier.id, replayed: true, outcome: "duplicate" };
+  }
+  const attempts = (await client.query<AttemptRow>(`SELECT ${ATTEMPT_COLUMNS} FROM payment_attempts WHERE order_id=$1 ORDER BY created_at,id FOR UPDATE`, [order.id])).rows;
+  const row = attempts.filter(attempt => attempt.provider === "manual").pop();
+  if (!row || !order.checkout_attempt_id) fail("PAYMENT_NOT_MANUAL", 409, "This order is not paid by manual confirmation");
+  if (PAID.has(order.payment_status)) fail("ORDER_ALREADY_PAID", 409, "This order is already paid");
+  if (order.order_status === "cancelled") {
+    const expired = (await client.query("SELECT 1 FROM order_events WHERE order_id=$1 AND type='order.expired'", [order.id])).rowCount;
+    fail(expired ? "ORDER_EXPIRED" : "ORDER_CANCELLED", 409, expired ? "This order expired before payment was confirmed" : "This order was cancelled");
+  }
+  if (order.order_status !== "pending_payment" || !PAYABLE.has(row!.status)) fail("ORDER_NOT_PAYABLE", 409, "This order is not awaiting payment");
+  // The hold must still run: once it ends the stock may already be someone else's (the sweep
+  // cancels such orders on its next slot).
+  const hold = (await client.query("SELECT 1 FROM inventory_reservations WHERE checkout_attempt_id=$1 AND status='active' AND expires_at>now()", [order.checkout_attempt_id])).rowCount;
+  if (!hold) fail("ORDER_EXPIRED", 409, "The payment hold for this order has ended");
+  if (input.amountMinor !== order.total_minor || input.amountMinor !== row!.amount_minor) fail("AMOUNT_MISMATCH", 409, "The confirmed amount must equal the order total in KZT");
+
+  const event: PaymentEvent = {
+    eventId: `manual:${input.reference}`, kind: "captured", merchantAccount: provider.merchantAccount, environment: provider.environment,
+    merchantReference: row!.merchant_reference, sessionId: null, transactionId: input.reference, amountMinor: input.amountMinor, currency: "KZT", occurredAt: null,
+  };
+  const outcome = await applyPaymentEvent(client, provider, event, "staff", { method: input.method, note: input.note ?? null, confirmedBy: input.actorUserId });
+  // A concurrent confirmation committed the same reference first (the capture insert waited on it).
+  if (outcome === "duplicate") fail("REFERENCE_USED", 409, "This payment reference was already used");
+  const transactionId = (await client.query<{ id: string }>(MANUAL_CAPTURE, [input.reference])).rows[0]?.id ?? fail("REFERENCE_USED", 409, "This payment reference was already used");
+  return { transactionId, replayed: false, outcome };
+}
+
+// ---------------------------------------------------------------------------------------------
 // Reconciliation, replacement and expiry
 
 /**
@@ -380,7 +429,8 @@ async function capture(client: PoolClient, provider: PaymentProvider, order: Ord
  */
 export async function reconcilePayments(pool: Pool, providers: PaymentProviders, options: { olderThanMs?: number; limit?: number } = {}): Promise<{ checked: number; applied: number; failed: number }> {
   const olderThanMs = Math.max(0, Math.trunc(options.olderThanMs ?? 60_000)), limit = Math.min(Math.max(Math.trunc(options.limit ?? 100), 1), 500);
-  const real = [...providers.values()].filter(provider => !provider.simulated).map(provider => provider.name);
+  // The manual adapter has nothing to look up: staff confirm its payments (O07).
+  const real = [...providers.values()].filter(provider => !provider.simulated && provider.name !== "manual").map(provider => provider.name);
   if (real.length === 0) return { checked: 0, applied: 0, failed: 0 };
   const rows = (await pool.query<AttemptRow>(
     `SELECT ${ATTEMPT_COLUMNS} FROM payment_attempts WHERE provider=ANY($1::text[]) AND status IN ('pending','requires_action','authorized','unknown') AND provider_session_id IS NOT NULL

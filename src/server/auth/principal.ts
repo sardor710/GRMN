@@ -31,7 +31,7 @@ export async function requireStaffPrincipal(runtime: AuthRuntime, headers: Heade
 export async function requirePermission(runtime: AuthRuntime, headers: Headers, permission: Permission) {
   const current = await getSessionIdentity(runtime, headers), principal = principalFromIdentity(current);
   if (!principal.permissions.includes(permission)) throw new AuthFailure("FORBIDDEN", 403, "Permission is required");
-  if (["staff:manage", "settings:write", "payments:refund", "exports:create"].includes(permission)) {
+  if (["staff:manage", "settings:write", "payments:refund", "payments:confirm", "exports:create"].includes(permission)) {
     if (!current?.mfa_at || Date.now()-current.mfa_at.getTime()>900000) throw new AuthFailure("FORBIDDEN", 403, "Fresh MFA verification is required");
   }
   return principal;

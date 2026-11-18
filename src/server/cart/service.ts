@@ -84,9 +84,11 @@ export interface CartServiceOptions {
   market?: string;
   /** Quote lifetime (Task 13B); 15 minutes by default. */
   quoteTtlSeconds?: number;
+  /** O07: whether checkout accepts the simulated demo payment method. The runtime refuses it in production. */
+  allowDemoPayments?: boolean;
 }
 
-export function createCartService({ database, secret, identify, market = "default", quoteTtlSeconds = QUOTE_TTL_SECONDS }: CartServiceOptions) {
+export function createCartService({ database, secret, identify, market = "default", quoteTtlSeconds = QUOTE_TTL_SECONDS, allowDemoPayments = true }: CartServiceOptions) {
   if (!/^[a-f0-9]{64}$/i.test(secret)) throw new Error("Cart services require the validated auth secret");
   const digest = (token: string) => createHmac("sha256", secret).update("grmn-cart-capability:v1:" + token).digest("hex");
 
@@ -298,11 +300,11 @@ export function createCartService({ database, secret, identify, market = "defaul
       });
     },
 
-    // Task 14A: places one pending demo order for the actor's quoted cart revision. The
-    // idempotency key comes from the Idempotency-Key header; a retried key returns the same order.
+    // Task 14A: places one pending order for the actor's quoted cart revision (manual payment, O07).
+    // The idempotency key comes from the Idempotency-Key header; a retried key returns the same order.
     async checkout(headers: Headers, idempotencyKey: string, input: unknown): Promise<CheckoutResultDTO> {
       const who = await actor(headers);
-      return placeOrder(database.pool, secret, { userId: who.userId, guestTokenHash: who.userId ? null : who.tokenHash }, idempotencyKey, input);
+      return placeOrder(database.pool, secret, { userId: who.userId, guestTokenHash: who.userId ? null : who.tokenHash }, idempotencyKey, input, { allowDemo: allowDemoPayments });
     },
 
     // Task 14A: the polling contract after checkout (owning session, or a guest status token).
