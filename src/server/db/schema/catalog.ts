@@ -192,3 +192,24 @@ export const prices = pgTable("prices", {
   check("prices_currency_market_valid", sql`${table.currency}='KZT' AND length(btrim(${table.market}))>0`),
   check("prices_version_valid", sql`${table.version}>=1`),
 ]);
+
+// Task 21B follow-up (owner, 2026-11-18): the maintained offer summary for price-sorted listings.
+// Derived data: one row per eligible variant and market (an active variant that chooses every option,
+// with an active KZT price there), with whether a live location has free stock. Only the 0015
+// functions write it, from deferred triggers on prices, variants, options, selections, balances and
+// locations; catalog_rebuild_offers() rebuilds it after a bulk load that bypassed triggers.
+export const catalogVariantOffers = pgTable("catalog_variant_offers", {
+  variantId: uuid("variant_id").notNull().references(() => productVariants.id, { onDelete: "cascade" }),
+  market: text("market").notNull(),
+  productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  // The listing's tie-break is the variant id as text (the `chosen` order), so it is stored for the index.
+  variantKey: text("variant_key").notNull(),
+  amountMinor: bigint("amount_minor", { mode: "bigint" }).notNull(),
+  available: boolean("available").notNull(),
+  refreshedAt: timestamp("refreshed_at", { withTimezone: true }).notNull().defaultNow(),
+}, table => [
+  primaryKey({ columns: [table.variantId, table.market] }),
+  // The chosen offer of a product: available first, then cheapest, then variant id.
+  index("catalog_variant_offers_choice_idx").on(table.productId, table.market, table.available.desc(), table.amountMinor, table.variantKey),
+  check("catalog_variant_offers_valid", sql`${table.amountMinor}>=0 AND ${table.variantKey}=${table.variantId}::text`),
+]);

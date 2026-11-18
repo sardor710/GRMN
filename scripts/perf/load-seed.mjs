@@ -123,7 +123,8 @@ try{
     });
     await client.query("COMMIT");
   }catch(error){await client.query("ROLLBACK");throw error;}
-  try{await step("analyze",()=>client.query("VACUUM (ANALYZE)"));}finally{await client.end();}
+  // The bulk load bypassed triggers, so the offer summary (0015) is rebuilt from the loaded state.
+  try{await step("offer summary",()=>client.query("SELECT catalog_rebuild_offers()"));await step("analyze",()=>client.query("VACUUM (ANALYZE)"));}finally{await client.end();}
 
   // The storefront homepage: the repository's own CMS homepage content, saved through the CMS service.
   await step("homepage",async()=>{

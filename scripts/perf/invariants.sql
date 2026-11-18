@@ -13,4 +13,15 @@ UNION ALL SELECT 'at most one payable attempt per order', count(*)=0, count(*) F
 UNION ALL SELECT 'no capture recorded twice', count(*)=0, count(*) FROM (SELECT provider,environment,merchant_account,kind,external_id FROM payment_transactions GROUP BY 1,2,3,4,5 HAVING count(*)>1) x
 UNION ALL SELECT 'no new order marked paid without a capture', count(*)=0, count(*) FROM orders o WHERE o.checkout_attempt_id IS NOT NULL AND o.payment_status='paid' AND NOT EXISTS(SELECT 1 FROM payment_transactions t WHERE t.order_id=o.id AND t.kind='capture')
 UNION ALL SELECT 'no refunds over captured cash', count(*)=0, count(*) FROM (SELECT t.id FROM payment_transactions t JOIN refunds r ON r.transaction_id=t.id AND r.status IN ('reserved','pending','unknown','succeeded') GROUP BY t.id,t.amount_minor HAVING sum(r.amount_minor)>t.amount_minor) x
-UNION ALL SELECT 'every converted guest cart has one owner', count(*)=0, count(*) FROM carts WHERE user_id IS NOT NULL AND guest_token_hash IS NOT NULL;
+UNION ALL SELECT 'every converted guest cart has one owner', count(*)=0, count(*) FROM carts WHERE user_id IS NOT NULL AND guest_token_hash IS NOT NULL
+UNION ALL SELECT 'the offer summary equals the live offers', count(*)=0, count(*) FROM (
+  (SELECT variant_id,market,product_id,amount_minor,available FROM catalog_variant_offers
+   EXCEPT SELECT variant_id,market,product_id,amount_minor,available FROM catalog_variant_offer_source)
+  UNION ALL
+  (SELECT variant_id,market,product_id,amount_minor,available FROM catalog_variant_offer_source
+   EXCEPT SELECT variant_id,market,product_id,amount_minor,available FROM catalog_variant_offers)) x
+UNION ALL SELECT 'at most 3 unpaid manual orders per customer', count(*)=0, count(*) FROM (
+  SELECT o.user_id FROM orders o WHERE o.user_id IS NOT NULL AND o.order_status='pending_payment' AND o.payment_status IN ('unpaid','pending','failed') AND o.payment_mode='live'
+    AND EXISTS(SELECT 1 FROM payment_attempts a WHERE a.order_id=o.id AND a.provider='manual')
+    AND EXISTS(SELECT 1 FROM inventory_reservations r WHERE r.checkout_attempt_id=o.checkout_attempt_id AND r.status='active' AND r.expires_at>clock_timestamp())
+  GROUP BY 1 HAVING count(*)>3) x;

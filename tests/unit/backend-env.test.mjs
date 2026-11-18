@@ -48,3 +48,14 @@ test("Task 21B: pool wait statistics are off by default and bounded when enabled
   assert.equal(parseServerEnv({ DATABASE_URL: localUrl, DATABASE_POOL_STATS_MS: "5000" }).poolStatsMs, 5000);
   for (const value of ["-1", "1.5", "3600001", "x"]) assert.throws(() => parseServerEnv({ DATABASE_URL: localUrl, DATABASE_POOL_STATS_MS: value }));
 });
+
+test("Task 21B follow-up: the listing limit defaults to half the pool (at least 1) and waits 2 s", () => {
+  const base = parseServerEnv({ DATABASE_URL: localUrl });
+  assert.deepEqual([base.listingConcurrency, base.listingWaitMs], [2, 2000], "pool 5 → 2 listings");
+  assert.equal(parseServerEnv({ DATABASE_URL: localUrl, DATABASE_POOL_MAX: "1" }).listingConcurrency, 1);
+  assert.equal(parseServerEnv({ DATABASE_URL: localUrl, DATABASE_POOL_MAX: "10" }).listingConcurrency, 5);
+  assert.equal(parseServerEnv({ DATABASE_URL: localUrl, CATALOG_LISTING_CONCURRENCY: "3", CATALOG_LISTING_WAIT_MS: "500" }).listingConcurrency, 3);
+  assert.equal(parseServerEnv({ DATABASE_URL: localUrl, CATALOG_LISTING_WAIT_MS: "500" }).listingWaitMs, 500);
+  for (const [field, value] of [["CATALOG_LISTING_CONCURRENCY", "0"], ["CATALOG_LISTING_CONCURRENCY", "101"], ["CATALOG_LISTING_WAIT_MS", "0"], ["CATALOG_LISTING_WAIT_MS", "30001"]])
+    assert.throws(() => parseServerEnv({ DATABASE_URL: localUrl, [field]: value }), field + "=" + value);
+});

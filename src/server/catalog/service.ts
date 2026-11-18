@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { Availability, DisplayCurrency, ExchangeRateSnapshotDTO, MediaDTO, PriceDTO, ProductCardDTO, ProductDetailDTO, ProductQuery, VariantDTO } from "../../contracts/commerce.ts";
 import type { Page, PageInput } from "../../contracts/pagination.ts";
 import { AuthFailure } from "../auth/config.ts";
+import type { ConcurrencyLimit } from "./limit.ts";
 
 const fail = (): never => { throw new AuthFailure("INVALID_INPUT", 400, "Invalid catalog query or cursor"); };
 const text = z.string().trim().min(1).max(200);
@@ -37,8 +38,7 @@ const eligibleFrom = (stock: boolean) => `FROM product_variants v
  JOIN prices pr ON pr.variant_id=v.id AND pr.is_active AND pr.currency='KZT' AND pr.market=$1${stock ? `
  CROSS JOIN LATERAL (SELECT count(*) AS known,COALESCE(sum(ib.on_hand-ib.reserved),0) AS free FROM inventory_balances ib JOIN stock_locations sl ON sl.id=ib.location_id AND sl.archived_at IS NULL WHERE ib.variant_id=v.id) balance` : ""}
  WHERE v.product_id=p.id AND v.status='active' AND NOT EXISTS(SELECT 1 FROM product_options po WHERE po.product_id=p.id AND NOT EXISTS(SELECT 1 FROM variant_option_values vo WHERE vo.variant_id=v.id AND vo.option_id=po.id))`;
-const eligibleVariant = eligibleFrom(false);
-// The same variants with their stock state.
+// The eligible variants with their stock state (built for the selected page only).
 const variantsFrom = eligibleFrom(true);
 const stateSQL = `(CASE WHEN balance.known=0 THEN 'unavailable' WHEN balance.free>0 THEN 'available' ELSE 'out_of_stock' END)`;
 // Classification keys of product `p`; `eligible` computes one only when a filter needs it.
@@ -49,17 +49,23 @@ const keySQL = {
   case_size: `COALESCE(p.legacy_content->>'caseSize',(SELECT ae.label FROM product_attribute_values av JOIN attribute_definitions ad ON ad.id=av.attribute_id JOIN attribute_enum_values ae ON ae.attribute_id=ad.id AND ae.key=av.enum_value WHERE av.product_id=p.id AND ad.key='case_size'))`,
 } as const;
 type KeyColumn = keyof typeof keySQL;
-// Price sorts need the chosen offer's price for every product (available first, then cheapest, then variant
-// id: the same order as `chosen`); other sorts only need to know an eligible variant exists.
+// Paging and sorting read the maintained offer summary (catalog_variant_offers, migration 0015): one row
+// per eligible variant and market, kept equal to the live definition above at every commit by deferred
+// triggers. Price sorts take each product's chosen offer from its index (available first, then cheapest,
+// then variant id: the same order as `chosen`) instead of ranking every variant per request (21B: 1.3 s
+// per page at 5,000 products); other sorts only need to know an eligible offer exists. Display prices,
+// stock states and the chosen offer of the selected page are still built live by offersSQL.
+const chosenOffer = `SELECT o.amount_minor AS amount FROM catalog_variant_offers o WHERE o.product_id=p.id AND o.market=$1 ORDER BY o.available DESC NULLS LAST,o.amount_minor,o.variant_key LIMIT 1`;
+const hasOffer = `EXISTS(SELECT 1 FROM catalog_variant_offers o WHERE o.product_id=p.id AND o.market=$1)`;
 const base = (byPrice: boolean, keys: ReadonlySet<KeyColumn>) => `WITH eligible AS (
  SELECT p.id,p.public_key,p.name,p.description,to_char(p.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_key,
  ${[...keys].map(column => `${keySQL[column]} AS ${column},`).join("\n ")}
  ${byPrice ? "summary.amount" : "NULL::bigint AS amount"}
  FROM products p
  ${byPrice
-    ? `JOIN LATERAL (SELECT count(*) AS n,(array_agg(pr.amount_minor ORDER BY (${stateSQL}='available') DESC,pr.amount_minor,v.id::text))[1] AS amount ${variantsFrom}) summary ON summary.n>0`
+    ? `JOIN LATERAL (${chosenOffer}) summary ON true`
     : ""}
- WHERE p.status='published'${byPrice ? "" : ` AND EXISTS(SELECT 1 ${eligibleVariant})`}
+ WHERE p.status='published'${byPrice ? "" : ` AND ${hasOffer}`}
  )`;
 // Display columns of the selected page (`p` is joined by offersSQL).
 const pageColumns = `p.id,p.public_key,p.name,p.description,p.family,p.badge,p.price_suffix,p.specs,p.features,p.in_the_box,p.seo_title,p.seo_description,p.canonical_url,p.no_index,p.og_image_source,
@@ -75,7 +81,9 @@ const offersSQL = `JOIN products p ON p.id=selected.id
  ) ORDER BY v.is_default DESC,v.id) AS variants ${variantsFrom}) offers ON offers.variants IS NOT NULL
  CROSS JOIN LATERAL (SELECT item AS offer FROM jsonb_array_elements(offers.variants) item ORDER BY (item->>'availability'='available') DESC,(item->>'amount')::bigint,item->>'id' LIMIT 1) chosen`;
 
-export function createCatalogService({pool,publicMarkets=["default"]}:{pool:Pick<Pool,"query">;publicMarkets?:readonly string[]}) {
+// `listingLimit` (Task 21B follow-up) caps concurrent listings only: key, product and redirect reads stay
+// uncapped, so a burst of listings cannot starve product pages of pool connections.
+export function createCatalogService({pool,publicMarkets=["default"],listingLimit}:{pool:Pick<Pool,"query">;publicMarkets?:readonly string[];listingLimit?:ConcurrencyLimit}) {
   function queryInput(input:unknown){const q=parse(schema,input);if(!publicMarkets.includes(q.market))fail();return q;}
   async function rate(currency:DisplayCurrency):Promise<ExchangeRateSnapshotDTO|null>{
     if(currency!=="USD")return null;
@@ -121,7 +129,7 @@ export function createCatalogService({pool,publicMarkets=["default"]}:{pool:Pick
       if(rows.some(r=>!safe(r.target_path)||r.seen.includes(r.target_path)||r.depth>=9))throw new AuthFailure("DEPENDENCY_UNAVAILABLE",503,"Redirect configuration is unavailable");
       return{targetPath:rows[0].target_path,statusCode:rows[0].status_code};
     },
-    async listProducts(input:ProductQuery,page:PageInput={}):Promise<Page<ProductCardDTO>> {const result=await select(queryInput(input),page);return{items:result.rows.map(row=>card(row,result.fx)),nextCursor:result.nextCursor};},
+    async listProducts(input:ProductQuery,page:PageInput={}):Promise<Page<ProductCardDTO>> {const q=queryInput(input),run=()=>select(q,page),result=await(listingLimit?listingLimit(run):run());return{items:result.rows.map(row=>card(row,result.fx)),nextCursor:result.nextCursor};},
     async getProductsByKeys(keys:string[],input:ProductQuery):Promise<Page<ProductCardDTO>> {parse(z.array(text).max(100),keys);const result=await select(queryInput(input),{limit:100},keys);return{items:result.rows.map(row=>card(row,result.fx)),nextCursor:null};},
     async getProductByPublicKey(publicKey:string,market:string,displayCurrency:DisplayCurrency):Promise<ProductDetailDTO|null>{
       parse(text,publicKey);const q=queryInput({market,displayCurrency,locale:"en"}),result=await select(q,{limit:1},[publicKey]),row=result.rows[0];if(!row)return null;

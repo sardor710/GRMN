@@ -72,6 +72,8 @@ try{
     await client.query("INSERT INTO product_media(id,product_id,variant_id,media_id,position,is_primary) SELECT gen_random_uuid(),product_id,variant_id,media_id,position,is_primary FROM seed_media");
     await client.query("COMMIT");
   }catch(error){await client.query("ROLLBACK");throw error;}finally{client.release();}
+  // The bulk load bypassed triggers, so the offer summary (0015) is rebuilt from the loaded state.
+  await q("SELECT catalog_rebuild_offers()");
   await q("ANALYZE");
   const seedMs=Date.now()-started;
 
