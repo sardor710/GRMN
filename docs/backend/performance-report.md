@@ -1,11 +1,11 @@
 # Performance report (Task 21A, partial)
 
-**Status:** query-plan evidence, index decisions and shared rate limits, 2026-11-18.
+**Status:** query-plan evidence, index decisions and shared rate limits, 2026-11-18. Catalog and search plans at full catalog volume, with a listing fix, were added on 2026-11-18 (see "Catalog listing and search").
 
 **Not done:**
 - Section 3 load runs (21B).
-- Full-volume (scale 1) plans.
-- Catalog and search plans.
+- Full-volume (scale 1) plans for orders and reports.
+- A price-sorted listing under 300 ms (see below).
 - The public data cache, which was withdrawn (see below).
 
 Nothing here certifies production capacity. The host was a developer laptop (8 GB RAM, 0.1–0.6 GB free during the runs), not the target VPS (O05 is open).
@@ -56,10 +56,46 @@ These scans grow linearly with orders and captures. At Section 3 volume (10× th
 - **Dashboard refunds:** the seed has no refunds, so the refunds × `order_events` join was not exercised at volume. It joins on the unique `order_events.dedupe_key` index.
 - **Low-stock list:** a top-N over balances, about 50–70 ms at 50,000 variants (staff only). Revisit if 21B puts it on a hot path.
 
-## Not measured (review I9)
+## Catalog listing and search (review I9 follow-up)
 
-- **Catalog listing and search.** The real query (`catalog/service.ts` eligible CTE: per-product lateral variant, price and inventory aggregation, media and option subqueries, `ILIKE` on name or description, ordering by a computed price or name) needs categories, options, media and attributes, and this seed creates none of them. The earlier simplified probes have been removed.
-- **No search or trigram decision is made yet.** This is 21B work, on a seed with catalog relations.
+**Method:** `node --conditions=react-server scripts/perf/catalog-explain.mjs <scale>`.
+- It seeds a temporary PostgreSQL 18.6 with **catalog relations**: at scale 1, 5,000 products and 50,000 variants.
+  - Every product has two options (size × color, 10 variants), one primary category, three activities, and level and case-size attributes.
+  - Every variant has a price and a stock row (about 20% out of stock). There are 70,000 public media rows: 4 per product and 1 per variant.
+- It calls the **real** `catalog/service.ts` through a pool that records every statement, then runs `EXPLAIN (ANALYZE, BUFFERS)` on exactly that SQL. Nothing is copied by hand.
+- Raw output: [before](perf-catalog-scale-1-before.json) and [after](perf-catalog-scale-1-after.json), on the same seed. The seed took 7.5 s.
+
+**Finding:** the listing built every published product's full variant, option, stock and gallery JSON before it filtered, sorted and applied LIMIT 24. Every listing request scaled with the whole catalog: about 7.5 s per page at 5,000 products, against the Section 3 target of p95 under 300 ms for public uncached reads.
+
+**Fix** (`catalog/service.ts`, no migration):
+- `eligible` now holds only what filtering, sorting and paging need: id, key, name, description, creation time and, for price sorts, the chosen offer's price.
+- Category, activity, level and case-size keys are computed only when a filter uses them.
+- Non-price sorts check eligibility with `EXISTS`, which stops at the first eligible variant.
+- Display columns and the variant, gallery and option JSON are built only for the selected rows.
+
+The DTOs are unchanged. The catalog integration tests (26) pass, including a new mutation-checked test: price sorting and cursors follow the chosen offer when a cheaper variant is out of stock.
+
+| Scenario (real service call) | Before | After |
+|---|---|---|
+| Listing, first page, by name | **7,848 ms** | **135 ms** |
+| Listing, second page via cursor | 7,836 ms | 129 ms |
+| Listing, newest | 7,296 ms | 130 ms |
+| Listing, price ascending | 7,314 ms | **751 ms** |
+| Listing, category filter | 1,331 ms | 79 ms |
+| Running catalogue (`activitiesAll`) | 2,693 ms | 88 ms |
+| Level + case-size filters | 907 ms | 113 ms |
+| Search, common term | 1,466 ms | 90 ms |
+| Search, rare term / no match | 6 / 4 ms | 6 / 4 ms |
+| Product detail by key | 2.4 ms | 2.3 ms |
+| Compare / related by keys | 6.7 ms | 7.5 ms |
+
+Times are single runs of database execution time on a developer laptop, not p95 under load.
+
+**Tried and rejected:** checking "chooses every option" by comparing counts instead of the nested `NOT EXISTS`. It made the price sort slower (1,165 ms) and the name sort slower (171 ms), so it was reverted. The database already rejects an active variant that misses an option at commit (now covered by a test), so the query check is defense in depth.
+
+**Remaining:**
+- **Price sorts** (about 750 ms at full volume) still rank every eligible variant by stock state and price, which is roughly 18 buffers per variant. Getting under 300 ms needs a maintained per-product offer summary (chosen price and availability, updated with price, stock and variant changes) or the shared cache. Both are schema or infrastructure decisions, and 21B should confirm on the VPS whether price sort is used enough to matter.
+- **Search:** `ILIKE '%term%'` is applied while scanning products, before the per-product work: a rare term costs 6 ms in total, so the scan itself is cheap at 5,000 products. A common term costs about 90 ms because of the matching rows' eligibility checks, which a trigram index would not reduce. **Decision: no trigram index at Section 3 volume.** Revisit if the catalog grows by an order of magnitude.
 
 ## Decisions (migration `0011_performance-throttle`)
 
@@ -110,4 +146,4 @@ On hardware representative of the VPS (O05), recording generator, hardware, regi
 - Section 3 steady load (100 rps for 30 min), burst (500 rps for 5 min) and checkout (20/s for 5 min);
 - last-unit contention;
 - p95/p99 latency, 5xx rate, pool wait, database resources and worker/expiry lag;
-- catalog and search plans on a seed with catalog relations.
+- catalog listing p95 under that load, and whether price-sorted listings need the offer summary or the cache (catalog plans themselves are measured above).

@@ -1,0 +1,241 @@
+{
+  "scale": 1,
+  "postgres": "18.6",
+  "seedMs": 7442,
+  "counts": {
+    "products": 5000,
+    "variants": 50000,
+    "media": 70000,
+    "product_categories": 5000,
+    "product_activities": 15000,
+    "variant_option_values": 100000
+  },
+  "results": {
+    "listing, first page, name (catalog listProducts)": {
+      "wallMs": 7485.06,
+      "statements": [
+        {
+          "ms": 7848.01,
+          "planningMs": 2.66,
+          "sharedBlocks": 6287568,
+          "seqScans": [
+            "Seq Scan on products",
+            "Seq Scan on stock_locations",
+            "Seq Scan on categories",
+            "Seq Scan on activities",
+            "Seq Scan on attribute_definitions",
+            "Seq Scan on attribute_enum_values"
+          ],
+          "indexes": 18
+        }
+      ]
+    },
+    "listing, second page via cursor": {
+      "wallMs": 7419.1,
+      "statements": [
+        {
+          "ms": 7836.28,
+          "planningMs": 2.53,
+          "sharedBlocks": 6257380,
+          "seqScans": [
+            "Seq Scan on products",
+            "Seq Scan on stock_locations",
+            "Seq Scan on categories",
+            "Seq Scan on activities",
+            "Seq Scan on attribute_definitions",
+            "Seq Scan on attribute_enum_values"
+          ],
+          "indexes": 18
+        }
+      ]
+    },
+    "listing, price ascending": {
+      "wallMs": 7070.64,
+      "statements": [
+        {
+          "ms": 7314,
+          "planningMs": 6.18,
+          "sharedBlocks": 5789795,
+          "seqScans": [
+            "Seq Scan on products",
+            "Seq Scan on stock_locations",
+            "Seq Scan on categories",
+            "Seq Scan on activities",
+            "Seq Scan on attribute_definitions",
+            "Seq Scan on attribute_enum_values"
+          ],
+          "indexes": 19
+        }
+      ]
+    },
+    "listing, newest": {
+      "wallMs": 6943.72,
+      "statements": [
+        {
+          "ms": 7296.48,
+          "planningMs": 2.32,
+          "sharedBlocks": 5789795,
+          "seqScans": [
+            "Seq Scan on products",
+            "Seq Scan on stock_locations",
+            "Seq Scan on categories",
+            "Seq Scan on activities",
+            "Seq Scan on attribute_definitions",
+            "Seq Scan on attribute_enum_values"
+          ],
+          "indexes": 19
+        }
+      ]
+    },
+    "listing, category filter": {
+      "wallMs": 1268.34,
+      "statements": [
+        {
+          "ms": 1331.05,
+          "planningMs": 2.32,
+          "sharedBlocks": 1040285,
+          "seqScans": [
+            "Seq Scan on products",
+            "Seq Scan on categories",
+            "Seq Scan on stock_locations",
+            "Seq Scan on activities",
+            "Seq Scan on attribute_definitions",
+            "Seq Scan on attribute_enum_values"
+          ],
+          "indexes": 19
+        }
+      ]
+    },
+    "listing, activitiesAll running (running catalogue)": {
+      "wallMs": 2575.54,
+      "statements": [
+        {
+          "ms": 2693.07,
+          "planningMs": 2.49,
+          "sharedBlocks": 2131825,
+          "seqScans": [
+            "Seq Scan on products",
+            "Seq Scan on activities",
+            "Seq Scan on stock_locations",
+            "Seq Scan on categories",
+            "Seq Scan on attribute_definitions",
+            "Seq Scan on attribute_enum_values"
+          ],
+          "indexes": 19
+        }
+      ]
+    },
+    "listing, level + case size filters": {
+      "wallMs": 866,
+      "statements": [
+        {
+          "ms": 907.35,
+          "planningMs": 2.89,
+          "sharedBlocks": 690504,
+          "seqScans": [
+            "Seq Scan on products",
+            "Seq Scan on attribute_definitions",
+            "Seq Scan on attribute_enum_values",
+            "Seq Scan on stock_locations",
+            "Seq Scan on categories",
+            "Seq Scan on activities"
+          ],
+          "indexes": 19
+        }
+      ]
+    },
+    "search, common term": {
+      "wallMs": 1494.36,
+      "statements": [
+        {
+          "ms": 1466.22,
+          "planningMs": 2.38,
+          "sharedBlocks": 1158239,
+          "seqScans": [
+            "Seq Scan on products",
+            "Seq Scan on stock_locations",
+            "Seq Scan on categories",
+            "Seq Scan on activities",
+            "Seq Scan on attribute_definitions",
+            "Seq Scan on attribute_enum_values"
+          ],
+          "indexes": 19
+        }
+      ]
+    },
+    "search, rare term (hash fragment)": {
+      "wallMs": 10.36,
+      "statements": [
+        {
+          "ms": 5.96,
+          "planningMs": 2.3,
+          "sharedBlocks": 1340,
+          "seqScans": [
+            "Seq Scan on products",
+            "Seq Scan on stock_locations",
+            "Seq Scan on categories",
+            "Seq Scan on activities",
+            "Seq Scan on attribute_definitions",
+            "Seq Scan on attribute_enum_values"
+          ],
+          "indexes": 19
+        }
+      ]
+    },
+    "search, no match": {
+      "wallMs": 8.75,
+      "statements": [
+        {
+          "ms": 4.19,
+          "planningMs": 2.56,
+          "sharedBlocks": 162,
+          "seqScans": [
+            "Seq Scan on products",
+            "Seq Scan on stock_locations",
+            "Seq Scan on categories",
+            "Seq Scan on activities",
+            "Seq Scan on attribute_definitions",
+            "Seq Scan on attribute_enum_values"
+          ],
+          "indexes": 19
+        }
+      ]
+    },
+    "detail by public key (product page)": {
+      "wallMs": 8.07,
+      "statements": [
+        {
+          "ms": 2.36,
+          "planningMs": 2.55,
+          "sharedBlocks": 1189,
+          "seqScans": [
+            "Seq Scan on stock_locations",
+            "Seq Scan on categories",
+            "Seq Scan on activities",
+            "Seq Scan on attribute_definitions",
+            "Seq Scan on attribute_enum_values"
+          ],
+          "indexes": 20
+        }
+      ]
+    },
+    "compare / related by keys (getProductsByKeys)": {
+      "wallMs": 11.16,
+      "statements": [
+        {
+          "ms": 6.72,
+          "planningMs": 2.67,
+          "sharedBlocks": 4711,
+          "seqScans": [
+            "Seq Scan on stock_locations",
+            "Seq Scan on categories",
+            "Seq Scan on activities",
+            "Seq Scan on attribute_definitions",
+            "Seq Scan on attribute_enum_values"
+          ],
+          "indexes": 20
+        }
+      ]
+    }
+  }
+}
