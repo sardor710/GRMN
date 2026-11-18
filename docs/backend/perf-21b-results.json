@@ -1,0 +1,1533 @@
+{
+ "generated": "2026-11-18",
+ "note": "Task 21B runs on the O05 VPS; see performance-report.md. No secrets or tokens.",
+ "runs": {
+  "baseline": {
+   "endpoints": {
+    "home": {
+     "n": 15,
+     "p50": 31,
+     "p95": 131,
+     "p99": 207
+    },
+    "listing_price_asc": {
+     "n": 15,
+     "p50": 1343,
+     "p95": 1548,
+     "p99": 1653
+    },
+    "listing_price_desc": {
+     "n": 2,
+     "p50": 1256,
+     "p95": 1311,
+     "p99": 1316
+    },
+    "product": {
+     "n": 37,
+     "p50": 45,
+     "p95": 125,
+     "p99": 250
+    },
+    "listing_newest": {
+     "n": 17,
+     "p50": 185,
+     "p95": 262,
+     "p99": 290
+    },
+    "cart_get": {
+     "n": 5,
+     "p50": 9,
+     "p95": 14,
+     "p99": 15
+    },
+    "account_orders": {
+     "n": 3,
+     "p50": 45,
+     "p95": 89,
+     "p99": 93
+    },
+    "listing_filtered": {
+     "n": 10,
+     "p50": 24,
+     "p95": 103,
+     "p99": 143
+    },
+    "search": {
+     "n": 16,
+     "p50": 159,
+     "p95": 242,
+     "p99": 278
+    }
+   }
+  },
+  "step10": {
+   "endpoints": {
+    "account_orders": {
+     "n": 43,
+     "p50": 80,
+     "p95": 286,
+     "p99": 493,
+     "max": 569,
+     "err%": 0
+    },
+    "cart_get": {
+     "n": 35,
+     "p50": 7,
+     "p95": 22,
+     "p99": 57,
+     "max": 72,
+     "err%": 0
+    },
+    "home": {
+     "n": 141,
+     "p50": 55,
+     "p95": 824,
+     "p99": 1159,
+     "max": 1282,
+     "err%": 0
+    },
+    "listing_filtered": {
+     "n": 85,
+     "p50": 735,
+     "p95": 1453,
+     "p99": 1728,
+     "max": 1732,
+     "err%": 0
+    },
+    "listing_newest": {
+     "n": 133,
+     "p50": 782,
+     "p95": 1799,
+     "p99": 2059,
+     "max": 2909,
+     "err%": 0
+    },
+    "listing_price_asc": {
+     "n": 84,
+     "p50": 3662,
+     "p95": 5344,
+     "p99": 5530,
+     "max": 5726,
+     "err%": 15.48
+    },
+    "listing_price_desc": {
+     "n": 37,
+     "p50": 3495,
+     "p95": 5172,
+     "p99": 5349,
+     "max": 5388,
+     "err%": 10.81
+    },
+    "product": {
+     "n": 246,
+     "p50": 191,
+     "p95": 2263,
+     "p99": 2608,
+     "max": 3106,
+     "err%": 0
+    },
+    "search": {
+     "n": 97,
+     "p50": 629,
+     "p95": 1559,
+     "p99": 1776,
+     "max": 2222,
+     "err%": 0
+    }
+   },
+   "all": {
+    "n": 901,
+    "p50": 398,
+    "p95": 3929,
+    "p99": 5120,
+    "rps": 9.7,
+    "5xx": 17,
+    "unexpected%": 1.89,
+    "business": 0,
+    "dropped": 0
+   },
+   "cpu%": {
+    "k6": {
+     "avg": 5,
+     "max": 12
+    },
+    "proxy": {
+     "avg": 2,
+     "max": 6
+    },
+    "worker": {
+     "avg": 2,
+     "max": 6
+    },
+    "app": {
+     "avg": 35,
+     "max": 103
+    },
+    "db": {
+     "avg": 254,
+     "max": 310
+    },
+    "other_services_total": {
+     "avg": 2,
+     "max": 8
+    }
+   },
+   "mem_last": {
+    "k6": "70.91MiB",
+    "proxy": "7.918MiB",
+    "worker": "128MiB",
+    "app": "212.5MiB",
+    "db": "390MiB"
+   },
+   "db": {
+    "tps_avg": 35,
+    "tps_max": 44,
+    "hit_ratio_min": 0.9943,
+    "deadlocks": 0,
+    "app_conns_max": 22,
+    "app_active_avg": 6.9,
+    "app_active_max": 10,
+    "lock_waits_max": 0,
+    "size_mb": 3040
+   },
+   "worker": {
+    "oldest_ready_ms_max": 0,
+    "ready_max": 0,
+    "ready_last": 0,
+    "overdue_holds_max": 0,
+    "dead_last": 0
+   },
+   "pool": {
+    "intervals": 54,
+    "acquisitions": 2802,
+    "failures": 0,
+    "wait_p95_ms_median": 0.2,
+    "wait_p95_ms_max": 1114.48,
+    "wait_p99_ms_max": 1265.11,
+    "wait_max_ms": 1308.87,
+    "peak_waiting": 22,
+    "pool_total_max": 10
+   },
+   "orders_placed_delta": 0,
+   "invariants_ok": true
+  },
+  "step25": {
+   "endpoints": {
+    "account_orders": {
+     "n": 105,
+     "p50": 87,
+     "p95": 329,
+     "p99": 607,
+     "max": 805,
+     "err%": 0
+    },
+    "cart_get": {
+     "n": 95,
+     "p50": 7,
+     "p95": 127,
+     "p99": 167,
+     "max": 202,
+     "err%": 0
+    },
+    "home": {
+     "n": 320,
+     "p50": 2049,
+     "p95": 2324,
+     "p99": 2674,
+     "max": 2863,
+     "err%": 51.56
+    },
+    "listing_filtered": {
+     "n": 233,
+     "p50": 2193,
+     "p95": 3265,
+     "p99": 3840,
+     "max": 4205,
+     "err%": 54.94
+    },
+    "listing_newest": {
+     "n": 335,
+     "p50": 2211,
+     "p95": 3577,
+     "p99": 3896,
+     "max": 5122,
+     "err%": 53.73
+    },
+    "listing_price_asc": {
+     "n": 191,
+     "p50": 2166,
+     "p95": 7099,
+     "p99": 7343,
+     "max": 7424,
+     "err%": 83.77
+    },
+    "listing_price_desc": {
+     "n": 91,
+     "p50": 2364,
+     "p95": 7094,
+     "p99": 7346,
+     "max": 7364,
+     "err%": 81.32
+    },
+    "product": {
+     "n": 653,
+     "p50": 6019,
+     "p95": 8242,
+     "p99": 10158,
+     "max": 10620,
+     "err%": 92.04
+    },
+    "search": {
+     "n": 223,
+     "p50": 2149,
+     "p95": 2978,
+     "p99": 3437,
+     "max": 3844,
+     "err%": 57.85
+    }
+   },
+   "all": {
+    "n": 2246,
+    "p50": 2375,
+    "p95": 7937,
+    "p99": 8303,
+    "rps": 23.9,
+    "5xx": 1437,
+    "unexpected%": 63.98,
+    "business": 0,
+    "dropped": 5
+   },
+   "cpu%": {
+    "k6": {
+     "avg": 10,
+     "max": 25
+    },
+    "proxy": {
+     "avg": 5,
+     "max": 28
+    },
+    "worker": {
+     "avg": 1,
+     "max": 19
+    },
+    "app": {
+     "avg": 63,
+     "max": 123
+    },
+    "db": {
+     "avg": 277,
+     "max": 393
+    },
+    "other_services_total": {
+     "avg": 10,
+     "max": 103
+    }
+   },
+   "mem_last": {
+    "k6": "74.74MiB",
+    "proxy": "9.113MiB",
+    "worker": "52.39MiB",
+    "app": "253.3MiB",
+    "db": "461.8MiB"
+   },
+   "db": {
+    "tps_avg": 49,
+    "tps_max": 64,
+    "hit_ratio_min": 0.9999,
+    "deadlocks": 0,
+    "app_conns_max": 26,
+    "app_active_avg": 9.6,
+    "app_active_max": 11,
+    "lock_waits_max": 0,
+    "size_mb": 3040
+   },
+   "worker": {
+    "oldest_ready_ms_max": 0,
+    "ready_max": 0,
+    "ready_last": 0,
+    "overdue_holds_max": 0,
+    "dead_last": 0
+   },
+   "pool": {
+    "intervals": 55,
+    "acquisitions": 4034,
+    "failures": 2424,
+    "wait_p95_ms_median": 0.1,
+    "wait_p95_ms_max": 2004.56,
+    "wait_p99_ms_max": 2031.42,
+    "wait_max_ms": 2031.42,
+    "peak_waiting": 117,
+    "pool_total_max": 10
+   },
+   "orders_placed_delta": 0,
+   "invariants_ok": true
+  },
+  "step50": {
+   "endpoints": {
+    "account_orders": {
+     "n": 232,
+     "p50": 265,
+     "p95": 1559,
+     "p99": 2700,
+     "max": 4216,
+     "err%": 0
+    },
+    "cart_get": {
+     "n": 247,
+     "p50": 22,
+     "p95": 299,
+     "p99": 531,
+     "max": 1574,
+     "err%": 0
+    },
+    "home": {
+     "n": 625,
+     "p50": 2290,
+     "p95": 3458,
+     "p99": 4397,
+     "max": 4791,
+     "err%": 79.04
+    },
+    "listing_filtered": {
+     "n": 441,
+     "p50": 2451,
+     "p95": 3692,
+     "p99": 4879,
+     "max": 6625,
+     "err%": 80.5
+    },
+    "listing_newest": {
+     "n": 661,
+     "p50": 2463,
+     "p95": 4069,
+     "p99": 4875,
+     "max": 5641,
+     "err%": 79.27
+    },
+    "listing_price_asc": {
+     "n": 325,
+     "p50": 2483,
+     "p95": 7425,
+     "p99": 8256,
+     "max": 9156,
+     "err%": 93.23
+    },
+    "listing_price_desc": {
+     "n": 158,
+     "p50": 2470,
+     "p95": 7476,
+     "p99": 7942,
+     "max": 8223,
+     "err%": 91.14
+    },
+    "product": {
+     "n": 1212,
+     "p50": 4629,
+     "p95": 8103,
+     "p99": 9022,
+     "max": 11197,
+     "err%": 98.84
+    },
+    "search": {
+     "n": 446,
+     "p50": 2396,
+     "p95": 3902,
+     "p99": 4871,
+     "max": 4951,
+     "err%": 78.48
+    }
+   },
+   "all": {
+    "n": 4347,
+    "p50": 2599,
+    "p95": 6786,
+    "p99": 8460,
+    "rps": 45.8,
+    "5xx": 3368,
+    "unexpected%": 77.48,
+    "business": 0,
+    "dropped": 153
+   },
+   "cpu%": {
+    "k6": {
+     "avg": 24,
+     "max": 78
+    },
+    "proxy": {
+     "avg": 8,
+     "max": 18
+    },
+    "worker": {
+     "avg": 1,
+     "max": 5
+    },
+    "app": {
+     "avg": 95,
+     "max": 199
+    },
+    "db": {
+     "avg": 282,
+     "max": 452
+    },
+    "other_services_total": {
+     "avg": 5,
+     "max": 29
+    }
+   },
+   "mem_last": {
+    "k6": "130.6MiB",
+    "proxy": "4.887MiB",
+    "worker": "49.29MiB",
+    "app": "299.5MiB",
+    "db": "461.1MiB"
+   },
+   "db": {
+    "tps_avg": 70,
+    "tps_max": 82,
+    "hit_ratio_min": 1,
+    "deadlocks": 0,
+    "app_conns_max": 32,
+    "app_active_avg": 8.2,
+    "app_active_max": 11,
+    "lock_waits_max": 0,
+    "size_mb": 3040
+   },
+   "worker": {
+    "oldest_ready_ms_max": 0,
+    "ready_max": 0,
+    "ready_last": 0,
+    "overdue_holds_max": 0,
+    "dead_last": 0
+   },
+   "pool": {
+    "intervals": 57,
+    "acquisitions": 6179,
+    "failures": 5643,
+    "wait_p95_ms_median": 51.6,
+    "wait_p95_ms_max": 2124.55,
+    "wait_p99_ms_max": 2574.63,
+    "wait_max_ms": 2574.63,
+    "peak_waiting": 232,
+    "pool_total_max": 10
+   },
+   "orders_placed_delta": 0,
+   "invariants_ok": true
+  },
+  "steady": {
+   "endpoints": {
+    "account_orders": {
+     "n": 9023,
+     "p50": 477,
+     "p95": 2141,
+     "p99": 9306,
+     "max": 22664,
+     "err%": 18.12
+    },
+    "cart_get": {
+     "n": 8988,
+     "p50": 68,
+     "p95": 680,
+     "p99": 7345,
+     "max": 22530,
+     "err%": 18.69
+    },
+    "home": {
+     "n": 26716,
+     "p50": 2605,
+     "p95": 5476,
+     "p99": 12103,
+     "max": 26293,
+     "err%": 89.68
+    },
+    "listing_filtered": {
+     "n": 17890,
+     "p50": 2693,
+     "p95": 5700,
+     "p99": 11144,
+     "max": 26363,
+     "err%": 89.29
+    },
+    "listing_newest": {
+     "n": 26680,
+     "p50": 2671,
+     "p95": 5767,
+     "p99": 11589,
+     "max": 26146,
+     "err%": 89.24
+    },
+    "listing_price_asc": {
+     "n": 14114,
+     "p50": 2675,
+     "p95": 7682,
+     "p99": 11336,
+     "max": 29869,
+     "err%": 91.86
+    },
+    "listing_price_desc": {
+     "n": 7040,
+     "p50": 2697,
+     "p95": 7692,
+     "p99": 11890,
+     "max": 27888,
+     "err%": 91.51
+    },
+    "product": {
+     "n": 49788,
+     "p50": 4906,
+     "p95": 9488,
+     "p99": 15485,
+     "max": 31335,
+     "err%": 99.68
+    },
+    "search": {
+     "n": 17659,
+     "p50": 2669,
+     "p95": 5645,
+     "p99": 11219,
+     "max": 26066,
+     "err%": 89.18
+    }
+   },
+   "all": {
+    "n": 177898,
+    "p50": 2799,
+    "p95": 7907,
+    "p99": 12953,
+    "rps": 97.2,
+    "5xx": 151843,
+    "unexpected%": 85.35,
+    "business": 0,
+    "dropped": 1874
+   },
+   "cpu%": {
+    "k6": {
+     "avg": 25,
+     "max": 125
+    },
+    "proxy": {
+     "avg": 9,
+     "max": 54
+    },
+    "worker": {
+     "avg": 0,
+     "max": 3
+    },
+    "app": {
+     "avg": 109,
+     "max": 169
+    },
+    "db": {
+     "avg": 263,
+     "max": 404
+    },
+    "other_services_total": {
+     "avg": 4,
+     "max": 99
+    }
+   },
+   "mem_last": {
+    "k6": "886.4MiB",
+    "proxy": "8.625MiB",
+    "worker": "56.52MiB",
+    "app": "877.8MiB",
+    "db": "319.8MiB"
+   },
+   "db": {
+    "tps_avg": 106,
+    "tps_max": 141,
+    "hit_ratio_min": 1,
+    "deadlocks": 0,
+    "app_conns_max": 34,
+    "app_active_avg": 8.1,
+    "app_active_max": 13,
+    "lock_waits_max": 0,
+    "size_mb": 3040
+   },
+   "worker": {
+    "oldest_ready_ms_max": 0,
+    "ready_max": 0,
+    "ready_last": 0,
+    "overdue_holds_max": 0,
+    "dead_last": 0
+   },
+   "pool": {
+    "intervals": 1077,
+    "acquisitions": 185821,
+    "failures": 194736,
+    "wait_p95_ms_median": 296.3,
+    "wait_p95_ms_max": 2850.82,
+    "wait_p99_ms_max": 3192.99,
+    "wait_max_ms": 3192.99,
+    "peak_waiting": 433,
+    "pool_total_max": 10
+   },
+   "orders_placed_delta": 0,
+   "invariants_ok": true
+  },
+  "burst": {
+   "endpoints": {
+    "account_orders": {
+     "n": 2254,
+     "p50": 647,
+     "p95": 1905,
+     "p99": 3100,
+     "max": 21209,
+     "err%": 28.79
+    },
+    "cart_get": {
+     "n": 2299,
+     "p50": 92,
+     "p95": 325,
+     "p99": 2729,
+     "max": 22033,
+     "err%": 29.19
+    },
+    "home": {
+     "n": 6898,
+     "p50": 4128,
+     "p95": 5976,
+     "p99": 7174,
+     "max": 28137,
+     "err%": 92.95
+    },
+    "listing_filtered": {
+     "n": 4502,
+     "p50": 4144,
+     "p95": 6062,
+     "p99": 7354,
+     "max": 28742,
+     "err%": 92.8
+    },
+    "listing_newest": {
+     "n": 6814,
+     "p50": 4271,
+     "p95": 6186,
+     "p99": 7456,
+     "max": 28994,
+     "err%": 92.69
+    },
+    "listing_price_asc": {
+     "n": 3647,
+     "p50": 4214,
+     "p95": 7986,
+     "p99": 10363,
+     "max": 29188,
+     "err%": 93.53
+    },
+    "listing_price_desc": {
+     "n": 1860,
+     "p50": 4310,
+     "p95": 8075,
+     "p99": 10496,
+     "max": 27993,
+     "err%": 93.71
+    },
+    "product": {
+     "n": 12707,
+     "p50": 6455,
+     "p95": 9898,
+     "p99": 11987,
+     "max": 30748,
+     "err%": 99.7
+    },
+    "search": {
+     "n": 4549,
+     "p50": 4237,
+     "p95": 6109,
+     "p99": 7292,
+     "max": 29121,
+     "err%": 92.04
+    }
+   },
+   "all": {
+    "n": 45530,
+    "p50": 3522,
+    "p95": 8783,
+    "p99": 10765,
+    "rps": 138.0,
+    "5xx": 40236,
+    "unexpected%": 88.37,
+    "business": 0,
+    "dropped": 104248
+   },
+   "cpu%": {
+    "k6": {
+     "avg": 27,
+     "max": 108
+    },
+    "proxy": {
+     "avg": 7,
+     "max": 27
+    },
+    "worker": {
+     "avg": 0,
+     "max": 2
+    },
+    "app": {
+     "avg": 106,
+     "max": 162
+    },
+    "db": {
+     "avg": 240,
+     "max": 310
+    },
+    "other_services_total": {
+     "avg": 4,
+     "max": 39
+    }
+   },
+   "mem_last": {
+    "k6": "1.063GiB",
+    "proxy": "38.61MiB",
+    "worker": "56.79MiB",
+    "app": "930.4MiB",
+    "db": "505MiB"
+   },
+   "db": {
+    "tps_avg": 114,
+    "tps_max": 153,
+    "hit_ratio_min": 1,
+    "deadlocks": 0,
+    "app_conns_max": 34,
+    "app_active_avg": 6.8,
+    "app_active_max": 12,
+    "lock_waits_max": 0,
+    "size_mb": 3040
+   },
+   "worker": {
+    "oldest_ready_ms_max": 0,
+    "ready_max": 0,
+    "ready_last": 0,
+    "overdue_holds_max": 0,
+    "dead_last": 0
+   },
+   "pool": {
+    "intervals": 189,
+    "acquisitions": 36107,
+    "failures": 41130,
+    "wait_p95_ms_median": 1984.9,
+    "wait_p95_ms_max": 2917.17,
+    "wait_p99_ms_max": 3046.99,
+    "wait_max_ms": 3065.21,
+    "peak_waiting": 512,
+    "pool_total_max": 10
+   },
+   "orders_placed_delta": 0,
+   "invariants_ok": true
+  },
+  "checkout": {
+   "endpoints": {
+    "cart_add": {
+     "n": 6000,
+     "p50": 25,
+     "p95": 133,
+     "p99": 888,
+     "max": 2176,
+     "err%": 0
+    },
+    "checkout": {
+     "n": 6000,
+     "p50": 81,
+     "p95": 268,
+     "p99": 1239,
+     "max": 2846,
+     "err%": 0
+    },
+    "quote": {
+     "n": 6000,
+     "p50": 25,
+     "p95": 130,
+     "p99": 1105,
+     "max": 2032,
+     "err%": 0
+    }
+   },
+   "all": {
+    "n": 18000,
+    "p50": 38,
+    "p95": 205,
+    "p99": 1134,
+    "rps": 60.0,
+    "5xx": 0,
+    "unexpected%": 0,
+    "business": 0,
+    "dropped": 0
+   },
+   "cpu%": {
+    "k6": {
+     "avg": 15,
+     "max": 27
+    },
+    "proxy": {
+     "avg": 5,
+     "max": 10
+    },
+    "worker": {
+     "avg": 9,
+     "max": 27
+    },
+    "app": {
+     "avg": 72,
+     "max": 138
+    },
+    "db": {
+     "avg": 139,
+     "max": 258
+    },
+    "other_services_total": {
+     "avg": 13,
+     "max": 193
+    }
+   },
+   "mem_last": {
+    "k6": "66.41MiB",
+    "proxy": "4.645MiB",
+    "worker": "81.18MiB",
+    "app": "368.3MiB",
+    "db": "824.5MiB"
+   },
+   "db": {
+    "tps_avg": 195,
+    "tps_max": 326,
+    "hit_ratio_min": 0.9894,
+    "deadlocks": 0,
+    "app_conns_max": 15,
+    "app_active_avg": 1.7,
+    "app_active_max": 5,
+    "lock_waits_max": 1,
+    "size_mb": 3118
+   },
+   "worker": {
+    "oldest_ready_ms_max": 1018,
+    "ready_max": 38,
+    "ready_last": 6,
+    "overdue_holds_max": 0,
+    "dead_last": 0
+   },
+   "pool": {
+    "intervals": 61,
+    "acquisitions": 30000,
+    "failures": 0,
+    "wait_p95_ms_median": 0.1,
+    "wait_p95_ms_max": 765.89,
+    "wait_p99_ms_max": 912.14,
+    "wait_max_ms": 928.14,
+    "peak_waiting": 83,
+    "pool_total_max": 10
+   },
+   "orders_placed_delta": 6000,
+   "invariants_ok": true
+  },
+  "noprice10": {
+   "endpoints": {
+    "account_orders": {
+     "n": 49,
+     "p50": 20,
+     "p95": 53,
+     "p99": 105,
+     "max": 143,
+     "err%": 0
+    },
+    "cart_get": {
+     "n": 44,
+     "p50": 6,
+     "p95": 14,
+     "p99": 23,
+     "max": 26,
+     "err%": 0
+    },
+    "home": {
+     "n": 126,
+     "p50": 22,
+     "p95": 37,
+     "p99": 56,
+     "max": 70,
+     "err%": 0
+    },
+    "listing_filtered": {
+     "n": 87,
+     "p50": 143,
+     "p95": 219,
+     "p99": 257,
+     "max": 269,
+     "err%": 0
+    },
+    "listing_newest": {
+     "n": 247,
+     "p50": 173,
+     "p95": 247,
+     "p99": 305,
+     "max": 332,
+     "err%": 0
+    },
+    "product": {
+     "n": 271,
+     "p50": 37,
+     "p95": 63,
+     "p99": 124,
+     "max": 175,
+     "err%": 0
+    },
+    "search": {
+     "n": 77,
+     "p50": 147,
+     "p95": 182,
+     "p99": 207,
+     "max": 207,
+     "err%": 0
+    }
+   },
+   "all": {
+    "n": 901,
+    "p50": 53,
+    "p95": 215,
+    "p99": 263,
+    "rps": 10.0,
+    "5xx": 0,
+    "unexpected%": 0,
+    "business": 0,
+    "dropped": 0
+   },
+   "cpu%": {
+    "k6": {
+     "avg": 6,
+     "max": 10
+    },
+    "proxy": {
+     "avg": 2,
+     "max": 6
+    },
+    "worker": {
+     "avg": 0,
+     "max": 1
+    },
+    "app": {
+     "avg": 25,
+     "max": 37
+    },
+    "db": {
+     "avg": 80,
+     "max": 120
+    },
+    "other_services_total": {
+     "avg": 6,
+     "max": 12
+    }
+   },
+   "mem_last": {
+    "k6": "71.23MiB",
+    "proxy": "4.625MiB",
+    "worker": "51.42MiB",
+    "app": "225.5MiB",
+    "db": "835.9MiB"
+   },
+   "db": {
+    "tps_avg": 37,
+    "tps_max": 45,
+    "hit_ratio_min": 1,
+    "deadlocks": 0,
+    "app_conns_max": 9,
+    "app_active_avg": 1,
+    "app_active_max": 2,
+    "lock_waits_max": 0,
+    "size_mb": 3128
+   },
+   "worker": {
+    "oldest_ready_ms_max": 0,
+    "ready_max": 0,
+    "ready_last": 0,
+    "overdue_holds_max": 0,
+    "dead_last": 0
+   },
+   "pool": {
+    "intervals": 55,
+    "acquisitions": 2894,
+    "failures": 0,
+    "wait_p95_ms_median": 0.1,
+    "wait_p95_ms_max": 13.46,
+    "wait_p99_ms_max": 52.45,
+    "wait_max_ms": 52.45,
+    "peak_waiting": 2,
+    "pool_total_max": 4
+   },
+   "orders_placed_delta": 0,
+   "invariants_ok": true
+  },
+  "noprice25": {
+   "endpoints": {
+    "account_orders": {
+     "n": 106,
+     "p50": 23,
+     "p95": 93,
+     "p99": 156,
+     "max": 190,
+     "err%": 0
+    },
+    "cart_get": {
+     "n": 98,
+     "p50": 5,
+     "p95": 22,
+     "p99": 71,
+     "max": 92,
+     "err%": 0
+    },
+    "home": {
+     "n": 351,
+     "p50": 28,
+     "p95": 1287,
+     "p99": 1690,
+     "max": 1757,
+     "err%": 0
+    },
+    "listing_filtered": {
+     "n": 229,
+     "p50": 183,
+     "p95": 1950,
+     "p99": 2261,
+     "max": 2461,
+     "err%": 0
+    },
+    "listing_newest": {
+     "n": 643,
+     "p50": 230,
+     "p95": 2114,
+     "p99": 2474,
+     "max": 2866,
+     "err%": 0
+    },
+    "product": {
+     "n": 576,
+     "p50": 55,
+     "p95": 3784,
+     "p99": 4197,
+     "max": 4422,
+     "err%": 0
+    },
+    "search": {
+     "n": 248,
+     "p50": 173,
+     "p95": 1858,
+     "p99": 2042,
+     "max": 2200,
+     "err%": 0
+    }
+   },
+   "all": {
+    "n": 2251,
+    "p50": 149,
+    "p95": 2139,
+    "p99": 3888,
+    "rps": 24.6,
+    "5xx": 0,
+    "unexpected%": 0,
+    "business": 0,
+    "dropped": 0
+   },
+   "cpu%": {
+    "k6": {
+     "avg": 11,
+     "max": 24
+    },
+    "proxy": {
+     "avg": 4,
+     "max": 12
+    },
+    "worker": {
+     "avg": 1,
+     "max": 7
+    },
+    "app": {
+     "avg": 55,
+     "max": 71
+    },
+    "db": {
+     "avg": 209,
+     "max": 316
+    },
+    "other_services_total": {
+     "avg": 15,
+     "max": 205
+    }
+   },
+   "mem_last": {
+    "k6": "73.96MiB",
+    "proxy": "4.875MiB",
+    "worker": "49.9MiB",
+    "app": "259MiB",
+    "db": "920.6MiB"
+   },
+   "db": {
+    "tps_avg": 80,
+    "tps_max": 96,
+    "hit_ratio_min": 1,
+    "deadlocks": 0,
+    "app_conns_max": 23,
+    "app_active_avg": 3.5,
+    "app_active_max": 10,
+    "lock_waits_max": 0,
+    "size_mb": 3128
+   },
+   "worker": {
+    "oldest_ready_ms_max": 0,
+    "ready_max": 0,
+    "ready_last": 0,
+    "overdue_holds_max": 0,
+    "dead_last": 0
+   },
+   "pool": {
+    "intervals": 56,
+    "acquisitions": 6856,
+    "failures": 0,
+    "wait_p95_ms_median": 0.1,
+    "wait_p95_ms_max": 1591.37,
+    "wait_p99_ms_max": 1674.61,
+    "wait_max_ms": 1681.33,
+    "peak_waiting": 72,
+    "pool_total_max": 10
+   },
+   "orders_placed_delta": 0,
+   "invariants_ok": true
+  },
+  "noprice50": {
+   "endpoints": {
+    "account_orders": {
+     "n": 220,
+     "p50": 167,
+     "p95": 617,
+     "p99": 934,
+     "max": 988,
+     "err%": 0
+    },
+    "cart_get": {
+     "n": 219,
+     "p50": 17,
+     "p95": 100,
+     "p99": 322,
+     "max": 411,
+     "err%": 0
+    },
+    "home": {
+     "n": 626,
+     "p50": 2132,
+     "p95": 2494,
+     "p99": 2623,
+     "max": 2789,
+     "err%": 40.1
+    },
+    "listing_filtered": {
+     "n": 438,
+     "p50": 2488,
+     "p95": 3078,
+     "p99": 3425,
+     "max": 3504,
+     "err%": 37.44
+    },
+    "listing_newest": {
+     "n": 1200,
+     "p50": 2550,
+     "p95": 3166,
+     "p99": 3528,
+     "max": 4095,
+     "err%": 37.67
+    },
+    "product": {
+     "n": 1264,
+     "p50": 6202,
+     "p95": 10162,
+     "p99": 10519,
+     "max": 10914,
+     "err%": 84.18
+    },
+    "search": {
+     "n": 433,
+     "p50": 2382,
+     "p95": 3014,
+     "p99": 3281,
+     "max": 3537,
+     "err%": 38.11
+    }
+   },
+   "all": {
+    "n": 4400,
+    "p50": 2535,
+    "p95": 8230,
+    "p99": 10243,
+    "rps": 47.5,
+    "5xx": 2096,
+    "unexpected%": 47.64,
+    "business": 0,
+    "dropped": 101
+   },
+   "cpu%": {
+    "k6": {
+     "avg": 13,
+     "max": 26
+    },
+    "proxy": {
+     "avg": 6,
+     "max": 16
+    },
+    "worker": {
+     "avg": 0,
+     "max": 0
+    },
+    "app": {
+     "avg": 97,
+     "max": 132
+    },
+    "db": {
+     "avg": 261,
+     "max": 277
+    },
+    "other_services_total": {
+     "avg": 4,
+     "max": 9
+    }
+   },
+   "mem_last": {
+    "k6": "130.3MiB",
+    "proxy": "15.43MiB",
+    "worker": "51.58MiB",
+    "app": "312MiB",
+    "db": "932.6MiB"
+   },
+   "db": {
+    "tps_avg": 108,
+    "tps_max": 119,
+    "hit_ratio_min": 1,
+    "deadlocks": 0,
+    "app_conns_max": 27,
+    "app_active_avg": 9.1,
+    "app_active_max": 10,
+    "lock_waits_max": 0,
+    "size_mb": 3128
+   },
+   "worker": {
+    "oldest_ready_ms_max": 0,
+    "ready_max": 0,
+    "ready_last": 0,
+    "overdue_holds_max": 0,
+    "dead_last": 0
+   },
+   "pool": {
+    "intervals": 56,
+    "acquisitions": 9335,
+    "failures": 3709,
+    "wait_p95_ms_median": 0.1,
+    "wait_p95_ms_max": 2015.83,
+    "wait_p99_ms_max": 2068.91,
+    "wait_max_ms": 2110.02,
+    "peak_waiting": 231,
+    "pool_total_max": 10
+   },
+   "orders_placed_delta": 0,
+   "invariants_ok": true
+  },
+  "inject": {
+   "endpoints": {
+    "account_orders": {
+     "n": 91,
+     "p50": 18,
+     "p95": 1707,
+     "p99": 2016,
+     "max": 2019,
+     "err%": 5.49
+    },
+    "cart_add": {
+     "n": 1081,
+     "p50": 29,
+     "p95": 2005,
+     "p99": 2015,
+     "max": 10018,
+     "err%": 5.64
+    },
+    "cart_get": {
+     "n": 87,
+     "p50": 5,
+     "p95": 23,
+     "p99": 459,
+     "max": 2236,
+     "err%": 0
+    },
+    "checkout": {
+     "n": 1020,
+     "p50": 65,
+     "p95": 177,
+     "p99": 661,
+     "max": 1238,
+     "err%": 0
+    },
+    "home": {
+     "n": 273,
+     "p50": 23,
+     "p95": 1736,
+     "p99": 2011,
+     "max": 2094,
+     "err%": 5.13
+    },
+    "listing_filtered": {
+     "n": 193,
+     "p50": 157,
+     "p95": 2005,
+     "p99": 2094,
+     "max": 3029,
+     "err%": 5.18
+    },
+    "listing_newest": {
+     "n": 272,
+     "p50": 194,
+     "p95": 966,
+     "p99": 2007,
+     "max": 2558,
+     "err%": 4.04
+    },
+    "listing_price_asc": {
+     "n": 136,
+     "p50": 1224,
+     "p95": 2202,
+     "p99": 2817,
+     "max": 5010,
+     "err%": 4.41
+    },
+    "listing_price_desc": {
+     "n": 72,
+     "p50": 1232,
+     "p95": 2427,
+     "p99": 3432,
+     "max": 4310,
+     "err%": 5.56
+    },
+    "product": {
+     "n": 492,
+     "p50": 42,
+     "p95": 2005,
+     "p99": 2021,
+     "max": 3641,
+     "err%": 6.71
+    },
+    "quote": {
+     "n": 1020,
+     "p50": 24,
+     "p95": 80,
+     "p99": 236,
+     "max": 693,
+     "err%": 0
+    },
+    "search": {
+     "n": 184,
+     "p50": 148,
+     "p95": 2006,
+     "p99": 2054,
+     "max": 2603,
+     "err%": 8.15
+    }
+   },
+   "all": {
+    "n": 4921,
+    "p50": 45,
+    "p95": 1296,
+    "p99": 2013,
+    "rps": 13.7,
+    "5xx": 159,
+    "unexpected%": 3.23,
+    "business": 0,
+    "dropped": 0
+   },
+   "cpu%": {
+    "k6": {
+     "avg": 6,
+     "max": 13
+    },
+    "proxy": {
+     "avg": 2,
+     "max": 9
+    },
+    "worker": {
+     "avg": 3,
+     "max": 55
+    },
+    "app": {
+     "avg": 31,
+     "max": 95
+    },
+    "db": {
+     "avg": 130,
+     "max": 270
+    },
+    "other_services_total": {
+     "avg": 4,
+     "max": 27
+    }
+   },
+   "mem_last": {
+    "k6": "97.67MiB",
+    "proxy": "4.703MiB",
+    "worker": "127.3MiB",
+    "app": "206.5MiB",
+    "db": "910.5MiB"
+   },
+   "db": {
+    "tps_avg": 49,
+    "tps_max": 117,
+    "hit_ratio_min": 0.9999,
+    "deadlocks": 0,
+    "app_conns_max": 32,
+    "app_active_avg": 1.3,
+    "app_active_max": 5,
+    "lock_waits_max": 0,
+    "size_mb": 3128
+   },
+   "worker": {
+    "oldest_ready_ms_max": 41194,
+    "ready_max": 124,
+    "ready_last": 1,
+    "overdue_holds_max": 0,
+    "dead_last": 0
+   },
+   "pool": {
+    "intervals": 204,
+    "acquisitions": 10312,
+    "failures": 41,
+    "wait_p95_ms_median": 0.1,
+    "wait_p95_ms_max": 1783.92,
+    "wait_p99_ms_max": 1896.03,
+    "wait_max_ms": 1896.03,
+    "peak_waiting": 6,
+    "pool_total_max": 10
+   },
+   "orders_placed_delta": 1019,
+   "invariants_ok": true,
+   "events": [
+    "15:51:32 worker SIGKILL",
+    "15:52:12 worker start",
+    "15:53:13 db pause",
+    "15:53:33 db unpause",
+    "15:54:43 app SIGKILL+restart",
+    "15:54:44 app started",
+    "15:56:40 run finished"
+   ]
+  },
+  "lastunit": {
+   "outcomes": {
+    "order": 1,
+    "INSUFFICIENT_STOCK": 9,
+    "CART_NOT_QUOTABLE": 90
+   },
+   "stock_after": {
+    "on_hand": 1,
+    "reserved": 1
+   },
+   "orders": 1,
+   "invariants_ok": true
+  },
+  "dupkey": {
+   "outcomes": {
+    "first": 1,
+    "replayed_same_order": 29,
+    "RATE_LIMITED": 20
+   },
+   "distinct_orders": 1,
+   "invariants_ok": true
+  }
+ }
+}

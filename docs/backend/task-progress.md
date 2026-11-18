@@ -13,10 +13,15 @@ Updated: **2026-11-18**. This is the current progress index; individual handoffs
   - **O05:** the VPS hardware is recorded. It is shared with 14 other containers; see [decisions.md](decisions.md#o05-the-vps-recorded-2026-11-18).
   - **O07 is resolved:** payment is confirmed manually by an admin, built as **21C** ([handoff](handoffs/task-21c.md)).
 - **Work location:** `beta` on GitHub (`sardor710/GRMN`), cloned on the VPS. The Windows checkouts and the Codex worktree are historical.
+- **21B ran on the VPS (2026-11-18)** ([performance report](performance-report.md#task-21b-section-3-load-on-the-vps-2026-11-18)).
+  - **Pass:** checkout 20/s (p95 268 ms, 0 errors), last-unit contention (exactly 1 order), the duplicate key (1 order), failure injection (worker kill, a 20 s database pause, app kill), and every invariant after every run.
+  - **Fail:** browsing at 100 rps steady (85% errors) and 500 rps burst (88% errors). About 10 rps is sustainable: the uncached catalog listing uses about 98% of database time, and price sorts about 60%.
+  - **Decision:** price-sorted listings need the offer summary, and the 100/500 rps targets also need the shared cache.
+  - **Fixed along the way:** same-origin checks failed behind the TLS proxy, and the 21A history seed gave every order one timestamp.
 - **Next:**
   1. Owner: decide the 21C hold-abuse policy (review I2; [ruling](handoffs/task-21c.md#rulings)) and confirm the O07 defaults (methods, roles, 48-hour hold).
-  2. 21B: load and failure injection on this VPS, measured alongside the other services. It also decides whether price-sorted listings need a maintained offer summary or the shared cache ([performance report](performance-report.md#catalog-listing-and-search-review-i9-follow-up)).
-  3. Task 23 (cutover rehearsal) is owner-run. Apply migrations 0011, 0012 and 0013 before importing data.
+  2. Owner: approve building the **offer summary** (schema) and the **shared cache** (infrastructure: for example Redis with eviction), plus a listing concurrency cap. Then re-run the 21B runs (`tests/load`, `scripts/perf`).
+  3. Task 23 (cutover rehearsal) is owner-run. Apply migrations 0011, 0012 and 0013 before importing data. Production proxies must forward `Host`/`X-Forwarded-Host` and `X-Forwarded-Proto` (21B fix).
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
 - No deployment, real import, production database migration or production `.env` exists. The 21C commits are on `beta`; pushing to GitHub is done by the owner.
 
@@ -440,6 +445,37 @@ Run on the merged branch from PowerShell, with 2.4–3.3 GB free RAM.
 
 [Detailed receipt](handoffs/task-21c.md).
 
+### Task 21B
+
+**Run on the VPS (2026-11-18): correctness passes, browsing capacity fails.**
+- **Setup:**
+  - The production Docker image, PostgreSQL 18.6, the worker and a TLS nginx proxy on a private network, capped at app 1.5 / database 2.5 / worker 0.5 / proxy 0.5 vCPU, with k6 1.4.2 at 1 vCPU.
+  - Scale-1 seed: 5,000 products, 50,000 variants, 150,000 users, 1M orders, 3M items, 800k captures.
+- **Results:**
+
+  | Run | Result |
+  |---|---|
+  | Steady 100 rps × 30 min | p95 7.9 s, 85% errors: fail |
+  | Burst 500 rps × 5 min | 138 rps achieved, 88% errors: fail |
+  | Checkout 20/s × 5 min | 6,000 orders, checkout p95 268 ms, 0 errors: pass |
+  | Last unit, 100 shoppers | 1 order: pass |
+  | Duplicate key, ×50 | 1 order: pass |
+  | Failure injection | 1,020 of 1,020 checkouts placed, recovery within seconds, all invariants: pass |
+- **Measurements:**
+  - Pool wait p95 up to 2.9 s: listings starve the 10-connection pool.
+  - Database CPU at its cap from 10 rps.
+  - Worker lag 0 under load, 41 s while the worker was killed.
+  - Staff/order queries at 1M orders: 0.7–208 ms.
+- **Decision (with numbers):**
+  - **Offer summary for price sorts:** page selection 0.3 ms instead of 1.3 s, rebuild 138 ms.
+  - **Shared cache for the 100/500 rps targets:** without price sorts the mix still saturates at about 25 rps.
+- **Fixes:**
+  - `requestURL()`: every same-origin API check failed behind the proxy (test-first, 4 unit tests);
+  - the history seed correlation (21A's dashboard/export numbers had measured an empty window);
+  - a Task 13A smoke race;
+  - opt-in pool wait statistics (`DATABASE_POOL_STATS_MS`).
+- **Gates:** unit 197 (+1 skip), legacy 73/73, integration **362/362**, lint 0 errors, typecheck, boundaries, build, and the browser smoke passed.
+
 ## Remaining task list
 
 Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained slices; see "Consolidation of Tasks 12–22" in the plan. Steps that need a real provider are in its deferred activation backlog.
@@ -457,7 +493,7 @@ Tasks 12–22 were consolidated on 2026-11-17 from 24 sub-slices into 12 chained
 | 18 | Complete (18A, 18B, I6 collection wiring) | — (homepage collections wired with draft isolation, migration 0012, 2026-11-18) |
 | 19 | Merged into 18 | Email/newsletter sending is in the deferred activation backlog |
 | 20 | Merged into 13 | Wishlist built in 13A; other account domains deferred in [account-tab-dispositions.md](account-tab-dispositions.md) |
-| 21 | 21A partial; 21C complete | 21A: public cache (needs a shared cache handler), price-sorted listing under 300 ms (offer summary or cache). Catalog/search plans and the browser purchase to "paid" (via 21C) are done. 21B: load and failure injection on the recorded VPS (O05). 21C follow-up: the hold-abuse policy (owner) |
+| 21 | 21A partial; 21B run (capacity fails); 21C complete | Build the per-product **offer summary** (price sorts) and the **shared cache** (100/500 rps), plus a listing concurrency cap; then re-run 21B. Checkout, contention, failure injection and invariants pass. 21C follow-up: the hold-abuse policy (owner) |
 | 22 | Merged into 21 | — |
 | 23 | Not started (owner-run) | Cutover and recovery rehearsal |
 | 24 | Not started (owner-run) | Authorized production cutover, observation and retirement |

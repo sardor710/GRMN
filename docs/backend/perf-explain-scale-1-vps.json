@@ -1,0 +1,78 @@
+{
+  "scale": 1,
+  "postgres": "18.6 (Debian 18.6-1.pgdg12+2)",
+  "seedMs": null,
+  "counts": {
+    "products": 5000,
+    "variants": 50000,
+    "users": 150001,
+    "orders": 1007223,
+    "items": 3007223,
+    "captures": 800000
+  },
+  "indexes": [
+    "CREATE INDEX orders_shown_at_idx ON public.orders USING btree (COALESCE(placed_at, created_at) DESC, id DESC)",
+    "CREATE INDEX payment_transactions_capture_time_idx ON public.payment_transactions USING btree (created_at) WHERE (kind = 'capture'::text)"
+  ],
+  "baseline": null,
+  "shipped": {
+    "account order history (10A)": {
+      "ms": 0.7,
+      "sharedBlocks": 18,
+      "scans": [
+        "Index Scan on orders using orders_customer_history_idx"
+      ]
+    },
+    "admin order queue, newest (16A listOrders)": {
+      "ms": 1.92,
+      "sharedBlocks": 281,
+      "scans": [
+        "Index Scan on orders using orders_shown_at_idx",
+        "Index Scan on order_items using order_items_order_idx"
+      ]
+    },
+    "admin order queue, shipped (16A listOrders)": {
+      "ms": 19.6,
+      "sharedBlocks": 7287,
+      "scans": [
+        "Index Scan on orders using orders_shown_at_idx",
+        "Index Scan on order_items using order_items_order_idx"
+      ]
+    },
+    "admin order queue, rare exception (16A listOrders)": {
+      "ms": 35.49,
+      "sharedBlocks": 11150,
+      "scans": [
+        "Index Scan on orders using orders_shown_at_idx",
+        "Index Scan on order_items using order_items_order_idx"
+      ]
+    },
+    "dashboard totals, 30 days (18B summary)": {
+      "ms": 207.77,
+      "sharedBlocks": 35326,
+      "scans": [
+        "Index Scan on payment_transactions using payment_transactions_order_idx",
+        "Seq Scan on refunds",
+        "Index Scan on order_events using order_events_dedupe_key_unique"
+      ]
+    },
+    "order export count, 30 days (18B countRows)": {
+      "ms": 130.97,
+      "sharedBlocks": 30311,
+      "scans": [
+        "Bitmap Heap Scan on orders",
+        "Bitmap Index Scan using orders_shown_at_idx"
+      ]
+    },
+    "low-stock list (18B lowStock)": {
+      "ms": 74.7,
+      "sharedBlocks": 1454,
+      "scans": [
+        "Seq Scan on stock_locations",
+        "Seq Scan on inventory_balances",
+        "Seq Scan on product_variants",
+        "Seq Scan on products"
+      ]
+    }
+  }
+}
