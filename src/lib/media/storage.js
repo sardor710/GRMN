@@ -13,7 +13,8 @@ const EXT = { jpeg: 'jpg', png: 'png', webp: 'webp', avif: 'avif' };
 export const CONTENT_TYPES = { jpg: 'image/jpeg', png: 'image/png', webp: 'image/webp', avif: 'image/avif' };
 
 export function uploadDir() {
-  return path.resolve(process.env.UPLOAD_DIR || path.join(process.cwd(), 'storage', 'uploads'));
+  // turbopackIgnore: a runtime data directory, not part of the server bundle trace.
+  return path.resolve(/*turbopackIgnore: true*/ process.env.UPLOAD_DIR || path.join(/*turbopackIgnore: true*/ process.cwd(), 'storage', 'uploads'));
 }
 
 const ascii = (buf, start, end) => String.fromCharCode(...buf.subarray(start, end));
@@ -45,10 +46,10 @@ export async function saveImage(input, { folder }) {
   if (!type) throw new Error('Not a supported image (JPEG, PNG, WebP or AVIF)');
   const parts = [...safeFolder(folder), String(new Date().getFullYear())];
   const name = `${randomUUID()}.${EXT[type]}`;
-  const dir = path.join(uploadDir(), ...parts);
-  await fsp.mkdir(dir, { recursive: true });
-  const file = path.join(dir, name);
-  await fsp.writeFile(file, buf);
+  const dir = path.join(/*turbopackIgnore: true*/ uploadDir(), ...parts);
+  await fsp.mkdir(/*turbopackIgnore: true*/ dir, { recursive: true });
+  const file = path.join(/*turbopackIgnore: true*/ dir, name);
+  await fsp.writeFile(/*turbopackIgnore: true*/ file, buf);
   return { src: `/uploads/${[...parts, name].join('/')}`, file, type };
 }
 
@@ -67,13 +68,13 @@ export function resolveUploadFile(segments) {
     clean.push(seg);
   }
   const root = uploadDir();
-  const candidate = path.resolve(root, ...clean);
+  const candidate = path.resolve(/*turbopackIgnore: true*/ root, ...clean);
   if (!candidate.startsWith(root + path.sep)) return null;
   try {
-    const real = fs.realpathSync(candidate);
-    const realRoot = fs.realpathSync(root);
+    const real = fs.realpathSync(/*turbopackIgnore: true*/ candidate);
+    const realRoot = fs.realpathSync(/*turbopackIgnore: true*/ root);
     if (!real.startsWith(realRoot + path.sep)) return null;
-    return fs.statSync(real).isFile() ? real : null;
+    return fs.statSync(/*turbopackIgnore: true*/ real).isFile() ? real : null;
   } catch {
     return null;
   }
