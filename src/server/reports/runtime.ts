@@ -11,6 +11,7 @@ import { cmsBackend } from "../cms/source.ts";
 import { createReportsService } from "./service.ts";
 import { createExportService } from "./exports.ts";
 import { createSettingsService } from "../settings/service.ts";
+import { requestURL } from "../auth/request-url.ts";
 
 // Task 18B routes, PostgreSQL mode only (permissions are checked in each service):
 // /api/admin/reports   GET ?view=summary&from=&to=&timeZone=  (orders:read)
@@ -32,7 +33,7 @@ function ready() {
   };
 }
 function query(request: Request, baseURL: string): Record<string, string> {
-  const url = new URL(request.url);
+  const url = requestURL(request, baseURL);
   if (url.origin !== baseURL) bad();
   if (request.method !== "GET" && request.headers.get("origin") !== baseURL) throw new AuthFailure("FORBIDDEN", 403, "Invalid request origin");
   const params = [...url.searchParams];

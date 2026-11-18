@@ -10,6 +10,7 @@ import type { Permission } from "../context.ts";
 import { cmsBackend } from "../cms/source.ts";
 import { createPublishingService } from "./publishing.ts";
 import { createMediaService, MAX_IMAGE_BYTES, readPublicMedia } from "./media.ts";
+import { requestURL } from "../auth/request-url.ts";
 
 // Task 18A routes, PostgreSQL mode only:
 // /api/admin/content  GET ?pageId= (version history) | POST { action: publish | unpublish | restore |
@@ -32,7 +33,7 @@ function ready() {
   return { publishing: createPublishingService({ pool, authorize }), media: createMediaService({ pool, authorize, secret, storageDir: mediaStorageDir() }), baseURL: new URL(process.env.AUTH_BASE_URL!).origin };
 }
 function sameOrigin(request: Request, baseURL: string) {
-  const url = new URL(request.url);
+  const url = requestURL(request, baseURL);
   if (url.origin !== baseURL) bad();
   if (request.method !== "GET" && request.headers.get("origin") !== baseURL) throw new AuthFailure("FORBIDDEN", 403, "Invalid request origin");
   return url;

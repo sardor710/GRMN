@@ -4,6 +4,7 @@ import { authErrorResponse } from "../auth/http.ts";
 import { adminJSON, readAdminJSON } from "../auth/admin-service.ts";
 import type { AccountService } from "./service.ts";
 import type { WishlistService } from "../wishlist/service.ts";
+import { requestURL } from "../auth/request-url.ts";
 
 // HTTP mapping for /api/account/*. Identity always comes from the session cookie inside the
 // service; query strings accept only pagination, and bodies never carry an owner.
@@ -24,7 +25,7 @@ export function createAccountHandler(input: { service: AccountService; baseURL: 
   const { service, baseURL, wishlist } = input;
   return async function handleAccount(request: Request): Promise<Response> {
     try {
-      const url = new URL(request.url);
+      const url = requestURL(request, baseURL);
       if (url.origin !== baseURL) bad();
       const read = request.method === "GET";
       if (!read && request.headers.get("origin") !== baseURL) throw new AuthFailure("FORBIDDEN", 403, "Invalid request origin");
@@ -93,7 +94,7 @@ export function createClaimApprovalHandler(input: { service: AccountService; bas
   const { service, baseURL } = input;
   return async function handleClaimApproval(request: Request): Promise<Response> {
     try {
-      const url = new URL(request.url);
+      const url = requestURL(request, baseURL);
       if (url.origin !== baseURL || url.pathname !== "/api/admin/order-claims") missing();
       if (request.method !== "POST") return method();
       if (request.headers.get("origin") !== baseURL) throw new AuthFailure("FORBIDDEN", 403, "Invalid request origin");

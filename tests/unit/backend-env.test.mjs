@@ -42,3 +42,9 @@ test("importing the database factory does not require credentials or open a conn
   const { createDatabase } = await import("../../src/server/db/client.ts");
   assert.equal(typeof createDatabase, "function");
 });
+
+test("Task 21B: pool wait statistics are off by default and bounded when enabled", () => {
+  assert.equal(parseServerEnv({ DATABASE_URL: localUrl }).poolStatsMs, 0);
+  assert.equal(parseServerEnv({ DATABASE_URL: localUrl, DATABASE_POOL_STATS_MS: "5000" }).poolStatsMs, 5000);
+  for (const value of ["-1", "1.5", "3600001", "x"]) assert.throws(() => parseServerEnv({ DATABASE_URL: localUrl, DATABASE_POOL_STATS_MS: value }));
+});

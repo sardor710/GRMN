@@ -3,6 +3,7 @@ import { AuthFailure } from "../auth/config.ts";
 import { authErrorResponse } from "../auth/http.ts";
 import { adminJSON, readAdminJSON } from "../auth/admin-service.ts";
 import type { InventoryService } from "./service.ts";
+import { requestURL } from "../auth/request-url.ts";
 
 // /api/admin/inventory. GET ?variantId= reads a balance and its recent ledger (catalog:read);
 // GET ?view=reconciliation compares balances with the ledger (inventory:write);
@@ -13,7 +14,7 @@ export function createInventoryHTTP(input: { service: InventoryService; baseURL:
   const { service, baseURL } = input;
   return async function handleInventory(request: Request): Promise<Response> {
     try {
-      const url = new URL(request.url);
+      const url = requestURL(request, baseURL);
       if (url.origin !== baseURL || url.pathname !== "/api/admin/inventory") bad();
       const params = [...url.searchParams];
       if (new Set(params.map(([key]) => key)).size !== params.length) bad();

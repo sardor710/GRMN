@@ -13,6 +13,7 @@ import type { PhoneSender } from "./phone-service.ts";
 import { getSessionIdentity } from "./principal.ts";
 import { completeProfileInput, emailInput, phoneInput } from "./validation.ts";
 import { revokeBrowserAuthentication } from "./lifecycle.ts";
+import { requestURL } from "./request-url.ts";
 
 const bodies = {
   "/sign-in/email": z.object({ email: emailInput, password: z.string().min(16).max(128) }).strict(),
@@ -81,7 +82,7 @@ export function createAuthFoundation(input: { database: DatabaseHandle; config: 
     let previousAdmission = false;
     try {
       if (!config.enabled) throw new AuthFailure("DEPENDENCY_UNAVAILABLE", 503, "Authentication is not enabled");
-      const url = new URL(request.url), path = url.pathname.slice("/api/auth".length);
+      const url = requestURL(request, config.baseURL), path = url.pathname.slice("/api/auth".length);
       if (url.origin!==config.baseURL || !url.pathname.startsWith("/api/auth/")) throw new AuthFailure("INVALID_INPUT", 400, "Invalid auth origin");
       const network = config.trustedIPHeader ? request.headers.get(config.trustedIPHeader) : "unattributed";
       if (config.trustedIPHeader && (!network || !isIP(network))) throw new AuthFailure("DEPENDENCY_UNAVAILABLE", 503, "Trusted proxy identity is unavailable");

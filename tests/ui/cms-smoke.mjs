@@ -133,8 +133,12 @@ try{
   await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
   await navigate("/c/wearables-smartwatches");
   await evaluate(`localStorage.setItem("garmin-clone-cart",JSON.stringify([{id:"ui-cart-fixture",name:"Forged name",price:1,qty:2}]));true`);
-  await navigate("/p/ui-cart-fixture");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Cart fixture product did not render");
+  // Task 21B: reload and let THIS page import the stored cart before moving on. Navigating away while the
+  // first page's sync is still in flight (a slow first dev compile) abandoned its import half-way, and the
+  // next page imported again into a second guest cart: a test race, not an application path.
+  await navigate("/c/wearables-smartwatches");
   await until(()=>evaluate("localStorage.getItem('garmin-clone-cart')===null"),"The stored local cart was not imported");
+  await navigate("/p/ui-cart-fixture");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Cart fixture product did not render");
   await until(async()=>{try{await click("Add to Cart");return true;}catch{return false;}},"Add to Cart was not clickable");
   await until(async()=>(await database.pool.query("SELECT ci.quantity FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.status='active' AND c.user_id IS NULL AND ci.variant_id=$1",[cartVariant])).rows[0]?.quantity===3,"Guest server cart did not hold the imported and added quantity");
   const guestCookie=(await send("Network.getCookies",{urls:[origin+"/api/cart"]})).cookies.find(c=>c.name==="grmn-cart");assert.ok(guestCookie?.httpOnly,"guest cart capability must be HttpOnly");

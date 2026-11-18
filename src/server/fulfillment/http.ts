@@ -5,6 +5,7 @@ import { adminJSON, readAdminJSON } from "../auth/admin-service.ts";
 import type { FulfillmentService } from "./service.ts";
 import type { AfterSalesService } from "./aftersales.ts";
 import type { ManualPaymentService } from "../payments/manual.ts";
+import { requestURL } from "../auth/request-url.ts";
 
 // /api/admin/orders in PostgreSQL mode (Task 16A).
 // GET (orders:read): no query or ?fulfillmentStatus=&cursor=&limit= lists the queue; ?id= reads one order.
@@ -18,7 +19,7 @@ export function createFulfillmentHTTP(input: { service: FulfillmentService; afte
   const { service, aftersales, manualPayments, baseURL } = input;
   return async function handleFulfillment(request: Request): Promise<Response> {
     try {
-      const url = new URL(request.url);
+      const url = requestURL(request, baseURL);
       if (url.origin !== baseURL || url.pathname !== "/api/admin/orders") bad();
       const params = [...url.searchParams];
       if (new Set(params.map(([name]) => name)).size !== params.length) bad();

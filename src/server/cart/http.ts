@@ -3,6 +3,7 @@ import { AuthFailure } from "../auth/config.ts";
 import { authErrorResponse } from "../auth/http.ts";
 import { adminJSON, readAdminJSON } from "../auth/admin-service.ts";
 import { CART_COOKIE, type CartResult, type CartService } from "./service.ts";
+import { requestURL } from "../auth/request-url.ts";
 
 // HTTP mapping for /api/cart/*. The cart owner is the session (or the guest capability cookie);
 // no query string or body field can name a cart, an owner or a price.
@@ -23,7 +24,7 @@ export function createCartHandler(input: { service: CartService; baseURL: string
   }
   return async function handleCart(request: Request): Promise<Response> {
     try {
-      const url = new URL(request.url);
+      const url = requestURL(request, baseURL);
       if (url.origin !== baseURL) bad();
       if (request.method !== "GET" && request.headers.get("origin") !== baseURL) throw new AuthFailure("FORBIDDEN", 403, "Invalid request origin");
       if ([...url.searchParams.keys()].length) bad();

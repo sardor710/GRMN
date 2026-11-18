@@ -10,6 +10,7 @@ import { sanitizeProductInput } from "../../lib/cms/product-input.ts";
 import { findSkuConflicts } from "../../lib/cms/product-variants.ts";
 import type { CMSProduct } from "../../lib/cms/types";
 import { adminDTO, productInput, bannerInput, blogInput, discountInput, settingsInput, homepageInput, orderUpdateInput, emptyInput, deleteInput, seoPatchInput } from "./admin-schemas.ts";
+import { requestURL } from "./request-url.ts";
 
 export type AdminResource = "admins"|"banners"|"blogs"|"clients"|"discounts"|"homepage"|"orders"|"products"|"settings";
 export interface AdminStore {
@@ -61,7 +62,7 @@ export function createAdminHandlers(input:{runtime:AuthRuntime;store:AdminStore;
         // Refunds have their own sensitive permission, even though execution is
         // unavailable until the transactional commerce workflow is implemented.
         const principal=await requirePermission(runtime,request.headers,permission);
-        const url=new URL(request.url);
+        const url=requestURL(request,baseURL);
         if(url.origin!==baseURL)throw new AuthFailure("INVALID_INPUT",400,"Invalid request origin");
         if(!read && request.headers.get("origin")!==baseURL)throw new AuthFailure("FORBIDDEN",403,"Invalid request origin");
         if(read) {

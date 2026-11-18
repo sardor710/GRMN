@@ -3,6 +3,7 @@ import { AuthFailure } from "../auth/config.ts";
 import { authErrorResponse } from "../auth/http.ts";
 import { adminJSON, readAdminJSON } from "../auth/admin-service.ts";
 import type { OperationsService } from "./admin.ts";
+import { requestURL } from "../auth/request-url.ts";
 
 // Task 12B. /api/admin/operations. GET (optionally ?kind=) returns the job-lag metrics and the
 // open dead letters; POST { jobId, reason } replays one dead letter. Both need operator access,
@@ -13,7 +14,7 @@ export function createOperationsHTTP(input: { service: OperationsService; baseUR
   const { service, baseURL } = input;
   return async function handleOperations(request: Request): Promise<Response> {
     try {
-      const url = new URL(request.url);
+      const url = requestURL(request, baseURL);
       if (url.origin !== baseURL || url.pathname !== "/api/admin/operations") bad();
       const params = [...url.searchParams];
       if (new Set(params.map(([key]) => key)).size !== params.length) bad();

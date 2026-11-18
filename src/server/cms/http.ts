@@ -6,6 +6,7 @@ import { adminJSON, readAdminJSON } from "../auth/admin-service.ts";
 import { productInput, blogInput } from "../auth/admin-schemas.ts";
 import type { Permission, Principal } from "../context.ts";
 import type { CMSResource, CMSService } from "./service.ts";
+import { requestURL } from "../auth/request-url.ts";
 
 const readPermissions:Record<CMSResource|"homepage",Permission>={products:"catalog:read",blogs:"content:write",banners:"content:write",clients:"customers:read",homepage:"content:write"};
 const writePermissions:typeof readPermissions={...readPermissions,products:"catalog:write",clients:"customers:write"};
@@ -20,7 +21,7 @@ export function createCMSHTTP(input:{cms:CMSService;authorize:(headers:Headers,p
   return{async handle(resource:CMSResource|"homepage",request:Request):Promise<Response>{
     try{
       const read=request.method==="GET";await input.authorize(request.headers,(read?readPermissions:writePermissions)[resource]);
-      const url=new URL(request.url);if(url.origin!==input.baseURL)return bad();
+      const url=requestURL(request,input.baseURL);if(url.origin!==input.baseURL)return bad();
       if(!read&&request.headers.get("origin")!==input.baseURL)throw new AuthFailure("FORBIDDEN",403,"Invalid request origin");
       if(read){
         if(resource==="homepage"){queries(url,[]);const item=await input.cms.homepage(request.headers);return adminJSON({config:item.config,version:item.version,dimensionSpecs:input.dimensionSpecs,backend:"postgres"});}

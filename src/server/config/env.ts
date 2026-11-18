@@ -8,6 +8,8 @@ export interface ServerConfig {
   connectionTimeoutMs: number;
   statementTimeoutMs: number;
   idleTimeoutMs: number;
+  /** Task 21B: when > 0, log pool acquisition-wait statistics every this many ms (0 = off). */
+  poolStatsMs: number;
 }
 
 function invalid(field: string): never {
@@ -47,6 +49,7 @@ export function parseServerEnv(source: EnvironmentSource): ServerConfig {
     connectionTimeoutMs: integer(source, "DATABASE_CONNECT_TIMEOUT_MS", 2000, 100, 30000),
     statementTimeoutMs: integer(source, "DATABASE_STATEMENT_TIMEOUT_MS", 5000, 100, 60000),
     idleTimeoutMs: integer(source, "DATABASE_IDLE_TIMEOUT_MS", 10000, 100, 300000),
+    poolStatsMs: integer(source, "DATABASE_POOL_STATS_MS", 0, 0, 3600000),
   };
 }
 
