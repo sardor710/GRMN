@@ -1,0 +1,90 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1794318908909,
+      "tag": "0000_identity-customers",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794320773548,
+      "tag": "0001_catalog-media",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794322471314,
+      "tag": "0002_commerce-inventory",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794323956047,
+      "tag": "0003_payments-fulfillment-promotions",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794343290691,
+      "tag": "0004_content-operations",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794346222912,
+      "tag": "0005_auth-runtime",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794854847314,
+      "tag": "0006_account-ownership",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794859487464,
+      "tag": "0007_account-claims",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794887309437,
+      "tag": "0008_inventory-ledger",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794892755822,
+      "tag": "0009_inventory-reservations",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794904872612,
+      "tag": "0010_cart-price-snapshots",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794949984165,
+      "tag": "0011_performance-throttle",
+      "breakpoints": true
+    }
+  ]
+}

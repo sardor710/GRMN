@@ -65,9 +65,10 @@ interface HomeTilesProps {
 }
 
 export function HomeTiles({ promoTiles, storyTiles, categoryTiles }: HomeTilesProps) {
-  const promos = promoTiles && promoTiles.length > 0 ? promoTiles : homePromoTiles;
-  const stories = storyTiles && storyTiles.length > 0 ? storyTiles : homeStoryTiles;
-  const categories = categoryTiles && categoryTiles.length > 0 ? categoryTiles : homeCategoryTiles;
+  // CMS tiles win even when empty; static tiles only without CMS data.
+  const promos = promoTiles ?? homePromoTiles;
+  const stories = storyTiles ?? homeStoryTiles;
+  const categories = categoryTiles ?? homeCategoryTiles;
 
   return (
     <>

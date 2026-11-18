@@ -1,3 +1,4 @@
+import "server-only";
 import type {
   CMSData,
   AdminUser,
@@ -15,12 +16,15 @@ import { generateOrderNumber, generateOrderMilestones } from "./order-lifecycle"
 import { createDefaultHomepageConfig } from "./homepage-schema";
 import { syncLegacyFields } from "./product-variants";
 import dataJson from "./data.json";
-import { initialCMSData } from "./seed";
 
 // In-memory cache
-let inMemoryData: CMSData = (dataJson as unknown as CMSData) || initialCMSData;
+let inMemoryData: CMSData = dataJson as unknown as CMSData;
+function assertLegacyMode():void {
+  if(process.env?.CMS_BACKEND==="postgres")throw new Error("Legacy CMS access is disabled with PostgreSQL");
+}
 
 function loadData(): CMSData {
+  assertLegacyMode();
   if (typeof window === "undefined") {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -31,17 +35,17 @@ function loadData(): CMSData {
       if (fs.existsSync(dataFilePath)) {
         const raw = fs.readFileSync(dataFilePath, "utf-8");
         inMemoryData = JSON.parse(raw);
-        return inMemoryData;
+        return structuredClone(inMemoryData);
       }
-    } catch (err) {
-      console.error("Error reading CMS data file:", err);
+    } catch {
+      throw new Error("CMS persistence is unavailable");
     }
   }
-  return inMemoryData;
+  throw new Error("CMS persistence is unavailable");
 }
 
 function saveData(data: CMSData): void {
-  inMemoryData = data;
+  assertLegacyMode();
   if (typeof window === "undefined") {
     try {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -54,10 +58,11 @@ function saveData(data: CMSData): void {
         fs.mkdirSync(dir, { recursive: true });
       }
       fs.writeFileSync(dataFilePath, JSON.stringify(data, null, 2), "utf-8");
-    } catch (err) {
-      console.error("Error saving CMS data to file:", err);
+    } catch {
+      throw new Error("CMS persistence is unavailable");
     }
   }
+  inMemoryData = structuredClone(data);
 }
 
 // ----------------- ADMINS -----------------
@@ -193,7 +198,7 @@ export function saveProduct(product: Partial<CMSProduct> & { name: string; price
       status: product.status || "published",
       isFeatured: product.isFeatured ?? false,
       specs: product.specs || [
-        { label: "Lens Material", value: "CorningВ® GorillaВ® Glass 3" },
+        { label: "Lens Material", value: "Corning® Gorilla® Glass 3" },
         { label: "Bezel Material", value: "Stainless Steel" },
         { label: "Display", value: '1.4" AMOLED' },
         { label: "Battery Life", value: "Up to 14 days" },
@@ -491,8 +496,6 @@ export function getHomepageConfig(): HomepageConfig {
   const data = loadData();
   if (!data.homepage || !Array.isArray(data.homepage.heroBanners) || !Array.isArray(data.homepage.carousels)) {
     const defaultConfig = createDefaultHomepageConfig();
-    data.homepage = defaultConfig;
-    saveData(data);
     return defaultConfig;
   }
   return data.homepage;

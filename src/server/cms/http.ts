@@ -1,0 +1,52 @@
+import "server-only";
+import { z } from "zod";
+import { AuthFailure } from "../auth/config.ts";
+import { authErrorResponse } from "../auth/http.ts";
+import { adminJSON, readAdminJSON } from "../auth/admin-service.ts";
+import { productInput, blogInput } from "../auth/admin-schemas.ts";
+import type { Permission, Principal } from "../context.ts";
+import type { CMSResource, CMSService } from "./service.ts";
+
+const readPermissions:Record<CMSResource|"homepage",Permission>={products:"catalog:read",blogs:"content:write",banners:"content:write",clients:"customers:read",homepage:"content:write"};
+const writePermissions:typeof readPermissions={...readPermissions,products:"catalog:write",clients:"customers:write"};
+const patchSchema=z.object({id:z.string().min(1).max(128),version:z.number().int().positive(),...Object.fromEntries(Object.entries(productInput.shape).filter(([key])=>["seoTitle","seoDescription","focusKeywords","canonicalUrl","noIndex","ogImage"].includes(key)))}).strict().refine(value=>Object.keys(value).length>2);
+const bad=():never=>{throw new AuthFailure("INVALID_INPUT",400,"Invalid or unknown fields");};
+function parsed<T>(schema:z.ZodType<T>,value:unknown):T{const result=schema.safeParse(value);if(!result.success)return bad();return result.data;}
+function queries(url:URL,allowed:readonly string[]):Record<string,string>{
+  const result:Record<string,string>=Object.create(null);
+  for(const [key,value]of url.searchParams){if(!allowed.includes(key)||Object.hasOwn(result,key))return bad();result[key]=value;}return result;
+}
+export function createCMSHTTP(input:{cms:CMSService;authorize:(headers:Headers,permission:Permission)=>Promise<Principal>;baseURL:string;dimensionSpecs:unknown;defaults:()=>unknown}){
+  return{async handle(resource:CMSResource|"homepage",request:Request):Promise<Response>{
+    try{
+      const read=request.method==="GET";await input.authorize(request.headers,(read?readPermissions:writePermissions)[resource]);
+      const url=new URL(request.url);if(url.origin!==input.baseURL)return bad();
+      if(!read&&request.headers.get("origin")!==input.baseURL)throw new AuthFailure("FORBIDDEN",403,"Invalid request origin");
+      if(read){
+        if(resource==="homepage"){queries(url,[]);const item=await input.cms.homepage(request.headers);return adminJSON({config:item.config,version:item.version,dimensionSpecs:input.dimensionSpecs,backend:"postgres"});}
+        const query=queries(url,["limit","cursor","search","status","family","category","facet"]);if(query.limit&&!/^\d+$/.test(query.limit))return bad();
+        if(query.facet){if(resource!=="blogs"||query.facet!=="categories")return bad();delete query.facet;const page=await input.cms.categories(request.headers,{...query,limit:query.limit?Number(query.limit):20});return adminJSON({categories:page.items,nextCursor:page.nextCursor,backend:"postgres"});}
+        const page=await input.cms.list(resource,request.headers,{...query,limit:query.limit?Number(query.limit):20});
+        return adminJSON({[resource]:page.items,nextCursor:page.nextCursor,backend:"postgres"});
+      }
+      if(request.method==="DELETE"){
+        if(resource==="homepage")return bad();const query=queries(url,["id","version"]);
+        if(!query.id||!query.version||!/^\d+$/.test(query.version))return bad();
+        return adminJSON(await input.cms.archive(resource,request.headers,query.id,Number(query.version)));
+      }
+      queries(url,[]);const raw=await readAdminJSON(request,true);
+      if(resource==="homepage"){
+        if(request.method==="POST"){const data=parsed(z.object({action:z.literal("reset"),version:z.number().int().nonnegative()}).strict(),raw);const saved=await input.cms.saveHomepage(request.headers,{version:data.version,config:input.defaults()});return adminJSON({success:true,config:saved.config,version:saved.version});}
+        if(request.method!=="PUT")return bad();const saved=await input.cms.saveHomepage(request.headers,raw);return adminJSON({success:true,config:saved.config,version:saved.version});
+      }
+      let command:unknown=raw;
+      if(request.method==="PATCH"&&(resource==="products"||resource==="blogs")){
+        const patch=parsed(patchSchema,raw),current=await input.cms.get(resource,request.headers,patch.id);
+        const keys=Object.keys(resource==="products"?productInput.shape:blogInput.shape);
+        command={...Object.fromEntries(keys.filter(key=>Object.hasOwn(current,key)).map(key=>[key,current[key]])),...patch};
+      }else if(request.method!=="POST")return bad();
+      const saved=await input.cms.save(resource,request.headers,command);
+      return adminJSON({success:true,[resource==="products"?"product":resource==="blogs"?"blog":resource==="banners"?"banner":"client"]:saved});
+    }catch(error){return authErrorResponse(error);}
+  }};
+}

@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { decodeRouteParam } from "@/lib/route-params";
+import { readOr } from "@/server/public-input";
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -10,8 +12,8 @@ import { ProductJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 
 export const dynamic = "force-dynamic";
 
-export function generateStaticParams() {
-  return getAllProducts().map((p) => ({ id: p.id }));
+export async function generateStaticParams() {
+  return (await getAllProducts()).map((p) => ({ id: p.id }));
 }
 
 export async function generateMetadata({
@@ -19,22 +21,23 @@ export async function generateMetadata({
 }: {
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const cmsProduct = getCMSProduct(id);
-  const detail = getProductDetail(id);
+  const id = decodeRouteParam((await params).id);
+  const detail = await readOr(getProductDetail(id), () => undefined);
+  const cmsProduct = detail?.commerce?undefined:await getCMSProduct(id);
 
   if (!detail && !cmsProduct) {
     return { title: "Garmin Smartwatches & GPS Devices" };
   }
 
+  const seo=detail?.commerce?.seo;
   const name = cmsProduct?.name || detail?.title || "Garmin Product";
-  const title = cmsProduct?.seoTitle || `${name} | Official Garmin Smartwatch`;
+  const title = seo?.title || cmsProduct?.seoTitle || `${name} | Official Garmin Smartwatch`;
   const description =
-    cmsProduct?.seoDescription ||
+    seo?.description || cmsProduct?.seoDescription ||
     cmsProduct?.description ||
     detail?.subtitle ||
     `Discover ${name} with advanced GPS tracking, health metrics, and long battery life.`;
-  const image = cmsProduct?.ogImage || cmsProduct?.image || detail?.gallery[0]?.src || "/images/products/1228429.jpg";
+  const image = seo?.image || cmsProduct?.ogImage || cmsProduct?.image || detail?.gallery[0]?.src || "/images/products/1228429.jpg";
   const url = `https://www.garmin.com/p/${id}`;
 
   return {
@@ -42,9 +45,9 @@ export async function generateMetadata({
     description,
     keywords: cmsProduct?.focusKeywords?.join(", "),
     alternates: {
-      canonical: cmsProduct?.canonicalUrl || url,
+      canonical: seo?.canonicalUrl || cmsProduct?.canonicalUrl || url,
     },
-    robots: cmsProduct?.noIndex
+    robots: seo?.noIndex || cmsProduct?.noIndex
       ? { index: false, follow: false }
       : { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1 },
     openGraph: {
@@ -76,16 +79,16 @@ export default async function ProductPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const detail = getProductDetail(id);
+  const id = decodeRouteParam((await params).id);
+  const detail = await readOr(getProductDetail(id), () => undefined);
   if (!detail) notFound();
 
-  const cmsProduct = getCMSProduct(id);
+  const cmsProduct = await getCMSProduct(id);
   const fullProduct = cmsProduct || {
     id: detail.id,
     name: detail.title,
     sku: detail.partNumber || `GRM-${detail.id}`,
-    price: detail.price,
+    price: Number(detail.price),
     description: detail.subtitle,
     image: detail.gallery[0]?.src || "/images/products/1228429.jpg",
     family: "Smartwatches",
@@ -94,7 +97,8 @@ export default async function ProductPage({
     activities: ["Running", "Hiking"],
     level: "Premium" as const,
     caseSize: "Medium" as const,
-    stock: 50,
+    stock: 0,
+    stockManaged:false,
     status: "published" as const,
     specs: detail.specs || [],
     inTheBox: detail.inTheBox || [],
@@ -111,7 +115,7 @@ export default async function ProductPage({
   return (
     <div className="flex min-h-screen flex-col bg-white">
       {/* Google Structured Data */}
-      <ProductJsonLd product={fullProduct} url={`https://www.garmin.com/p/${id}`} />
+      <ProductJsonLd product={detail.commerce??fullProduct} url={`https://www.garmin.com/p/${id}`} />
       <BreadcrumbJsonLd items={breadcrumbs} />
 
       <SiteHeader />

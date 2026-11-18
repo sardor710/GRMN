@@ -1,29 +1,18 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import {useRouter,usePathname,useSearchParams} from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { blogPosts, blogCategories } from "@/lib/blog";
+import { blogCategories, type BlogPost } from "@/lib/blog-constants";
 import { categoryIcons } from "@/components/blog-icons";
 import { SearchIcon } from "@/components/icons";
 
-export function BlogExplorer() {
-  const [active, setActive] = useState<string | null>(null);
-  const [query, setQuery] = useState("");
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return blogPosts.filter((p) => {
-      if (active && p.category !== active && !p.categories.some((c) => c.toLowerCase().includes(active))) {
-        // fall back to label match
-        const label = blogCategories.find((c) => c.key === active)?.label.toLowerCase() ?? "";
-        if (!p.categories.some((c) => c.toLowerCase() === label)) return false;
-      }
-      if (q && !p.title.toLowerCase().includes(q) && !p.excerpt.toLowerCase().includes(q)) return false;
-      return true;
-    });
-  }, [active, query]);
-
+export function BlogExplorer({posts}:{posts:BlogPost[]}) {
+  const router=useRouter(),pathname=usePathname(),params=useSearchParams();
+  const active=params.get("category"),query=params.get("search")??"",filtered=posts;
+  const update=(name:string,value:string)=>{const next=new URLSearchParams(params.toString());next.delete("cursor");if(value)next.set(name,value);else next.delete(name);router.push(pathname+"?"+next.toString());};
+  const setActive=(value:string|null)=>update("category",value??"");
+  const setQuery=(value:string)=>update("search",value);
   return (
     <>
       {/* Category icon row */}
@@ -31,11 +20,11 @@ export function BlogExplorer() {
         <div className="mx-auto flex max-w-[1100px] flex-wrap items-start justify-center gap-x-8 gap-y-4 px-4 py-6">
           {blogCategories.map((c) => {
             const Icon = categoryIcons[c.key];
-            const on = active === c.key;
+            const on = active === c.label;
             return (
               <button
                 key={c.key}
-                onClick={() => setActive(on ? null : c.key)}
+                onClick={() => setActive(on ? null : c.label)}
                 className={`flex w-20 flex-col items-center gap-2 text-center transition-colors ${
                   on ? "text-[#007cc3]" : "text-neutral-700 hover:text-black"
                 }`}
@@ -82,13 +71,13 @@ export function BlogExplorer() {
             {filtered.map((post) => (
               <Link key={post.slug} href={`/blog/${post.slug}`} className="group flex flex-col">
                 <div className="relative aspect-[16/10] w-full overflow-hidden">
-                  <Image
+                  {post.image&&<Image
                     src={post.image}
                     alt={post.title}
                     fill
                     sizes="(max-width: 768px) 100vw, 420px"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
+                  />}
                 </div>
                 <div className="mt-4 flex gap-3">
                   {post.categories.map((c) => (

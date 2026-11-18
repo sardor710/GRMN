@@ -55,17 +55,21 @@ export interface FooterColumn {
 }
 
 export interface Product {
+  availability?: import("../contracts/commerce").Availability;
+  priceLabel?: string;
+  currency?: "KZT" | "USD";
+  purchasable?: boolean;
   id: string;
   name: string;
-  price: number;
+  price: number | string;
   priceSuffix?: string; // e.g. "and up"
   description: string;
   image: string;
   badge?: string;
   family: string;
   activities: string[];
-  level: "Entry" | "Advanced" | "Premium" | "Youth";
-  caseSize: "Small" | "Medium" | "Large";
+  level: "Entry" | "Advanced" | "Premium" | "Youth" | "Unknown";
+  caseSize: "Small" | "Medium" | "Large" | "Unknown";
 }
 
 export interface WatchFamily {
@@ -86,11 +90,15 @@ export interface AccessoryItem {
 }
 
 export interface ProductDetail {
+  priceLabel?: string;
+  commerce?: import("../contracts/commerce").ProductDetailDTO;
+  currency?: "KZT" | "USD";
+  purchasable?: boolean;
   id: string;
   title: string;
   subtitle: string;
   partNumber: string;
-  price: number;
+  price: number | string;
   badge?: string;
   breadcrumb: { label: string; href: string }[];
   gallery: { view: string; src: string }[];

@@ -1,16 +1,33 @@
 # Backend migration — task reports and current position
 
-Updated: **2026-11-17**. This is the current progress index; individual handoffs are historical completion receipts.
+Updated: **2026-11-18**. This is the current progress index; individual handoffs are historical completion receipts.
 
 ## Current position
 
-- **Completed:** Tasks **01–11** (10A account APIs and ownership, 10B legacy claims/phone change/credential change, 10C account UI wiring; 11A inventory ledger, audited adjustments, reconciliation, opening import; 11B race-safe reservations) **12** (12A durable outbox and leased worker; 12B scheduled reservation expiry, audited dead-letter replay and job-lag metric) and **13** (13A server cart, login merge and wishlist; 13B quotes, markdowns, coupon quotas and USD display) and **14** (14A idempotent checkout and pending demo order; 14B payment interface, demo adapter, verified inbox, capture and unpaid-order expiry), within the scope and activation limits below.
-- **Committed:** on `codex/backend-task-02`. Tasks 02–09 are in `b92fd0e`, 10A in `76bbf3b`, 10B in `7d615b9`, 10C in `3eecd53`, 11A in `6aed380`, 11B in `eb1cb5b`, 12A in `3432aeb`, 12B in `4fe08d2`, 13A in `40a16cb`, 13B in `d98cc92`, 14A in `92b2737`, and 14B in the commit after it (see `git log`).
-- **Next:** Task **16A**: manual fulfillment and order timeline (15 is merged into 14). See [the 14B handoff](handoffs/task-14b.md#exact-next-step).
+- **Completed:** Tasks **01–14**, **16** (16A + 16B, absorbing 17) and **18** (18A + 18B, absorbing 19). Task 15 is merged into 14, 20 into 13 and 22 into 21. All are complete within the scope and activation limits below.
+- **Partial:** Task **21A**. Done: migration 0011, two indexes backed by EXPLAIN evidence, shared rate limits and the permission matrix check. Withdrawn: the public data cache. Blocked: browser E2E purchase lifecycles (they need ≥1 GB free RAM and O07) and catalog/search plans. The autonomous chain stopped here.
+- **Committed on `codex/backend-task-02`:** 02–09 `b92fd0e`, 10A `76bbf3b`, 10B `7d615b9`, 10C `3eecd53`, 11A `6aed380`, 11B `eb1cb5b`, 12A `3432aeb`, 12B `4fe08d2`, 13A `40a16cb`, 13B `d98cc92`, 14A `92b2737`, 14B `7981280`, 16A `9afd247`, 16B `f88c52e`, 18A `69e1d81`, 18B `4ac8955`, 21A `53a5b63`.
+- **Merged (2026-11-18):** `codex/backend-task-02` is merged into `D:/projects/garmin/GRMN` on branch `merge/backend-into-cms-variants`, together with the product variants, garmin.com importer and homepage work from `feat/garmin-clone-cms-variants`. See "Merge into the main checkout" below. **Continue all work in `D:/projects/garmin/GRMN`.** The Codex worktree is historical.
+- **Next (owner):**
+  1. On a machine with ≥1 GB free RAM, run the deferred gates: `npm run test:integration` and the browser smoke `node --conditions=react-server tests/ui/cms-smoke.mjs` (open for 16A–21A and the merge), then `npm run build`.
+  2. Decide O05 (VPS) and O07 (manual payment confirmation), then run 21B.
+  3. Task 23 (cutover rehearsal) is owner-run.
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
-- **Active implementation:** `C:/Users/Freakman/.codex/worktrees/backend-task-02/GRMN`, branch `codex/backend-task-02`.
-- **Original checkout:** `D:/projects/garmin/GRMN`. Its progress documentation is synchronized, but the backend implementation has **not** been merged or copied there. An AI inspecting only that checkout's application files will see older code. Continue code work in the active worktree above.
-- No merge, push, deployment, real import, production database migration or backend activation has been performed.
+- No push, deployment, real import, production database migration or backend activation has been performed.
+
+## Merge into the main checkout (2026-11-18)
+
+The two branches grew from the same uncommitted CMS work. Conflicts were resolved as follows:
+
+- **Backend wins** wherever it deliberately replaced insecure or unauthorized behavior: Better Auth staff sessions replace the old admin cookie, legacy exports are replaced by authorized exports, the account APIs are session-owned, and every admin page and route uses the guarded runtime.
+- **Feature branch wins** for the storefront visuals: the header, hero, featured carousel, tiles and homepage data.
+- **Products have two admin screens.** In legacy mode `ProductsScreen` is the options/variants/photos/garmin.com-import editor, adapted to the paginated, permission-checked admin API. In PostgreSQL mode `PostgresProductsScreen` is the backend catalog screen. `products/page.tsx` picks one with `cmsBackend()`.
+- **Admin validation:** `admin-schemas.ts` now accepts and projects images, options, variants, overview HTML, spec groups and source. For homepage blocks it accepts disclaimers, promo item variants and image alt text. The products POST handler sanitizes input (overview HTML, image/swatch allowlists, hex colors), requires variant SKUs and returns 409 `SKU_CONFLICT`. Product bodies may be up to 1 MB (other resources stay at 128 KB).
+- **Import and uploads:** `/api/admin/import/garmin` and `/api/admin/uploads` require a same-origin request from staff with `catalog:write` (`requireCatalogWriter`).
+- **Cart and product page:** the browser-only cart keeps one line per variant SKU. In server mode the cart uses server lines. `ProductTop` shows the JSON CMS variant picker in legacy mode and the server variant select in PostgreSQL mode.
+- **Homepage:** explicitly empty or inactive CMS blocks are respected, so static campaigns never come back.
+- **Data:** about 226 double-encoded strings in `data.json` (for example "fД“nixВ®") were repaired back to UTF-8 ("fēnix®"). Legacy admin sign-in now requires the backend auth setup (`AUTH_ENABLED=1`, PostgreSQL); see [auth-integration.md](auth-integration.md).
+- **Gates at merge:** `npm run typecheck` passes, `npm run lint` has 0 errors, `npm run test:legacy` passes 73/73, `npm run test:unit` passes 189/189 (run from PowerShell: the migration tests call Windows `whoami`, which Git Bash shadows), and `check:boundaries` passes. **Not run** for lack of free RAM: `npm run test:integration` (embedded PostgreSQL; it includes a new legacy-variant validation test), `npm run build` and the browser smoke.
 
 **Complete means the recorded task scope passed its stated gate.** Schema completion does not mean its later services exist. Historical test counts below describe each completion point, not a fresh test run of all current uncommitted changes.
 

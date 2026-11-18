@@ -21,7 +21,7 @@ export default async function AdminLayout({
               name: admin.name,
               email: admin.email,
               role: admin.role,
-              avatar: admin.avatar,
+              permissions: admin.permissions,
             }
           : undefined
       }

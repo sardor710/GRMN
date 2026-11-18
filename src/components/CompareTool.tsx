@@ -1,15 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import {useRouter,usePathname,useSearchParams} from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { products } from "@/lib/products";
+
 import type { Product } from "@/types";
 
 const MAX = 4;
 
 const rows: { label: string; get: (p: Product) => string }[] = [
-  { label: "Price", get: (p) => `$${p.price.toLocaleString("en-US", { minimumFractionDigits: 2 })}` },
+  { label: "Price", get: (p) => p.priceLabel??`${p.price} ${p.currency??"USD"}` },
   { label: "Product family", get: (p) => p.family },
   { label: "Experience level", get: (p) => p.level },
   { label: "Case size", get: (p) => p.caseSize },
@@ -18,15 +18,12 @@ const rows: { label: string; get: (p: Product) => string }[] = [
   { label: "Overview", get: (p) => p.description },
 ];
 
-export function CompareTool() {
-  const [selected, setSelected] = useState<string[]>(["1228429", "1462801", "1614061"]);
-
-  const chosen = selected.map((id) => products.find((p) => p.id === id)).filter((p): p is Product => !!p);
-  const available = products.filter((p) => !selected.includes(p.id));
-
-  const remove = (id: string) => setSelected((s) => s.filter((x) => x !== id));
-  const add = (id: string) => setSelected((s) => (s.length < MAX && id ? [...s, id] : s));
-
+export function CompareTool({products,selectedProducts}:{products:Product[];selectedProducts:Product[]}) {
+  const router=useRouter(),pathname=usePathname(),params=useSearchParams();
+  const chosen=selectedProducts,selected=chosen.map(p=>p.id),available=products.filter(p=>!selected.includes(p.id));
+  const change=(ids:string[])=>{const next=new URLSearchParams(params.toString());next.delete("selected");ids.forEach(id=>next.append("selected",id));router.push(pathname+"?"+next.toString());};
+  const remove=(id:string)=>change(selected.filter(value=>value!==id));
+  const add=(id:string)=>{if(id&&selected.length<MAX)change([...selected,id]);};
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-10">
       <div className="text-center">

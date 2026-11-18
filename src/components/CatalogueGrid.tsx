@@ -1,15 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import {useRouter,usePathname,useSearchParams} from "next/navigation";
 import type { Product } from "@/types";
-import { activityFilters, levelFilters, caseSizeFilters } from "@/lib/products";
+import { activityFilters, levelFilters, caseSizeFilters } from "@/lib/catalog-constants";
 import { ProductCard } from "@/components/ProductCard";
 import { ChevronRightIcon } from "@/components/icons";
 
 type SortKey = "featured" | "price-asc" | "price-desc" | "name";
 
 const sortLabels: Record<SortKey, string> = {
-  featured: "Featured Products",
+  featured: "Newest Products",
   "price-asc": "Price: Low to High",
   "price-desc": "Price: High to Low",
   name: "Name: A to Z",
@@ -72,37 +73,17 @@ function Check({
 }
 
 export function CatalogueGrid({ products }: { products: Product[] }) {
-  const [activities, setActivities] = useState<Set<string>>(new Set());
-  const [levels, setLevels] = useState<Set<string>>(new Set());
-  const [sizes, setSizes] = useState<Set<string>>(new Set());
-  const [sort, setSort] = useState<SortKey>("featured");
-
-  const toggle = (set: Set<string>, val: string, setter: (s: Set<string>) => void) => {
-    const next = new Set(set);
-    if (next.has(val)) next.delete(val);
-    else next.add(val);
-    setter(next);
-  };
-
-  const filtered = useMemo(() => {
-    let out = products.filter((p) => {
-      if (activities.size && !p.activities.some((a) => activities.has(a))) return false;
-      if (levels.size && !levels.has(p.level)) return false;
-      if (sizes.size && !sizes.has(p.caseSize)) return false;
-      return true;
-    });
-    out = [...out];
-    if (sort === "price-asc") out.sort((a, b) => a.price - b.price);
-    else if (sort === "price-desc") out.sort((a, b) => b.price - a.price);
-    else if (sort === "name") out.sort((a, b) => a.name.localeCompare(b.name));
-    return out;
-  }, [products, activities, levels, sizes, sort]);
-
-  const clearAll = () => {
-    setActivities(new Set());
-    setLevels(new Set());
-    setSizes(new Set());
-  };
+  const router=useRouter(),pathname=usePathname(),params=useSearchParams();
+  const activities=new Set(params.getAll("activities")),levels=new Set(params.getAll("levels")),sizes=new Set(params.getAll("caseSizes"));
+  const sort=(params.get("sort")??"featured") as SortKey;
+  function update(name:string,values:string[]){const next=new URLSearchParams(params.toString());next.delete("cursor");next.delete(name);values.forEach(value=>next.append(name,value));router.push(pathname+"?"+next.toString());}
+  const setActivities=(values:Set<string>)=>update("activities",[...values]);
+  const setLevels=(values:Set<string>)=>update("levels",[...values]);
+  const setSizes=(values:Set<string>)=>update("caseSizes",[...values]);
+  const setSort=(value:SortKey)=>update("sort",[value]);
+  const toggle=(set:Set<string>,value:string,setter:(v:Set<string>)=>void)=>{const next=new Set(set);if(next.has(value))next.delete(value);else next.add(value);setter(next);};
+  const filtered=products;
+  const clearAll=()=>{const next=new URLSearchParams(params.toString());["activities","levels","caseSizes","cursor"].forEach(name=>next.delete(name));router.push(pathname+"?"+next.toString());};
   const activeCount = activities.size + levels.size + sizes.size;
 
   return (

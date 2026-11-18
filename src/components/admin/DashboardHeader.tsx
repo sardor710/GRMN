@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Plus, Download, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 
 interface DashboardHeaderProps {
   timeframe: string;
@@ -10,7 +10,6 @@ interface DashboardHeaderProps {
   setCurrency: (c: string) => void;
   onRefresh: () => void;
   isRefreshing?: boolean;
-  onExportCSV: () => void;
 }
 
 export function DashboardHeader({
@@ -20,7 +19,6 @@ export function DashboardHeader({
   setCurrency,
   onRefresh,
   isRefreshing = false,
-  onExportCSV,
 }: DashboardHeaderProps) {
   const timeframes = [
     { id: "7d", label: "7 Days" },
@@ -98,15 +96,7 @@ export function DashboardHeader({
             <span className="hidden sm:inline">Sync</span>
           </button>
 
-          <button
-            type="button"
-            onClick={onExportCSV}
-            className="flex items-center gap-1.5 border border-neutral-300 bg-white px-3 py-1.5 text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-700 hover:border-black hover:text-black transition-colors rounded-none"
-            title="Export CSV"
-          >
-            <Download className="h-3.5 w-3.5 text-neutral-500" />
-            <span className="hidden sm:inline">Export</span>
-          </button>
+          <span className="text-xs text-neutral-500">Exports are unavailable.</span>
 
           <Link
             href="/admin/products"

@@ -16,14 +16,15 @@ export interface AdminUser {
 export type ClientStatus = 'active' | 'vip' | 'pending' | 'suspended';
 
 export interface Client {
+  version?: number;
   id: string;
   name: string;
   email: string;
   phone: string;
   country: string;
   status: ClientStatus;
-  totalSpent: number;
-  ordersCount: number;
+  totalSpent?: number;
+  ordersCount?: number;
   avatar?: string;
   notes?: string;
   createdAt: string;
@@ -123,6 +124,9 @@ export interface ProductSource {
 }
 
 export interface CMSProduct {
+  currency?: "KZT" | "USD";
+  stockManaged?: boolean;
+  version?: number;
   id: string;
   name: string;
   sku: string;
@@ -190,6 +194,7 @@ export interface Discount {
 export type BannerPosition = 'hero' | 'promo_pod' | 'announcement';
 
 export interface Banner {
+  version?: number;
   id: string;
   title: string;
   subtitle?: string;
@@ -205,6 +210,8 @@ export interface Banner {
 export type BlogStatus = 'published' | 'draft';
 
 export interface CMSBlog {
+  updatedAt?: string;
+  version?: number;
   id: string;
   slug: string;
   title: string;

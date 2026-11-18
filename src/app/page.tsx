@@ -5,12 +5,12 @@ import { HomeFeatured } from "@/components/home/HomeFeatured";
 import { HomeTiles } from "@/components/home/HomeTiles";
 import { HomeSignup } from "@/components/home/HomeSignup";
 import { HomeFooter } from "@/components/home/HomeFooter";
-import { getHomepageConfig } from "@/lib/cms/store";
+import { readHomepage } from "@/server/cms/source";
 
 export const dynamic = "force-dynamic";
 
-export default function Home() {
-  const config = getHomepageConfig();
+export default async function Home() {
+  const config = await readHomepage();
 
   return (
     <div className="garmin-home min-h-screen bg-white">

@@ -64,7 +64,14 @@ const navSections: { title: string; items: NavItem[] }[] = [
   },
 ];
 
-export function AdminSidebar() {
+const navPermissions: Record<string,string> = {
+  "/admin/products": "catalog:read", "/admin/discounts": "catalog:read",
+  "/admin/orders": "orders:read", "/admin/clients": "customers:read",
+  "/admin/homepage": "content:write", "/admin/banners": "content:write",
+  "/admin/blogs": "content:write", "/admin/seo": "content:write",
+  "/admin/admins": "staff:manage", "/admin/settings": "settings:write",
+};
+export function AdminSidebar({permissions}: {permissions: readonly string[]}) {
   const pathname = usePathname();
 
   return (
@@ -90,7 +97,7 @@ export function AdminSidebar() {
               {section.title}
             </p>
             <ul className="space-y-0.5">
-              {section.items.map((item) => {
+              {section.items.filter(item => !navPermissions[item.href] || permissions.includes(navPermissions[item.href])).map((item) => {
                 const Icon = item.icon;
                 const isActive =
                   item.href === "/admin"

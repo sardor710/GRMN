@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import {minorToMajor,catalogPriceLabel} from "@/lib/public-catalog";
 import type { ProductDetail } from "@/types";
 import { useCart } from "@/lib/cart";
+import { CartRequestError, createCartClient } from "@/lib/cart-client";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { GarminBadge } from "@/components/GarminBadge";
 import { VariantPicker } from "@/components/product/VariantPicker";
@@ -13,19 +15,24 @@ import { isPurchasable, selectValue } from "@/lib/cms/product-variants";
 // Same price format the storefront used before variants (site-wide currency display is a separate follow-up).
 const money = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD`;
 
-export function ProductTop({ product }: { product: ProductDetail }) {
+export function ProductTop({ product:initial }: { product: ProductDetail }) {
+  const [variantId,setVariantId]=useState(initial.commerce?.selectedVariantId??initial.commerce?.variants[0]?.id??"");
+  const variant=initial.commerce?.variants.find(v=>v.id===variantId);
+  const product:ProductDetail=variant?{...initial,price:minorToMajor(variant.price.selling.amountMinor),priceLabel:catalogPriceLabel(variant.price,"KZT"),partNumber:variant.sku,gallery:(variant.gallery??[]).map(m=>({view:m.alt||variant.name,src:m.url}))}:initial;
   const [mainIdx, setMainIdx] = useState(0);
   const [caseSize, setCaseSize] = useState(product.defaultCaseSize);
   const [version, setVersion] = useState(product.defaultVersion);
   const [colorIdx, setColorIdx] = useState(0);
   const [added, setAdded] = useState(false);
-  const { add } = useCart();
+  const { add, mode } = useCart();
+  const [notice, setNotice] = useState<string | null>(null);
+  const [wish, setWish] = useState<"idle" | "saving" | "saved">("idle");
 
-  // ---- variant model (CMS products with options) ----
+  // ---- legacy CMS variant model (JSON CMS products with options) ----
   const vm = product.variantModel;
-  const defaultVariant = vm ? vm.variants.find((v) => v.isDefault) || vm.variants[0] : undefined;
-  const [variantId, setVariantId] = useState(defaultVariant?.id);
-  const variant = vm?.variants.find((v) => v.id === variantId) || defaultVariant;
+  const defaultCmsVariant = vm ? vm.variants.find((v) => v.isDefault) || vm.variants[0] : undefined;
+  const [cmsVariantId, setCmsVariantId] = useState(defaultCmsVariant?.id);
+  const cmsVariant = vm?.variants.find((v) => v.id === cmsVariantId) || defaultCmsVariant;
 
   // Deep link: /p/<id>?sku=<variant sku>
   useEffect(() => {
@@ -36,43 +43,62 @@ export function ProductTop({ product }: { product: ProductDetail }) {
       ? vm.variants.find((v) => v.status === "active" && v.sku.toLowerCase() === sku.toLowerCase())
       : undefined;
     // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from the URL after hydration
-    if (match) setVariantId(match.id);
+    if (match) setCmsVariantId(match.id);
   }, [vm]);
 
   const gallery = useMemo(() => {
-    if (!vm || !variant) return product.gallery;
+    if (!vm || !cmsVariant) return product.gallery;
     const byId = new Map(vm.images.map((img) => [img.id, img]));
-    const own = variant.imageIds.map((id) => byId.get(id)).filter((img): img is NonNullable<typeof img> => Boolean(img));
+    const own = cmsVariant.imageIds.map((id) => byId.get(id)).filter((img): img is NonNullable<typeof img> => Boolean(img));
     return own.length ? own.map((img, i) => ({ view: `${img.alt || product.title} ${i + 1}`, src: img.src })) : product.gallery;
-  }, [vm, variant, product.gallery, product.title]);
-  const safeIdx = Math.min(mainIdx, gallery.length - 1);
+  }, [vm, cmsVariant, product.gallery, product.title]);
+  const safeIdx = Math.max(0, Math.min(mainIdx, gallery.length - 1));
 
   const chooseValue = (optionId: string, valueId: string) => {
     if (!vm) return;
-    const next = selectValue(vm.variants, variant?.selections || {}, optionId, valueId);
+    const next = selectValue(vm.variants, cmsVariant?.selections || {}, optionId, valueId);
     if (!next) return;
-    setVariantId(next.id);
+    setCmsVariantId(next.id);
     setMainIdx(0);
     const url = new URL(window.location.href);
     url.searchParams.set("sku", next.sku);
     window.history.replaceState(null, "", url);
   };
 
-  const price = variant?.price ?? product.price;
-  const compareAt = variant?.originalPrice;
-  const partNumber = variant?.sku || product.partNumber;
+  const price = cmsVariant?.price ?? product.price;
+  const compareAt = cmsVariant?.originalPrice;
+  const partNumber = cmsVariant?.sku || product.partNumber;
 
-  const handleAdd = () => {
-    if (!isPurchasable(variant)) return;
-    add({
-      id: product.id,
-      name: product.title,
-      price,
-      image: gallery[0]?.src,
-      ...(variant ? { sku: variant.sku, variantLabel: variant.title } : {}),
-    });
+  // Server cart (Task 13A): the selected variant's real availability decides; the server prices it.
+  // In the browser-only cart a JSON CMS variant must be active and in stock.
+  const serverCart = mode === "server" && !!initial.commerce;
+  const sellable = serverCart ? variant?.availability === "available" : product.purchasable !== false && isPurchasable(cmsVariant);
+  const addLabel = !sellable
+    ? (serverCart && variant?.availability === "out_of_stock") || (!serverCart && cmsVariant && !isPurchasable(cmsVariant)) ? "Out of stock" : "Purchasing unavailable"
+    : added ? "Added ✓" : "Add to Cart";
+  const handleAdd = async () => {
+    if(!sellable||(!serverCart&&typeof price!=="number"))return;
+    setNotice(null);
+    try {
+      await add({
+        id: product.id,
+        name: product.title,
+        price: typeof price === "number" ? price : 0,
+        image: gallery[0]?.src,
+        ...(variant ? { variantId: variant.id } : {}),
+        ...(cmsVariant ? { sku: cmsVariant.sku, variantLabel: cmsVariant.title } : {}),
+      });
+    } catch (error) { setNotice(error instanceof Error ? error.message : "This item could not be added"); return; }
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+  };
+  const handleWishlist = async () => {
+    setWish("saving"); setNotice(null);
+    try { await createCartClient((url, init) => fetch(url, { ...init, credentials: "same-origin" })).saveToWishlist(product.id); setWish("saved"); }
+    catch (error) {
+      setWish("idle");
+      setNotice(error instanceof CartRequestError && error.status === 401 ? "Sign in to save items to your wishlist." : error instanceof Error ? error.message : "This item could not be saved");
+    }
   };
 
   return (
@@ -121,7 +147,7 @@ export function ProductTop({ product }: { product: ProductDetail }) {
           </div>
           <div className="relative flex-1">
             <div className="relative aspect-square w-full">
-              <Image
+              {gallery[safeIdx]&&<Image
                 src={gallery[safeIdx].src}
                 alt={product.title}
                 fill
@@ -129,7 +155,7 @@ export function ProductTop({ product }: { product: ProductDetail }) {
                 unoptimized={gallery[safeIdx].src.startsWith("http")}
                 sizes="(max-width: 1024px) 100vw, 560px"
                 className="object-contain"
-              />
+              />}
             </div>
           </div>
         </div>
@@ -148,15 +174,15 @@ export function ProductTop({ product }: { product: ProductDetail }) {
             </div>
           )}
 
-          {variant && <p className="mt-1 text-[14px] text-neutral-700">{variant.title}</p>}
+          {cmsVariant && <p className="mt-1 text-[14px] text-neutral-700">{cmsVariant.title}</p>}
 
           <p className="mt-4 text-[28px] font-medium text-black">
-            {money(price)}
-            {compareAt !== undefined && compareAt > price && (
+            {product.priceLabel ?? (typeof price === "number" ? money(price) : price)}
+            {typeof price === "number" && compareAt !== undefined && compareAt > price && (
               <span className="ml-3 align-middle text-[18px] font-normal text-neutral-500 line-through">{money(compareAt)}</span>
             )}
           </p>
-          <p className="mt-2 text-[14px] text-neutral-600">
+          {product.currency!=="KZT"&&<><p className="mt-2 text-[14px] text-neutral-600">
             Starting at $69/mo or 0% APR with <span className="font-semibold">affirm</span>.{" "}
             <a href="#" className="underline">See if you qualify</a>
           </p>
@@ -164,10 +190,12 @@ export function ProductTop({ product }: { product: ProductDetail }) {
             HSA/FSA eligible for qualified customers. <a href="#" className="underline">Learn more</a>
           </p>
 
-          {vm && variant ? (
-            <VariantPicker options={vm.options} variants={vm.variants} selections={variant.selections} onSelect={chooseValue} />
-          ) : (
-          <>
+          </>}
+          {product.commerce&&<label className="mt-6 block">Variant<select aria-label="Variant" value={variantId} onChange={e=>{setVariantId(e.target.value);setMainIdx(0);}} className="mt-2 block w-full border p-3">{product.commerce.variants.map(v=><option key={v.id} value={v.id}>{v.name} {Object.values(v.options).join(" / ")}</option>)}</select><span>{variant?.availability==="available"?"In stock":variant?.availability==="out_of_stock"?"Out of stock":"Availability unavailable"}</span></label>}
+          {!product.commerce && vm && cmsVariant && (
+            <VariantPicker options={vm.options} variants={vm.variants} selections={cmsVariant.selections} onSelect={chooseValue} />
+          )}
+          {!product.commerce && !(vm && cmsVariant) && <>
           {/* Case size */}
           <Selector
             label="Case Size"
@@ -204,23 +232,29 @@ export function ProductTop({ product }: { product: ProductDetail }) {
               ))}
             </div>
           </div>
-          </>
-          )}
+          </>}
 
-          <p className="mt-6 text-[14px] text-neutral-700">
-            {variant && variant.stock <= 0 ? "Currently out of stock." : "Available to ship in 1–3 business days."}
-          </p>
+          {!product.commerce && (
+            <p className="mt-6 text-[14px] text-neutral-700">
+              {cmsVariant && cmsVariant.stock <= 0 ? "Currently out of stock." : "Available to ship in 1–3 business days."}
+            </p>
+          )}
 
           <div className="mt-4 flex items-center gap-3">
             <button
-              onClick={handleAdd}
-              disabled={!isPurchasable(variant)}
+              disabled={!sellable} onClick={handleAdd}
               className="g-btn bg-[#5bc2e7] text-black transition-colors hover:bg-[#37b4dc] disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-500"
             >
-              {!isPurchasable(variant) ? "Out of Stock" : added ? "Added ✓" : "Add to Cart"}
+              {addLabel}
             </button>
             <button className="g-btn g-btn--outline-dark">Customize</button>
+            {mode === "server" && (
+              <button type="button" onClick={handleWishlist} disabled={wish === "saving"} className="g-btn g-btn--outline-dark disabled:opacity-50">
+                {wish === "saved" ? "Saved to Wishlist ✓" : "Save to Wishlist"}
+              </button>
+            )}
           </div>
+          {notice && <p role="status" className="mt-3 text-[13px] text-neutral-700">{notice}</p>}
         </div>
       </div>
     </div>

@@ -62,7 +62,7 @@
       "totalSpent": 799.99,
       "ordersCount": 1,
       "avatar": "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80",
-      "notes": "Purchased fД“nix 8 47mm AMOLED Titanium.",
+      "notes": "Purchased fēnix 8 47mm AMOLED Titanium.",
       "createdAt": "2026-04-12T14:45:00.000Z"
     },
     {
@@ -12357,10 +12357,10 @@
       "price": 799.99,
       "originalPrice": 919.9884999999999,
       "priceSuffix": "and up",
-      "description": "Premium multisport GPS smartwatches with options that include inReachВ® technology for connectivity on the go.",
+      "description": "Premium multisport GPS smartwatches with options that include inReach® technology for connectivity on the go.",
       "image": "/images/products/1228429.jpg",
       "badge": "BEST SELLER",
-      "family": "fД“nix",
+      "family": "fēnix",
       "category": "Smartwatches & Wearables",
       "subCategory": "Multisport GPS",
       "activities": [
@@ -12402,7 +12402,7 @@
         }
       ],
       "inTheBox": [
-        "fД“nixВ® 8 Smartwatch",
+        "fēnix® 8 Smartwatch",
         "USB-C Charging / Data Clip Cable",
         "Quick-Start Manual & Warranty Booklet",
         "Alternative QuickFit Silicone Strap"
@@ -12415,21 +12415,21 @@
       "features": [
         {
           "title": "Advanced Health & Fitness Tracking",
-          "body": "24/7 heart rate monitoring, Body Batteryв„ў energy tracking, Pulse Ox, sleep coach, and nap detection."
+          "body": "24/7 heart rate monitoring, Body Battery™ energy tracking, Pulse Ox, sleep coach, and nap detection."
         },
         {
           "title": "Multi-Band GNSS & TopoActive Maps",
-          "body": "Multi-frequency positioning with SatIQв„ў technology delivers superior tracking accuracy in challenging environments."
+          "body": "Multi-frequency positioning with SatIQ™ technology delivers superior tracking accuracy in challenging environments."
         }
       ],
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "seoTitle": "fД“nixВ® 8 | Official Garmin Multisport GPS Smartwatch",
-      "seoDescription": "Explore the Garmin Premium multisport GPS smartwatches with options that include inReachВ® technology for connectivity on the go. Featuring Lens Material: S...",
+      "seoTitle": "fēnix® 8 | Official Garmin Multisport GPS Smartwatch",
+      "seoDescription": "Explore the Garmin Premium multisport GPS smartwatches with options that include inReach® technology for connectivity on the go. Featuring Lens Material: S...",
       "focusKeywords": [
-        "Garmin fД“nixВ® 8",
-        "fД“nixВ® 8 GPS watch",
-        "fД“nixВ® 8 specs",
-        "buy fД“nixВ® 8",
+        "Garmin fēnix® 8",
+        "fēnix® 8 GPS watch",
+        "fēnix® 8 specs",
+        "buy fēnix® 8",
         "Garmin Multisport"
       ],
       "canonicalUrl": "",
@@ -12447,7 +12447,7 @@
     },
     {
       "id": "1462801",
-      "name": "ForerunnerВ® 970",
+      "name": "Forerunner® 970",
       "sku": "GRM-1462801",
       "price": 749.99,
       "originalPrice": 862.4884999999999,
@@ -12471,7 +12471,7 @@
       "specs": [
         {
           "label": "Lens Material",
-          "value": "CorningВ® GorillaВ® Glass 3"
+          "value": "Corning® Gorilla® Glass 3"
         },
         {
           "label": "Bezel Material",
@@ -12495,7 +12495,7 @@
         }
       ],
       "inTheBox": [
-        "ForerunnerВ® 970 Smartwatch",
+        "Forerunner® 970 Smartwatch",
         "USB-C Charging / Data Clip Cable",
         "Quick-Start Manual & Warranty Booklet",
         "Alternative QuickFit Silicone Strap"
@@ -12508,27 +12508,27 @@
       "features": [
         {
           "title": "Advanced Health & Fitness Tracking",
-          "body": "24/7 heart rate monitoring, Body Batteryв„ў energy tracking, Pulse Ox, sleep coach, and nap detection."
+          "body": "24/7 heart rate monitoring, Body Battery™ energy tracking, Pulse Ox, sleep coach, and nap detection."
         },
         {
           "title": "Multi-Band GNSS & TopoActive Maps",
-          "body": "Multi-frequency positioning with SatIQв„ў technology delivers superior tracking accuracy in challenging environments."
+          "body": "Multi-frequency positioning with SatIQ™ technology delivers superior tracking accuracy in challenging environments."
         }
       ],
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "seoTitle": "ForerunnerВ® 970 | Official Garmin Forerunner GPS Smartwatch",
+      "seoTitle": "Forerunner® 970 | Official Garmin Forerunner GPS Smartwatch",
       "seoDescription": "Explore the Garmin Premium GPS running and triathlon smartwatch with an AMOLED display, built-in LED flashlight and enhanced navigation plus advanced train...",
       "focusKeywords": [
-        "Garmin ForerunnerВ® 970",
-        "ForerunnerВ® 970 GPS watch",
-        "ForerunnerВ® 970 specs",
-        "buy ForerunnerВ® 970",
+        "Garmin Forerunner® 970",
+        "Forerunner® 970 GPS watch",
+        "Forerunner® 970 specs",
+        "buy Forerunner® 970",
         "Garmin Forerunner"
       ]
     },
     {
       "id": "1510465",
-      "name": "VenuВ® X1",
+      "name": "Venu® X1",
       "sku": "GRM-1510465",
       "price": 699.99,
       "originalPrice": 804.9884999999999,
@@ -12551,7 +12551,7 @@
       "specs": [
         {
           "label": "Lens Material",
-          "value": "CorningВ® GorillaВ® Glass 3"
+          "value": "Corning® Gorilla® Glass 3"
         },
         {
           "label": "Bezel Material",
@@ -12575,7 +12575,7 @@
         }
       ],
       "inTheBox": [
-        "VenuВ® X1 Smartwatch",
+        "Venu® X1 Smartwatch",
         "USB-C Charging / Data Clip Cable",
         "Quick-Start Manual & Warranty Booklet",
         "Alternative QuickFit Silicone Strap"
@@ -12588,27 +12588,27 @@
       "features": [
         {
           "title": "Advanced Health & Fitness Tracking",
-          "body": "24/7 heart rate monitoring, Body Batteryв„ў energy tracking, Pulse Ox, sleep coach, and nap detection."
+          "body": "24/7 heart rate monitoring, Body Battery™ energy tracking, Pulse Ox, sleep coach, and nap detection."
         },
         {
           "title": "Multi-Band GNSS & TopoActive Maps",
-          "body": "Multi-frequency positioning with SatIQв„ў technology delivers superior tracking accuracy in challenging environments."
+          "body": "Multi-frequency positioning with SatIQ™ technology delivers superior tracking accuracy in challenging environments."
         }
       ],
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "seoTitle": "VenuВ® X1 | Official Garmin Venu GPS Smartwatch",
+      "seoTitle": "Venu® X1 | Official Garmin Venu GPS Smartwatch",
       "seoDescription": "Explore the Garmin Sleek, lightweight GPS smartwatch with a bright 2-inch AMOLED display and advanced health and fitness features.",
       "focusKeywords": [
-        "Garmin VenuВ® X1",
-        "VenuВ® X1 GPS watch",
-        "VenuВ® X1 specs",
-        "buy VenuВ® X1",
+        "Garmin Venu® X1",
+        "Venu® X1 GPS watch",
+        "Venu® X1 specs",
+        "buy Venu® X1",
         "Garmin Venu"
       ]
     },
     {
       "id": "1463821",
-      "name": "ForerunnerВ® 570",
+      "name": "Forerunner® 570",
       "sku": "GRM-1463821",
       "price": 549.99,
       "originalPrice": 632.4884999999999,
@@ -12631,7 +12631,7 @@
       "specs": [
         {
           "label": "Lens Material",
-          "value": "CorningВ® GorillaВ® Glass 3"
+          "value": "Corning® Gorilla® Glass 3"
         },
         {
           "label": "Bezel Material",
@@ -12655,7 +12655,7 @@
         }
       ],
       "inTheBox": [
-        "ForerunnerВ® 570 Smartwatch",
+        "Forerunner® 570 Smartwatch",
         "USB-C Charging / Data Clip Cable",
         "Quick-Start Manual & Warranty Booklet",
         "Alternative QuickFit Silicone Strap"
@@ -12668,27 +12668,27 @@
       "features": [
         {
           "title": "Advanced Health & Fitness Tracking",
-          "body": "24/7 heart rate monitoring, Body Batteryв„ў energy tracking, Pulse Ox, sleep coach, and nap detection."
+          "body": "24/7 heart rate monitoring, Body Battery™ energy tracking, Pulse Ox, sleep coach, and nap detection."
         },
         {
           "title": "Multi-Band GNSS & TopoActive Maps",
-          "body": "Multi-frequency positioning with SatIQв„ў technology delivers superior tracking accuracy in challenging environments."
+          "body": "Multi-frequency positioning with SatIQ™ technology delivers superior tracking accuracy in challenging environments."
         }
       ],
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "seoTitle": "ForerunnerВ® 570 | Official Garmin Forerunner GPS Smartwatch",
+      "seoTitle": "Forerunner® 570 | Official Garmin Forerunner GPS Smartwatch",
       "seoDescription": "Explore the Garmin Advanced GPS running and triathlon smartwatches with AMOLED displays plus training and recovery features. Featuring Lens Material: Corni...",
       "focusKeywords": [
-        "Garmin ForerunnerВ® 570",
-        "ForerunnerВ® 570 GPS watch",
-        "ForerunnerВ® 570 specs",
-        "buy ForerunnerВ® 570",
+        "Garmin Forerunner® 570",
+        "Forerunner® 570 GPS watch",
+        "Forerunner® 570 specs",
+        "buy Forerunner® 570",
         "Garmin Forerunner"
       ]
     },
     {
       "id": "1941179",
-      "name": "ForerunnerВ® 70/170",
+      "name": "Forerunner® 70/170",
       "sku": "GRM-1941179",
       "price": 249.99,
       "originalPrice": 287.4885,
@@ -12711,7 +12711,7 @@
       "specs": [
         {
           "label": "Lens Material",
-          "value": "CorningВ® GorillaВ® Glass 3"
+          "value": "Corning® Gorilla® Glass 3"
         },
         {
           "label": "Bezel Material",
@@ -12735,7 +12735,7 @@
         }
       ],
       "inTheBox": [
-        "ForerunnerВ® 70/170 Smartwatch",
+        "Forerunner® 70/170 Smartwatch",
         "USB-C Charging / Data Clip Cable",
         "Quick-Start Manual & Warranty Booklet",
         "Alternative QuickFit Silicone Strap"
@@ -12748,27 +12748,27 @@
       "features": [
         {
           "title": "Advanced Health & Fitness Tracking",
-          "body": "24/7 heart rate monitoring, Body Batteryв„ў energy tracking, Pulse Ox, sleep coach, and nap detection."
+          "body": "24/7 heart rate monitoring, Body Battery™ energy tracking, Pulse Ox, sleep coach, and nap detection."
         },
         {
           "title": "Multi-Band GNSS & TopoActive Maps",
-          "body": "Multi-frequency positioning with SatIQв„ў technology delivers superior tracking accuracy in challenging environments."
+          "body": "Multi-frequency positioning with SatIQ™ technology delivers superior tracking accuracy in challenging environments."
         }
       ],
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "seoTitle": "ForerunnerВ® 70/170 | Official Garmin Forerunner GPS Smartwatch",
-      "seoDescription": "Explore the Garmin GPS running smartwatches with essential training and recovery features, plus optional music. Featuring Lens Material: CorningВ® GorillaВ®...",
+      "seoTitle": "Forerunner® 70/170 | Official Garmin Forerunner GPS Smartwatch",
+      "seoDescription": "Explore the Garmin GPS running smartwatches with essential training and recovery features, plus optional music. Featuring Lens Material: Corning® Gorilla®...",
       "focusKeywords": [
-        "Garmin ForerunnerВ® 70/170",
-        "ForerunnerВ® 70/170 GPS watch",
-        "ForerunnerВ® 70/170 specs",
-        "buy ForerunnerВ® 70/170",
+        "Garmin Forerunner® 70/170",
+        "Forerunner® 70/170 GPS watch",
+        "Forerunner® 70/170 specs",
+        "buy Forerunner® 70/170",
         "Garmin Forerunner"
       ]
     },
     {
       "id": "1316397",
-      "name": "InstinctВ® 3",
+      "name": "Instinct® 3",
       "sku": "GRM-1316397",
       "price": 249.99,
       "originalPrice": 287.4885,
@@ -12792,7 +12792,7 @@
       "specs": [
         {
           "label": "Lens Material",
-          "value": "CorningВ® GorillaВ® Glass 3"
+          "value": "Corning® Gorilla® Glass 3"
         },
         {
           "label": "Bezel Material",
@@ -12816,7 +12816,7 @@
         }
       ],
       "inTheBox": [
-        "InstinctВ® 3 Smartwatch",
+        "Instinct® 3 Smartwatch",
         "USB-C Charging / Data Clip Cable",
         "Quick-Start Manual & Warranty Booklet",
         "Alternative QuickFit Silicone Strap"
@@ -12829,34 +12829,34 @@
       "features": [
         {
           "title": "Advanced Health & Fitness Tracking",
-          "body": "24/7 heart rate monitoring, Body Batteryв„ў energy tracking, Pulse Ox, sleep coach, and nap detection."
+          "body": "24/7 heart rate monitoring, Body Battery™ energy tracking, Pulse Ox, sleep coach, and nap detection."
         },
         {
           "title": "Multi-Band GNSS & TopoActive Maps",
-          "body": "Multi-frequency positioning with SatIQв„ў technology delivers superior tracking accuracy in challenging environments."
+          "body": "Multi-frequency positioning with SatIQ™ technology delivers superior tracking accuracy in challenging environments."
         }
       ],
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "seoTitle": "InstinctВ® 3 | Official Garmin Instinct GPS Smartwatch",
-      "seoDescription": "Explore the Garmin Rugged GPS smartwatches with dedicated tactical features and solar charging or AMOLED displays. Featuring Lens Material: CorningВ® Gorill...",
+      "seoTitle": "Instinct® 3 | Official Garmin Instinct GPS Smartwatch",
+      "seoDescription": "Explore the Garmin Rugged GPS smartwatches with dedicated tactical features and solar charging or AMOLED displays. Featuring Lens Material: Corning® Gorill...",
       "focusKeywords": [
-        "Garmin InstinctВ® 3",
-        "InstinctВ® 3 GPS watch",
-        "InstinctВ® 3 specs",
-        "buy InstinctВ® 3",
+        "Garmin Instinct® 3",
+        "Instinct® 3 GPS watch",
+        "Instinct® 3 specs",
+        "buy Instinct® 3",
         "Garmin Instinct"
       ]
     },
     {
       "id": "1555457",
-      "name": "vГ­voactiveВ® 6",
+      "name": "vívoactive® 6",
       "sku": "GRM-1555457",
       "price": 299.99,
       "originalPrice": 344.9885,
       "description": "Health and fitness GPS smartwatch with a bright, colorful display and essential fitness, wellness and smart features.",
       "image": "/images/products/1555457.jpg",
       "badge": "NONE",
-      "family": "vГ­voactive",
+      "family": "vívoactive",
       "category": "Smartwatches & Wearables",
       "subCategory": "Smartwatches",
       "activities": [
@@ -12872,7 +12872,7 @@
       "specs": [
         {
           "label": "Lens Material",
-          "value": "CorningВ® GorillaВ® Glass 3"
+          "value": "Corning® Gorilla® Glass 3"
         },
         {
           "label": "Bezel Material",
@@ -12896,7 +12896,7 @@
         }
       ],
       "inTheBox": [
-        "vГ­voactiveВ® 6 Smartwatch",
+        "vívoactive® 6 Smartwatch",
         "USB-C Charging / Data Clip Cable",
         "Quick-Start Manual & Warranty Booklet",
         "Alternative QuickFit Silicone Strap"
@@ -12909,27 +12909,27 @@
       "features": [
         {
           "title": "Advanced Health & Fitness Tracking",
-          "body": "24/7 heart rate monitoring, Body Batteryв„ў energy tracking, Pulse Ox, sleep coach, and nap detection."
+          "body": "24/7 heart rate monitoring, Body Battery™ energy tracking, Pulse Ox, sleep coach, and nap detection."
         },
         {
           "title": "Multi-Band GNSS & TopoActive Maps",
-          "body": "Multi-frequency positioning with SatIQв„ў technology delivers superior tracking accuracy in challenging environments."
+          "body": "Multi-frequency positioning with SatIQ™ technology delivers superior tracking accuracy in challenging environments."
         }
       ],
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "seoTitle": "vГ­voactiveВ® 6 | Official Garmin vГ­voactive GPS Smartwatch",
+      "seoTitle": "vívoactive® 6 | Official Garmin vívoactive GPS Smartwatch",
       "seoDescription": "Explore the Garmin Health and fitness GPS smartwatch with a bright, colorful display and essential fitness, wellness and smart features.",
       "focusKeywords": [
-        "Garmin vГ­voactiveВ® 6",
-        "vГ­voactiveВ® 6 GPS watch",
-        "vГ­voactiveВ® 6 specs",
-        "buy vГ­voactiveВ® 6",
-        "Garmin vГ­voactive"
+        "Garmin vívoactive® 6",
+        "vívoactive® 6 GPS watch",
+        "vívoactive® 6 specs",
+        "buy vívoactive® 6",
+        "Garmin vívoactive"
       ]
     },
     {
       "id": "1800201",
-      "name": "InstinctВ® Crossover",
+      "name": "Instinct® Crossover",
       "sku": "GRM-1800201",
       "price": 399.99,
       "originalPrice": 459.9885,
@@ -12953,7 +12953,7 @@
       "specs": [
         {
           "label": "Lens Material",
-          "value": "CorningВ® GorillaВ® Glass 3"
+          "value": "Corning® Gorilla® Glass 3"
         },
         {
           "label": "Bezel Material",
@@ -12977,7 +12977,7 @@
         }
       ],
       "inTheBox": [
-        "InstinctВ® Crossover Smartwatch",
+        "Instinct® Crossover Smartwatch",
         "USB-C Charging / Data Clip Cable",
         "Quick-Start Manual & Warranty Booklet",
         "Alternative QuickFit Silicone Strap"
@@ -12990,27 +12990,27 @@
       "features": [
         {
           "title": "Advanced Health & Fitness Tracking",
-          "body": "24/7 heart rate monitoring, Body Batteryв„ў energy tracking, Pulse Ox, sleep coach, and nap detection."
+          "body": "24/7 heart rate monitoring, Body Battery™ energy tracking, Pulse Ox, sleep coach, and nap detection."
         },
         {
           "title": "Multi-Band GNSS & TopoActive Maps",
-          "body": "Multi-frequency positioning with SatIQв„ў technology delivers superior tracking accuracy in challenging environments."
+          "body": "Multi-frequency positioning with SatIQ™ technology delivers superior tracking accuracy in challenging environments."
         }
       ],
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "seoTitle": "InstinctВ® Crossover | Official Garmin Instinct GPS Smartwatch",
-      "seoDescription": "Explore the Garmin Hybrid outdoor GPS smartwatches with options for solar charging or AMOLED displays. Featuring Lens Material: CorningВ® GorillaВ® Glass 3,...",
+      "seoTitle": "Instinct® Crossover | Official Garmin Instinct GPS Smartwatch",
+      "seoDescription": "Explore the Garmin Hybrid outdoor GPS smartwatches with options for solar charging or AMOLED displays. Featuring Lens Material: Corning® Gorilla® Glass 3,...",
       "focusKeywords": [
-        "Garmin InstinctВ® Crossover",
-        "InstinctВ® Crossover GPS watch",
-        "InstinctВ® Crossover specs",
-        "buy InstinctВ® Crossover",
+        "Garmin Instinct® Crossover",
+        "Instinct® Crossover GPS watch",
+        "Instinct® Crossover specs",
+        "buy Instinct® Crossover",
         "Garmin Instinct"
       ]
     },
     {
       "id": "1828641",
-      "name": "tactixВ® 8",
+      "name": "tactix® 8",
       "sku": "GRM-1828641",
       "price": 1299.99,
       "originalPrice": 1494.9885,
@@ -13035,7 +13035,7 @@
       "specs": [
         {
           "label": "Lens Material",
-          "value": "CorningВ® GorillaВ® Glass 3"
+          "value": "Corning® Gorilla® Glass 3"
         },
         {
           "label": "Bezel Material",
@@ -13059,7 +13059,7 @@
         }
       ],
       "inTheBox": [
-        "tactixВ® 8 Smartwatch",
+        "tactix® 8 Smartwatch",
         "USB-C Charging / Data Clip Cable",
         "Quick-Start Manual & Warranty Booklet",
         "Alternative QuickFit Silicone Strap"
@@ -13072,27 +13072,27 @@
       "features": [
         {
           "title": "Advanced Health & Fitness Tracking",
-          "body": "24/7 heart rate monitoring, Body Batteryв„ў energy tracking, Pulse Ox, sleep coach, and nap detection."
+          "body": "24/7 heart rate monitoring, Body Battery™ energy tracking, Pulse Ox, sleep coach, and nap detection."
         },
         {
           "title": "Multi-Band GNSS & TopoActive Maps",
-          "body": "Multi-frequency positioning with SatIQв„ў technology delivers superior tracking accuracy in challenging environments."
+          "body": "Multi-frequency positioning with SatIQ™ technology delivers superior tracking accuracy in challenging environments."
         }
       ],
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "seoTitle": "tactixВ® 8 | Official Garmin tactix GPS Smartwatch",
-      "seoDescription": "Explore the Garmin Premium tactical GPS smartwatches with solar charging or AMOLED displays. Featuring Lens Material: CorningВ® GorillaВ® Glass 3, Bezel Mate...",
+      "seoTitle": "tactix® 8 | Official Garmin tactix GPS Smartwatch",
+      "seoDescription": "Explore the Garmin Premium tactical GPS smartwatches with solar charging or AMOLED displays. Featuring Lens Material: Corning® Gorilla® Glass 3, Bezel Mate...",
       "focusKeywords": [
-        "Garmin tactixВ® 8",
-        "tactixВ® 8 GPS watch",
-        "tactixВ® 8 specs",
-        "buy tactixВ® 8",
+        "Garmin tactix® 8",
+        "tactix® 8 GPS watch",
+        "tactix® 8 specs",
+        "buy tactix® 8",
         "Garmin tactix"
       ]
     },
     {
       "id": "851039",
-      "name": "Enduroв„ў 3",
+      "name": "Enduro™ 3",
       "sku": "GRM-851039",
       "price": 899.99,
       "originalPrice": 1034.9885,
@@ -13115,7 +13115,7 @@
       "specs": [
         {
           "label": "Lens Material",
-          "value": "CorningВ® GorillaВ® Glass 3"
+          "value": "Corning® Gorilla® Glass 3"
         },
         {
           "label": "Bezel Material",
@@ -13139,7 +13139,7 @@
         }
       ],
       "inTheBox": [
-        "Enduroв„ў 3 Smartwatch",
+        "Enduro™ 3 Smartwatch",
         "USB-C Charging / Data Clip Cable",
         "Quick-Start Manual & Warranty Booklet",
         "Alternative QuickFit Silicone Strap"
@@ -13152,27 +13152,27 @@
       "features": [
         {
           "title": "Advanced Health & Fitness Tracking",
-          "body": "24/7 heart rate monitoring, Body Batteryв„ў energy tracking, Pulse Ox, sleep coach, and nap detection."
+          "body": "24/7 heart rate monitoring, Body Battery™ energy tracking, Pulse Ox, sleep coach, and nap detection."
         },
         {
           "title": "Multi-Band GNSS & TopoActive Maps",
-          "body": "Multi-frequency positioning with SatIQв„ў technology delivers superior tracking accuracy in challenging environments."
+          "body": "Multi-frequency positioning with SatIQ™ technology delivers superior tracking accuracy in challenging environments."
         }
       ],
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "seoTitle": "Enduroв„ў 3 | Official Garmin Enduro GPS Smartwatch",
-      "seoDescription": "Explore the Garmin Ultraperformance smartwatch with GPS plus advanced training metrics and maps. Featuring Lens Material: CorningВ® GorillaВ® Glass 3, Bezel...",
+      "seoTitle": "Enduro™ 3 | Official Garmin Enduro GPS Smartwatch",
+      "seoDescription": "Explore the Garmin Ultraperformance smartwatch with GPS plus advanced training metrics and maps. Featuring Lens Material: Corning® Gorilla® Glass 3, Bezel...",
       "focusKeywords": [
-        "Garmin Enduroв„ў 3",
-        "Enduroв„ў 3 GPS watch",
-        "Enduroв„ў 3 specs",
-        "buy Enduroв„ў 3",
+        "Garmin Enduro™ 3",
+        "Enduro™ 3 GPS watch",
+        "Enduro™ 3 specs",
+        "buy Enduro™ 3",
         "Garmin Enduro"
       ]
     },
     {
       "id": "1196650",
-      "name": "LilyВ® 2",
+      "name": "Lily® 2",
       "sku": "GRM-1196650",
       "price": 249.99,
       "originalPrice": 287.4885,
@@ -13195,7 +13195,7 @@
       "specs": [
         {
           "label": "Lens Material",
-          "value": "CorningВ® GorillaВ® Glass 3"
+          "value": "Corning® Gorilla® Glass 3"
         },
         {
           "label": "Bezel Material",
@@ -13219,7 +13219,7 @@
         }
       ],
       "inTheBox": [
-        "LilyВ® 2 Smartwatch",
+        "Lily® 2 Smartwatch",
         "USB-C Charging / Data Clip Cable",
         "Quick-Start Manual & Warranty Booklet",
         "Alternative QuickFit Silicone Strap"
@@ -13232,27 +13232,27 @@
       "features": [
         {
           "title": "Advanced Health & Fitness Tracking",
-          "body": "24/7 heart rate monitoring, Body Batteryв„ў energy tracking, Pulse Ox, sleep coach, and nap detection."
+          "body": "24/7 heart rate monitoring, Body Battery™ energy tracking, Pulse Ox, sleep coach, and nap detection."
         },
         {
           "title": "Multi-Band GNSS & TopoActive Maps",
-          "body": "Multi-frequency positioning with SatIQв„ў technology delivers superior tracking accuracy in challenging environments."
+          "body": "Multi-frequency positioning with SatIQ™ technology delivers superior tracking accuracy in challenging environments."
         }
       ],
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "seoTitle": "LilyВ® 2 | Official Garmin Lily GPS Smartwatch",
-      "seoDescription": "Explore the Garmin Small fashion smartwatch with essential wellness and smart features plus optional GPS. Featuring Lens Material: CorningВ® GorillaВ® Glass...",
+      "seoTitle": "Lily® 2 | Official Garmin Lily GPS Smartwatch",
+      "seoDescription": "Explore the Garmin Small fashion smartwatch with essential wellness and smart features plus optional GPS. Featuring Lens Material: Corning® Gorilla® Glass...",
       "focusKeywords": [
-        "Garmin LilyВ® 2",
-        "LilyВ® 2 GPS watch",
-        "LilyВ® 2 specs",
-        "buy LilyВ® 2",
+        "Garmin Lily® 2",
+        "Lily® 2 GPS watch",
+        "Lily® 2 specs",
+        "buy Lily® 2",
         "Garmin Lily"
       ]
     },
     {
       "id": "1815501",
-      "name": "Bounceв„ў 2",
+      "name": "Bounce™ 2",
       "sku": "GRM-1815501",
       "price": 299.99,
       "originalPrice": 344.9885,
@@ -13273,7 +13273,7 @@
       "specs": [
         {
           "label": "Lens Material",
-          "value": "CorningВ® GorillaВ® Glass 3"
+          "value": "Corning® Gorilla® Glass 3"
         },
         {
           "label": "Bezel Material",
@@ -13297,7 +13297,7 @@
         }
       ],
       "inTheBox": [
-        "Bounceв„ў 2 Smartwatch",
+        "Bounce™ 2 Smartwatch",
         "USB-C Charging / Data Clip Cable",
         "Quick-Start Manual & Warranty Booklet",
         "Alternative QuickFit Silicone Strap"
@@ -13310,27 +13310,27 @@
       "features": [
         {
           "title": "Advanced Health & Fitness Tracking",
-          "body": "24/7 heart rate monitoring, Body Batteryв„ў energy tracking, Pulse Ox, sleep coach, and nap detection."
+          "body": "24/7 heart rate monitoring, Body Battery™ energy tracking, Pulse Ox, sleep coach, and nap detection."
         },
         {
           "title": "Multi-Band GNSS & TopoActive Maps",
-          "body": "Multi-frequency positioning with SatIQв„ў technology delivers superior tracking accuracy in challenging environments."
+          "body": "Multi-frequency positioning with SatIQ™ technology delivers superior tracking accuracy in challenging environments."
         }
       ],
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "seoTitle": "Bounceв„ў 2 | Official Garmin Bounce GPS Smartwatch",
-      "seoDescription": "Explore the Garmin Kids smartwatch with calling, messaging and location tracking features. Featuring Lens Material: CorningВ® GorillaВ® Glass 3, Bezel Materi...",
+      "seoTitle": "Bounce™ 2 | Official Garmin Bounce GPS Smartwatch",
+      "seoDescription": "Explore the Garmin Kids smartwatch with calling, messaging and location tracking features. Featuring Lens Material: Corning® Gorilla® Glass 3, Bezel Materi...",
       "focusKeywords": [
-        "Garmin Bounceв„ў 2",
-        "Bounceв„ў 2 GPS watch",
-        "Bounceв„ў 2 specs",
-        "buy Bounceв„ў 2",
+        "Garmin Bounce™ 2",
+        "Bounce™ 2 GPS watch",
+        "Bounce™ 2 specs",
+        "buy Bounce™ 2",
         "Garmin Bounce"
       ]
     },
     {
       "id": "1908217",
-      "name": "ApproachВ® J1",
+      "name": "Approach® J1",
       "sku": "GRM-1908217",
       "price": 299.99,
       "originalPrice": 344.9885,
@@ -13351,7 +13351,7 @@
       "specs": [
         {
           "label": "Lens Material",
-          "value": "CorningВ® GorillaВ® Glass 3"
+          "value": "Corning® Gorilla® Glass 3"
         },
         {
           "label": "Bezel Material",
@@ -13375,7 +13375,7 @@
         }
       ],
       "inTheBox": [
-        "ApproachВ® J1 Smartwatch",
+        "Approach® J1 Smartwatch",
         "USB-C Charging / Data Clip Cable",
         "Quick-Start Manual & Warranty Booklet",
         "Alternative QuickFit Silicone Strap"
@@ -13388,27 +13388,27 @@
       "features": [
         {
           "title": "Advanced Health & Fitness Tracking",
-          "body": "24/7 heart rate monitoring, Body Batteryв„ў energy tracking, Pulse Ox, sleep coach, and nap detection."
+          "body": "24/7 heart rate monitoring, Body Battery™ energy tracking, Pulse Ox, sleep coach, and nap detection."
         },
         {
           "title": "Multi-Band GNSS & TopoActive Maps",
-          "body": "Multi-frequency positioning with SatIQв„ў technology delivers superior tracking accuracy in challenging environments."
+          "body": "Multi-frequency positioning with SatIQ™ technology delivers superior tracking accuracy in challenging environments."
         }
       ],
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "seoTitle": "ApproachВ® J1 | Official Garmin Approach GPS Smartwatch",
-      "seoDescription": "Explore the Garmin Junior golf watch with built-in GPS, a bright, colorful display and essential features. Featuring Lens Material: CorningВ® GorillaВ® Glass...",
+      "seoTitle": "Approach® J1 | Official Garmin Approach GPS Smartwatch",
+      "seoDescription": "Explore the Garmin Junior golf watch with built-in GPS, a bright, colorful display and essential features. Featuring Lens Material: Corning® Gorilla® Glass...",
       "focusKeywords": [
-        "Garmin ApproachВ® J1",
-        "ApproachВ® J1 GPS watch",
-        "ApproachВ® J1 specs",
-        "buy ApproachВ® J1",
+        "Garmin Approach® J1",
+        "Approach® J1 GPS watch",
+        "Approach® J1 specs",
+        "buy Approach® J1",
         "Garmin Approach"
       ]
     },
     {
       "id": "1765781",
-      "name": "MARQВ® (Gen 2)",
+      "name": "MARQ® (Gen 2)",
       "sku": "GRM-1765781",
       "price": 1900,
       "originalPrice": 2185,
@@ -13432,7 +13432,7 @@
       "specs": [
         {
           "label": "Lens Material",
-          "value": "CorningВ® GorillaВ® Glass 3"
+          "value": "Corning® Gorilla® Glass 3"
         },
         {
           "label": "Bezel Material",
@@ -13456,7 +13456,7 @@
         }
       ],
       "inTheBox": [
-        "MARQВ® (Gen 2) Smartwatch",
+        "MARQ® (Gen 2) Smartwatch",
         "USB-C Charging / Data Clip Cable",
         "Quick-Start Manual & Warranty Booklet",
         "Alternative QuickFit Silicone Strap"
@@ -13469,27 +13469,27 @@
       "features": [
         {
           "title": "Advanced Health & Fitness Tracking",
-          "body": "24/7 heart rate monitoring, Body Batteryв„ў energy tracking, Pulse Ox, sleep coach, and nap detection."
+          "body": "24/7 heart rate monitoring, Body Battery™ energy tracking, Pulse Ox, sleep coach, and nap detection."
         },
         {
           "title": "Multi-Band GNSS & TopoActive Maps",
-          "body": "Multi-frequency positioning with SatIQв„ў technology delivers superior tracking accuracy in challenging environments."
+          "body": "Multi-frequency positioning with SatIQ™ technology delivers superior tracking accuracy in challenging environments."
         }
       ],
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "seoTitle": "MARQВ® (Gen 2) | Official Garmin MARQ GPS Smartwatch",
-      "seoDescription": "Explore the Garmin Luxury GPS tool watches with AMOLED displays, premium materials and multisport capabilities. Featuring Lens Material: CorningВ® GorillaВ®...",
+      "seoTitle": "MARQ® (Gen 2) | Official Garmin MARQ GPS Smartwatch",
+      "seoDescription": "Explore the Garmin Luxury GPS tool watches with AMOLED displays, premium materials and multisport capabilities. Featuring Lens Material: Corning® Gorilla®...",
       "focusKeywords": [
-        "Garmin MARQВ® (Gen 2)",
-        "MARQВ® (Gen 2) GPS watch",
-        "MARQВ® (Gen 2) specs",
-        "buy MARQВ® (Gen 2)",
+        "Garmin MARQ® (Gen 2)",
+        "MARQ® (Gen 2) GPS watch",
+        "MARQ® (Gen 2) specs",
+        "buy MARQ® (Gen 2)",
         "Garmin MARQ"
       ]
     },
     {
       "id": "785411",
-      "name": "vГ­vomoveВ®",
+      "name": "vívomove®",
       "sku": "GRM-785411",
       "price": 269.99,
       "originalPrice": 310.4885,
@@ -13497,7 +13497,7 @@
       "description": "Hybrid smartwatches with hidden displays, essential wellness tracking and smart features.",
       "image": "/images/products/785411.jpg",
       "badge": "NONE",
-      "family": "vГ­vomove",
+      "family": "vívomove",
       "category": "Smartwatches & Wearables",
       "subCategory": "Smartwatches",
       "activities": [
@@ -13512,7 +13512,7 @@
       "specs": [
         {
           "label": "Lens Material",
-          "value": "CorningВ® GorillaВ® Glass 3"
+          "value": "Corning® Gorilla® Glass 3"
         },
         {
           "label": "Bezel Material",
@@ -13536,7 +13536,7 @@
         }
       ],
       "inTheBox": [
-        "vГ­vomoveВ® Smartwatch",
+        "vívomove® Smartwatch",
         "USB-C Charging / Data Clip Cable",
         "Quick-Start Manual & Warranty Booklet",
         "Alternative QuickFit Silicone Strap"
@@ -13549,27 +13549,27 @@
       "features": [
         {
           "title": "Advanced Health & Fitness Tracking",
-          "body": "24/7 heart rate monitoring, Body Batteryв„ў energy tracking, Pulse Ox, sleep coach, and nap detection."
+          "body": "24/7 heart rate monitoring, Body Battery™ energy tracking, Pulse Ox, sleep coach, and nap detection."
         },
         {
           "title": "Multi-Band GNSS & TopoActive Maps",
-          "body": "Multi-frequency positioning with SatIQв„ў technology delivers superior tracking accuracy in challenging environments."
+          "body": "Multi-frequency positioning with SatIQ™ technology delivers superior tracking accuracy in challenging environments."
         }
       ],
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "seoTitle": "vГ­vomoveВ® | Official Garmin vГ­vomove GPS Smartwatch",
-      "seoDescription": "Explore the Garmin Hybrid smartwatches with hidden displays, essential wellness tracking and smart features. Featuring Lens Material: CorningВ® GorillaВ® Gla...",
+      "seoTitle": "vívomove® | Official Garmin vívomove GPS Smartwatch",
+      "seoDescription": "Explore the Garmin Hybrid smartwatches with hidden displays, essential wellness tracking and smart features. Featuring Lens Material: Corning® Gorilla® Gla...",
       "focusKeywords": [
-        "Garmin vГ­vomoveВ®",
-        "vГ­vomoveВ® GPS watch",
-        "vГ­vomoveВ® specs",
-        "buy vГ­vomoveВ®",
-        "Garmin vГ­vomove"
+        "Garmin vívomove®",
+        "vívomove® GPS watch",
+        "vívomove® specs",
+        "buy vívomove®",
+        "Garmin vívomove"
       ]
     },
     {
       "id": "847706",
-      "name": "ApproachВ® S70",
+      "name": "Approach® S70",
       "sku": "GRM-847706",
       "price": 649.99,
       "originalPrice": 747.4884999999999,
@@ -13591,7 +13591,7 @@
       "specs": [
         {
           "label": "Lens Material",
-          "value": "CorningВ® GorillaВ® Glass 3"
+          "value": "Corning® Gorilla® Glass 3"
         },
         {
           "label": "Bezel Material",
@@ -13615,7 +13615,7 @@
         }
       ],
       "inTheBox": [
-        "ApproachВ® S70 Smartwatch",
+        "Approach® S70 Smartwatch",
         "USB-C Charging / Data Clip Cable",
         "Quick-Start Manual & Warranty Booklet",
         "Alternative QuickFit Silicone Strap"
@@ -13628,27 +13628,27 @@
       "features": [
         {
           "title": "Advanced Health & Fitness Tracking",
-          "body": "24/7 heart rate monitoring, Body Batteryв„ў energy tracking, Pulse Ox, sleep coach, and nap detection."
+          "body": "24/7 heart rate monitoring, Body Battery™ energy tracking, Pulse Ox, sleep coach, and nap detection."
         },
         {
           "title": "Multi-Band GNSS & TopoActive Maps",
-          "body": "Multi-frequency positioning with SatIQв„ў technology delivers superior tracking accuracy in challenging environments."
+          "body": "Multi-frequency positioning with SatIQ™ technology delivers superior tracking accuracy in challenging environments."
         }
       ],
       "createdAt": "2026-01-01T00:00:00.000Z",
-      "seoTitle": "ApproachВ® S70 | Official Garmin Approach GPS Smartwatch",
-      "seoDescription": "Explore the Garmin Premium golf smartwatch with GPS, an AMOLED display and advanced wellness and on-course features. Featuring Lens Material: CorningВ® Gori...",
+      "seoTitle": "Approach® S70 | Official Garmin Approach GPS Smartwatch",
+      "seoDescription": "Explore the Garmin Premium golf smartwatch with GPS, an AMOLED display and advanced wellness and on-course features. Featuring Lens Material: Corning® Gori...",
       "focusKeywords": [
-        "Garmin ApproachВ® S70",
-        "ApproachВ® S70 GPS watch",
-        "ApproachВ® S70 specs",
-        "buy ApproachВ® S70",
+        "Garmin Approach® S70",
+        "Approach® S70 GPS watch",
+        "Approach® S70 specs",
+        "buy Approach® S70",
         "Garmin Approach"
       ]
     },
     {
       "id": "marq-captain",
-      "name": "MARQВ® Captain (Gen 2)",
+      "name": "MARQ® Captain (Gen 2)",
       "sku": "010-02648-11",
       "price": 2200,
       "description": "Luxury modern tool watch crafted from Grade-5 titanium with navy ceramic regatta timer bezel and jacquard-weave nylon strap.",
@@ -13694,7 +13694,7 @@
         }
       ],
       "inTheBox": [
-        "MARQВ® Captain (Gen 2)",
+        "MARQ® Captain (Gen 2)",
         "Navy blue jacquard-weave nylon strap",
         "Alternative navy blue silicone rubber watch strap",
         "Magnetic USB-C fast charger cable",
@@ -13705,19 +13705,19 @@
         "acc-qf22-silicone-black"
       ],
       "createdAt": "2026-02-01T00:00:00.000Z",
-      "seoTitle": "MARQВ® Captain (Gen 2) | Official Garmin MARQ GPS Smartwatch",
+      "seoTitle": "MARQ® Captain (Gen 2) | Official Garmin MARQ GPS Smartwatch",
       "seoDescription": "Explore the Garmin Luxury modern tool watch crafted from Grade-5 titanium with navy ceramic regatta timer bezel and jacquard-weave nylon strap.",
       "focusKeywords": [
-        "Garmin MARQВ® Captain (Gen 2)",
-        "MARQВ® Captain (Gen 2) GPS watch",
-        "MARQВ® Captain (Gen 2) specs",
-        "buy MARQВ® Captain (Gen 2)",
+        "Garmin MARQ® Captain (Gen 2)",
+        "MARQ® Captain (Gen 2) GPS watch",
+        "MARQ® Captain (Gen 2) specs",
+        "buy MARQ® Captain (Gen 2)",
         "Garmin MARQ"
       ]
     },
     {
       "id": "marq-adventurer-damascus",
-      "name": "MARQВ® Adventurer (Gen 2) Damascus Steel Edition",
+      "name": "MARQ® Adventurer (Gen 2) Damascus Steel Edition",
       "sku": "010-02648-51",
       "price": 3100,
       "description": "Forged from Damascus steel with 360-degree compass bezel and hybrid leather/FKM rubber strap.",
@@ -13743,7 +13743,7 @@
         },
         {
           "label": "Bezel Material",
-          "value": "Hand-forged Damascus Steel with 360В° Compass"
+          "value": "Hand-forged Damascus Steel with 360° Compass"
         },
         {
           "label": "Display",
@@ -13763,7 +13763,7 @@
         }
       ],
       "inTheBox": [
-        "MARQВ® Adventurer (Gen 2) Damascus Steel Edition",
+        "MARQ® Adventurer (Gen 2) Damascus Steel Edition",
         "Hybrid leather/FKM rubber strap",
         "Black silicone rubber strap",
         "Magnetic USB-C fast charging clip",
@@ -13774,19 +13774,19 @@
         "acc-qf22-silicone-black"
       ],
       "createdAt": "2026-02-15T00:00:00.000Z",
-      "seoTitle": "MARQВ® Adventurer (Gen 2) Damascus Steel Edition | Official Garmin",
+      "seoTitle": "MARQ® Adventurer (Gen 2) Damascus Steel Edition | Official Garmin",
       "seoDescription": "Explore the Garmin Forged from Damascus steel with 360-degree compass bezel and hybrid leather/FKM rubber strap. Featuring Lens Material: Domed Sapphire Cr...",
       "focusKeywords": [
-        "Garmin MARQВ® Adventurer (Gen 2) Damascus Steel Edition",
-        "MARQВ® Adventurer (Gen 2) Damascus Steel Edition GPS watch",
-        "MARQВ® Adventurer (Gen 2) Damascus Steel Edition specs",
-        "buy MARQВ® Adventurer (Gen 2) Damascus Steel Edition",
+        "Garmin MARQ® Adventurer (Gen 2) Damascus Steel Edition",
+        "MARQ® Adventurer (Gen 2) Damascus Steel Edition GPS watch",
+        "MARQ® Adventurer (Gen 2) Damascus Steel Edition specs",
+        "buy MARQ® Adventurer (Gen 2) Damascus Steel Edition",
         "Garmin MARQ"
       ]
     },
     {
       "id": "marq-carbon-golfer",
-      "name": "MARQВ® Golfer (Gen 2) Carbon Edition",
+      "name": "MARQ® Golfer (Gen 2) Carbon Edition",
       "sku": "010-02722-11",
       "price": 2950,
       "description": "Machined from a solid block of Fused Carbon Fiber with custom French-woven jacquard strap.",
@@ -13830,10 +13830,10 @@
         }
       ],
       "inTheBox": [
-        "MARQВ® Golfer (Gen 2) Carbon Edition",
+        "MARQ® Golfer (Gen 2) Carbon Edition",
         "French jacquard-weave nylon strap",
         "Pine green silicone rubber strap",
-        "3x ApproachВ® CT10 club tracking sensors",
+        "3x Approach® CT10 club tracking sensors",
         "USB-C fast magnetic charging cable"
       ],
       "compatibleAccessories": [
@@ -13841,13 +13841,13 @@
         "acc-hrm-pro-plus"
       ],
       "createdAt": "2026-03-01T00:00:00.000Z",
-      "seoTitle": "MARQВ® Golfer (Gen 2) Carbon Edition | Official Garmin MARQ GPS Sm",
+      "seoTitle": "MARQ® Golfer (Gen 2) Carbon Edition | Official Garmin MARQ GPS Sm",
       "seoDescription": "Explore the Garmin Machined from a solid block of Fused Carbon Fiber with custom French-woven jacquard strap. Featuring Lens Material: Domed Sapphire Cryst...",
       "focusKeywords": [
-        "Garmin MARQВ® Golfer (Gen 2) Carbon Edition",
-        "MARQВ® Golfer (Gen 2) Carbon Edition GPS watch",
-        "MARQВ® Golfer (Gen 2) Carbon Edition specs",
-        "buy MARQВ® Golfer (Gen 2) Carbon Edition",
+        "Garmin MARQ® Golfer (Gen 2) Carbon Edition",
+        "MARQ® Golfer (Gen 2) Carbon Edition GPS watch",
+        "MARQ® Golfer (Gen 2) Carbon Edition specs",
+        "buy MARQ® Golfer (Gen 2) Carbon Edition",
         "Garmin MARQ"
       ]
     }
@@ -13938,7 +13938,7 @@
   "banners": [
     {
       "id": "banner-1",
-      "title": "MARQВ® (Gen 2) Collection",
+      "title": "MARQ® (Gen 2) Collection",
       "subtitle": "Where luxury and performance collide. Seven modern tool watches forged from titanium, carbon and Damascus steel.",
       "ctaLabel": "Explore MARQ",
       "ctaUrl": "/minisite/marq",
@@ -13950,9 +13950,9 @@
     },
     {
       "id": "banner-2",
-      "title": "fД“nixВ® 8 Series",
+      "title": "fēnix® 8 Series",
       "subtitle": "Be your best. Multisport GPS smartwatches built for athletes with AMOLED display and mic/speaker.",
-      "ctaLabel": "Shop fД“nix 8",
+      "ctaLabel": "Shop fēnix 8",
       "ctaUrl": "/minisite/fenix-8",
       "image": "/images/hero/fenix8-hero.jpg",
       "position": "hero",
@@ -13962,7 +13962,7 @@
     },
     {
       "id": "banner-3",
-      "title": "Garmin Payв„ў Contactless Payment",
+      "title": "Garmin Pay™ Contactless Payment",
       "subtitle": "Leave your cards and phone behind. Pay on the go with your wrist.",
       "ctaLabel": "Learn More",
       "ctaUrl": "/minisite/garmin-pay",
@@ -13987,8 +13987,8 @@
       "id": "blog-1",
       "slug": "outdoor-maps-plus",
       "title": "What is Outdoor Maps+? And why you should use it for hiking",
-      "excerpt": "A one-stop subscription that unlocks premium mapping вЂ” from satellite imagery to detailed topographic layers вЂ” right on your compatible Garmin device.",
-      "content": "A one-stop subscription that unlocks premium mapping вЂ” from satellite imagery to detailed topographic layers вЂ” right on your compatible Garmin device.\n\nDiscover all Garmin training features, wellness insights, and smart metrics to elevate your performance to the next level.",
+      "excerpt": "A one-stop subscription that unlocks premium mapping — from satellite imagery to detailed topographic layers — right on your compatible Garmin device.",
+      "content": "A one-stop subscription that unlocks premium mapping — from satellite imagery to detailed topographic layers — right on your compatible Garmin device.\n\nDiscover all Garmin training features, wellness insights, and smart metrics to elevate your performance to the next level.",
       "coverImage": "/images/blog/outdoor-maps-plus.jpg",
       "category": "outdoor",
       "readingTime": "5 min read",
@@ -13997,7 +13997,7 @@
       "publishedAt": "July 8, 2026",
       "createdAt": "2026-01-01T00:00:00.000Z",
       "seoTitle": "What is Outdoor Maps+? And why you should use it for hiking | Gar",
-      "seoDescription": "A one-stop subscription that unlocks premium mapping вЂ” from satellite imagery to detailed topographic layers вЂ” right on your compatible Garmin device.",
+      "seoDescription": "A one-stop subscription that unlocks premium mapping — from satellite imagery to detailed topographic layers — right on your compatible Garmin device.",
       "focusKeywords": [
         "outdoor",
         "What is Outdoor guide",
@@ -14119,8 +14119,8 @@
       "id": "blog-7",
       "slug": "what-does-your-boat-need",
       "title": "What does your boat need?",
-      "excerpt": "Chartplotters, fishfinders, trolling motors and more вЂ” build the marine setup that matches how you spend time on the water.",
-      "content": "Chartplotters, fishfinders, trolling motors and more вЂ” build the marine setup that matches how you spend time on the water.\n\nDiscover all Garmin training features, wellness insights, and smart metrics to elevate your performance to the next level.",
+      "excerpt": "Chartplotters, fishfinders, trolling motors and more — build the marine setup that matches how you spend time on the water.",
+      "content": "Chartplotters, fishfinders, trolling motors and more — build the marine setup that matches how you spend time on the water.\n\nDiscover all Garmin training features, wellness insights, and smart metrics to elevate your performance to the next level.",
       "coverImage": "/images/blog/what-does-your-boat-need.jpg",
       "category": "marine",
       "readingTime": "6 min read",
@@ -14129,7 +14129,7 @@
       "publishedAt": "June 24, 2026",
       "createdAt": "2026-01-01T00:00:00.000Z",
       "seoTitle": "What does your boat need? | Garmin Fitness & Tech Blog",
-      "seoDescription": "Chartplotters, fishfinders, trolling motors and more вЂ” build the marine setup that matches how you spend time on the water.",
+      "seoDescription": "Chartplotters, fishfinders, trolling motors and more — build the marine setup that matches how you spend time on the water.",
       "focusKeywords": [
         "marine",
         "What does your guide",
@@ -14185,8 +14185,8 @@
       "id": "blog-10",
       "slug": "which-smartwatch-is-right",
       "title": "Which Garmin smartwatch is right for me?",
-      "excerpt": "From fД“nix to Venu to Forerunner вЂ” a quick guide to finding the watch that fits your lifestyle and goals.",
-      "content": "From fД“nix to Venu to Forerunner вЂ” a quick guide to finding the watch that fits your lifestyle and goals.\n\nDiscover all Garmin training features, wellness insights, and smart metrics to elevate your performance to the next level.",
+      "excerpt": "From fēnix to Venu to Forerunner — a quick guide to finding the watch that fits your lifestyle and goals.",
+      "content": "From fēnix to Venu to Forerunner — a quick guide to finding the watch that fits your lifestyle and goals.\n\nDiscover all Garmin training features, wellness insights, and smart metrics to elevate your performance to the next level.",
       "coverImage": "/images/blog/which-smartwatch-is-right.jpg",
       "category": "health",
       "readingTime": "6 min read",
@@ -14195,7 +14195,7 @@
       "publishedAt": "June 16, 2026",
       "createdAt": "2026-01-01T00:00:00.000Z",
       "seoTitle": "Which Garmin smartwatch is right for me? | Garmin Fitness & Tech ",
-      "seoDescription": "From fД“nix to Venu to Forerunner вЂ” a quick guide to finding the watch that fits your lifestyle and goals. Learn expert tips, athlete workouts, and smartwat...",
+      "seoDescription": "From fēnix to Venu to Forerunner — a quick guide to finding the watch that fits your lifestyle and goals. Learn expert tips, athlete workouts, and smartwat...",
       "focusKeywords": [
         "health",
         "Which Garmin smartwatch guide",
@@ -14387,7 +14387,7 @@
       "items": [
         {
           "productId": "marq-aviator-gen2",
-          "name": "MARQВ® Aviator (Gen 2)",
+          "name": "MARQ® Aviator (Gen 2)",
           "price": 2450,
           "quantity": 1,
           "image": "/marq/images/marq-spec-aviator.png"
@@ -14416,7 +14416,7 @@
       "items": [
         {
           "productId": "1228429",
-          "name": "fД“nixВ® 8 - 51 mm, Solar Sapphire",
+          "name": "fēnix® 8 - 51 mm, Solar Sapphire",
           "price": 999.99,
           "quantity": 1,
           "image": "/images/products/1228429.jpg"
@@ -14445,7 +14445,7 @@
       "items": [
         {
           "productId": "marq-adventurer-damascus",
-          "name": "MARQВ® Adventurer Damascus Steel",
+          "name": "MARQ® Adventurer Damascus Steel",
           "price": 3100,
           "quantity": 1,
           "image": "/marq/images/marq-spec-damascus.png"
@@ -14474,7 +14474,7 @@
       "items": [
         {
           "productId": "1228429",
-          "name": "fД“nixВ® 8 - 47 mm, AMOLED",
+          "name": "fēnix® 8 - 47 mm, AMOLED",
           "price": 799.99,
           "quantity": 1,
           "image": "/images/products/1228429.jpg"
@@ -14503,7 +14503,7 @@
       "items": [
         {
           "productId": "marq-athlete",
-          "name": "MARQВ® Athlete (Gen 2)",
+          "name": "MARQ® Athlete (Gen 2)",
           "price": 1299.99,
           "quantity": 1,
           "image": "/marq/images/marq-spec-athlete.png"
@@ -14532,7 +14532,7 @@
       "items": [
         {
           "productId": "1462801",
-          "name": "ForerunnerВ® 265",
+          "name": "Forerunner® 265",
           "price": 549.99,
           "quantity": 1,
           "image": "/images/products/1462801.jpg"
@@ -14561,14 +14561,14 @@
       "items": [
         {
           "productId": "1462801",
-          "name": "ForerunnerВ® 970",
+          "name": "Forerunner® 970",
           "price": 749.99,
           "quantity": 1,
           "image": "/images/products/1462801.jpg"
         },
         {
           "productId": "hrm-pro-plus",
-          "name": "HRM-Proв„ў Plus Heart Rate Monitor",
+          "name": "HRM-Pro™ Plus Heart Rate Monitor",
           "price": 149.99,
           "quantity": 1,
           "image": "/images/products/1228429.jpg"
@@ -14597,7 +14597,7 @@
       "items": [
         {
           "productId": "marq-captain",
-          "name": "MARQВ® Captain (Gen 2)",
+          "name": "MARQ® Captain (Gen 2)",
           "price": 2200,
           "quantity": 1,
           "image": "/marq/images/marq-spec-captain.png"
@@ -14628,7 +14628,7 @@
     "garminPaySandbox": true,
     "stripeEnabled": true,
     "seoTitle": "Garmin Singapore | Official Smartwatches, GPS & Wearables Store",
-    "seoDescription": "Explore Garmin smartwatch collections including MARQ Gen 2, fД“nix 8, Forerunner, Venu and Garmin Pay.",
+    "seoDescription": "Explore Garmin smartwatch collections including MARQ Gen 2, fēnix 8, Forerunner, Venu and Garmin Pay.",
     "importRateKztPerUsd": 500
   },
   "activities": [
@@ -14636,14 +14636,14 @@
       "id": "act-1786950830049-994",
       "adminName": "Product Manager",
       "action": "Updated product",
-      "target": "fД“nixВ® 8",
+      "target": "fēnix® 8",
       "timestamp": "2026-08-17T07:13:50.049Z"
     },
     {
       "id": "act-1786950772738-762",
       "adminName": "Product Manager",
       "action": "Updated product",
-      "target": "ForerunnerВ® 70/170",
+      "target": "Forerunner® 70/170",
       "timestamp": "2026-08-17T07:12:52.738Z"
     },
     {
@@ -14657,7 +14657,7 @@
       "id": "act-2",
       "adminName": "Marcus Vance",
       "action": "Updated inventory stock",
-      "target": "fД“nix 8 Titanium AMOLED (+25 units)",
+      "target": "fēnix 8 Titanium AMOLED (+25 units)",
       "timestamp": "2026-08-16T15:30:00.000Z"
     },
     {

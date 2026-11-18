@@ -1,0 +1,20 @@
+# Local development only. This is not the production VPS topology.
+services:
+  db:
+    image: postgres:18.6-bookworm
+    environment:
+      POSTGRES_USER: grmn_local
+      POSTGRES_DB: grmn_local
+      POSTGRES_PASSWORD: ${GRMN_LOCAL_DB_PASSWORD:?Set GRMN_LOCAL_DB_PASSWORD in .env.local}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - backend_local_postgres:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U grmn_local -d grmn_local"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  backend_local_postgres:

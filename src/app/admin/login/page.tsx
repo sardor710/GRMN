@@ -1,167 +1,128 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GarminLogo } from "@/components/icons";
-import { Shield, KeyRound, Mail, ArrowRight, Loader2, CheckCircle2 } from "lucide-react";
+import { restartStaffAuthentication } from "@/lib/staff-auth-recovery";
 
+type Step = "password"|"enroll"|"verify"|"restart";
+interface AuthResult {
+  success?: boolean;
+  mfaRestartRequired?: boolean;
+  error?: { code?: string; message?: string };
+  mfaRequired?: boolean;
+  mfaEnrolled?: boolean;
+  staff?: boolean;
+  user?: { id: string } | null;
+  totpURI?: string;
+  backupCodes?: string[];
+}
+async function authPost(operation: string, body: Record<string,unknown>) {
+  const response = await fetch("/api/auth/"+operation, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), cache: "no-store" });
+  const data: AuthResult = await response.json();
+  return { response, data };
+}
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@garmin.com");
-  const [password, setPassword] = useState("admin123");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [step,setStep] = useState<Step>("password");
+  const [email,setEmail] = useState("");
+  const [password,setPassword] = useState("");
+  const [code,setCode] = useState("");
+  const [backup,setBackup] = useState(false);
+  const [totpURI,setTotpURI] = useState("");
+  const [backupCodes,setBackupCodes] = useState<string[]>([]);
+  const [savedCodes,setSavedCodes] = useState(false);
+  const [loading,setLoading] = useState(false);
+  const [error,setError] = useState("");
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    let active = true;
+    fetch("/api/auth/get-session", { cache: "no-store" }).then(async response => {
+      if (!response.ok) return;
+      const data: AuthResult = await response.json();
+      if (active && data.user && data.staff) setStep(current => current==="restart" || data.mfaRestartRequired ? "restart" : data.mfaEnrolled ? "verify" : "enroll");
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  const clearSensitive = () => {
+    setPassword(""); setCode(""); setTotpURI(""); setBackupCodes([]); setSavedCodes(false); setBackup(false);
+  };
+  const recover = async (reason: string) => {
+    const result = await restartStaffAuthentication({clearSensitive,setStep,signOut:()=>authPost("sign-out",{})});
+    setError(reason+" "+result.message);
+    if (result.signedOut) router.refresh();
+    return result;
+  };
+  const restart = async () => {
     setLoading(true);
-    setError(null);
-
+    try { await recover(""); }
+    finally { setLoading(false); }
+  };
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault(); if (step==="restart") return; setLoading(true); setError("");
     try {
-      const res = await fetch("/api/admin/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || "Login failed");
+      if (step==="password") {
+        const credential=password; setPassword("");
+        const {response,data} = await authPost("sign-in/email", {email,password:credential});
+        if (!response.ok) throw new Error(data.error?.message || "Sign-in could not be completed");
+        setPassword("");
+        if (data.mfaRequired) { setStep("verify"); return; }
+        const sessionResponse = await fetch("/api/auth/get-session", {cache:"no-store"});
+        const session: AuthResult = await sessionResponse.json();
+        if (!sessionResponse.ok || !session.staff) throw new Error("Staff sign-in is required");
+        setStep(session.mfaEnrolled ? "verify" : "enroll");
+      } else if (step==="enroll" && !totpURI) {
+        const credential=password; setPassword("");
+        const {response,data} = await authPost("two-factor/enable", {password:credential});
+        if (!response.ok || !data.totpURI || !data.backupCodes) throw new Error(data.error?.message || "MFA enrollment is unavailable");
+        setPassword(""); setTotpURI(data.totpURI); setBackupCodes(data.backupCodes);
+      } else {
+        let proof: Awaited<ReturnType<typeof authPost>>;
+        try { proof=await authPost(backup ? "two-factor/verify-backup-code" : "two-factor/verify-totp", {code}); }
+        catch { await recover("Verification could not be confirmed."); return; }
+        const {response,data}=proof;
+        if (!response.ok) {
+          if (data.error?.code==="MFA_STEP_UP_RETRY") {
+            clearSensitive(); setStep("verify"); setError(data.error.message || "Fresh proof was not refreshed; previous admission remains unchanged."); return;
+          }
+          if (data.error?.code==="MFA_ADMISSION_RETRY" || data.error?.code==="MFA_RESTART_REQUIRED" || response.status>=500) {
+            await recover("Your proof may have been consumed; this sign-in cannot continue."); return;
+          }
+          setCode(""); throw new Error(data.error?.message || "MFA verification could not be completed");
+        }
+        clearSensitive();
+        router.replace("/admin"); router.refresh();
       }
-
-      setSuccess(true);
-      setTimeout(() => {
-        router.push("/admin");
-        router.refresh();
-      }, 500);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Invalid credentials");
-      setLoading(false);
+    } catch (failure) {
+      if (step==="enroll") await recover("Enrollment could not be confirmed.");
+      else setError(failure instanceof Error ? failure.message : "Authentication is unavailable");
     }
+    finally { setLoading(false); }
   };
-
-  const handleFillDemo = () => {
-    setEmail("admin@garmin.com");
-    setPassword("admin123");
-    setError(null);
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex min-h-screen items-center justify-center bg-neutral-100 p-4 text-black font-sans">
-      <div className="relative w-full max-w-md border border-neutral-300 bg-white p-8 shadow-xl rounded-none">
-        {/* Brand */}
-        <div className="flex flex-col items-center text-center">
-          <div className="flex items-center gap-2 mb-3">
-            <GarminLogo className="h-6 w-auto text-black" />
-            <span className="font-heading tracking-widest text-[10px] font-bold text-[#007cc3] uppercase bg-[#007cc3]/10 px-1.5 py-0.5 border border-[#007cc3]/20">
-              ADMIN
-            </span>
-          </div>
-          <h1 className="g-heading uppercase tracking-wide text-2xl font-normal text-black">
-            Administrator Sign In
-          </h1>
-          <p className="mt-1 text-[13px] text-neutral-500">
-            Official Garmin eCommerce portal &amp; store configuration
-          </p>
-        </div>
-
-        {/* Preset credentials card */}
-        <div className="mt-6 border border-neutral-200 bg-neutral-50 p-4">
-          <div className="flex items-center justify-between">
-            <span className="font-heading uppercase tracking-wider text-[11px] font-semibold text-neutral-500">
-              Default Credentials
-            </span>
-            <button
-              type="button"
-              onClick={handleFillDemo}
-              className="text-[12px] font-medium text-[#007cc3] hover:underline"
-            >
-              Fill In
-            </button>
-          </div>
-          <div className="mt-2.5 grid grid-cols-2 gap-2 text-[11px] text-neutral-700 font-mono">
-            <div className="bg-white p-2 border border-neutral-200">
-              <span className="text-neutral-400">Email:</span> admin@garmin.com
-            </div>
-            <div className="bg-white p-2 border border-neutral-200">
-              <span className="text-neutral-400">Pass:</span> admin123
-            </div>
-          </div>
-        </div>
-
-        {/* Error notification */}
-        {error && (
-          <div className="mt-4 border border-rose-300 bg-rose-50 p-3 text-[13px] text-rose-700">
-            {error}
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-          <div>
-            <label className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600">
-              Email Address
-            </label>
-            <div className="relative mt-1">
-              <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-              <input
-                type="text"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@garmin.com"
-                className="h-10 w-full border border-neutral-300 bg-white pl-10 pr-3 text-[13px] text-black placeholder-neutral-400 focus:border-black focus:outline-none rounded-none"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600">
-              Password
-            </label>
-            <div className="relative mt-1">
-              <KeyRound className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="h-10 w-full border border-neutral-300 bg-white pl-10 pr-3 text-[13px] text-black placeholder-neutral-400 focus:border-black focus:outline-none rounded-none"
-              />
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading || success}
-            className="flex h-11 w-full items-center justify-center gap-2 bg-black text-white hover:bg-neutral-800 border border-black text-[13px] font-medium tracking-[0.06em] uppercase rounded-none transition-colors disabled:opacity-50"
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin text-white" />
-            ) : success ? (
-              <span className="flex items-center gap-1.5">
-                <CheckCircle2 className="h-4 w-4 text-emerald-400" /> Authorized
-              </span>
-            ) : (
-              <>
-                <span>Sign In to Dashboard</span>
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
-        </form>
-
-        {/* Footer info */}
-        <div className="mt-8 border-t border-neutral-200 pt-4 flex items-center justify-between text-[11px] text-neutral-400">
-          <span className="flex items-center gap-1">
-            <Shield className="h-3.5 w-3.5 text-[#007cc3]" /> SSL Encrypted
-          </span>
-          <span className="font-mono">v2.4.0</span>
-        </div>
-      </div>
+  const enrollmentProof = step==="enroll" && !!totpURI;
+  return <div className="fixed inset-0 z-50 flex min-h-screen items-center justify-center overflow-y-auto bg-neutral-100 p-4 text-black">
+    <div className="my-auto w-full max-w-lg border border-neutral-300 bg-white p-8 shadow-xl">
+      <GarminLogo className="mx-auto h-6 w-auto text-black" />
+      <h1 className="mt-6 text-center text-2xl">{step==="restart" ? "Restart staff sign-in" : step==="password" ? "Administrator sign in" : step==="enroll" ? "Set up staff MFA" : "Verify staff MFA"}</h1>
+      <p className="mt-3 text-sm text-neutral-600">Use your configured staff account. Access requires a password and an authenticator or backup code.</p>
+      {error && <p role="alert" className="mt-4 border border-rose-300 bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
+      {step!=="restart" && <form onSubmit={submit} className="mt-6 space-y-4">
+        {step==="password" && <label className="block text-sm">Email address<input type="email" autoComplete="username" required maxLength={254} value={email} onChange={e=>setEmail(e.target.value)} className="mt-1 block w-full border border-neutral-400 p-2" /></label>}
+        {(step==="password" || (step==="enroll" && !totpURI)) && <label className="block text-sm">{step==="enroll" ? "Confirm your staff password" : "Password"}<input type="password" autoComplete="current-password" required minLength={16} maxLength={128} value={password} onChange={e=>setPassword(e.target.value)} className="mt-1 block w-full border border-neutral-400 p-2" /></label>}
+        {enrollmentProof && <div className="space-y-3 text-sm">
+          <p>Add this setup URI to your authenticator on a private device. Keep the recovery codes somewhere safe; they are shown only during enrollment.</p>
+          <label className="block">Authenticator setup URI<textarea readOnly value={totpURI} className="mt-1 block h-20 w-full break-all border border-neutral-400 p-2 font-mono text-xs" /></label>
+          <p className="whitespace-pre-wrap break-all border border-neutral-300 bg-neutral-50 p-3 font-mono text-xs">{backupCodes.join("\n")}</p>
+          <label className="flex gap-2"><input type="checkbox" checked={savedCodes} onChange={e=>setSavedCodes(e.target.checked)} required />I saved my recovery codes privately.</label>
+        </div>}
+        {(step==="verify" || enrollmentProof) && <>
+          <label className="block text-sm">{backup ? "Unused backup code" : "Authenticator code"}<input autoComplete="one-time-code" inputMode={backup ? "text" : "numeric"} required minLength={6} maxLength={backup ? 64 : 6} pattern={backup ? undefined : "[0-9]{6}"} value={code} onChange={e=>setCode(e.target.value)} className="mt-1 block w-full border border-neutral-400 p-2 font-mono" /></label>
+          {step==="verify" && <button type="button" onClick={()=>{setBackup(!backup);setCode("");}} className="text-sm underline">{backup ? "Use authenticator" : "Use an unused backup code"}</button>}
+        </>}
+        <button type="submit" disabled={loading || (enrollmentProof && !savedCodes)} className="w-full bg-black p-3 text-sm uppercase text-white disabled:opacity-50">{loading ? "Please wait…" : step==="password" ? "Continue" : step==="enroll" && !totpURI ? "Create authenticator setup" : "Verify and continue"}</button>
+      </form>}
+      {step!=="password" && <button type="button" onClick={restart} disabled={loading} className="mt-4 text-sm underline">Sign out and restart</button>}
     </div>
-  );
+  </div>;
 }

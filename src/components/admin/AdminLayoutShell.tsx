@@ -11,6 +11,7 @@ interface AdminLayoutShellProps {
     email: string;
     role: string;
     avatar?: string;
+    permissions?: readonly string[];
   };
 }
 
@@ -21,10 +22,11 @@ export function AdminLayoutShell({ children, user }: AdminLayoutShellProps) {
   if (isLoginPage) {
     return <div className="min-h-screen bg-neutral-100 text-black antialiased">{children}</div>;
   }
+  if (!user) return <main className="min-h-screen bg-neutral-100 p-8 text-black">{children}</main>;
 
   return (
     <div className="min-h-screen bg-neutral-100 text-black flex flex-col antialiased">
-      <AdminSidebar />
+      <AdminSidebar permissions={user.permissions ?? []} />
       <div className="pl-64 flex flex-col flex-1 min-h-screen">
         <AdminHeader user={user} />
         <main className="flex-1 p-6 md:p-8 bg-neutral-50 overflow-x-hidden">

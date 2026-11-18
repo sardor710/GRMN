@@ -28,20 +28,22 @@ export function AdminHeader({ user }: AdminHeaderProps) {
   const router = useRouter();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
 
   const handleLogout = async () => {
     try {
-      await fetch("/api/admin/auth/logout", { method: "POST" });
+      const response = await fetch("/api/admin/auth/logout", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+      if (!response.ok) throw new Error("Sign-out failed. Retry to end your session.");
       router.push("/admin/login");
       router.refresh();
     } catch {
-      router.push("/admin/login");
+      setLogoutError("Sign-out failed. Retry to end your session.");
     }
   };
 
   const adminName = user?.name || "Garmin Administrator";
-  const adminEmail = user?.email || "admin@garmin.com";
-  const adminRole = user?.role || "super_admin";
+  const adminEmail = user?.email || "";
+  const adminRole = user?.role || "staff";
 
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-neutral-200 bg-white px-6 font-sans">
@@ -62,6 +64,8 @@ export function AdminHeader({ user }: AdminHeaderProps) {
 
       {/* Right actions */}
       <div className="flex items-center gap-3">
+        {logoutError && <span role="alert" className="text-xs text-rose-700">{logoutError}</span>}
+        <Link href="/admin/login" className="text-xs underline">Verify MFA again</Link>
         {/* SEO Hub Link */}
         <Link
           href="/admin/seo"

@@ -14,7 +14,8 @@ interface HomeHeroProps {
 }
 
 export function HomeHero({ banners }: HomeHeroProps) {
-  const activeSlides = banners && banners.length > 0
+  // CMS banners win even when empty or all inactive (an editor may switch the hero off); static slides only without CMS data.
+  const activeSlides = banners !== undefined
     ? banners.filter((b) => b.active !== false).sort((a, b) => a.order - b.order).map((b) => ({
         key: b.key || b.id,
         title: b.title,
@@ -26,7 +27,7 @@ export function HomeHero({ banners }: HomeHeroProps) {
     : homeHeroSlides.map((s) => ({ ...s, disclaimer: undefined as string | undefined, image: `/homepage/hero/${s.key}-1-D.jpg` }));
 
   // The track has positioning classes for at most 10 slides (HomeHero.module.css .index0-.index9).
-  const slides = activeSlides.length > 0 ? activeSlides.slice(0, 10) : homeHeroSlides.map((s) => ({ ...s, disclaimer: undefined as string | undefined, image: `/homepage/hero/${s.key}-1-D.jpg` }));
+  const slides = activeSlides.slice(0, 10);
 
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -59,6 +60,7 @@ export function HomeHero({ banners }: HomeHeroProps) {
   }, [index, paused, slides.length]);
 
   const currentSlide = slides[index] || slides[0];
+  if (!currentSlide) return null;
 
   return (
     <section

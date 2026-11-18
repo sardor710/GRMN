@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { watchFamilies } from "@/lib/products";
+import { watchFamilies } from "@/lib/catalog-constants";
 
 export function WearablesHero() {
   return (

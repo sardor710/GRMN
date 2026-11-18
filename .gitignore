@@ -48,5 +48,5 @@ next-env.d.ts
 # Local temp files
 temp/
 
-# uploaded and imported product media (served by /uploads route)
-/storage/
+# Uploaded media (Task 18A; MEDIA_STORAGE_DIR default)
+storage/

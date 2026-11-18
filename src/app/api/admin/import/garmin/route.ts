@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentAdmin } from "@/lib/cms/auth";
+import { requireCatalogWriter } from "@/lib/cms/admin-guard";
 import { saveSettings } from "@/lib/cms/store";
 import { downloadRemoteImage, type DownloadResult } from "@/lib/media/storage";
 import { parseGarminProduct, validateGarminUrl, type GarminDraft } from "@/lib/import/garmin-parse";
@@ -127,8 +127,8 @@ async function localizeImages(draft: GarminDraft, remoteImages: { id: string; ur
 
 /** POST { url, rateKztPerUsd, downloadImages? } → { draft, warnings }. Never saves the product. */
 export async function POST(request: Request) {
-  const admin = await getCurrentAdmin();
-  if (!admin) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const denied = await requireCatalogWriter(request);
+  if (denied) return denied;
 
   let body: { url?: unknown; rateKztPerUsd?: unknown; downloadImages?: unknown };
   try {
@@ -151,7 +151,8 @@ export async function POST(request: Request) {
     const { html, finalUrl } = await fetchGarminPage(checked.url);
     const { product, remoteImages, warnings } = parseGarminProduct(html, { sourceUrl: finalUrl.href, rateKztPerUsd: rate });
     if (body.downloadImages !== false) warnings.push(...(await localizeImages(product, remoteImages)));
-    saveSettings({ importRateKztPerUsd: rate });
+    // Remember the rate for the next import (legacy JSON store only; PostgreSQL uses the USD rate editor).
+    if (process.env.CMS_BACKEND !== "postgres") saveSettings({ importRateKztPerUsd: rate });
     return NextResponse.json({ draft: product, warnings });
   } catch (err) {
     const status = err instanceof ImportError ? err.status : err instanceof Error && err.name === "GarminParseError" ? 422 : 502;

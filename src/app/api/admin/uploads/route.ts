@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCurrentAdmin } from "@/lib/cms/auth";
+import { requireCatalogWriter } from "@/lib/cms/admin-guard";
 import { MAX_UPLOAD_BYTES, saveImage, sniffImageType } from "@/lib/media/storage";
 
 export const runtime = "nodejs";
@@ -10,8 +10,8 @@ const MAX_REQUEST_BYTES = MAX_FILES * MAX_UPLOAD_BYTES + 1024 * 1024;
 
 /** POST multipart `files` (1–20 images) → { images: { src }[] }. Admin only. */
 export async function POST(request: Request) {
-  const admin = await getCurrentAdmin();
-  if (!admin) return NextResponse.json({ error: "Not signed in" }, { status: 401 });
+  const denied = await requireCatalogWriter(request);
+  if (denied) return denied;
 
   const declared = Number(request.headers.get("content-length") || 0);
   if (!declared || declared > MAX_REQUEST_BYTES) {

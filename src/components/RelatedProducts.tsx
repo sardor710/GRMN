@@ -1,9 +1,9 @@
 import { ProductCard } from "@/components/ProductCard";
-import { getProduct } from "@/lib/products";
+import { getProductsByKeys } from "@/lib/products";
 import { SectionHeading } from "@/components/SectionHeading";
 
-export function RelatedProducts({ ids }: { ids: string[] }) {
-  const items = ids.map(getProduct).filter((p) => p !== undefined);
+export async function RelatedProducts({ ids }: { ids: string[] }) {
+  const items = await getProductsByKeys(ids.slice(0,12));
   if (items.length === 0) return null;
 
   return (
