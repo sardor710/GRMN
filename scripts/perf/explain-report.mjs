@@ -10,6 +10,9 @@
 // exact 0011 DDL. Catalog listing and search are NOT measured here: their real query (the catalog
 // eligible CTE) needs categories, options, media and attributes the seed does not create (review I9).
 // Output: a JSON summary on stdout.
+//
+// Task 21B: EXPLAIN_EXISTING=1 with DATABASE_URL measures the same literal queries, with the shipped
+// indexes only, on an already seeded DISPOSABLE perf database (tests/load, scripts/perf/load-seed.mjs).
 import {randomUUID} from "node:crypto";
 import {migrate} from "drizzle-orm/node-postgres/migrator";
 import {startTemporaryPostgres} from "../db/temporary-postgres.mjs";
@@ -20,16 +23,20 @@ const scale=Number(process.argv[2]??"0.05");
 if(!(scale>0&&scale<=1))throw new Error("scale must be in (0,1]");
 const n={products:Math.round(5000*scale),variants:Math.round(50000*scale),users:Math.round(150000*scale),orders:Math.round(1_000_000*scale)};
 
-const temporary=await startTemporaryPostgres();
+const existing=process.env.EXPLAIN_EXISTING==="1";
+const temporary=existing?null:await startTemporaryPostgres();
 let database;
 try{
-  const migration=createDatabase(parseServerEnv({DATABASE_URL:temporary.url,DATABASE_POOL_MAX:"1",DATABASE_CONNECT_TIMEOUT_MS:"10000",DATABASE_STATEMENT_TIMEOUT_MS:"60000"}));
-  try{await migrate(migration.db,{migrationsFolder:"drizzle"});}finally{await migration.close();}
-  database=createDatabase(parseServerEnv({DATABASE_URL:temporary.url,DATABASE_POOL_MAX:"2",DATABASE_CONNECT_TIMEOUT_MS:"10000",DATABASE_STATEMENT_TIMEOUT_MS:"60000"}));
+  const url=existing?process.env.DATABASE_URL:temporary.url;
+  if(!existing){
+    const migration=createDatabase(parseServerEnv({DATABASE_URL:url,DATABASE_POOL_MAX:"1",DATABASE_CONNECT_TIMEOUT_MS:"10000",DATABASE_STATEMENT_TIMEOUT_MS:"60000"}));
+    try{await migrate(migration.db,{migrationsFolder:"drizzle"});}finally{await migration.close();}
+  }
+  database=createDatabase(parseServerEnv({DATABASE_URL:url,DATABASE_POOL_MAX:"2",DATABASE_CONNECT_TIMEOUT_MS:"10000",DATABASE_STATEMENT_TIMEOUT_MS:"60000"}));
   const q=(sql,args=[])=>database.pool.query(sql,args);
   const started=Date.now();
-  const client=await database.pool.connect();
-  try{
+  const client=existing?null:await database.pool.connect();
+  if(client)try{
     await client.query("BEGIN");
     // Synthetic data only; the guard triggers are bypassed for the bulk load, CHECK constraints still apply.
     await client.query("SET LOCAL session_replication_role=replica");
@@ -46,8 +53,10 @@ try{
         (ARRAY['confirmed','confirmed','confirmed','pending_payment','cancelled'])[1+(g%5)],
         (ARRAY['paid','paid','paid','unpaid','refunded'])[1+(g%5)],
         CASE WHEN g%100=0 THEN 'exception' ELSE (ARRAY['delivered','shipped','unfulfilled','unfulfilled','unfulfilled'])[1+(g%5)] END,'live',true
+      -- The lateral references g so it runs per order (uncorrelated, PostgreSQL evaluates it once: every
+      -- order had the same time and amount before Task 21B).
       FROM generate_series(1,$1::int) g
-      CROSS JOIN LATERAL (SELECT now()-(random()*365)*interval '1 day' AS t,(3*(1000+(random()*90000)::int))*100 AS a) x
+      CROSS JOIN LATERAL (SELECT now()-(random()*365+g*0)*interval '1 day' AS t,(3*(1000+(random()*90000+g*0)::int))*100 AS a) x
       JOIN seed_users u ON u.k=1+(g%$2)`,[n.orders,n.users]);
     await client.query(`INSERT INTO order_items(id,order_id,product_id,variant_id,name,quantity,unit_price_minor,discount_minor,tax_minor,total_minor)
       SELECT gen_random_uuid(),o.id,v.product_id,v.id,'Synthetic item',1,o.total_minor/3,0,0,o.total_minor/3
@@ -58,8 +67,8 @@ try{
       SELECT gen_random_uuid(),a.id,a.order_id,'kaspi','live','perf-merchant','perf-txn:'||a.id,'capture',a.amount_minor,'perf-capture:'||a.id,o.placed_at FROM payment_attempts a JOIN orders o ON o.id=a.order_id`);
     await client.query("COMMIT");
   }catch(error){await client.query("ROLLBACK");throw error;}finally{client.release();}
-  await q("ANALYZE");
-  const seedMs=Date.now()-started;
+  if(!existing)await q("ANALYZE");
+  const seedMs=existing?null:Date.now()-started;
   const sample=(await q("SELECT user_id FROM orders WHERE user_id IS NOT NULL LIMIT 1")).rows[0].user_id;
   // Literal service SQL. fulfillment/service.ts listOrders, reports/service.ts summary, reports/exports.ts countRows.
   const listOrders=where=>`SELECT o.id,o.order_number,COALESCE(o.placed_at,o.created_at) AS shown_at,o.order_status,o.payment_status,o.fulfillment_status,o.payment_mode,o.data_quality,o.total_minor::text AS total_minor,
@@ -94,11 +103,15 @@ try{
   // Baseline without the 21A indexes, then the shipped definitions read back from the migrated schema.
   const shipped=(await q("SELECT indexname,indexdef FROM pg_indexes WHERE indexname IN ('orders_shown_at_idx','payment_transactions_capture_time_idx') ORDER BY indexname")).rows;
   if(shipped.length!==2)throw new Error("the 0011 indexes are missing from the migrated schema");
-  for(const row of shipped)await q(`DROP INDEX ${row.indexname}`);
-  await q("ANALYZE");const baseline=await measure();
-  for(const row of shipped)await q(row.indexdef);
-  await q("ANALYZE");const candidates=await measure();
+  let baseline=null;
+  if(!existing){
+    for(const row of shipped)await q(`DROP INDEX ${row.indexname}`);
+    await q("ANALYZE");baseline=await measure();
+    for(const row of shipped)await q(row.indexdef);
+    await q("ANALYZE");
+  }
+  const candidates=await measure();
   const counts=(await q("SELECT (SELECT count(*) FROM products)::int AS products,(SELECT count(*) FROM product_variants)::int AS variants,(SELECT count(*) FROM users)::int AS users,(SELECT count(*) FROM orders)::int AS orders,(SELECT count(*) FROM order_items)::int AS items,(SELECT count(*) FROM payment_transactions)::int AS captures")).rows[0];
   const version=(await q("SHOW server_version")).rows[0].server_version;
   console.log(JSON.stringify({scale,postgres:version,seedMs,counts,indexes:shipped.map(row=>row.indexdef),baseline,shipped:candidates},null,2));
-}finally{try{await database?.close();}finally{await temporary.stop();}}
+}finally{try{await database?.close();}finally{await temporary?.stop();}}

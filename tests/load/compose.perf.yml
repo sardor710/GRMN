@@ -1,0 +1,64 @@
+# Task 21B load stack. DISPOSABLE and synthetic only: never point it at real data.
+# Production image (Dockerfile runner stage) + PostgreSQL 18.6 + the outbox worker + a TLS proxy, on a
+# private bridge network. Nothing listens beyond loopback: only PostgreSQL (seeding/monitoring) and the
+# proxy (spot checks) are published, on 127.0.0.1. k6 joins the network. CPU caps leave headroom for
+# the other services on the shared VPS (O05). Secrets come from the environment of the run script.
+name: grmn-perf
+services:
+  db:
+    image: postgres:18.6-bookworm
+    environment:
+      POSTGRES_USER: grmn_perf
+      POSTGRES_DB: grmn_perf
+      POSTGRES_PASSWORD: ${PERF_DB_PASSWORD:?set by the run script}
+    command: >-
+      postgres -c shared_buffers=1GB -c effective_cache_size=3GB -c work_mem=8MB -c maintenance_work_mem=512MB
+      -c max_connections=100 -c max_wal_size=8GB -c checkpoint_timeout=15min -c track_io_timing=on
+      -c shared_preload_libraries=pg_stat_statements -c pg_stat_statements.track=top -c random_page_cost=1.1
+    ports: ["127.0.0.1:55433:5432"]
+    shm_size: 1g
+    cpus: ${PERF_DB_CPUS:-1.5}
+    mem_limit: 4g
+    volumes: [perf_db:/var/lib/postgresql]
+    healthcheck: {test: ["CMD-SHELL", "pg_isready -U grmn_perf -d grmn_perf"], interval: 2s, timeout: 3s, retries: 30}
+  app:
+    image: grmn-perf:21b
+    environment: &appenv
+      NODE_ENV: production
+      NEXT_TELEMETRY_DISABLED: "1"
+      HOSTNAME: 0.0.0.0
+      CMS_BACKEND: postgres
+      AUTH_ENABLED: "1"
+      AUTH_SECRET: ${PERF_AUTH_SECRET:?set by the run script}
+      AUTH_BASE_URL: https://grmn.perf.internal
+      AUTH_TRUSTED_IP_HEADER: x-grmn-client-ip
+      DATABASE_URL: postgresql://grmn_perf:${PERF_DB_PASSWORD}@db:5432/grmn_perf
+      DATABASE_POOL_MAX: ${PERF_POOL_MAX:-10}
+      DATABASE_POOL_STATS_MS: "5000"
+      MEDIA_STORAGE_DIR: /tmp/media
+    cpus: ${PERF_APP_CPUS:-2}
+    mem_limit: 2g
+    depends_on: {db: {condition: service_healthy}}
+  worker:
+    image: node:24.14.1-slim
+    working_dir: /app
+    command: ["node", "--conditions=react-server", "scripts/workers/outbox-worker.mjs"]
+    environment:
+      <<: *appenv
+      DATABASE_POOL_MAX: "6"
+      DATABASE_POOL_STATS_MS: "0"
+      WORKER_ID: perf-worker
+    volumes: ["../..:/app:ro"]
+    cpus: 0.5
+    mem_limit: 1g
+    depends_on: {db: {condition: service_healthy}}
+  proxy:
+    image: nginx:1.29-alpine
+    volumes: ["./nginx.perf.conf:/etc/nginx/nginx.conf:ro", "${PERF_CERT_DIR:?set by the run script}:/etc/nginx/certs:ro"]
+    ports: ["127.0.0.1:58443:443"]
+    networks: {default: {aliases: [grmn.perf.internal]}}
+    cpus: 0.5
+    mem_limit: 256m
+    depends_on: [app]
+volumes:
+  perf_db:
