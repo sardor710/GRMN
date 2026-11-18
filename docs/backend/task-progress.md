@@ -13,9 +13,8 @@ Updated: **2026-11-18**. This is the current progress index; individual handoffs
 - **Committed on `codex/backend-task-02`:** 02–09 `b92fd0e`, 10A `76bbf3b`, 10B `7d615b9`, 10C `3eecd53`, 11A `6aed380`, 11B `eb1cb5b`, 12A `3432aeb`, 12B `4fe08d2`, 13A `40a16cb`, 13B `d98cc92`, 14A `92b2737`, 14B `7981280`, 16A `9afd247`, 16B `f88c52e`, 18A `69e1d81`, 18B `4ac8955`, 21A `53a5b63`.
 - **Merged (2026-11-18):** `codex/backend-task-02` is merged into `D:/projects/garmin/GRMN` on branch `merge/backend-into-cms-variants`, together with the product variants, garmin.com importer and homepage work from `feat/garmin-clone-cms-variants`. See "Merge into the main checkout" below. **Continue all work in `D:/projects/garmin/GRMN`.** The Codex worktree is historical.
 - **Next (owner):**
-  1. Optional: rerun the browser smoke once more (`Remove-Item -Recurse -Force .next/dev`, then `node --conditions=react-server tests/ui/cms-smoke.mjs`) with ≥3 GB free. It passed after the merge and the 18A wiring; the rerun after the catalog query change was stopped for low memory (see "Deferred gates" below).
-  2. Decide O05 (VPS) and O07 (manual payment confirmation), then run 21B. 21B also decides whether price-sorted listings need a maintained offer summary or the shared cache ([performance report](performance-report.md#catalog-listing-and-search-review-i9-follow-up)).
-  3. Task 23 (cutover rehearsal) is owner-run. Apply migrations 0011 and 0012 before importing data.
+  1. Decide O05 (VPS) and O07 (manual payment confirmation), then run 21B. 21B also decides whether price-sorted listings need a maintained offer summary or the shared cache ([performance report](performance-report.md#catalog-listing-and-search-review-i9-follow-up)).
+  2. Task 23 (cutover rehearsal) is owner-run. Apply migrations 0011 and 0012 before importing data.
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
 - No push, deployment, real import, production database migration or backend activation has been performed.
 
@@ -44,7 +43,8 @@ Run on the merged branch from PowerShell, with 2.4–3.3 GB free RAM.
   **Final run on the finished tree: 349/349.**
 - **Browser smoke** (`tests/ui/cms-smoke.mjs`): it first failed before starting, because its receipt folder existed only in the old Codex worktree. The test now creates it.
   - **It then passed:** Task09 public catalog and review fixes, 10C account, 13A cart, 14A checkout, 16A fulfillment, and the admin CRUD walk (cursor pages, product create/update, homepage editor, article, banner, provisional customer, KZT rendering).
-  - That run covered the merge and the 18A wiring. A final rerun after the catalog query change was **stopped by Claude Code for low system memory**, so it has not been repeated since that change. The integration suite (349/349, including the 26 catalog tests) covers the catalog semantics.
+  - That run covered the merge and the 18A wiring. A rerun after the catalog query change was stopped for low system memory.
+  - **Rerun on the final tree (3.7 GB free, `.next/dev` cleared): passed**, with the same steps, so the catalog query change is covered in the browser too.
   - The script has no steps for 16B, 18A, 18B or 21A screens. Their gates remain the integration tests.
 - **18A ruling I6, homepage collections (done):**
   - Migration **0012** adds a published snapshot (`published_name`, `published_at`, `collection_published_products`) and backfills already-published collections.
