@@ -9,7 +9,7 @@ Updated: **2026-11-18**. This is the current progress index; individual handoffs
 - **Committed on `codex/backend-task-02`:** 02–09 `b92fd0e`, 10A `76bbf3b`, 10B `7d615b9`, 10C `3eecd53`, 11A `6aed380`, 11B `eb1cb5b`, 12A `3432aeb`, 12B `4fe08d2`, 13A `40a16cb`, 13B `d98cc92`, 14A `92b2737`, 14B `7981280`, 16A `9afd247`, 16B `f88c52e`, 18A `69e1d81`, 18B `4ac8955`, 21A `53a5b63`.
 - **Merged (2026-11-18):** `codex/backend-task-02` is merged into `D:/projects/garmin/GRMN` on branch `merge/backend-into-cms-variants`, together with the product variants, garmin.com importer and homepage work from `feat/garmin-clone-cms-variants`. See "Merge into the main checkout" below. **Continue all work in `D:/projects/garmin/GRMN`.** The Codex worktree is historical.
 - **Next (owner):**
-  1. On a machine with ≥1 GB free RAM, run the deferred gates: `npm run test:integration` and the browser smoke `node --conditions=react-server tests/ui/cms-smoke.mjs` (open for 16A–21A and the merge), then `npm run build`.
+  1. On a machine with ≥1 GB free RAM, run the deferred gates: `npm run test:integration` and the browser smoke `node --conditions=react-server tests/ui/cms-smoke.mjs` (open for 16A–21A and the merge), 
   2. Decide O05 (VPS) and O07 (manual payment confirmation), then run 21B.
   3. Task 23 (cutover rehearsal) is owner-run.
 - **Authorized stopping point:** the autonomous chain runs to **Task 22** (`STOP_AFTER`). It stops early for an open owner decision, credentials, a provider, a purchase or production data. Tasks 23 and 24 are never chained.
@@ -27,7 +27,7 @@ The two branches grew from the same uncommitted CMS work. Conflicts were resolve
 - **Cart and product page:** the browser-only cart keeps one line per variant SKU. In server mode the cart uses server lines. `ProductTop` shows the JSON CMS variant picker in legacy mode and the server variant select in PostgreSQL mode.
 - **Homepage:** explicitly empty or inactive CMS blocks are respected, so static campaigns never come back.
 - **Data:** about 226 double-encoded strings in `data.json` (for example "fД“nixВ®") were repaired back to UTF-8 ("fēnix®"). Legacy admin sign-in now requires the backend auth setup (`AUTH_ENABLED=1`, PostgreSQL); see [auth-integration.md](auth-integration.md).
-- **Gates at merge:** `npm run typecheck` passes, `npm run lint` has 0 errors, `npm run test:legacy` passes 73/73, `npm run test:unit` passes 189/189 (run from PowerShell: the migration tests call Windows `whoami`, which Git Bash shadows), and `check:boundaries` passes. **Not run** for lack of free RAM: `npm run test:integration` (embedded PostgreSQL; it includes a new legacy-variant validation test), `npm run build` and the browser smoke.
+- **Gates at merge:** `npm run typecheck` passes, `npm run lint` has 0 errors, `npm run test:legacy` passes 73/73, `npm run test:unit` passes 189/189 (run from PowerShell: the migration tests call Windows `whoami`, which Git Bash shadows), `check:boundaries` passes, and `npm run build` passes with no warnings. **Not run** for lack of free RAM: `npm run test:integration` (embedded PostgreSQL; it includes a new legacy-variant validation test) and the browser smoke.
 
 **Complete means the recorded task scope passed its stated gate.** Schema completion does not mean its later services exist. Historical test counts below describe each completion point, not a fresh test run of all current uncommitted changes.
 
