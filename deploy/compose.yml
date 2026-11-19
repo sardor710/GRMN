@@ -45,6 +45,8 @@ services:
       AUTH_BASE_URL: https://${GRMN_DOMAIN:?set in the env file}
       NEXT_PUBLIC_SITE_URL: https://${GRMN_DOMAIN}
       AUTH_TRUSTED_IP_HEADER: x-grmn-client-ip
+      # Task 24: 0 = staff sign in with password only (owner decision); unset/1 = authenticator required.
+      STAFF_MFA_REQUIRED: ${STAFF_MFA_REQUIRED:-1}
       DATABASE_URL: postgresql://grmn_app:${DB_APP_PASSWORD}@db:5432/grmn
       DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-10}
       MEDIA_STORAGE_DIR: /media

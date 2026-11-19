@@ -40,10 +40,13 @@ export default function AdminLoginPage() {
     fetch("/api/auth/get-session", { cache: "no-store" }).then(async response => {
       if (!response.ok) return;
       const data: AuthResult = await response.json();
-      if (active && data.user && data.staff) setStep(current => current==="restart" || data.mfaRestartRequired ? "restart" : data.mfaEnrolled ? "verify" : "enroll");
+      if (!active || !data.user || !data.staff) return;
+      // Already admitted, or MFA is switched off (STAFF_MFA_REQUIRED=0): go straight to the admin.
+      if (data.mfaRequired===false && !data.mfaRestartRequired) { router.replace("/admin"); return; }
+      setStep(current => current==="restart" || data.mfaRestartRequired ? "restart" : data.mfaEnrolled ? "verify" : "enroll");
     }).catch(() => {});
     return () => { active = false; };
-  }, []);
+  }, [router]);
 
   const clearSensitive = () => {
     setPassword(""); setCode(""); setTotpURI(""); setBackupCodes([]); setSavedCodes(false); setBackup(false);
@@ -71,6 +74,7 @@ export default function AdminLoginPage() {
         const sessionResponse = await fetch("/api/auth/get-session", {cache:"no-store"});
         const session: AuthResult = await sessionResponse.json();
         if (!sessionResponse.ok || !session.staff) throw new Error("Staff sign-in is required");
+        if (session.mfaRequired===false && !session.mfaRestartRequired) { router.replace("/admin"); router.refresh(); return; }
         setStep(session.mfaEnrolled ? "verify" : "enroll");
       } else if (step==="enroll" && !totpURI) {
         const credential=password; setPassword("");

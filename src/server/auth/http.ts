@@ -10,7 +10,7 @@ import { AuthFailure } from "./config.ts";
 import type { AuthConfig } from "./config.ts";
 import { authDigest, consumeAuthBudget, PHONE_PURPOSES } from "./phone-service.ts";
 import type { PhoneSender } from "./phone-service.ts";
-import { getSessionIdentity } from "./principal.ts";
+import { getSessionIdentity, staffMfaRequired } from "./principal.ts";
 import { completeProfileInput, emailInput, phoneInput } from "./validation.ts";
 import { revokeBrowserAuthentication } from "./lifecycle.ts";
 import { requestURL } from "./request-url.ts";
@@ -89,7 +89,7 @@ export function createAuthFoundation(input: { database: DatabaseHandle; config: 
       if (request.method==="GET" && path==="/get-session") {
         await consumeAuthBudget(database, config.secret, "http:"+path, network ?? "unattributed", 100, 60);
         const identity = await getSessionIdentity(runtime, request.headers);
-        return json({ user: identity ? { id: identity.id, name: identity.name } : null, staff: !!identity?.staff, mfaEnrolled: !!identity?.mfa_enrolled, mfaRequired: !!identity?.staff && !identity.mfa_at, mfaRestartRequired: !!identity?.staff && identity.mfa_enrolled && !identity.mfa_at });
+        return json({ user: identity ? { id: identity.id, name: identity.name } : null, staff: !!identity?.staff, mfaEnrolled: !!identity?.mfa_enrolled, mfaRequired: !!identity?.staff && !identity.mfa_at && staffMfaRequired(), mfaRestartRequired: !!identity?.staff && identity.mfa_enrolled && !identity.mfa_at && staffMfaRequired() });
       }
       if (request.method!=="POST" || !(path in bodies)) return json({ error: { code: "NOT_FOUND", message: "Auth operation is unavailable" } }, 404);
       if (request.headers.get("origin")!==config.baseURL) throw new AuthFailure("FORBIDDEN", 403, "Invalid auth origin");
@@ -108,7 +108,7 @@ export function createAuthFoundation(input: { database: DatabaseHandle; config: 
         const identity = await getSessionIdentity(runtime, request.headers);
         if (!identity) throw new AuthFailure("UNAUTHENTICATED", 401, "Sign in is required");
         if (!identity.staff) throw new AuthFailure("FORBIDDEN", 403, "This account signs in with a verified phone; use phone verification instead");
-        if (!identity.mfa_at) throw new AuthFailure("FORBIDDEN", 403, "Staff MFA verification is required");
+        if (!identity.mfa_at && staffMfaRequired()) throw new AuthFailure("FORBIDDEN", 403, "Staff MFA verification is required");
         await consumeAuthBudget(database, config.secret, "password-change", identity.id, 5, 900);
         passwordOwner = identity.id;
       }

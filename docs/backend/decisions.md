@@ -111,6 +111,14 @@ Owner decision: orders are accepted before a real payment provider exists, and *
 
 Still open: the DNS switch and the front door, a real TLS certificate (issued once DNS points at the store), the off-site backup target, and the SMS provider.
 
+### Staff sign-in without an authenticator (owner, 2026-11-19)
+
+The owner asked to remove the authenticator step: staff sign in with the password they were given, and another security layer is planned later.
+- **Built as a switch.** `STAFF_MFA_REQUIRED=0` (production env) skips per-session MFA admission and the 15-minute fresh-MFA rule for sensitive permissions (payment confirmation, settings, refunds, exports, staff management). The login page then goes straight to the admin.
+- **Unset or 1 restores the authenticator** with no code change. Tests run with it on, plus `tests/integration/staff-password-only.test.mjs`.
+- **Still in force:** the 32-character generated passwords, per-account and per-IP sign-in rate limits, session cookies (HttpOnly, SameSite=Lax), roles and permissions, and the audit log.
+- **Risk accepted by the owner:** a leaked password alone gives that account's access, including payment confirmation for owner and super_admin.
+
 ## Manual USD display conversion contract
 
 Owner clarification, 2026-11-11: existing saved product prices and historical order totals are **KZT, expressed in tenge (major units)**. Tasks 06–07 may validate exact conversion of persisted CMS product prices/original prices and order item/total amounts to integer KZT minor units (exponent 2), preserving original values and rejecting unsupported precision. This does not automatically confirm static/accessory prices, coupon money or reported customer lifetime baselines from other sources. No source values are rewritten and no real-target import is authorized by this clarification.

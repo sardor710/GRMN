@@ -7,6 +7,14 @@ import { AuthFailure } from "./config.ts";
 import { allPermissions } from "./bootstrap.ts";
 
 export interface AuthRuntime { auth: AuthInstance; database: DatabaseHandle }
+/**
+ * Task 24 (owner, 2026-11-19): STAFF_MFA_REQUIRED=0 lets staff work with their password alone until
+ * another security layer is added. Unset or any other value keeps per-session MFA and fresh MFA
+ * (15 minutes) for sensitive permissions.
+ */
+export function staffMfaRequired(env: Readonly<Record<string, string | undefined>> = process.env): boolean {
+  return env.STAFF_MFA_REQUIRED !== "0";
+}
 export async function getSessionIdentity(runtime: AuthRuntime, headers: Headers) {
   const result = await runtime.auth.api.getSession({ headers, query: { disableCookieCache: true } });
   if (!result) return null;
@@ -15,7 +23,7 @@ export async function getSessionIdentity(runtime: AuthRuntime, headers: Headers)
 }
 function principalFromIdentity(current: Awaited<ReturnType<typeof getSessionIdentity>>): Principal {
   if (!current) throw new AuthFailure("UNAUTHENTICATED", 401, "Sign in is required");
-  if (current.staff && !current.mfa_at) throw new AuthFailure("FORBIDDEN", 403, "Staff MFA verification is required");
+  if (current.staff && !current.mfa_at && staffMfaRequired()) throw new AuthFailure("FORBIDDEN", 403, "Staff MFA verification is required");
   const permissions = current.permissions.filter((code): code is Permission => (allPermissions as readonly string[]).includes(code));
   return { userId: current.id, permissions };
 }
@@ -32,7 +40,7 @@ export async function requirePermission(runtime: AuthRuntime, headers: Headers, 
   const current = await getSessionIdentity(runtime, headers), principal = principalFromIdentity(current);
   if (!principal.permissions.includes(permission)) throw new AuthFailure("FORBIDDEN", 403, "Permission is required");
   if (["staff:manage", "settings:write", "payments:refund", "payments:confirm", "exports:create"].includes(permission)) {
-    if (!current?.mfa_at || Date.now()-current.mfa_at.getTime()>900000) throw new AuthFailure("FORBIDDEN", 403, "Fresh MFA verification is required");
+    if (staffMfaRequired() && (!current?.mfa_at || Date.now()-current.mfa_at.getTime()>900000)) throw new AuthFailure("FORBIDDEN", 403, "Fresh MFA verification is required");
   }
   return principal;
 }
@@ -41,7 +49,7 @@ export async function requirePermission(runtime: AuthRuntime, headers: Headers, 
 export async function requireFreshPermission(runtime: AuthRuntime, headers: Headers, permission: Permission) {
   const current = await getSessionIdentity(runtime, headers), principal = principalFromIdentity(current);
   if (!current?.staff || !principal.permissions.includes(permission)) throw new AuthFailure("FORBIDDEN", 403, "Permission is required");
-  if (!current.mfa_at || Date.now()-current.mfa_at.getTime()>900000) throw new AuthFailure("FORBIDDEN", 403, "Fresh MFA verification is required");
+  if (staffMfaRequired() && (!current.mfa_at || Date.now()-current.mfa_at.getTime()>900000)) throw new AuthFailure("FORBIDDEN", 403, "Fresh MFA verification is required");
   return principal;
 }
 export async function revokeUserSessions(runtime: AuthRuntime, headers: Headers, targetUserId: string) {
