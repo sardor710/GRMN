@@ -1,7 +1,30 @@
 {
   "storeName": "GRMN",
-  "tax": { "mode": "inclusive", "rateBps": 1600, "countryCode": "KZ" },
-  "shipping": { "zones": [ { "key": "kz", "name": "Kazakhstan", "countries": ["KZ"], "rates": [ { "key": "standard", "amountMinor": "150000" } ] } ] },
+  "tax": {
+    "mode": "inclusive",
+    "rateBps": 1600,
+    "countryCode": "KZ"
+  },
+  "shipping": {
+    "zones": [
+      {
+        "key": "kz",
+        "name": "Kazakhstan",
+        "countries": [
+          "KZ"
+        ],
+        "rates": [
+          {
+            "key": "standard",
+            "amountMinor": "150000"
+          }
+        ]
+      }
+    ]
+  },
   "freeShippingThresholdMinor": "3000000",
-  "manualPayment": { "instructions": "Pay by Kaspi transfer using the details our staff send you. We confirm your payment and then prepare your order.", "holdHours": 48 }
+  "manualPayment": {
+    "instructions": "Оплата через Kaspi (перевод или Kaspi QR). После оформления заказа менеджер Garmin.kz свяжется с вами по указанному телефону и отправит реквизиты. Укажите номер заказа в комментарии к платежу. Заказ резервируется на 48 часов; после подтверждения оплаты мы подготовим и отправим его.\nKaspi арқылы төлем (аударым немесе Kaspi QR). Тапсырыс рәсімделгеннен кейін Garmin.kz менеджері көрсетілген телефон арқылы хабарласып, деректемелерді жібереді. Төлемге түсініктемеде тапсырыс нөмірін көрсетіңіз. Тапсырыс 48 сағатқа сақталады.\nPayment via Kaspi (transfer or Kaspi QR). After you place the order, a Garmin.kz manager will call you at the phone number given and send the payment details. Put the order number in the payment comment. Your order is reserved for 48 hours; once the payment is confirmed we prepare and ship it.",
+    "holdHours": 48
+  }
 }

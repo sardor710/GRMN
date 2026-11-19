@@ -462,3 +462,52 @@ test("O07 admin orders HTTP: confirm_payment and complete_manual_refund go throu
   assert.equal(response.status,200,await response.clone().text());
   assert.equal((await response.json()).order.paymentStatus,"paid");
 });
+
+// ---------------------------------------------------------------------------------------------
+// Task 24: order notifications to the owner's Telegram group. A scheduled worker job reads new
+// order events after a durable cursor and sends one plain-text message per event of interest.
+// Breaks caught: a backlog flood on first enable, a lost event after a failed send, a duplicate
+// after success, and messages missing what staff need to act (number, items, total, phone).
+test("Task 24: placed, paid and cancelled orders reach the Telegram group once, starting from enablement",async()=>{
+  await load();
+  const notifications=await import("../../src/server/operations/order-notifications.ts");
+  const sent=[],sender={send:async text=>{sent.push(text);}};
+  // Earlier tests already placed orders: enabling starts from now, without a backlog.
+  assert.deepEqual(await notifications.notifyOrderEvents(database.pool,sender,{baseURL:"https://shop.example",settleMs:0}),{initialized:true,sent:0});
+  const p=await product({price:2500000,stock:5});
+  const a=await manualOrder([[p.variant,1]]);
+  await confirm(a);
+  const b=await manualOrder([[p.variant,2]]);
+  await refundsApi.cancelOrder(fulfiller,{orderId:b.orderId,expectedOrderVersion:(await orderRow(b.orderId)).version,idempotencyKey:key(),reason:"Customer did not pay"});
+  const first=await notifications.notifyOrderEvents(database.pool,sender,{baseURL:"https://shop.example",settleMs:0});
+  assert.equal(first.sent,4,sent.join("\n---\n"));
+  const [placed,paid,placedB,cancelled]=sent;
+  assert.match(placed,new RegExp(`New order ${a.orderNumber}`));
+  assert.match(placed,/Manual fixture \d+ × 1/); assert.match(placed,/Total: [\d ]+ KZT/); assert.match(placed,/\+77010000004/); assert.match(placed,/Almaty/);
+  assert.match(placed,/https:\/\/shop\.example\/admin\/orders/);
+  assert.match(paid,new RegExp(`Paid ${a.orderNumber}`));
+  assert.match(placedB,new RegExp(`New order ${b.orderNumber}`)); assert.match(placedB,/× 2/);
+  assert.match(cancelled,new RegExp(`Cancelled ${b.orderNumber}`));
+  const idle=await notifications.notifyOrderEvents(database.pool,sender,{baseURL:"https://shop.example",settleMs:0});
+  assert.deepEqual(idle,{initialized:false,sent:0},sent.slice(4).join("\n---\n"));
+  // A failed send keeps the event; the next run delivers it once.
+  const c=await manualOrder([[p.variant,1]]);
+  await assert.rejects(notifications.notifyOrderEvents(database.pool,{send:async()=>{throw new Error("telegram down");}},{baseURL:"https://shop.example",settleMs:0}),/Telegram/);
+  const again=await notifications.notifyOrderEvents(database.pool,sender,{baseURL:"https://shop.example",settleMs:0});
+  assert.equal(again.sent,1); assert.match(sent.at(-1),new RegExp(`New order ${c.orderNumber}`));
+});
+
+test("Task 24: the Telegram job is scheduled only when the bot token and chat id are both set",async()=>{
+  const {jobSchedules,jobHandlers}=await import("../../src/server/operations/registry.ts");
+  const {ORDER_NOTIFY_KIND,telegramSender}=await import("../../src/server/operations/order-notifications.ts");
+  assert.equal(jobSchedules({}).some(s=>s.kind===ORDER_NOTIFY_KIND),false);
+  assert.equal(jobSchedules({TELEGRAM_BOT_TOKEN:"1:x"}).some(s=>s.kind===ORDER_NOTIFY_KIND),false);
+  assert.deepEqual(jobSchedules({TELEGRAM_BOT_TOKEN:"1:x",TELEGRAM_CHAT_ID:"-100123"}).find(s=>s.kind===ORDER_NOTIFY_KIND),{kind:ORDER_NOTIFY_KIND,everyMs:30000});
+  assert.equal(typeof jobHandlers[ORDER_NOTIFY_KIND],"function");
+  const calls=[];
+  const sender=telegramSender({token:"1:x",chatId:"-100123",fetch:async(url,init)=>{calls.push([url,JSON.parse(init.body)]);return new Response(JSON.stringify({ok:true}),{status:200});}});
+  await sender.send("hello");
+  assert.deepEqual(calls,[["https://api.telegram.org/bot1:x/sendMessage",{chat_id:"-100123",text:"hello",disable_web_page_preview:true}]]);
+  const failing=telegramSender({token:"1:x",chatId:"-100123",fetch:async()=>new Response(JSON.stringify({ok:false,description:"chat not found"}),{status:400})});
+  await assert.rejects(failing.send("x"),error=>/Telegram send failed: 400/.test(error.message)&&!error.message.includes("1:x"));
+});

@@ -1,5 +1,5 @@
 {
-  "emailDomain": "SET-THE-STORE-DOMAIN",
+  "emailDomain": "garmin.kz",
   "accounts": [
     { "role": "super_admin", "name": "Store administrator", "login": "admin" },
     { "role": "owner", "name": "Store owner", "login": "owner" },

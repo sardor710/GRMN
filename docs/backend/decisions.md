@@ -93,15 +93,22 @@ Owner decision: orders are accepted before a real payment provider exists, and *
 | Banners | **Keep all 4.** Two images are missing from the repository and the announcement says "$150"; staff set the images and the KZT delivery text before publishing (imports are drafts) | rule `keep-banners` |
 | Blogs | **Keep the 12** (asked 2026-11-19). Their `publishedAt` is a display date ("July 8, 2026"), kept as legacy text | rule `keep-blogs` |
 | Promo codes | **Drop the 4** (asked 2026-11-19; they were USD rules of the old store) | rule `remove-promo-codes` |
-| Tax | Prices **include VAT**. Rate recorded as **16%** (the Kazakhstan rate from 2026-01-01; the owner said "includes VAT" without a number, so confirm). Inclusive VAT never changes what the customer pays, only the VAT line on receipts | `deploy/store-config.json` |
+| Tax | Prices **include VAT at 16%** (owner confirmed 2026-11-19). Inclusive VAT never changes what the customer pays, only the VAT line on receipts | `deploy/store-config.json` |
 | Delivery | **1,500 KZT below 30,000 KZT of goods; free from 30,000 KZT** (exactly 30,000 is free) | `deploy/store-config.json` |
 | Backups | **Daily base backup** (21:30 UTC), continuous WAL archive, media backup, 14-day pruning. No off-site target yet | `deploy/cron/grmn.cron`, `deploy/ops/scheduled.sh` |
-| Alerts | **Telegram, set up later** by the owner (system health and orders). `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` stay empty; alerts are logged until then. Order notifications are not built | `deploy/ops/notify.sh`, `deploy/env.example` |
+| Alerts and order notifications | **Telegram** bot `@Garminkzbot`, supergroup "Garmin orders" (chat id `-1003759758706`; the owner gave 3759758706, and supergroup ids carry the `-100` prefix). System alerts come from `notify.sh`. **Order notifications** cover placed, paid, cancelled, expired, shipped, delivered and refunded orders, sent by the worker job `notifications.orders.telegram` every 30 s. The token lives only in the private production env file | `deploy/ops/notify.sh`, `src/server/operations/order-notifications.ts`, migration 0018 |
 | Staff | **4 accounts**, handed out by the owner: super_admin, owner (confirms payments, ships), product_manager, support (asked 2026-11-19). Each enrolls MFA at first sign-in | `deploy/staff-accounts.json`, `npm run ops:staff-setup` |
 | Legacy live site | **None.** There is nothing to freeze; the cutover has no A1 freeze step | runbook |
 | SMS | Connected later. At launch customers check out as guests; phone sign-in waits for the provider | — |
 
-Still open: the domain (TLS and the staff email domain), the payment instructions text (a neutral placeholder is configured), the VAT rate confirmation, the store name (configured as "GRMN"), the off-site backup target, and the explicit production go.
+**Owner, 2026-11-19 (second message):**
+- **Domain** `garmin.kz`; staff emails are `<role>@garmin.kz`.
+- **Payment instructions:** written by Claude at the owner's request, in Russian, Kazakh and English: Kaspi transfer or Kaspi QR, the manager calls with the details, the order number goes in the comment, 48-hour hold.
+- **Go given.**
+- **Prepare, don't switch:** production is set up on the VPS, closed and local-only. **DNS is not changed:** garmin.kz still points at 109.233.109.114, the current megagroup.kz store of Bassar Electronics.
+- **Odoo is not touched:** odoo-nginx holds ports 80/443 on this VPS, so the public front door for garmin.kz is still open (another IP or server, or a later decision).
+
+Still open: the DNS switch and the front door, a real TLS certificate (issued once DNS points at the store), the off-site backup target, and the SMS provider.
 
 ## Manual USD display conversion contract
 

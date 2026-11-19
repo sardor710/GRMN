@@ -58,6 +58,9 @@ services:
       <<: *app
       DATABASE_POOL_MAX: "6"
       WORKER_ID: ${WORKER_ID:-worker-1}
+      # Task 24: order notifications to the owner's Telegram group (off while either is empty).
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
     volumes: [media:/media]
     depends_on: {db: {condition: service_healthy}}
     restart: unless-stopped

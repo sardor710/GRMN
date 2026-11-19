@@ -82,6 +82,13 @@ export const migrationIssues = pgTable("migration_issues", {
 
 // Task 21A: shared fixed-window rate-limit counters, so every application instance enforces one
 // budget. The key is a hash of scope and identifier (never a raw IP or token).
+// Task 24: per-channel cursor over order_events for outbound notifications (Telegram). The job sends
+// events strictly after (last_recorded_at, last_event_id) and advances the cursor after each send.
+export const notificationCursors = pgTable("notification_cursors", {
+  channel: text("channel").primaryKey(), lastRecordedAt: time("last_recorded_at").notNull(),
+  lastEventId: uuid("last_event_id").notNull().default(sql`'00000000-0000-0000-0000-000000000000'::uuid`), updatedAt: time("updated_at").notNull().defaultNow(),
+}, t => [check("notification_cursors_channel_valid", sql`${t.channel} ~ '^[a-z][a-z0-9_.-]{0,62}$'`)]);
+
 export const rateLimitBuckets = pgTable("rate_limit_buckets", {
   bucketKey: text("bucket_key").notNull(), windowStart: time("window_start").notNull(), hits: integer("hits").notNull().default(0),
 }, t => [primaryKey({ columns: [t.bucketKey, t.windowStart] }), index("rate_limit_buckets_window_idx").on(t.windowStart),

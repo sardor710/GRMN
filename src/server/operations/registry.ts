@@ -10,6 +10,7 @@ import { CONTENT_INVALIDATE_KIND } from "../content/publishing.ts";
 import { cleanupOrphanMedia } from "../content/media.ts";
 import { EXPORT_EXPIRE_KIND, EXPORT_GENERATE_KIND, expireExports, generateExport } from "../reports/exports.ts";
 import { pruneRateLimits } from "./rate-limit.ts";
+import { ORDER_NOTIFY_KIND, notifyOrderEvents, telegramConfig, telegramSender } from "./order-notifications.ts";
 import path from "node:path";
 import { JobError } from "./outbox.ts";
 import type { ClaimedJob, JobHandler, JobHandlers } from "./outbox.ts";
@@ -131,6 +132,14 @@ const sweepExports: JobHandler = async (_job, ctx) => {
 export const RATE_LIMIT_PRUNE_KIND = "operations.rate_limits.prune";
 const pruneLimits: JobHandler = async (_job, ctx) => { await pruneRateLimits(ctx.pool); await ctx.complete(); };
 
+// Task 24: order events to the owner's Telegram group (scheduled only when configured).
+const notifyOrders: JobHandler = async (_job, ctx) => {
+  const config = telegramConfig(process.env);
+  if (config) await notifyOrderEvents(ctx.pool, telegramSender(config), { baseURL: process.env.AUTH_BASE_URL ? new URL(process.env.AUTH_BASE_URL).origin : undefined });
+  await ctx.complete();
+};
+
+export { ORDER_NOTIFY_KIND };
 export { PAYMENT_INBOX_KIND, CONTENT_INVALIDATE_KIND, EXPORT_EXPIRE_KIND, EXPORT_GENERATE_KIND };
 export const jobHandlers: JobHandlers = {
   [RESERVATION_EXPIRY_KIND]: expireReservations,
@@ -145,6 +154,7 @@ export const jobHandlers: JobHandlers = {
   [EXPORT_GENERATE_KIND]: buildExport,
   [EXPORT_EXPIRE_KIND]: sweepExports,
   [RATE_LIMIT_PRUNE_KIND]: pruneLimits,
+  [ORDER_NOTIFY_KIND]: notifyOrders,
 };
 
 /**
@@ -155,5 +165,6 @@ export function jobSchedules(env: Readonly<Record<string, string | undefined>>):
   const raw = env.RESERVATION_EXPIRY_INTERVAL_MS;
   const everyMs = raw === undefined ? 30_000 : /^\d+$/.test(raw) ? Number(raw) : NaN;
   if (!Number.isSafeInteger(everyMs) || everyMs < 1000 || everyMs > 60_000) throw new Error("Missing or invalid worker configuration: RESERVATION_EXPIRY_INTERVAL_MS");
-  return [{ kind: RESERVATION_EXPIRY_KIND, everyMs }, { kind: COUPON_EXPIRY_KIND, everyMs }, { kind: ORDER_EXPIRY_KIND, everyMs }, { kind: PAYMENT_RECONCILE_KIND, everyMs: 60_000 }, { kind: REFUND_PROCESS_KIND, everyMs: 60_000 }, { kind: MEDIA_CLEANUP_KIND, everyMs: 3_600_000 }, { kind: EXPORT_EXPIRE_KIND, everyMs: 3_600_000 }, { kind: RATE_LIMIT_PRUNE_KIND, everyMs: 3_600_000 }];
+  return [{ kind: RESERVATION_EXPIRY_KIND, everyMs }, { kind: COUPON_EXPIRY_KIND, everyMs }, { kind: ORDER_EXPIRY_KIND, everyMs }, { kind: PAYMENT_RECONCILE_KIND, everyMs: 60_000 }, { kind: REFUND_PROCESS_KIND, everyMs: 60_000 }, { kind: MEDIA_CLEANUP_KIND, everyMs: 3_600_000 }, { kind: EXPORT_EXPIRE_KIND, everyMs: 3_600_000 }, { kind: RATE_LIMIT_PRUNE_KIND, everyMs: 3_600_000 },
+    ...(telegramConfig(env) ? [{ kind: ORDER_NOTIFY_KIND, everyMs: 30_000 }] : [])];
 }
