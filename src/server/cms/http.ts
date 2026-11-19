@@ -11,7 +11,8 @@ import { requestURL } from "../auth/request-url.ts";
 const readPermissions:Record<CMSResource|"homepage",Permission>={products:"catalog:read",blogs:"content:write",banners:"content:write",clients:"customers:read",homepage:"content:write"};
 const writePermissions:typeof readPermissions={...readPermissions,products:"catalog:write",clients:"customers:write"};
 // Task 24: SEO patches may carry ru/kk overlays (merged per locale with the stored translations).
-const patchSchema=z.object({id:z.string().min(1).max(128),version:z.number().int().positive(),...Object.fromEntries(Object.entries(productInput.shape).filter(([key])=>["seoTitle","seoDescription","focusKeywords","canonicalUrl","noIndex","ogImage","translations"].includes(key)))}).strict().refine(value=>Object.keys(value).length>2);
+const patchSchema=z.object({id:z.string().min(1).max(128),version:z.number().int().positive(),...Object.fromEntries(Object.entries(productInput.shape).filter(([key])=>["seoTitle","seoDescription","focusKeywords","canonicalUrl","noIndex","ogImage","translations"].includes(key))),status:z.enum(["published","draft","archived"]).optional()}).strict().refine(value=>Object.keys(value).length>2);
+const bulkSchema=z.object({action:z.enum(["publish","draft","archive","delete"]),items:z.array(z.object({id:z.string().min(1).max(128),version:z.number().int().positive()}).strict()).min(1).max(100)}).strict();
 const bad=():never=>{throw new AuthFailure("INVALID_INPUT",400,"Invalid or unknown fields");};
 function parsed<T>(schema:z.ZodType<T>,value:unknown):T{const result=schema.safeParse(value);if(!result.success)return bad();return result.data;}
 function queries(url:URL,allowed:readonly string[]):Record<string,string>{
@@ -40,14 +41,20 @@ export function createCMSHTTP(input:{cms:CMSService;authorize:(headers:Headers,p
       }
       queries(url,[]);
       // garmin.com imports (overview, up to 300 photos, all variants) exceed 128 KB, like the legacy route.
+      const bulk=resource==="products"&&request.method==="POST"&&url.pathname==="/api/admin/products/bulk";
       const raw=await readAdminJSON(request,true,resource==="products"?1048576:131072);
       if(resource==="homepage"){
         if(request.method==="POST"){const data=parsed(z.object({action:z.literal("reset"),version:z.number().int().nonnegative()}).strict(),raw);const saved=await input.cms.saveHomepage(request.headers,{version:data.version,config:input.defaults()});return adminJSON({success:true,config:saved.config,version:saved.version});}
         if(request.method!=="PUT")return bad();const saved=await input.cms.saveHomepage(request.headers,raw);return adminJSON({success:true,config:saved.config,version:saved.version});
       }
+      if(bulk)return adminJSON(await input.cms.bulkProducts(request.headers,parsed(bulkSchema,raw)));
       let command:unknown=raw;
       if(request.method==="PATCH"&&(resource==="products"||resource==="blogs")){
-        const patch=parsed(patchSchema,raw),current=await input.cms.get(resource,request.headers,patch.id);
+        const patch=parsed(patchSchema,raw);
+        if(patch.status!==undefined&&resource!=="products")return bad();
+        // Status-only patch (list dropdown): no merge with the stored document.
+        if(patch.status!==undefined&&Object.keys(patch).length===3)return adminJSON(await input.cms.setProductStatus(request.headers,{id:patch.id,version:patch.version,status:patch.status}));
+        const current=await input.cms.get(resource,request.headers,patch.id);
         const keys=Object.keys(resource==="products"?productInput.shape:blogInput.shape);
         command={...Object.fromEntries(keys.filter(key=>Object.hasOwn(current,key)).map(key=>[key,current[key]])),...patch};
       }else if(request.method!=="POST")return bad();

@@ -7,7 +7,6 @@ import {
   Plus,
   Search,
   Trash2,
-  Edit,
   Tag,
   Boxes,
   FileText,
@@ -34,8 +33,17 @@ import type {
 import { AdminModal } from "@/components/admin/AdminModal";
 import { AdminPageControls } from "@/components/admin/AdminPageControls";
 import { useAdminCollection } from "@/hooks/useAdminCollection";
-import { archiveAdminRecord } from "@/lib/admin-collection";
 import { GarminBadge } from "@/components/GarminBadge";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  BulkActionBar,
+  BulkResultMessage,
+  bulkReason,
+  type BulkOutcome,
+  type BulkProductAction,
+  type BulkResult,
+} from "@/components/admin/products/BulkActionBar";
+import { StatusMenu, statusPillClass } from "@/components/admin/products/StatusMenu";
 import { SEOEditor } from "@/components/admin/SEOEditor";
 import {
   GarminImportDialog,
@@ -184,7 +192,17 @@ const withCurrent = (list: string[], current: string) => (current && !list.inclu
 const defaultImageSrc = (images: ProductImage[], defaultImageId: string) =>
   (images.find((i) => i.id === defaultImageId) || images[0])?.src || "";
 
-/** Legacy JSON CMS product editor (options, variants, photos, garmin.com import). PostgreSQL mode uses PostgresProductsScreen. */
+/** Products listed by the admin API; PostgreSQL rows carry the optimistic-concurrency version. */
+type ListedProduct = CMSProduct & { version?: number };
+/** `version` is dropped after a version conflict so it is re-read from the list before the next send. */
+type SelectedProduct = { version?: number; name: string };
+/** The bulk endpoint accepts at most this many products per request. */
+const BULK_LIMIT = 100;
+
+/**
+ * Product list and editor (options, variants, photos, garmin.com import) for both stores.
+ * Selection, the bulk bar and the inline status menu need PostgreSQL and are hidden in legacy JSON mode.
+ */
 export default function AdminProductsPage() {
   const [search, setSearch] = useState("");
   const [familyFilter, setFamilyFilter] = useState("all");
@@ -192,6 +210,10 @@ export default function AdminProductsPage() {
   // Server-side filtered, paginated list (shared admin API).
   const collection = useAdminCollection<CMSProduct>("products", { search, status: statusFilter, family: familyFilter });
   const { items: products, loading } = collection;
+  // Selected rows by id (kept across pages); the version is re-read from the current page when an action runs.
+  const [selected, setSelected] = useState<Map<string, SelectedProduct>>(() => new Map());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkOutcome, setBulkOutcome] = useState<BulkOutcome | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<CMSProduct | null>(null);
   const [activeTab, setActiveTab] = useState<EditorTab>("general");
@@ -353,34 +375,99 @@ export default function AdminProductsPage() {
     setActiveTab(draft.variants?.length ? "variants" : "general");
   };
 
+  // Selection, bulk actions and the inline status menu use PostgreSQL-only endpoints.
   const postgresStore = collection.backend === "postgres";
-  // PostgreSQL: the trash button archives (hidden from the store, history kept); "Delete permanently"
-  // removes a never-sold product for good. The legacy JSON store deletes directly.
-  const handleDelete = async (id: string) => {
-    if (!confirm(postgresStore ? "Archive this product? It disappears from the store; you can still see it here." : "Permanently delete this product from the catalog? This cannot be undone.")) return;
-    const item = products.find((p) => p.id === id);
-    if (!item) return;
-    try {
-      await archiveAdminRecord(fetch, "products", item);
-      fetchProducts();
-    } catch (error) {
-      collection.setError(error instanceof Error ? error.message : "Delete failed");
-    }
+
+  const clearSelection = () => setSelected(new Map());
+
+  const toggleRow = (p: ListedProduct, checked: boolean) => {
+    setSelected((prev) => {
+      const next = new Map(prev);
+      if (checked && p.version !== undefined) next.set(p.id, { version: p.version, name: p.name });
+      else next.delete(p.id);
+      return next;
+    });
   };
-  const handleDeletePermanently = async (id: string) => {
-    const item = products.find((p) => p.id === id) as (CMSProduct & { version?: number }) | undefined;
-    if (!item || !confirm(`Delete "${item.name}" permanently? Its variants, prices, photos and translations are removed and this cannot be undone. Products that were ordered or received stock cannot be deleted (archive them instead).`)) return;
-    try {
-      const params = new URLSearchParams({ id: item.id, version: String(item.version ?? ""), permanent: "1" });
-      const res = await fetch(`/api/admin/products?${params}`, { method: "DELETE" });
-      if (!res.ok) {
-        const data = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
-        throw new Error(data?.error?.message || "The product could not be deleted. Reload and try again.");
+
+  const pageRows = products as ListedProduct[];
+  const allOnPageSelected = pageRows.length > 0 && pageRows.every((p) => selected.has(p.id));
+  const someOnPageSelected = pageRows.some((p) => selected.has(p.id));
+
+  const toggleAllOnPage = (checked: boolean) => {
+    setSelected((prev) => {
+      const next = new Map(prev);
+      for (const p of pageRows) {
+        if (checked && p.version !== undefined) next.set(p.id, { version: p.version, name: p.name });
+        else next.delete(p.id);
       }
-      fetchProducts();
-    } catch (error) {
-      collection.setError(error instanceof Error ? error.message : "Delete failed");
+      return next;
+    });
+  };
+
+  const runBulk = async (action: BulkProductAction) => {
+    const entries = [...selected];
+    if (entries.length === 0) return;
+    // A row on the current page has the freshest version (e.g. after an inline status change). A row on
+    // another page whose stored version was dropped after a conflict is not sent until it is seen again.
+    const results: BulkResult[] = [];
+    const items: { id: string; version: number }[] = [];
+    for (const [id, s] of entries) {
+      const version = pageRows.find((p) => p.id === id)?.version ?? s.version;
+      if (version === undefined) {
+        results.push({ id, ok: false, code: "STALE_SELECTION", message: "changed elsewhere; open its page to refresh it, then try again" });
+      } else {
+        items.push({ id, version });
+      }
     }
+    setBulkBusy(true);
+    setBulkOutcome(null);
+    let requestError: string | undefined;
+    try {
+      for (let start = 0; start < items.length; start += BULK_LIMIT) {
+        const res = await fetch("/api/admin/products/bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ action, items: items.slice(start, start + BULK_LIMIT) }),
+        });
+        const data = (await res.json().catch(() => null)) as { results?: BulkResult[]; error?: { message?: string } } | null;
+        if (!res.ok || !Array.isArray(data?.results)) {
+          throw new Error(data?.error?.message || `The bulk action failed (HTTP ${res.status}).`);
+        }
+        results.push(...data.results);
+      }
+    } catch (error) {
+      requestError =
+        error instanceof Error && error.message !== "Failed to fetch" ? error.message : "Network error. Reload to see which products changed.";
+    } finally {
+      setBulkBusy(false);
+    }
+    const sent = results.some((r) => r.ok || r.code !== "STALE_SELECTION");
+    if (!sent && requestError) {
+      // Nothing reached the server: no reload, so the page error banner stays visible.
+      collection.setError(requestError);
+      return;
+    }
+    const failed = results.filter((r): r is Extract<BulkResult, { ok: false }> => !r.ok);
+    const done = new Set(results.filter((r) => r.ok).map((r) => r.id));
+    const conflicted = new Set(failed.filter((r) => r.code === "VERSION_CONFLICT").map((r) => r.id));
+    // Only products the server confirmed leave the selection; the rest stay selected to retry or act on.
+    // A version conflict drops the stored version so the row is re-read from the list before it is sent again.
+    setSelected(
+      (prev) =>
+        new Map(
+          [...prev]
+            .filter(([id]) => !done.has(id))
+            .map(([id, s]): [string, SelectedProduct] => [id, conflicted.has(id) ? { name: s.name } : s]),
+        ),
+    );
+    // The error travels in the outcome because the reload below clears the page error banner.
+    setBulkOutcome({
+      updated: done.size,
+      unchanged: failed.length,
+      reasons: failed.map((r) => ({ id: r.id, name: selected.get(r.id)?.name ?? r.id, message: bulkReason(action, r.code, r.message) })),
+      error: requestError,
+    });
+    if (sent) fetchProducts();
   };
 
   const handleCategoryChange = (newCat: string) => {
@@ -530,7 +617,8 @@ export default function AdminProductsPage() {
   const productSkuConflict = skuConflicts.includes(formData.sku.trim().toUpperCase());
 
   // Filtering happens on the server (useAdminCollection).
-  const filteredProducts = products;
+  const filteredProducts = pageRows;
+  const columnCount = postgresStore ? 8 : 7;
 
   const availableSubCategories =
     SUB_CATEGORIES_MAP[formData.category] || ["General"];
@@ -569,7 +657,10 @@ export default function AdminProductsPage() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              clearSelection();
+            }}
             placeholder="Search by model, SKU, or family..."
             className="h-9 w-full border border-neutral-300 bg-neutral-50 pl-9 pr-3 text-[13px] text-black placeholder-neutral-400 focus:border-black focus:bg-white focus:outline-none rounded-none"
           />
@@ -578,7 +669,10 @@ export default function AdminProductsPage() {
         <div className="flex items-center gap-2.5">
           <select
             value={familyFilter}
-            onChange={(e) => setFamilyFilter(e.target.value)}
+            onChange={(e) => {
+              setFamilyFilter(e.target.value);
+              clearSelection();
+            }}
             className="h-9 border border-neutral-300 bg-white px-3 text-[13px] font-medium text-black focus:border-black focus:outline-none rounded-none"
           >
             <option value="all">All Watch Families</option>
@@ -591,7 +685,10 @@ export default function AdminProductsPage() {
 
           <select
             value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              clearSelection();
+            }}
             className="h-9 border border-neutral-300 bg-white px-3 text-[13px] font-medium text-black focus:border-black focus:outline-none rounded-none"
           >
             <option value="all">All Statuses</option>
@@ -602,12 +699,29 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
+      {postgresStore && (
+        <BulkActionBar count={selected.size} busy={bulkBusy} onAction={(action) => void runBulk(action)} onClear={clearSelection} />
+      )}
+      {bulkOutcome && <BulkResultMessage outcome={bulkOutcome} onDismiss={() => setBulkOutcome(null)} />}
+
       {/* Products Table */}
       <div className="border border-neutral-200 bg-white overflow-hidden rounded-none shadow-xs">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[13px]">
             <thead>
               <tr className="border-b border-neutral-200 bg-neutral-50 text-neutral-500 text-[11px] font-heading uppercase tracking-wider">
+                {postgresStore && (
+                  <th className="w-10 py-3 pl-4 pr-0 font-semibold">
+                    <Checkbox
+                      aria-label="Select all products on this page"
+                      checked={allOnPageSelected}
+                      indeterminate={someOnPageSelected && !allOnPageSelected}
+                      disabled={loading || pageRows.length === 0}
+                      onCheckedChange={toggleAllOnPage}
+                      className="rounded-none border-neutral-400 data-checked:border-black data-checked:bg-black data-indeterminate:border-black data-indeterminate:bg-black"
+                    />
+                  </th>
+                )}
                 <th className="py-3 px-4 font-semibold">Product &amp; SKU</th>
                 <th className="py-3 px-4 font-semibold">Hierarchy</th>
                 <th className="py-3 px-4 font-semibold">Price</th>
@@ -615,26 +729,46 @@ export default function AdminProductsPage() {
                 <th className="py-3 px-4 font-semibold">Stock</th>
                 <th className="py-3 px-4 font-semibold">Cross-Sell</th>
                 <th className="py-3 px-4 font-semibold">Status</th>
-                <th className="py-3 px-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100 text-neutral-800">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-neutral-400">
+                  <td colSpan={columnCount} className="py-8 text-center text-neutral-400">
                     Loading products...
                   </td>
                 </tr>
               ) : filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-neutral-400">
+                  <td colSpan={columnCount} className="py-8 text-center text-neutral-400">
                     No products matched your criteria.
                   </td>
                 </tr>
               ) : (
                 filteredProducts.map((p) => (
-                  <tr key={p.id} className="hover:bg-neutral-50/70 transition-colors">
-                    <td className="py-3.5 px-4">
+                  <tr
+                    key={p.id}
+                    data-product-id={p.id}
+                    className={`transition-colors ${selected.has(p.id) ? "bg-neutral-100" : "hover:bg-neutral-50/70"}`}
+                  >
+                    {postgresStore && (
+                      <td className="w-10 py-3.5 pl-4 pr-0">
+                        <Checkbox
+                          aria-label={`Select ${p.name}`}
+                          checked={selected.has(p.id)}
+                          onCheckedChange={(checked) => toggleRow(p, checked)}
+                          className="relative z-10 rounded-none border-neutral-400 data-checked:border-black data-checked:bg-black"
+                        />
+                      </td>
+                    )}
+                    {/* Image, name and SKU open the editor through one focusable overlay button. */}
+                    <td className="group/edit relative py-3.5 px-4">
+                      <button
+                        type="button"
+                        onClick={() => handleOpenEdit(p)}
+                        aria-label={`Edit ${p.name}`}
+                        className="absolute inset-0 z-[1] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black"
+                      />
                       <div className="flex items-center gap-3">
                         <div className="h-11 w-11 relative shrink-0 bg-neutral-50 border border-neutral-200 p-1 flex items-center justify-center overflow-hidden rounded-none">
                           <Image
@@ -646,7 +780,7 @@ export default function AdminProductsPage() {
                           />
                         </div>
                         <div>
-                          <p className="font-medium text-black line-clamp-1">{p.name}</p>
+                          <p className="font-medium text-black line-clamp-1 group-hover/edit:underline underline-offset-2">{p.name}</p>
                           <p className="font-mono text-[11px] text-neutral-500">{p.sku}</p>
                         </div>
                       </div>
@@ -695,47 +829,24 @@ export default function AdminProductsPage() {
                       </span>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span
-                        className={`font-heading uppercase tracking-wider text-[10px] font-bold px-2 py-0.5 rounded-none border ${
-                          p.status === "published"
-                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                            : p.status === "draft"
-                            ? "bg-amber-50 text-amber-800 border-amber-200"
-                            : "bg-neutral-100 text-neutral-600 border-neutral-200"
-                        }`}
-                      >
-                        {p.status}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          type="button"
-                          onClick={() => handleOpenEdit(p)}
-                          className="p-1.5 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded-none transition-colors"
-                          title="Edit Product"
+                      {postgresStore && p.version !== undefined ? (
+                        <div className="relative z-10 inline-flex">
+                          <StatusMenu
+                            id={p.id}
+                            version={p.version}
+                            status={p.status}
+                            name={p.name}
+                            onSaved={() => fetchProducts()}
+                            onError={(message) => collection.setError(message)}
+                          />
+                        </div>
+                      ) : (
+                        <span
+                          className={`font-heading uppercase tracking-wider text-[10px] font-bold px-2 py-0.5 rounded-none border ${statusPillClass(p.status)}`}
                         >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDelete(p.id)}
-                          className="p-1.5 text-neutral-400 hover:text-rose-600 hover:bg-rose-50 rounded-none transition-colors"
-                          title={postgresStore ? "Archive Product" : "Delete Product"}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                        {postgresStore && (
-                          <button
-                            type="button"
-                            onClick={() => handleDeletePermanently(p.id)}
-                            className="px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-rose-600 hover:bg-rose-50 rounded-none transition-colors"
-                            title="Delete Permanently"
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </div>
+                          {p.status}
+                        </span>
+                      )}
                     </td>
                   </tr>
                 ))
