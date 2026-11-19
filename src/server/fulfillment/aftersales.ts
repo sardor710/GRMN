@@ -206,7 +206,8 @@ async function reserveRefund(client: PoolClient, input: { order: OrderRow; captu
 async function settleDemoRefund(client: PoolClient, capture: CaptureRow, orderId: string, refundId: string, amount: bigint, actor: string): Promise<void> {
   if (capture.provider !== "demo") return;
   if (capture.environment !== "demo" || capture.merchant_account !== "demo") fail("PAYMENT_PROVENANCE_INVALID", 409, "A demo capture must stay in the demo environment");
-  await client.query("UPDATE refunds SET status='succeeded',provider_refund_id=$2,version=version+1,updated_at=now() WHERE id=$1 AND status='reserved'", [refundId, demoRefundId(refundId)]);
+  const settled = await client.query("UPDATE refunds SET status='succeeded',provider_refund_id=$2,version=version+1,updated_at=now() WHERE id=$1 AND status='reserved'", [refundId, demoRefundId(refundId)]);
+  if (settled.rowCount !== 1) fail("REFUND_NOT_SETTLED", 409, "The demo refund could not be settled");
   await refreshPayment(client, orderId);
   await orderEvent(client, { orderId, type: "refund.succeeded", actor, dedupeKey: `refund-succeeded:${refundId}`, visibility: "customer", payload: { refundId, amountMinor: amount.toString(), demo: true } });
 }

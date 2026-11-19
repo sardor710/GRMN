@@ -8,7 +8,7 @@ import { enqueueJob } from "../operations/outbox.ts";
 import { PAYMENT_START_KIND } from "../checkout/service.ts";
 import type { PaymentEvent, PaymentProvenance, PaymentProvider, PaymentProviders } from "./provider.ts";
 
-import { createDemoProvider } from "./demo.ts";
+import { createDemoProvider, demoRefundId } from "./demo.ts";
 
 export { createPaymentProviders } from "./provider.ts";
 export { createDemoProvider };
@@ -210,12 +210,31 @@ export async function processInboxEvent(pool: Pool, providers: PaymentProviders,
 // Applying a verified fact
 
 async function requestRefund(client: PoolClient, provider: PaymentProvider, order: OrderRow, transactionId: string, amountMinor: string, reason: string, source: string): Promise<void> {
+  const refundId = randomUUID();
   await client.query(
     `INSERT INTO refunds(id,transaction_id,order_id,provider,environment,merchant_account,idempotency_key,request_hash,amount_minor,status,reason)
      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'reserved',$10)`,
-    [randomUUID(), transactionId, order.id, provider.name, provider.environment, provider.merchantAccount, `refund:${transactionId}`,
+    [refundId, transactionId, order.id, provider.name, provider.environment, provider.merchantAccount, `refund:${transactionId}`,
       sha256(canonical({ transactionId, amountMinor, reason })), amountMinor, reason]);
   await orderEvent(client, order.id, "payment.refund_required", source, `refund-required:${transactionId}`, "internal", { transactionId, amountMinor, reason });
+  if (provider.simulated) await settleSimulatedRefund(client, order.id, refundId, amountMinor, source);
+}
+
+/**
+ * Task 3.2: the refund worker never submits a simulated provider's refund, so a refund that capture()
+ * requests for a demo capture (an allocation exception, a late or duplicate capture) is settled at
+ * once, locally, as staff demo refunds are (aftersales.ts settleDemoRefund). The money "returned" is
+ * that capture's, and such a capture never pays for the order, so when no other capture still pays
+ * for it the order's payment summary becomes refunded.
+ */
+async function settleSimulatedRefund(client: PoolClient, orderId: string, refundId: string, amountMinor: string, source: string): Promise<void> {
+  const settled = await client.query("UPDATE refunds SET status='succeeded',provider_refund_id=$2,version=version+1,updated_at=now() WHERE id=$1 AND status='reserved' AND provider='demo' AND environment='demo' AND merchant_account='demo'", [refundId, demoRefundId(refundId)]);
+  if (settled.rowCount !== 1) fail("REFUND_NOT_SETTLED", 409, "The demo refund could not be settled");
+  await client.query(
+    `UPDATE orders o SET payment_status='refunded',version=version+1,updated_at=clock_timestamp() WHERE o.id=$1 AND o.payment_status IN ('paid','partially_refunded')
+       AND NOT EXISTS (SELECT 1 FROM payment_transactions t WHERE t.order_id=o.id AND t.kind='capture'
+         AND NOT EXISTS (SELECT 1 FROM refunds r WHERE r.order_id=t.order_id AND r.idempotency_key='refund:'||t.id::text))`, [orderId]);
+  await orderEvent(client, orderId, "refund.succeeded", source, `refund-succeeded:${refundId}`, "customer", { refundId, amountMinor, demo: true });
 }
 
 /**
@@ -441,7 +460,7 @@ const DEMO_PROVIDER = createDemoProvider();
  */
 export async function confirmDemoCapture(pool: Pool, input: { orderId: string; attemptId: string }): Promise<{ orderId: string; paymentStatus: "paid" }> {
   if (!UUID.test(input.orderId) || !UUID.test(input.attemptId)) notFound();
-  return withInventoryTransaction(pool, async client => {
+  const state = await withInventoryTransaction(pool, async client => {
     const order = await lockOrder(client, input.orderId);
     const row = (await client.query<AttemptRow>(`SELECT ${ATTEMPT_COLUMNS} FROM payment_attempts WHERE id=$1 AND order_id=$2 FOR UPDATE`, [input.attemptId, order.id])).rows[0] ?? notFound();
     const mode = (await client.query<{ payment_mode: string }>("SELECT payment_mode FROM orders WHERE id=$1", [order.id])).rows[0].payment_mode;
@@ -461,10 +480,13 @@ export async function confirmDemoCapture(pool: Pool, input: { orderId: string; a
       const inserted = await recordTransaction(client, DEMO_PROVIDER, order, row, event, "capture", row.amount_minor, "checkout", { demo: true });
       if (inserted) await capture(client, DEMO_PROVIDER, order, row, inserted, "checkout");
     }
-    const status = (await client.query<{ payment_status: string }>("SELECT payment_status FROM orders WHERE id=$1", [order.id])).rows[0].payment_status;
-    if (!PAID.has(status)) fail("ORDER_NOT_PAYABLE", 409, "This demo order could not be captured");
-    return { orderId: order.id, paymentStatus: "paid" as const };
+    return (await client.query<{ order_status: string; payment_status: string }>("SELECT order_status,payment_status FROM orders WHERE id=$1", [order.id])).rows[0];
   });
+  // Decided after commit: capture() may have recorded the fact and then cancelled the order (no stock
+  // left to allocate; its demo refund is already settled). That outcome must persist, and it is not paid.
+  if (state.order_status !== "confirmed" || !PAID.has(state.payment_status))
+    fail("DEMO_CAPTURE_NOT_PAID", 409, "The demo payment was taken back: the order could not be allocated and was cancelled");
+  return { orderId: input.orderId, paymentStatus: "paid" };
 }
 
 // ---------------------------------------------------------------------------------------------

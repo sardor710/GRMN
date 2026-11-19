@@ -171,6 +171,20 @@ test("unpaid, legacy summary, exception and cancel-requested orders cannot ship"
   // Even an order whose status was forced to paid has no capture fact and cannot ship.
   await q("UPDATE orders SET order_status='confirmed',payment_status='paid' WHERE id=$1",[unpaid.orderId]);
   await rejectsWith(ship(unpaid.orderId,[{orderItemId:unpaidItem,quantity:1}]),409,"ORDER_NOT_PAID");
+  // The same holds for demo, now that captured demo orders ship: a demo order whose capture never
+  // happened (the capture insert fails here), forced to paid, has no capture fact and cannot ship.
+  const demoBuyer=await owner(),demoQuote=await quoted(demoBuyer.headers,[[p.variant,1]]);
+  await q(`CREATE FUNCTION test_fail_demo_capture() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.provider='demo' THEN RAISE EXCEPTION 'injected demo capture failure' USING ERRCODE='P0001'; END IF; RETURN NEW; END; $$`);
+  await q("CREATE TRIGGER test_fail_demo_capture BEFORE INSERT ON payment_transactions FOR EACH ROW EXECUTE FUNCTION test_fail_demo_capture()");
+  let uncaptured;
+  try{uncaptured=await carts.checkout(demoBuyer.headers,key(),{quoteId:demoQuote.id,cartVersion:demoQuote.cartVersion,paymentMethod:"demo"});}
+  finally{await q("DROP TRIGGER test_fail_demo_capture ON payment_transactions");await q("DROP FUNCTION test_fail_demo_capture()");}
+  assert.deepEqual([uncaptured.status,uncaptured.paymentMode],["pending_payment","demo"]);
+  const uncapturedItem=(await q("SELECT id FROM order_items WHERE order_id=$1",[uncaptured.orderId])).rows[0].id;
+  await rejectsWith(ship(uncaptured.orderId,[{orderItemId:uncapturedItem,quantity:1}]),409,"ORDER_NOT_PAID");
+  await q("UPDATE orders SET order_status='confirmed',payment_status='paid' WHERE id=$1",[uncaptured.orderId]);
+  assert.equal((await q("SELECT count(*)::int AS n FROM payment_transactions WHERE order_id=$1",[uncaptured.orderId])).rows[0].n,0,"no capture fact");
+  await rejectsWith(ship(uncaptured.orderId,[{orderItemId:uncapturedItem,quantity:1}]),409,"ORDER_NOT_PAID");
   // Legacy summary order: flagged and no item operations.
   const legacyId=randomUUID(),client=await database.pool.connect();
   try{await client.query("BEGIN");await client.query("INSERT INTO orders(id,contact_name,data_quality,total_minor,payment_mode,order_status,payment_status) VALUES($1,'Legacy buyer','legacy_incomplete',5000,'legacy_unknown','confirmed','paid')",[legacyId]);await client.query("COMMIT");}catch(error){await client.query("ROLLBACK");throw error;}finally{client.release();}

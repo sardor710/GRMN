@@ -279,7 +279,15 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
   const demoAttempt = (await pool.query<{ id: string }>(
     "SELECT id FROM payment_attempts WHERE order_id=$1 AND provider='demo' AND environment='demo' AND merchant_account='demo' ORDER BY created_at,id LIMIT 1", [placed.orderId])).rows[0];
   if (!demoAttempt) return placed;
-  await confirmDemoCapture(pool, { orderId: placed.orderId, attemptId: demoAttempt.id });
+  try {
+    await confirmDemoCapture(pool, { orderId: placed.orderId, attemptId: demoAttempt.id });
+  } catch (error) {
+    // The order is committed and its key completed, so the shopper still gets their order. It stays
+    // pending_payment (demo); a same-key retry captures it once, and if nobody retries, the unpaid-order
+    // sweep cancels it when its hold ends and releases the stock. Only the order id and code are logged.
+    const code = (error as { code?: unknown } | null)?.code;
+    console.error("Demo capture failed after checkout", placed.orderId, typeof code === "string" ? code : "UNKNOWN");
+  }
   return result(pool, secret, scope, placed.orderId, placed.replayed);
 }
 

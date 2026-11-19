@@ -45,6 +45,17 @@ A demo order now:
 - **Exactly once.** The capture's external id is `demo-capture:<paymentAttemptId>` and the checkout key
   replays the same order, so a retry, a double click or a crash between commit and capture records one
   capture and consumes stock once.
+- **A failed capture never loses the order.** The capture runs after the checkout commits (the deferred
+  seal check fires at commit). If it fails, checkout logs the order id and error code and still returns the
+  order, `pending_payment` and demo, instead of an error. The order is recovered in one of two ways:
+  - a same-key retry replays it and captures it once;
+  - if nobody retries, the unpaid-order sweep cancels it when its stock hold ends, cancels the attempt and
+    releases the stock (`order.expired`). A later retry then replays the cancelled order and never captures.
+- **Not paid when nothing can ship.** If a demo capture finds its hold ended and no stock left, `capture()`
+  records the fact, cancels the order as a fulfilment exception and requests a refund, as for real money.
+  For demo that refund is settled at once with a `demo-refund:<id>` reference, because the refund worker
+  never submits simulated providers. The order ends `cancelled/refunded/exception`, and
+  `confirmDemoCapture` answers `DEMO_CAPTURE_NOT_PAID` (409) rather than reporting `paid`.
 - **Only demo orders.** `confirmDemoCapture` refuses anything but a demo order's own demo attempt
   (`PAYMENT_NOT_DEMO`, 409), and only while the order still awaits payment for exactly its total. The
   database guard (`payments_guard_attempt`, replaced in 0021) still ties a demo attempt to a demo order and
@@ -56,6 +67,15 @@ A demo order now:
 
 ## Tests
 
-`tests/integration/demo-checkout.test.mjs`: the setting (Task 3.1) and the four Task 3.2 cases (paid and
-stock consumed, one capture on a repeated attempt, shipped/delivered/refunded, demo refunds never reach a live
-provider and stay out of the revenue report).
+`tests/integration/demo-checkout.test.mjs` covers:
+
+- the setting (Task 3.1);
+- the four Task 3.2 cases: paid with stock consumed; one capture on a repeated attempt; shipped, delivered and
+  refunded; demo refunds never reach a live provider and stay out of the revenue report;
+- the recovery paths: a capture that fails after commit still returns the order, its demo session starts with
+  demo provenance, and a same-key retry captures it once; an unpaid demo order is cancelled by the sweep with
+  its stock released; a capture with no stock left is cancelled, its demo refund settled, and it is not
+  reported paid.
+
+`tests/integration/fulfillment.test.mjs` pins that a demo order with no capture fact, even forced to paid,
+cannot ship.

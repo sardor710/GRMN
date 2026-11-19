@@ -307,3 +307,108 @@ test("demo refund writes provider demo and never touches a live provider",async(
   const summary=await reports.summary(as("reader"),{from:today(),to:today(),timeZone:"UTC"});
   assert.ok(summary.totals.every(row=>row.environment!=="demo"));
 });
+
+// Task 3.2 fix round 1: the recovery paths. The demo capture runs after the checkout commits, so a
+// failure there must leave a usable order: pending_payment (demo), recoverable by a same-key retry
+// (captured once) or, if nobody retries, cancelled by the unpaid-order sweep with its stock released.
+
+/** Runs `work` while every demo capture insert fails, as a crash between commit and capture would. */
+async function withDemoCaptureFailing(work){
+  await q(`CREATE FUNCTION test_fail_demo_capture() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.provider='demo' THEN RAISE EXCEPTION 'injected demo capture failure' USING ERRCODE='P0001'; END IF; RETURN NEW; END; $$`);
+  await q("CREATE TRIGGER test_fail_demo_capture BEFORE INSERT ON payment_transactions FOR EACH ROW EXECUTE FUNCTION test_fail_demo_capture()");
+  try{return await work();}
+  finally{await q("DROP TRIGGER test_fail_demo_capture ON payment_transactions");await q("DROP FUNCTION test_fail_demo_capture()");}
+}
+const demoAttemptOf=async orderId=>(await q("SELECT id,status,provider_session_id FROM payment_attempts WHERE order_id=$1",[orderId])).rows[0];
+const LATER=()=>new Date(Date.now()+2*60*60*1000);
+
+test("a demo capture that fails after checkout still returns the order, and a same-key retry captures it once",async()=>{
+  await setDemo(true);
+  const who=await buyer(),p=await product({stock:5}),quote=await quoted(who.headers,[[p.variant,2]]);
+  const idem=key(),input={quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"},actor={userId:who.id,guestTokenHash:null};
+  const placed=await withDemoCaptureFailing(()=>checkout.placeOrder(database.pool,secret,actor,idem,input));
+  // The shopper gets their order back, not an error: pending, demo, nothing captured, stock still held.
+  assert.deepEqual([placed.status,placed.paymentMode,placed.replayed],["pending_payment","demo",false]);
+  assert.deepEqual((await orderRow(placed.orderId)).payment_status,"unpaid");
+  assert.equal((await captures(placed.orderId)).length,0);
+  assert.deepEqual(await balance(p.variant),{on_hand:5,reserved:2});
+  // The order.placed job still opens the demo session with demo provenance, once.
+  const attempt=await demoAttemptOf(placed.orderId);
+  const providers=payments.createPaymentProviders([payments.createDemoProvider()]);
+  assert.equal((await payments.startPaymentSession(database.pool,providers,attempt.id)).status,"started");
+  assert.equal((await payments.startPaymentSession(database.pool,providers,attempt.id)).status,"skipped");
+  const started=(await q("SELECT payload FROM order_events WHERE order_id=$1 AND type='payment.session_started'",[placed.orderId])).rows;
+  assert.equal(started.length,1,"a repeated job starts no second session");
+  assert.deepEqual(started[0].payload.provenance,{provider:"demo",environment:"demo",merchantAccount:"demo",simulated:true});
+  // The retry (and a double click racing it) replays the key and captures exactly once.
+  const retried=await Promise.all([0,1].map(()=>checkout.placeOrder(database.pool,secret,actor,idem,input)));
+  for(const result of retried)assert.deepEqual([result.orderId,result.replayed,result.status,result.paymentState],[placed.orderId,true,"confirmed","simulated"]);
+  const again=await checkout.placeOrder(database.pool,secret,actor,idem,input);
+  assert.equal(again.status,"confirmed");
+  assert.equal((await captures(placed.orderId)).length,1,"one capture fact");
+  assert.deepEqual(await balance(p.variant),{on_hand:3,reserved:0},"stock consumed once");
+  assert.equal(await count("SELECT count(*)::int AS n FROM order_events WHERE order_id=$1 AND type='order.paid'",[placed.orderId]),1);
+  assert.equal((await demoAttemptOf(placed.orderId)).status,"captured");
+});
+
+test("a demo order left unpaid is cancelled by the unpaid-order sweep and its stock is released",async()=>{
+  await setDemo(true);
+  const who=await buyer(),p=await product({stock:5}),quote=await quoted(who.headers,[[p.variant,1]]);
+  const idem=key(),input={quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"},actor={userId:who.id,guestTokenHash:null};
+  const placed=await withDemoCaptureFailing(()=>checkout.placeOrder(database.pool,secret,actor,idem,input));
+  assert.equal(placed.status,"pending_payment");
+  assert.deepEqual(await balance(p.variant),{on_hand:5,reserved:1});
+  assert.equal((await payments.expireUnpaidOrders(database.pool,{limit:50})).failed,0);
+  assert.equal((await orderRow(placed.orderId)).order_status,"pending_payment","nothing expires before the hold does");
+  await payments.expireUnpaidOrders(database.pool,{asOf:LATER(),limit:50});
+  const order=await orderRow(placed.orderId);
+  assert.deepEqual([order.order_status,order.payment_status,order.payment_mode],["cancelled","unpaid","demo"]);
+  assert.equal((await demoAttemptOf(placed.orderId)).status,"cancelled");
+  assert.equal((await q("SELECT status FROM inventory_reservations WHERE order_id=$1",[placed.orderId])).rows[0].status,"expired");
+  assert.deepEqual(await balance(p.variant),{on_hand:5,reserved:0});
+  assert.equal(await count("SELECT count(*)::int AS n FROM order_events WHERE order_id=$1 AND type='order.expired' AND visibility='customer'",[placed.orderId]),1);
+  // A late retry of the same key replays the cancelled order and never captures it.
+  const late=await checkout.placeOrder(database.pool,secret,actor,idem,input);
+  assert.deepEqual([late.orderId,late.replayed,late.status],[placed.orderId,true,"cancelled"]);
+  assert.equal((await captures(placed.orderId)).length,0);
+  assert.deepEqual(await balance(p.variant),{on_hand:5,reserved:0});
+});
+
+test("a demo capture that finds no stock cancels the order, settles its demo refund and is not reported paid",async()=>{
+  await setDemo(true);
+  const spy=liveSpy(),providers=payments.createPaymentProviders([payments.createDemoProvider(),spy.provider]);
+  const inventory=await import("../../src/server/inventory/reservations.ts");
+  const p=await product({stock:1});
+  // A's capture fails after checkout, then its hold ends and B buys the last unit.
+  const a=await buyer(),aQuote=await quoted(a.headers,[[p.variant,1]]);
+  const idem=key(),input={quoteId:aQuote.id,cartVersion:aQuote.cartVersion,paymentMethod:"demo"},actor={userId:a.id,guestTokenHash:null};
+  const placed=await withDemoCaptureFailing(()=>checkout.placeOrder(database.pool,secret,actor,idem,input));
+  const hold=(await q("SELECT id FROM inventory_reservations WHERE order_id=$1",[placed.orderId])).rows[0].id;
+  await inventory.withInventoryTransaction(database.pool,client=>inventory.expireReservation(client,{reservationId:hold,asOf:LATER()}));
+  const b=await buyer(),bQuote=await quoted(b.headers,[[p.variant,1]]);
+  assert.equal((await place(b,bQuote,"demo")).status,"confirmed");
+  assert.deepEqual(await balance(p.variant),{on_hand:0,reserved:0});
+  // A's capture is recorded, but nothing can be allocated: never reported as paid.
+  const attempt=await demoAttemptOf(placed.orderId);
+  await rejectsWith(payments.confirmDemoCapture(database.pool,{orderId:placed.orderId,attemptId:attempt.id}),409,"DEMO_CAPTURE_NOT_PAID");
+  const order=await orderRow(placed.orderId);
+  assert.deepEqual([order.order_status,order.payment_status,order.fulfillment_status],["cancelled","refunded","exception"]);
+  assert.equal((await captures(placed.orderId)).length,1);
+  // Its refund is settled at once as demo; nothing is left open for the worker.
+  const refunds=(await q("SELECT provider,environment,merchant_account,status,provider_refund_id,reason FROM refunds WHERE order_id=$1",[placed.orderId])).rows;
+  assert.equal(refunds.length,1);
+  assert.deepEqual([refunds[0].provider,refunds[0].environment,refunds[0].merchant_account,refunds[0].status,refunds[0].reason],["demo","demo","demo","succeeded","late_capture_no_stock"]);
+  assert.match(refunds[0].provider_refund_id,/^demo-refund:/);
+  assert.equal(await count("SELECT count(*)::int AS n FROM order_events WHERE order_id=$1 AND type='refund.succeeded' AND visibility='customer'",[placed.orderId]),1);
+  assert.equal(await count("SELECT count(*)::int AS n FROM order_events WHERE order_id=$1 AND type='fulfillment.exception'",[placed.orderId]),1);
+  assert.deepEqual(await balance(p.variant),{on_hand:0,reserved:0},"no stock is manufactured");
+  // A repeat is refused the same way and adds nothing; a same-key checkout replay returns the cancelled order.
+  await rejectsWith(payments.confirmDemoCapture(database.pool,{orderId:placed.orderId,attemptId:attempt.id}),409,"DEMO_CAPTURE_NOT_PAID");
+  assert.equal((await captures(placed.orderId)).length,1);
+  assert.equal((await checkout.placeOrder(database.pool,secret,actor,idem,input)).status,"cancelled");
+  await aftersales.processRefunds(database.pool,providers);
+  assert.deepEqual(spy.calls,[]);
+  // Demo money: absent from the revenue report.
+  const summary=await reports.summary(as("reader"),{from:today(),to:today(),timeZone:"UTC"});
+  assert.ok(summary.totals.every(row=>row.environment!=="demo"));
+});
