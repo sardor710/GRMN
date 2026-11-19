@@ -66,12 +66,18 @@ export async function readProductsPage(input:{limit?:number;cursor?:string}&Part
 export async function readProduct(id:string){return (await read("products",{id})).items[0] as CMSProduct|undefined;}
 export async function readBlogsPage(input:{limit?:number;cursor?:string;search?:string;category?:string}={}){return await read("blogs",input) as {items:CMSBlog[];nextCursor:string|null};}
 export async function readBlog(slug:string){return (await read("blogs",{slug})).items[0] as CMSBlog|undefined;}
-export async function readHomepage(){
-  const item=(await read("homepage")).items[0] as {config:HomepageConfig}|undefined;
-  if(!item)throw new AuthFailure("UNAVAILABLE",503,"Homepage content is unavailable");
-  if(cmsBackend()!=="postgres")return item.config;
-  // 18A ruling I6: carousels bound to a merchandising collection show its published snapshot.
-  const [{resolveHomepageCollections},{createPublishingService},{getDatabase}]=await Promise.all([import("../../lib/cms/homepage-collections.ts"),import("../content/publishing.ts"),import("../db/client.ts")]);
-  const publishing=createPublishingService({pool:getDatabase().pool,authorize:async()=>{throw new AuthFailure("FORBIDDEN",403,"Public reads cannot authorize staff actions");}});
-  return resolveHomepageCollections(item.config,key=>publishing.readCollection(key));
+export async function readHomepage():Promise<HomepageConfig>{
+  // Owner 2026-11-19: never crash; an unpublished or unreadable homepage shows the built-in template.
+  const [{homepageWithFallback},{createDefaultHomepageConfig}]=await Promise.all([import("./homepage-fallback.ts"),import("../../lib/cms/homepage-schema")]);
+  const postgres=cmsBackend()==="postgres";
+  return homepageWithFallback({
+    read:async()=>((await read("homepage")).items[0] as {config:HomepageConfig|null}|undefined)?.config??undefined,
+    template:createDefaultHomepageConfig,
+    // 18A ruling I6: carousels bound to a merchandising collection show its published snapshot.
+    resolve:postgres?async config=>{
+      const [{resolveHomepageCollections},{createPublishingService},{getDatabase}]=await Promise.all([import("../../lib/cms/homepage-collections.ts"),import("../content/publishing.ts"),import("../db/client.ts")]);
+      const publishing=createPublishingService({pool:getDatabase().pool,authorize:async()=>{throw new AuthFailure("FORBIDDEN",403,"Public reads cannot authorize staff actions");}});
+      return resolveHomepageCollections(config,key=>publishing.readCollection(key));
+    }:undefined,
+  });
 }
