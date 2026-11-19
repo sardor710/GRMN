@@ -11,6 +11,8 @@ export interface BulkOutcome {
   unchanged: number;
   /** One line per product that was not changed. */
   reasons: { id: string; name: string; message: string }[];
+  /** A request that failed part-way (its products were not changed and stay selected). */
+  error?: string;
 }
 
 const ACTIONS: { action: Exclude<BulkProductAction, "delete">; label: string }[] = [
@@ -95,7 +97,7 @@ export function BulkResultMessage({ outcome, onDismiss }: { outcome: BulkOutcome
     <div
       role="status"
       className={`border px-4 py-3 text-[13px] rounded-none ${
-        outcome.unchanged > 0 ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"
+        outcome.unchanged > 0 || outcome.error ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -110,6 +112,7 @@ export function BulkResultMessage({ outcome, onDismiss }: { outcome: BulkOutcome
           Dismiss
         </button>
       </div>
+      {outcome.error && <p className="mt-1.5">{outcome.error} The products it carried were not changed and stay selected.</p>}
       {outcome.reasons.length > 0 && (
         <ul className="mt-1.5 list-disc space-y-0.5 pl-5">
           {outcome.reasons.map((reason) => (

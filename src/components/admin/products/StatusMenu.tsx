@@ -50,9 +50,13 @@ interface StatusMenuProps {
 }
 
 export function StatusMenu({ id, version, status, name, onSaved, onError }: StatusMenuProps) {
-  // Optimistic value while the PATCH is in flight; cleared on success (the list reloads) or reverted on error.
-  const [pending, setPending] = useState<ProductListStatus | null>(null);
+  // Optimistic value, tied to the version it was made from. It stays (and the trigger stays disabled) after a
+  // successful save until the parent passes the new version, so the old version is never sent again; it is
+  // reverted on error.
+  const [optimistic, setOptimistic] = useState<{ status: ProductListStatus; from: number } | null>(null);
+  const pending = optimistic !== null && optimistic.from === version ? optimistic.status : null;
   const shown = pending ?? status;
+  const setPending = (value: ProductListStatus | null) => setOptimistic(value === null ? null : { status: value, from: version });
 
   const change = async (next: ProductListStatus) => {
     if (next === shown || pending) return;
@@ -71,7 +75,7 @@ export function StatusMenu({ id, version, status, name, onSaved, onError }: Stat
         onError(statusErrorMessage(data?.error?.code, data?.error?.message, res.status));
         return;
       }
-      setPending(null);
+      // Keep the optimistic value until the reloaded row arrives with the new version.
       onSaved({ id, version: data.version, status: data.status });
     } catch {
       setPending(null);

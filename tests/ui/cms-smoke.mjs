@@ -60,6 +60,21 @@ async function productsListScenario({cms,headers,send,evaluate,navigate,text}){
     await until(async()=>(await cms.get("products",headers,fixtures.C.id)).status==="published","Status change did not reach the database");
     await navigate("/admin/products");await listed();
     assert.match(await evaluate(`document.querySelector(${JSON.stringify(row("C")+' button[aria-label^="Status of"]')}).textContent`),/Published/i,"status shown after reload");
+    // Stale row: B changes on the server after it was selected, so Publish applies to A only and B stays selected.
+    const barButton=label=>`[...document.querySelectorAll('[role=region][aria-label="Bulk actions"] button')].find(b=>b.textContent.trim()===${JSON.stringify(label)})`;
+    await tap(`${row("A")} [role=checkbox]`);await tap(`${row("B")} [role=checkbox]`);await until(async()=>/2 products selected/.test(await bar()),"Bulk bar missing for publish");
+    const staleB=await cms.get("products",headers,fixtures.B.id);
+    await cms.setProductStatus(headers,{id:fixtures.B.id,version:staleB.version,status:"draft"});
+    assert.ok((await cms.get("products",headers,fixtures.B.id)).version>staleB.version,"the server-side change bumped B's version");
+    await pressAt(barButton("Publish"));
+    await until(async()=>(await text()).includes("1 updated · 1 not changed"),"Stale bulk publish was not reported as 1 updated · 1 not changed").catch(async error=>{await writeFile(path.join(receipt,"admin-products-stale-body.txt"),await text());throw error;});
+    assert.match(await evaluate("[...document.querySelectorAll('[role=status] li')].map(li=>li.textContent).join(' | ')"),/UI LIST B: [^|]*changed elsewhere/,"B's reason names the version conflict");
+    await until(async()=>await rows()===3,"List did not reload after the stale publish");
+    assert.equal(await evaluate(`document.querySelector(${JSON.stringify(row("B")+" [role=checkbox]")}).getAttribute('aria-checked')`),"true","the refused row stays selected");
+    assert.equal(await evaluate(`document.querySelector(${JSON.stringify(row("A")+" [role=checkbox]")}).getAttribute('aria-checked')`),"false","the applied row leaves the selection");
+    assert.match(await bar(),/1 product selected/);
+    assert.equal((await cms.get("products",headers,fixtures.A.id)).status,"published");assert.equal((await cms.get("products",headers,fixtures.B.id)).status,"draft");
+    await pressAt(barButton("Clear selection"));await until(async()=>await bar()==="","Clear selection did not empty the bar");
     // Bulk archive of 2 products.
     await tap(`${row("A")} [role=checkbox]`);await tap(`${row("B")} [role=checkbox]`);await until(async()=>/2 products selected/.test(await bar()),"Bulk bar missing for archive");
     await pressAt("[...document.querySelectorAll('[role=region][aria-label=\"Bulk actions\"] button')].find(b=>b.textContent.trim()==='Archive')");

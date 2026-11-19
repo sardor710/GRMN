@@ -194,7 +194,8 @@ const defaultImageSrc = (images: ProductImage[], defaultImageId: string) =>
 
 /** Products listed by the admin API; PostgreSQL rows carry the optimistic-concurrency version. */
 type ListedProduct = CMSProduct & { version?: number };
-type SelectedProduct = { version: number; name: string };
+/** `version` is dropped after a version conflict so it is re-read from the list before the next send. */
+type SelectedProduct = { version?: number; name: string };
 /** The bulk endpoint accepts at most this many products per request. */
 const BULK_LIMIT = 100;
 
@@ -406,11 +407,21 @@ export default function AdminProductsPage() {
   const runBulk = async (action: BulkProductAction) => {
     const entries = [...selected];
     if (entries.length === 0) return;
-    // A row on the current page has the freshest version (e.g. after an inline status change).
-    const items = entries.map(([id, s]) => ({ id, version: pageRows.find((p) => p.id === id)?.version ?? s.version }));
+    // A row on the current page has the freshest version (e.g. after an inline status change). A row on
+    // another page whose stored version was dropped after a conflict is not sent until it is seen again.
+    const results: BulkResult[] = [];
+    const items: { id: string; version: number }[] = [];
+    for (const [id, s] of entries) {
+      const version = pageRows.find((p) => p.id === id)?.version ?? s.version;
+      if (version === undefined) {
+        results.push({ id, ok: false, code: "STALE_SELECTION", message: "changed elsewhere; open its page to refresh it, then try again" });
+      } else {
+        items.push({ id, version });
+      }
+    }
     setBulkBusy(true);
     setBulkOutcome(null);
-    const results: BulkResult[] = [];
+    let requestError: string | undefined;
     try {
       for (let start = 0; start < items.length; start += BULK_LIMIT) {
         const res = await fetch("/api/admin/products/bulk", {
@@ -425,23 +436,38 @@ export default function AdminProductsPage() {
         results.push(...data.results);
       }
     } catch (error) {
-      collection.setError(
-        error instanceof Error && error.message !== "Failed to fetch" ? error.message : "Network error. Reload to see which products changed.",
-      );
+      requestError =
+        error instanceof Error && error.message !== "Failed to fetch" ? error.message : "Network error. Reload to see which products changed.";
     } finally {
       setBulkBusy(false);
     }
-    if (results.length === 0) return;
+    const sent = results.some((r) => r.ok || r.code !== "STALE_SELECTION");
+    if (!sent && requestError) {
+      // Nothing reached the server: no reload, so the page error banner stays visible.
+      collection.setError(requestError);
+      return;
+    }
     const failed = results.filter((r): r is Extract<BulkResult, { ok: false }> => !r.ok);
-    // Only products the server confirmed leave the selection; the rest stay selected to retry or act on.
     const done = new Set(results.filter((r) => r.ok).map((r) => r.id));
-    setSelected((prev) => new Map([...prev].filter(([id]) => !done.has(id))));
+    const conflicted = new Set(failed.filter((r) => r.code === "VERSION_CONFLICT").map((r) => r.id));
+    // Only products the server confirmed leave the selection; the rest stay selected to retry or act on.
+    // A version conflict drops the stored version so the row is re-read from the list before it is sent again.
+    setSelected(
+      (prev) =>
+        new Map(
+          [...prev]
+            .filter(([id]) => !done.has(id))
+            .map(([id, s]): [string, SelectedProduct] => [id, conflicted.has(id) ? { name: s.name } : s]),
+        ),
+    );
+    // The error travels in the outcome because the reload below clears the page error banner.
     setBulkOutcome({
-      updated: results.length - failed.length,
+      updated: done.size,
       unchanged: failed.length,
       reasons: failed.map((r) => ({ id: r.id, name: selected.get(r.id)?.name ?? r.id, message: bulkReason(action, r.code, r.message) })),
+      error: requestError,
     });
-    fetchProducts();
+    if (sent) fetchProducts();
   };
 
   const handleCategoryChange = (newCat: string) => {
