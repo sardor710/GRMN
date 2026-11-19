@@ -156,7 +156,9 @@ test("a garmin.com import (fēnix 9 fixture) saves into PostgreSQL and is sellab
 test("admin HTTP: a variant product posted as JSON (money kept as exact text) saves and projects",async()=>{
   const cms=await service(),{createCMSHTTP}=await import("../../src/server/cms/http.ts");
   const http=createCMSHTTP({cms,authorize,baseURL:config.baseURL,dimensionSpecs:{},defaults:()=>home});
-  const body=JSON.stringify(variantProduct("VAR-H")).replace('"price":110000','"price":110000.5');
+  // A large garmin.com-style document (over the 128 KB default) is accepted for products.
+  const body=JSON.stringify(variantProduct("VAR-H",{overviewHtml:`<div class="pc-copy">${"<p>Long overview text.</p>".repeat(6000)}</div>`})).replace('"price":110000','"price":110000.5');
+  assert.ok(body.length>131072);
   const response=await http.handle("products",new Request(config.baseURL+"/api/admin/products",{method:"POST",headers:new Headers([...admin,["origin",config.baseURL],["content-type","application/json"]]),body}));
   assert.equal(response.status,200,await response.clone().text());
   const saved=(await response.json()).product;

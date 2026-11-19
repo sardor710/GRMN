@@ -36,7 +36,9 @@ export function createCMSHTTP(input:{cms:CMSService;authorize:(headers:Headers,p
         if(!query.id||!query.version||!/^\d+$/.test(query.version))return bad();
         return adminJSON(await input.cms.archive(resource,request.headers,query.id,Number(query.version)));
       }
-      queries(url,[]);const raw=await readAdminJSON(request,true);
+      queries(url,[]);
+      // garmin.com imports (overview, up to 300 photos, all variants) exceed 128 KB, like the legacy route.
+      const raw=await readAdminJSON(request,true,resource==="products"?1048576:131072);
       if(resource==="homepage"){
         if(request.method==="POST"){const data=parsed(z.object({action:z.literal("reset"),version:z.number().int().nonnegative()}).strict(),raw);const saved=await input.cms.saveHomepage(request.headers,{version:data.version,config:input.defaults()});return adminJSON({success:true,config:saved.config,version:saved.version});}
         if(request.method!=="PUT")return bad();const saved=await input.cms.saveHomepage(request.headers,raw);return adminJSON({success:true,config:saved.config,version:saved.version});
