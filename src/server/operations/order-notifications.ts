@@ -39,7 +39,8 @@ async function message(client: PoolClient, event: EventRow, baseURL: string | un
   const order = (await client.query<{ order_number: string; contact_name: string; contact_phone: string | null; total_minor: string; shipping_minor: string | null; payment_mode: string }>(
     "SELECT order_number,contact_name,contact_phone,total_minor::text,shipping_minor::text,payment_mode FROM orders WHERE id=$1", [event.order_id])).rows[0];
   if (!order) return `${titles[event.type]} (order ${event.order_id})`;
-  const head = `${titles[event.type]} ${order.order_number}`;
+  // Task 3.2: a demo order behaves like a paid one, so every message about it says DEMO (no real money).
+  const head = `${titles[event.type]} ${order.order_number}${order.payment_mode === "demo" ? " [DEMO]" : ""}`;
   const admin = baseURL ? `\nAdmin: ${baseURL}/admin/orders` : "";
   if (event.type === "order.placed") {
     const items = (await client.query<{ name: string; quantity: number; total_minor: string }>(

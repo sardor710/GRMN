@@ -108,7 +108,9 @@ before(async()=>{
 },{timeout:120000});
 after(async()=>{try{await database?.close();}finally{await temporary?.stop();}},{timeout:45000});
 
-test("the demo adapter is explicitly simulated: the session job records provenance and the order stays unpaid",async()=>{
+// Task 3.2 ("full demo", replacing D03): a demo order is captured once at checkout with demo
+// provenance; the adapter still takes no webhooks and reconciliation never reports anything for it.
+test("the demo adapter is explicitly simulated: a demo order is captured once with demo provenance and never by webhook or reconciliation",async()=>{
   await load();
   const registry=await import("../../src/server/operations/registry.ts");
   const buyer=await owner(),p=await product();
@@ -121,29 +123,37 @@ test("the demo adapter is explicitly simulated: the session job records provenan
   const run=()=>registry.jobHandlers[checkout.PAYMENT_START_KIND]({id:job.id,kind:job.kind,dedupeKey:job.dedupe_key,eventId:job.event_id,payload:{},event:{topic:job.topic,payload:job.payload,payloadVersion:1}},{pool:database.pool,signal:new AbortController().signal,idempotencyKey:job.dedupe_key,complete:async()=>{completed++;}});
   await run();await run();
   assert.equal(completed,2);
+  // The capture already ended the attempt, so the session job has nothing left to open.
   const [attempt]=await attempts(placed.orderId);
-  assert.equal(attempt.status,"pending");assert.match(attempt.provider_session_id,/^demo-session:/);
-  assert.deepEqual(await orderRow(placed.orderId),{order_status:"pending_payment",payment_status:"unpaid",fulfillment_status:"unfulfilled"});
-  const started=await events(placed.orderId,"payment.session_started");
-  assert.equal(started.length,1,"a repeated job starts no second session");
-  assert.deepEqual(started[0].payload.provenance,{provider:"demo",environment:"demo",merchantAccount:"demo",simulated:true});
+  assert.equal(attempt.status,"captured");assert.equal(attempt.provider_session_id,null);
+  assert.equal((await events(placed.orderId,"payment.session_started")).length,0);
+  assert.deepEqual(await orderRow(placed.orderId),{order_status:"confirmed",payment_status:"paid",fulfillment_status:"unfulfilled"});
+  const facts=(await q("SELECT provider,environment,merchant_account,kind,evidence FROM payment_transactions WHERE order_id=$1",[placed.orderId])).rows;
+  assert.equal(facts.length,1);
+  assert.deepEqual([facts[0].provider,facts[0].environment,facts[0].merchant_account,facts[0].kind],["demo","demo","demo","capture"]);
+  assert.deepEqual(facts[0].evidence.provenance,{provider:"demo",environment:"demo",merchantAccount:"demo",simulated:true});
   // The demo emits no webhooks and its reconciliation never reports a payment.
   await rejectsWith(payments.receiveWebhook(database.pool,payments.createPaymentProviders([demo]),"demo",Buffer.from("{}"),new Headers()),404,"NOT_FOUND");
   await payments.reconcilePayments(database.pool,payments.createPaymentProviders([demo]),{olderThanMs:0,limit:50});
-  assert.equal((await orderRow(placed.orderId)).payment_status,"unpaid");
-  assert.equal(await count("SELECT count(*)::int AS n FROM payment_transactions WHERE order_id=$1",[placed.orderId]),0,"a simulated payment never creates a capture fact");
-  assert.equal((await carts.checkoutStatus(buyer.headers,{orderId:placed.orderId})).paymentStatus,"unpaid");
+  assert.equal(await count("SELECT count(*)::int AS n FROM payment_transactions WHERE order_id=$1",[placed.orderId]),1,"nothing but the checkout capture is ever recorded for a demo order");
+  assert.equal((await carts.checkoutStatus(buyer.headers,{orderId:placed.orderId})).paymentStatus,"paid");
 });
 
 test("an unpaid order whose holds expired is cancelled: attempt cancelled, stock and coupon released, customer event",async()=>{
   await load();
   const buyer=await owner(),p=await product({price:20000});await coupon("expireme");
   const quote=await quoted(buyer.headers,[[p.variant,2]],{couponCode:"expireme"});
-  const placed=await carts.checkout(buyer.headers,key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"});
+  // Task 3.2: a demo order is captured at checkout, so an unpaid order is a manual one (demo off).
+  await q("UPDATE store_settings SET payment_mode='live',version=version+1 WHERE id=1");
+  let placed;
+  try{placed=await carts.checkout(buyer.headers,key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"manual"});}
+  finally{await q("UPDATE store_settings SET payment_mode='demo',version=version+1 WHERE id=1");}
   assert.deepEqual(await balance(p.variant),{on_hand:5,reserved:2});
   const early=await payments.expireUnpaidOrders(database.pool,{limit:50});
   assert.equal(early.expired,0,"nothing expires before the hold does");
-  const result=await payments.expireUnpaidOrders(database.pool,{asOf:FUTURE(),limit:50});
+  // The manual hold runs 48 hours by default.
+  const PAST_HOLD=()=>new Date(Date.now()+49*60*60*1000);
+  const result=await payments.expireUnpaidOrders(database.pool,{asOf:PAST_HOLD(),limit:50});
   assert.ok(result.expired>=1);
   assert.deepEqual(await orderRow(placed.orderId),{order_status:"cancelled",payment_status:"unpaid",fulfillment_status:"unfulfilled"});
   assert.deepEqual((await attempts(placed.orderId)).map(a=>a.status),["cancelled"]);
@@ -152,7 +162,7 @@ test("an unpaid order whose holds expired is cancelled: attempt cancelled, stock
   assert.equal((await q("SELECT status FROM promotion_redemptions WHERE order_id=$1",[placed.orderId])).rows[0].status,"released");
   const expired=await events(placed.orderId,"order.expired");
   assert.equal(expired.length,1);assert.equal(expired[0].visibility,"customer");
-  const again=await payments.expireUnpaidOrders(database.pool,{asOf:FUTURE(),limit:50});
+  const again=await payments.expireUnpaidOrders(database.pool,{asOf:PAST_HOLD(),limit:50});
   assert.equal(await count("SELECT count(*)::int AS n FROM order_events WHERE order_id=$1 AND type='order.expired'",[placed.orderId]),1,"repeat sweeps are no-ops");
   assert.equal(again.expired,0);
   assert.equal((await carts.checkoutStatus(buyer.headers,{orderId:placed.orderId})).status,"cancelled");

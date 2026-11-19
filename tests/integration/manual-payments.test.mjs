@@ -98,7 +98,8 @@ before(async()=>{
   await q("INSERT INTO shipping_policy_versions(id,version) VALUES($1,1)",[policy]);
   await q("INSERT INTO shipping_zones(id,key,name,countries,active) VALUES($1,'zone-manual','Zone','[\"KZ\"]'::jsonb,true)",[zone]);
   await q("INSERT INTO shipping_rates(id,policy_id,zone_id,key,amount_minor) VALUES($1,$2,$3,'standard',1500)",[randomUUID(),policy,zone]);
-  await q("INSERT INTO store_settings(id,active_tax_configuration_id,active_shipping_policy_id) VALUES(1,$1,$2)",[tax,policy]);
+  // Task 3.1: manual is offered only while the "Demo checkout" setting is off ('live').
+  await q("INSERT INTO store_settings(id,active_tax_configuration_id,active_shipping_policy_id,payment_mode) VALUES(1,$1,$2,'live')",[tax,policy]);
 },{timeout:120000});
 after(async()=>{try{await database?.close();}finally{await temporary?.stop();}},{timeout:45000});
 
@@ -122,7 +123,7 @@ test("O07 checkout: the manual method places an order awaiting payment with a 48
   assert.equal((await orderRow(order.orderId)).payment_status,"unpaid");
 });
 
-test("O07 checkout: the hold time comes from settings, and the demo method is refused when demo is not allowed",async()=>{
+test("O07 checkout: the hold time comes from settings, and the demo method is refused while demo checkout is off",async()=>{
   await load();
   const current=await settings.get(as("settings"));
   assert.deepEqual(current.manualPayment,{instructions:null,holdHours:48});
@@ -140,10 +141,10 @@ test("O07 checkout: the hold time comes from settings, and the demo method is re
   }finally{
     await settings.update(as("settings"),{expectedVersion:updated.version,manualPaymentHoldHours:48});
   }
-  // Production checkout: demo is refused, manual works.
+  // Demo checkout off (Task 3.1): demo is refused, manual works.
   const p=await product(),who=await buyer(),quote=await quoted(who.headers,[[p.variant,1]]);
-  await rejectsWith(checkout.placeOrder(database.pool,secret,{userId:who.id,guestTokenHash:null},key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"},{allowDemo:false}),409,"PAYMENT_UNAVAILABLE");
-  const placed=await checkout.placeOrder(database.pool,secret,{userId:who.id,guestTokenHash:null},key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"manual"},{allowDemo:false});
+  await rejectsWith(checkout.placeOrder(database.pool,secret,{userId:who.id,guestTokenHash:null},key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"}),409,"PAYMENT_METHOD_UNAVAILABLE");
+  const placed=await checkout.placeOrder(database.pool,secret,{userId:who.id,guestTokenHash:null},key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"manual"});
   assert.equal(placed.status,"pending_payment");
 });
 
@@ -294,11 +295,16 @@ test("O07 confirm is refused for an amount mismatch, cancelled, expired and demo
   finally{await q("ALTER TABLE inventory_reservations ENABLE TRIGGER USER");}
   await rejectsWith(confirm(lapsed),409,"ORDER_EXPIRED");
   assert.equal(await count("SELECT count(*)::int AS n FROM payment_transactions WHERE order_id=$1",[lapsed.orderId]),0);
-  // A demo order is never paid (D03): it cannot be confirmed manually.
+  // A demo order cannot be confirmed manually: it is paid by its own demo capture (Task 3.2).
   const who=await buyer(),quote=await quoted(who.headers,[[p.variant,1]]);
-  const demo=await checkout.placeOrder(database.pool,secret,{userId:who.id,guestTokenHash:null},key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"});
+  // Task 3.1: a demo order needs the "Demo checkout" setting on while it is placed.
+  await q("UPDATE store_settings SET payment_mode='demo',version=version+1 WHERE id=1");
+  let demo;
+  try{demo=await checkout.placeOrder(database.pool,secret,{userId:who.id,guestTokenHash:null},key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"});}
+  finally{await q("UPDATE store_settings SET payment_mode='live',version=version+1 WHERE id=1");}
   await rejectsWith(confirm(demo),409,"PAYMENT_NOT_MANUAL");
-  assert.equal((await orderRow(demo.orderId)).payment_status,"unpaid");
+  assert.equal((await orderRow(demo.orderId)).payment_status,"paid");
+  assert.equal(await count("SELECT count(*)::int AS n FROM payment_transactions WHERE order_id=$1 AND provider='manual'",[demo.orderId]),0,"no manual capture is recorded for a demo order");
 });
 
 test("O07 unpaid manual orders expire with the hold; staff cancelling an unpaid order releases the stock",async()=>{

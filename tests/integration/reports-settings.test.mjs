@@ -219,7 +219,7 @@ test("settings are typed and versioned; invalid combinations are refused; the US
   assert.equal(current.baseCurrency,"KZT");assert.equal(current.paymentMode,"demo");
   assert.ok(!("legacySettings" in current),"raw legacy settings (possible secrets) are never returned");
   await rejectsWith(settingsApi.update(settingsAdmin,{expectedVersion:current.version,usdDisplayEnabled:true}),409,"INVALID_SETTINGS");
-  await rejectsWith(settingsApi.update(settingsAdmin,{expectedVersion:current.version,paymentMode:"live"}),400,"INVALID_INPUT");
+  await rejectsWith(settingsApi.update(settingsAdmin,{expectedVersion:current.version,paymentMode:"kaspi"}),400,"INVALID_INPUT");
   await rejectsWith(settingsApi.update(settingsAdmin,{expectedVersion:current.version,freeShippingThresholdMinor:"-5"}),400,"INVALID_INPUT");
   await rejectsWith(settingsApi.update(settingsAdmin,{expectedVersion:current.version,contactEmail:"not-an-email"}),400,"INVALID_INPUT");
   await rejectsWith(settingsApi.setExchangeRate(settingsAdmin,{expectedVersion:current.version,kztPerUsd:"0"}),400,"INVALID_INPUT");

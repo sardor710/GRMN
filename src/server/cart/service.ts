@@ -9,6 +9,7 @@ import { AuthFailure } from "../auth/config.ts";
 import { publicImage } from "../catalog/service.ts";
 import { createQuote, QUOTE_TTL_SECONDS, type DeliverySnapshot } from "../pricing/quote.ts";
 import { placeOrder, readCheckoutStatus } from "../checkout/service.ts";
+import { availablePaymentMethods } from "../payments/demo-mode.ts";
 
 // Server carts (Task 13A). A guest cart is opened only by a random capability held in an HttpOnly
 // cookie; only its HMAC digest is stored. A signed-in shopper always uses the account cart, and the
@@ -84,13 +85,11 @@ export interface CartServiceOptions {
   market?: string;
   /** Quote lifetime (Task 13B); 15 minutes by default. */
   quoteTtlSeconds?: number;
-  /** O07: whether checkout accepts the simulated demo payment method. The runtime refuses it in production. */
-  allowDemoPayments?: boolean;
   /** The trusted client address for the unpaid-order limit; null skips the per-address limit (no trusted proxy). */
   clientAddress?: (headers: Headers) => string | null;
 }
 
-export function createCartService({ database, secret, identify, market = "default", quoteTtlSeconds = QUOTE_TTL_SECONDS, allowDemoPayments = true, clientAddress }: CartServiceOptions) {
+export function createCartService({ database, secret, identify, market = "default", quoteTtlSeconds = QUOTE_TTL_SECONDS, clientAddress }: CartServiceOptions) {
   if (!/^[a-f0-9]{64}$/i.test(secret)) throw new Error("Cart services require the validated auth secret");
   const digest = (token: string) => createHmac("sha256", secret).update("grmn-cart-capability:v1:" + token).digest("hex");
 
@@ -163,7 +162,9 @@ export function createCartService({ database, secret, identify, market = "defaul
 
   async function view(db: Queryable, who: Actor, cart: CartRow | null, notices: Notice[] = [], pendingMerge = false): Promise<CartDTO> {
     const owner = who.userId ? "account" : "guest";
-    if (!cart) return { id: null, version: 0, owner, lines: [], subtotal: money("0"), expiresAt: null, pendingMerge, notices };
+    // Task 3.1: the checkout methods offered now (only demo while demo checkout is on, otherwise only manual).
+    const paymentMethods = await availablePaymentMethods(db);
+    if (!cart) return { id: null, version: 0, owner, lines: [], subtotal: money("0"), expiresAt: null, pendingMerge, notices, paymentMethods };
     const rows = (await db.query<{ variant_id: string; quantity: number; seen: string | null }>("SELECT variant_id,quantity,seen_unit_price_minor::text AS seen FROM cart_items WHERE cart_id=$1 ORDER BY created_at,variant_id", [cart.id])).rows;
     const current = await offers(db, rows.map(row => row.variant_id)), all = [...notices];
     const notice = (code: CartNoticeCode, variantId: string) => { if (!all.some(n => n.code === code && n.variantId === variantId)) all.push({ code, variantId }); };
@@ -180,7 +181,7 @@ export function createCartService({ database, secret, identify, market = "defaul
         lineTotal: amount === null ? null : money(BigInt(amount) * BigInt(row.quantity)), availability,
       };
     });
-    return { id: cart.id, version: cart.version, owner, lines, subtotal: money(subtotal), expiresAt: cart.expires_at.toISOString(), pendingMerge, notices: all };
+    return { id: cart.id, version: cart.version, owner, lines, subtotal: money(subtotal), expiresAt: cart.expires_at.toISOString(), pendingMerge, notices: all, paymentMethods };
   }
 
   // Runs one cart mutation under the cart row lock with an optimistic version check. A cart is only
@@ -302,11 +303,11 @@ export function createCartService({ database, secret, identify, market = "defaul
       });
     },
 
-    // Task 14A: places one pending order for the actor's quoted cart revision (manual payment, O07).
+    // Task 14A: places one pending order for the actor's quoted cart revision (demo or manual, Task 3.1).
     // The idempotency key comes from the Idempotency-Key header; a retried key returns the same order.
     async checkout(headers: Headers, idempotencyKey: string, input: unknown): Promise<CheckoutResultDTO> {
       const who = await actor(headers);
-      return placeOrder(database.pool, secret, { userId: who.userId, guestTokenHash: who.userId ? null : who.tokenHash }, idempotencyKey, input, { allowDemo: allowDemoPayments, clientAddress: clientAddress?.(headers) ?? null });
+      return placeOrder(database.pool, secret, { userId: who.userId, guestTokenHash: who.userId ? null : who.tokenHash }, idempotencyKey, input, { clientAddress: clientAddress?.(headers) ?? null });
     },
 
     // Task 14A: the polling contract after checkout (owning session, or a guest status token).

@@ -4,10 +4,11 @@ import type { Pool, PoolClient } from "pg";
 import { z } from "zod";
 import type { Permission, Principal } from "../context.ts";
 import { AuthFailure } from "../auth/config.ts";
+import { demoCheckoutForcedOff } from "../payments/demo-mode.ts";
 
 // Task 18B. Typed, versioned store settings and the KZT-per-USD rate editor (settings:write, which
-// needs fresh MFA). Settings never return raw legacy settings (they may hold old secrets) and never
-// change the payment mode (demo until a provider is activated, D03). USD display needs an active
+// needs fresh MFA). Settings never return raw legacy settings (they may hold old secrets). The
+// payment mode is the "Demo checkout" setting (Task 3.1): 'demo' or 'live'. USD display needs an active
 // rate. A rate edit is a new immutable exchange_rate_versions row; it never rewrites quotes, orders
 // or refunds (13B snapshots them). Every change checks the settings version and is audited.
 
@@ -32,6 +33,8 @@ const updateInput = z.strictObject({
   // O07: the receipt's payment instructions for manual-payment orders ("" clears them) and the hold.
   manualPaymentInstructions: z.union([text(2000).min(1), z.literal("")]).optional(),
   manualPaymentHoldHours: z.number().int().min(1).max(168).optional(),
+  // Task 3.1: Settings -> Payments -> "Demo checkout". 'demo' offers only the demo method, 'live' only manual.
+  paymentMode: z.enum(["demo", "live"]).optional(),
 }).refine(value => Object.keys(value).length > 1);
 const rateInput = z.strictObject({ expectedVersion: z.number().int().min(1), kztPerUsd: z.string().regex(/^\d{1,12}(\.\d{1,8})?$/).refine(value => Number(value) > 0) });
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
@@ -47,6 +50,8 @@ export interface SettingsDTO {
   maintenanceMode: boolean; paymentMode: "demo" | "live"; seoTitle: string | null; seoDescription: string | null;
   /** O07: what manual-payment customers are told, and how long their order is held. */
   manualPayment: { instructions: string | null; holdHours: number };
+  /** Task 3.1: whether checkout is in demo mode now, and whether DEMO_CHECKOUT_DISABLED=1 forces it off. */
+  demoCheckout: { enabled: boolean; forcedOff: boolean };
 }
 interface Row {
   version: number; store_name: string | null; contact_email: string | null; support_phone: string | null; usd_display_enabled: boolean; active_exchange_rate_id: string | null;
@@ -64,6 +69,7 @@ function dto(row: Row): SettingsDTO {
     activeTaxConfigurationId: row.active_tax_configuration_id, activeShippingPolicyId: row.active_shipping_policy_id, freeShippingThresholdMinor: row.free_shipping_threshold,
     maintenanceMode: row.maintenance_mode, paymentMode: row.payment_mode, seoTitle: row.seo_title, seoDescription: row.seo_description,
     manualPayment: { instructions: row.manual_payment_instructions, holdHours: row.manual_payment_hold_hours },
+    demoCheckout: { enabled: row.payment_mode === "demo" && !demoCheckoutForcedOff(), forcedOff: demoCheckoutForcedOff() },
   };
 }
 
@@ -117,13 +123,15 @@ export function createSettingsService({ pool, authorize }: Options) {
         const blank = (next: string | undefined, old: string | null) => next === undefined ? old : next === "" ? null : next;
         await client.query(
           `UPDATE store_settings SET version=version+1,store_name=$1,contact_email=$2,support_phone=$3,usd_display_enabled=$4,free_shipping_threshold_minor=$5,maintenance_mode=$6,
-             seo_title=$7,seo_description=$8,active_tax_configuration_id=$9,active_shipping_policy_id=$10,manual_payment_instructions=$11,manual_payment_hold_hours=$12 WHERE id=1`,
+             seo_title=$7,seo_description=$8,active_tax_configuration_id=$9,active_shipping_policy_id=$10,manual_payment_instructions=$11,manual_payment_hold_hours=$12,payment_mode=$13 WHERE id=1`,
           [value(command.storeName, current.store_name), blank(command.contactEmail, current.contact_email), blank(command.supportPhone, current.support_phone), usd,
             command.freeShippingThresholdMinor === undefined ? current.free_shipping_threshold : command.freeShippingThresholdMinor, value(command.maintenanceMode, current.maintenance_mode),
             blank(command.seoTitle, current.seo_title), blank(command.seoDescription, current.seo_description),
             value(command.activeTaxConfigurationId, current.active_tax_configuration_id), value(command.activeShippingPolicyId, current.active_shipping_policy_id),
-            blank(command.manualPaymentInstructions, current.manual_payment_instructions), value(command.manualPaymentHoldHours, current.manual_payment_hold_hours)]);
-        await audit(client, principal.userId, "settings.updated", { fields: Object.keys(command).filter(name => name !== "expectedVersion"), beforeVersion: current.version });
+            blank(command.manualPaymentInstructions, current.manual_payment_instructions), value(command.manualPaymentHoldHours, current.manual_payment_hold_hours),
+            value(command.paymentMode, current.payment_mode)]);
+        await audit(client, principal.userId, "settings.updated", { fields: Object.keys(command).filter(name => name !== "expectedVersion"), beforeVersion: current.version,
+          ...(command.paymentMode !== undefined && command.paymentMode !== current.payment_mode ? { paymentMode: { from: current.payment_mode, to: command.paymentMode } } : {}) });
         return dto((await client.query<Row>(SELECT)).rows[0]);
       });
     },

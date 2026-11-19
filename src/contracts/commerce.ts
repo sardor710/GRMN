@@ -194,6 +194,8 @@ export interface CartDTO {
   /** True when a signed-in shopper still holds a guest cart that can be merged. */
   pendingMerge: boolean;
   notices: { code: CartNoticeCode; variantId: string }[];
+  /** The checkout methods offered now: ["demo"] while demo checkout is on, otherwise ["manual"]. */
+  paymentMethods: ("demo" | "manual")[];
 }
 
 export interface QuoteCommand {

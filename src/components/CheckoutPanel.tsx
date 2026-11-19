@@ -70,7 +70,7 @@ export function CheckoutPanel({ cart, disabled, onPlaced }: { cart: CartDTO; dis
     setBusy(true); setError(null);
     const email = form.email.trim();
     try {
-      const command = { quoteId: current.id, cartVersion: current.cartVersion, paymentMethod: "manual" as const, ...(email ? { contactEmail: email } : {}) };
+      const command = { quoteId: current.id, cartVersion: current.cartVersion, paymentMethod: cart.paymentMethods[0] ?? "manual", ...(email ? { contactEmail: email } : {}) };
       const result = await client.placeOrder(command, beginCheckout(session, command));
       forgetCheckoutKey(session);
       const placed = { orderId: result.orderId, orderNumber: result.orderNumber, statusToken: result.statusToken };
