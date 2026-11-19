@@ -55,6 +55,7 @@ export async function handleTranslateRequest(request: Request, model: Translatio
     return adminJSON({ success: true, ...result, model: process.env.OPENROUTER_MODEL || "nvidia/nemotron-3.5-super-vl:free" });
   } catch (error) {
     if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) return adminJSON({ error: { code: "DEPENDENCY_UNAVAILABLE", message: "The translation service took too long. Press the button again: finished fields are kept." } }, 503);
+    if (error instanceof Error && /^Translation service daily limit/.test(error.message)) return adminJSON({ error: { code: "RATE_LIMITED", message: `${error.message}.` } }, 429);
     if (error instanceof Error && /^Translation service/.test(error.message)) return adminJSON({ error: { code: "DEPENDENCY_UNAVAILABLE", message: `${error.message}. Try again in a minute.` } }, 503);
     return authErrorResponse(error);
   }

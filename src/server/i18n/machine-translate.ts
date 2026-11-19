@@ -161,7 +161,15 @@ export function openRouterModel(config: { apiKey: string; model: string; fetch?:
         headers: { "content-type": "application/json", authorization: `Bearer ${config.apiKey}`, "x-title": "GRMN store admin" },
         body: JSON.stringify({ model: config.model, temperature: 0.2, response_format: { type: "json_object" }, messages: [{ role: "system", content: system }, { role: "user", content: JSON.stringify(segments) }] }),
       });
-      if (!response.ok) throw new Error(`Translation service answered ${response.status}`);
+      if (!response.ok) {
+        // OpenRouter explains limits in plain words (for example the free-models-per-day limit); pass
+        // that on, but never the request or the key.
+        const detail = await response.json().catch(() => null) as { error?: { message?: string; metadata?: { limit_source?: string; headers?: Record<string, string> } } } | null;
+        const reset = Number(detail?.error?.metadata?.headers?.["X-RateLimit-Reset"]);
+        if (response.status === 429 && detail?.error?.metadata?.limit_source?.includes("daily"))
+          throw new Error(`Translation service daily limit reached${Number.isFinite(reset) ? ` (resets ${new Date(reset).toISOString().replace("T", " ").slice(0, 16)} UTC)` : ""}: add credits on openrouter.ai to raise it`);
+        throw new Error(`Translation service answered ${response.status}${detail?.error?.message ? `: ${detail.error.message.slice(0, 160)}` : ""}`);
+      }
       // (A timeout surfaces as AbortError/TimeoutError and is reported as a retryable 503.)
       const data = await response.json() as { choices?: { message?: { content?: string } }[] };
       const content = data.choices?.[0]?.message?.content ?? "";

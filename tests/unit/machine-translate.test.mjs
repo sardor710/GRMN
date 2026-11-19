@@ -81,3 +81,10 @@ test("repeated texts are translated once, and the translation memory answers kno
   await translateRecord({ record: repeated, spec, existing: {}, locales: ["ru"], model: withTranslationMemory(model, store) });
   assert.equal(model.calls.length, 1, "second run is served from memory");
 });
+
+test("a daily free-model limit is reported in plain words with its reset time", async () => {
+  const { openRouterModel } = await load();
+  const body = { error: { message: "Rate limit exceeded: free-models-per-day.", code: 429, metadata: { limit_source: "openrouter_free_tier_daily", headers: { "X-RateLimit-Reset": "1795132800000" } } } };
+  const model = openRouterModel({ apiKey: "sk-test", model: "m", fetch: async () => new Response(JSON.stringify(body), { status: 429 }) });
+  await assert.rejects(model.complete({ locale: "ru", segments: { s0: "x" } }), e => /daily limit reached \(resets 2026-11-20 00:00 UTC\)/.test(e.message) && !e.message.includes("sk-test"));
+});
