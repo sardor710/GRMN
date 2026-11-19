@@ -31,7 +31,8 @@ export default function AdminBlogsPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const collection = useAdminCollection<CMSBlog>("blogs", {search, category:categoryFilter});
   const {items:blogs, loading} = collection;
-  const translatable = collection.backend !== "postgres";
+  // Task 24: ru/kk translations are stored on both backends (PostgreSQL: page_version_translations).
+  const translatable = true;
   const fetchBlogs = () => {collection.reload();categoryPage.reload();};
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBlog, setEditingBlog] = useState<CMSBlog | null>(null);

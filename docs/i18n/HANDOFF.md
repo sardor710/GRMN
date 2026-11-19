@@ -66,6 +66,30 @@ Number, date and currency formatting use `src/i18n/format.js` with `en-US` / `ru
 - `src/app/sitemap.ts` lists every indexable language version of each URL with alternates. `src/app/robots.ts` references `${SITE_URL}/sitemap.xml`.
 - `<html lang>` follows the locale.
 
+## PostgreSQL storage (Task 24, built 2026-11-19)
+
+Content translations are stored in the database on the PostgreSQL backend, not in source files. Migration `0019_content-translations.sql`:
+
+| Table | Key | Holds |
+|---|---|---|
+| `product_translations` | `(product_id, locale)` | One locale's product overlay (the `Translations<ProductTranslatable>[locale]` shape: name, description, specs by index, features, inTheBox, SEO text, …), plus `updated_by` and `updated_at` |
+| `page_version_translations` | `(version_id, locale)` | One locale's overlay for a **page version**: a blog post, banner or homepage (homepage overlays are keyed by block id) |
+
+Locales are `ru` and `kk` only (CHECK); an empty overlay is never stored (CHECK), and English stays on the base columns.
+
+- **Saving** (`src/server/cms/service.ts`). The admin sends `record.translations` (homepage: `config.translations`). It is validated and normalized with beta2's `mergeTranslationsSafely` and the record's field spec, then merged per locale:
+  - a sent locale replaces that locale;
+  - a locale that is not sent is kept;
+  - a blank locale is removed.
+
+  Unknown locales and non-object values are rejected (400). Fields outside the spec are dropped. Saves are audited with `translations` in the field list.
+- **Versioning.** Each new page version carries the previous version's overlays with the sent locales replaced. A draft never changes what is live; publishing, rollback and scheduling move translations with their version.
+- **Reading.** Admin and public DTOs carry `translations` (aggregated from the tables), so the beta2 storefront code (`localizeBlog`, `localizeHomepage`, `translatedLocales`, `homepageLocales`) works unchanged. The catalog service localizes product names, descriptions, specs, features, in-the-box items and SEO text for `ru` and `kk`, and reports `translatedLocales` for hreflang and the sitemap.
+- **Admin.** The RU/KK tabs are enabled on PostgreSQL for products (`PostgresProductsScreen` uses `ProductTranslationPanel`), blogs, banners, the homepage and the SEO screen (its PATCH accepts `translations`).
+- **Not stored:** store-settings SEO overlays. The storefront takes its site title and description from the interface catalogs (`Meta`), so they are not read anywhere.
+
+Interface strings (buttons, menus, labels) stay in `messages/{en,ru,kk}.json`: they are part of the application, not content.
+
 ## Overlay to `*_translations` tables (PostgreSQL importer)
 
 Key every translation row by `(record id, locale)` with `locale` in `ru`, `kk`. English stays on the base table. Treat blank strings as absent. Overlay shape is defined by the specs in `src/i18n/translate-record.js` and the types in `src/lib/cms/types.ts`.

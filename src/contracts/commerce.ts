@@ -74,6 +74,8 @@ export interface ProductDetailDTO extends ProductCardDTO {
   relatedProductKeys?: string[];
   selectedVariantId?: string;
   seo?: { title: string; description: string; canonicalUrl: string | null; noIndex: boolean; image: string | null };
+  /** Task 24: languages with a translated name and description (en always); others are noindex. */
+  translatedLocales?: Locale[];
 }
 
 export interface ProductQuery {

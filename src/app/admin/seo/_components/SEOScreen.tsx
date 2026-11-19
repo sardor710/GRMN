@@ -39,7 +39,8 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
   const products=productPage.items, blogs=blogPage.items, loading=productPage.loading||blogPage.loading;
   const fetchData=()=>{productPage.reload();blogPage.reload();};
   // ru/kk SEO overlays are stored by the legacy JSON CMS only.
-  const translatable = productPage.backend !== "postgres" && blogPage.backend !== "postgres";
+  // Task 24: ru/kk SEO overlays are stored on both backends (PostgreSQL: product/page_version_translations).
+  const translatable = true;
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "product" | "blog" | "needs_work">("all");
   const [activeTab, setActiveTab] = useState<"audit" | "sitemap" | "robots" | "schema">("audit");

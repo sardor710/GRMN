@@ -21,12 +21,20 @@ import type {
   ProductSpecItem,
   ProductBadgeOption,
 } from "@/lib/cms/types";
+
+// Task 24: ru/kk translations are stored in PostgreSQL (product_translations); a language counts as
+// translated (and indexable) once its name and description are filled.
+const PRODUCT_REQUIRED_FIELDS = ["name", "description"] as const;
 import { useAdminCollection } from "@/hooks/useAdminCollection";
 import { AdminPageControls } from "@/components/admin/AdminPageControls";
 import { writeAdminRecord, archiveAdminRecord } from "@/lib/admin-collection";
 import { AdminModal } from "@/components/admin/AdminModal";
 import { GarminBadge } from "@/components/GarminBadge";
 import { SEOEditor } from "@/components/admin/SEOEditor";
+import { LocaleTabs, type ContentLocale } from "@/components/admin/LocaleTabs";
+import { ProductTranslationPanel, type ProductTranslations } from "@/components/admin/product-editor/ProductTranslationPanel";
+import { translationStatus } from "@/lib/cms/translation-input";
+import { PRODUCT_SPEC } from "@/i18n/translate-record";
 
 const PRIMARY_CATEGORIES = [
   "Smartwatches & Wearables",
@@ -145,7 +153,9 @@ export default function AdminProductsPage() {
     canonicalUrl: "",
     noIndex: false,
     ogImage: "",
+    translations: {} as ProductTranslations,
   });
+  const [contentLocale, setContentLocale] = useState<ContentLocale>("en");
 
 
   const handleOpenAdd = () => {
@@ -181,7 +191,9 @@ export default function AdminProductsPage() {
       canonicalUrl: "",
       noIndex: false,
       ogImage: "",
+      translations: {},
     });
+    setContentLocale("en");
     setActiveTab("general");
     setIsModalOpen(true);
   };
@@ -215,7 +227,9 @@ export default function AdminProductsPage() {
       canonicalUrl: prod.canonicalUrl || "",
       noIndex: prod.noIndex || false,
       ogImage: prod.ogImage || "",
+      translations: prod.translations || {},
     });
+    setContentLocale("en");
     setActiveTab("general");
     setIsModalOpen(true);
   };
@@ -535,6 +549,24 @@ export default function AdminProductsPage() {
       >
         <form onSubmit={handleSubmit} className="space-y-5 font-sans">
           {collection.error&&<div role="alert" className="border border-red-200 bg-red-50 p-3 text-sm text-red-800">{collection.error}<button type="button" className="ml-3 underline" onClick={()=>{setIsModalOpen(false);collection.reload();}}>Reload records</button></div>}
+          <LocaleTabs
+            value={contentLocale}
+            onChange={setContentLocale}
+            status={{
+              ru: translationStatus(formData, "ru", PRODUCT_SPEC, PRODUCT_REQUIRED_FIELDS),
+              kk: translationStatus(formData, "kk", PRODUCT_SPEC, PRODUCT_REQUIRED_FIELDS),
+            }}
+          />
+          {contentLocale !== "en" ? (
+            <ProductTranslationPanel
+              key={contentLocale}
+              locale={contentLocale}
+              product={{ ...formData, price: Number(formData.price), overviewHtml: "", specGroups: [], images: [], options: [], variants: [] }}
+              translations={formData.translations}
+              onChange={(translations) => setFormData((prev) => ({ ...prev, translations }))}
+            />
+          ) : (
+          <>
           {/* Navigation Tabs */}
           <div className="flex items-center gap-1 border-b border-neutral-200 pb-2">
             {[
@@ -1087,6 +1119,8 @@ export default function AdminProductsPage() {
           )}
 
           {/* Submit Actions */}
+          </>
+          )}
           <div className="flex justify-between items-center pt-4 border-t border-neutral-200">
             <div className="flex items-center gap-2">
               <span className="text-[12px] text-neutral-500">

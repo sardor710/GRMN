@@ -10,7 +10,8 @@ import { requestURL } from "../auth/request-url.ts";
 
 const readPermissions:Record<CMSResource|"homepage",Permission>={products:"catalog:read",blogs:"content:write",banners:"content:write",clients:"customers:read",homepage:"content:write"};
 const writePermissions:typeof readPermissions={...readPermissions,products:"catalog:write",clients:"customers:write"};
-const patchSchema=z.object({id:z.string().min(1).max(128),version:z.number().int().positive(),...Object.fromEntries(Object.entries(productInput.shape).filter(([key])=>["seoTitle","seoDescription","focusKeywords","canonicalUrl","noIndex","ogImage"].includes(key)))}).strict().refine(value=>Object.keys(value).length>2);
+// Task 24: SEO patches may carry ru/kk overlays (merged per locale with the stored translations).
+const patchSchema=z.object({id:z.string().min(1).max(128),version:z.number().int().positive(),...Object.fromEntries(Object.entries(productInput.shape).filter(([key])=>["seoTitle","seoDescription","focusKeywords","canonicalUrl","noIndex","ogImage","translations"].includes(key)))}).strict().refine(value=>Object.keys(value).length>2);
 const bad=():never=>{throw new AuthFailure("INVALID_INPUT",400,"Invalid or unknown fields");};
 function parsed<T>(schema:z.ZodType<T>,value:unknown):T{const result=schema.safeParse(value);if(!result.success)return bad();return result.data;}
 function queries(url:URL,allowed:readonly string[]):Record<string,string>{

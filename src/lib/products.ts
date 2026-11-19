@@ -53,7 +53,7 @@ function publicProduct(cp: CMSProduct): Product {
   return {currency:cp.currency??"USD",purchasable:cp.stockManaged===false?false:undefined,id:cp.id,name:cp.name,price:cp.price,priceSuffix:cp.priceSuffix,description:cp.description,image:cp.image,badge:cp.badge&&cp.badge!=="NONE"?cp.badge:undefined,family:cp.family,activities:cp.activities,level:cp.level,caseSize:cp.caseSize};
 }
 export const defaultProductQuery:ProductQuery={market:"default",locale:"en",displayCurrency:"KZT"};
-/** Product query for a storefront locale (the PostgreSQL catalog has no translations yet, so it returns English text). */
+/** Product query for a storefront locale (the PostgreSQL catalog overlays product_translations, Task 24). */
 function queryFor(locale:Locale):ProductQuery{return locale===defaultProductQuery.locale?defaultProductQuery:{...defaultProductQuery,locale};}
 /** Legacy CMS records carry `translations`; overlay the visitor's language (blank fields fall back to English). */
 function localized(cp:CMSProduct,locale:Locale):CMSProduct{return locale==="en"?cp:localizeProduct(cp,locale);}
@@ -81,7 +81,7 @@ export const catalogueMeta: Record<string, { titleKey: string; headingKey: strin
 export async function getRawCMSProduct(id:string):Promise<CMSProduct|undefined>{return cmsBackend()==="legacy"?readProduct(id):undefined;}
 export async function getCMSProduct(id:string,locale:Locale="en"){const raw=await getRawCMSProduct(id);return raw?localized(raw,locale):undefined;}
 export async function getProduct(id:string,locale:Locale="en"):Promise<Product|undefined> {
-  if(cmsBackend()==="postgres"){const found=await getCatalogService().getProductByPublicKey(id,"default","KZT");return found?catalogCardView(found):undefined;}
+  if(cmsBackend()==="postgres"){const found=await getCatalogService().getProductByPublicKey(id,"default","KZT",locale);return found?catalogCardView(found):undefined;}
   const found=await readProduct(id);return found?publicProduct(localized(found,locale)):undefined;
 }
 
@@ -332,7 +332,7 @@ export async function buildDetailFromCms(p: CMSProduct, locale: Locale = "en"): 
 
 export async function getProductDetail(id: string, locale: Locale = "en"): Promise<ProductDetail | undefined> {
   if(cmsBackend()==="postgres"){
-    const detail=await getCatalogService().getProductByPublicKey(id,"default","KZT");if(!detail)return undefined;
+    const detail=await getCatalogService().getProductByPublicKey(id,"default","KZT",locale);if(!detail)return undefined;
     const view=catalogCardView(detail),editorial=id==="1228429"?fenix8Detail:undefined;
     return {id:detail.publicKey,title:detail.name,subtitle:detail.description,partNumber:detail.variants.find(v=>v.id===detail.selectedVariantId)?.sku??detail.variants[0]?.sku??"",price:view.price,priceLabel:view.priceLabel,currency:"KZT",purchasable:false,badge:view.badge,commerce:detail,
       breadcrumb:editorial?.breadcrumb??[{label:"SMARTWATCHES",href:"/c/wearables-smartwatches"}],

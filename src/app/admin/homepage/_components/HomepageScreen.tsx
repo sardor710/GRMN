@@ -41,8 +41,8 @@ import { HOMEPAGE_SPEC } from "@/i18n/translate-record";
 
 export default function AdminHomepagePage() {
   const [version,setVersion]=useState<number>();
-  // Only the PostgreSQL config is versioned; translations are edited on the legacy JSON CMS.
-  const translatable = version === undefined;
+  // Task 24: ru/kk translations are stored on both backends (PostgreSQL: page_version_translations).
+  const translatable = true;
   const [config, setConfig] = useState<HomepageConfig | null>(null);
   const [dimensionSpecs] = useState<Record<string, ImageDimensionSpec>>(IMAGE_DIMENSION_SPECS);
   const [loading, setLoading] = useState(true);
@@ -106,7 +106,7 @@ export default function AdminHomepagePage() {
     if (!config) return;
     try {
       setSaving(true);
-      // ru/kk overlays are stored by the legacy JSON CMS only; the versioned PostgreSQL config rejects them.
+      // ru/kk overlays travel in config.translations on both backends (PostgreSQL stores them per version).
       const blocks: HomepageConfig = { ...config };
       if (!translatable) delete blocks.translations;
       const data=await writeAdminRecord(fetch,"homepage",{config:blocks,...(version===undefined?{}:{version})},"PUT");

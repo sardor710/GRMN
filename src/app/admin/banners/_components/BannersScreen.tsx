@@ -25,7 +25,8 @@ export default function AdminBannersPage() {
   const collection = useAdminCollection<Banner>("banners");
   const {items:banners, loading} = collection;
   const fetchBanners = collection.reload;
-  const translatable = collection.backend !== "postgres";
+  // Task 24: ru/kk translations are stored on both backends (PostgreSQL: page_version_translations).
+  const translatable = true;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBanner, setEditingBanner] = useState<Banner | null>(null);
   const [contentLocale, setContentLocale] = useState<ContentLocale>("en");

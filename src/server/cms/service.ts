@@ -8,6 +8,11 @@ import { adminDTO, productInput, blogInput, bannerInput, homepageInput } from ".
 import { plainText, sanitizeRichText } from "../content/sanitize.ts";
 import { CONTENT_INVALIDATE_KIND } from "../content/events.ts";
 import { appendOutboxEvent } from "../operations/outbox.ts";
+import { mergeTranslationsSafely } from "../../lib/cms/translation-input.ts";
+import { PRODUCT_HTML_FIELDS } from "../../lib/cms/product-input.ts";
+import { BLOG_HTML_FIELDS } from "../../lib/cms/content-input.ts";
+import { BANNER_SPEC, BLOG_SPEC, HOMEPAGE_SPEC, PRODUCT_SPEC } from "../../i18n/translate-record.ts";
+import type { FieldSpec } from "../../i18n/translate-record.ts";
 
 export type CMSResource = "products" | "blogs" | "banners" | "clients";
 export interface CMSItem extends Record<string, unknown> { id: string; version: number }
@@ -25,14 +30,27 @@ const money = z.union([z.string(),z.number()]).transform((value,ctx) => {
   if(minor>BigInt("100000000000000")){ctx.addIssue({code:"custom",message:"Amount exceeds the supported range"});return z.NEVER;}
   return minor.toString();
 });
-// i18n translation overlays are stored by the legacy JSON CMS only; PostgreSQL commands reject them.
-const productCommand = productInput.omit({translations:true}).extend({id:identity.optional(),version:version.optional(),price:money,originalPrice:money.nullable().optional(),sku:z.string().trim().min(1).max(128)}).strict();
-const blogCommand = blogInput.omit({translations:true}).extend({id:z.uuid().optional(),version:version.optional(),slug:z.string().trim().max(200).regex(/^[\p{L}\p{N}_-]*$/u).optional(),draft:z.boolean().optional()}).strict();
+// Task 24: ru/kk translation overlays (record.translations) are stored in product_translations and
+// page_version_translations (migration 0019), validated and merged per locale like the legacy CMS.
+const productCommand = productInput.extend({id:identity.optional(),version:version.optional(),price:money,originalPrice:money.nullable().optional(),sku:z.string().trim().min(1).max(128)}).strict();
+const blogCommand = blogInput.extend({id:z.uuid().optional(),version:version.optional(),slug:z.string().trim().max(200).regex(/^[\p{L}\p{N}_-]*$/u).optional(),draft:z.boolean().optional()}).strict();
 // Task 18A: draft:true saves a new version without changing what is live (draft isolation).
-const bannerCommand = bannerInput.omit({translations:true}).extend({id:z.uuid().optional(),version:version.optional(),draft:z.boolean().optional()}).strict();
+const bannerCommand = bannerInput.extend({id:z.uuid().optional(),version:version.optional(),draft:z.boolean().optional()}).strict();
 const clientCommand = z.object({id:z.uuid().optional(),version:version.optional(),name:z.string().trim().min(1).max(200),phone:z.string().trim().min(1).max(64),email:z.union([z.email().max(254),z.literal("")]).optional(),country:z.string().regex(/^(?:[A-Z]{2})?$/).optional(),status:z.enum(["active","vip","pending","suspended"]).optional(),avatar:z.string().max(2048).optional(),notes:z.string().max(10000).optional()}).strict();
 const querySchema = z.object({limit:z.number().int().min(1).max(100).default(20),cursor:z.string().max(2048).optional(),search:z.string().trim().max(200).default(""),status:z.string().max(30).optional(),family:z.string().max(200).optional(),category:z.string().max(200).optional()}).strict();
 function parse<T>(schema:z.ZodType<T>, value:unknown):T { const result=schema.safeParse(value);if(!result.success)return fail("INVALID_INPUT",400,"Invalid or unknown fields");return result.data; }
+const LOCALES=["ru","kk"] as const;
+/** Validates `incoming` and merges it per locale with `stored` (a sent locale replaces, blank removes). */
+function mergedTranslations(stored:unknown,incoming:unknown,spec:FieldSpec,html?:Record<string,(value:string)=>string>):Record<string,unknown>{
+  if(incoming===undefined)return record(stored);
+  if(incoming!==null&&typeof incoming==="object"&&!Array.isArray(incoming)&&Object.keys(incoming).some(key=>!(LOCALES as readonly string[]).includes(key)))return fail("INVALID_INPUT",400,"Invalid translations: only ru and kk can be translated");
+  if(incoming!==null&&typeof incoming==="object"&&Object.values(incoming).some(value=>value===null||typeof value!=="object"||Array.isArray(value)))return fail("INVALID_INPUT",400,"Invalid translations: each locale must be an object");
+  const merged=mergeTranslationsSafely({translations:record(stored)},incoming,spec,html);
+  if(!merged.ok)return fail("INVALID_INPUT",400,`Invalid translations: ${merged.error}`);
+  return merged.translations;
+}
+const translationsColumn=(table:string,key:string,ref:string)=>`(SELECT jsonb_object_agg(t.locale,t.content) FROM ${table} t WHERE t.${key}=${ref}) AS translations`;
+const translationsOf=(row:Record<string,unknown>)=>row.translations&&typeof row.translations==="object"?row.translations as Record<string,unknown>:undefined;
 const entityTypes={products:"product",blogs:"blog",banners:"banner",clients:"customer",homepage:"homepage"} as const;
 const permissions:Record<CMSResource,readonly[Permission,Permission]>={products:["catalog:read","catalog:write"],blogs:["content:write","content:write"],banners:["content:write","content:write"],clients:["customers:read","customers:write"]};
 
@@ -44,23 +62,23 @@ function productDTO(row:Record<string,unknown>):CMSItem {
     id:String(row.public_key),name:String(row.name),sku:String(row.sku??""),description:String(row.description),family:String(row.family??""),badge:row.badge??undefined,priceSuffix:row.price_suffix??undefined,
     currency:"KZT",price:amount,originalPrice:row.compare_at_minor==null?undefined:Number(row.compare_at_minor)/100,status:String(row.status),isFeatured:row.is_featured===true,
     specs:row.specs,inTheBox:row.in_the_box,features:row.features,stock:Number(row.stock_available??0),stockManaged:Number(row.stock_known??0)>0,version:Number(row.version),createdAt:(row.created_at as Date).toISOString(),
-    seoTitle:row.seo_title??"",seoDescription:row.seo_description??"",focusKeywords:row.focus_keywords??[],canonicalUrl:row.canonical_url??"",noIndex:row.no_index===true,ogImage:row.og_image_source??""});
+    seoTitle:row.seo_title??"",seoDescription:row.seo_description??"",focusKeywords:row.focus_keywords??[],canonicalUrl:row.canonical_url??"",noIndex:row.no_index===true,ogImage:row.og_image_source??"",translations:translationsOf(row)});
   return {...defaults,...projected,id:String(row.public_key),version:Number(row.version),currency:"KZT",stockManaged:Number(row.stock_known??0)>0};
 }
 function contentDTO(row:Record<string,unknown>):CMSItem {
   const extra=record(row.legacy_content),kind=String(row.kind);
-  if(kind==="homepage") return {id:String(row.id),version:Number(row.version),config:parse(homepageInput,Array.isArray(row.blocks)?row.blocks[0]:undefined)};
+  if(kind==="homepage"){const blocks=record(Array.isArray(row.blocks)?row.blocks[0]:undefined),translations=translationsOf(row);return {id:String(row.id),version:Number(row.version),config:parse(homepageInput,translations?{...blocks,translations}:blocks)};}
   const resource=kind==="blog"?"blogs":"banners";
   const projected=adminDTO(resource,{...extra,id:row.id,title:row.title,subtitle:row.subtitle,excerpt:row.summary,content:row.body,slug:row.slug,status:row.status,
     author:row.author_label??"",category:row.category??"",readingTime:row.reading_time??"",coverImage:row.cover_source??"",position:row.position,order:row.sort_order,ctaLabel:row.cta_label,ctaUrl:row.cta_url,image:row.image_source,
     active:row.status==="published",seoTitle:row.seo_title,seoDescription:row.seo_description,focusKeywords:row.focus_keywords,canonicalUrl:row.canonical_url,noIndex:row.no_index,ogImage:row.og_image_source,
-    createdAt:(row.created_at as Date).toISOString(),publishedAt:row.published_at instanceof Date?row.published_at.toISOString():""});
+    createdAt:(row.created_at as Date).toISOString(),publishedAt:row.published_at instanceof Date?row.published_at.toISOString():"",translations:translationsOf(row)});
   return {...projected,id:String(row.id),version:Number(row.version),updatedAt:(row.revision_created_at instanceof Date?row.revision_created_at:row.created_at as Date).toISOString()};
 }
 function customerDTO(row:Record<string,unknown>,principal:Principal):CMSItem {return {id:String(row.id),version:Number(row.version),name:row.name,email:row.email??"",phone:row.entered_phone,country:row.country_code??"",status:row.status,avatar:row.avatar??"",...(principal.permissions.includes("customers:write")?{notes:row.notes??""}:{}),createdAt:(row.created_at as Date).toISOString()};}
 const customerSelect="SELECT c.*,n.body AS notes FROM customer_profiles c LEFT JOIN LATERAL (SELECT body FROM customer_private_notes WHERE profile_id=c.id ORDER BY created_at DESC,id DESC LIMIT 1) n ON true";
-const productSelect = "SELECT p.*,v.sku,v.id AS variant_id,pr.id AS price_id,pr.amount_minor,pr.compare_at_minor,stock.stock_known,stock.stock_available FROM products p LEFT JOIN LATERAL (SELECT * FROM product_variants WHERE product_id=p.id AND is_default ORDER BY (status='archived'),created_at DESC,id DESC LIMIT 1) v ON true LEFT JOIN prices pr ON pr.variant_id=v.id AND pr.is_active AND pr.currency='KZT' AND pr.market='default' LEFT JOIN LATERAL (SELECT count(*) AS stock_known,COALESCE(sum(ib.on_hand-ib.reserved),0) AS stock_available FROM inventory_balances ib JOIN stock_locations sl ON sl.id=ib.location_id AND sl.archived_at IS NULL WHERE ib.variant_id=v.id) stock ON true";
-const contentSelect = (published=false) => `SELECT p.id,p.key,p.kind,p.slug,p.status,p.version,p.created_at,pv.*,p.id AS id,p.version AS version,p.created_at AS created_at,pv.created_at AS revision_created_at,b.author_label,b.category,b.reading_time,b.cover_source,bn.position,bn.sort_order,bn.cta_label,bn.cta_url,bn.image_source,pub.published_at FROM pages p ${published?"JOIN page_publications pub ON pub.page_id=p.id AND pub.published_at<=now() AND (pub.scheduled_until IS NULL OR pub.scheduled_until>now()) JOIN page_versions pv ON pv.id=pub.version_id":"JOIN LATERAL (SELECT * FROM page_versions WHERE page_id=p.id ORDER BY version DESC LIMIT 1) pv ON true LEFT JOIN page_publications pub ON pub.page_id=p.id"} LEFT JOIN blog_posts b ON b.version_id=pv.id LEFT JOIN banners bn ON bn.version_id=pv.id`;
+const productSelect = `SELECT p.*,v.sku,v.id AS variant_id,pr.id AS price_id,pr.amount_minor,pr.compare_at_minor,stock.stock_known,stock.stock_available,${translationsColumn("product_translations","product_id","p.id")} FROM products p LEFT JOIN LATERAL (SELECT * FROM product_variants WHERE product_id=p.id AND is_default ORDER BY (status='archived'),created_at DESC,id DESC LIMIT 1) v ON true LEFT JOIN prices pr ON pr.variant_id=v.id AND pr.is_active AND pr.currency='KZT' AND pr.market='default' LEFT JOIN LATERAL (SELECT count(*) AS stock_known,COALESCE(sum(ib.on_hand-ib.reserved),0) AS stock_available FROM inventory_balances ib JOIN stock_locations sl ON sl.id=ib.location_id AND sl.archived_at IS NULL WHERE ib.variant_id=v.id) stock ON true`;
+const contentSelect = (published=false) => `SELECT p.id,p.key,p.kind,p.slug,p.status,p.version,p.created_at,pv.*,p.id AS id,p.version AS version,p.created_at AS created_at,pv.created_at AS revision_created_at,b.author_label,b.category,b.reading_time,b.cover_source,bn.position,bn.sort_order,bn.cta_label,bn.cta_url,bn.image_source,pub.published_at,${translationsColumn("page_version_translations","version_id","pv.id")} FROM pages p ${published?"JOIN page_publications pub ON pub.page_id=p.id AND pub.published_at<=now() AND (pub.scheduled_until IS NULL OR pub.scheduled_until>now()) JOIN page_versions pv ON pv.id=pub.version_id":"JOIN LATERAL (SELECT * FROM page_versions WHERE page_id=p.id ORDER BY version DESC LIMIT 1) pv ON true LEFT JOIN page_publications pub ON pub.page_id=p.id"} LEFT JOIN blog_posts b ON b.version_id=pv.id LEFT JOIN banners bn ON bn.version_id=pv.id`;
 
 export function createCMSService({pool,authorize}:Options) {
   async function tx<T>(action:(client:PoolClient)=>Promise<T>):Promise<T> {
@@ -96,8 +114,11 @@ export function createCMSService({pool,authorize}:Options) {
     return{items,nextCursor:more?Buffer.from(json({scope:query.binding,last:selected.at(-1)!.id})).toString("base64url"):null};
   }
   async function saveContent(client:PoolClient,principal:Principal,resource:"blogs"|"banners"|"homepage",raw:unknown):Promise<CMSItem>{
-    const homepage=resource==="homepage",input=homepage?parse(z.object({version:z.number().int().min(0),config:homepageInput.omit({translations:true})}).strict(),raw):resource==="blogs"?parse(blogCommand,raw):parse(bannerCommand,raw);
-    const {draft,...fields}=record(input),kind=homepage?"homepage":resource==="blogs"?"blog":"banner";
+    const homepage=resource==="homepage",input=homepage?parse(z.object({version:z.number().int().min(0),config:homepageInput}).strict(),raw):resource==="blogs"?parse(blogCommand,raw):parse(bannerCommand,raw);
+    const {draft,translations:sentTranslations,...rest}=record(input),kind=homepage?"homepage":resource==="blogs"?"blog":"banner";
+    // Homepage overlays travel inside the config; they are stored in page_version_translations, not in the blocks.
+    const {translations:sentHomepage,...homepageConfig}=homepage?record(rest.config):{} as Record<string,unknown>;
+    const fields=homepage?{...rest,config:homepageConfig}:rest,incoming=homepage?sentHomepage:sentTranslations;
     // Task 18A: editor rich text is sanitized before it is stored; the excerpt is shown as text, so it is plain text.
     const data=kind==="blog"?{...fields,content:sanitizeRichText(String(fields.content??"")),...(typeof fields.excerpt==="string"?{excerpt:plainText(fields.excerpt)}:{})}:fields;
     if(homepage)await client.query("SELECT pg_advisory_xact_lock(hashtextextended('cms:homepage',0))");
@@ -107,12 +128,16 @@ export function createCMSService({pool,authorize}:Options) {
     if((old&&data.version!==oldVersion)||(!old&&data.version!==undefined&&data.version!==0))return fail("VERSION_CONFLICT",409,"Content changed; reload before saving");
     if(old?.status==="archived")return fail("CONFLICT",409,"Archived content cannot be overwritten");
     const id=old?.id??randomUUID(),next=oldVersion+1,versionId=randomUUID();
+    // The new version carries the previous version's overlays, with any sent locale replaced.
+    const previous=old?(await client.query("SELECT jsonb_object_agg(t.locale,t.content) AS translations FROM page_version_translations t JOIN page_versions pv ON pv.id=t.version_id WHERE pv.page_id=$1 AND pv.version=$2",[id,oldVersion])).rows[0]?.translations:undefined;
+    const translations=mergedTranslations(previous,incoming,kind==="blog"?BLOG_SPEC:kind==="banner"?BANNER_SPEC:HOMEPAGE_SPEC,kind==="blog"?BLOG_HTML_FIELDS:undefined);
     const slug=kind==="blog"?String(data.slug||String(data.title).toLowerCase().replace(/[^\p{L}\p{N}_-]+/gu,"-").replace(/^-|-$/g,"")||id):null;
     if(old?.slug&&slug!==old.slug)return fail("CONFLICT",409,"Changing a public URL requires a redirect workflow");
     if(old)await client.query("UPDATE pages SET version=$2 WHERE id=$1",[id,next]);
     else await client.query("INSERT INTO pages(id,key,kind,slug) VALUES($1,$2,$3,$4)",[id,homepage?"homepage":id,kind,slug]);
     const config=homepage?{...record(data.config),updatedAt:new Date().toISOString()}:undefined;
     await client.query("INSERT INTO page_versions(id,page_id,page_kind,version,title,subtitle,summary,body,blocks,legacy_content,seo_title,seo_description,focus_keywords,canonical_url,no_index,og_image_source,author_user_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)",[versionId,id,kind,next,homepage?"Homepage":data.title,data.subtitle??null,data.excerpt??"",data.content??"",json(homepage?[config]:[]),json(homepage?{}:data),data.seoTitle??null,data.seoDescription??null,json(data.focusKeywords??[]),data.canonicalUrl||null,data.noIndex??false,data.ogImage||null,principal.userId]);
+    for(const locale of LOCALES)if(translations[locale])await client.query("INSERT INTO page_version_translations(version_id,locale,content) VALUES($1,$2,$3)",[versionId,locale,json(translations[locale])]);
     if(kind==="blog")await client.query("INSERT INTO blog_posts(version_id,page_id,author_label,category,reading_time,cover_source) VALUES($1,$2,$3,$4,$5,$6)",[versionId,id,data.author??null,data.category??null,data.readingTime??null,data.coverImage??null]);
     if(kind==="banner")await client.query("INSERT INTO banners(version_id,page_id,position,sort_order,cta_label,cta_url,image_source) VALUES($1,$2,$3,$4,$5,$6,$7)",[versionId,id,data.position??"hero",data.order??0,data.ctaLabel??null,data.ctaUrl??null,data.image??null]);
     const keepLive=draft===true&&old?.status==="published";
@@ -124,7 +149,7 @@ export function createCMSService({pool,authorize}:Options) {
       await appendOutboxEvent(client,{topic:"content.published",dedupeKey:`content.published:${id}:${next}`,aggregate:{type:"page",id},payload:{pageId:id,kind,slug,versionId},consumers:[CONTENT_INVALIDATE_KIND]});
     }
     await client.query("UPDATE pages SET status=$2 WHERE id=$1",[id,status]);
-    await audit(client,principal,"cms.saved",entityTypes[resource],id,Object.keys(data).filter(key=>!["id","version","config"].includes(key)),oldVersion,next);
+    await audit(client,principal,"cms.saved",entityTypes[resource],id,[...Object.keys(data).filter(key=>!["id","version","config"].includes(key)),...(incoming!==undefined?["translations"]:[])],oldVersion,next);
     const row=(await client.query(`${contentSelect()} WHERE p.id=$1`,[id])).rows[0];return contentDTO(row);
   }
   return {
@@ -151,7 +176,9 @@ export function createCMSService({pool,authorize}:Options) {
           const status=data.status??old?.status??"draft";
           const compareAt=data.originalPrice===undefined?old?.compare_at_minor??null:data.originalPrice;
           if(compareAt!==null&&BigInt(compareAt)<BigInt(data.price))return fail("INVALID_INPUT",400,"Compare-at price cannot be below selling price");
-          const metadata={...record(old?.legacy_content),...data,price:Number(data.price)/100,originalPrice:compareAt===null?undefined:Number(compareAt)/100};
+          const {translations:sentTranslations,...base}=data;
+          const translations=mergedTranslations(old?.translations,sentTranslations,PRODUCT_SPEC,PRODUCT_HTML_FIELDS);
+          const metadata={...record(old?.legacy_content),...base,price:Number(data.price)/100,originalPrice:compareAt===null?undefined:Number(compareAt)/100};
           const fields=[data.name,data.description??old?.description??"",data.family??old?.family??null,data.badge??old?.badge??null,data.priceSuffix??old?.price_suffix??null,status,data.isFeatured??old?.is_featured??false,json(data.specs??old?.specs??[]),json(data.features??old?.features??[]),json(data.inTheBox??old?.in_the_box??[]),json(metadata),data.seoTitle??old?.seo_title??null,data.seoDescription??old?.seo_description??null,json(data.focusKeywords??old?.focus_keywords??[]),data.canonicalUrl??old?.canonical_url??null,data.noIndex??old?.no_index??false,data.ogImage??old?.og_image_source??null];
           if(old)await client.query("UPDATE products SET name=$2,description=$3,family=$4,badge=$5,price_suffix=$6,status=$7,is_featured=$8,specs=$9,features=$10,in_the_box=$11,legacy_content=$12,seo_title=$13,seo_description=$14,focus_keywords=$15,canonical_url=$16,no_index=$17,og_image_source=$18,version=version+1,updated_at=clock_timestamp() WHERE id=$1",[id,...fields]);
           else await client.query("INSERT INTO products(id,name,description,family,badge,price_suffix,status,is_featured,specs,features,in_the_box,legacy_content,seo_title,seo_description,focus_keywords,canonical_url,no_index,og_image_source,public_key) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)",[id,...fields,publicKey]);
@@ -160,6 +187,10 @@ export function createCMSService({pool,authorize}:Options) {
           else await client.query("INSERT INTO product_variants(id,product_id,sku,is_default,status) VALUES($1,$2,$3,true,$4)",[variantId,id,data.sku,status==="archived"?"archived":status==="published"?"active":"draft"]);
           if(old?.price_id)await client.query("UPDATE prices SET amount_minor=$2,compare_at_minor=$3,version=version+1 WHERE id=$1",[old.price_id,data.price,compareAt]);
           else await client.query("INSERT INTO prices(id,variant_id,amount_minor,compare_at_minor) VALUES($1,$2,$3,$4)",[randomUUID(),variantId,data.price,compareAt]);
+          if(sentTranslations!==undefined)for(const locale of LOCALES){
+            if(translations[locale])await client.query("INSERT INTO product_translations(product_id,locale,content,updated_by) VALUES($1,$2,$3,$4) ON CONFLICT(product_id,locale) DO UPDATE SET content=excluded.content,updated_by=excluded.updated_by,updated_at=clock_timestamp()",[id,locale,json(translations[locale]),principal.userId]);
+            else await client.query("DELETE FROM product_translations WHERE product_id=$1 AND locale=$2",[id,locale]);
+          }
           await audit(client,principal,"cms.saved",entityTypes.products,id,Object.keys(data),old?Number(old.version):0,next);
           return productDTO((await client.query(`${productSelect} WHERE p.id=$1`,[id])).rows[0]);
         });

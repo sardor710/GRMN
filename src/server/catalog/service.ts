@@ -6,6 +6,8 @@ import type { Availability, DisplayCurrency, ExchangeRateSnapshotDTO, MediaDTO, 
 import type { Page, PageInput } from "../../contracts/pagination.ts";
 import { AuthFailure } from "../auth/config.ts";
 import type { ConcurrencyLimit } from "./limit.ts";
+import { PRODUCT_SPEC, isRecordTranslated, localizeRecord, resolveSeoText } from "../../i18n/translate-record.ts";
+import type { Locale } from "../../i18n/config.ts";
 
 const fail = (): never => { throw new AuthFailure("INVALID_INPUT", 400, "Invalid catalog query or cursor"); };
 const text = z.string().trim().min(1).max(200);
@@ -117,6 +119,26 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
     const rows=(await pool.query(`${base(field==="amount",keyColumns)}, selected AS (SELECT * FROM eligible${where.length?" WHERE "+where.join(" AND "):""} ORDER BY ${order} LIMIT ${param(pg.limit+1)}) SELECT ${pageColumns} FROM selected ${offersSQL} ORDER BY selected.${order.replace(",id",",selected.id")}`,args)).rows;
     const more=rows.length>pg.limit,items=rows.slice(0,pg.limit),last=items.at(-1);return{rows:items,fx,nextCursor:more?Buffer.from(JSON.stringify({v:1,scope,id:last!.id,value:String(last![field])})).toString("base64url"):null};
   }
+  // Task 24: ru/kk overlays from product_translations (blank or missing fields fall back to English).
+  async function translationsFor(ids:string[]):Promise<Map<string,Record<string,unknown>>>{
+    if(!ids.length)return new Map();
+    const rows=(await pool.query("SELECT product_id,jsonb_object_agg(locale,content) AS translations FROM product_translations WHERE product_id=ANY($1::uuid[]) GROUP BY product_id",[ids])).rows;
+    return new Map(rows.map(r=>[String(r.product_id),obj(r.translations)]));
+  }
+  function localizedCard<T extends ProductCardDTO>(dto:T,translations:Record<string,unknown>|undefined,locale:Locale):T{
+    if(locale==="en"||!translations)return dto;
+    const local=localizeRecord({name:dto.name,description:dto.description,translations},locale,PRODUCT_SPEC);
+    return{...dto,name:local.name,description:local.description};
+  }
+  async function localizedCards(items:ProductCardDTO[],locale:Locale):Promise<ProductCardDTO[]>{
+    if(locale==="en")return items;const map=await translationsFor(items.map(i=>i.id));return items.map(i=>localizedCard(i,map.get(i.id),locale));
+  }
+  async function englishDetail(publicKey:string,market:string,displayCurrency:DisplayCurrency):Promise<ProductDetailDTO|null>{
+      parse(text,publicKey);const q=queryInput({market,displayCurrency,locale:"en"}),result=await select(q,{limit:1},[publicKey]),row=result.rows[0];if(!row)return null;
+      const relations=(await pool.query(`SELECT p.public_key,r.relation_type FROM product_relations r JOIN products p ON p.id=r.target_product_id WHERE r.source_product_id=$1 AND p.status='published' AND EXISTS(SELECT 1 FROM product_variants v JOIN prices pr ON pr.variant_id=v.id AND pr.is_active AND pr.currency='KZT' AND pr.market=$2 WHERE v.product_id=p.id AND v.status='active') ORDER BY r.position,p.id LIMIT 100`,[row.id,market])).rows;
+      const variants:VariantDTO[]=array(row.variants).map(value=>{const v=obj(value);return{id:String(v.id),sku:String(v.sku),name:String(v.name),options:Object.fromEntries(Object.entries(obj(v.options)).filter((pair):pair is [string,string]=>typeof pair[1]==="string")),price:price(v,result.fx),availability:v.availability as Availability,gallery:array(v.gallery).map(media).filter((x):x is MediaDTO=>x!==null)};});
+      return{...card(row,result.fx),selectedVariantId:String(obj(row.offer).id),variants,gallery:variants.find(v=>v.id===obj(row.offer).id)?.gallery??[],specs:array(row.specs).flatMap(v=>{const r=obj(v);return typeof r.label==="string"&&typeof r.value==="string"?[{label:r.label,value:r.value}]:[];}),features:array(row.features).flatMap(v=>{const r=obj(v);return typeof r.title==="string"&&typeof r.body==="string"?[{title:r.title,body:r.body,image:media({url:r.image,alt:r.title})}]:[];}),inTheBox:strings(row.in_the_box),compatibleProductKeys:relations.filter(r=>r.relation_type==="compatible_accessory").map(r=>r.public_key),relatedProductKeys:relations.filter(r=>r.relation_type==="related"||r.relation_type==="upsell").map(r=>r.public_key),seo:{title:String(row.seo_title??row.name),description:String(row.seo_description??row.description),canonicalUrl:row.canonical_url==null?null:String(row.canonical_url),noIndex:row.no_index===true,image:publicImage(row.og_image_source)}};
+    }
   return {
     async getRedirect(sourcePath:string):Promise<{targetPath:string;statusCode:301|302|307|308}|null>{
       const safe=(path:string)=>path.startsWith("/")&&!path.startsWith("//")&&!/[\\\u0000-\u0020]/.test(path)&&path.length<=2048;
@@ -129,13 +151,23 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
       if(rows.some(r=>!safe(r.target_path)||r.seen.includes(r.target_path)||r.depth>=9))throw new AuthFailure("DEPENDENCY_UNAVAILABLE",503,"Redirect configuration is unavailable");
       return{targetPath:rows[0].target_path,statusCode:rows[0].status_code};
     },
-    async listProducts(input:ProductQuery,page:PageInput={}):Promise<Page<ProductCardDTO>> {const q=queryInput(input),run=()=>select(q,page),result=await(listingLimit?listingLimit(run):run());return{items:result.rows.map(row=>card(row,result.fx)),nextCursor:result.nextCursor};},
-    async getProductsByKeys(keys:string[],input:ProductQuery):Promise<Page<ProductCardDTO>> {parse(z.array(text).max(100),keys);const result=await select(queryInput(input),{limit:100},keys);return{items:result.rows.map(row=>card(row,result.fx)),nextCursor:null};},
-    async getProductByPublicKey(publicKey:string,market:string,displayCurrency:DisplayCurrency):Promise<ProductDetailDTO|null>{
-      parse(text,publicKey);const q=queryInput({market,displayCurrency,locale:"en"}),result=await select(q,{limit:1},[publicKey]),row=result.rows[0];if(!row)return null;
-      const relations=(await pool.query(`SELECT p.public_key,r.relation_type FROM product_relations r JOIN products p ON p.id=r.target_product_id WHERE r.source_product_id=$1 AND p.status='published' AND EXISTS(SELECT 1 FROM product_variants v JOIN prices pr ON pr.variant_id=v.id AND pr.is_active AND pr.currency='KZT' AND pr.market=$2 WHERE v.product_id=p.id AND v.status='active') ORDER BY r.position,p.id LIMIT 100`,[row.id,market])).rows;
-      const variants:VariantDTO[]=array(row.variants).map(value=>{const v=obj(value);return{id:String(v.id),sku:String(v.sku),name:String(v.name),options:Object.fromEntries(Object.entries(obj(v.options)).filter((pair):pair is [string,string]=>typeof pair[1]==="string")),price:price(v,result.fx),availability:v.availability as Availability,gallery:array(v.gallery).map(media).filter((x):x is MediaDTO=>x!==null)};});
-      return{...card(row,result.fx),selectedVariantId:String(obj(row.offer).id),variants,gallery:variants.find(v=>v.id===obj(row.offer).id)?.gallery??[],specs:array(row.specs).flatMap(v=>{const r=obj(v);return typeof r.label==="string"&&typeof r.value==="string"?[{label:r.label,value:r.value}]:[];}),features:array(row.features).flatMap(v=>{const r=obj(v);return typeof r.title==="string"&&typeof r.body==="string"?[{title:r.title,body:r.body,image:media({url:r.image,alt:r.title})}]:[];}),inTheBox:strings(row.in_the_box),compatibleProductKeys:relations.filter(r=>r.relation_type==="compatible_accessory").map(r=>r.public_key),relatedProductKeys:relations.filter(r=>r.relation_type==="related"||r.relation_type==="upsell").map(r=>r.public_key),seo:{title:String(row.seo_title??row.name),description:String(row.seo_description??row.description),canonicalUrl:row.canonical_url==null?null:String(row.canonical_url),noIndex:row.no_index===true,image:publicImage(row.og_image_source)}};
+    async listProducts(input:ProductQuery,page:PageInput={}):Promise<Page<ProductCardDTO>> {const q=queryInput(input),run=()=>select(q,page),result=await(listingLimit?listingLimit(run):run());return{items:await localizedCards(result.rows.map(row=>card(row,result.fx)),q.locale),nextCursor:result.nextCursor};},
+    async getProductsByKeys(keys:string[],input:ProductQuery):Promise<Page<ProductCardDTO>> {parse(z.array(text).max(100),keys);const q=queryInput(input),result=await select(q,{limit:100},keys);return{items:await localizedCards(result.rows.map(row=>card(row,result.fx)),q.locale),nextCursor:null};},
+    /** Task 24: languages each product is indexable in (en plus translated name and description). */
+    async translatedLocales(productIds:string[]):Promise<Map<string,Locale[]>>{
+      parse(z.array(z.uuid()).max(500),productIds);const map=await translationsFor(productIds);
+      return new Map(productIds.map(id=>{const t=map.get(id);return[id,["en",...(["ru","kk"] as const).filter(l=>t&&isRecordTranslated({translations:t},l,["name","description"]))] as Locale[]];}));
+    },
+    async getProductByPublicKey(publicKey:string,market:string,displayCurrency:DisplayCurrency,locale:Locale="en"):Promise<ProductDetailDTO|null>{
+      const detail=await englishDetail(publicKey,market,displayCurrency);if(!detail)return null;
+      const translations=(await translationsFor([detail.id])).get(detail.id);
+      const translatedLocales:Locale[]=["en",...(["ru","kk"] as const).filter(l=>translations&&isRecordTranslated({translations},l,["name","description"]))];
+      if(locale==="en"||!translations)return{...detail,translatedLocales};
+      const local=localizeRecord({name:detail.name,description:detail.description,specs:detail.specs,features:detail.features.map(f=>({title:f.title,body:f.body})),inTheBox:detail.inTheBox,translations},locale,PRODUCT_SPEC);
+      const seoTitle=resolveSeoText({seoTitle:detail.seo?.title,name:detail.name,translations} as {translations?:unknown},locale,["seoTitle","name"]);
+      return{...detail,translatedLocales,name:local.name,description:local.description,specs:local.specs,inTheBox:local.inTheBox,
+        features:detail.features.map((f,i)=>({...f,title:local.features[i]?.title??f.title,body:local.features[i]?.body??f.body})),
+        ...(detail.seo?{seo:{...detail.seo,title:seoTitle??local.name,description:resolveSeoText({seoDescription:detail.seo.description,description:detail.description,translations} as {translations?:unknown},locale,["seoDescription","description"])??local.description}}:{})};
     },
   };
 }

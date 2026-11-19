@@ -105,7 +105,11 @@ The owner asked to delete Odoo completely, keep erp.tigr.uz and zanko.uz, and pu
 
 The image needs the public origin at build time: `docker build --build-arg NEXT_PUBLIC_SITE_URL=https://garmin.tigr.uz` (Dockerfile ARG). Compose also passes it at runtime.
 
-**Limit on PostgreSQL:** beta2 translates the whole interface. CMS content translations (product, blog and banner text) are stored only by the legacy JSON store; in PostgreSQL mode the admin hides those tabs and content stays English (`/ru` and `/kk` product pages are `noindex` until translated). Storing content translations in PostgreSQL is a follow-up; beta2's handoff sketches `*_translations` tables.
+**Content translations in PostgreSQL (built after the merge, at the owner's request):**
+- Migration 0019 adds `product_translations` and `page_version_translations`.
+- The admin RU/KK tabs work on PostgreSQL for products, blogs, banners, the homepage and SEO.
+- The storefront and sitemap read the stored translations.
+- Details are in [docs/i18n/HANDOFF.md](../../i18n/HANDOFF.md#postgresql-storage-task-24-built-2026-11-19).
 
 **Deployed 2026-11-19:**
 - `grmn:47a935d` / `grmn-ops:47a935d` are in production, after a pre-release backup.

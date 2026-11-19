@@ -29,10 +29,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  // PostgreSQL catalog: English only (no translations stored there yet). A record-level canonical
-  // override is listed as-is, like before, and gets no localized alternates.
+  // PostgreSQL catalog: each product lists the languages it is translated into (product_translations).
+  // A record-level canonical override is listed as-is, like before, and gets no localized alternates.
   const normalizedRoutes:SitemapRoute[]=[],canonicalEntries:MetadataRoute.Sitemap=[];
-  if(cmsBackend()==="postgres"){const {getCatalogService}=await import("@/server/catalog/runtime");let cursor:string|undefined;do{const page=await getCatalogService().listProducts({market:"default",locale:"en",displayCurrency:"KZT"},{limit:100,cursor});for(const p of page.items.filter(p=>!p.noIndex)){const lastModified=p.updatedAt?new Date(p.updatedAt):now;if(p.canonicalUrl)canonicalEntries.push({url:p.canonicalUrl,lastModified,changeFrequency:"daily",priority:0.85});else normalizedRoutes.push({path:`/p/${encodeURIComponent(p.publicKey)}`,indexedLocales:["en"],lastModified,changeFrequency:"daily",priority:0.85});}cursor=page.nextCursor??undefined;}while(cursor);}
+  if(cmsBackend()==="postgres"){const {getCatalogService}=await import("@/server/catalog/runtime");let cursor:string|undefined;do{const page=await getCatalogService().listProducts({market:"default",locale:"en",displayCurrency:"KZT"},{limit:100,cursor});const locales=await getCatalogService().translatedLocales(page.items.map(p=>p.id));for(const p of page.items.filter(p=>!p.noIndex)){const lastModified=p.updatedAt?new Date(p.updatedAt):now;if(p.canonicalUrl)canonicalEntries.push({url:p.canonicalUrl,lastModified,changeFrequency:"daily",priority:0.85});else normalizedRoutes.push({path:`/p/${encodeURIComponent(p.publicKey)}`,indexedLocales:locales.get(p.id)??["en"],lastModified,changeFrequency:"daily",priority:0.85});}cursor=page.nextCursor??undefined;}while(cursor);}
   // Legacy CMS products (records carry translations, so ru/kk are listed once translated).
   const products: import("@/lib/cms/types").CMSProduct[] = [];
   let productCursor:string|undefined;if(cmsBackend()==="legacy")do{const page=await readProductsPage({limit:100,cursor:productCursor});products.push(...page.items);productCursor=page.nextCursor??undefined;}while(productCursor);

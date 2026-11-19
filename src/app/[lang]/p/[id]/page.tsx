@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/p/[id]">):
   const t = await getMetaTranslations(params);
   const id = decodeRouteParam((await params).id);
   const detail = await readOr(getProductDetail(id, locale), () => undefined);
-  // Legacy CMS records carry translations; the PostgreSQL detail brings its own SEO block (English only).
+  // Legacy CMS records carry translations; the PostgreSQL detail is already localized (product_translations).
   const rawProduct = detail?.commerce ? undefined : await getRawCMSProduct(id);
   const cmsProduct = detail?.commerce ? undefined : await getCMSProduct(id, locale);
 
@@ -47,8 +47,8 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/p/[id]">):
   const seo = localizedSeo({
     path: `/p/${id}`,
     locale,
-    // Same record the page renders: without a translated overlay (or on PostgreSQL) only en is indexed.
-    indexedLocales: translatedLocales(rawProduct ?? {}, ["name", "description"]),
+    // Same record the page renders: a language is indexed once its name and description are translated.
+    indexedLocales: detail?.commerce?.translatedLocales ?? translatedLocales(rawProduct ?? {}, ["name", "description"]),
     canonicalOverride: commerceSeo?.canonicalUrl || cmsProduct?.canonicalUrl || undefined,
     noIndex: commerceSeo?.noIndex || cmsProduct?.noIndex,
   });

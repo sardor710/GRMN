@@ -73,3 +73,19 @@ export const pageVersionMedia = pgTable("page_version_media", {
 export const redirects = pgTable("redirects", {
   id: id(), sourcePath: text("source_path").notNull().unique(), targetPath: text("target_path").notNull(), statusCode: integer("status_code").notNull().default(301), active: boolean("active").notNull().default(false),
 }, t => [check("redirects_fields_valid", sql`left(${t.sourcePath},1)='/' AND left(${t.sourcePath},2)<>'//' AND left(${t.targetPath},1)='/' AND left(${t.targetPath},2)<>'//' AND ${t.sourcePath}<>${t.targetPath} AND ${t.statusCode} IN (301,302,307,308)`)]);
+
+// Task 24: ru/kk content translations, stored in PostgreSQL. Each row holds one locale's overlay in the
+// shape of src/lib/cms/types.ts (Translations<…>[locale]); English stays on the base columns. Page
+// translations belong to a page version, so a translation is drafted, published and rolled back with
+// its version. Product translations follow the product row (products are not versioned).
+export const pageVersionTranslations = pgTable("page_version_translations", {
+  versionId: uuid("version_id").notNull().references(() => pageVersions.id, { onDelete: "restrict" }),
+  locale: text("locale").notNull(), content: jsonb("content").notNull(), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [primaryKey({ columns: [t.versionId, t.locale] }),
+  check("page_version_translations_valid", sql`${t.locale} IN ('ru','kk') AND jsonb_typeof(${t.content})='object' AND ${t.content}<>'{}'::jsonb`)]);
+export const productTranslations = pgTable("product_translations", {
+  productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
+  locale: text("locale").notNull(), content: jsonb("content").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(), updatedBy: uuid("updated_by").references(() => user.id, { onDelete: "restrict" }),
+}, t => [primaryKey({ columns: [t.productId, t.locale] }),
+  check("product_translations_valid", sql`${t.locale} IN ('ru','kk') AND jsonb_typeof(${t.content})='object' AND ${t.content}<>'{}'::jsonb`)]);
