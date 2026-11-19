@@ -74,6 +74,9 @@ export interface ProductDetailDTO extends ProductCardDTO {
   relatedProductKeys?: string[];
   selectedVariantId?: string;
   seo?: { title: string; description: string; canonicalUrl: string | null; noIndex: boolean; image: string | null };
+  /** garmin.com-style overview (sanitized HTML) and grouped specifications from the product editor. */
+  overviewHtml?: string;
+  specGroups?: { title: string; items: { label: string; value: string }[] }[];
   /** Task 24: languages with a translated name and description (en always); others are noindex. */
   translatedLocales?: Locale[];
 }

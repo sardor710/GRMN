@@ -9,7 +9,8 @@ import { plainText, sanitizeRichText } from "../content/sanitize.ts";
 import { CONTENT_INVALIDATE_KIND } from "../content/events.ts";
 import { appendOutboxEvent } from "../operations/outbox.ts";
 import { mergeTranslationsSafely } from "../../lib/cms/translation-input.ts";
-import { PRODUCT_HTML_FIELDS } from "../../lib/cms/product-input.ts";
+import { PRODUCT_HTML_FIELDS, sanitizeProductInput } from "../../lib/cms/product-input.ts";
+import { projectProduct, type ProductDocument } from "./product-projection.ts";
 import { BLOG_HTML_FIELDS } from "../../lib/cms/content-input.ts";
 import { BANNER_SPEC, BLOG_SPEC, HOMEPAGE_SPEC, PRODUCT_SPEC } from "../../i18n/translate-record.ts";
 import type { FieldSpec } from "../../i18n/translate-record.ts";
@@ -176,17 +177,21 @@ export function createCMSService({pool,authorize}:Options) {
           const status=data.status??old?.status??"draft";
           const compareAt=data.originalPrice===undefined?old?.compare_at_minor??null:data.originalPrice;
           if(compareAt!==null&&BigInt(compareAt)<BigInt(data.price))return fail("INVALID_INPUT",400,"Compare-at price cannot be below selling price");
-          const {translations:sentTranslations,...base}=data;
+          const {translations:sentTranslations,...unsafe}=data;
+          // Overview HTML, image URLs and swatch colours are sanitized like the legacy admin route.
+          const clean=sanitizeProductInput(unsafe as Record<string,unknown>,undefined);
+          if(!clean.ok)return fail("INVALID_INPUT",400,clean.error);
+          const base=clean.product as typeof unsafe;
           const translations=mergedTranslations(old?.translations,sentTranslations,PRODUCT_SPEC,PRODUCT_HTML_FIELDS);
           const metadata={...record(old?.legacy_content),...base,price:Number(data.price)/100,originalPrice:compareAt===null?undefined:Number(compareAt)/100};
           const fields=[data.name,data.description??old?.description??"",data.family??old?.family??null,data.badge??old?.badge??null,data.priceSuffix??old?.price_suffix??null,status,data.isFeatured??old?.is_featured??false,json(data.specs??old?.specs??[]),json(data.features??old?.features??[]),json(data.inTheBox??old?.in_the_box??[]),json(metadata),data.seoTitle??old?.seo_title??null,data.seoDescription??old?.seo_description??null,json(data.focusKeywords??old?.focus_keywords??[]),data.canonicalUrl??old?.canonical_url??null,data.noIndex??old?.no_index??false,data.ogImage??old?.og_image_source??null];
           if(old)await client.query("UPDATE products SET name=$2,description=$3,family=$4,badge=$5,price_suffix=$6,status=$7,is_featured=$8,specs=$9,features=$10,in_the_box=$11,legacy_content=$12,seo_title=$13,seo_description=$14,focus_keywords=$15,canonical_url=$16,no_index=$17,og_image_source=$18,version=version+1,updated_at=clock_timestamp() WHERE id=$1",[id,...fields]);
           else await client.query("INSERT INTO products(id,name,description,family,badge,price_suffix,status,is_featured,specs,features,in_the_box,legacy_content,seo_title,seo_description,focus_keywords,canonical_url,no_index,og_image_source,public_key) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)",[id,...fields,publicKey]);
-          const variantId=old?.variant_id??randomUUID();
-          if(old?.variant_id)await client.query("UPDATE product_variants SET sku=$2,status=$3,version=version+1 WHERE id=$1",[variantId,data.sku,status==="archived"?"archived":status==="published"?"active":"draft"]);
-          else await client.query("INSERT INTO product_variants(id,product_id,sku,is_default,status) VALUES($1,$2,$3,true,$4)",[variantId,id,data.sku,status==="archived"?"archived":status==="published"?"active":"draft"]);
-          if(old?.price_id)await client.query("UPDATE prices SET amount_minor=$2,compare_at_minor=$3,version=version+1 WHERE id=$1",[old.price_id,data.price,compareAt]);
-          else await client.query("INSERT INTO prices(id,variant_id,amount_minor,compare_at_minor) VALUES($1,$2,$3,$4)",[randomUUID(),variantId,data.price,compareAt]);
+          // The editor document (options, variants, photos) is projected into the commerce tables.
+          const document:ProductDocument={status,sku:data.sku,priceMinor:data.price,compareMinor:compareAt,
+            options:(Array.isArray(metadata.options)?metadata.options:[]) as ProductDocument["options"],variants:(Array.isArray(metadata.variants)?metadata.variants:[]) as ProductDocument["variants"],
+            images:(Array.isArray(metadata.images)?metadata.images:[]) as ProductDocument["images"],defaultImageId:typeof metadata.defaultImageId==="string"?metadata.defaultImageId:undefined};
+          await projectProduct(client,id,document);
           if(sentTranslations!==undefined)for(const locale of LOCALES){
             if(translations[locale])await client.query("INSERT INTO product_translations(product_id,locale,content,updated_by) VALUES($1,$2,$3,$4) ON CONFLICT(product_id,locale) DO UPDATE SET content=excluded.content,updated_by=excluded.updated_by,updated_at=clock_timestamp()",[id,locale,json(translations[locale]),principal.userId]);
             else await client.query("DELETE FROM product_translations WHERE product_id=$1 AND locale=$2",[id,locale]);

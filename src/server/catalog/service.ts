@@ -23,7 +23,8 @@ const strings = (v:unknown) => array(v).filter((x):x is string=>typeof x==="stri
 const key = (v:string) => v.toLowerCase().replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-|-$/g,"");
 export function publicImage(url:unknown):string|null {
   if(typeof url!=="string"||url.length>2048||/[\u0000-\u0020\\]/.test(url))return null;
-  if(url.startsWith("/images/")&&!url.startsWith("//")&&!url.split("/").includes(".."))return url;
+  // Static images, editor/importer uploads (UPLOAD_DIR, served by /uploads) and CMS media (/media).
+  if(/^\/(images|uploads|media)\//.test(url)&&!url.startsWith("//")&&!url.split("/").includes(".."))return url;
   return null;
 }
 function media(value:unknown):MediaDTO|null {const v=obj(value),url=publicImage(v.url);return url?{url,alt:typeof v.alt==="string"?v.alt:"",width:typeof v.width==="number"?v.width:null,height:typeof v.height==="number"?v.height:null}:null;}
@@ -159,13 +160,18 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
       return new Map(productIds.map(id=>{const t=map.get(id);return[id,["en",...(["ru","kk"] as const).filter(l=>t&&isRecordTranslated({translations:t},l,["name","description"]))] as Locale[]];}));
     },
     async getProductByPublicKey(publicKey:string,market:string,displayCurrency:DisplayCurrency,locale:Locale="en"):Promise<ProductDetailDTO|null>{
-      const detail=await englishDetail(publicKey,market,displayCurrency);if(!detail)return null;
+      const found=await englishDetail(publicKey,market,displayCurrency);if(!found)return null;
+      // The editor's overview and grouped specs live in the product document (legacy_content).
+      const editorial=obj((await pool.query("SELECT jsonb_build_object('overviewHtml',legacy_content->'overviewHtml','specGroups',legacy_content->'specGroups') AS doc FROM products WHERE id=$1",[found.id])).rows[0]?.doc);
+      const specGroups=array(editorial.specGroups).flatMap(g=>{const group=obj(g);return typeof group.title==="string"?[{title:group.title,items:array(group.items).flatMap(i=>{const item=obj(i);return typeof item.label==="string"&&typeof item.value==="string"?[{label:item.label,value:item.value}]:[];})}]:[];});
+      const detail:ProductDetailDTO={...found,...(typeof editorial.overviewHtml==="string"&&editorial.overviewHtml?{overviewHtml:editorial.overviewHtml}:{}),...(specGroups.length?{specGroups}:{})};
       const translations=(await translationsFor([detail.id])).get(detail.id);
       const translatedLocales:Locale[]=["en",...(["ru","kk"] as const).filter(l=>translations&&isRecordTranslated({translations},l,["name","description"]))];
       if(locale==="en"||!translations)return{...detail,translatedLocales};
-      const local=localizeRecord({name:detail.name,description:detail.description,specs:detail.specs,features:detail.features.map(f=>({title:f.title,body:f.body})),inTheBox:detail.inTheBox,translations},locale,PRODUCT_SPEC);
+      const local=localizeRecord({name:detail.name,description:detail.description,specs:detail.specs,features:detail.features.map(f=>({title:f.title,body:f.body})),inTheBox:detail.inTheBox,overviewHtml:detail.overviewHtml,specGroups:detail.specGroups,translations},locale,PRODUCT_SPEC);
       const seoTitle=resolveSeoText({seoTitle:detail.seo?.title,name:detail.name,translations} as {translations?:unknown},locale,["seoTitle","name"]);
       return{...detail,translatedLocales,name:local.name,description:local.description,specs:local.specs,inTheBox:local.inTheBox,
+        ...(local.overviewHtml?{overviewHtml:local.overviewHtml}:{}),...(local.specGroups?{specGroups:local.specGroups}:{}),
         features:detail.features.map((f,i)=>({...f,title:local.features[i]?.title??f.title,body:local.features[i]?.body??f.body})),
         ...(detail.seo?{seo:{...detail.seo,title:seoTitle??local.name,description:resolveSeoText({seoDescription:detail.seo.description,description:detail.description,translations} as {translations?:unknown},locale,["seoDescription","description"])??local.description}}:{})};
     },

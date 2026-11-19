@@ -50,6 +50,8 @@ services:
       DATABASE_URL: postgresql://grmn_app:${DB_APP_PASSWORD}@db:5432/grmn
       DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-10}
       MEDIA_STORAGE_DIR: /media
+      # Editor photo uploads and garmin.com import photos (served by /uploads), on the backed-up media volume.
+      UPLOAD_DIR: /media/uploads
     volumes: [media:/media]
     depends_on: {db: {condition: service_healthy}}
     restart: unless-stopped

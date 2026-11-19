@@ -13,7 +13,8 @@ const link = z.string().max(2048).refine(value => !value || value === "#" || /^\
 const translations = z.record(z.string(), z.unknown()).optional();
 const seo = { seoTitle: short.optional(), seoDescription: text.optional(), focusKeywords: list.optional(), canonicalUrl: link.optional(), noIndex: z.boolean().optional(), ogImage: link.optional() };
 export const seoPatchInput = z.object({id,...seo,translations}).strict().refine(value=>Object.keys(value).length>1);
-// Product media, options and variants (legacy JSON CMS). The admin route additionally sanitizes
+// Product media, options and variants (both stores; the garmin.com importer keeps up to 300 photos and
+// full spec tables, so images allow 300 and flat specs 500 rows). The admin route additionally sanitizes
 // overview HTML, allowlists image and swatch URLs and enforces SKU uniqueness (product-input/product-variants).
 const optionValueInput = z.object({id,key:short,label:short,swatchColor:short.optional(),swatchImage:link.optional()}).strict();
 const productOptionInput = z.object({id,key:short,name:short.min(1),display:z.enum(["buttons","swatch","dropdown"]),values:z.array(optionValueInput).max(200)}).strict();
@@ -27,9 +28,9 @@ export const productInput = z.object({
   description: text.optional(), image: link.optional(), badge: short.optional(), family: short.optional(), category: short.optional(), subCategory: short.optional(),
   activities: list.optional(), level: z.enum(["Entry","Advanced","Premium","Youth"]).optional(), caseSize: z.enum(["Small","Medium","Large"]).optional(),
   stock: count.optional(), status: z.enum(["published","draft","archived"]).optional(), isFeatured: z.boolean().optional(),
-  specs: z.array(z.object({label: short, value: text}).strict()).max(200).optional(), inTheBox: list.optional(), compatibleAccessories: list.optional(),
+  specs: z.array(z.object({label: short, value: text}).strict()).max(500).optional(), inTheBox: list.optional(), compatibleAccessories: list.optional(),
   features: z.array(z.object({title: short, body: text, image: link.optional()}).strict()).max(200).optional(), ...seo,
-  images: z.array(productImageInput).max(100).optional(), defaultImageId: short.optional(), options: z.array(productOptionInput).max(10).optional(),
+  images: z.array(productImageInput).max(300).optional(), defaultImageId: short.optional(), options: z.array(productOptionInput).max(10).optional(),
   variants: z.array(productVariantInput).max(500).optional(), overviewHtml: z.string().max(200000).optional(), specGroups: z.array(specGroupInput).max(100).optional(), source: productSourceInput.optional(), translations,
 }).strict();
 export const bannerInput = z.object({id:id.optional(),title:short.min(1),subtitle:text.optional(),ctaLabel:short.optional(),ctaUrl:link.optional(),image:link.optional(),position:z.enum(["hero","promo_pod","announcement"]).optional(),active:z.boolean().optional(),order:count.optional(),translations}).strict();

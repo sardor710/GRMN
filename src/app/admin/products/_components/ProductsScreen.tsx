@@ -459,9 +459,15 @@ export default function AdminProductsPage() {
     }
     // New products get a server-generated id: an existing id would overwrite that product.
     const id = editingProduct ? editingProduct.id : undefined;
+    // PostgreSQL: saves are versioned (optimistic concurrency) and stock moves only through the
+    // Inventory screen, so the product stock field is not sent (variant stock is ignored there).
+    const { stock, ...rest } = formData;
+    const postgres = collection.backend === "postgres";
     const payload = {
       ...(id ? { id } : {}),
-      ...formData,
+      ...(postgres && editingProduct ? { version: (editingProduct as CMSProduct & { version?: number }).version } : {}),
+      ...rest,
+      ...(postgres ? {} : { stock }),
       image: defaultImageSrc(formData.images, formData.defaultImageId) || formData.image,
       // empty arrays are sent on purpose so removing all options turns the product back into a simple one
       options: formData.options,
@@ -1036,8 +1042,9 @@ export default function AdminProductsPage() {
                     id="product-stock"
                     type="number"
                     min={0}
-                    required={!hasVariants}
-                    disabled={hasVariants}
+                    required={!hasVariants && collection.backend !== "postgres"}
+                    disabled={hasVariants || collection.backend === "postgres"}
+                    title={collection.backend === "postgres" ? "Stock is received and adjusted on the Inventory screen" : undefined}
                     value={hasVariants ? (defaultVariant?.stock ?? 0) : formData.stock}
                     onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) })}
                     className="mt-1 h-9 w-full border border-neutral-300 bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none font-semibold rounded-none disabled:bg-neutral-100 disabled:text-neutral-500"

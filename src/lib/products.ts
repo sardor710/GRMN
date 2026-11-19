@@ -338,7 +338,8 @@ export async function getProductDetail(id: string, locale: Locale = "en"): Promi
       breadcrumb:editorial?.breadcrumb??[{label:"SMARTWATCHES",href:"/c/wearables-smartwatches"}],
       gallery:detail.gallery.map(m=>({view:m.alt||detail.name,src:m.url})),
       caseSizes:[],defaultCaseSize:"",versions:[],defaultVersion:"",colors:[],
-      features:detail.features.length?detail.features.map(f=>({title:f.title,body:f.body,image:f.image?.url})):editorial?.features??[],specs:detail.specs.length?detail.specs:editorial?.specs??[],inTheBox:detail.inTheBox.length?detail.inTheBox:editorial?.inTheBox??[],related:detail.relatedProductKeys??[]};
+      features:detail.features.length?detail.features.map(f=>({title:f.title,body:f.body,image:f.image?.url})):editorial?.features??[],specs:detail.specs.length?detail.specs:editorial?.specs??[],inTheBox:detail.inTheBox.length?detail.inTheBox:editorial?.inTheBox??[],related:detail.relatedProductKeys??[],
+      ...(detail.overviewHtml?{overviewHtml:detail.overviewHtml}:{}),...(detail.specGroups?.length?{specGroups:detail.specGroups}:{})};
   }
   const cms = await getCMSProduct(id, locale);
   // Only products with variants or an overview get the CMS page; legacy products keep their hand-built page

@@ -201,11 +201,13 @@ test("customer read permissions hide private notes and cannot edit a linked acco
 
 async function editedForm(resource,item){
   const {componentFixture,nodes}=await import("../helpers/component-fixture.mjs");
-  // The PostgreSQL CMS service pairs with PostgresProductsScreen (the legacy screen is the JSON variants editor).
-  const label=resource==="products"?"PostgresProducts":"Clients",fixture=componentFixture(`src/app/admin/${resource}/_components/${label}Screen.tsx`,{items:[item]});
+  // Products: the one product editor (options/variants/photos/import) for both stores; it posts with fetch.
+  const posted=[],fetcher=async(_url,options)=>{if(options?.body)posted.push(JSON.parse(options.body));return{ok:true,status:200,json:async()=>({success:true})};};
+  const productEditor=resource==="products"?{modules:{"@/components/admin/product-editor":{formatKzt:value=>String(value),newId:prefix=>`${prefix}-fixture`}}}:{};
+  const fixture=componentFixture(`src/app/admin/${resource}/_components/${resource==="products"?"Products":"Clients"}Screen.tsx`,{items:[item],fetcher,...productEditor});
   nodes(fixture.render()).find(node=>node.props?.title===`Edit ${resource==="products"?"Product":"Client"}`).props.onClick();
   await nodes(fixture.render()).find(node=>node.type==="form").props.onSubmit({preventDefault(){}});
-  return fixture.writes[0].body;
+  return resource==="products"?posted[0]:fixture.writes[0].body;
 }
 test("actual edit-form payloads preserve hidden product features and customer avatars",async()=>{
   const cms=await service(),features=[{title:"Preserve",body:"Existing feature",image:"/image.jpg"}];

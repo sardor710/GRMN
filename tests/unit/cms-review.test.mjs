@@ -7,7 +7,6 @@ import * as seoCore from "../../src/i18n/seo-core.js";
 
 const screen=resource=>`src/app/admin/${resource}/_components/${resource[0].toUpperCase()+resource.slice(1)}Screen.tsx`;
 // Products have two screens: the legacy JSON editor (options/variants) and the PostgreSQL catalog screen.
-const postgresProducts="src/app/admin/products/_components/PostgresProductsScreen.tsx";
 const productEditor={"@/components/admin/product-editor":{formatKzt:value=>String(value),newId:prefix=>`${prefix}-fixture`}};
 test("legacy destructive confirmations say permanently delete, while candidate actions say archive",async()=>{
   for(const resource of ["products","blogs","banners"]){
@@ -43,7 +42,7 @@ test("unsupported discounts load as an unavailable state rather than a successfu
   assert.ok(nodes(tree).some(node=>node.props?.role==="alert"&&/unavailable/i.test(nodeText(node))));
 });
 test("cross-sell target selection can reach a product outside the main list page",()=>{
-  for(const [file,modules] of [[postgresProducts,{}],[screen("products"),productEditor]]){
+  for(const [file,modules] of [[screen("products"),productEditor]]){
   const fixture=componentFixture(file,{items:[],modules,collectionFactory:(_resource,input,page)=>input?.family===undefined?{...page,items:[{id:"outside",name:"Beyond page",sku:"OUTSIDE",category:"Cat",price:1}]}:page});
   nodes(fixture.render()).find(node=>node.type==="button"&&nodeText(node).includes("Cross-Selling")).props.onClick();assert.match(nodeText(fixture.render()),/Beyond page/);
   }
@@ -58,7 +57,10 @@ test("successful article saves refresh independent category choices",async()=>{
   assert.deepEqual(reloaded,["blogs","blogs/categories"]);
 });
 test("successful product saves refresh the independent target picker",async()=>{
-  const reloaded=[];const fixture=componentFixture(postgresProducts,{collectionFactory:(_resource,input,page)=>({...page,reload:()=>reloaded.push(input?.family===undefined?"picker":"main")})});
+  // One product editor for both stores (the PostgreSQL-only screen was removed, owner 2026-11-19).
+  const item={id:"p1",version:1,name:"Watch",sku:"W-1",price:1000,category:"Smartwatches & Wearables",image:"/images/products/1228429.jpg",images:[],options:[],variants:[],stock:0,status:"published"};
+  const reloaded=[];const fixture=componentFixture(screen("products"),{items:[item],modules:productEditor,fetcher:async()=>({ok:true,status:200,json:async()=>({success:true})}),collectionFactory:(_resource,input,page)=>({...page,items:input?.family===undefined?page.items:[item],reload:()=>reloaded.push(input?.family===undefined?"picker":"main")})});
+  nodes(fixture.render()).find(node=>node.props?.title==="Edit Product").props.onClick();
   await nodes(fixture.render()).find(node=>node.type==="form").props.onSubmit({preventDefault(){}});
   assert.deepEqual(reloaded,["main","picker"]);
 });
