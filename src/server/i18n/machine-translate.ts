@@ -107,6 +107,8 @@ export async function translateRecord(input: {
   locales: readonly MachineLocale[]; model: TranslationModel; batch?: { maxItems: number; maxChars: number };
   /** Stop starting new batches after this many ms; the caller repeats until `remaining` is 0. */
   budgetMs?: number;
+  /** Batches sent at the same time (default 3). */
+  concurrency?: number;
 }): Promise<{ translations: Record<string, Overlay>; filled: number; remaining: number }> {
   const html = new Set(input.htmlFields ?? []), existing = isObject(input.existing) ? input.existing : {};
   const translations: Record<string, Overlay> = {};
@@ -120,13 +122,24 @@ export async function translateRecord(input: {
     const byText = new Map<string, Slot[]>();
     for (const slot of slots) byText.set(slot.text, [...(byText.get(slot.text) ?? []), slot]);
     const unique = [...byText.entries()].map(([text, group], index) => ({ key: `s${index}`, text, group }));
-    for (const group of batches(unique as unknown as Slot[], input.batch?.maxItems ?? 50, input.batch?.maxChars ?? 5000) as unknown as typeof unique[]) {
-      if (Date.now() >= deadline) { remaining += group.reduce((n, u) => n + u.group.length, 0); continue; }
-      const result = await input.model.complete({ locale, segments: Object.fromEntries(group.map(u => [u.key, u.text])) });
-      for (const u of group) {
-        const value = result[u.key];
-        if (typeof value === "string" && value.trim()) for (const slot of u.group) { slot.set(current, value); filled++; }
-      }
+    // Small batches (a free model answers a 20-text batch well within one call's timeout), up to
+    // `concurrency` at a time; no new wave starts after the time budget.
+    const groups = batches(unique as unknown as Slot[], input.batch?.maxItems ?? 20, input.batch?.maxChars ?? 2000) as unknown as typeof unique[];
+    const concurrency = input.concurrency ?? 3;
+    for (let start = 0; start < groups.length; start += concurrency) {
+      const wave = groups.slice(start, start + concurrency);
+      if (Date.now() >= deadline) { for (const group of wave) remaining += group.reduce((n, u) => n + u.group.length, 0); continue; }
+      const results = await Promise.allSettled(wave.map(group => input.model.complete({ locale, segments: Object.fromEntries(group.map(u => [u.key, u.text])) })));
+      results.forEach((outcome, index) => {
+        const group = wave[index];
+        if (outcome.status === "rejected") { remaining += group.reduce((n, u) => n + u.group.length, 0); return; }
+        for (const u of group) {
+          const value = outcome.value[u.key];
+          if (typeof value === "string" && value.trim()) for (const slot of u.group) { slot.set(current, value); filled++; }
+        }
+      });
+      // Every call in the wave failed: report the cause instead of looping on nothing.
+      if (results.every(r => r.status === "rejected")) throw (results[0] as PromiseRejectedResult).reason;
     }
     if (Object.keys(current).length) translations[locale] = current;
   }
