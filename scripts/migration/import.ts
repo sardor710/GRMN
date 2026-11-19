@@ -4,7 +4,7 @@ import type { Snapshot } from "./extract.ts";
 import { validateSnapshot } from "./validate.ts";
 import type { ValidatedRecord } from "./validate.ts";
 import { canonical, compareExact, databaseText, stableId, storedRecordPayload, text } from "./map.ts";
-import { advanceSequenceOnClient, archiveRecordId, expectedOrderLines, parseManifest, receiptKey, reconcileOnClient, rollbackSafely, targetFingerprint, verifyCheckpoint } from "./reconcile.ts";
+import { advanceSequenceOnClient, archiveRecordId, issueResolution, expectedOrderLines, parseManifest, receiptKey, reconcileOnClient, rollbackSafely, targetFingerprint, verifyCheckpoint } from "./reconcile.ts";
 import type { Manifest, Receipt, Reconciliation } from "./reconcile.ts";
 
 export interface ImportOptions {
@@ -73,7 +73,10 @@ export async function importSnapshot(pool: Pool, snapshot: Snapshot, options: Im
           const targetType = (record.disposition === "importable" ? record.targetType : "legacy_source_records") as Receipt["targetType"];
           const targetId = record.disposition === "importable" ? record.targetId : archiveId;
           await client.query("INSERT INTO legacy_id_map(id,source_namespace,entity,source_key,run_id,record_id,target_type,target_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8)", [stableId(snapshot.namespace, record.entity, record.sourceKey, "map"), snapshot.namespace, record.entity, record.sourceKey, runId, archiveId, targetType, targetId]);
-          for (const item of record.issues) await client.query("INSERT INTO migration_issues(id,run_id,entity,source_key,field_path,code,severity,safe_message) VALUES($1,$2,$3,$4,$5,$6,$7,$6)", [stableId(runId, record.entity, record.sourceKey, item.code, item.fieldPath), runId, record.entity, record.sourceKey, databaseText(item.fieldPath), item.code, item.severity]);
+          for (const item of record.issues) {
+            const resolution = issueResolution(snapshot, item);
+            await client.query("INSERT INTO migration_issues(id,run_id,entity,source_key,field_path,code,severity,safe_message,disposition,resolution,resolved_at) VALUES($1,$2,$3,$4,$5,$6,$7,$6,$8,$9,CASE WHEN $8='resolved' THEN now() END)", [stableId(runId, record.entity, record.sourceKey, item.code, item.fieldPath), runId, record.entity, record.sourceKey, databaseText(item.fieldPath), item.code, item.severity, resolution ? "resolved" : "open", resolution ? canonical(resolution) : null]);
+          }
           next.receipts[receiptKey(record.entity, record.sourceKey)] = { entity: record.entity, sourceKey: record.sourceKey, targetType, targetId, fingerprint: "", disposition: record.disposition };
         }
         // Deferred schema triggers seal order/content snapshots at commit.

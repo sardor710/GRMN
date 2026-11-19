@@ -5,7 +5,7 @@ import type { Snapshot } from "./extract.ts";
 import { validateSnapshot } from "./validate.ts";
 import { asObject, canonical, compareExact, databaseText, moneyToMinor, sha256, stableId, storedRecordPayload, text } from "./map.ts";
 import type { JsonObject } from "./map.ts";
-import type { ValidatedRecord } from "./validate.ts";
+import type { Issue, ValidatedRecord } from "./validate.ts";
 
 const receiptSchema = z.object({ entity: z.string(), sourceKey: z.string(), targetType: z.enum(["products", "pages", "customer_profiles", "orders", "promotions", "audit_events", "legacy_source_records"]), targetId: z.uuid(), fingerprint: z.string().regex(/^[a-f0-9]{64}$/), disposition: z.enum(["importable", "quarantined", "excluded"]) }).strict();
 const manifestSchema = z.object({ version: z.literal(1), artifactChecksum: z.string(), cursor: z.number().int().nonnegative(), receipts: z.record(z.string(), receiptSchema) }).strict();
@@ -20,7 +20,7 @@ export interface Reconciliation {
   runId: string | null; status: string; ready: boolean; parityReady: boolean; mismatches: Mismatch[];
   counts: Record<string, { expected: number; imported: number; quarantined: number; excluded: number; missing: number }>;
   fieldCoverage: { compared: number; mismatched: number; normalizedCompared: number; normalizedMismatched: number; archivedOnlyFields: number }; blockers: number;
-  financial: { currency: "KZT"; orders: number; sourceTotalMinor: string; targetTotalMinor: string; lineSubtotalMinor: string; quarantinedTotalMinor: string; quarantinedOrders: number; unvaluedOrders: number };
+  financial: { currency: "KZT"; orders: number; sourceTotalMinor: string; targetTotalMinor: string; lineSubtotalMinor: string; quarantinedTotalMinor: string; quarantinedOrders: number; excludedTotalMinor: string; excludedOrders: number; unvaluedOrders: number };
 }
 
 // This closed registry is shared by the initial receipt and later reconciliation.
@@ -112,7 +112,7 @@ export async function reconcileOnClient(client: PoolClient, snapshot: Snapshot):
   assertSnapshot(snapshot);
   const validation = validateSnapshot(snapshot);
   const runs = await client.query("SELECT id,status,manifest FROM migration_runs WHERE source_namespace=$1 ORDER BY created_at,id", [snapshot.namespace]);
-  const result: Reconciliation = { runId: runs.rows[0]?.id ?? null, status: runs.rows[0]?.status ?? "missing", ready: false, parityReady: false, mismatches: [], counts: Object.create(null), fieldCoverage: { compared: 0, mismatched: 0, normalizedCompared: 0, normalizedMismatched: 0, archivedOnlyFields: 0 }, blockers: 0, financial: { currency: "KZT", orders: 0, sourceTotalMinor: "0", targetTotalMinor: "0", lineSubtotalMinor: "0", quarantinedTotalMinor: "0", quarantinedOrders: 0, unvaluedOrders: 0 } };
+  const result: Reconciliation = { runId: runs.rows[0]?.id ?? null, status: runs.rows[0]?.status ?? "missing", ready: false, parityReady: false, mismatches: [], counts: Object.create(null), fieldCoverage: { compared: 0, mismatched: 0, normalizedCompared: 0, normalizedMismatched: 0, archivedOnlyFields: 0 }, blockers: 0, financial: { currency: "KZT", orders: 0, sourceTotalMinor: "0", targetTotalMinor: "0", lineSubtotalMinor: "0", quarantinedTotalMinor: "0", quarantinedOrders: 0, excludedTotalMinor: "0", excludedOrders: 0, unvaluedOrders: 0 } };
   if (runs.rowCount !== 1) { result.mismatches.push({ code: "RUN_MISSING_OR_AMBIGUOUS", entity: "migration" }); return result; }
   const manifest = parseManifest(runs.rows[0].manifest);
   if (manifest.artifactChecksum !== snapshot.artifactChecksum) throw new Error("SOURCE_CHANGED");
@@ -121,15 +121,17 @@ export async function reconcileOnClient(client: PoolClient, snapshot: Snapshot):
   if (staged.rowCount !== validation.records.length || Object.keys(manifest.receipts).length !== validation.records.length || manifest.cursor !== validation.records.length) result.mismatches.push({ code: "COUNT_MISMATCH", entity: "migration" });
   const blockers = await client.query("SELECT count(*)::text AS count FROM migration_issues WHERE run_id=$1 AND severity='blocker' AND disposition='open'", [result.runId]);
   result.blockers = Number(blockers.rows[0].count);
-  if (!await issueParity(client, result.runId!, validation.records)) result.mismatches.push({ code: "ISSUE_MISMATCH", entity: "migration" });
+  if (!await issueParity(client, snapshot, result.runId!, validation.records)) result.mismatches.push({ code: "ISSUE_MISMATCH", entity: "migration" });
   let sourceTotal = BigInt(0), targetTotal = BigInt(0), lineTotal = BigInt(0);
-  let quarantinedTotal = BigInt(0);
+  let quarantinedTotal = BigInt(0), excludedTotal = BigInt(0);
   for (const record of validation.records.filter(record => record.entity === "orders")) {
     if (record.disposition === "quarantined") result.financial.quarantinedOrders++;
+    if (record.disposition === "excluded") result.financial.excludedOrders++;
     if (record.projection.totalMinor === null) result.financial.unvaluedOrders++;
     else {
       const amount = BigInt(String(record.projection.totalMinor)); sourceTotal += amount;
       if (record.disposition === "quarantined") quarantinedTotal += amount;
+      if (record.disposition === "excluded") excludedTotal += amount;
     }
   }
   for (const record of validation.records) {
@@ -167,8 +169,8 @@ export async function reconcileOnClient(client: PoolClient, snapshot: Snapshot):
     }
   }
   result.financial.sourceTotalMinor = sourceTotal.toString(); result.financial.targetTotalMinor = targetTotal.toString(); result.financial.lineSubtotalMinor = lineTotal.toString();
-  result.financial.quarantinedTotalMinor = quarantinedTotal.toString();
-  if (sourceTotal !== targetTotal + quarantinedTotal) result.mismatches.push({ code: "FINANCIAL_TOTAL_MISMATCH", entity: "orders" });
+  result.financial.quarantinedTotalMinor = quarantinedTotal.toString(); result.financial.excludedTotalMinor = excludedTotal.toString();
+  if (sourceTotal !== targetTotal + quarantinedTotal + excludedTotal) result.mismatches.push({ code: "FINANCIAL_TOTAL_MISMATCH", entity: "orders" });
   for (const code of (await inspectOrderSequence(client)).problems) result.mismatches.push({ code, entity: "orders" });
   result.parityReady = result.blockers === 0 && validation.records.every(record => record.disposition !== "quarantined") && result.mismatches.length === 0;
   result.ready = result.parityReady && result.status === "completed";
@@ -176,9 +178,17 @@ export async function reconcileOnClient(client: PoolClient, snapshot: Snapshot):
   return result;
 }
 
-async function issueParity(client: PoolClient, runId: string, records: ValidatedRecord[]): Promise<boolean> {
-  const actual = (await client.query("SELECT id,entity,source_key,field_path,code,severity,safe_message FROM migration_issues WHERE run_id=$1", [runId])).rows;
-  const expected = records.flatMap(record => record.issues.map(item => ({ id: stableId(runId, record.entity, record.sourceKey, item.code, item.fieldPath), entity: record.entity, source_key: record.sourceKey, field_path: databaseText(item.fieldPath), code: item.code, severity: item.severity, safe_message: item.code })));
+// Task 24: the persisted form of an owner decision on one issue (rule plus the owner's reason).
+export function issueResolution(snapshot: Snapshot, item: Issue): JsonObject | null {
+  if (!item.resolution) return null;
+  const rule = snapshot.decisions?.rules.find(candidate => candidate.id === item.resolution!.rule);
+  if (!rule) throw new Error("Issue resolution names an unknown owner decision");
+  return { rule: rule.id, action: item.resolution.action, reason: rule.reason, approvedBy: snapshot.decisions!.approvedBy, approvedAt: snapshot.decisions!.approvedAt };
+}
+
+async function issueParity(client: PoolClient, snapshot: Snapshot, runId: string, records: ValidatedRecord[]): Promise<boolean> {
+  const actual = (await client.query("SELECT id,entity,source_key,field_path,code,severity,safe_message,disposition,resolution FROM migration_issues WHERE run_id=$1", [runId])).rows;
+  const expected = records.flatMap(record => record.issues.map(item => { const resolution = issueResolution(snapshot, item); return { id: stableId(runId, record.entity, record.sourceKey, item.code, item.fieldPath), entity: record.entity, source_key: record.sourceKey, field_path: databaseText(item.fieldPath), code: item.code, severity: item.severity, safe_message: item.code, disposition: resolution ? "resolved" : "open", resolution }; }));
   const sort = (rows: Record<string, unknown>[]) => rows.sort((a, b) => compareExact(String(a.id), String(b.id)));
   return canonical(sort(actual)) === canonical(sort(expected));
 }
@@ -186,7 +196,7 @@ async function issueParity(client: PoolClient, runId: string, records: Validated
 export async function verifyCheckpoint(client: PoolClient, snapshot: Snapshot, runId: string, records: ValidatedRecord[], manifest: Manifest): Promise<void> {
   if (manifest.cursor > records.length || Object.keys(manifest.receipts).length !== manifest.cursor) throw new Error("CHECKPOINT_INVALID");
   const prefix = records.slice(0, manifest.cursor), staged = (await client.query("SELECT s.*,m.target_id,m.target_type,m.source_namespace FROM legacy_source_records s LEFT JOIN legacy_id_map m ON m.record_id=s.id WHERE s.run_id=$1", [runId])).rows;
-  if (staged.length !== prefix.length || !await issueParity(client, runId, prefix)) throw new Error("CHECKPOINT_INVALID");
+  if (staged.length !== prefix.length || !await issueParity(client, snapshot, runId, prefix)) throw new Error("CHECKPOINT_INVALID");
   const byKey = new Map(staged.map(row => [receiptKey(row.entity, row.source_key), row]));
   for (const record of prefix) {
     const key = receiptKey(record.entity, record.sourceKey), receipt = manifest.receipts[key], row = byKey.get(key);

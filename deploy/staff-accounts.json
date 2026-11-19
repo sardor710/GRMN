@@ -1,0 +1,9 @@
+{
+  "emailDomain": "SET-THE-STORE-DOMAIN",
+  "accounts": [
+    { "role": "super_admin", "name": "Store administrator", "login": "admin" },
+    { "role": "owner", "name": "Store owner", "login": "owner" },
+    { "role": "product_manager", "name": "Product manager", "login": "products" },
+    { "role": "support", "name": "Customer support", "login": "support" }
+  ]
+}

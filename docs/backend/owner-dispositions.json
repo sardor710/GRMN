@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "approvedBy": "store owner (Task 24 instructions, 2026-11-19)",
+  "approvedAt": "2026-11-19",
+  "rules": [
+    { "id": "remove-products", "entity": "products", "action": "exclude", "reason": "Owner: remove all legacy products; the catalog starts empty and staff add products in the admin" },
+    { "id": "remove-orders", "entity": "orders", "action": "exclude", "reason": "Owner: remove all legacy orders" },
+    { "id": "remove-customers", "entity": "clients", "action": "exclude", "reason": "Owner: remove all legacy users (customer contacts)" },
+    { "id": "remove-legacy-admin", "entity": "admins", "action": "exclude", "reason": "Owner: remove all legacy users; staff accounts are created fresh with MFA" },
+    { "id": "remove-legacy-activity", "entity": "activities", "action": "exclude", "reason": "Activity log of the removed legacy admin about removed records; kept only in the archive" },
+    { "id": "remove-promo-codes", "entity": "discounts", "action": "exclude", "reason": "Owner: drop the 4 legacy promo codes (USD rules of the old store)" },
+    { "id": "replace-settings", "entity": "settings", "action": "exclude", "reason": "Old USD store settings; replaced by the reviewed ops:store-setup configuration" },
+    { "id": "keep-blogs", "entity": "blogs", "action": "accept", "codes": ["INVALID_TIMESTAMP"], "reason": "Owner: keep the 12 blogs. publishedAt is a display date such as \"July 8, 2026\", stored as legacy text; posts import as drafts for staff to publish" },
+    { "id": "keep-banners", "entity": "banners", "action": "accept", "codes": ["MISSING_ASSET"], "reason": "Owner: keep all banners. Two images are not in the repository; staff set replacement images (and the KZT delivery text) before publishing, banners import as drafts" },
+    { "id": "account-demo-literals", "entity": "static:src/components/AccountDashboard.tsx#*", "action": "exclude", "reason": "Account dashboard demo literals; never data. Removed in the Task 24C cleanup" },
+    { "id": "static-products", "entity": "static:src/lib/products.ts#products", "action": "exclude", "reason": "Static fallback product list; owner removed all products" },
+    { "id": "seed-products", "entity": "static:src/lib/cms/seed.ts#BASE_PRODUCTS", "action": "exclude", "reason": "Seed product list; owner removed all products" },
+    { "id": "seed-dataset", "entity": "static:src/lib/cms/seed.ts#initialCMSData", "action": "exclude", "reason": "Demo seed dataset; never production data" },
+    { "id": "static-catalogues", "entity": "static:src/lib/products.ts#catalogues", "action": "exclude", "reason": "Category page definitions stay in version-controlled code; nothing to import" }
+  ]
+}

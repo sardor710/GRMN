@@ -85,6 +85,24 @@ Owner decision: orders are accepted before a real payment provider exists, and *
 - **After payment** the order flows into the existing fulfillment, refund and report code. A refund of a manual payment is recorded as a manual refund (`provider='manual'`): the worker never submits it, and staff complete it with a payout method and reference once the money has been sent back.
 - **Hold abuse (owner decision 2026-11-18, review I2).** A customer, and a trusted client address, may each have at most **3 unpaid manual orders** at a time; a 4th checkout is refused with 409 `TOO_MANY_UNPAID_ORDERS` until one is paid, cancelled or expired, or its hold ends. The address is stored only as a keyed hash on `checkout_attempts` (migration 0014). Guests are limited by address; signed-in customers by both. Without a trusted proxy (development) only the per-customer limit applies. **Cost if wrong:** shoppers behind one shared address (an office, or a mobile carrier's NAT) share the 3. If staff see real customers refused, the per-address number is the one to raise (`MAX_UNPAID_MANUAL_ORDERS` in `checkout/service.ts`).
 
+## Task 24 launch inputs (owner, 2026-11-19)
+
+| Item | Owner decision | Where it is applied |
+|---|---|---|
+| Legacy products, orders, users | **Remove all.** Archived in `legacy_source_records` for audit; nothing live. The catalog starts empty; staff add products in the admin | `docs/backend/owner-dispositions.json` (rules `remove-*`) |
+| Banners | **Keep all 4.** Two images are missing from the repository and the announcement says "$150"; staff set the images and the KZT delivery text before publishing (imports are drafts) | rule `keep-banners` |
+| Blogs | **Keep the 12** (asked 2026-11-19). Their `publishedAt` is a display date ("July 8, 2026"), kept as legacy text | rule `keep-blogs` |
+| Promo codes | **Drop the 4** (asked 2026-11-19; they were USD rules of the old store) | rule `remove-promo-codes` |
+| Tax | Prices **include VAT**. Rate recorded as **16%** (the Kazakhstan rate from 2026-01-01; the owner said "includes VAT" without a number, so confirm). Inclusive VAT never changes what the customer pays, only the VAT line on receipts | `deploy/store-config.json` |
+| Delivery | **1,500 KZT below 30,000 KZT of goods; free from 30,000 KZT** (exactly 30,000 is free) | `deploy/store-config.json` |
+| Backups | **Daily base backup** (21:30 UTC), continuous WAL archive, media backup, 14-day pruning. No off-site target yet | `deploy/cron/grmn.cron`, `deploy/ops/scheduled.sh` |
+| Alerts | **Telegram, set up later** by the owner (system health and orders). `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` stay empty; alerts are logged until then. Order notifications are not built | `deploy/ops/notify.sh`, `deploy/env.example` |
+| Staff | **4 accounts**, handed out by the owner: super_admin, owner (confirms payments, ships), product_manager, support (asked 2026-11-19). Each enrolls MFA at first sign-in | `deploy/staff-accounts.json`, `npm run ops:staff-setup` |
+| Legacy live site | **None.** There is nothing to freeze; the cutover has no A1 freeze step | runbook |
+| SMS | Connected later. At launch customers check out as guests; phone sign-in waits for the provider | — |
+
+Still open: the domain (TLS and the staff email domain), the payment instructions text (a neutral placeholder is configured), the VAT rate confirmation, the store name (configured as "GRMN"), the off-site backup target, and the explicit production go.
+
 ## Manual USD display conversion contract
 
 Owner clarification, 2026-11-11: existing saved product prices and historical order totals are **KZT, expressed in tenge (major units)**. Tasks 06–07 may validate exact conversion of persisted CMS product prices/original prices and order item/total amounts to integer KZT minor units (exponent 2), preserving original values and rejecting unsupported precision. This does not automatically confirm static/accessory prices, coupon money or reported customer lifetime baselines from other sources. No source values are rewritten and no real-target import is authorized by this clarification.

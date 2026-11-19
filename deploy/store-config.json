@@ -1,0 +1,7 @@
+{
+  "storeName": "GRMN",
+  "tax": { "mode": "inclusive", "rateBps": 1600, "countryCode": "KZ" },
+  "shipping": { "zones": [ { "key": "kz", "name": "Kazakhstan", "countries": ["KZ"], "rates": [ { "key": "standard", "amountMinor": "150000" } ] } ] },
+  "freeShippingThresholdMinor": "3000000",
+  "manualPayment": { "instructions": "Pay by Kaspi transfer using the details our staff send you. We confirm your payment and then prepare your order.", "holdHours": 48 }
+}

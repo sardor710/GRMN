@@ -277,6 +277,43 @@ test("temporary database protection runs before any current-source migration wri
   assert.ok(path.startsWith(resolve("temp") + (process.platform === "win32" ? "\\" : "/")));
 });
 
+// Runs before the suffix-collision test, which leaves colliding legacy order numbers behind (orders are immutable).
+// Task 24: owner dispositions. Breaks caught: removed records leaking into live tables, a money
+// total that no longer balances once orders are excluded, decisions lost from migration_issues,
+// and a replay that re-decides differently.
+test("owner dispositions complete the import: excluded records are archived only, accepted blockers resolved, money balances", async () => {
+  const f = fixture(); f.cms.banners[0].image = "/images/missing-owner.jpg";
+  const decisions = { version: 1, approvedBy: "owner", approvedAt: "2026-11-19", rules: [
+    { id: "remove-products", entity: "products", action: "exclude", reason: "Owner removes products" },
+    { id: "remove-orders", entity: "orders", action: "exclude", reason: "Owner removes orders" },
+    { id: "keep-banners", entity: "banners", action: "accept", codes: ["MISSING_ASSET"], reason: "Staff replace the image" },
+  ] };
+  const snapshot = extractSources(sourceOptions(f.cms, { namespace: `${f.cms.products[0].id}-owner`, decisions }));
+  const { importSnapshot } = await importer(), { reconcileSnapshot } = await reconciler();
+  const first = await importSnapshot(handle.pool, snapshot, { offline: true, batchSize: 3 });
+  assert.equal(first.status, "completed"); assert.equal(first.ready, true); assert.deepEqual(first.mismatches, []); assert.equal(first.blockers, 0);
+  assert.equal(first.counts.products.excluded, 1); assert.equal(first.counts.orders.excluded, 1); assert.equal(first.counts.banners.imported, 1);
+  assert.equal(first.financial.excludedOrders, 1); assert.equal(first.financial.excludedTotalMinor, "246912"); assert.equal(first.financial.targetTotalMinor, "0");
+  assert.equal(Number((await q("SELECT count(*) FROM products WHERE public_key=$1", [f.cms.products[0].id])).rows[0].count), 0);
+  assert.equal(Number((await q("SELECT count(*) FROM orders WHERE order_number=$1", [f.cms.orders[0].orderNumber])).rows[0].count), 0);
+  const map = (await q("SELECT entity,target_type FROM legacy_id_map WHERE source_namespace=$1 AND entity IN ('products','orders') ORDER BY entity", [snapshot.namespace])).rows;
+  assert.deepEqual(map.map(r => r.target_type), ["legacy_source_records", "legacy_source_records"]);
+  const issues = (await q("SELECT entity,code,disposition,resolution,resolved_at FROM migration_issues i JOIN migration_runs r ON r.id=i.run_id WHERE r.source_namespace=$1 AND (severity='blocker' OR code='OWNER_EXCLUDED') ORDER BY entity,code", [snapshot.namespace])).rows;
+  const banner = issues.find(r => r.entity === "banners" && r.code === "MISSING_ASSET");
+  assert.equal(banner.disposition, "resolved"); assert.ok(banner.resolved_at);
+  assert.deepEqual(banner.resolution, { rule: "keep-banners", action: "accept", reason: "Staff replace the image", approvedBy: "owner", approvedAt: "2026-11-19" });
+  assert.ok(issues.some(r => r.entity === "orders" && r.code === "OWNER_EXCLUDED"));
+  assert.ok(issues.filter(r => r.code !== "OWNER_EXCLUDED").every(r => r.disposition === "resolved"));
+  const replay = await importSnapshot(handle.pool, snapshot, { offline: true });
+  assert.equal(replay.ready, true); assert.deepEqual(replay.mismatches, []);
+  const again = await reconcileSnapshot(handle.pool, snapshot);
+  assert.equal(again.ready, true);
+  await assert.rejects(q("UPDATE migration_issues SET resolution=NULL,resolved_at=NULL,disposition='open' WHERE code='MISSING_ASSET' AND run_id=(SELECT id FROM migration_runs WHERE source_namespace=$1)", [snapshot.namespace]), /Import run is finished/);
+  // Changing a decision is a new interpretation of the same source: it conflicts before any write.
+  const changed = extractSources(sourceOptions(f.cms, { namespace: snapshot.namespace, decisions: { ...decisions, rules: decisions.rules.slice(1) } }));
+  await assert.rejects(importSnapshot(handle.pool, changed, { offline: true }), /SOURCE_CHANGED/);
+});
+
 test("sequence floor exceeds every numeric suffix, preserves a higher high-water mark and detects suffix collisions", async () => {
   const f = fixture(), { importSnapshot } = await importer(), { advanceOrderSequence } = await reconciler();
   await importSnapshot(handle.pool, extractSources(f.options), { offline: true });

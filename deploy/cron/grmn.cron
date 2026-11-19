@@ -1,0 +1,12 @@
+# Task 24: GRMN scheduled jobs. Install for the deploy user with `crontab deploy/cron/grmn.cron` after
+# replacing /srv/grmn/app (the checkout) and /srv/grmn/production.env (the private env file).
+# Times are server time (UTC). WAL is archived continuously by PostgreSQL (archive_timeout 300 s);
+# the daily base backup bounds replay time; prune keeps KEEP_DAYS (14) and the WAL they need.
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+# Daily at 21:30 UTC (02:30 Almaty, after the evening peak): base backup, media backup, prune.
+30 21 * * * /srv/grmn/app/deploy/ops/scheduled.sh backup grmn /srv/grmn/production.env
+# Every 5 minutes: health check (stuck jobs, overdue holds, WAL archiving, backup age, invariants).
+*/5 * * * * /srv/grmn/app/deploy/ops/scheduled.sh health grmn /srv/grmn/production.env
+# Off-site copy: add when the owner chooses a target (deploy/backup/offsite.sh), e.g. every 10 minutes:
+# */10 * * * * OFFSITE_REMOTE=<remote:path> /srv/grmn/app/deploy/backup/offsite.sh /srv/grmn/backup >>/var/log/grmn/offsite.log 2>&1

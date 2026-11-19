@@ -3,7 +3,9 @@ import type { Snapshot, SourceRecord } from "./extract.ts";
 import { asObject, canonical, compareExact, databaseText, legacyOrderStatus, moneyToMinor, stableId, text } from "./map.ts";
 import type { Json, JsonObject } from "./map.ts";
 
-export interface Issue { code: string; fieldPath: string; severity: "warning" | "blocker" }
+// A blocker with a resolution was decided by the owner (docs/backend/owner-dispositions.json); it is
+// persisted as a resolved migration issue and no longer quarantines its record.
+export interface Issue { code: string; fieldPath: string; severity: "warning" | "blocker"; resolution?: { rule: string; action: "exclude" | "accept" } }
 export interface ValidatedRecord extends SourceRecord {
   targetId: string; targetType: string; disposition: "importable" | "quarantined" | "excluded";
   projection: JsonObject; issues: Issue[];
@@ -175,14 +177,35 @@ export function validateSnapshot(snapshot: Snapshot): ValidationReport {
     const ref = asObject(value).productId;
     if (typeof ref === "string" && products.get(ref)?.issues.some(item => item.severity === "blocker")) issue(row, "PRODUCT_NOT_IMPORTABLE", `items[${index}].productId`);
   }
+  applyOwnerDecisions(snapshot, records, issue);
   const counts: Record<string, Counts> = Object.create(null);
   for (const record of records) {
-    if (record.issues.some(item => item.severity === "blocker")) record.disposition = "quarantined";
+    if (record.issues.some(item => item.severity === "blocker" && !item.resolution)) record.disposition = "quarantined";
     record.issues.sort((a, b) => compareExact(`${a.code}:${a.fieldPath}`, `${b.code}:${b.fieldPath}`));
     const count = counts[record.entity] ??= { expected: 0, importable: 0, quarantined: 0, excluded: 0 };
     count.expected++; count[record.disposition]++;
   }
   return { snapshot, records, counts };
+}
+
+// Task 24: an exclude rule archives the record without a live target (and resolves its blockers);
+// an accept rule resolves only the named blocker codes. Every rule must still match something, so a
+// stale decision cannot silently approve future source changes.
+function applyOwnerDecisions(snapshot: Snapshot, records: ValidatedRecord[], issue: (record: ValidatedRecord, code: string, fieldPath?: string, severity?: Issue["severity"]) => void): void {
+  for (const rule of snapshot.decisions?.rules ?? []) {
+    const entityMatches = (entity: string) => rule.entity.endsWith("*") ? entity.startsWith(rule.entity.slice(0, -1)) : entity === rule.entity;
+    const matched = records.filter(record => entityMatches(record.entity) && (!rule.keys || rule.keys.includes(record.identity)));
+    if (!matched.length) throw new Error(`Owner decision "${rule.id}" matches no source record`);
+    let accepted = 0;
+    for (const record of matched) {
+      if (rule.action === "exclude") {
+        record.disposition = "excluded";
+        for (const item of record.issues) if (item.severity === "blocker" && !item.resolution) item.resolution = { rule: rule.id, action: "exclude" };
+        issue(record, "OWNER_EXCLUDED", "", "warning");
+      } else for (const item of record.issues) if (item.severity === "blocker" && !item.resolution && rule.codes!.includes(item.code)) { item.resolution = { rule: rule.id, action: "accept" }; accepted++; }
+    }
+    if (rule.action === "accept" && !accepted) throw new Error(`Owner decision "${rule.id}" accepts no open blocker`);
+  }
 }
 
 export function safeReport(report: ValidationReport): JsonObject {

@@ -283,6 +283,46 @@ docker exec -i grmn-restore-db psql -U grmn_owner -d grmn < scripts/perf/invaria
 
 A PITR target must be followed by a commit in the archive; otherwise use `latest` (see the script header).
 
+## Part 11. Task 24 production launch (owner inputs of 2026-11-19)
+
+The owner's inputs are recorded in [decisions.md](decisions.md#task-24-launch-inputs-owner-2026-11-19). They change the rehearsed procedure as follows:
+- **There is no live legacy site, so there is no freeze (A1).** The source is the repository copy, and the export is taken from the release commit.
+- **The import must finish with exit 0 (`completed`, 0 open blockers).** The owner dispositions (`docs/backend/owner-dispositions.json`) are part of the checksummed archive:
+  - products, orders, users, promo codes, activity and settings are archived only;
+  - banners, blogs and the homepage import as drafts.
+- **Staff are created with `ops:staff-setup`, not `auth:bootstrap`:** 4 accounts, with passwords written to a new private file. Each person enrolls MFA at first sign-in.
+- **The catalog starts empty.** Before reopening, staff create at least the first real products and receive their stock. Staff also set the two missing banner images and the KZT announcement text, then publish banners, blogs and the homepage.
+
+Before the window, the owner gives:
+- the domain, with DNS pointing at the VPS (a TLS certificate is issued for it);
+- the payment instructions text and the VAT rate confirmation;
+- the explicit go.
+
+```bash
+# L0 (day before) release images, private env file (deploy/env.example; PROXY_BIND public, Telegram empty), TLS in TLS_DIR
+docker build --target runner -t grmn:$COMMIT . && docker build --target ops -t grmn-ops:$COMMIT .
+$DC up -d db && $DC run --rm -T ops node --conditions=react-server node_modules/drizzle-kit/bin.cjs migrate
+deploy/ops/scheduled.sh backup grmn <env file>                       # first base backup through the cron wrapper
+# L1 export and import (must print status "completed", exit 0)
+npm run db:import:dry-run -- --output temp/<final>                   # exit 0 with the owner dispositions
+docker run --rm -v $PWD/temp/<final>:/src:ro -v $OPS_TEMP_DIR:/t alpine sh -c 'cp -a /src /t/<final> && chown -R 1000:1000 /t/<final>'
+$DC run --rm -T -e IMPORT_DATABASE_URL=postgresql://grmn_migrate:<pw>@db:5432/grmn ops \
+  node --conditions=react-server scripts/migration/import-target.ts --archive temp/<final> --output temp/<import> --confirm-database grmn
+# L2 store and staff (store stays closed)
+cp deploy/store-config.json deploy/staff-accounts.json $OPS_TEMP_DIR/   # set emailDomain first; copy in through a container as above
+$DC run --rm -T ops node --conditions=react-server scripts/ops/store-setup.ts temp/store-config.json
+$DC run --rm -T ops node --conditions=react-server scripts/ops/staff-setup.ts temp/staff-accounts.json --output temp/staff-credentials.json
+#   move temp/staff-credentials.json to the owner privately, then delete it from the server
+# L3 app up (closed), staff work through the bypass: products, stock, banners, publishing
+$DC up -d app worker proxy
+node scripts/ops/verify-cutover.mjs --base https://<domain> --credentials <operator.json> --delivery-rule 150000:3000000 \
+  --variant <first real variant> --publish <homepage pageId>:<version> --out <receipt>
+#   the purchase checks place two test orders (one paid and shipped, one cancelled); omit --variant to skip them
+# L4 reopen, schedule, watch
+node scripts/ops/verify-cutover.mjs --base https://<domain> --credentials <operator.json> --open
+crontab deploy/cron/grmn.cron                                          # daily backup 21:30 UTC, health every 5 min
+```
+
 ## Related documents
 
 - [migration-runbook.md](migration-runbook.md): extraction, dry run and the disposable rehearsal (Tasks 06–07).

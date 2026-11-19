@@ -2,11 +2,15 @@
 // the public HTTPS origin, as a customer and as a staff member would; it never touches the database.
 //   node scripts/ops/verify-cutover.mjs --base https://<domain> --credentials <operator.json>
 //        [--products key1,key2] [--variant <uuid>] [--publish <pageId>:<pageVersion> ...] [--redirect /from=/to ...] [--open] [--insecure-tls] [--out file]
+//        [--create-product <product.json>] [--delivery-rule <feeMinor>:<freeFromMinor>]
 // operator.json (private, 0600): {"email","password","totpSecret"?}. Without totpSecret the staff
 // account is enrolled in TOTP on first use and the secret and backup codes are written back to the
 // file (rehearsal only; a production operator enrols in the browser and supplies the secret).
 // --variant enables the purchase checks: opening stock (+5 received), a guest manual-payment
 // purchase, staff confirmation to "paid", a shipment, and a second order cancelled (stock released).
+// --create-product (Task 24: the catalog starts empty) has staff create that product through the
+// admin, then uses its default variant for the purchase checks. --delivery-rule checks the quoted
+// delivery fee: <feeMinor> below the free-delivery threshold, 0 from <freeFromMinor> upwards.
 // Every check prints PASS or FAIL; the exit code is 1 if any failed. Prints no personal data.
 import { readFile, writeFile } from "node:fs/promises";
 import { createHmac, randomUUID } from "node:crypto";
@@ -75,6 +79,19 @@ for (const pair of all("--publish")) {
   check(`staff publishes reviewed page ${pageId.slice(0, 8)}`, pub.status === 200, `status ${pub.status}`);
 }
 
+// 2c. Staff create a product through the admin (the catalog starts empty at launch).
+let createdVariant;
+if (opt("--create-product")) {
+  const input = JSON.parse(await readFile(opt("--create-product"), "utf8"));
+  const created = await call(staff, "POST", "/api/admin/products", { body: input });
+  check(`staff create product ${input.sku}`, created.status === 200 && created.json?.success === true, `status ${created.status} ${created.status === 200 ? "" : created.text.slice(0, 160)}`);
+  const found = await call(staff, "GET", `/api/admin/products?search=${encodeURIComponent(input.sku)}`);
+  const product = (found.json?.products ?? []).find(p => p.sku === input.sku);
+  createdVariant = product?.variantId ?? product?.variants?.find(v => v.sku === input.sku)?.id ?? product?.variants?.[0]?.id;
+  check("created product has a sellable variant", Boolean(createdVariant), createdVariant ? "" : JSON.stringify(Object.keys(product ?? {})));
+  if (product?.slug ?? product?.id) products.push(product.slug ?? product.id);
+}
+
 // 3. Public pages through the bypass.
 const pages = ["/", "/c/wearables-smartwatches", "/c/wearables-smartwatches?sort=price-asc", "/c/wearables-smartwatches?sort=price-desc", "/c/wearables-smartwatches?search=a", "/robots.txt", "/sitemap.xml"];
 for (const path of pages) { const r = await call(customer, "GET", path); check(`page ${path}`, r.status === 200, `status ${r.status}`); }
@@ -93,7 +110,8 @@ for (const pair of all("--redirect")) {
 }
 
 // 4. Purchase path (needs a sellable variant).
-const variant = opt("--variant");
+const variant = opt("--variant") ?? createdVariant;
+const deliveryRule = opt("--delivery-rule")?.split(":").map(BigInt);
 const delivery = { kind: "inline", address: { recipientName: "Rehearsal Buyer", phone: "+77010000023", countryCode: "KZ", city: "Almaty", line1: "Rehearsal street 23" } };
 async function guestOrder() {
   const buyer = jar(); buyer.set("grmn-maintenance-bypass", bypassCookie ?? "");
@@ -110,6 +128,19 @@ if (variant) {
   const { buyer, add, quote, order } = await guestOrder();
   check("guest cart add", add.status === 200, `status ${add.status}`);
   check("guest quote in KZT", quote.status === 200 && quote.json?.total?.currency === "KZT", `status ${quote.status}`);
+  if (deliveryRule) {
+    const [fee, freeFrom] = deliveryRule, goods = BigInt(quote.json?.subtotal?.amountMinor ?? -1), shipping = quote.json?.shipping?.amountMinor;
+    check(`delivery fee ${goods < freeFrom ? "charged below" : "free from"} the threshold`, shipping === String(goods < freeFrom ? fee : 0n), `goods ${goods}, delivery ${shipping}`);
+    // A quote-only cart just over the threshold (no checkout, so no stock is held).
+    const unit = BigInt(quote.json?.lines?.[0]?.unitPrice?.amountMinor ?? quote.json?.subtotal?.amountMinor ?? 0);
+    if (unit > 0n && goods < freeFrom) {
+      const big = jar(); big.set("grmn-maintenance-bypass", bypassCookie ?? "");
+      const quantity = Number((freeFrom + unit - 1n) / unit);
+      const bigAdd = await call(big, "POST", "/api/cart/lines", { body: { variantId: variant, quantity, expectedCartVersion: 0 } });
+      const bigQuote = await call(big, "POST", "/api/cart/quote", { body: { cartVersion: bigAdd.json?.version, displayCurrency: "KZT", delivery } });
+      check("delivery free from the threshold", bigQuote.status === 200 && bigQuote.json?.shipping?.amountMinor === "0" && BigInt(bigQuote.json?.subtotal?.amountMinor ?? 0) >= freeFrom, `status ${bigQuote.status}, ${quantity} × ${unit}: goods ${bigQuote.json?.subtotal?.amountMinor}, delivery ${bigQuote.json?.shipping?.amountMinor}`);
+    }
+  }
   check("guest manual checkout: order awaiting payment", order.status === 200 && order.json?.status === "pending_payment", `status ${order.status}`);
   const status = await call(buyer, "POST", "/api/cart/checkout/status", { body: { orderId: order.json?.orderId, statusToken: order.json?.statusToken } });
   check("receipt: awaiting payment with instructions and a pay-by time", status.status === 200 && status.json?.paymentMethod === "manual" && status.json?.paymentInstructions && status.json?.payBy, `status ${status.status}`);

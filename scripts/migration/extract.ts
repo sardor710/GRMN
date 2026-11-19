@@ -18,10 +18,15 @@ export interface Snapshot {
   version: 2; namespace: string; classification: "owner_confirmed_real" | "synthetic" | "unconfirmed";
   cmsMoney: "KZT-major" | null; sources: Asset[]; assets: Asset[]; records: SourceRecord[];
   redactions: string[]; sourceChecksum: string; artifactChecksum: string;
+  // Task 24: the owner's reviewed dispositions (docs/backend/owner-dispositions.json), checksummed with
+  // the archive so a replay always applies the same decisions. Absent in archives made before Task 24.
+  decisions?: OwnerDecisions;
 }
+export interface OwnerDecisionRule { id: string; entity: string; keys?: string[]; action: "exclude" | "accept"; codes?: string[]; reason: string }
+export interface OwnerDecisions { version: 1; approvedBy: string; approvedAt: string; rules: OwnerDecisionRule[] }
 export interface ExtractOptions {
   namespace: string; classification: Snapshot["classification"]; cmsMoney: Snapshot["cmsMoney"];
-  sources: Source[]; assets?: Asset[]; staticDefinitions?: string[];
+  sources: Source[]; assets?: Asset[]; staticDefinitions?: string[]; decisions?: OwnerDecisions;
 }
 
 function evaluateDefinition(sources: Map<string, string>, path: string, name: string, visited = new Set<string>()): { value: Json; resolved: string } {
@@ -134,14 +139,33 @@ export function extractSources(options: ExtractOptions): Snapshot {
   }).sort((a, b) => compareExact(a.path, b.path));
   const body = { version: 2 as const, namespace: options.namespace, classification: options.classification, cmsMoney: options.cmsMoney,
     sources: metadata, assets: [...(options.assets ?? [])].sort((a, b) => compareExact(a.path, b.path)),
-    records: records.sort((a, b) => compareExact(`${a.entity}:${a.sourceKey}`, `${b.entity}:${b.sourceKey}`)), redactions: redactions.sort(compareExact), sourceChecksum: sha256(canonical(metadata)) };
+    records: records.sort((a, b) => compareExact(`${a.entity}:${a.sourceKey}`, `${b.entity}:${b.sourceKey}`)), redactions: redactions.sort(compareExact), sourceChecksum: sha256(canonical(metadata)),
+    ...(options.decisions ? { decisions: parseOwnerDecisions(options.decisions) } : {}) };
   return { ...body, artifactChecksum: sha256(canonical(body)) };
+}
+
+const decisionText = z.string().trim().min(1).max(500);
+const decisionsSchema = z.strictObject({
+  version: z.literal(1), approvedBy: decisionText, approvedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  rules: z.array(z.strictObject({
+    id: z.string().regex(/^[a-z0-9][a-z0-9-]{0,62}$/), entity: z.string().min(1).max(300), keys: z.array(z.string().min(1)).min(1).optional(),
+    action: z.enum(["exclude", "accept"]), codes: z.array(z.string().regex(/^[A-Z_]+$/)).min(1).optional(), reason: decisionText,
+  })).min(1),
+}).superRefine((value, context) => {
+  if (new Set(value.rules.map(rule => rule.id)).size !== value.rules.length) context.addIssue({ code: "custom", message: "duplicate rule id" });
+  for (const rule of value.rules) if ((rule.action === "accept") !== (rule.codes !== undefined)) context.addIssue({ code: "custom", message: `rule ${rule.id}: accept needs codes; exclude takes none` });
+});
+export function parseOwnerDecisions(input: unknown): OwnerDecisions {
+  const parsed = decisionsSchema.safeParse(input);
+  if (!parsed.success) throw new Error(`Invalid owner decisions: ${parsed.error.issues.map(issue => issue.message).join("; ")}`);
+  return parsed.data as OwnerDecisions;
 }
 
 const assetSchema = z.object({ path: z.string().min(1), sha256: z.string().regex(/^[a-f0-9]{64}$/), bytes: z.number().int().nonnegative(), invalidUtf8: z.boolean().optional() }).strict();
 const snapshotSchema = z.object({ version: z.literal(2), namespace: z.string().min(1), classification: z.enum(["owner_confirmed_real", "synthetic", "unconfirmed"]), cmsMoney: z.literal("KZT-major").nullable(),
   sources: z.array(assetSchema), assets: z.array(assetSchema), redactions: z.array(z.string()), sourceChecksum: z.string(), artifactChecksum: z.string(),
   records: z.array(z.object({ entity: z.string().min(1), sourceKey: z.string().min(1), identity: z.string().min(1), source: z.string(), resolvedSource: z.string(), payload: z.record(z.string(), z.json()), recordChecksum: z.string(), numberLexemes: z.record(z.string(), z.string()) }).strict()),
+  decisions: decisionsSchema.optional(),
 }).strict();
 
 export function assertSnapshot(input: unknown): asserts input is Snapshot {
@@ -214,7 +238,7 @@ export async function readPrivateExport(directory: string): Promise<Snapshot> {
   return snapshot;
 }
 
-export async function collectCurrentSources(root = process.cwd()): Promise<{ sources: Source[]; assets: Asset[]; staticDefinitions: string[] }> {
+export async function collectCurrentSources(root = process.cwd()): Promise<{ sources: Source[]; assets: Asset[]; staticDefinitions: string[]; decisions?: OwnerDecisions }> {
   const walk = async (directory: string): Promise<string[]> => {
     const entries = await readdir(resolve(root, directory), { withFileTypes: true });
     const children = await Promise.all(entries.map(async entry => {
@@ -228,5 +252,8 @@ export async function collectCurrentSources(root = process.cwd()): Promise<{ sou
   const sources = await Promise.all(paths.map(async path => { const bytes = await readFile(resolve(root, path)); return { path, contents: bytes.toString("utf8"), bytes }; }));
   const assets = await Promise.all((await walk("public")).map(async path => { const bytes = await readFile(resolve(root, path)); return { path, bytes: bytes.length, sha256: sha256(bytes) }; }));
   const inventory = JSON.parse(await readFile(resolve(root, "docs/backend/source-inventory.json"), "utf8")) as { staticDefinitions: Record<string, unknown> };
-  return { sources, assets, staticDefinitions: [...Object.keys(inventory.staticDefinitions), "src/lib/cms/seed.ts#BASE_PRODUCTS"] };
+  let decisions: OwnerDecisions | undefined;
+  try { decisions = parseOwnerDecisions(JSON.parse(await readFile(resolve(root, "docs/backend/owner-dispositions.json"), "utf8"))); }
+  catch (error) { if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error; }
+  return { sources, assets, staticDefinitions: [...Object.keys(inventory.staticDefinitions), "src/lib/cms/seed.ts#BASE_PRODUCTS"], ...(decisions ? { decisions } : {}) };
 }
