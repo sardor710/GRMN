@@ -59,3 +59,14 @@ test("the OpenRouter client asks for Cyrillic Kazakh, keeps brands, and parses f
   const failing = openRouterModel({ apiKey: "sk-test", model: "m", fetch: async () => new Response("{}", { status: 429 }) });
   await assert.rejects(failing.complete({ locale: "ru", segments: { s0: "x" } }), e => /429/.test(e.message) && !e.message.includes("sk-test"));
 });
+
+test("a time budget stops new batches and reports what remains; the next call continues", async () => {
+  const { translateRecord } = await load();
+  const slow = { calls: 0, async complete({ locale, segments }) { this.calls++; await new Promise(r => setTimeout(r, 30)); return Object.fromEntries(Object.entries(segments).map(([k, v]) => [k, `[${locale}] ${v}`])); } };
+  const big = { name: "N", specs: Array.from({ length: 20 }, (_, i) => ({ label: `Label ${i}`, value: `Value ${i}` })) };
+  const spec = { scalars: ["name"], lists: { specs: { scalars: ["label", "value"] } } };
+  const first = await translateRecord({ record: big, spec, existing: {}, locales: ["ru"], model: slow, batch: { maxItems: 5, maxChars: 4000 }, budgetMs: 40 });
+  assert.ok(first.remaining > 0 && first.filled > 0);
+  const second = await translateRecord({ record: big, spec, existing: first.translations, locales: ["ru"], model: slow, batch: { maxItems: 5, maxChars: 4000 } });
+  assert.equal(second.remaining, 0); assert.equal(second.translations.ru.specs[19].value, "[ru] Value 19");
+});

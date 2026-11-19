@@ -105,15 +105,19 @@ function batches(slots: Slot[], maxItems: number, maxChars: number): Slot[][] {
 export async function translateRecord(input: {
   record: Record<string, unknown>; spec: FieldSpec; htmlFields?: readonly string[]; existing: Record<string, unknown> | undefined;
   locales: readonly MachineLocale[]; model: TranslationModel; batch?: { maxItems: number; maxChars: number };
-}): Promise<{ translations: Record<string, Overlay>; filled: number }> {
+  /** Stop starting new batches after this many ms; the caller repeats until `remaining` is 0. */
+  budgetMs?: number;
+}): Promise<{ translations: Record<string, Overlay>; filled: number; remaining: number }> {
   const html = new Set(input.htmlFields ?? []), existing = isObject(input.existing) ? input.existing : {};
   const translations: Record<string, Overlay> = {};
   for (const [locale, overlay] of Object.entries(existing)) if (isObject(overlay)) translations[locale] = structuredClone(overlay);
-  let filled = 0;
+  let filled = 0, remaining = 0;
+  const deadline = input.budgetMs === undefined ? Infinity : Date.now() + input.budgetMs;
   for (const locale of input.locales) {
     const current = translations[locale] ?? {};
     const slots = collect(input.record, input.spec, current, html);
-    for (const group of batches(slots, input.batch?.maxItems ?? 40, input.batch?.maxChars ?? 6000)) {
+    for (const group of batches(slots, input.batch?.maxItems ?? 25, input.batch?.maxChars ?? 3000)) {
+      if (Date.now() >= deadline) { remaining += group.length; continue; }
       const result = await input.model.complete({ locale, segments: Object.fromEntries(group.map(slot => [slot.key, slot.text])) });
       for (const slot of group) {
         const value = result[slot.key];
@@ -122,7 +126,7 @@ export async function translateRecord(input: {
     }
     if (Object.keys(current).length) translations[locale] = current;
   }
-  return { translations, filled };
+  return { translations, filled, remaining };
 }
 
 const LANGUAGE: Record<MachineLocale, string> = { ru: "Russian", kk: "Kazakh (written in the Kazakh Cyrillic alphabet only; never Latin or Turkish letters)" };
@@ -136,11 +140,12 @@ export function openRouterModel(config: { apiKey: string; model: string; fetch?:
         "Keep brand and product names (Garmin, fēnix, MARQ, Venu, Forerunner, Instinct, inReach, Connect IQ, Garmin Pay), model and part numbers, units and numbers unchanged. " +
         "Translate naturally for shoppers. Answer with one JSON object only: the same keys, each value the translation of that key's text.";
       const response = await request("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST", signal: AbortSignal.timeout(config.timeoutMs ?? 120_000),
+        method: "POST", signal: AbortSignal.timeout(config.timeoutMs ?? 40_000),
         headers: { "content-type": "application/json", authorization: `Bearer ${config.apiKey}`, "x-title": "GRMN store admin" },
         body: JSON.stringify({ model: config.model, temperature: 0.2, response_format: { type: "json_object" }, messages: [{ role: "system", content: system }, { role: "user", content: JSON.stringify(segments) }] }),
       });
       if (!response.ok) throw new Error(`Translation service answered ${response.status}`);
+      // (A timeout surfaces as AbortError/TimeoutError and is reported as a retryable 503.)
       const data = await response.json() as { choices?: { message?: { content?: string } }[] };
       const content = data.choices?.[0]?.message?.content ?? "";
       const json = content.replace(/^\s*```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");

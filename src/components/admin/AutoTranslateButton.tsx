@@ -19,11 +19,21 @@ export function AutoTranslateButton({ kind, record, onTranslated }: {
   const run = async () => {
     setBusy(true); setMessage("");
     try {
-      const res = await fetch("/api/admin/translate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, record: record() }) });
-      const data = (await res.json().catch(() => null)) as { translations?: Record<string, unknown>; filled?: number; error?: { message?: string } } | null;
-      if (!res.ok || !data?.translations) throw new Error(data?.error?.message || "Automatic translation is unavailable right now.");
-      onTranslated(data.translations);
-      setMessage(data.filled ? `Filled ${data.filled} empty RU/KZ fields — review the RU and KZ tabs, then save.` : "Nothing to translate: every RU/KZ field is already filled.");
+      // Long content (a garmin.com overview) is translated in rounds of about 40 s; each round
+      // continues with the fields still empty.
+      let current = record(), total = 0;
+      for (let round = 1; round <= 40; round++) {
+        const res = await fetch("/api/admin/translate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, record: current }) });
+        const data = (await res.json().catch(() => null)) as { translations?: Record<string, unknown>; filled?: number; remaining?: number; error?: { message?: string } } | null;
+        if (!res.ok || !data?.translations) throw new Error(data?.error?.message || "Automatic translation is unavailable right now.");
+        onTranslated(data.translations);
+        current = { ...current, translations: data.translations };
+        total += data.filled ?? 0;
+        if (!data.remaining) break;
+        setMessage(`Translated ${total} fields so far, ${data.remaining} to go…`);
+        if (!data.filled) throw new Error("The translation service is not answering right now; the fields done so far are kept.");
+      }
+      setMessage(total ? `Filled ${total} empty RU/KZ fields — review the RU and KZ tabs (machine translation), then save.` : "Nothing to translate: every RU/KZ field is already filled.");
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Automatic translation failed.");
     } finally { setBusy(false); }
