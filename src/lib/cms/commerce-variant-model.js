@@ -17,8 +17,11 @@ export function commerceVariantModel(detail) {
   const names = [];
   for (const v of source) for (const name of Object.keys(v.options || {})) if (!names.includes(name)) names.push(name);
   if (!names.length) return undefined;
+  // PostgreSQL variants key options by their stable key; optionNames gives the display name.
+  const display = (key) => detail?.optionNames?.[key] || key;
 
-  const options = names.map((name) => {
+  const options = names.map((key) => {
+    const name = key;
     const optionId = `opt-${slug(name)}`;
     const labels = [];
     for (const v of source) {
@@ -29,18 +32,18 @@ export function commerceVariantModel(detail) {
       // garmin.com shows each color as a photo of the watch in that color.
       const owner = source.find((v) => v.options?.[name] === label && v.gallery?.length);
       const value = { id: `${optionId}-${slug(label)}`, key: label, label };
-      if (isColorName(name) && owner) value.swatchImage = owner.gallery[0].url;
+      if ((isColorName(name) || isColorName(display(name))) && owner) value.swatchImage = owner.gallery[0].url;
       return value;
     });
-    const swatch = isColorName(name) && values.every((v) => v.swatchImage);
-    return { id: optionId, key: slug(name), name, display: swatch ? 'swatch' : 'buttons', values };
+    const swatch = (isColorName(name) || isColorName(display(name))) && values.every((v) => v.swatchImage);
+    return { id: optionId, key: slug(name), name: display(name), display: swatch ? 'swatch' : 'buttons', values };
   });
 
   const selected = detail.selectedVariantId || source[0].id;
   const variants = source.map((v) => {
     const selections = {};
-    for (const o of options) {
-      const label = v.options?.[o.name];
+    for (const [index, o] of options.entries()) {
+      const label = v.options?.[names[index]];
       const value = o.values.find((x) => x.label === label);
       if (value) selections[o.id] = value.id;
     }

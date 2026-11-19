@@ -74,6 +74,8 @@ export interface ProductDetailDTO extends ProductCardDTO {
   relatedProductKeys?: string[];
   selectedVariantId?: string;
   seo?: { title: string; description: string; canonicalUrl: string | null; noIndex: boolean; image: string | null };
+  /** Option key → display name (e.g. "case-size" → "Case Size"); variant `options` stay keyed by key. */
+  optionNames?: Record<string, string>;
   /** garmin.com-style overview (sanitized HTML) and grouped specifications from the product editor. */
   overviewHtml?: string;
   specGroups?: { title: string; items: { label: string; value: string }[] }[];

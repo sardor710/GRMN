@@ -37,3 +37,20 @@ test('single-variant products and products without options need no picker', () =
   assert.equal(commerceVariantModel({ variants: [detail.variants[0]] }), undefined);
   assert.equal(commerceVariantModel({ variants: detail.variants.map((v) => ({ ...v, options: {} })) }), undefined);
 });
+
+test('PostgreSQL option keys show their display names and still select variants', async () => {
+  const { commerceVariantModel } = await import('../src/lib/cms/commerce-variant-model.js');
+  const model = commerceVariantModel({
+    optionNames: { 'case-size': 'Case Size', color: 'Color' },
+    selectedVariantId: 'b',
+    variants: [
+      { id: 'a', sku: 'A', name: 'A', availability: 'available', options: { 'case-size': '47 mm', color: 'Black' }, gallery: [{ url: '/uploads/a.jpg' }] },
+      { id: 'b', sku: 'B', name: 'B', availability: 'available', options: { 'case-size': '51 mm', color: 'White' }, gallery: [{ url: '/uploads/b.jpg' }] },
+    ],
+  });
+  assert.deepEqual(model.options.map((o) => o.name), ['Case Size', 'Color']);
+  assert.equal(model.options[1].display, 'swatch');
+  const b = model.variants.find((v) => v.id === 'b');
+  assert.equal(Object.keys(b.selections).length, 2);
+  assert.equal(b.isDefault, true);
+});

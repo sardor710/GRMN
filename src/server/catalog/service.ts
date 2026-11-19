@@ -164,7 +164,8 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
       // The editor's overview and grouped specs live in the product document (legacy_content).
       const editorial=obj((await pool.query("SELECT jsonb_build_object('overviewHtml',legacy_content->'overviewHtml','specGroups',legacy_content->'specGroups') AS doc FROM products WHERE id=$1",[found.id])).rows[0]?.doc);
       const specGroups=array(editorial.specGroups).flatMap(g=>{const group=obj(g);return typeof group.title==="string"?[{title:group.title,items:array(group.items).flatMap(i=>{const item=obj(i);return typeof item.label==="string"&&typeof item.value==="string"?[{label:item.label,value:item.value}]:[];})}]:[];});
-      const detail:ProductDetailDTO={...found,...(typeof editorial.overviewHtml==="string"&&editorial.overviewHtml?{overviewHtml:editorial.overviewHtml}:{}),...(specGroups.length?{specGroups}:{})};
+      const optionNames=Object.fromEntries((await pool.query("SELECT key,name FROM product_options WHERE product_id=$1 ORDER BY position,key",[found.id])).rows.map(r=>[String(r.key),String(r.name)]));
+      const detail:ProductDetailDTO={...found,...(Object.keys(optionNames).length?{optionNames}:{}),...(typeof editorial.overviewHtml==="string"&&editorial.overviewHtml?{overviewHtml:editorial.overviewHtml}:{}),...(specGroups.length?{specGroups}:{})};
       const translations=(await translationsFor([detail.id])).get(detail.id);
       const translatedLocales:Locale[]=["en",...(["ru","kk"] as const).filter(l=>translations&&isRecordTranslated({translations},l,["name","description"]))];
       if(locale==="en"||!translations)return{...detail,translatedLocales};
