@@ -30,18 +30,31 @@ export function validateGarminUrl(raw) {
 
 const OVERVIEW_IMG_OK = (src) => /^https:\/\/res\.garmin\.com\//.test(src) || /^\/uploads\//.test(src);
 
+// Layout classes the overview converter may emit (and the sanitizer keeps). Anything else is stripped.
+const OV_THEMES = ['light', 'dark', 'neutral'];
+const OV_ALIGNS = ['left', 'center', 'right'];
+const OV_POSITIONS = ['top', 'middle', 'bottom'];
+const OV_TS_MIN = 10;
+const OV_TS_MAX = 40;
+const OV_CLASSES = [
+  // classes from earlier imports stay renderable
+  'ov-features', 'ov-feature', 'ov-highlight', 'ov-video', 'ov-intro', 'ov-lifestyle', 'ov-disclaimer',
+  'ov-banner', 'ov-banner-text', 'ov-desktop', 'ov-mobile', 'ov-section', 'ov-headline', 'ov-copy', 'ov-cols',
+  'ov-card', 'ov-card-icon', 'ov-highlights', 'ov-disclaimers', 'ov-play',
+  ...OV_THEMES.map((t) => `ov-theme-${t}`),
+  ...OV_ALIGNS.map((a) => `ov-align-${a}`),
+  ...OV_POSITIONS.map((p) => `ov-pos-${p}`),
+  ...Array.from({ length: 6 }, (_, i) => `ov-cols-${i + 1}`),
+  ...Array.from({ length: OV_TS_MAX - OV_TS_MIN + 1 }, (_, i) => `ov-ts-${OV_TS_MIN + i}`),
+];
+
 /** Allowlist sanitizer for overview HTML (also used by the products API on save). */
 export function sanitizeOverviewHtml(html) {
   return sanitizeHtml(String(html || ''), {
-    allowedTags: ['h1', 'h2', 'h3', 'h4', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'b', 'i', 'sup', 'sub', 'br', 'a', 'img',
+    allowedTags: ['h1', 'h2', 'h3', 'h4', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'b', 'i', 'sup', 'sub', 'br', 'hr', 'a', 'img',
       'table', 'thead', 'tbody', 'tr', 'th', 'td', 'figure', 'figcaption', 'div', 'section', 'span'],
     allowedAttributes: { a: ['href', 'rel', 'target'], img: ['src', 'alt', 'loading'], td: ['colspan'], th: ['colspan'], '*': ['class'] },
-    allowedClasses: {
-      div: ['ov-features', 'ov-feature', 'ov-highlight', 'ov-video'],
-      p: ['ov-disclaimer'],
-      figure: ['ov-lifestyle'],
-      section: ['ov-intro'],
-    },
+    allowedClasses: { div: OV_CLASSES, p: OV_CLASSES, figure: OV_CLASSES, section: OV_CLASSES, img: OV_CLASSES, a: OV_CLASSES, span: OV_CLASSES },
     allowedSchemes: ['https'],
     allowedSchemesAppliedToAttributes: ['href', 'src'],
     allowProtocolRelative: false,
@@ -56,74 +69,117 @@ export function sanitizeOverviewHtml(html) {
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 const plain = (html) => sanitizeHtml(String(html || ''), { allowedTags: [], allowedAttributes: {} }).replace(/\s+/g, ' ').trim();
 
-/** Convert Garmin's overview web components (pc-*) into semantic HTML; output still goes through sanitizeOverviewHtml. */
+const pickToken = (raw, allowed, fallback) => {
+  const t = String(raw || '').trim().toLowerCase().split(/\s+/)[0];
+  return allowed.includes(t) ? t : fallback;
+};
+const themeOf = (a, fallback = 'light') => pickToken(a.theme, OV_THEMES, fallback);
+const alignOf = (a, fallback = 'left') => pickToken(a['text-align'], OV_ALIGNS, fallback);
+const positionOf = (a) => pickToken(a['text-position'], OV_POSITIONS, 'middle');
+/** garmin.com text-size is a multiplier (1.8 … 3) of the base headline size → ov-ts-18 … ov-ts-30. */
+const sizeOf = (a, fallback) => {
+  const n = Number.parseFloat(a['text-size']);
+  const tenths = Number.isFinite(n) ? Math.round(n * 10) : fallback;
+  return Math.min(OV_TS_MAX, Math.max(OV_TS_MIN, tenths));
+};
+const isIcon = (a) => /\.svg(\?|$)/i.test(a.image || '') || Boolean(a['img-width']);
+
+/**
+ * Convert Garmin's overview web components (pc-*) into semantic HTML that keeps garmin.com's layout:
+ * full-width banners with text over the photo, themed sections, N-column card grids, headlines, dividers
+ * and footnotes. Output still goes through sanitizeOverviewHtml.
+ */
 export function overviewFromGarmin(html) {
   const doc = parseDocument(String(html || ''), { recognizeSelfClosing: true, decodeEntities: true });
-  const out = [];
-  let inGroup = false;
-  const closeGroup = () => {
-    if (inGroup) out.push('</div>');
-    inGroup = false;
-  };
-  const img = (src, alt) => (src ? `<img src="${esc(src)}" alt="${esc(plain(alt))}">` : '');
+  const img = (src, alt, cls) => (src ? `<img${cls ? ` class="${cls}"` : ''} src="${esc(src)}" alt="${esc(plain(alt))}">` : '');
+  const tags = (node) => (node.children || []).filter((c) => c.type === 'tag');
+  const hasContent = (a) => Boolean(a.title || a.description || a.image);
 
-  const visit = (node) => {
-    if (node.type !== 'tag') return;
+  const card = (a) => {
+    if (!hasContent(a)) return '';
+    const cls = isIcon(a) ? 'ov-card ov-card-icon' : 'ov-card';
+    return `<div class="${cls}">${img(a.image, a.title || a.description)}${a.title ? `<h3>${a.title}</h3>` : ''}${a.description ? `<p>${a.description}</p>` : ''}</div>`;
+  };
+
+  const children = (node) => tags(node).map(visit).join('');
+
+  function visit(node) {
+    if (node.type !== 'tag') return '';
     const a = node.attribs || {};
     switch (node.name) {
-      case 'pc-overview-intro':
-        closeGroup();
-        out.push(`<section class="ov-intro"><h2>${a.title || ''}</h2>${a.description ? `<p>${a.description}</p>` : ''}</section>`);
-        break;
-      case 'pc-headline':
-        closeGroup();
-        if (a['primary-text']) out.push(`<h2>${a['primary-text']}</h2>`);
-        if (a['secondary-text']) out.push(`<p>${a['secondary-text']}</p>`);
-        break;
-      case 'pc-copy': {
-        closeGroup();
-        const h = a['title-heading-size'] === 'h2' ? 'h2' : 'h3';
-        if (a.title) out.push(`<${h}>${a.title}</${h}>`);
-        if (a.description) out.push(`<p>${a.description}</p>`);
-        break;
+      case 'pc-life-style': {
+        if (!a['bg-image']) return '';
+        const cls = `ov-banner ov-theme-${themeOf(a, 'dark')} ov-align-${alignOf(a)} ov-pos-${positionOf(a)} ov-ts-${sizeOf(a, 30)}`;
+        const mobile = a['mobile-bg-image'] && a['mobile-bg-image'] !== a['bg-image'];
+        const pics = mobile
+          ? img(a['bg-image'], a.text, 'ov-desktop') + img(a['mobile-bg-image'], a.text, 'ov-mobile')
+          : img(a['bg-image'], a.text);
+        const text = a.text || a['button-text']
+          ? `<div class="ov-banner-text">${a.text ? `<h2>${a.text}</h2>` : ''}${a['button-text'] ? `<p>${a['button-text']}</p>` : ''}</div>`
+          : '';
+        return `<div class="${cls}">${pics}${text}</div>`;
       }
-      case 'pc-life-style':
-        closeGroup();
-        if (a['bg-image']) {
-          const caption = [a.text, a['button-text']].filter(Boolean).join('<br>');
-          out.push(`<figure class="ov-lifestyle">${img(a['bg-image'], a.text)}${caption ? `<figcaption>${caption}</figcaption>` : ''}</figure>`);
-        }
-        break;
-      case 'pc-video-banner':
-        closeGroup();
-        if (a['bg-image']) {
-          const body = img(a['bg-image'], 'Watch the video');
-          out.push(`<div class="ov-video">${a['video-link'] ? `<a href="${esc(a['video-link'])}">${body}</a>` : body}</div>`);
-        }
-        break;
-      case 'pc-feature-card': {
-        if (!inGroup) out.push('<div class="ov-features">');
-        inGroup = true;
-        if (a.title) {
-          out.push(`<div class="ov-feature">${img(a.image, a.title)}<h3>${a.title}</h3>${a.description ? `<p>${a.description}</p>` : ''}</div>`);
-        } else if (a.description) {
-          out.push(`<div class="ov-highlight">${img(a.image, a.description)}<p>${a.description}</p></div>`);
-        }
-        break;
+      case 'pc-video-banner': {
+        if (!a['bg-image']) return '';
+        const body = `${img(a['bg-image'], 'Watch the video')}<span class="ov-play"></span>`;
+        return `<div class="ov-video">${a['video-link'] ? `<a href="${esc(a['video-link'])}">${body}</a>` : body}</div>`;
+      }
+      case 'pc-overview-intro': {
+        const highlights = tags(node)
+          .filter((c) => c.name === 'pc-feature-card')
+          .map((c) => {
+            const ca = c.attribs || {};
+            return ca.description ? `<div class="ov-highlight">${img(ca.image, ca.description)}<p>${ca.description}</p></div>` : '';
+          })
+          .join('');
+        const title = a.title ? `<h2>${a.title}</h2>` : '';
+        const description = a.description ? `<p>${a.description}</p>` : '';
+        const grid = highlights ? `<div class="ov-cols ov-cols-6 ov-highlights">${highlights}</div>` : '';
+        return `<section class="ov-section ov-intro ov-theme-${themeOf(a)}">${title}${description}${grid}</section>`;
+      }
+      case 'pc-layout-container': {
+        const inner = children(node);
+        return inner ? `<section class="ov-section ov-theme-${themeOf(a)}">${inner}</section>` : '';
+      }
+      case 'pc-column-layout': {
+        const inner = children(node);
+        if (!inner) return '';
+        const declared = Number.parseInt(a.columns, 10);
+        const count = Number.isFinite(declared) && declared > 0
+          ? declared
+          : tags(node).filter((c) => hasContent(c.attribs || {})).length;
+        // Single-column rows (headlines, copy) need no grid.
+        if (count <= 1) return inner;
+        return `<div class="ov-cols ov-cols-${Math.min(6, count)}">${inner}</div>`;
+      }
+      case 'pc-feature-card':
+        return card(a);
+      case 'pc-headline': {
+        const body = `${a['primary-text'] ? `<h2>${a['primary-text']}</h2>` : ''}${a['secondary-text'] ? `<p>${a['secondary-text']}</p>` : ''}`;
+        return body ? `<div class="ov-headline ov-theme-${themeOf(a)} ov-align-${alignOf(a, 'center')} ov-ts-${sizeOf(a, 20)}">${body}</div>` : '';
+      }
+      case 'pc-copy': {
+        const h = a['title-heading-size'] === 'h3' ? 'h3' : 'h2';
+        const body = `${a.title ? `<${h}>${a.title}</${h}>` : ''}${a.description ? `<p>${a.description}</p>` : ''}`;
+        return body ? `<div class="ov-copy">${body}</div>` : '';
+      }
+      case 'pc-line-divider':
+        return '<hr>';
+      case 'pc-disclaimer-block': {
+        const inner = children(node);
+        return inner ? `<div class="ov-disclaimers">${inner}</div>` : '';
       }
       case 'pc-disclaimer-item':
-        closeGroup();
-        if (a.content) out.push(`<p class="ov-disclaimer"><sup>${esc(a.counter || '')}</sup> ${a.content}</p>`);
-        break;
+        return a.content ? `<p class="ov-disclaimer"><sup>${esc(a.counter || '')}</sup> ${a.content}</p>` : '';
+      case 'pc-social-gallery':
+        // Customer photo wall loaded live from a third party on garmin.com; nothing to import.
+        return '';
       default:
-        break;
+        // Wrappers (div, overview-container, …) only hold nested components.
+        return children(node);
     }
-    // Intro cards and layout containers hold nested components.
-    for (const child of node.children || []) visit(child);
-  };
-  for (const node of doc.children) visit(node);
-  closeGroup();
-  return out.join('\n');
+  }
+  return doc.children.map(visit).join('\n');
 }
 
 const textOf = (node) => DomUtils.textContent(node).replace(/\s+/g, ' ').trim();

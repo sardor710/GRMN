@@ -4,6 +4,8 @@ import {test} from "node:test";
 import {componentFixture,nodes,nodeText} from "../helpers/component-fixture.mjs";
 import {findServerBoundaryViolations} from "../../scripts/check-server-boundaries.mjs";
 import {legacyAdminPage} from "../../src/server/cms/legacy-page.ts";
+import * as commerceVariantModel from "../../src/lib/cms/commerce-variant-model.js";
+import * as productVariants from "../../src/lib/cms/product-variants.js";
 
 test("client bundles contain no static catalog or article records",()=>{
  for(const file of ["CatalogueGrid","WearablesHero","CompareTool","BlogExplorer"])assert.doesNotMatch(readFileSync(`src/components/${file}.tsx`,"utf8"),/from ["']@\/lib\/(?:public-products|blog)["']/);
@@ -22,20 +24,23 @@ test("compare starts from server-selected published data instead of fixed static
  const tree=fixture.render({products:[],selectedProducts:[]});assert.match(nodeText(tree),/start comparing/);assert.ok(!nodeText(tree).includes("Forbidden seed"));
 });
 
+// PostgreSQL variants use the garmin.com option pickers: pick a value by its label (Size → "Large").
+const choose=(tree,label)=>{const picker=nodes(tree).find(n=>typeof n.props?.onSelect==="function"&&Array.isArray(n.props.options));assert.ok(picker,"variant picker rendered");
+ for(const o of picker.props.options){const v=o.values.find(x=>x.label===label);if(v){picker.props.onSelect(o.id,v.id);return;}}assert.fail("no option value "+label);};
 test("variant selection changes the actual price and media without fabricating options or shipping",()=>{
  const commerce={selectedVariantId:"a",variants:[{id:"a",sku:"A",name:"Small",options:{size:"Small"},availability:"out_of_stock",price:{selling:{amountMinor:"1000"}},gallery:[{url:"/images/a.jpg",alt:"A"}]},{id:"b",sku:"B",name:"Large",options:{size:"Large"},availability:"available",price:{selling:{amountMinor:"2500"}},gallery:[{url:"/images/b.jpg",alt:"B"}]}]};
- const fixture=componentFixture("src/components/ProductTop.tsx",{modules:{"@/lib/cart":{useCart:()=>({add(){throw Error("Forbidden old cart");}})},"@/lib/public-catalog":{minorToMajor:v=>String(BigInt(v)/100n),catalogPriceLabel:p=>p.selling.amountMinor+" KZT"}}});
+ const fixture=componentFixture("src/components/ProductTop.tsx",{modules:{"@/lib/cart":{useCart:()=>({add(){throw Error("Forbidden old cart");}})},"@/lib/public-catalog":{minorToMajor:v=>String(BigInt(v)/100n),catalogPriceLabel:p=>p.selling.amountMinor+" KZT"},"@/lib/cms/commerce-variant-model":commerceVariantModel,"@/lib/cms/product-variants":productVariants}});
  const props={product:{id:"fixture",title:"Model",price:"10.00",priceLabel:"1000 KZT",currency:"KZT",purchasable:false,breadcrumb:[],gallery:[{src:"/images/a.jpg",view:"A"}],caseSizes:[],versions:[],colors:[],commerce}};
- let tree=fixture.render(props);const selector=nodes(tree).find(n=>n.type==="select"&&n.props["aria-label"]==="Variant");assert.ok(selector);selector.props.onChange({target:{value:"b"}});tree=fixture.render(props);assert.match(nodeText(tree),/2500 KZT/);assert.ok(nodes(tree).some(n=>n.props?.src==="/images/b.jpg"));assert.doesNotMatch(nodeText(tree),/1–3 business days/);
+ let tree=fixture.render(props);choose(tree,"Large");tree=fixture.render(props);assert.match(nodeText(tree),/2500 KZT/);assert.ok(nodes(tree).some(n=>n.props?.src==="/images/b.jpg"));assert.doesNotMatch(nodeText(tree),/1–3 business days/);
 });
 
 test("Task 13A: in server-cart mode an available variant is added by its exact id; an out-of-stock one is not offered",async()=>{
  const commerce={selectedVariantId:"a",variants:[{id:"a",sku:"A",name:"Small",options:{size:"Small"},availability:"out_of_stock",price:{selling:{amountMinor:"1000"}},gallery:[]},{id:"b",sku:"B",name:"Large",options:{size:"Large"},availability:"available",price:{selling:{amountMinor:"2500"}},gallery:[]}]};
- const adds=[];const fixture=componentFixture("src/components/ProductTop.tsx",{modules:{"@/lib/cart":{useCart:()=>({mode:"server",add:async item=>{adds.push(item);}})},"@/lib/cart-client":{createCartClient:()=>({}),CartRequestError:Error},"@/lib/public-catalog":{minorToMajor:v=>String(BigInt(v)/100n),catalogPriceLabel:p=>p.selling.amountMinor+" KZT"}}});
+ const adds=[];const fixture=componentFixture("src/components/ProductTop.tsx",{modules:{"@/lib/cart":{useCart:()=>({mode:"server",add:async item=>{adds.push(item);}})},"@/lib/cart-client":{createCartClient:()=>({}),CartRequestError:Error},"@/lib/public-catalog":{minorToMajor:v=>String(BigInt(v)/100n),catalogPriceLabel:p=>p.selling.amountMinor+" KZT"},"@/lib/cms/commerce-variant-model":commerceVariantModel,"@/lib/cms/product-variants":productVariants}});
  const props={product:{id:"fixture",title:"Model",price:"10.00",priceLabel:"1000 KZT",currency:"KZT",purchasable:false,breadcrumb:[],gallery:[],caseSizes:[],versions:[],colors:[],commerce}};
  const button=tree=>nodes(tree).find(n=>n.type==="button"&&/Add to Cart|Out of stock|Purchasing unavailable/.test(nodeText(n)));
  let tree=fixture.render(props);assert.equal(button(tree).props.disabled,true);assert.match(nodeText(button(tree)),/Out of stock/);
- nodes(tree).find(n=>n.type==="select"&&n.props["aria-label"]==="Variant").props.onChange({target:{value:"b"}});tree=fixture.render(props);
+ choose(tree,"Large");tree=fixture.render(props);
  assert.equal(button(tree).props.disabled,false);await button(tree).props.onClick();assert.equal(adds[0].variantId,"b");assert.equal(adds[0].id,"fixture");
 });
 

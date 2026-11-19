@@ -16,23 +16,25 @@ export function ProductTabs({ product }: { product: ProductDetail }) {
   const t = useTranslations("ProductTabs");
   const [tab, setTab] = useState<Tab>("overview");
 
-  const isRichOverview = tab === "overview" && product.id === "1228429" && !product.overviewHtml;
+  // Overviews imported with garmin.com's layout blocks (banners, sections) run edge to edge like garmin.com;
+  // older imports are plain flowing HTML and keep the narrow reading column.
+  const fullBleedHtml = /class="ov-(?:banner|section)/.test(product.overviewHtml || "");
+  const isRichOverview = tab === "overview" && ((product.id === "1228429" && !product.overviewHtml) || fullBleedHtml);
 
   return (
     <section className="mt-8">
-      {/* Tab bar */}
-      <div className="sticky top-0 z-30 border-y border-neutral-200 bg-[#f2f2f2]">
-        <div className="mx-auto flex max-w-[1280px] gap-8 overflow-x-auto px-4">
+      {/* Tab bar — garmin.com: centered, #e5e5e5, 4px black underline on the active tab */}
+      <div className="sticky top-0 z-30 bg-[#e5e5e5]">
+        <div className="mx-auto flex max-w-[1280px] overflow-x-auto px-4 lg:justify-center">
           {TABS.map((id) => (
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`relative whitespace-nowrap py-4 text-[14px] font-medium uppercase tracking-[0.06em] transition-colors ${
-                tab === id ? "text-black" : "text-neutral-500 hover:text-black"
+              className={`mx-4 whitespace-nowrap border-b-4 px-[14px] pb-6 pt-7 text-[14px] font-semibold uppercase leading-[21px] tracking-[0.28px] text-black transition-colors ${
+                tab === id ? "border-black" : "border-transparent hover:border-neutral-400"
               }`}
             >
               {t(`tabs.${id}`)}
-              {tab === id && <span className="absolute inset-x-0 bottom-0 h-[3px] bg-black" />}
             </button>
           ))}
         </div>
@@ -43,6 +45,9 @@ export function ProductTabs({ product }: { product: ProductDetail }) {
         {tab === "overview" && (
           product.id === "1228429" && !product.overviewHtml ? (
             <ProductOverview product={product} />
+          ) : fullBleedHtml ? (
+            /* overviewHtml is sanitized with an allowlist on import and on every admin save */
+            <div className={overviewStyles.overview} dangerouslySetInnerHTML={{ __html: product.overviewHtml || "" }} />
           ) : product.overviewHtml ? (
             <div className="mx-auto max-w-[1080px] py-8">
               {/* overviewHtml is sanitized with an allowlist on import and on every admin save */}

@@ -692,7 +692,7 @@
     "price": "{price} USD",
     "previousImage": "Previous",
     "nextImage": "Next",
-    "partNumber": "Part Number {partNumber}",
+    "partNumber": "Part Number: {partNumber}",
     "financing": "Starting at $69/mo or 0% APR with <brand>affirm</brand>.",
     "qualify": "See if you qualify",
     "hsa": "HSA/FSA eligible for qualified customers.",
@@ -715,7 +715,9 @@
     "variant": "Variant",
     "inStock": "In stock",
     "availabilityOutOfStock": "Out of stock",
-    "availabilityUnknown": "Availability unavailable"
+    "availabilityUnknown": "Availability unavailable",
+    "sale": "Sale",
+    "save": "Save {amount}"
   },
   "RelatedProducts": {
     "heading": "You May Also Like"

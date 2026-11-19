@@ -13,16 +13,22 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { GarminBadge } from "@/components/GarminBadge";
 import { VariantPicker } from "@/components/product/VariantPicker";
 import { isPurchasable, selectValue } from "@/lib/cms/product-variants";
+import { commerceVariantModel } from "@/lib/cms/commerce-variant-model";
+import type { ProductOption, ProductVariant } from "@/lib/cms/types";
 import { formatMoney } from "@/i18n/format";
 import { useAppLocale } from "@/i18n/useAppLocale";
 
 export function ProductTop({ product:initial }: { product: ProductDetail }) {
   const t = useTranslations("ProductTop");
   const locale = useAppLocale();
-  // Currency stays USD (plan L9); only the number format follows the locale.
-  const money = (n: number) => t("price", { price: formatMoney(n, locale) });
   const [variantId,setVariantId]=useState(initial.commerce?.selectedVariantId??initial.commerce?.variants[0]?.id??"");
   const variant=initial.commerce?.variants.find(v=>v.id===variantId);
+  // PostgreSQL products get the same garmin.com pickers as JSON CMS products (no plain dropdown).
+  const commerceModel = useMemo(
+    () => (initial.commerce ? (commerceVariantModel(initial.commerce) as { options: ProductOption[]; variants: ProductVariant[] } | undefined) : undefined),
+    [initial.commerce],
+  );
+  const commerceSelections = commerceModel?.variants.find((v) => v.id === variantId)?.selections;
   const product:ProductDetail=variant?{...initial,price:minorToMajor(variant.price.selling.amountMinor),priceLabel:catalogPriceLabel(variant.price,"KZT",INTL_LOCALE[locale]),partNumber:variant.sku,gallery:(variant.gallery??[]).map(m=>({view:m.alt||variant.name,src:m.url}))}:initial;
   const [mainIdx, setMainIdx] = useState(0);
   const [caseSize, setCaseSize] = useState(product.defaultCaseSize);
@@ -70,9 +76,24 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
     window.history.replaceState(null, "", url);
   };
 
+  const chooseCommerceValue = (optionId: string, valueId: string) => {
+    if (!commerceModel) return;
+    const next = selectValue(commerceModel.variants, commerceSelections || {}, optionId, valueId);
+    if (!next) return;
+    setVariantId(next.id);
+    setMainIdx(0);
+  };
+
   const price = cmsVariant?.price ?? product.price;
   const compareAt = cmsVariant?.originalPrice;
   const partNumber = cmsVariant?.sku || product.partNumber;
+  // garmin.com imports are converted to tenge (sourcePrice keeps the USD original); legacy products stay USD (plan L9).
+  const isKzt = Boolean(cmsVariant?.sourcePrice?.rateKztPerUsd);
+  const money = (n: number) =>
+    isKzt
+      ? `${new Intl.NumberFormat(INTL_LOCALE[locale], { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} KZT`
+      : t("price", { price: formatMoney(n, locale) });
+  const onSale = typeof price === "number" && compareAt !== undefined && compareAt > price;
 
   // Server cart (Task 13A): the selected variant's real availability decides; the server prices it.
   // In the browser-only cart a JSON CMS variant must be active and in stock.
@@ -107,96 +128,114 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   };
 
   return (
-    <div className="mx-auto max-w-[1280px] px-4 py-6">
-      {/* Breadcrumb */}
-      <nav className="mb-6 flex flex-wrap items-center gap-2 text-[13px] text-neutral-500">
-        {product.breadcrumb.map((b, i) => (
-          <span key={b.label} className="flex items-center gap-2">
-            {i > 0 && <span>/</span>}
-            <Link href={b.href} className="uppercase tracking-[0.04em] hover:text-black">
-              {b.label}
-            </Link>
-          </span>
-        ))}
-      </nav>
-
-      <div className="grid grid-cols-1 gap-10 lg:grid-cols-2">
-        {/* Gallery */}
-        <div className="flex gap-4">
-          <div className="flex flex-col gap-2">
+    <div className="mx-auto max-w-[1440px] px-4 pb-8 pt-4 lg:px-0">
+      {/* garmin.com layout (measured at 1440px): gallery column ≈ 700px, buy box 561px starting 32px after it */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,701px)_minmax(0,561px)]">
+        {/* Gallery: 80px thumbnails in a column (1.6px #ccc frame, black when shown) beside a square photo */}
+        <div className="flex flex-col-reverse gap-2 lg:flex-row lg:justify-end lg:gap-[5px]">
+          <div className="flex items-center gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
             <button
               aria-label={t("previousImage")}
               onClick={() => setMainIdx((i) => Math.max(0, i - 1))}
-              className="grid h-8 place-items-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+              disabled={safeIdx === 0}
+              className="hidden h-4 w-20 place-items-center bg-[#e5e5e5] text-black disabled:opacity-40 lg:grid"
             >
-              <ChevronLeftIcon className="h-4 w-4 rotate-90" />
+              <ChevronLeftIcon className="h-3 w-3 rotate-90" />
             </button>
-            {gallery.map((g, i) => (
-              <button
-                key={`${g.view}-${i}`}
-                onClick={() => setMainIdx(i)}
-                className={`relative h-16 w-16 border ${
-                  i === safeIdx ? "border-black" : "border-neutral-200"
-                }`}
-              >
-                <Image src={g.src} alt={g.view} fill sizes="64px" unoptimized={g.src.startsWith("http")} className="object-contain p-1" />
-              </button>
-            ))}
+            <div className="flex gap-2 lg:max-h-[464px] lg:flex-col lg:overflow-y-auto lg:[scrollbar-width:none]">
+              {gallery.map((g, i) => (
+                <button
+                  key={`${g.view}-${i}`}
+                  onClick={() => setMainIdx(i)}
+                  aria-label={g.view}
+                  aria-current={i === safeIdx}
+                  className={`relative h-20 w-20 shrink-0 border-[1.6px] bg-white ${i === safeIdx ? "border-black" : "border-[#ccc] hover:border-black"}`}
+                >
+                  <Image src={g.src} alt="" fill sizes="80px" unoptimized={g.src.startsWith("http")} className="object-contain" />
+                </button>
+              ))}
+            </div>
             <button
               aria-label={t("nextImage")}
               onClick={() => setMainIdx((i) => Math.min(gallery.length - 1, i + 1))}
-              className="grid h-8 place-items-center bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+              disabled={safeIdx >= gallery.length - 1}
+              className="hidden h-4 w-20 place-items-center bg-[#e5e5e5] text-black disabled:opacity-40 lg:grid"
             >
-              <ChevronRightIcon className="h-4 w-4 rotate-90" />
+              <ChevronRightIcon className="h-3 w-3 rotate-90" />
             </button>
           </div>
-          <div className="relative flex-1">
-            <div className="relative aspect-square w-full">
-              {gallery[safeIdx]&&<Image
+          <div className="relative aspect-square w-full lg:w-[483px]">
+            {gallery[safeIdx] && (
+              <Image
                 src={gallery[safeIdx].src}
                 alt={product.title}
                 fill
                 priority
                 unoptimized={gallery[safeIdx].src.startsWith("http")}
-                sizes="(max-width: 1024px) 100vw, 560px"
+                sizes="(max-width: 1024px) 100vw, 483px"
                 className="object-contain"
-              />}
-            </div>
+              />
+            )}
           </div>
         </div>
 
         {/* Buy box */}
         <div>
-          <h1 className="g-heading text-[32px] leading-tight text-black">{product.title}</h1>
-          <p className="mt-2 text-[16px] text-neutral-700">{product.subtitle}</p>
-          <p className="mt-3 text-[12px] font-medium uppercase tracking-[0.06em] text-neutral-500">
-            {t("partNumber", { partNumber })}
-          </p>
+          <nav className="mb-4 flex flex-wrap items-center gap-2 text-[13px] text-black">
+            {product.breadcrumb.map((b, i) => (
+              <span key={b.label} className="flex items-center gap-2">
+                {i > 0 && <span aria-hidden>/</span>}
+                <Link href={b.href} className="underline hover:no-underline">
+                  {b.label}
+                </Link>
+              </span>
+            ))}
+          </nav>
+          <h1 className="g-heading text-[32px] normal-case leading-[40px] tracking-[0.8px] text-black lg:text-[40px] lg:leading-[50px]">
+            {product.title}
+          </h1>
+          <p className="mt-1 text-[14px] leading-[21px] text-black">{t("partNumber", { partNumber })}</p>
 
-          {product.badge && product.badge !== "NONE" && (
+          {product.badge && product.badge !== "NONE" ? (
             <div className="mt-3">
               <GarminBadge badge={product.badge} variant="pill" />
             </div>
-          )}
+          ) : onSale ? (
+            <span className="mt-3 inline-block rounded-full bg-[#6dcff6] px-4 py-[7px] text-[14px] leading-[21px] text-black">
+              {t("sale")}
+            </span>
+          ) : null}
 
-          {cmsVariant && <p className="mt-1 text-[14px] text-neutral-700">{cmsVariant.title}</p>}
-
-          <p className="mt-4 text-[28px] font-medium text-black">
-            {product.priceLabel ?? (typeof price === "number" ? money(price) : price)}
-            {typeof price === "number" && compareAt !== undefined && compareAt > price && (
-              <span className="ml-3 align-middle text-[18px] font-normal text-neutral-500 line-through">{money(compareAt)}</span>
+          <div className="mt-4">
+            {onSale && typeof price === "number" && (
+              <p className="text-[14px] leading-[21px] text-black">
+                <span className="line-through">{money(compareAt as number)}</span>{" "}
+                {t("save", { amount: money((compareAt as number) - price) })}
+              </p>
             )}
-          </p>
-          {product.currency!=="KZT"&&<><p className="mt-2 text-[14px] text-neutral-600">
-            {t.rich("financing", { brand: (chunks) => <span className="font-semibold">{chunks}</span> })}{" "}
-            <a href="#" className="underline">{t("qualify")}</a>
-          </p>
-          <p className="mt-1 text-[14px] text-neutral-600">
-            {t("hsa")} <a href="#" className="underline">{t("learnMore")}</a>
-          </p>
-
-          </>}
-          {product.commerce&&<label className="mt-6 block">{t("variant")}<select aria-label={t("variant")} value={variantId} onChange={e=>{setVariantId(e.target.value);setMainIdx(0);}} className="mt-2 block w-full border p-3">{product.commerce.variants.map(v=><option key={v.id} value={v.id}>{v.name} {Object.values(v.options).join(" / ")}</option>)}</select><span>{variant?.availability==="available"?t("inStock"):variant?.availability==="out_of_stock"?t("availabilityOutOfStock"):t("availabilityUnknown")}</span></label>}
+            <p className="text-[20px] font-bold leading-[24px] text-black">
+              {product.priceLabel ?? (typeof price === "number" ? money(price) : price)}
+            </p>
+          </div>
+          {product.currency !== "KZT" && !isKzt && (
+            <>
+              <p className="mt-1 text-[14px] text-black">
+                {t.rich("financing", { brand: (chunks) => <span className="font-semibold">{chunks}</span> })}{" "}
+                <a href="#" className="underline">{t("qualify")}</a>
+              </p>
+              <p className="text-[14px] text-black">
+                {t("hsa")} <a href="#" className="underline">{t("learnMore")}</a>
+              </p>
+            </>
+          )}
+          {product.commerce && commerceModel && commerceSelections && (
+            <VariantPicker
+              options={commerceModel.options}
+              variants={commerceModel.variants}
+              selections={commerceSelections}
+              onSelect={chooseCommerceValue}
+            />
+          )}
           {!product.commerce && vm && cmsVariant && (
             <VariantPicker options={vm.options} variants={vm.variants} selections={cmsVariant.selections} onSelect={chooseValue} />
           )}
@@ -217,48 +256,64 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
           />
 
           {/* Model / Color */}
-          <div className="mt-6">
-            <p className="text-[14px] font-medium text-black">{t("modelColor")}</p>
-            <div className="mt-2 flex flex-wrap gap-2">
+          <div className="mt-4">
+            <p className="text-[14px] font-bold leading-[21px] text-black">
+              {t("modelColor")}
+              {product.colors[colorIdx] && <span className="font-normal"> - {product.colors[colorIdx].label}</span>}
+            </p>
+            <div className="mt-2 flex flex-wrap gap-[10.8px]">
               {product.colors.map((c, i) => (
                 <button
                   key={c.label}
                   aria-label={c.label}
+                  aria-pressed={i === colorIdx}
                   onClick={() => {
                     setColorIdx(i);
                     setMainIdx(0);
                   }}
-                  className={`relative h-16 w-16 border ${
-                    i === colorIdx ? "border-2 border-black" : "border-neutral-200"
+                  className={`relative h-[83px] w-[83px] border-[1.6px] bg-white ${
+                    i === colorIdx ? "border-black" : "border-[#ccc] hover:border-black"
                   }`}
                 >
-                  <Image src={c.src} alt={c.label} fill sizes="64px" className="object-contain p-1" />
+                  <Image src={c.src} alt="" fill sizes="80px" className="object-contain" />
                 </button>
               ))}
             </div>
           </div>
           </>}
 
-          {!product.commerce && (
-            <p className="mt-6 text-[14px] text-neutral-700">
-              {cmsVariant && cmsVariant.stock <= 0 ? t("outOfStockNote") : t("shipsIn")}
-            </p>
-          )}
-
-          <div className="mt-4 flex items-center gap-3">
+          {/* garmin.com CTAs: 52px, 16px/500 uppercase, candy blue #6dcff6 and a white outlined button */}
+          <div className="mt-4 flex flex-wrap items-center gap-2">
             <button
               disabled={!sellable} onClick={handleAdd}
-              className="g-btn bg-[#5bc2e7] text-black transition-colors hover:bg-[#37b4dc] disabled:cursor-not-allowed disabled:bg-neutral-200 disabled:text-neutral-500"
+              className="h-[52px] border-[0.8px] border-[#6dcff6] bg-[#6dcff6] px-8 text-[16px] font-medium uppercase leading-[18.4px] text-black transition-colors hover:border-[#3fbef0] hover:bg-[#3fbef0] disabled:cursor-not-allowed disabled:border-neutral-200 disabled:bg-neutral-200 disabled:text-neutral-500"
             >
               {addLabel}
             </button>
-            <button className="g-btn g-btn--outline-dark">{t("customize")}</button>
+            <button className="h-[52px] border-[0.8px] border-black bg-white px-8 text-[16px] font-medium uppercase leading-[18.4px] text-black transition-colors hover:bg-black hover:text-white">
+              {t("customize")}
+            </button>
             {mode === "server" && (
-              <button type="button" onClick={handleWishlist} disabled={wish === "saving"} className="g-btn g-btn--outline-dark disabled:opacity-50">
+              <button
+                type="button" onClick={handleWishlist} disabled={wish === "saving"}
+                className="h-[52px] border-[0.8px] border-black bg-white px-8 text-[16px] font-medium uppercase leading-[18.4px] text-black transition-colors hover:bg-black hover:text-white disabled:opacity-50"
+              >
                 {wish === "saved" ? t("savedToWishlist") : t("saveToWishlist")}
               </button>
             )}
           </div>
+          <p className="mt-4 text-[14px] leading-[21px] text-black">
+            {/* PostgreSQL catalog: report real stock only — no delivery promise the server has not made */}
+            {product.commerce
+              ? variant?.availability === "available"
+                ? t("inStock")
+                : variant?.availability === "out_of_stock"
+                  ? t("availabilityOutOfStock")
+                  : t("availabilityUnknown")
+              : cmsVariant && cmsVariant.stock <= 0
+                ? t("outOfStockNote")
+                : t("shipsIn")}
+          </p>
           {notice && <p role="status" className="mt-3 text-[13px] text-neutral-700">{notice}</p>}
         </div>
       </div>
@@ -278,17 +333,21 @@ function Selector({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="mt-6">
-      <p className="text-[14px] font-medium text-black">{label}</p>
-      <div className="mt-2 flex flex-wrap gap-2">
+    <div className="mt-4">
+      <p className="text-[14px] font-bold leading-[21px] text-black">
+        {label}
+        {value && <span className="font-normal"> - {value}</span>}
+      </p>
+      <div className="mt-2 flex flex-wrap gap-[10.8px]">
         {options.map((o) => (
           <button
             key={o}
             onClick={() => onChange(o)}
-            className={`border px-4 py-2 text-[13px] uppercase tracking-[0.04em] transition-colors ${
+            aria-pressed={o === value}
+            className={`h-[38px] min-w-[82px] border-[1.6px] px-[17.5px] text-[14px] leading-[21px] transition-colors ${
               o === value
                 ? "border-black bg-black text-white"
-                : "border-neutral-300 bg-white text-black hover:border-black"
+                : "border-[#ccc] bg-white text-black hover:border-black"
             }`}
           >
             {o}

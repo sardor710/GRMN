@@ -11,89 +11,93 @@ interface VariantPickerProps {
   onSelect: (optionId: string, valueId: string) => void;
 }
 
-/** Garmin-style option pickers: buttons, swatches (image or color) or a dropdown, per option. */
+/**
+ * garmin.com option pickers (measured on /p/1613801, 2026-11-19): a bold "Name - Selected" label, 38px text
+ * buttons with a 1.6px #ccc border (black and filled when chosen) and 83px photo swatches. A value that does
+ * not fit the other choices stays clickable — picking it switches to the variant that has it — and only its
+ * photo is faded, as on garmin.com.
+ */
 export function VariantPicker({ options, variants, selections, onSelect }: VariantPickerProps) {
   return (
-    <div className="mt-2">
+    <div>
       {options.map((option) => {
         const available = availableValueIds(variants, selections, option.id);
         const selected = option.values.find((v) => v.id === selections[option.id]);
         return (
-          <div key={option.id} className="mt-6" role="group" aria-label={option.name}>
-            <p className="text-[14px] font-medium text-black">
+          <div key={option.id} className="mt-4" role="group" aria-label={option.name}>
+            <p className="text-[14px] font-bold leading-[21px] text-black">
               {option.name}
-              {option.display === "swatch" && selected && (
-                <span className="ml-2 font-normal text-neutral-600">{selected.label}</span>
-              )}
+              {selected && <span className="font-normal"> - {selected.label}</span>}
             </p>
 
             {option.display === "dropdown" ? (
               <select
                 value={selections[option.id] || ""}
                 onChange={(e) => onSelect(option.id, e.target.value)}
-                className="mt-2 w-full max-w-[360px] border border-neutral-300 bg-white px-3 py-2 text-[14px] text-black focus:border-black focus:outline-none"
+                className="mt-2 w-full max-w-[360px] border-[1.6px] border-[#ccc] bg-white px-3 py-2 text-[14px] text-black focus:border-black focus:outline-none"
               >
                 {option.values.map((value) => (
-                  <option key={value.id} value={value.id} disabled={!available.has(value.id)}>
+                  <option key={value.id} value={value.id}>
                     {value.label}
-                    {!available.has(value.id) ? " (unavailable)" : ""}
                   </option>
                 ))}
               </select>
             ) : (
-              <div className="mt-2 flex flex-wrap gap-2">
+              <ul className="mt-2 flex flex-wrap gap-[10.8px]">
                 {option.values.map((value) => {
                   const isSelected = value.id === selections[option.id];
-                  const isAvailable = available.has(value.id);
+                  const fits = available.has(value.id);
                   if (option.display === "swatch") {
                     return (
-                      <button
-                        key={value.id}
-                        type="button"
-                        title={value.label}
-                        aria-label={value.label}
-                        aria-pressed={isSelected}
-                        onClick={() => onSelect(option.id, value.id)}
-                        className={cn(
-                          "relative grid h-16 w-16 place-items-center border bg-white transition-colors",
-                          isSelected ? "border-2 border-black" : "border-neutral-200 hover:border-neutral-500",
-                          !isAvailable && "opacity-40",
-                        )}
-                      >
-                        {value.swatchImage ? (
-                          // eslint-disable-next-line @next/next/no-img-element -- remote Garmin swatch thumbnails
-                          <img src={value.swatchImage} alt="" className="h-full w-full object-contain p-1" />
-                        ) : (
-                          <span
-                            className="h-9 w-9 rounded-full border border-neutral-300 bg-[var(--swatch)]"
-                            style={{ ["--swatch" as string]: value.swatchColor || "#e5e5e5" }}
-                          />
-                        )}
-                        {!isAvailable && (
-                          <span className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top_right,transparent_calc(50%-1px),#9ca3af,transparent_calc(50%+1px))]" />
-                        )}
-                      </button>
+                      <li key={value.id}>
+                        <button
+                          type="button"
+                          title={value.label}
+                          aria-label={value.label}
+                          aria-pressed={isSelected}
+                          onClick={() => onSelect(option.id, value.id)}
+                          className={cn(
+                            "grid h-[83px] w-[83px] place-items-center border-[1.6px] bg-white",
+                            isSelected ? "border-black" : "border-[#ccc] hover:border-black",
+                          )}
+                        >
+                          {value.swatchImage ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- variant photo thumbnails (remote or /uploads)
+                            <img
+                              src={value.swatchImage}
+                              alt=""
+                              className={cn("h-20 w-20 object-contain", !fits && !isSelected && "opacity-30")}
+                            />
+                          ) : (
+                            <span
+                              className={cn(
+                                "h-12 w-12 rounded-full border border-[#ccc] bg-[var(--swatch)]",
+                                !fits && !isSelected && "opacity-30",
+                              )}
+                              style={{ ["--swatch" as string]: value.swatchColor || "#e5e5e5" }}
+                            />
+                          )}
+                        </button>
+                      </li>
                     );
                   }
                   return (
-                    <button
-                      key={value.id}
-                      type="button"
-                      aria-pressed={isSelected}
-                      onClick={() => onSelect(option.id, value.id)}
-                      className={cn(
-                        "border px-4 py-2 text-[13px] uppercase tracking-[0.04em] transition-colors",
-                        isSelected
-                          ? "border-black bg-black text-white"
-                          : "border-neutral-300 bg-white text-black hover:border-black",
-                        !isAvailable && !isSelected && "border-dashed text-neutral-400",
-                      )}
-                    >
-                      {value.label}
-                    </button>
+                    <li key={value.id}>
+                      <button
+                        type="button"
+                        aria-pressed={isSelected}
+                        onClick={() => onSelect(option.id, value.id)}
+                        className={cn(
+                          "h-[38px] min-w-[82px] border-[1.6px] px-[17.5px] text-[14px] leading-[21px] transition-colors",
+                          isSelected ? "border-black bg-black text-white" : "border-[#ccc] bg-white text-black hover:border-black",
+                        )}
+                      >
+                        {value.label}
+                      </button>
+                    </li>
                   );
                 })}
-              </div>
+              </ul>
             )}
           </div>
         );

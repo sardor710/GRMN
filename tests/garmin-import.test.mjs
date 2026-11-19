@@ -162,3 +162,61 @@ test('parseInTheBox and familyFromName', () => {
   assert.equal(familyFromName('Edge® 1060 Plus'), 'Edge 1060');
   assert.equal(familyFromName('Forerunner® 970 – 47 mm'), 'Forerunner 970');
 });
+
+// ---- garmin.com overview layout fidelity (banners, sections, column grids, headlines) ----
+const OV_SAMPLE = `<div><overview-container>
+<pc-life-style data-translate bg-image="https://res.garmin.com/en/products/x/g/D-1.jpg" mobile-bg-image="https://res.garmin.com/en/products/x/g/M-1.jpg"
+  text="VENU® 4" text-size="3" text-align="left" text-position="middle" button-text="A healthier lifestyle" theme="dark" />
+<pc-overview-intro theme="light" title="DISCOVER A HEALTHIER YOU" description="Purpose-built for you.">
+  <pc-feature-card image="https://res.garmin.com/icons/AMOLED.svg" img-width="50px" description="BRIGHT AMOLED DISPLAY" />
+</pc-overview-intro>
+</overview-container></div>
+<div>
+<pc-layout-container theme="light"><pc-column-layout columns="1">
+  <pc-headline theme="dark" text-align="center" text-size="2.6" primary-text="WHAT YOU'LL LOVE" />
+</pc-column-layout></pc-layout-container>
+<pc-layout-container><pc-column-layout>
+  <pc-feature-card title="24/7 HEALTH MONITORING" image="https://res.garmin.com/en/products/x/g/f1.jpg" description="Make improvements." />
+  <pc-feature-card title="SLEEP" image="https://res.garmin.com/en/products/x/g/f2.jpg" description="Sleep score." />
+  <pc-feature-card title="STATUS" image="https://res.garmin.com/en/products/x/g/f3.jpg" description="Health status." />
+</pc-column-layout></pc-layout-container>
+<pc-layout-container><pc-copy theme="light" title="HEALTH" /><pc-line-divider />
+  <pc-column-layout columns="5">
+    <pc-feature-card title="HRV STATUS" image="https://res.garmin.com/icons/HRV.svg" description="Understand your health." />
+    <pc-feature-card />
+  </pc-column-layout>
+</pc-layout-container>
+<pc-layout-container theme="neutral"><pc-disclaimer-block><pc-disclaimer-item counter="1" content="See notes." /></pc-disclaimer-block></pc-layout-container>
+</div>`;
+const ovOut = () => sanitizeOverviewHtml(overviewFromGarmin(OV_SAMPLE));
+
+test('overview: life-style becomes a full-width banner with text over the photo, not a caption', () => {
+  const html = ovOut();
+  assert.match(html, /<div class="ov-banner ov-theme-dark ov-align-left ov-pos-middle ov-ts-30">/);
+  assert.match(html, /<img[^>]*class="ov-desktop"[^>]*D-1\.jpg|<img[^>]*D-1\.jpg[^>]*class="ov-desktop"/);
+  assert.match(html, /M-1\.jpg/);
+  assert.match(html, /<div class="ov-banner-text"><h2>VENU® 4<\/h2><p>A healthier lifestyle<\/p><\/div>/);
+  assert.doesNotMatch(html, /figcaption/);
+});
+
+test('overview: layout containers, column grids, headlines and dividers keep garmin.com structure', () => {
+  const html = ovOut();
+  assert.match(html, /<section class="ov-section ov-theme-light">/);
+  assert.match(html, /<div class="ov-headline ov-theme-dark ov-align-center ov-ts-26"><h2>WHAT YOU'LL LOVE<\/h2><\/div>/);
+  // columns attribute missing → number of cards in the row
+  assert.match(html, /<div class="ov-cols ov-cols-3">(?:<div class="ov-card">[\s\S]*?<\/div>){3}<\/div>/);
+  assert.match(html, /<div class="ov-cols ov-cols-5"><div class="ov-card ov-card-icon">/);
+  assert.match(html, /<div class="ov-copy"><h2>HEALTH<\/h2><\/div><hr \/>/);
+  assert.equal((html.match(/class="ov-card/g) || []).length, 4, 'empty filler cards are dropped');
+  assert.match(html, /<section class="ov-section ov-theme-neutral"><div class="ov-disclaimers">/);
+});
+
+test('overview: intro keeps its icon highlights in a grid under the title', () => {
+  const html = ovOut();
+  assert.match(html, /<section class="ov-section ov-intro ov-theme-light"><h2>DISCOVER A HEALTHIER YOU<\/h2><p>Purpose-built for you\.<\/p><div class="ov-cols ov-cols-6 ov-highlights"><div class="ov-highlight">/);
+});
+
+test('overview: unknown theme/alignment values cannot inject classes', () => {
+  const html = sanitizeOverviewHtml(overviewFromGarmin('<pc-headline theme="x evil" text-align="center onclick" text-size="99" primary-text="T" />'));
+  assert.match(html, /<div class="ov-headline ov-theme-light ov-align-center ov-ts-40"><h2>T<\/h2><\/div>/);
+});

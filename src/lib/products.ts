@@ -164,8 +164,8 @@ export const fenix8Detail: ProductDetail = {
   price: 1099.99,
   badge: "CUSTOMIZABLE",
   breadcrumb: [
-    { label: "OUTDOOR RECREATION", href: "/c/wearables-smartwatches" },
-    { label: "ADVENTURE WATCHES", href: "/c/wearables-smartwatches" },
+    { label: "Outdoor Recreation", href: "/c/wearables-smartwatches" },
+    { label: "Adventure Watches", href: "/c/wearables-smartwatches" },
   ],
   gallery: [
     { view: "Front", src: "/images/products/fenix8-cf.jpg" },
@@ -261,8 +261,8 @@ async function buildFallbackDetail(p: Product, locale: Locale): Promise<ProductD
     price: p.price,
     badge: p.badge,
     breadcrumb: [
-      { label: "SMARTWATCHES", href: "/c/wearables-smartwatches" },
-      { label: p.family.toUpperCase(), href: "/c/wearables-smartwatches" },
+      { label: "Smartwatches", href: "/c/wearables-smartwatches" },
+      { label: p.family, href: "/c/wearables-smartwatches" },
     ],
     gallery,
     caseSizes: ["43 MM", "47 MM", "51 MM"],
@@ -307,8 +307,9 @@ export async function buildDetailFromCms(p: CMSProduct, locale: Locale = "en"): 
     price: p.price,
     badge: p.badge && p.badge !== "NONE" ? p.badge : undefined,
     breadcrumb: [
-      { label: (p.category || "Products").toUpperCase(), href: "/c/wearables-smartwatches" },
-      ...(p.family ? [{ label: p.family.toUpperCase(), href: "/c/wearables-smartwatches" }] : []),
+      // garmin.com: "Sports & Fitness / Fitness Tracking" — category, then subcategory (family as a fallback).
+      { label: p.category || "Products", href: "/c/wearables-smartwatches" },
+      ...(p.subCategory || p.family ? [{ label: String(p.subCategory || p.family), href: "/c/wearables-smartwatches" }] : []),
     ],
     gallery,
     caseSizes: [],
@@ -335,7 +336,7 @@ export async function getProductDetail(id: string, locale: Locale = "en"): Promi
     const detail=await getCatalogService().getProductByPublicKey(id,"default","KZT",locale);if(!detail)return undefined;
     const view=catalogCardView(detail),editorial=id==="1228429"?fenix8Detail:undefined;
     return {id:detail.publicKey,title:detail.name,subtitle:detail.description,partNumber:detail.variants.find(v=>v.id===detail.selectedVariantId)?.sku??detail.variants[0]?.sku??"",price:view.price,priceLabel:view.priceLabel,currency:"KZT",purchasable:false,badge:view.badge,commerce:detail,
-      breadcrumb:editorial?.breadcrumb??[{label:"SMARTWATCHES",href:"/c/wearables-smartwatches"}],
+      breadcrumb:editorial?.breadcrumb??[{label:"Smartwatches",href:"/c/wearables-smartwatches"}],
       gallery:detail.gallery.map(m=>({view:m.alt||detail.name,src:m.url})),
       caseSizes:[],defaultCaseSize:"",versions:[],defaultVersion:"",colors:[],
       features:detail.features.length?detail.features.map(f=>({title:f.title,body:f.body,image:f.image?.url})):editorial?.features??[],specs:detail.specs.length?detail.specs:editorial?.specs??[],inTheBox:detail.inTheBox.length?detail.inTheBox:editorial?.inTheBox??[],related:detail.relatedProductKeys??[],

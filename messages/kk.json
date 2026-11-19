@@ -692,7 +692,7 @@
     "price": "{price} USD",
     "previousImage": "Алдыңғы сурет",
     "nextImage": "Келесі сурет",
-    "partNumber": "Артикул {partNumber}",
+    "partNumber": "Артикул: {partNumber}",
     "financing": "Айына 69 $-дан бастап немесе <brand>affirm</brand> арқылы жылдық 0%.",
     "qualify": "Сізге сай келетінін тексеріңіз",
     "hsa": "Сәйкес клиенттер HSA/FSA қаражатымен төлей алады.",
@@ -715,7 +715,9 @@
     "variant": "Нұсқа",
     "inStock": "Қоймада бар",
     "availabilityOutOfStock": "Қоймада жоқ",
-    "availabilityUnknown": "Қолжетімділігі белгісіз"
+    "availabilityUnknown": "Қолжетімділігі белгісіз",
+    "sale": "Жеңілдік",
+    "save": "Үнемдеу {amount}"
   },
   "RelatedProducts": {
     "heading": "Сізге мыналар да ұнауы мүмкін"

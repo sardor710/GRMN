@@ -692,7 +692,7 @@
     "price": "{price} USD",
     "previousImage": "Предыдущее фото",
     "nextImage": "Следующее фото",
-    "partNumber": "Артикул {partNumber}",
+    "partNumber": "Артикул: {partNumber}",
     "financing": "От 69 $ в месяц или 0% годовых с <brand>affirm</brand>.",
     "qualify": "Проверьте, подходите ли вы",
     "hsa": "Можно оплатить средствами HSA/FSA (для подходящих клиентов).",
@@ -715,7 +715,9 @@
     "variant": "Вариант",
     "inStock": "В наличии",
     "availabilityOutOfStock": "Нет в наличии",
-    "availabilityUnknown": "Наличие неизвестно"
+    "availabilityUnknown": "Наличие неизвестно",
+    "sale": "Распродажа",
+    "save": "Экономия {amount}"
   },
   "RelatedProducts": {
     "heading": "Вам также может понравиться"
