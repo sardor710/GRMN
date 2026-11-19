@@ -115,3 +115,12 @@ The image needs the public origin at build time: `docker build --build-arg NEXT_
 - `grmn:47a935d` / `grmn-ops:47a935d` are in production, after a pre-release backup.
 - Staging first passed **39/39** with the language build: `/` redirects to `/ru`; `/en`, `/ru`, `/kk`, categories, blog, cart and the product page answer; delivery rule, purchase, cancellation and reopen all pass; the canonical and sitemap use garmin.tigr.uz.
 - **Deploy note:** the store's nginx resolves `app` once at start, so after the app container is recreated, restart the proxy (`… restart proxy`). Otherwise it answers 502.
+
+**Content translations deployed (2026-11-19):**
+- `grmn:d239c3b` / `grmn-ops:d239c3b` are in production; migration 0019 applied (20 migrations).
+- Staging first passed 39/39. A product created through the admin with ru/kk translations rendered "Тестовые часы" on `/ru/p/…` and "Сынақ сағаты" on `/kk/p/…`, and the sitemap listed all three languages.
+
+**Found during this deploy:**
+- **The backup job's prune step failed** once production held more than 2 base backups: it ran as the host user and could not read files owned by PostgreSQL (uid 999). The base and media backups had already succeeded; the pre-migration base `20261119T110346Z` is intact.
+- **Fix:** `scheduled.sh` runs `prune.sh` inside the db container. `prune.sh` also no longer aborts when a base lacks a `backup_label`.
+- The job was re-run and passed with exit 0.

@@ -15,7 +15,9 @@ run() {
     backup)
       "$here/../backup/base-backup.sh" "$project" "$envfile" &&
       "$here/../backup/media-backup.sh" "$project" "$envfile" &&
-      "$here/../backup/prune.sh" "$backup_dir" "${keep:-14}" ;;
+      # Backup files belong to the PostgreSQL user (uid 999), so pruning runs inside the db container.
+      docker compose -p "$project" --env-file "$envfile" -f "$here/../compose.yml" exec -T db \
+        bash -s -- /backup "${keep:-14}" < "$here/../backup/prune.sh" ;;
     health)
       docker compose -p "$project" --env-file "$envfile" -f "$here/../compose.yml" run --rm -T ops \
         node --conditions=react-server scripts/ops/health-check.mjs --backup-dir /backup ;;
