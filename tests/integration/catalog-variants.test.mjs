@@ -165,3 +165,52 @@ test("admin HTTP: a variant product posted as JSON (money kept as exact text) sa
   const prices=(await rows("SELECT v.sku,pr.amount_minor::text AS a FROM product_variants v JOIN prices pr ON pr.variant_id=v.id AND pr.is_active JOIN products p ON p.id=v.product_id WHERE p.public_key=$1 ORDER BY v.sku",[saved.id])).map(r=>r.a);
   assert.deepEqual(prices,["10000000","11000050","10000000","12000000"]);
 });
+
+test("admin editor: applying a garmin.com import and pressing Save posts a payload the PostgreSQL route accepts",async()=>{
+  const {componentFixture,nodes}=await import("../helpers/component-fixture.mjs");
+  const {parseGarminProduct}=await import("../../src/lib/import/garmin-parse.js");
+  const html=fs.readFileSync(new URL("../fixtures/garmin/fenix9.html",import.meta.url),"utf8");
+  const {product}=parseGarminProduct(html,{sourceUrl:"https://www.garmin.com/en-US/p/1953453",rateKztPerUsd:512.37,now:"2026-11-17T00:00:00.000Z"});
+  const keep=new Set();for(const v of product.variants)for(const id of v.imageIds.slice(0,8))if(keep.size<300)keep.add(id);
+  // Own SKUs: the fēnix 9 fixture is also saved by another test in this file (SKUs are unique store-wide).
+  const draft={...product,sku:"U-"+product.sku,variants:product.variants.map(v=>({...v,sku:"U-"+v.sku,imageIds:v.imageIds.filter(id=>keep.has(id))})),images:product.images.filter(i=>keep.has(i.id)).map(i=>({...i,src:photo(`/uploads/products/garmin/ui/${i.id}.jpg`)}))};
+  const posted=[];
+  const fixture=componentFixture("src/app/admin/products/_components/ProductsScreen.tsx",{items:[],modules:{"@/components/admin/product-editor":{formatKzt:value=>String(value),newId:prefix=>`${prefix}-fixture`}},
+    fetcher:async(_url,options)=>{if(options?.body)posted.push(options.body);return{ok:true,status:200,json:async()=>({success:true})};}});
+  const tree=nodes(fixture.render());
+  tree.find(node=>node.props?.onApply&&node.props?.formHasData!==undefined).props.onApply(draft);
+  await nodes(fixture.render()).find(node=>node.type==="form").props.onSubmit({preventDefault(){}});
+  assert.equal(posted.length,1,"the editor posted the product");
+  const cms=await service(),{createCMSHTTP}=await import("../../src/server/cms/http.ts");
+  const http=createCMSHTTP({cms,authorize,baseURL:config.baseURL,dimensionSpecs:{},defaults:()=>home});
+  const response=await http.handle("products",new Request(config.baseURL+"/api/admin/products",{method:"POST",headers:new Headers([...admin,["origin",config.baseURL],["content-type","application/json"]]),body:posted[0]}));
+  assert.equal(response.status,200,await response.clone().text()+" keys: "+Object.keys(JSON.parse(posted[0])).join(","));
+});
+
+test("admin editor: editing a saved imported product (Save Changes) is accepted, with or without a re-import",async()=>{
+  const {componentFixture,nodes}=await import("../helpers/component-fixture.mjs");
+  const {parseGarminProduct}=await import("../../src/lib/import/garmin-parse.js");
+  const html=fs.readFileSync(new URL("../fixtures/garmin/fenix9.html",import.meta.url),"utf8");
+  const {product}=parseGarminProduct(html,{sourceUrl:"https://www.garmin.com/en-US/p/1953453",rateKztPerUsd:500,now:"2026-11-17T00:00:00.000Z"});
+  const keep=new Set();for(const v of product.variants)for(const id of v.imageIds.slice(0,8))if(keep.size<300)keep.add(id);
+  const draft={...product,variants:product.variants.map(v=>({...v,sku:"E-"+v.sku,imageIds:v.imageIds.filter(id=>keep.has(id))})),images:product.images.filter(i=>keep.has(i.id)).map(i=>({...i,src:photo(`/uploads/products/garmin/edit/${i.id}.jpg`)}))};
+  draft.sku="E-"+product.sku;
+  const cms=await service(),{createCMSHTTP}=await import("../../src/server/cms/http.ts");
+  const http=createCMSHTTP({cms,authorize,baseURL:config.baseURL,dimensionSpecs:{},defaults:()=>home});
+  const post=body=>http.handle("products",new Request(config.baseURL+"/api/admin/products",{method:"POST",headers:new Headers([...admin,["origin",config.baseURL],["content-type","application/json"]]),body}));
+  const first=await post(JSON.stringify({...draft,status:"published"}));assert.equal(first.status,200,await first.clone().text());
+  const saved=(await first.json()).product;
+  const listed=(await (await http.handle("products",new Request(config.baseURL+"/api/admin/products?search="+encodeURIComponent(saved.sku),{headers:admin}))).json()).products.find(p=>p.id===saved.id);
+  for(const reimport of [false,true]){
+    const posted=[];
+    const fixture=componentFixture("src/app/admin/products/_components/ProductsScreen.tsx",{items:[listed],modules:{"@/components/admin/product-editor":{formatKzt:value=>String(value),newId:prefix=>`${prefix}-fixture`}},
+      fetcher:async(_url,options)=>{if(options?.body)posted.push(options.body);return{ok:true,status:200,json:async()=>({success:true})};}});
+    nodes(fixture.render()).find(node=>node.props?.title==="Edit Product").props.onClick();
+    if(reimport)nodes(fixture.render()).find(node=>node.props?.onApply&&node.props?.formHasData!==undefined).props.onApply(draft);
+    await nodes(fixture.render()).find(node=>node.type==="form").props.onSubmit({preventDefault(){}});
+    const current=(await cms.get("products",admin,saved.id)).version;
+    const body=JSON.parse(posted[0]);body.version=current;
+    const response=await post(JSON.stringify(body));
+    assert.equal(response.status,200,`${reimport?"re-import":"edit"}: `+await response.clone().text());
+  }
+});

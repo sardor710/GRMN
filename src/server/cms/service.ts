@@ -10,7 +10,7 @@ import { CONTENT_INVALIDATE_KIND } from "../content/events.ts";
 import { appendOutboxEvent } from "../operations/outbox.ts";
 import { mergeTranslationsSafely } from "../../lib/cms/translation-input.ts";
 import { PRODUCT_HTML_FIELDS, sanitizeProductInput } from "../../lib/cms/product-input.ts";
-import { projectProduct, type ProductDocument } from "./product-projection.ts";
+import { projectProduct, toMinor, type ProductDocument } from "./product-projection.ts";
 import { BLOG_HTML_FIELDS } from "../../lib/cms/content-input.ts";
 import { BANNER_SPEC, BLOG_SPEC, HOMEPAGE_SPEC, PRODUCT_SPEC } from "../../i18n/translate-record.ts";
 import type { FieldSpec } from "../../i18n/translate-record.ts";
@@ -39,7 +39,8 @@ const blogCommand = blogInput.extend({id:z.uuid().optional(),version:version.opt
 const bannerCommand = bannerInput.extend({id:z.uuid().optional(),version:version.optional(),draft:z.boolean().optional()}).strict();
 const clientCommand = z.object({id:z.uuid().optional(),version:version.optional(),name:z.string().trim().min(1).max(200),phone:z.string().trim().min(1).max(64),email:z.union([z.email().max(254),z.literal("")]).optional(),country:z.string().regex(/^(?:[A-Z]{2})?$/).optional(),status:z.enum(["active","vip","pending","suspended"]).optional(),avatar:z.string().max(2048).optional(),notes:z.string().max(10000).optional()}).strict();
 const querySchema = z.object({limit:z.number().int().min(1).max(100).default(20),cursor:z.string().max(2048).optional(),search:z.string().trim().max(200).default(""),status:z.string().max(30).optional(),family:z.string().max(200).optional(),category:z.string().max(200).optional()}).strict();
-function parse<T>(schema:z.ZodType<T>, value:unknown):T { const result=schema.safeParse(value);if(!result.success)return fail("INVALID_INPUT",400,"Invalid or unknown fields");return result.data; }
+// The message names the offending fields (paths only, never values) so staff can fix the form.
+function parse<T>(schema:z.ZodType<T>, value:unknown):T { const result=schema.safeParse(value);if(!result.success){const fields=[...new Set(result.error.issues.map(issue=>issue.path.join(".")||(issue.code==="unrecognized_keys"?(issue as {keys?:string[]}).keys?.join(", "):"")).filter(Boolean))].slice(0,5);return fail("INVALID_INPUT",400,`Invalid or unknown fields${fields.length?": "+fields.join("; "):""}`);}return result.data; }
 const LOCALES=["ru","kk"] as const;
 /** Validates `incoming` and merges it per locale with `stored` (a sent locale replaces, blank removes). */
 function mergedTranslations(stored:unknown,incoming:unknown,spec:FieldSpec,html?:Record<string,(value:string)=>string>):Record<string,unknown>{
@@ -55,8 +56,15 @@ const translationsOf=(row:Record<string,unknown>)=>row.translations&&typeof row.
 const entityTypes={products:"product",blogs:"blog",banners:"banner",clients:"customer",homepage:"homepage"} as const;
 const permissions:Record<CMSResource,readonly[Permission,Permission]>={products:["catalog:read","catalog:write"],blogs:["content:write","content:write"],banners:["content:write","content:write"],clients:["customers:read","customers:write"]};
 
+// Documents saved before 2026-11-19 kept variant prices as exact text; read them back as numbers
+// so the editor gets every price (otherwise the DTO drops them and the next save is refused).
+function numericVariantPrices(content:unknown):unknown{
+  const doc=record(content);if(!Array.isArray(doc.variants))return content;
+  const num=(value:unknown)=>typeof value==="string"&&/^(0|[1-9][0-9]{0,13})(\.[0-9]{1,2})?$/.test(value)?Number(value):value;
+  return{...doc,variants:doc.variants.map(v=>{const variant=record(v);return{...variant,price:num(variant.price),...(variant.originalPrice===undefined?{}:{originalPrice:num(variant.originalPrice)})};})};
+}
 function productDTO(row:Record<string,unknown>):CMSItem {
-  const extra=adminDTO("products",row.legacy_content), amount=Number(row.amount_minor??0)/100;
+  const extra=adminDTO("products",numericVariantPrices(row.legacy_content)), amount=Number(row.amount_minor??0)/100;
   if(row.amount_minor==null||!Number.isSafeInteger(Number(row.amount_minor))||(row.compare_at_minor!=null&&!Number.isSafeInteger(Number(row.compare_at_minor))))return fail("UNAVAILABLE",503,"Price is unavailable or outside the supported display range");
   const defaults={image:"",category:"",subCategory:"",activities:[],level:"Entry",caseSize:"Medium",compatibleAccessories:[]};
   const projected=adminDTO("products",{...extra,
@@ -181,7 +189,10 @@ export function createCMSService({pool,authorize}:Options) {
           // Overview HTML, image URLs and swatch colours are sanitized like the legacy admin route.
           const clean=sanitizeProductInput(unsafe as Record<string,unknown>,undefined);
           if(!clean.ok)return fail("INVALID_INPUT",400,clean.error);
-          const base=clean.product as typeof unsafe;
+          // Variant prices may arrive as exact text (the admin route keeps money lexemes); the editor
+          // document stores them as numbers in KZT major units, like the legacy store.
+          const base={...(clean.product as typeof unsafe),...(Array.isArray(unsafe.variants)?{variants:(clean.product as typeof unsafe).variants!.map(v=>({...v,price:Number(toMinor(v.price,`Price of ${v.sku}`))/100,
+            ...(v.originalPrice===undefined||v.originalPrice===""?{}:{originalPrice:Number(toMinor(v.originalPrice,`Compare-at price of ${v.sku}`))/100})}))}:{})} as typeof unsafe;
           const translations=mergedTranslations(old?.translations,sentTranslations,PRODUCT_SPEC,PRODUCT_HTML_FIELDS);
           const metadata={...record(old?.legacy_content),...base,price:Number(data.price)/100,originalPrice:compareAt===null?undefined:Number(compareAt)/100};
           const fields=[data.name,data.description??old?.description??"",data.family??old?.family??null,data.badge??old?.badge??null,data.priceSuffix??old?.price_suffix??null,status,data.isFeatured??old?.is_featured??false,json(data.specs??old?.specs??[]),json(data.features??old?.features??[]),json(data.inTheBox??old?.in_the_box??[]),json(metadata),data.seoTitle??old?.seo_title??null,data.seoDescription??old?.seo_description??null,json(data.focusKeywords??old?.focus_keywords??[]),data.canonicalUrl??old?.canonical_url??null,data.noIndex??old?.no_index??false,data.ogImage??old?.og_image_source??null];
