@@ -32,8 +32,10 @@ export function createCMSHTTP(input:{cms:CMSService;authorize:(headers:Headers,p
         return adminJSON({[resource]:page.items,nextCursor:page.nextCursor,backend:"postgres"});
       }
       if(request.method==="DELETE"){
-        if(resource==="homepage")return bad();const query=queries(url,["id","version"]);
+        if(resource==="homepage")return bad();const query=queries(url,["id","version","permanent"]);
         if(!query.id||!query.version||!/^\d+$/.test(query.version))return bad();
+        // Owner 2026-11-19: ?permanent=1 deletes a never-sold product for good (otherwise archive).
+        if(query.permanent!==undefined){if(resource!=="products"||query.permanent!=="1")return bad();return adminJSON(await input.cms.deleteProduct(request.headers,query.id,Number(query.version)));}
         return adminJSON(await input.cms.archive(resource,request.headers,query.id,Number(query.version)));
       }
       queries(url,[]);

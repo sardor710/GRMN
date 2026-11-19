@@ -135,7 +135,8 @@ export default function AdminDiscountsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this discount coupon?")) return;
     try {
-      await fetch(`/api/admin/discounts?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/admin/discounts?id=${id}`, { method: "DELETE" });
+      if (!res.ok) { setActionError("The discount could not be deleted. Reload and try again."); return; }
       setDiscounts(discounts.filter((d) => d.id !== id));
     } catch (err) {
       console.error("Failed to delete discount:", err);
@@ -169,8 +170,10 @@ export default function AdminDiscountsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      // PostgreSQL saves are versioned (the legacy store has no version field).
+      const version = (editingDiscount as (Discount & { version?: number }) | null)?.version;
       const payload = {
-        ...(editingDiscount ? { id: editingDiscount.id } : {}),
+        ...(editingDiscount ? { id: editingDiscount.id, ...(version ? { version } : {}) } : {}),
         ...formData,
         startDate: new Date(formData.startDate).toISOString(),
         expiresAt: new Date(formData.expiresAt + "T23:59:59").toISOString(),
@@ -182,7 +185,7 @@ export default function AdminDiscountsPage() {
         body: JSON.stringify(payload),
       });
 
-      if (!res.ok)throw new Error(res.status===409?"Record changed. Reload before saving.":"Discount changes are unavailable.");
+      if (!res.ok){const data=await res.json().catch(()=>null) as {error?:{message?:string}|string}|null;const message=typeof data?.error==="string"?data.error:data?.error?.message;throw new Error(message||(res.status===409?"Record changed. Reload before saving.":"Discount changes are unavailable."));}
       if (res.ok) {
         setIsModalOpen(false);
         fetchData();

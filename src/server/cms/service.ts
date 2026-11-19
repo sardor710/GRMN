@@ -225,6 +225,42 @@ export function createCMSService({pool,authorize}:Options) {
         return customerDTO((await client.query(`${customerSelect} WHERE c.id=$1`,[id])).rows[0],principal);
       });
     },
+    /**
+     * Owner 2026-11-19: delete a product permanently. Allowed only when it was never ordered and has
+     * no stock history (orders and the stock ledger are immutable); everything that only describes
+     * the product goes with it: variants, prices, options, selections, photo links, translations,
+     * collection entries, relations, promotion links, and cart and wishlist lines.
+     */
+    async deleteProduct(headers:Headers,publicKey:string,expected:number):Promise<{deleted:true}>{
+      const principal=await actor(headers,"products",true);parse(identity,publicKey);parse(version,expected);
+      return tx(async client=>{
+        const product=(await client.query("SELECT id,version,name FROM products WHERE public_key=$1 FOR UPDATE",[publicKey])).rows[0]??fail("NOT_FOUND",404,"Product was not found");
+        if(Number(product.version)!==expected)return fail("VERSION_CONFLICT",409,"Product changed; reload before deleting");
+        const id=product.id,variants=(await client.query<{id:string}>("SELECT id FROM product_variants WHERE product_id=$1",[id])).rows.map(r=>r.id);
+        if((await client.query("SELECT 1 FROM order_items WHERE product_id=$1 OR variant_id=ANY($2::uuid[]) LIMIT 1",[id,variants])).rowCount)
+          return fail("CONFLICT",409,"This product has orders, so it cannot be deleted; archive it instead");
+        if((await client.query("SELECT 1 FROM stock_movements WHERE variant_id=ANY($1::uuid[]) LIMIT 1",[variants])).rowCount)
+          return fail("CONFLICT",409,"This product has stock history, so it cannot be deleted; archive it instead");
+        const del=(sql:string,args:unknown[])=>client.query(sql,args);
+        await del("DELETE FROM cart_items WHERE variant_id=ANY($1::uuid[])",[variants]);
+        await del("DELETE FROM wishlist_items WHERE product_id=$1",[id]);
+        await del("DELETE FROM promotion_variants WHERE variant_id=ANY($1::uuid[])",[variants]);
+        await del("DELETE FROM price_adjustment_variants WHERE variant_id=ANY($1::uuid[])",[variants]);
+        await del("DELETE FROM collection_products WHERE product_id=$1",[id]);
+        await del("DELETE FROM collection_published_products WHERE product_id=$1",[id]);
+        await del("DELETE FROM product_relations WHERE source_product_id=$1 OR target_product_id=$1",[id]);
+        for(const table of ["product_categories","product_activities","product_attribute_values","product_translations","product_media"])await del(`DELETE FROM ${table} WHERE product_id=$1`,[id]);
+        await del("DELETE FROM inventory_balances WHERE variant_id=ANY($1::uuid[])",[variants]);
+        await del("DELETE FROM variant_option_values WHERE product_id=$1",[id]);
+        await del("DELETE FROM prices WHERE variant_id=ANY($1::uuid[])",[variants]);
+        await del("DELETE FROM product_variants WHERE product_id=$1",[id]);
+        await del("DELETE FROM option_values WHERE product_id=$1",[id]);
+        await del("DELETE FROM product_options WHERE product_id=$1",[id]);
+        await del("DELETE FROM products WHERE id=$1",[id]);
+        await audit(client,principal,"cms.deleted",entityTypes.products,id,["permanent"],expected,expected);
+        return{deleted:true as const};
+      });
+    },
     async archive(resource:CMSResource,headers:Headers,id:string,expected:number){
       const principal=await actor(headers,resource,true);parse(version,expected);parse(resource==="products"?identity:z.uuid(),id);
       return tx(async client=>{

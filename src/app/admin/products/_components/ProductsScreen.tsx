@@ -352,12 +352,30 @@ export default function AdminProductsPage() {
     setActiveTab(draft.variants?.length ? "variants" : "general");
   };
 
+  const postgresStore = collection.backend === "postgres";
+  // PostgreSQL: the trash button archives (hidden from the store, history kept); "Delete permanently"
+  // removes a never-sold product for good. The legacy JSON store deletes directly.
   const handleDelete = async (id: string) => {
-    if (!confirm("Permanently delete this product from the catalog? This cannot be undone.")) return;
+    if (!confirm(postgresStore ? "Archive this product? It disappears from the store; you can still see it here." : "Permanently delete this product from the catalog? This cannot be undone.")) return;
     const item = products.find((p) => p.id === id);
     if (!item) return;
     try {
       await archiveAdminRecord(fetch, "products", item);
+      fetchProducts();
+    } catch (error) {
+      collection.setError(error instanceof Error ? error.message : "Delete failed");
+    }
+  };
+  const handleDeletePermanently = async (id: string) => {
+    const item = products.find((p) => p.id === id) as (CMSProduct & { version?: number }) | undefined;
+    if (!item || !confirm(`Delete "${item.name}" permanently? Its variants, prices, photos and translations are removed and this cannot be undone. Products that were ordered or received stock cannot be deleted (archive them instead).`)) return;
+    try {
+      const params = new URLSearchParams({ id: item.id, version: String(item.version ?? ""), permanent: "1" });
+      const res = await fetch(`/api/admin/products?${params}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
+        throw new Error(data?.error?.message || "The product could not be deleted. Reload and try again.");
+      }
       fetchProducts();
     } catch (error) {
       collection.setError(error instanceof Error ? error.message : "Delete failed");
@@ -702,10 +720,20 @@ export default function AdminProductsPage() {
                           type="button"
                           onClick={() => handleDelete(p.id)}
                           className="p-1.5 text-neutral-400 hover:text-rose-600 hover:bg-rose-50 rounded-none transition-colors"
-                          title="Delete Product"
+                          title={postgresStore ? "Archive Product" : "Delete Product"}
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
+                        {postgresStore && (
+                          <button
+                            type="button"
+                            onClick={() => handleDeletePermanently(p.id)}
+                            className="px-1.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-rose-600 hover:bg-rose-50 rounded-none transition-colors"
+                            title="Delete Permanently"
+                          >
+                            Delete
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

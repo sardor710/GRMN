@@ -77,6 +77,8 @@ export async function handleAdminRequest(resource: AdminResource | "order-claims
   if (resource === "reports") return (await import("../reports/runtime.ts")).handleReportsRequest(request);
   if (resource === "exports") return (await import("../reports/runtime.ts")).handleExportsRequest(request);
   if (resource === "settings" && cmsBackend() === "postgres") return (await import("../reports/runtime.ts")).handleSettingsRequest(request);
+  // Discounts and promotions in PostgreSQL mode (owner 2026-11-19): the promotions tables checkout applies.
+  if (resource === "discounts" && cmsBackend() === "postgres") return (await import("../pricing/promotions-runtime.ts")).handleDiscountsRequest(request);
   // Orders in PostgreSQL mode are the fulfillment service (Task 16A); the legacy JSON store serves the rest.
   if (resource === "orders" && cmsBackend() === "postgres") return (await import("../fulfillment/runtime.ts")).handleFulfillmentRequest(request);
   try { return await (await handlers(request, resource)).handle(resource, request); }
