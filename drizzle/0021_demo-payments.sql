@@ -5,4 +5,27 @@ ALTER TABLE "refunds" ADD CONSTRAINT "refunds_fields_valid" CHECK ("refunds"."cu
 -- Task 3.1 (owner decision 2026-11-19): "Demo checkout" is on by default on every environment until
 -- launch. An existing store row is switched to demo (the column default is already 'demo'); staff
 -- turn it off in Settings -> Payments, and DEMO_CHECKOUT_DISABLED=1 forces it off.
-UPDATE "store_settings" SET "payment_mode"='demo',"version"="version"+1 WHERE "id"=1 AND "payment_mode"<>'demo';
+UPDATE "store_settings" SET "payment_mode"='demo',"version"="version"+1 WHERE "id"=1 AND "payment_mode"<>'demo';--> statement-breakpoint
+-- Task 3.2 (owner decision 2026-11-19 "full demo", replacing D03): a demo attempt may now end
+-- 'captured' (the demo capture right after checkout). Everything else is the 0003 guard unchanged:
+-- a demo attempt still only belongs to a demo order, for exactly its total, and never takes the
+-- real-money states (authorized, unknown, late_captured, superseded, ...).
+CREATE OR REPLACE FUNCTION payments_guard_attempt() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE v_mode text; v_amount bigint;
+BEGIN
+  IF TG_OP='UPDATE' THEN
+    IF (to_jsonb(NEW)-ARRAY['status','provider_session_id','version','updated_at']) IS DISTINCT FROM (to_jsonb(OLD)-ARRAY['status','provider_session_id','version','updated_at']) OR
+       (OLD.provider_session_id IS NOT NULL AND NEW.provider_session_id IS DISTINCT FROM OLD.provider_session_id) OR
+       (OLD.status NOT IN ('created','pending','requires_action','authorized','unknown') AND NEW.status IN ('created','pending','requires_action','authorized','unknown')) THEN
+      RAISE EXCEPTION 'Payment attempt identity cannot be rewritten or reopened' USING ERRCODE='23514';
+    END IF;
+  END IF;
+  SELECT payment_mode,total_minor INTO v_mode,v_amount FROM orders WHERE id=NEW.order_id FOR UPDATE;
+  IF NOT FOUND THEN RAISE EXCEPTION 'Unknown payment order' USING ERRCODE='23503'; END IF;
+  IF (NEW.provider='demo')<>(v_mode='demo') OR NEW.amount_minor<>v_amount OR
+     (NEW.provider='demo' AND NEW.status NOT IN ('created','pending','simulated','captured','failed','cancelled')) THEN
+    RAISE EXCEPTION 'Payment attempt mode or amount does not match its order' USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;

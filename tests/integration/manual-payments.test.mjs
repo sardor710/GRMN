@@ -295,7 +295,7 @@ test("O07 confirm is refused for an amount mismatch, cancelled, expired and demo
   finally{await q("ALTER TABLE inventory_reservations ENABLE TRIGGER USER");}
   await rejectsWith(confirm(lapsed),409,"ORDER_EXPIRED");
   assert.equal(await count("SELECT count(*)::int AS n FROM payment_transactions WHERE order_id=$1",[lapsed.orderId]),0);
-  // A demo order is never paid (D03): it cannot be confirmed manually.
+  // A demo order cannot be confirmed manually: it is paid by its own demo capture (Task 3.2).
   const who=await buyer(),quote=await quoted(who.headers,[[p.variant,1]]);
   // Task 3.1: a demo order needs the "Demo checkout" setting on while it is placed.
   await q("UPDATE store_settings SET payment_mode='demo',version=version+1 WHERE id=1");
@@ -303,7 +303,8 @@ test("O07 confirm is refused for an amount mismatch, cancelled, expired and demo
   try{demo=await checkout.placeOrder(database.pool,secret,{userId:who.id,guestTokenHash:null},key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"});}
   finally{await q("UPDATE store_settings SET payment_mode='live',version=version+1 WHERE id=1");}
   await rejectsWith(confirm(demo),409,"PAYMENT_NOT_MANUAL");
-  assert.equal((await orderRow(demo.orderId)).payment_status,"unpaid");
+  assert.equal((await orderRow(demo.orderId)).payment_status,"paid");
+  assert.equal(await count("SELECT count(*)::int AS n FROM payment_transactions WHERE order_id=$1 AND provider='manual'",[demo.orderId]),0,"no manual capture is recorded for a demo order");
 });
 
 test("O07 unpaid manual orders expire with the hold; staff cancelling an unpaid order releases the stock",async()=>{

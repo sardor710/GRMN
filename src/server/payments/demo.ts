@@ -1,12 +1,18 @@
 import "server-only";
 import type { PaymentProvenance, PaymentProvider } from "./provider.ts";
 
-// Task 14B. The explicitly simulated demo adapter (decision D03). It opens a local, labelled demo
-// session and nothing else: it has no webhooks (every request claiming to be a demo event is
-// refused) and its reconciliation never reports a payment, so a demo order can never become paid
-// and no real-capture fact is ever written for it (O07 stays open).
+// Task 14B, changed by Task 3.2 (owner decision 2026-11-19 "full demo", replacing D03). The
+// explicitly simulated demo adapter. It opens a local, labelled demo session and nothing outside
+// talks to it: it has no webhooks (every request claiming to be a demo event is refused before its
+// body is read) and its reconciliation never reports a payment. A demo order is captured once,
+// right after checkout, by confirmDemoCapture (payments/service.ts); its refunds succeed locally
+// with a `demo-refund:<refundId>` id and never reach a live provider. Every fact it leads to carries
+// provider, environment and merchant account 'demo', so it is never counted as money.
 
 const PROVENANCE: PaymentProvenance = Object.freeze({ provider: "demo", environment: "demo", merchantAccount: "demo", simulated: true });
+
+/** The provider refund id a demo refund records (local and deterministic; nothing is sent anywhere). */
+export const demoRefundId = (refundId: string) => `demo-refund:${refundId}`;
 
 export function createDemoProvider(): PaymentProvider {
   return {
@@ -15,7 +21,7 @@ export function createDemoProvider(): PaymentProvider {
     verifySignature() { return false; },
     parseEvent() { return null; },
     async lookup() { return { state: "pending" }; },
-    // A demo order is never captured, so there is never anything to refund (D03).
-    async refund() { return { state: "failed", providerRefundId: null }; },
+    // A demo capture is refunded locally: nothing is sent anywhere and the refund always succeeds.
+    async refund(request) { return { state: "succeeded", providerRefundId: demoRefundId(request.refundId) }; },
   };
 }

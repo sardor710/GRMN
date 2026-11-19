@@ -87,7 +87,8 @@ export const isLegacy = (order: Pick<OrderRow, "data_quality" | "payment_mode" |
 /** Why this order cannot ship now, or null when it can. */
 export function fulfillmentBlock(order: Pick<OrderRow, "data_quality" | "payment_mode" | "checkout_attempt_id" | "payment_status" | "captured" | "fulfillment_status" | "order_status">): FulfillmentBlock | null {
   if (isLegacy(order)) return "LEGACY_ORDER";
-  if (order.payment_mode !== "live" || !order.captured || !["paid", "partially_refunded"].includes(order.payment_status)) return "ORDER_NOT_PAID";
+  // Task 3.2 ("full demo"): a captured demo order is fulfilled like a paid one; an uncaptured one never ships.
+  if (!["live", "demo"].includes(order.payment_mode) || !order.captured || !["paid", "partially_refunded"].includes(order.payment_status)) return "ORDER_NOT_PAID";
   if (order.fulfillment_status === "exception") return "FULFILLMENT_EXCEPTION";
   if (order.order_status !== "confirmed") return "ORDER_NOT_SHIPPABLE";
   return null;

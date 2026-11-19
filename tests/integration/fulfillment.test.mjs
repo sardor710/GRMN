@@ -156,17 +156,21 @@ test("over-shipping is refused, and a cancelled ready shipment frees its quantit
   await rejectsWith(fulfillment.createShipment(fulfiller,{orderId,expectedOrderVersion:await version(orderId),idempotencyKey:key(),lines:[{orderItemId:item[p.variant],quantity:1},{orderItemId:item[p.variant],quantity:1}]}),400,"INVALID_INPUT");
 });
 
-test("unpaid demo, legacy summary, exception and cancel-requested orders cannot ship",async()=>{
+test("unpaid, legacy summary, exception and cancel-requested orders cannot ship",async()=>{
   await load();
   const p=await product();
-  // A demo order is never paid (D03/O07).
+  // An unpaid order cannot ship. Task 3.2: a demo order is captured at checkout and ships like a paid
+  // one (demo-checkout.test.mjs), so the unpaid order here is a manual one, placed with demo off.
   const buyer=await owner(),quote=await quoted(buyer.headers,[[p.variant,1]]);
-  const demo=await carts.checkout(buyer.headers,key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"});
-  const demoItem=(await q("SELECT id FROM order_items WHERE order_id=$1",[demo.orderId])).rows[0].id;
-  await rejectsWith(ship(demo.orderId,[{orderItemId:demoItem,quantity:1}]),409,"ORDER_NOT_PAID");
-  // Even a demo order whose status was forced to paid has no capture fact and cannot ship.
-  await q("UPDATE orders SET order_status='confirmed',payment_status='paid' WHERE id=$1",[demo.orderId]);
-  await rejectsWith(ship(demo.orderId,[{orderItemId:demoItem,quantity:1}]),409,"ORDER_NOT_PAID");
+  await q("UPDATE store_settings SET payment_mode='live',version=version+1 WHERE id=1");
+  let unpaid;
+  try{unpaid=await carts.checkout(buyer.headers,key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"manual"});}
+  finally{await q("UPDATE store_settings SET payment_mode='demo',version=version+1 WHERE id=1");}
+  const unpaidItem=(await q("SELECT id FROM order_items WHERE order_id=$1",[unpaid.orderId])).rows[0].id;
+  await rejectsWith(ship(unpaid.orderId,[{orderItemId:unpaidItem,quantity:1}]),409,"ORDER_NOT_PAID");
+  // Even an order whose status was forced to paid has no capture fact and cannot ship.
+  await q("UPDATE orders SET order_status='confirmed',payment_status='paid' WHERE id=$1",[unpaid.orderId]);
+  await rejectsWith(ship(unpaid.orderId,[{orderItemId:unpaidItem,quantity:1}]),409,"ORDER_NOT_PAID");
   // Legacy summary order: flagged and no item operations.
   const legacyId=randomUUID(),client=await database.pool.connect();
   try{await client.query("BEGIN");await client.query("INSERT INTO orders(id,contact_name,data_quality,total_minor,payment_mode,order_status,payment_status) VALUES($1,'Legacy buyer','legacy_incomplete',5000,'legacy_unknown','confirmed','paid')",[legacyId]);await client.query("COMMIT");}catch(error){await client.query("ROLLBACK");throw error;}finally{client.release();}

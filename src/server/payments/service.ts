@@ -8,8 +8,10 @@ import { enqueueJob } from "../operations/outbox.ts";
 import { PAYMENT_START_KIND } from "../checkout/service.ts";
 import type { PaymentEvent, PaymentProvenance, PaymentProvider, PaymentProviders } from "./provider.ts";
 
+import { createDemoProvider } from "./demo.ts";
+
 export { createPaymentProviders } from "./provider.ts";
-export { createDemoProvider } from "./demo.ts";
+export { createDemoProvider };
 
 // Task 14B. Payment sessions, the durable inbox of verified provider events, idempotent capture,
 // one active payable attempt per order, reconciliation, and the order-level expiry of unpaid
@@ -23,8 +25,9 @@ export { createDemoProvider } from "./demo.ts";
 // and checkout-attempt locks, so no cycle exists). Capture is idempotent on the
 // provider transaction id (payment_transactions dedupe), so duplicates, provider retries, a crashed
 // worker and reconciliation racing a webhook apply each charge once.
-// The demo provider is simulated: it never emits events and reconciliation skips it, so a demo
-// order is never paid and no capture fact is written for it (D03, O07).
+// The demo provider is simulated: it never emits events and reconciliation skips it. A demo order
+// is captured once, right after checkout, by confirmDemoCapture below (Task 3.2, replacing D03), and
+// that fact always carries demo provenance so it is never counted as money.
 
 /** Worker job: process one verified inbox event. */
 export const PAYMENT_INBOX_KIND = "payments.inbox.process";
@@ -418,6 +421,50 @@ export async function confirmManualCapture(client: PoolClient, provider: Payment
   if (outcome === "duplicate") fail("REFERENCE_USED", 409, "This payment reference was already used");
   const transactionId = (await client.query<{ id: string }>(MANUAL_CAPTURE, [input.reference])).rows[0]?.id ?? fail("REFERENCE_USED", 409, "This payment reference was already used");
   return { transactionId, replayed: false, outcome };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Demo capture (Task 3.2, owner decision 2026-11-19 "full demo"; replaces D03)
+
+const DEMO_PROVIDER = createDemoProvider();
+
+/**
+ * Captures a demo order right after checkout sealed it, through the same capture path as a manual
+ * confirmation: the stock hold and coupon are consumed, the order becomes confirmed/paid, and the
+ * same order events (payment.captured, order.paid) feed the notification channels. The fact is a
+ * `kind='capture'` transaction with demo provenance (provider, environment and merchant 'demo'), so
+ * reports and refunds keep it apart from real money.
+ *
+ * Idempotent on the demo payment attempt: its capture's external id is `demo-capture:<attemptId>`,
+ * so a retried or double-clicked checkout replays and records one capture, consuming stock once.
+ * Only a demo order's own demo attempt is accepted (PAYMENT_NOT_DEMO otherwise).
+ */
+export async function confirmDemoCapture(pool: Pool, input: { orderId: string; attemptId: string }): Promise<{ orderId: string; paymentStatus: "paid" }> {
+  if (!UUID.test(input.orderId) || !UUID.test(input.attemptId)) notFound();
+  return withInventoryTransaction(pool, async client => {
+    const order = await lockOrder(client, input.orderId);
+    const row = (await client.query<AttemptRow>(`SELECT ${ATTEMPT_COLUMNS} FROM payment_attempts WHERE id=$1 AND order_id=$2 FOR UPDATE`, [input.attemptId, order.id])).rows[0] ?? notFound();
+    const mode = (await client.query<{ payment_mode: string }>("SELECT payment_mode FROM orders WHERE id=$1", [order.id])).rows[0].payment_mode;
+    if (mode !== "demo" || row.provider !== "demo" || row.environment !== "demo" || row.merchant_account !== "demo")
+      fail("PAYMENT_NOT_DEMO", 409, "This order is not a demo order");
+    const transactionId = `demo-capture:${row.id}`;
+    const done = (await client.query("SELECT 1 FROM payment_transactions WHERE provider='demo' AND environment='demo' AND merchant_account='demo' AND kind='capture' AND external_id=$1", [transactionId])).rowCount;
+    if (!done) {
+      if (order.order_status !== "pending_payment" || PAID.has(order.payment_status) || !PAYABLE.has(row.status)) fail("ORDER_NOT_PAYABLE", 409, "This order is not awaiting payment");
+      if (row.amount_minor !== order.total_minor) fail("AMOUNT_MISMATCH", 409, "The demo payment must equal the order total in KZT");
+      const event: PaymentEvent = {
+        eventId: transactionId, kind: "captured", merchantAccount: DEMO_PROVIDER.merchantAccount, environment: DEMO_PROVIDER.environment,
+        merchantReference: row.merchant_reference, sessionId: row.provider_session_id, transactionId, amountMinor: row.amount_minor, currency: "KZT", occurredAt: null,
+      };
+      // applyPaymentEvent ignores simulated providers (they have no webhooks or reconciliation), so the
+      // demo fact is recorded here and then applied by the shared capture() exactly like a real one.
+      const inserted = await recordTransaction(client, DEMO_PROVIDER, order, row, event, "capture", row.amount_minor, "checkout", { demo: true });
+      if (inserted) await capture(client, DEMO_PROVIDER, order, row, inserted, "checkout");
+    }
+    const status = (await client.query<{ payment_status: string }>("SELECT payment_status FROM orders WHERE id=$1", [order.id])).rows[0].payment_status;
+    if (!PAID.has(status)) fail("ORDER_NOT_PAYABLE", 409, "This demo order could not be captured");
+    return { orderId: order.id, paymentStatus: "paid" as const };
+  });
 }
 
 // ---------------------------------------------------------------------------------------------

@@ -9,6 +9,7 @@ import { AuthFailure } from "../auth/config.ts";
 // calendar days in the requested IANA time zone (at most 92 days). A capture belongs to the day it
 // was recorded, a refund to the day it succeeded (its immutable refund.succeeded event, review I6).
 // Different currencies and payment environments (sandbox, live) are never added together (review I5).
+// Demo captures and refunds (environment 'demo', Task 3.2) are not money and are left out entirely.
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_DAYS = 92;
@@ -40,8 +41,8 @@ export function createReportsService({ pool, authorize }: Options) {
       if (!(await pool.query("SELECT 1 FROM pg_timezone_names WHERE name=$1", [command.timeZone])).rowCount) invalid();
       const args = [command.from, command.to, command.timeZone];
       const window = `bounds AS (SELECT ($1::date)::timestamp AT TIME ZONE $3 AS lo,(($2::date)+1)::timestamp AT TIME ZONE $3 AS hi),
-        captured AS (SELECT t.currency,t.environment,(t.created_at AT TIME ZONE $3)::date AS day,t.amount_minor,t.order_id FROM payment_transactions t,bounds b WHERE t.kind='capture' AND t.created_at>=b.lo AND t.created_at<b.hi),
-        succeeded AS (SELECT r.currency,r.environment,r.amount_minor,COALESCE(e.occurred_at,e.recorded_at,r.updated_at) AS at FROM refunds r LEFT JOIN order_events e ON e.dedupe_key='refund-succeeded:'||r.id::text WHERE r.status='succeeded'),
+        captured AS (SELECT t.currency,t.environment,(t.created_at AT TIME ZONE $3)::date AS day,t.amount_minor,t.order_id FROM payment_transactions t,bounds b WHERE t.kind='capture' AND t.environment<>'demo' AND t.created_at>=b.lo AND t.created_at<b.hi),
+        succeeded AS (SELECT r.currency,r.environment,r.amount_minor,COALESCE(e.occurred_at,e.recorded_at,r.updated_at) AS at FROM refunds r LEFT JOIN order_events e ON e.dedupe_key='refund-succeeded:'||r.id::text WHERE r.status='succeeded' AND r.environment<>'demo'),
         refunded AS (SELECT s.currency,s.environment,(s.at AT TIME ZONE $3)::date AS day,s.amount_minor FROM succeeded s,bounds b WHERE s.at>=b.lo AND s.at<b.hi)`;
       const [totals, days] = await Promise.all([
         pool.query<{ currency: string; environment: "sandbox" | "live"; captured: string; refunded: string; orders: number }>(`WITH ${window}
