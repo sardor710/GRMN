@@ -141,6 +141,13 @@
       "when": 1795085182312,
       "tag": "0019_content-translations",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1795098098661,
+      "tag": "0020_translation-memory",
+      "breakpoints": true
     }
   ]
 }

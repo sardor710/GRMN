@@ -70,3 +70,14 @@ test("a time budget stops new batches and reports what remains; the next call co
   const second = await translateRecord({ record: big, spec, existing: first.translations, locales: ["ru"], model: slow, batch: { maxItems: 5, maxChars: 4000 } });
   assert.equal(second.remaining, 0); assert.equal(second.translations.ru.specs[19].value, "[ru] Value 19");
 });
+
+test("repeated texts are translated once, and the translation memory answers known texts without a model call", async () => {
+  const { translateRecord, withTranslationMemory } = await load(), model = fakeModel();
+  const memory = new Map(), store = { hash: t => t, async read(locale, hashes) { return new Map(hashes.filter(h => memory.has(locale + h)).map(h => [h, memory.get(locale + h)])); }, async write(locale, rows) { for (const r of rows) memory.set(locale + r.hash, r.text); } };
+  const repeated = { name: "Yes", specs: Array.from({ length: 30 }, () => ({ label: "Water rating", value: "Yes" })) };
+  const spec = { scalars: ["name"], lists: { specs: { scalars: ["label", "value"] } } };
+  const first = await translateRecord({ record: repeated, spec, existing: {}, locales: ["ru"], model: withTranslationMemory(model, store) });
+  assert.equal(first.filled, 61); assert.equal(model.calls.length, 1); assert.equal(model.calls[0].count, 2, "two distinct texts");
+  await translateRecord({ record: repeated, spec, existing: {}, locales: ["ru"], model: withTranslationMemory(model, store) });
+  assert.equal(model.calls.length, 1, "second run is served from memory");
+});

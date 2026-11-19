@@ -89,3 +89,11 @@ export const productTranslations = pgTable("product_translations", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(), updatedBy: uuid("updated_by").references(() => user.id, { onDelete: "restrict" }),
 }, t => [primaryKey({ columns: [t.productId, t.locale] }),
   check("product_translations_valid", sql`${t.locale} IN ('ru','kk') AND jsonb_typeof(${t.content})='object' AND ${t.content}<>'{}'::jsonb`)]);
+
+// Owner 2026-11-19: machine-translation memory. Each distinct English text is translated once per
+// locale and reused across fields and products (spec labels, "Yes"/"No", variant names…).
+export const translationMemory = pgTable("translation_memory", {
+  sourceSha256: text("source_sha256").notNull(), locale: text("locale").notNull(), translated: text("translated").notNull(),
+  model: text("model").notNull(), createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, t => [primaryKey({ columns: [t.sourceSha256, t.locale] }),
+  check("translation_memory_valid", sql`${t.locale} IN ('ru','kk') AND ${t.sourceSha256} ~ '^[0-9a-f]{64}$' AND length(btrim(${t.translated}))>0`)]);

@@ -7,7 +7,24 @@ import { adminJSON, readAdminJSON } from "../auth/admin-service.ts";
 import { requirePermission, requireStaffPrincipal } from "../auth/principal.ts";
 import { requestURL } from "../auth/request-url.ts";
 import { BANNER_SPEC, BLOG_SPEC, HOMEPAGE_SPEC, PRODUCT_SPEC } from "../../i18n/translate-record.ts";
-import { translateRecord, translationModelFromEnv, type TranslationModel } from "./machine-translate.ts";
+import { createHash } from "node:crypto";
+import { getDatabase } from "../db/client.ts";
+import { translateRecord, translationModelFromEnv, withTranslationMemory, type MachineLocale, type TranslationModel } from "./machine-translate.ts";
+
+/** The OpenRouter model behind the database translation memory (migration 0020). */
+function memoryModel(model: TranslationModel): TranslationModel {
+  const pool = getDatabase().pool, name = process.env.OPENROUTER_MODEL || "nvidia/nemotron-3.5-super-vl:free";
+  return withTranslationMemory(model, {
+    hash: text => createHash("sha256").update(text, "utf8").digest("hex"),
+    async read(locale: MachineLocale, hashes: string[]) {
+      const rows = (await pool.query<{ source_sha256: string; translated: string }>("SELECT source_sha256,translated FROM translation_memory WHERE locale=$1 AND source_sha256=ANY($2::text[])", [locale, hashes])).rows;
+      return new Map(rows.map(r => [r.source_sha256, r.translated]));
+    },
+    async write(locale: MachineLocale, rows: { hash: string; text: string }[]) {
+      for (const row of rows) await pool.query("INSERT INTO translation_memory(source_sha256,locale,translated,model) VALUES($1,$2,$3,$4) ON CONFLICT (source_sha256,locale) DO NOTHING", [row.hash, locale, row.text, name]);
+    },
+  });
+}
 
 // POST /api/admin/translate { kind, record, locales? } → { translations, filled, model } (owner
 // 2026-11-19). The record is the editor's current form; nothing is saved here. Each call works for
@@ -34,7 +51,7 @@ export async function handleTranslateRequest(request: Request, model: Translatio
     await requirePermission(runtime, request.headers, kind.permission);
     if (!model) throw new AuthFailure("DEPENDENCY_UNAVAILABLE", 503, "Automatic translation is not configured (OPENROUTER_API_KEY)");
     const { translations: existing, ...record } = parsed.data.record;
-    const result = await translateRecord({ record, spec: kind.spec, htmlFields: kind.html, existing: existing as Record<string, unknown> | undefined, locales: parsed.data.locales ?? ["ru", "kk"], model, budgetMs: 15_000 });
+    const result = await translateRecord({ record, spec: kind.spec, htmlFields: kind.html, existing: existing as Record<string, unknown> | undefined, locales: parsed.data.locales ?? ["ru", "kk"], model: memoryModel(model), budgetMs: 15_000 });
     return adminJSON({ success: true, ...result, model: process.env.OPENROUTER_MODEL || "nvidia/nemotron-3.5-super-vl:free" });
   } catch (error) {
     if (error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError")) return adminJSON({ error: { code: "DEPENDENCY_UNAVAILABLE", message: "The translation service took too long. Press the button again: finished fields are kept." } }, 503);

@@ -116,12 +116,16 @@ export async function translateRecord(input: {
   for (const locale of input.locales) {
     const current = translations[locale] ?? {};
     const slots = collect(input.record, input.spec, current, html);
-    for (const group of batches(slots, input.batch?.maxItems ?? 25, input.batch?.maxChars ?? 3000)) {
-      if (Date.now() >= deadline) { remaining += group.length; continue; }
-      const result = await input.model.complete({ locale, segments: Object.fromEntries(group.map(slot => [slot.key, slot.text])) });
-      for (const slot of group) {
-        const value = result[slot.key];
-        if (typeof value === "string" && value.trim()) { slot.set(current, value); filled++; }
+    // Each distinct text is translated once (spec values, repeated labels, flat and grouped specs).
+    const byText = new Map<string, Slot[]>();
+    for (const slot of slots) byText.set(slot.text, [...(byText.get(slot.text) ?? []), slot]);
+    const unique = [...byText.entries()].map(([text, group], index) => ({ key: `s${index}`, text, group }));
+    for (const group of batches(unique as unknown as Slot[], input.batch?.maxItems ?? 50, input.batch?.maxChars ?? 5000) as unknown as typeof unique[]) {
+      if (Date.now() >= deadline) { remaining += group.reduce((n, u) => n + u.group.length, 0); continue; }
+      const result = await input.model.complete({ locale, segments: Object.fromEntries(group.map(u => [u.key, u.text])) });
+      for (const u of group) {
+        const value = result[u.key];
+        if (typeof value === "string" && value.trim()) for (const slot of u.group) { slot.set(current, value); filled++; }
       }
     }
     if (Object.keys(current).length) translations[locale] = current;
@@ -159,4 +163,29 @@ export function openRouterModel(config: { apiKey: string; model: string; fetch?:
 export function translationModelFromEnv(env: Readonly<Record<string, string | undefined>> = process.env): TranslationModel | null {
   const apiKey = env.OPENROUTER_API_KEY?.trim();
   return apiKey ? openRouterModel({ apiKey, model: env.OPENROUTER_MODEL?.trim() || "nvidia/nemotron-3.5-super-vl:free" }) : null;
+}
+
+/**
+ * Translation memory (translation_memory): cached texts come back without a model call; new ones
+ * are stored after the model answers. Keyed by the SHA-256 of the English text and the locale.
+ */
+export function withTranslationMemory(model: TranslationModel, store: {
+  read(locale: MachineLocale, hashes: string[]): Promise<Map<string, string>>;
+  write(locale: MachineLocale, rows: { hash: string; text: string }[]): Promise<void>;
+  hash(text: string): string;
+}): TranslationModel {
+  return {
+    async complete({ locale, segments }) {
+      const entries = Object.entries(segments), hashes = entries.map(([, text]) => store.hash(text));
+      const cached = await store.read(locale, hashes), out: Record<string, string> = {}, missing: Record<string, string> = {};
+      entries.forEach(([key, text], i) => { const hit = cached.get(hashes[i]); if (hit) out[key] = hit; else missing[key] = text; });
+      if (Object.keys(missing).length) {
+        const fresh = await model.complete({ locale, segments: missing });
+        const rows: { hash: string; text: string }[] = [];
+        for (const [key, value] of Object.entries(fresh)) if (typeof value === "string" && value.trim() && key in missing) { out[key] = value; rows.push({ hash: store.hash(missing[key]), text: value.trim() }); }
+        if (rows.length) await store.write(locale, rows);
+      }
+      return out;
+    },
+  };
 }
