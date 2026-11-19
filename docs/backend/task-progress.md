@@ -1,10 +1,20 @@
 # Backend migration — task reports and current position
 
-Updated: **2026-11-18**. This is the current progress index; individual handoffs are historical completion receipts.
+Updated: **2026-11-19**. This is the current progress index; individual handoffs are historical completion receipts.
 
 ## Current position
 
 - **Completed:** Task **23** (rehearsal on staging, 2026-11-18). Tasks **01–14**, **16** (16A + 16B, absorbing 17), **18** (18A + 18B, absorbing 19, plus the 18A I6 homepage collection wiring) and **21C** (manual payment confirmation, O07, 2026-11-18). Task 15 is merged into 14, 20 into 13 and 22 into 21. All are complete within the scope and activation limits below.
+- **Task 24 prepared (2026-11-19)** ([handoff](handoffs/task-24-prep.md)). The owner's inputs are applied:
+  - removed: products, orders, users, promo codes;
+  - kept: banners and blogs;
+  - delivery: 1,500 KZT below 30,000 KZT, free from 30,000;
+  - daily backups;
+  - 4 staff accounts;
+  - Telegram later;
+  - no live legacy site.
+
+  The launch was rehearsed on staging: import `completed` with 0 blockers, verification 32/32, store reopened, health clean, backup restored. Waiting for the domain, the payment text, the VAT rate confirmation and the go.
 - **Partial:** Task **21A** (its open item, a price-sorted listing under 300 ms: after the 21B follow-up the database part is about 85 ms; end to end at 25 rps the p95 is 286 ms ascending, but 431 ms descending).
   - Done: migration 0011, two indexes backed by EXPLAIN evidence, shared rate limits, the permission matrix check, catalog/search plans at full catalog volume with a listing fix, and (through 21C) a browser purchase that reaches "paid".
   - Withdrawn: the public data cache.

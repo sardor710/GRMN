@@ -29,7 +29,7 @@ export async function setupStaff(database: DatabaseHandle, input: unknown) {
     const created = await createInitialStaff(database, accounts);
     return { accounts: accounts.map((a, i) => ({ ...a, userId: created[i].userId })) };
   } catch (error) {
-    if (error instanceof AuthFailure && error.code === "VERSION_CONFLICT") throw new Error("Staff already exist; add or change staff through the admin");
+    if (error instanceof AuthFailure && error.code === "VERSION_CONFLICT") throw new Error("Staff already exist; this command only creates the initial staff");
     throw error;
   }
 }

@@ -1136,7 +1136,7 @@ The wishlist is in 13A. The other account domains get one disposition list in 13
 
 ### Task 24 — Production cutover, observation, and legacy retirement
 
-**Current status:** NOT STARTED.
+**Current status:** PREPARED (2026-11-19). The owner's inputs are applied and the launch is rehearsed on staging (`docs/backend/handoffs/task-24-prep.md`). Waiting for the domain, the payment text, the VAT confirmation and the explicit go.
 
 **Depends on:** 23 and explicit production release instruction. **Size:** 24A cutover; 24B observation/reconciliation; 24C cleanup in a later release.
 
@@ -1190,10 +1190,10 @@ Later possibilities: additional settlement currencies/warehouses (current USD co
 - [x] Task 09: public catalog/content reads complete; 300/300 tests, check and full browser smoke passed (`handoffs/task-09.md`).
 - [x] Task 10: 10A account APIs/ownership (`handoffs/task-10a.md`), 10B claims/phone change/staff credential change (`handoffs/task-10b.md`) and 10C AccountDashboard UI wiring (349/349, `handoffs/task-10c.md`) complete.
 - [x] Task 11: inventory ledger, adjustments, reconciliation, opening import (`handoffs/task-11a.md`) and race-safe reservations (`handoffs/task-11b.md`).
-- [ ] Tasks 12–16 (consolidated 2026-11-17; 15 merged into 14, 17 into 16): worker and expiry, cart/quotes/wishlist, checkout with demo payment, manual fulfillment/returns/refunds. Tasks 12 and 13 are complete (`handoffs/task-12a.md`, `task-12b.md`, `task-13a.md`, `task-13b.md`) and Task 14A is complete (`task-14a.md`); Task 14B is next.
-- [ ] Task 18 (19 merged in; 20 merged into 13): CMS media/publishing, reports, exports, settings and inventory admin UI.
-- [ ] Task 21 (22 merged in): measured performance and full qualification — the last chained task.
-- [ ] Task 23: cutover and recovery rehearsal (owner-run, not chained).
+- [x] Tasks 12–16 (consolidated 2026-11-17; 15 merged into 14, 17 into 16): see `docs/backend/task-progress.md` and the handoffs.
+- [x] Task 18 (19 merged in; 20 merged into 13): CMS media/publishing, reports, exports, settings and inventory admin UI.
+- [ ] Task 21 (22 merged in): 21B/21C done; 21A partial (a price-sorted listing under 300 ms). See `docs/backend/task-progress.md`.
+- [x] Task 23: cutover and recovery rehearsal, passed on VPS staging 2026-11-18 (`handoffs/task-23.md`).
 - [ ] Task 24: authorized production release, observation and later legacy cleanup.
 
 ### Research basis

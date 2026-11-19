@@ -87,9 +87,12 @@ if (opt("--create-product")) {
   check(`staff create product ${input.sku}`, created.status === 200 && created.json?.success === true, `status ${created.status} ${created.status === 200 ? "" : created.text.slice(0, 160)}`);
   const found = await call(staff, "GET", `/api/admin/products?search=${encodeURIComponent(input.sku)}`);
   const product = (found.json?.products ?? []).find(p => p.sku === input.sku);
-  createdVariant = product?.variantId ?? product?.variants?.find(v => v.sku === input.sku)?.id ?? product?.variants?.[0]?.id;
-  check("created product has a sellable variant", Boolean(createdVariant), createdVariant ? "" : JSON.stringify(Object.keys(product ?? {})));
-  if (product?.slug ?? product?.id) products.push(product.slug ?? product.id);
+  const key = product?.slug ?? product?.id;
+  if (key) products.push(key);
+  // The admin product DTO carries no variant ids; the storefront page does (as a shopper's browser sees it).
+  const page = key ? await call(customer, "GET", `/p/${encodeURIComponent(key)}`) : { text: "" };
+  createdVariant = page.text.match(/selectedVariantId\\?":\\?"([0-9a-f-]{36})/)?.[1] ?? page.text.match(/variants\\?":\[\{\\?"id\\?":\\?"([0-9a-f-]{36})/)?.[1];
+  check("created product page offers a sellable variant", Boolean(createdVariant), `page ${page.status ?? "-"}`);
 }
 
 // 3. Public pages through the bypass.
