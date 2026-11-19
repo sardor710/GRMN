@@ -1136,7 +1136,7 @@ The wishlist is in 13A. The other account domains get one disposition list in 13
 
 ### Task 24 — Production cutover, observation, and legacy retirement
 
-**Current status:** PREPARED (2026-11-19). The owner's inputs are applied and the launch is rehearsed on staging (`docs/backend/handoffs/task-24-prep.md`). Waiting for the domain, the payment text, the VAT confirmation and the explicit go.
+**Current status:** 24A PRODUCTION PREPARED (2026-11-19). The store is closed and local-only on the VPS; DNS and the public front door are still pending (owner). See `docs/backend/handoffs/task-24-prep.md`.
 
 **Depends on:** 23 and explicit production release instruction. **Size:** 24A cutover; 24B observation/reconciliation; 24C cleanup in a later release.
 

@@ -14,7 +14,9 @@ Updated: **2026-11-19**. This is the current progress index; individual handoffs
   - Telegram later;
   - no live legacy site.
 
-  The launch was rehearsed on staging: import `completed` with 0 blockers, verification 32/32, store reopened, health clean, backup restored. Waiting for the domain, the payment text, the VAT rate confirmation and the go.
+  The launch was rehearsed on staging: import `completed` with 0 blockers, verification 32/32, store reopened, health clean, backup restored.
+
+  **Production is prepared on the VPS**, closed and local-only (compose project `grmn`, garmin.kz): 4 staff accounts, Telegram order notifications, daily backups and a health cron. Not yet public: the owner keeps DNS on the current megagroup.kz site for now, and Odoo's nginx holds ports 80/443. See the [handoff](handoffs/task-24-prep.md#production-prepared-on-the-vps-2026-11-19-owner-go-dns-not-switched).
 - **Partial:** Task **21A** (its open item, a price-sorted listing under 300 ms: after the 21B follow-up the database part is about 85 ms; end to end at 25 rps the p95 is 286 ms ascending, but 431 ms descending).
   - Done: migration 0011, two indexes backed by EXPLAIN evidence, shared rate limits, the permission matrix check, catalog/search plans at full catalog volume with a listing fix, and (through 21C) a browser purchase that reaches "paid".
   - Withdrawn: the public data cache.

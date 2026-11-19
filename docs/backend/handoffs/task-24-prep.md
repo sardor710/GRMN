@@ -46,3 +46,30 @@ Receipts are in `/home/nick/grmn-staging/receipts/t24-*` (private, including the
 - The store name ("GRMN" configured).
 - The go.
 - Later: the Telegram bot and group, an off-site backup target, the SMS provider.
+
+## Production prepared on the VPS (2026-11-19, owner "go"; DNS not switched)
+
+The owner gave the go, but chose "prepare, don't switch yet" and "don't touch Odoo". Production therefore runs on the VPS, **closed and reachable only from the VPS itself**.
+
+| Item | State |
+|---|---|
+| Stack | Compose project `grmn` from `deploy/compose.yml`, images `grmn:5198127` / `grmn-ops:5198127`. Proxy on `127.0.0.1:58543` (HTTPS) and `:58580` (HTTP→HTTPS) only |
+| Private files | `/home/nick/grmn-production/` (chmod 700): `production.env` (generated secrets, Telegram token), `backup/`, `tls/` (**self-signed placeholder, 30 days**), `logs/`, `receipts/`, `staff-credentials.json` (the 4 passwords; hand over, then delete) |
+| Database | Migrations 0000–0018. Import `completed`: 0 mismatches, 0 blockers; products, orders, customers and users 0; 17 content pages (drafts except none published yet); 258 archived |
+| Store | Created **closed** (maintenance on). VAT 16% inclusive, delivery 1,500 KZT below 30,000 KZT and free from 30,000, trilingual Kaspi instructions, 48 h hold |
+| Staff | `admin@garmin.kz` (super_admin), `owner@`, `products@` (product_manager), `support@`. All 4 sign in. MFA is **not** enrolled: each person enrolls at first admin sign-in |
+| Telegram | Worker job running (cursor initialized 09:53:54 UTC). Connection test message sent to "Garmin orders" |
+| Schedules | `crontab` of user nick (`/home/nick/grmn-production/crontab`): backup daily at 21:30 UTC, health every 5 min (logs in `grmn-production/logs`). First backup and health check passed (invariants 12/12) |
+
+**Reaching the closed store before launch.** The auth origin is `https://garmin.kz`, so the browser must see exactly that origin. Steps, from a staff computer:
+1. Map `garmin.kz` to `127.0.0.1` in its hosts file.
+2. Run `sudo ssh -L 443:127.0.0.1:58543 nick@81.17.97.65`.
+3. Open `https://garmin.kz/admin/login` and accept the placeholder certificate.
+4. Enroll MFA, then take the maintenance bypass to preview the store.
+
+**To go public** (each step needs the owner):
+1. **A front door on ports 80/443.** odoo-nginx holds them, so either use another public IP or server, or decide later to route through odoo-nginx (the store's nginx must then trust the client IP from that proxy only).
+2. **DNS:** point `garmin.kz` and `www` A records at that address (now 109.233.109.114, the current megagroup.kz store).
+3. **A real certificate** for garmin.kz, in `grmn-production/tls/`; reload the proxy.
+4. **Staff preparation:** create products and stock, fix the banner images and the KZT announcement, publish banners, blogs and the homepage.
+5. **Open the store:** turn maintenance off in admin settings.
