@@ -9,6 +9,18 @@ export function stripLocale(pathname: string): { locale: Locale | null; rest: st
   return js.stripLocale(pathname) as { locale: Locale | null; rest: string };
 }
 
+export function localeSegment(locale: Locale): string {
+  return js.localeSegment(locale);
+}
+
+export function legacySegmentRedirect(pathname: string, search: string): string | null {
+  return js.legacySegmentRedirect(pathname, search);
+}
+
+export function internalLocalePath(pathname: string): string | null {
+  return js.internalLocalePath(pathname);
+}
+
 export function negotiateLocale(input: { cookie?: string; acceptLanguage?: string }): Locale {
   return js.negotiateLocale(input) as Locale;
 }

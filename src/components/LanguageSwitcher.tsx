@@ -4,7 +4,7 @@ import { Suspense } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Link, usePathname } from "@/i18n/navigation";
-import { LOCALE_LABEL, SWITCHER_ORDER, type Locale } from "@/i18n/config";
+import { LOCALE_CODE_LABEL, LOCALE_LABEL, SWITCHER_ORDER, type Locale } from "@/i18n/config";
 import styles from "./LanguageSwitcher.module.css";
 
 export type LanguageSwitcherVariant = "header" | "footer" | "mobile";
@@ -30,7 +30,7 @@ function LanguageLinks({ variant, search }: { variant: LanguageSwitcherVariant; 
             aria-label={compact ? LOCALE_LABEL[locale] : undefined}
             title={compact ? LOCALE_LABEL[locale] : undefined}
           >
-            {compact ? locale.toUpperCase() : LOCALE_LABEL[locale]}
+            {compact ? LOCALE_CODE_LABEL[locale] : LOCALE_LABEL[locale]}
           </Link>
         </li>
       ))}

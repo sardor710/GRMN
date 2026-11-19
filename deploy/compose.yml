@@ -47,6 +47,9 @@ services:
       AUTH_TRUSTED_IP_HEADER: x-grmn-client-ip
       # Task 24: 0 = staff sign in with password only (owner decision); unset/1 = authenticator required.
       STAFF_MFA_REQUIRED: ${STAFF_MFA_REQUIRED:-1}
+      # Owner 2026-11-19: Russian and Kazakh machine translation in the admin (OpenRouter).
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENROUTER_MODEL: ${OPENROUTER_MODEL:-nvidia/nemotron-3.5-super-vl:free}
       DATABASE_URL: postgresql://grmn_app:${DB_APP_PASSWORD}@db:5432/grmn
       DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-10}
       MEDIA_STORAGE_DIR: /media

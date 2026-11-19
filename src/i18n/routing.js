@@ -1,4 +1,4 @@
-import { DEFAULT_LOCALE, isLocale } from './config.js';
+import { DEFAULT_LOCALE, LOCALE_SEGMENT, isLocale, localeFromSegment } from './config.js';
 
 const EXCLUDED_PREFIXES = [
   '/admin',
@@ -25,13 +25,35 @@ export function isExcludedPath(pathname) {
   return /\.[^./]+$/.test(last);
 }
 
-/** Splits a leading locale segment off a pathname. `rest` always starts with "/". */
+/** The URL segment for a locale ("kk" → "kz"). */
+export function localeSegment(locale) {
+  return LOCALE_SEGMENT[locale] ?? locale;
+}
+
+/**
+ * Splits a leading locale segment off a pathname. `rest` always starts with "/". The public
+ * segment is "kz" for Kazakh; the internal "/kk" form (the app route, old links) is recognised too.
+ */
 export function stripLocale(pathname) {
   const match = /^\/([^/]+)(\/.*)?$/.exec(pathname);
-  if (match && isLocale(match[1])) {
-    return { locale: match[1], rest: match[2] || '/' };
-  }
+  const locale = match ? localeFromSegment(match[1]) ?? (isLocale(match[1]) ? match[1] : null) : null;
+  if (locale) return { locale, rest: match[2] || '/' };
   return { locale: null, rest: pathname };
+}
+
+/** Old /kk/… links redirect (301) to /kz/…; null when the path already uses its public segment. */
+export function legacySegmentRedirect(pathname, search) {
+  const match = /^\/([^/]+)(\/.*)?$/.exec(pathname);
+  if (!match || !isLocale(match[1]) || LOCALE_SEGMENT[match[1]] === match[1]) return null;
+  return `/${LOCALE_SEGMENT[match[1]]}${match[2] || ''}${search || ''}`;
+}
+
+/** The internal app path for a public one ("/kz/p/x" → "/kk/p/x"), or null when they are the same. */
+export function internalLocalePath(pathname) {
+  const match = /^\/([^/]+)(\/.*)?$/.exec(pathname);
+  const locale = match ? localeFromSegment(match[1]) : null;
+  if (!locale || locale === match[1]) return null;
+  return `/${locale}${match[2] || ''}`;
 }
 
 function parseAcceptLanguage(header) {
@@ -71,7 +93,7 @@ export function localizeHref(href, locale) {
   const { locale: existing, rest } = stripLocale(path);
   if (existing === null && isExcludedPath(path)) return href;
   const base = existing === null ? path : rest;
-  return `/${locale}${base === '/' ? '' : base}${suffix}`;
+  return `/${localeSegment(locale)}${base === '/' ? '' : base}${suffix}`;
 }
 
 /**
@@ -83,7 +105,7 @@ export function decideLocaleRedirect(pathname, search, cookie, acceptLanguage) {
   if (isExcludedPath(pathname)) return null;
   if (stripLocale(pathname).locale !== null) return null;
   const locale = negotiateLocale({ cookie, acceptLanguage });
-  return `/${locale}${pathname === '/' ? '' : pathname}${search || ''}`;
+  return `/${localeSegment(locale)}${pathname === '/' ? '' : pathname}${search || ''}`;
 }
 
 /**

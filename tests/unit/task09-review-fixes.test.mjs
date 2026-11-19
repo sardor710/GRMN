@@ -11,7 +11,7 @@ function load(file,stubs,env={}){
 }
 // The proxy runs the maintenance gate first, then the backend CMS redirect lookup, then the i18n locale redirect (real routing helpers).
 const routing=await import("../../src/i18n/routing.js"),i18nConfig=await import("../../src/i18n/config.js");
-class FakeResponse{constructor(body,init){this.kind="error";this.status=init?.status;}static next(){return{kind:"next"};}static redirect(url,init){const status=typeof init==="number"?init:init?.status;return{kind:"redirect",url:String(url),status,headers:new Map()};}}
+class FakeResponse{constructor(body,init){this.kind="error";this.status=init?.status;}static next(){return{kind:"next"};}static redirect(url,init){const status=typeof init==="number"?init:init?.status;return{kind:"redirect",url:String(url),status,headers:new Map()};}static rewrite(url){return{kind:"rewrite",url:String(url)};}}
 function proxyWith(getRedirect,gate=async()=>null){
   return load("src/proxy.ts",{"next/server":{NextResponse:FakeResponse},"maintenance-runtime":{maintenanceGate:gate},"public-input":{isInvalidPublicInput:e=>e instanceof AuthFailure&&e.status===400},"cms/source":{cmsBackend:()=>"postgres"},"catalog/runtime":{getCatalogService:()=>({getRedirect})},"i18n/routing":routing,"i18n/config":i18nConfig}).proxy;
 }
@@ -39,13 +39,15 @@ test("proxy still reports genuine database failures as 503",async()=>{
 test("proxy looks a prefixed path up without its locale and keeps the locale on the target",async()=>{
   const lookups=[];const proxy=proxyWith(async path=>{lookups.push(path);return path==="/p/old"?{targetPath:"/p/new",statusCode:301}:null;});
   const response=await proxy(request("/kk/p/old"));
-  assert.equal(response.kind,"redirect");assert.equal(response.url,"http://localhost/kk/p/new");assert.equal(response.status,301);assert.deepEqual(lookups,["/p/old"]);
+  assert.equal(response.kind,"redirect");assert.equal(response.url,"http://localhost/kz/p/new");assert.equal(response.status,301);assert.deepEqual(lookups,["/p/old"]);
   const unprefixed=await proxy(request("/p/old"));assert.equal(unprefixed.url,"http://localhost/p/new","unprefixed requests get the authored target; the locale redirect follows");
 });
 test("proxy never looks account pages up but still prefixes them",async()=>{
   const lookups=[];const proxy=proxyWith(async path=>{lookups.push(path);return null;});
-  const response=await proxy(request("/account"));assert.equal(response.kind,"redirect");assert.equal(response.url,"http://localhost/kk/account");
-  assert.equal((await proxy(request("/kk/account"))).kind,"next");assert.deepEqual(lookups,[]);
+  const response=await proxy(request("/account"));assert.equal(response.kind,"redirect");assert.equal(response.url,"http://localhost/kz/account");
+  // Kazakh is served at /kz (rewritten to the internal kk route); old /kk links redirect there.
+  assert.equal((await proxy(request("/kz/account"))).kind,"rewrite");assert.deepEqual(lookups,[]);
+  assert.equal((await proxy(request("/ru/account"))).kind,"next");
 });
 test("sitemap category URLs come from real catalogue routes",async()=>{
   process.env.NEXT_PUBLIC_SITE_URL="https://example.test";
@@ -54,7 +56,7 @@ test("sitemap category URLs come from real catalogue routes",async()=>{
   const {default:sitemap}=load("src/app/sitemap.ts",{"cms/source":{cmsBackend:()=>"legacy",readProductsPage:async()=>({items:[],nextCursor:null}),readBlogsPage:async()=>({items:[],nextCursor:null}),readHomepage:async()=>emptyHome},"lib/products":{catalogues:[{slug:"wearables-smartwatches"},{slug:"sports-fitness/running-smartwatches"}]},"i18n/seo":seo,"i18n/translate-record":translate},{NEXT_PUBLIC_SITE_URL:"https://example.test"});
   const urls=(await sitemap()).map(e=>e.url).filter(u=>u.includes("/c/"));
   // Category pages are indexable in every language (interface strings), each with its own locale prefix.
-  assert.deepEqual(urls,["en","ru","kk"].map(l=>`https://example.test/${l}/c/wearables-smartwatches`).concat(["en","ru","kk"].map(l=>`https://example.test/${l}/c/sports-fitness/running-smartwatches`)));
+  assert.deepEqual(urls,["en","ru","kz"].map(l=>`https://example.test/${l}/c/wearables-smartwatches`).concat(["en","ru","kz"].map(l=>`https://example.test/${l}/c/sports-fitness/running-smartwatches`)));
 });
 test("public reads map invalid input/cursor to a not-found fallback and rethrow real failures",async()=>{
   const {readOr,isInvalidPublicInput}=await import("../../src/server/public-input.ts");

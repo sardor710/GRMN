@@ -11,7 +11,7 @@ export type LocaleStatusMap = { ru: TranslationStatus; kk: TranslationStatus };
 const TABS: { id: ContentLocale; code: string; label: string }[] = [
   { id: "en", code: "EN", label: "English" },
   { id: "ru", code: "RU", label: "Русский" },
-  { id: "kk", code: "KK", label: "Қазақша" },
+  { id: "kk", code: "KZ", label: "Қазақша" },
 ];
 
 const DOT_CLASS: Record<TranslationStatus, string> = {

@@ -6,6 +6,8 @@ import {
   LOCALE_REDIRECT_HEADERS,
   cmsRedirectLookupPaths,
   decideLocaleRedirect,
+  internalLocalePath,
+  legacySegmentRedirect,
   localizeCmsRedirectTarget,
   stripLocale,
 } from "./i18n/routing";
@@ -64,6 +66,9 @@ export async function proxy(request: NextRequest) {
   }
 
   const { pathname, search } = request.nextUrl;
+  // Owner 2026-11-19: Kazakh lives at /kz; old /kk links move there permanently.
+  const legacy = legacySegmentRedirect(pathname, search);
+  if (legacy) return NextResponse.redirect(new URL(legacy, request.url), 301);
   const target = decideLocaleRedirect(
     pathname,
     search,
@@ -80,6 +85,9 @@ export async function proxy(request: NextRequest) {
   const { locale } = stripLocale(pathname);
   if (locale) headers.set(INTL_LOCALE_HEADER, locale);
   else headers.delete(INTL_LOCALE_HEADER);
+  // The app route segment is the locale code (/kk/…); the public URL is /kz/….
+  const internal = internalLocalePath(pathname);
+  if (internal) return NextResponse.rewrite(new URL(internal + search, request.url), { request: { headers } });
   return NextResponse.next({ request: { headers } });
 }
 

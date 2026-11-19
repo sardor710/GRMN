@@ -9,7 +9,8 @@ import { DEFAULT_LOCALE, LOCALE_COOKIE, LOCALES } from "./config";
 export const intlRouting = defineRouting({
   locales: LOCALES,
   defaultLocale: DEFAULT_LOCALE,
-  localePrefix: "always",
+  // Kazakh links use the public /kz segment (the proxy maps /kz to the internal kk route).
+  localePrefix: { mode: "always", prefixes: { kk: "/kz" } },
   localeDetection: false,
   localeCookie: { name: LOCALE_COOKIE, maxAge: 60 * 60 * 24 * 365 },
 });

@@ -1,4 +1,4 @@
-import { LOCALES } from './config.js';
+import { LOCALES, LOCALE_SEGMENT } from './config.js';
 
 const ALL = Object.freeze([...LOCALES]);
 const EN_ONLY = Object.freeze(['en']);
@@ -39,13 +39,15 @@ export function absoluteUrl(path, siteUrl = SITE_URL) {
   return path === '/' || path === '' ? siteUrl : `${siteUrl}${path.startsWith('/') ? '' : '/'}${path}`;
 }
 
-/** Absolute, locale-prefixed URL of a page ("/p/x" + "kk" -> https://host/kk/p/x). */
+/** Absolute, locale-prefixed URL of a page ("/p/x" + "kk" -> https://host/kz/p/x). */
 export function localizedUrl(path, locale, siteUrl = SITE_URL) {
   return absoluteUrl(prefixed(locale, path), siteUrl);
 }
 
 function prefixed(locale, path) {
-  return path === '/' || path === '' ? `/${locale}` : `/${locale}${path}`;
+  // Public URL segment: Kazakh is /kz (hreflang keys stay the language code "kk").
+  const segment = LOCALE_SEGMENT[locale] ?? locale;
+  return path === '/' || path === '' ? `/${segment}` : `/${segment}${path}`;
 }
 
 /** True when `locale` is one of the locales the page is translated into (the page may be indexed). */

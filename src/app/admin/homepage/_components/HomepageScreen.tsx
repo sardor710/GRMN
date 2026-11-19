@@ -1,5 +1,6 @@
 "use client";
 
+import { AutoTranslateButton } from "@/components/admin/AutoTranslateButton";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -483,6 +484,7 @@ export default function AdminHomepagePage() {
           kk: translationStatus(config, "kk", HOMEPAGE_SPEC),
         }}
       />}
+      <AutoTranslateButton kind="homepage" record={() => config as unknown as Record<string, unknown>} onTranslated={(translations) => setConfig((prev) => (prev ? { ...prev, translations: translations as HomepageConfig["translations"] } : prev))} />
 
       {contentLocale !== "en" ? (
         <HomepageTranslationPanel

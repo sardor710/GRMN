@@ -98,8 +98,8 @@ if (opt("--create-product")) {
 // 3. Public pages through the bypass.
 // Every public page carries a language prefix (en/ru/kk); unprefixed paths redirect (307) to one.
 const root = await call(customer, "GET", "/");
-check("unprefixed / redirects to a language", root.status === 307 && /^\/(en|ru|kk)(\/|$)/.test(new URL(root.headers.get("location") ?? "/", BASE).pathname), `status ${root.status} → ${root.headers.get("location")}`);
-const pages = ["/en", "/ru", "/kk", "/ru/c/wearables-smartwatches", "/kk/c/wearables-smartwatches?sort=price-asc", "/en/c/wearables-smartwatches?sort=price-desc", "/ru/c/wearables-smartwatches?search=a", "/ru/blog", "/ru/cart", "/robots.txt", "/sitemap.xml"];
+check("unprefixed / redirects to a language", root.status === 307 && /^\/(en|ru|kz)(\/|$)/.test(new URL(root.headers.get("location") ?? "/", BASE).pathname), `status ${root.status} → ${root.headers.get("location")}`);
+const pages = ["/en", "/ru", "/kz", "/ru/c/wearables-smartwatches", "/kz/c/wearables-smartwatches?sort=price-asc", "/en/c/wearables-smartwatches?sort=price-desc", "/ru/c/wearables-smartwatches?search=a", "/ru/blog", "/ru/cart", "/robots.txt", "/sitemap.xml"];
 for (const path of pages) { const r = await call(customer, "GET", path); check(`page ${path}`, r.status === 200, `status ${r.status}`); }
 const sitemap = await call(customer, "GET", "/sitemap.xml");
 for (const key of products) {

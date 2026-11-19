@@ -7,17 +7,17 @@ const ALL = ['en', 'ru', 'kk'];
 test('buildAlternates: ru product page', () => {
   const a = buildAlternates({ path: '/p/x', locale: 'ru', indexedLocales: ALL });
   assert.equal(a.canonical, '/ru/p/x');
-  assert.deepEqual(a.languages, { en: '/en/p/x', ru: '/ru/p/x', kk: '/kk/p/x', 'x-default': '/p/x' });
+  assert.deepEqual(a.languages, { en: '/en/p/x', ru: '/ru/p/x', kk: '/kz/p/x', 'x-default': '/p/x' });
 });
 
 test('buildAlternates: canonicalOverride applies to en only', () => {
   const en = buildAlternates({ path: '/p/x', locale: 'en', indexedLocales: ALL, canonicalOverride: 'https://x/y' });
   assert.equal(en.canonical, 'https://x/y');
   const kk = buildAlternates({ path: '/p/x', locale: 'kk', indexedLocales: ALL, canonicalOverride: 'https://x/y' });
-  assert.equal(kk.canonical, '/kk/p/x');
+  assert.equal(kk.canonical, '/kz/p/x');
 });
 
-test('buildAlternates: en-only page excludes ru/kk from languages', () => {
+test('buildAlternates: en-only page excludes ru/kz from languages', () => {
   const a = buildAlternates({ path: '/p/x', locale: 'ru', indexedLocales: ['en'] });
   assert.deepEqual(a.languages, { en: '/en/p/x', 'x-default': '/p/x' });
   assert.equal(isIndexable('ru', ['en']), false);
@@ -26,8 +26,8 @@ test('buildAlternates: en-only page excludes ru/kk from languages', () => {
 
 test('buildAlternates: home uses bare locale paths and "/" x-default', () => {
   const a = buildAlternates({ path: '/', locale: 'kk', indexedLocales: ALL });
-  assert.equal(a.canonical, '/kk');
-  assert.deepEqual(a.languages, { en: '/en', ru: '/ru', kk: '/kk', 'x-default': '/' });
+  assert.equal(a.canonical, '/kz');
+  assert.deepEqual(a.languages, { en: '/en', ru: '/ru', kk: '/kz', 'x-default': '/' });
 });
 
 test('buildAlternates: languages follow LOCALES order regardless of input order', () => {
@@ -49,7 +49,7 @@ import { absoluteUrl, localizedUrl } from '../src/i18n/seo-core.js';
 test('absoluteUrl / localizedUrl use the given site origin', () => {
   assert.equal(absoluteUrl('/images/a.jpg', 'https://h.test'), 'https://h.test/images/a.jpg');
   assert.equal(absoluteUrl('https://cdn/x.jpg', 'https://h.test'), 'https://cdn/x.jpg');
-  assert.equal(localizedUrl('/p/x', 'kk', 'https://h.test'), 'https://h.test/kk/p/x');
+  assert.equal(localizedUrl('/p/x', 'kk', 'https://h.test'), 'https://h.test/kz/p/x');
   assert.equal(localizedUrl('/', 'ru', 'https://h.test'), 'https://h.test/ru');
 });
 
@@ -76,7 +76,7 @@ test('buildSitemapEntries: product translated in ru only yields en + ru entries 
 test('buildSitemapEntries: en-only route yields one entry; home has no trailing path', () => {
   assert.equal(buildSitemapEntries('https://x.test', [route('/minisite/marq', ['en'])]).length, 1);
   const home = buildSitemapEntries('https://x.test', [route('/', ['en', 'ru', 'kk'])]);
-  assert.deepEqual(home.map((e) => e.url), ['https://x.test/en', 'https://x.test/ru', 'https://x.test/kk']);
+  assert.deepEqual(home.map((e) => e.url), ['https://x.test/en', 'https://x.test/ru', 'https://x.test/kz']);
   assert.equal(home[0].alternates.languages['x-default'], 'https://x.test');
 });
 
@@ -87,9 +87,9 @@ test('buildSitemapEntries: routes without indexed locales produce nothing', () =
 test('buildAlternates: en canonicalOverride off /en drops en from hreflang, keeps x-default', () => {
   const en = buildAlternates({ path: '/p/x', locale: 'en', indexedLocales: ALL, canonicalOverride: 'https://other.example/y' });
   assert.equal(en.canonical, 'https://other.example/y');
-  assert.deepEqual(en.languages, { ru: '/ru/p/x', kk: '/kk/p/x', 'x-default': '/p/x' });
+  assert.deepEqual(en.languages, { ru: '/ru/p/x', kk: '/kz/p/x', 'x-default': '/p/x' });
   const ru = buildAlternates({ path: '/p/x', locale: 'ru', indexedLocales: ALL, canonicalOverride: 'https://other.example/y' });
-  assert.deepEqual(ru.languages, { ru: '/ru/p/x', kk: '/kk/p/x', 'x-default': '/p/x' });
+  assert.deepEqual(ru.languages, { ru: '/ru/p/x', kk: '/kz/p/x', 'x-default': '/p/x' });
 });
 
 test('buildAlternates: canonicalOverride equal to the /en URL keeps en', () => {

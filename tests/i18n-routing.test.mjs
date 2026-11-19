@@ -34,11 +34,11 @@ test('negotiate: empty/garbage header → default', () => {
 test('negotiate: q=0 is not acceptable', () => assert.equal(negotiateLocale({ acceptLanguage: 'en;q=0, kk;q=0.1' }), 'kk'));
 
 test('localizeHref keeps query+hash', () => assert.equal(localizeHref('/p/fenix-8?sku=010-1#specs', 'ru'), '/ru/p/fenix-8?sku=010-1#specs'));
-test('localizeHref root', () => assert.equal(localizeHref('/', 'kk'), '/kk'));
-test('localizeHref root with query', () => assert.equal(localizeHref('/?a=1', 'kk'), '/kk?a=1'));
+test('localizeHref root', () => assert.equal(localizeHref('/', 'kk'), '/kz'));
+test('localizeHref root with query', () => assert.equal(localizeHref('/?a=1', 'kk'), '/kz?a=1'));
 test('localizeHref swaps existing prefix', () => {
-  assert.equal(localizeHref('/en/cart', 'kk'), '/kk/cart');
-  assert.equal(localizeHref('/en', 'kk'), '/kk');
+  assert.equal(localizeHref('/en/cart', 'kk'), '/kz/cart');
+  assert.equal(localizeHref('/en', 'kk'), '/kz');
 });
 test('localizeHref leaves external, admin, api, uploads, assets', () => {
   for (const h of ['https://www.garmin.com/c/x/', 'mailto:a@b.c', 'tel:+123', '//cdn.x/y', '#top', '/admin/products', '/api/cart', '/uploads/a.jpg', '/seo/favicon-32x32.png', '/favicon.ico'])
@@ -56,3 +56,14 @@ test('isExcludedPath', () => {
 test('stripLocale', () => assert.deepEqual(stripLocale('/ru/blog/x'), { locale: 'ru', rest: '/blog/x' }));
 test('stripLocale bare locale', () => assert.deepEqual(stripLocale('/kk'), { locale: 'kk', rest: '/' }));
 test('stripLocale does not match /russia', () => assert.deepEqual(stripLocale('/russia'), { locale: null, rest: '/russia' }));
+
+// Owner 2026-11-19: Kazakh is served under /kz (locale code stays kk); old /kk links redirect.
+test('kz segment: stripLocale, internal path and legacy redirect', async () => {
+  const r = await import('../src/i18n/routing.js');
+  assert.deepEqual(r.stripLocale('/kz/p/x'), { locale: 'kk', rest: '/p/x' });
+  assert.equal(r.internalLocalePath('/kz/p/x'), '/kk/p/x');
+  assert.equal(r.internalLocalePath('/ru/p/x'), null);
+  assert.equal(r.legacySegmentRedirect('/kk/p/x', '?a=1'), '/kz/p/x?a=1');
+  assert.equal(r.legacySegmentRedirect('/kz/p/x', ''), null);
+  assert.equal(r.legacySegmentRedirect('/ru', ''), null);
+});

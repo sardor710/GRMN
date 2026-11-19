@@ -1,5 +1,6 @@
 "use client";
 
+import { AutoTranslateButton } from "@/components/admin/AutoTranslateButton";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import {
@@ -795,6 +796,7 @@ export default function AdminProductsPage() {
               kk: translationStatus(formData, "kk", PRODUCT_SPEC, PRODUCT_REQUIRED_FIELDS),
             }}
           />
+          <AutoTranslateButton kind="product" record={() => formData as unknown as Record<string, unknown>} onTranslated={(translations) => setFormData((prev) => ({ ...prev, translations: translations as typeof prev.translations }))} />
 
           {contentLocale !== "en" ? (
             <ProductTranslationPanel

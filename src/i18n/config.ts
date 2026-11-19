@@ -11,6 +11,10 @@ export const INTL_LOCALE: Record<Locale, string> = js.INTL_LOCALE as Record<Loca
 export const OG_LOCALE: Record<Locale, string> = js.OG_LOCALE as Record<Locale, string>;
 export const LOCALE_LABEL: Record<Locale, string> = js.LOCALE_LABEL as Record<Locale, string>;
 
+/** Owner 2026-11-19: Kazakh is served under /kz and labelled "KZ" (the locale stays "kk"). */
+export const LOCALE_SEGMENT: Record<Locale, string> = js.LOCALE_SEGMENT as Record<Locale, string>;
+export const LOCALE_CODE_LABEL: Record<Locale, string> = js.LOCALE_CODE_LABEL as Record<Locale, string>;
+
 export function isLocale(value: string): value is Locale {
   return js.isLocale(value);
 }

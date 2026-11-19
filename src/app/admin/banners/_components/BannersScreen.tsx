@@ -1,5 +1,6 @@
 "use client";
 
+import { AutoTranslateButton } from "@/components/admin/AutoTranslateButton";
 import { useState } from "react";
 import Image from "next/image";
 import {
@@ -256,6 +257,7 @@ export default function AdminBannersPage() {
               kk: translationStatus(formData, "kk", BANNER_SPEC),
             }}
           />}
+          <AutoTranslateButton kind="banner" record={() => formData} onTranslated={(translations) => setFormData((prev) => ({ ...prev, translations: translations as typeof prev.translations }))} />
 
           {contentLocale !== "en" ? (
             <div key={contentLocale} className="space-y-4">

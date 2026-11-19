@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { cmsRedirectLookupPaths, decideLocaleRedirect, localizeCmsRedirectTarget } from '../src/i18n/routing.js';
 
 test('redirect: root uses Accept-Language when no cookie', () =>
-  assert.equal(decideLocaleRedirect('/', '', undefined, 'kk'), '/kk'));
+  assert.equal(decideLocaleRedirect('/', '', undefined, 'kk'), '/kz'));
 test('redirect: cookie wins and query is kept', () =>
   assert.equal(decideLocaleRedirect('/p/fenix-8', '?sku=1', 'ru', 'en'), '/ru/p/fenix-8?sku=1'));
 test('redirect: nothing known → default locale', () =>
@@ -55,7 +55,7 @@ test('locale redirect headers: vary on Cookie + Accept-Language and are never ca
 });
 
 test('account: unprefixed /account still gets the locale redirect', () =>
-  assert.equal(decideLocaleRedirect('/account', '?tab=orders', undefined, 'kk'), '/kk/account?tab=orders'));
+  assert.equal(decideLocaleRedirect('/account', '?tab=orders', undefined, 'kk'), '/kz/account?tab=orders'));
 
 test('cms redirect lookup: stripped path first, then as-is; excluded and account paths skipped', () => {
   assert.deepEqual(cmsRedirectLookupPaths('/old-watch'), ['/old-watch']);
@@ -68,7 +68,7 @@ test('cms redirect lookup: stripped path first, then as-is; excluded and account
 });
 
 test('cms redirect target: prefixed requests keep their locale on internal targets', () => {
-  assert.equal(localizeCmsRedirectTarget('/p/new', '/kk/p/old'), '/kk/p/new');
+  assert.equal(localizeCmsRedirectTarget('/p/new', '/kk/p/old'), '/kz/p/new');
   assert.equal(localizeCmsRedirectTarget('/', '/ru/old'), '/ru');
   assert.equal(localizeCmsRedirectTarget('/p/new?x=1#a', '/en/p/old'), '/en/p/new?x=1#a');
   // A target that names a locale, an excluded target and an external one stay as authored.

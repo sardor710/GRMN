@@ -13,11 +13,15 @@ test("all admin routes bind the guarded runtime and every private page checks se
     assert.match(source,/const denied = await requireCatalogWriter\(request\);\s+if \(denied\) return denied;/,path);
     assert.doesNotMatch(source,/getCurrentAdmin/,path);
   }
-  for(const entry of readdirSync(new URL("src/app/api/admin/",root),{withFileTypes:true}).filter(entry=>entry.isDirectory()&&!["auth","import","uploads","maintenance-bypass"].includes(entry.name))) {
+  for(const entry of readdirSync(new URL("src/app/api/admin/",root),{withFileTypes:true}).filter(entry=>entry.isDirectory()&&!["auth","import","uploads","maintenance-bypass","translate"].includes(entry.name))) {
     const source=read(`src/app/api/admin/${entry.name}/route.ts`);
     assert.match(source,new RegExp(`handleAdminRequest\\("${entry.name}", request\\)`),entry.name);
     assert.doesNotMatch(source,/cms\/store|request\.json/);
   }
+  // Owner 2026-11-19: machine translation has its own guard (same-origin, staff, the kind's write permission).
+  assert.match(read("src/app/api/admin/translate/route.ts"),/handleTranslateRequest\(request\)/);
+  assert.match(read("src/server/i18n/translate-runtime.ts"),/requireStaffPrincipal\(runtime, request\.headers\)/);
+  assert.match(read("src/server/i18n/translate-runtime.ts"),/requirePermission\(runtime, request\.headers, kind\.permission\)/);
   // Task 23 G1: the maintenance bypass has its own guard (same-origin, settings:write with fresh MFA).
   assert.match(read("src/app/api/admin/maintenance-bypass/route.ts"),/handleMaintenanceBypass\(request\)/);
   assert.match(read("src/server/operations/maintenance-runtime.ts"),/requirePermission\(getAuthRuntime\(\), headers, permission\)/);

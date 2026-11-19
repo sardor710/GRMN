@@ -1,5 +1,6 @@
 "use client";
 
+import { AutoTranslateButton } from "@/components/admin/AutoTranslateButton";
 import { useState } from "react";
 import Image from "next/image";
 import {
@@ -325,6 +326,7 @@ export default function AdminBlogsPage() {
               kk: translationStatus(formData, "kk", BLOG_SPEC, BLOG_REQUIRED_FIELDS),
             }}
           />}
+          <AutoTranslateButton kind="blog" record={() => formData} onTranslated={(translations) => setFormData((prev) => ({ ...prev, translations: translations as typeof prev.translations }))} />
 
           {contentLocale !== "en" ? (
             <BlogTranslationFields
