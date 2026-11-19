@@ -18,7 +18,7 @@
 ## Rulings
 
 - **Maintenance defaults to on** for a new settings row. That is kept: a fresh production database starts closed. Tests and seeds that need an open store set `maintenance_mode=false` explicitly (the browser smoke now does).
-- **The freeze lives in the proxy.** Every business write goes through `/api`; there are no server actions. Admin GET and HEAD stay open so staff can sign in and take the bypass. Payment webhooks stay open (plan step 9). The legacy site has no bypass.
+- **The freeze lives in the proxy.** Every business write goes through `/api`; there are no server actions. Admin GET and HEAD stay open so staff can sign in and take the bypass. **Changed 2026-11-19 (owner):** the whole admin API, writes included, stays open during maintenance so staff can prepare the closed store; each route enforces staff permissions, and customers stay frozen. Payment webhooks stay open (plan step 9). The legacy site has no bypass.
 - **The flag is cached for 5 s per process**, and a failed read counts as "open". When the database is down, requests already answer 503 anyway.
 - **Imported content stays draft until staff publish it.** The homepage answers 500 until then. This is a runbook step, not a code change.
 - **The import runs as the migration role.** The app role has data access only: no TRUNCATE, no CREATE.

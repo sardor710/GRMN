@@ -16,7 +16,7 @@ test("when maintenance is off everything is allowed", () => {
 test("during maintenance pages show the maintenance page and every business API is refused", () => {
   const d = (path, method = "GET") => maintenanceDecision({ active: true, bypass: false, path, method });
   for (const path of ["/", "/c/wearables", "/p/fenix-8", "/account", "/checkout"]) assert.equal(d(path), "page", path);
-  for (const [path, method] of [["/api/cart", "GET"], ["/api/cart/checkout", "POST"], ["/api/account/orders", "GET"], ["/api/admin/products", "PUT"], ["/api/admin/settings", "PUT"], ["/api/admin/auth/login", "POST"], ["/api/payments/return", "GET"]])
+  for (const [path, method] of [["/api/cart", "GET"], ["/api/cart/checkout", "POST"], ["/api/account/orders", "GET"], ["/api/admin/auth/login", "POST"], ["/api/payments/return", "GET"]])
     assert.equal(d(path, method), "api", `${method} ${path}`);
 });
 
@@ -27,6 +27,11 @@ test("during maintenance staff sign-in, admin pages and admin reads, webhooks an
   assert.equal(d("/api/admin/orders", "GET"), "allow"); assert.equal(d("/api/admin/orders", "HEAD"), "allow");
   assert.equal(d("/api/payments/webhooks/kaspi", "POST"), "allow", "a durable webhook intake stays open during the freeze (plan step 9)");
   assert.equal(d("/api/admin/maintenance-bypass", "POST"), "allow");
+  // Owner 2026-11-19: staff prepare the closed store (products, garmin.com import, photo uploads,
+  // content, settings), so admin API writes stay open; each admin route enforces staff sign-in and
+  // permissions itself. Customers stay frozen (cart, checkout, account, legacy admin login).
+  for (const [path, method] of [["/api/admin/products", "POST"], ["/api/admin/products", "PUT"], ["/api/admin/import/garmin", "POST"], ["/api/admin/uploads", "POST"], ["/api/admin/settings", "PUT"], ["/api/admin/inventory", "POST"]])
+    assert.equal(d(path, method), "allow", `${method} ${path}`);
   // Look-alike prefixes do not match.
   assert.equal(d("/administrator"), "page"); assert.equal(d("/api/authx", "POST"), "api"); assert.equal(d("/api/admin-x", "GET"), "api");
 });

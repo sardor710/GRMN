@@ -129,3 +129,28 @@ The image needs the public origin at build time: `docker build --build-arg NEXT_
 - `grmn:af156ef` is live with `STAFF_MFA_REQUIRED=0`, after a pre-release backup (exit 0).
 - Verified on garmin.tigr.uz: `admin@garmin.kz` signs in with its password (`mfaRequired:false`); the admin page, orders and settings answer 200, and the maintenance bypass (settings:write) is issued.
 - To restore the authenticator later: set `STAFF_MFA_REQUIRED=1` in `production.env` and `up -d --force-recreate app worker proxy`.
+
+**garmin.com importer and variants on PostgreSQL (2026-11-19, owner: "add those features and relaunch").**
+
+Commits 5cbad06/e7dc91c built the importer, options/variants editor, photo uploads and storefront variant pickers for the legacy JSON store; they now work on PostgreSQL.
+- **One product editor** (`ProductsScreen`) for both stores. The PostgreSQL-only screen is removed.
+- **Saves are projected into the commerce tables** by `src/server/cms/product-projection.ts`:
+  - options and values;
+  - variants matched by SKU or a stable id, archived (never deleted) when removed;
+  - exact per-variant KZT prices;
+  - selections;
+  - photos registered as `media_assets` (namespace `catalog-files`, with real size, checksum and type) and attached per variant.
+- **Validation:** exactly one default variant, unique SKUs, every option chosen, compare-at not below price. Overview HTML and images are sanitized.
+- **Limits:** 300 photos, 500 spec rows, 1 MB request.
+- **The catalog** accepts `/uploads` and `/media` photo paths and returns `overviewHtml` and `specGroups` (translated); the product page renders them.
+- **Stock** is not edited in the product form on PostgreSQL; it moves through the Inventory screen.
+- **Ops:**
+  - `UPLOAD_DIR=/media/uploads` on the backed-up media volume.
+  - The image makes `/media` owned by the app user; existing volumes were chowned once. Before this, CMS media uploads could not write either.
+  - **The admin API stays open during maintenance**, so staff can prepare products before opening.
+- **Staging:** live imports from garmin.com through the admin:
+  - **Venu 4:** 9 variants and 38 photos stored; saved; the en/ru product pages show 8 active variants, the gallery and the overview.
+  - **fēnix 9 Pro:** 33 variants and 245 photos in 5 s; saved; 33 variants on the page.
+  - **Launch check:** 39/39.
+- **Tests:** `tests/integration/catalog-variants.test.mjs` (7), including the fēnix 9 fixture import and an HTTP post. The full suite is 397/397.
+- **Found and fixed on staging:** decimal-text variant prices from the admin route, the 1 MB product request limit, `/media` permissions, and the maintenance freeze blocking staff edits.

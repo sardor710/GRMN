@@ -7,10 +7,11 @@ import { createHmac, timingSafeEqual } from "node:crypto";
  * Maintenance is on when MAINTENANCE_MODE=1 (the operator's switch; needs no database, so it also
  * freezes the legacy site) or when store_settings.maintenance_mode is true (PostgreSQL mode, cached
  * for a few seconds per process). While it is on:
- *   - storefront pages answer 503 with a maintenance page, and every /api route answers 503
- *     MAINTENANCE, so no customer or admin business write is accepted;
- *   - staff sign-in (/api/auth), admin pages and admin reads (GET/HEAD /api/admin), the payment
- *     webhook intake (kept durable during a freeze, plan step 9) and the bypass route stay open;
+ *   - storefront pages answer 503 with a maintenance page, and every customer /api route answers 503
+ *     MAINTENANCE, so no customer write (cart, checkout, account) is accepted;
+ *   - staff sign-in (/api/auth), admin pages, the admin API (reads and writes, so staff can prepare
+ *     the closed store; each route checks staff permissions), the payment webhook intake (kept
+ *     durable during a freeze, plan step 9) and the bypass route stay open;
  *   - a staff member with settings:write (fresh MFA) can take a signed, 2-hour bypass cookie and
  *     use the closed site normally to verify it. The legacy site has no bypass: its freeze is total.
  * Every business write goes through /api (there are no server actions), so the proxy is the one gate.
@@ -27,7 +28,10 @@ export function maintenanceDecision({ active, bypass, path, method }: { active: 
   const read = method === "GET" || method === "HEAD";
   if (under(path, "/api/auth") || under(path, "/api/payments/webhooks") || path === "/api/admin/maintenance-bypass") return "allow";
   if (under(path, "/admin") && read) return "allow";
-  if (under(path, "/api/admin") && read && !under(path, "/api/admin/auth")) return "allow";
+  // Staff prepare a closed store (products, garmin.com import, uploads, content, settings): admin API
+  // writes stay open, each route enforcing staff sign-in and permissions itself (owner, 2026-11-19).
+  // The legacy admin login stays closed.
+  if (under(path, "/api/admin") && !under(path, "/api/admin/auth")) return "allow";
   return under(path, "/api") ? "api" : "page";
 }
 
