@@ -100,3 +100,42 @@ test("PATCH status-only and POST /bulk are wired through the admin HTTP handler"
   assert.equal(bulk.status,200);assert.equal(bulk.body.results[0].ok,true);
   assert.equal((await call("POST","/api/admin/products/bulk",{action:"publish",items:Array.from({length:101},(_,i)=>({id:"x"+i,version:1}))})).status,400);
 });
+
+test("saving a product as archived from the editor keeps it readable and lets it be published again",async()=>{
+  const cms=await cmsService(),saved=await cms.save("products",admin,product());
+  const archived=await cms.save("products",admin,{...product({sku:saved.sku}),id:saved.id,version:saved.version,status:"archived"});
+  assert.equal(archived.status,"archived");assert.equal(archived.price,1000);
+  const listed=(await cms.list("products",admin,{search:saved.sku})).items.find(item=>item.id===saved.id);
+  assert.equal(listed.status,"archived");
+  const out=await cms.setProductStatus(admin,{id:saved.id,version:archived.version,status:"published"});
+  assert.equal(out.status,"published");
+  const again=await cms.get("products",admin,saved.id);
+  assert.equal(again.status,"published");assert.equal(again.price,1000);
+  const variant=(await q("SELECT v.status,v.is_default FROM product_variants v JOIN products p ON p.id=v.product_id WHERE p.public_key=$1",[saved.id])).rows[0];
+  assert.equal(variant.status,"active");assert.equal(variant.is_default,true);
+});
+
+test("status change on a product without a default variant or price is a 409, not a 500",async()=>{
+  const cms=await cmsService(),saved=await cms.save("products",admin,product());
+  await q("UPDATE product_variants SET is_default=false WHERE product_id=(SELECT id FROM products WHERE public_key=$1)",[saved.id]);
+  await rejects(cms.setProductStatus(admin,{id:saved.id,version:saved.version,status:"draft"}),"CONFLICT",409);
+  const out=await cms.bulkProducts(admin,{action:"draft",items:[{id:saved.id,version:saved.version}]});
+  assert.equal(out.results[0].ok,false);assert.equal(out.results[0].code,"CONFLICT");
+  assert.equal((await q("SELECT status,version FROM products WHERE public_key=$1",[saved.id])).rows[0].status,"published");
+});
+
+test("bulk delete refuses an ordered product and deletes the other",async()=>{
+  const cms=await cmsService(),a=await cms.save("products",admin,product()),b=await cms.save("products",admin,product());
+  const row=(await q("SELECT p.id AS product_id,v.id AS variant_id FROM products p JOIN product_variants v ON v.product_id=p.id WHERE p.public_key=$1",[a.id])).rows[0],order=randomUUID();
+  const client=await database.pool.connect();
+  try{
+    await client.query("BEGIN");
+    await client.query("INSERT INTO orders(id,contact_name,data_quality,total_minor) VALUES($1,'Synthetic buyer','legacy_incomplete',1000)",[order]);
+    await client.query("INSERT INTO order_items(id,order_id,product_id,variant_id,name,quantity,unit_price_minor,discount_minor,tax_minor,total_minor) VALUES($1,$2,$3,$4,'Ordered',1,1000,0,0,1000)",[randomUUID(),order,row.product_id,row.variant_id]);
+    await client.query("COMMIT");
+  }catch(error){await client.query("ROLLBACK");throw error;}finally{client.release();}
+  const out=await cms.bulkProducts(admin,{action:"delete",items:[{id:a.id,version:a.version},{id:b.id,version:b.version}]});
+  assert.equal(out.results[0].ok,false);assert.equal(out.results[0].code,"CONFLICT");assert.match(out.results[0].message,/orders/);
+  assert.equal(out.results[1].ok,true);
+  assert.equal((await q("SELECT count(*)::int AS n FROM products WHERE public_key=$1",[a.id])).rows[0].n,1);
+});

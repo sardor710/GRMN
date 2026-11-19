@@ -106,6 +106,7 @@ export function createCMSService({pool,authorize}:Options) {
     const old=(await client.query(`${productSelect} WHERE p.public_key=$1 FOR UPDATE OF p`,[data.id])).rows[0];
     if(!old)return fail("NOT_FOUND",404,"Product was not found");
     if(data.version!==Number(old.version))return fail("VERSION_CONFLICT",409,"Product changed; reload before saving");
+    if(old.sku==null||old.amount_minor==null)return fail("CONFLICT",409,"This product has no default variant or price; open it in the editor and save it first");
     // The column and the editor document keep the same status, like save.
     await client.query("UPDATE products SET status=$2,legacy_content=jsonb_set(legacy_content,'{status}',to_jsonb($2::text)),version=version+1,updated_at=clock_timestamp() WHERE id=$1",[old.id,data.status]);
     const meta=record(old.legacy_content);
@@ -115,6 +116,33 @@ export function createCMSService({pool,authorize}:Options) {
       images:(Array.isArray(meta.images)?meta.images:[]) as ProductDocument["images"],defaultImageId:typeof meta.defaultImageId==="string"?meta.defaultImageId:undefined});
     await audit(client,principal,"cms.saved",entityTypes.products,old.id,["status"],Number(old.version),Number(old.version)+1);
     return{id:data.id,version:Number(old.version)+1,status:data.status};
+  }
+  async function deleteIn(client:PoolClient,principal:Principal,publicKey:string,expected:number){
+      const product=(await client.query("SELECT id,version,name FROM products WHERE public_key=$1 FOR UPDATE",[publicKey])).rows[0]??fail("NOT_FOUND",404,"Product was not found");
+      if(Number(product.version)!==expected)return fail("VERSION_CONFLICT",409,"Product changed; reload before deleting");
+      const id=product.id,variants=(await client.query<{id:string}>("SELECT id FROM product_variants WHERE product_id=$1",[id])).rows.map(r=>r.id);
+      if((await client.query("SELECT 1 FROM order_items WHERE product_id=$1 OR variant_id=ANY($2::uuid[]) LIMIT 1",[id,variants])).rowCount)
+        return fail("CONFLICT",409,"This product has orders, so it cannot be deleted; archive it instead");
+      if((await client.query("SELECT 1 FROM stock_movements WHERE variant_id=ANY($1::uuid[]) LIMIT 1",[variants])).rowCount)
+        return fail("CONFLICT",409,"This product has stock history, so it cannot be deleted; archive it instead");
+      const del=(sql:string,args:unknown[])=>client.query(sql,args);
+      await del("DELETE FROM cart_items WHERE variant_id=ANY($1::uuid[])",[variants]);
+      await del("DELETE FROM wishlist_items WHERE product_id=$1",[id]);
+      await del("DELETE FROM promotion_variants WHERE variant_id=ANY($1::uuid[])",[variants]);
+      await del("DELETE FROM price_adjustment_variants WHERE variant_id=ANY($1::uuid[])",[variants]);
+      await del("DELETE FROM collection_products WHERE product_id=$1",[id]);
+      await del("DELETE FROM collection_published_products WHERE product_id=$1",[id]);
+      await del("DELETE FROM product_relations WHERE source_product_id=$1 OR target_product_id=$1",[id]);
+      for(const table of ["product_categories","product_activities","product_attribute_values","product_translations","product_media"])await del(`DELETE FROM ${table} WHERE product_id=$1`,[id]);
+      await del("DELETE FROM inventory_balances WHERE variant_id=ANY($1::uuid[])",[variants]);
+      await del("DELETE FROM variant_option_values WHERE product_id=$1",[id]);
+      await del("DELETE FROM prices WHERE variant_id=ANY($1::uuid[])",[variants]);
+      await del("DELETE FROM product_variants WHERE product_id=$1",[id]);
+      await del("DELETE FROM option_values WHERE product_id=$1",[id]);
+      await del("DELETE FROM product_options WHERE product_id=$1",[id]);
+      await del("DELETE FROM products WHERE id=$1",[id]);
+      await audit(client,principal,"cms.deleted",entityTypes.products,id,["permanent"],expected,expected);
+      return{deleted:true as const};
   }
   async function actor(headers:Headers,resource:CMSResource,write=false){return authorize(headers,permissions[resource][write?1:0]);}
   async function audit(client:PoolClient,principal:Principal,action:string,type:string,id:string,fields:string[],oldVersion:number,newVersion:number){
@@ -253,33 +281,7 @@ export function createCMSService({pool,authorize}:Options) {
      */
     async deleteProduct(headers:Headers,publicKey:string,expected:number):Promise<{deleted:true}>{
       const principal=await actor(headers,"products",true);parse(identity,publicKey);parse(version,expected);
-      return tx(async client=>{
-        const product=(await client.query("SELECT id,version,name FROM products WHERE public_key=$1 FOR UPDATE",[publicKey])).rows[0]??fail("NOT_FOUND",404,"Product was not found");
-        if(Number(product.version)!==expected)return fail("VERSION_CONFLICT",409,"Product changed; reload before deleting");
-        const id=product.id,variants=(await client.query<{id:string}>("SELECT id FROM product_variants WHERE product_id=$1",[id])).rows.map(r=>r.id);
-        if((await client.query("SELECT 1 FROM order_items WHERE product_id=$1 OR variant_id=ANY($2::uuid[]) LIMIT 1",[id,variants])).rowCount)
-          return fail("CONFLICT",409,"This product has orders, so it cannot be deleted; archive it instead");
-        if((await client.query("SELECT 1 FROM stock_movements WHERE variant_id=ANY($1::uuid[]) LIMIT 1",[variants])).rowCount)
-          return fail("CONFLICT",409,"This product has stock history, so it cannot be deleted; archive it instead");
-        const del=(sql:string,args:unknown[])=>client.query(sql,args);
-        await del("DELETE FROM cart_items WHERE variant_id=ANY($1::uuid[])",[variants]);
-        await del("DELETE FROM wishlist_items WHERE product_id=$1",[id]);
-        await del("DELETE FROM promotion_variants WHERE variant_id=ANY($1::uuid[])",[variants]);
-        await del("DELETE FROM price_adjustment_variants WHERE variant_id=ANY($1::uuid[])",[variants]);
-        await del("DELETE FROM collection_products WHERE product_id=$1",[id]);
-        await del("DELETE FROM collection_published_products WHERE product_id=$1",[id]);
-        await del("DELETE FROM product_relations WHERE source_product_id=$1 OR target_product_id=$1",[id]);
-        for(const table of ["product_categories","product_activities","product_attribute_values","product_translations","product_media"])await del(`DELETE FROM ${table} WHERE product_id=$1`,[id]);
-        await del("DELETE FROM inventory_balances WHERE variant_id=ANY($1::uuid[])",[variants]);
-        await del("DELETE FROM variant_option_values WHERE product_id=$1",[id]);
-        await del("DELETE FROM prices WHERE variant_id=ANY($1::uuid[])",[variants]);
-        await del("DELETE FROM product_variants WHERE product_id=$1",[id]);
-        await del("DELETE FROM option_values WHERE product_id=$1",[id]);
-        await del("DELETE FROM product_options WHERE product_id=$1",[id]);
-        await del("DELETE FROM products WHERE id=$1",[id]);
-        await audit(client,principal,"cms.deleted",entityTypes.products,id,["permanent"],expected,expected);
-        return{deleted:true as const};
-      });
+      return tx(client=>deleteIn(client,principal,publicKey,expected));
     },
     /** Status-only change (list dropdown and bulk bar): same lock, version check, column + document + projection as save. */
     async setProductStatus(headers:Headers,raw:{id:string;version:number;status:ProductStatus}):Promise<{id:string;version:number;status:string}>{
@@ -289,10 +291,11 @@ export function createCMSService({pool,authorize}:Options) {
     /** Up to 100 products, each in its own transaction, so one stale row never blocks the others. */
     async bulkProducts(headers:Headers,raw:{action:BulkAction;items:{id:string;version:number}[]}):Promise<{results:BulkResult[]}>{
       const principal=await actor(headers,"products",true);const data=parse(bulkCommand,raw);
+      for(const item of data.items)parse(identity,item.id);
       const results:BulkResult[]=[],action=data.action;
       for(const item of data.items){
         try{
-          if(action==="delete"){await this.deleteProduct(headers,item.id,item.version);results.push({id:item.id,ok:true});}
+          if(action==="delete"){await tx(client=>deleteIn(client,principal,item.id,item.version));results.push({id:item.id,ok:true});}
           else{const done=await tx(client=>setStatusIn(client,principal,{...item,status:BULK_STATUS[action]}));results.push({id:item.id,ok:true,version:done.version});}
         }catch(error){
           if(error instanceof AuthFailure)results.push({id:item.id,ok:false,code:error.code,message:error.message});

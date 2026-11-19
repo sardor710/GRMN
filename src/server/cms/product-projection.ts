@@ -109,7 +109,7 @@ export async function projectProduct(client: PoolClient, productId: string, doc:
       editorToRow.set(v.id, id); keepVariants.push(id);
       const amount = toMinor(v.price, `Price of ${sku}`), compare = v.originalPrice === undefined || v.originalPrice === "" ? null : toMinor(v.originalPrice, `Compare-at price of ${sku}`);
       const status = variantStatus(doc.status, v.status);
-      await upsertVariant(id, sku, v.title?.trim() || null, status, v.isDefault && status !== "archived", amount, compare);
+      await upsertVariant(id, sku, v.title?.trim() || null, status, v.isDefault, amount, compare);
       await client.query("DELETE FROM variant_option_values WHERE variant_id=$1", [id]);
       for (const option of doc.options) await client.query("INSERT INTO variant_option_values(variant_id,product_id,option_id,option_value_id) VALUES($1,$2,$3,$4)", [id, productId, optionIds.get(option.id), valueIds.get(`${option.id}\u0000${v.selections[option.id]}`)]);
     }
@@ -118,7 +118,7 @@ export async function projectProduct(client: PoolClient, productId: string, doc:
     const found = bySku.get(doc.sku.trim().toLowerCase()) ?? existing.find(v => v.is_default && v.status !== "archived") ?? existing.find(v => v.status !== "archived");
     const id = found?.id ?? stableUuid(productId, "default-variant");
     keepVariants.push(id);
-    await upsertVariant(id, doc.sku.trim(), null, variantStatus(doc.status, "active"), doc.status !== "archived", doc.priceMinor, doc.compareMinor);
+    await upsertVariant(id, doc.sku.trim(), null, variantStatus(doc.status, "active"), true, doc.priceMinor, doc.compareMinor);
     await client.query("DELETE FROM variant_option_values WHERE variant_id=$1", [id]);
   }
   await client.query("UPDATE product_variants SET status='archived',is_default=false,version=version+1 WHERE product_id=$1 AND NOT id=ANY($2::uuid[]) AND status<>'archived'", [productId, keepVariants]);
