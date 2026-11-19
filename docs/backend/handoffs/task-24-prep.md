@@ -154,3 +154,22 @@ Commits 5cbad06/e7dc91c built the importer, options/variants editor, photo uploa
   - **Launch check:** 39/39.
 - **Tests:** `tests/integration/catalog-variants.test.mjs` (7), including the fēnix 9 fixture import and an HTTP post. The full suite is 397/397.
 - **Found and fixed on staging:** decimal-text variant prices from the admin route, the 1 MB product request limit, `/media` permissions, and the maintenance freeze blocking staff edits.
+
+**Admin additions (owner, 2026-11-19):**
+- **Discounts and promotions on PostgreSQL:** `src/server/pricing/promotions-admin.ts`, behind the existing Discounts screen.
+  - **Supports:** create and edit (versioned); percentage or fixed KZT; minimum spend; usage and per-customer limits; all products or selected SKUs; dates; stackable; active, disabled or expired.
+  - **Codes** are stored lowercase (checkout lowercases what customers type) and shown uppercase.
+  - **Delete archives the code:** promotions are commerce history, protected by the `promotions_no_delete` trigger. Checkout then refuses the code and the list hides it.
+  - **Category scope is refused** with a message: there are no catalog categories yet.
+- **Delete a product permanently** (`DELETE /api/admin/products?…&permanent=1`): only for a product that was never ordered and has no stock history. Its variants, prices, options, photo links, translations, collection entries and promotion, cart and wishlist lines go with it; otherwise 409 ("archive it instead"). On PostgreSQL the trash button is labelled Archive.
+- **Auto-translate RU & KZ** (OpenRouter `OPENROUTER_API_KEY`, `OPENROUTER_MODEL` = `nvidia/nemotron-3.5-super-vl:free`; the key is only in `production.env`):
+  - **Where:** a button in the product, blog, banner and homepage editors.
+  - **Safe for staff edits:** only empty RU/KZ fields are filled; HTML is translated node by node.
+  - **Translation memory** (migration 0020, `translation_memory`): each distinct text is translated once and reused across fields and products.
+  - **Rounds:** 15 s budget, 3 concurrent batches of 20, 40 s per call, automatic retries, so no request hits the 60 s proxy limit.
+  - **Speed** on the free model: about 5 texts per second; a large garmin.com product such as fēnix 9 Pro (about 3,700 texts) takes about 12 minutes the first time.
+  - **Quality:** the Kazakh output of this free model needs review (for example "Bright display" became "Қарлы дисплей", "snowy display").
+  - **Nothing is saved** until staff save.
+- **Kazakh is served at `/kz/…`** and labelled "KZ":
+  - the proxy rewrites `/kz` to the internal `kk` route, and old `/kk/…` links answer 301;
+  - hreflang, `<html lang>`, message catalogs and stored translations keep the ISO 639-1 code `kk`.

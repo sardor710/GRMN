@@ -21,11 +21,15 @@ export function AutoTranslateButton({ kind, record, onTranslated }: {
     try {
       // Long content (a garmin.com overview) is translated in rounds of about 40 s; each round
       // continues with the fields still empty.
-      let current = record(), total = 0;
-      for (let round = 1; round <= 40; round++) {
+      let current = record(), total = 0, failures = 0;
+      for (let round = 1; round <= 400; round++) {
         const res = await fetch("/api/admin/translate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, record: current }) });
         const data = (await res.json().catch(() => null)) as { translations?: Record<string, unknown>; filled?: number; remaining?: number; error?: { message?: string } } | null;
+        // The free model sometimes stalls on one round: retry a few times before giving up
+        // (everything finished so far is already in the form).
+        if ((res.status === 503 || res.status === 504 || res.status === 502) && ++failures <= 3) { setMessage(`Translation service is slow — retrying (${failures}/3)… ${total} fields done.`); await new Promise(r => setTimeout(r, 3000)); continue; }
         if (!res.ok || !data?.translations) throw new Error(data?.error?.message || "Automatic translation is unavailable right now.");
+        failures = 0;
         onTranslated(data.translations);
         current = { ...current, translations: data.translations };
         total += data.filled ?? 0;
