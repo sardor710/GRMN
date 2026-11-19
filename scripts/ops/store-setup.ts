@@ -1,6 +1,7 @@
 // Task 23 G7: first-time store configuration. A freshly migrated database has no store_settings row,
 // so checkout cannot quote. This creates, once and in one transaction, from a reviewed JSON file:
-// the settings row (store CLOSED: maintenance_mode on, payment_mode live for O07 manual payments),
+// the settings row (store CLOSED: maintenance_mode on, payment_mode demo: "Demo checkout" is on by default until launch, Task 3.1;
+// staff turn it off in Settings -> Payments to take manual payments),
 // tax configuration version 1 and shipping policy version 1 with its zones and rates. Later changes go
 // through admin settings (versioned, audited). Money is KZT minor units as decimal strings.
 //   DATABASE_URL=… node --conditions=react-server scripts/ops/store-setup.ts <config.json>
@@ -42,7 +43,7 @@ export async function setupStore(pool: Pool, input: unknown): Promise<{ created:
     }
     await client.query(
       `INSERT INTO store_settings(id,store_name,active_tax_configuration_id,active_shipping_policy_id,free_shipping_threshold_minor,maintenance_mode,payment_mode,manual_payment_instructions,manual_payment_hold_hours)
-       VALUES(1,$1,$2,$3,$4,true,'live',$5,$6)`,
+       VALUES(1,$1,$2,$3,$4,true,'demo',$5,$6)`,
       [c.storeName, tax, policy, c.freeShippingThresholdMinor ?? null, c.manualPayment?.instructions ?? null, c.manualPayment?.holdHours ?? 48]);
     await client.query("COMMIT");
     return { created: true, maintenanceMode: true, zones: c.shipping.zones.length, rates };

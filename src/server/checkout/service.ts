@@ -156,7 +156,7 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
     // Task 3.1: demo and manual are never offered together. A retried key still replays its order
     // above after the setting changed; a new checkout must use the method offered now.
     if ((command.paymentMethod === "demo" || command.paymentMethod === "manual") && !(await availablePaymentMethods(client)).includes(command.paymentMethod))
-      fail("PAYMENT_METHOD_UNAVAILABLE", 409, "This payment method is not available");
+      fail("PAYMENT_METHOD_UNAVAILABLE", 409, "Checkout options changed (demo checkout was turned off or on). Reload checkout and try again.");
 
     // The quote must belong to one of the actor's own carts: a session uses its account cart, a guest its capability cart.
     const owned = (await client.query<{ cart_id: string; cart_version: number }>(

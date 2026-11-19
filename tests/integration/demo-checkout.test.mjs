@@ -149,3 +149,21 @@ test("placing manual while demo is on is refused",async()=>{
   const placed=await place(who,quote,"demo");
   assert.equal(placed.paymentMode,"demo");assert.deepEqual(await balance(p.variant),{on_hand:5,reserved:1});
 });
+
+test("a quote made while demo was on cannot be placed as demo after demo is turned off; nothing is reserved",async()=>{
+  try{
+    await setDemo(true);
+    const who=await buyer(),p=await product({stock:3}),quote=await quoted(who.headers,[[p.variant,1]]);
+    assert.deepEqual((await carts.getCart(who.headers)).cart.paymentMethods,["demo"]);
+    await setDemo(false);
+    await assert.rejects(place(who,quote,"demo"),error=>{
+      assert.equal(error.status,409);assert.equal(error.code,"PAYMENT_METHOD_UNAVAILABLE");
+      assert.equal(error.message,"Checkout options changed (demo checkout was turned off or on). Reload checkout and try again.");
+      return true;
+    });
+    assert.deepEqual(await balance(p.variant),{on_hand:3,reserved:0});
+    assert.equal(await count("SELECT count(*)::int AS n FROM checkout_attempts WHERE quote_id=$1",[quote.id]),0);
+    assert.equal(await count("SELECT count(*)::int AS n FROM order_items WHERE variant_id=$1",[p.variant]),0);
+    assert.deepEqual((await carts.getCart(who.headers)).cart.paymentMethods,["manual"]);
+  }finally{await setDemo(true);}
+});
