@@ -55,7 +55,7 @@ The owner gave the go, but chose "prepare, don't switch yet" and "don't touch Od
 |---|---|
 | Stack | Compose project `grmn` from `deploy/compose.yml`, images `grmn:5198127` / `grmn-ops:5198127`. Proxy on `127.0.0.1:58543` (HTTPS) and `:58580` (HTTP→HTTPS) only |
 | Private files | `/home/nick/grmn-production/` (chmod 700): `production.env` (generated secrets, Telegram token), `backup/`, `tls/` (**self-signed placeholder, 30 days**), `logs/`, `receipts/`, `staff-credentials.json` (the 4 passwords; hand over, then delete) |
-| Database | Migrations 0000–0018. Import `completed`: 0 mismatches, 0 blockers; products, orders, customers and users 0; 17 content pages (drafts except none published yet); 258 archived |
+| Database | Migrations 0000–0018. Import `completed`: 0 mismatches, 0 blockers; products, orders, customers and users 0; 17 content pages, all drafts; 258 archived |
 | Store | Created **closed** (maintenance on). VAT 16% inclusive, delivery 1,500 KZT below 30,000 KZT and free from 30,000, trilingual Kaspi instructions, 48 h hold |
 | Staff | `admin@garmin.kz` (super_admin), `owner@`, `products@` (product_manager), `support@`. All 4 sign in. MFA is **not** enrolled: each person enrolls at first admin sign-in |
 | Telegram | Worker job running (cursor initialized 09:53:54 UTC). Connection test message sent to "Garmin orders" |
