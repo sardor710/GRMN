@@ -23,6 +23,9 @@ const sourcePriceInput = z.object({currency:z.literal("USD"),list:money,sale:mon
 const productVariantInput = z.object({id,sku:short,title:short,selections:z.record(id,id),price:money,originalPrice:money.optional(),stock:count,status:z.enum(["draft","active","archived"]),isDefault:z.boolean(),imageIds:z.array(id).max(200),sourcePartNumber:short.optional(),sourcePrice:sourcePriceInput.optional()}).strict();
 const specGroupInput = z.object({title:short,items:z.array(z.object({label:short,value:text}).strict()).max(500)}).strict();
 const productSourceInput = z.object({provider:z.literal("garmin"),url:link,productId:short,partNumber:short,importedAt:short}).strict();
+// The PostgreSQL admin route keeps exact money lexemes, so its variant prices may arrive as decimal text.
+const variantMoney = z.union([money, z.string().regex(/^(0|[1-9][0-9]{0,13})(\.[0-9]{1,2})?$/)]);
+export const exactMoneyVariantInput = productVariantInput.extend({price:variantMoney,originalPrice:variantMoney.optional()});
 export const productInput = z.object({
   id: id.optional(), name: short.min(1), price: money, sku: short.optional(), originalPrice: money.optional(), priceSuffix: short.optional(),
   description: text.optional(), image: link.optional(), badge: short.optional(), family: short.optional(), category: short.optional(), subCategory: short.optional(),

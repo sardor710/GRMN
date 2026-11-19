@@ -4,7 +4,7 @@ import type { Pool, PoolClient } from "pg";
 import { z } from "zod";
 import type { Permission, Principal } from "../context.ts";
 import { AuthFailure } from "../auth/config.ts";
-import { adminDTO, productInput, blogInput, bannerInput, homepageInput } from "../auth/admin-schemas.ts";
+import { adminDTO, productInput, blogInput, bannerInput, homepageInput, exactMoneyVariantInput } from "../auth/admin-schemas.ts";
 import { plainText, sanitizeRichText } from "../content/sanitize.ts";
 import { CONTENT_INVALIDATE_KIND } from "../content/events.ts";
 import { appendOutboxEvent } from "../operations/outbox.ts";
@@ -33,7 +33,7 @@ const money = z.union([z.string(),z.number()]).transform((value,ctx) => {
 });
 // Task 24: ru/kk translation overlays (record.translations) are stored in product_translations and
 // page_version_translations (migration 0019), validated and merged per locale like the legacy CMS.
-const productCommand = productInput.extend({id:identity.optional(),version:version.optional(),price:money,originalPrice:money.nullable().optional(),sku:z.string().trim().min(1).max(128)}).strict();
+const productCommand = productInput.extend({variants:z.array(exactMoneyVariantInput).max(500).optional(),id:identity.optional(),version:version.optional(),price:money,originalPrice:money.nullable().optional(),sku:z.string().trim().min(1).max(128)}).strict();
 const blogCommand = blogInput.extend({id:z.uuid().optional(),version:version.optional(),slug:z.string().trim().max(200).regex(/^[\p{L}\p{N}_-]*$/u).optional(),draft:z.boolean().optional()}).strict();
 // Task 18A: draft:true saves a new version without changing what is live (draft isolation).
 const bannerCommand = bannerInput.extend({id:z.uuid().optional(),version:version.optional(),draft:z.boolean().optional()}).strict();

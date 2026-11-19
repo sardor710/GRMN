@@ -152,3 +152,14 @@ test("a garmin.com import (fēnix 9 fixture) saves into PostgreSQL and is sellab
   for(const v of detail.variants){assert.ok(Number(v.price.selling.amountMinor)>0);assert.ok(v.gallery.length>=1,v.sku);}
   assert.ok(detail.specGroups.length>0); assert.ok(detail.overviewHtml.length>0);
 });
+
+test("admin HTTP: a variant product posted as JSON (money kept as exact text) saves and projects",async()=>{
+  const cms=await service(),{createCMSHTTP}=await import("../../src/server/cms/http.ts");
+  const http=createCMSHTTP({cms,authorize,baseURL:config.baseURL,dimensionSpecs:{},defaults:()=>home});
+  const body=JSON.stringify(variantProduct("VAR-H")).replace('"price":110000','"price":110000.5');
+  const response=await http.handle("products",new Request(config.baseURL+"/api/admin/products",{method:"POST",headers:new Headers([...admin,["origin",config.baseURL],["content-type","application/json"]]),body}));
+  assert.equal(response.status,200,await response.clone().text());
+  const saved=(await response.json()).product;
+  const prices=(await rows("SELECT v.sku,pr.amount_minor::text AS a FROM product_variants v JOIN prices pr ON pr.variant_id=v.id AND pr.is_active JOIN products p ON p.id=v.product_id WHERE p.public_key=$1 ORDER BY v.sku",[saved.id])).map(r=>r.a);
+  assert.deepEqual(prices,["10000000","11000050","10000000","12000000"]);
+});

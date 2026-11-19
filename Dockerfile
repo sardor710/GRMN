@@ -109,6 +109,10 @@ COPY --from=builder --chown=node:node /app/.next/static ./.next/static
 # cached responses are available immediately on startup, uncomment this line:
 # COPY --from=builder --chown=node:node /app/.next/cache ./.next/cache
 
+# The media volume (/media: CMS media, editor uploads, garmin.com import photos) must be writable by
+# the app user; a new named volume takes this ownership from the image.
+RUN mkdir -p /media/uploads && chown -R node:node /media
+
 # Switch to non-root user for security best practices
 USER node
 
@@ -131,7 +135,7 @@ COPY --chown=node:node drizzle ./drizzle
 COPY --chown=node:node src ./src
 COPY --chown=node:node scripts ./scripts
 COPY --chown=node:node public ./public
-RUN mkdir -p temp && chown node:node temp
+RUN mkdir -p temp /media/uploads && chown node:node temp && chown -R node:node /media
 USER node
 CMD ["node", "--conditions=react-server", "scripts/workers/outbox-worker.mjs"]
 
