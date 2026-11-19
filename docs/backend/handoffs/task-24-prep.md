@@ -124,3 +124,8 @@ The image needs the public origin at build time: `docker build --build-arg NEXT_
 - **The backup job's prune step failed** once production held more than 2 base backups: it ran as the host user and could not read files owned by PostgreSQL (uid 999). The base and media backups had already succeeded; the pre-migration base `20261119T110346Z` is intact.
 - **Fix:** `scheduled.sh` runs `prune.sh` inside the db container. `prune.sh` also no longer aborts when a base lacks a `backup_label`.
 - The job was re-run and passed with exit 0.
+
+**Password-only staff sign-in deployed (2026-11-19, owner):**
+- `grmn:af156ef` is live with `STAFF_MFA_REQUIRED=0`, after a pre-release backup (exit 0).
+- Verified on garmin.tigr.uz: `admin@garmin.kz` signs in with its password (`mfaRequired:false`); the admin page, orders and settings answer 200, and the maintenance bypass (settings:write) is issued.
+- To restore the authenticator later: set `STAFF_MFA_REQUIRED=1` in `production.env` and `up -d --force-recreate app worker proxy`.
