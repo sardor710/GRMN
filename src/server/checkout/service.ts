@@ -11,6 +11,7 @@ import { appendOutboxEvent } from "../operations/outbox.ts";
 import type { PaymentMethodCode } from "../../contracts/commerce.ts";
 import type { PaymentProvider, PaymentProviders } from "../payments/provider.ts";
 import { createManualProvider } from "../payments/manual-provider.ts";
+import { availablePaymentMethods } from "../payments/demo-mode.ts";
 
 // Task 14A. Idempotent checkout inside the exact plan Section 6 boundary, in ONE short
 // transaction with no network call: claim the idempotency key (checkout_attempts), lock the cart
@@ -131,13 +132,14 @@ async function enforceUnpaidLimit(client: PoolClient, userId: string | null, add
 /**
  * Places a pending order for the actor's quoted cart revision. A repeated key returns the original
  * order. "manual" (O07) is real checkout: staff confirm the payment later, and the stock and coupon
- * are held for the configured manual hold. "demo" is for tests and development only (`allowDemo`
- * false refuses it). kaspi/secondary need a registered real provider (Task 14B; none yet, D03).
+ * are held for the configured manual hold. "demo" is the simulated method of the "Demo checkout"
+ * setting (Task 3.1): while demo checkout is on only demo is accepted, while it is off only manual
+ * (PAYMENT_METHOD_UNAVAILABLE otherwise, before anything is claimed or reserved).
+ * kaspi/secondary need a registered real provider (Task 14B; none yet, D03).
  */
-export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActor, idempotencyKey: string, input: unknown, options: { payments?: PaymentProviders; allowDemo?: boolean; clientAddress?: string | null } = {}): Promise<CheckoutResultDTO> {
+export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActor, idempotencyKey: string, input: unknown, options: { payments?: PaymentProviders; clientAddress?: string | null } = {}): Promise<CheckoutResultDTO> {
   if (typeof idempotencyKey !== "string" || !IDEMPOTENCY_KEY.test(idempotencyKey)) invalid();
   const command = parse(checkoutInput, input);
-  if (command.paymentMethod === "demo" && options.allowDemo === false) fail("PAYMENT_UNAVAILABLE", 409, "This payment method is not available");
   const provider: PaymentProvider | null = command.paymentMethod === "demo" ? null
     : command.paymentMethod === "manual" ? options.payments?.get("manual") ?? createManualProvider()
     : options.payments?.get(command.paymentMethod) ?? null;
@@ -151,6 +153,10 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
   return withInventoryTransaction(pool, async client => {
     const replayed = await replay(client, secret, scope, idempotencyKey, requestHash);
     if (replayed) return replayed;
+    // Task 3.1: demo and manual are never offered together. A retried key still replays its order
+    // above after the setting changed; a new checkout must use the method offered now.
+    if ((command.paymentMethod === "demo" || command.paymentMethod === "manual") && !(await availablePaymentMethods(client)).includes(command.paymentMethod))
+      fail("PAYMENT_METHOD_UNAVAILABLE", 409, "This payment method is not available");
 
     // The quote must belong to one of the actor's own carts: a session uses its account cart, a guest its capability cart.
     const owned = (await client.query<{ cart_id: string; cart_version: number }>(
