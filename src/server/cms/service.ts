@@ -24,6 +24,12 @@ const json = (value: unknown) => JSON.stringify(value);
 const record = (value: unknown): Record<string, unknown> => value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string,unknown> : {};
 const version = z.number().int().min(1).max(2147483646);
 const identity = z.string().trim().min(1).max(128);
+type ProductStatus = "published" | "draft" | "archived";
+type BulkAction = "publish" | "draft" | "archive" | "delete";
+export type BulkResult = { id: string; ok: true; version?: number } | { id: string; ok: false; code: string; message: string };
+const BULK_STATUS: Record<Exclude<BulkAction, "delete">, ProductStatus> = { publish: "published", draft: "draft", archive: "archived" };
+const statusCommand = z.object({ id: identity, version, status: z.enum(["published", "draft", "archived"]) }).strict();
+const bulkCommand = z.object({ action: z.enum(["publish", "draft", "archive", "delete"]), items: z.array(z.object({ id: identity, version }).strict()).min(1).max(100) }).strict();
 const money = z.union([z.string(),z.number()]).transform((value,ctx) => {
   const text=String(value), match=/^(0|[1-9][0-9]*)(?:\.([0-9]{1,2}))?$/.exec(text);
   if(!match){ctx.addIssue({code:"custom",message:"Use exact KZT with at most two decimal places"});return z.NEVER;}
@@ -95,6 +101,20 @@ export function createCMSService({pool,authorize}:Options) {
     try{await client.query("BEGIN");const result=await action(client);await client.query("COMMIT");return result;}
     catch(error){try{await client.query("ROLLBACK");}catch{broken=true;}if((error as {code?:string}).code==="23505")return fail("CONFLICT",409,"Identity or SKU already exists");throw error;}
     finally{client.release(broken);}
+  }
+  async function setStatusIn(client:PoolClient,principal:Principal,data:{id:string;version:number;status:ProductStatus}){
+    const old=(await client.query(`${productSelect} WHERE p.public_key=$1 FOR UPDATE OF p`,[data.id])).rows[0];
+    if(!old)return fail("NOT_FOUND",404,"Product was not found");
+    if(data.version!==Number(old.version))return fail("VERSION_CONFLICT",409,"Product changed; reload before saving");
+    // The column and the editor document keep the same status, like save.
+    await client.query("UPDATE products SET status=$2,legacy_content=jsonb_set(legacy_content,'{status}',to_jsonb($2::text)),version=version+1,updated_at=clock_timestamp() WHERE id=$1",[old.id,data.status]);
+    const meta=record(old.legacy_content);
+    // Archiving mirrors archive(): the projection would clear is_default on the only variant and hide the product from every admin read.
+    if(data.status!=="archived")await projectProduct(client,old.id,{status:data.status,sku:old.sku,priceMinor:String(old.amount_minor??"0"),compareMinor:old.compare_at_minor==null?null:String(old.compare_at_minor),
+      options:(Array.isArray(meta.options)?meta.options:[]) as ProductDocument["options"],variants:(Array.isArray(meta.variants)?meta.variants:[]) as ProductDocument["variants"],
+      images:(Array.isArray(meta.images)?meta.images:[]) as ProductDocument["images"],defaultImageId:typeof meta.defaultImageId==="string"?meta.defaultImageId:undefined});
+    await audit(client,principal,"cms.saved",entityTypes.products,old.id,["status"],Number(old.version),Number(old.version)+1);
+    return{id:data.id,version:Number(old.version)+1,status:data.status};
   }
   async function actor(headers:Headers,resource:CMSResource,write=false){return authorize(headers,permissions[resource][write?1:0]);}
   async function audit(client:PoolClient,principal:Principal,action:string,type:string,id:string,fields:string[],oldVersion:number,newVersion:number){
@@ -260,6 +280,26 @@ export function createCMSService({pool,authorize}:Options) {
         await audit(client,principal,"cms.deleted",entityTypes.products,id,["permanent"],expected,expected);
         return{deleted:true as const};
       });
+    },
+    /** Status-only change (list dropdown and bulk bar): same lock, version check, column + document + projection as save. */
+    async setProductStatus(headers:Headers,raw:{id:string;version:number;status:ProductStatus}):Promise<{id:string;version:number;status:string}>{
+      const principal=await actor(headers,"products",true);const data=parse(statusCommand,raw);
+      return tx(client=>setStatusIn(client,principal,data));
+    },
+    /** Up to 100 products, each in its own transaction, so one stale row never blocks the others. */
+    async bulkProducts(headers:Headers,raw:{action:BulkAction;items:{id:string;version:number}[]}):Promise<{results:BulkResult[]}>{
+      const principal=await actor(headers,"products",true);const data=parse(bulkCommand,raw);
+      const results:BulkResult[]=[],action=data.action;
+      for(const item of data.items){
+        try{
+          if(action==="delete"){await this.deleteProduct(headers,item.id,item.version);results.push({id:item.id,ok:true});}
+          else{const done=await tx(client=>setStatusIn(client,principal,{...item,status:BULK_STATUS[action]}));results.push({id:item.id,ok:true,version:done.version});}
+        }catch(error){
+          if(error instanceof AuthFailure)results.push({id:item.id,ok:false,code:error.code,message:error.message});
+          else results.push({id:item.id,ok:false,code:"INTERNAL_ERROR",message:"Product could not be updated"});
+        }
+      }
+      return{results};
     },
     async archive(resource:CMSResource,headers:Headers,id:string,expected:number){
       const principal=await actor(headers,resource,true);parse(version,expected);parse(resource==="products"?identity:z.uuid(),id);
