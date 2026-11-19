@@ -25,12 +25,21 @@ import {
   generateBlogSEOMeta,
 } from "@/lib/seo/analyzer";
 import type { CMSProduct, CMSBlog } from "@/lib/cms/types";
+import { LocaleTabs, type ContentLocale } from "@/components/admin/LocaleTabs";
+import { TranslationField } from "@/components/admin/TranslationField";
+import { translationStatus } from "@/lib/cms/translation-input";
+import { getOverlayString, setOverlayValue } from "@/lib/cms/translation-edit";
+
+/** The quick editor translates only the SEO pair; the RU/KK dot counts those two fields. */
+const SEO_FIELDS = ["seoTitle", "seoDescription"] as const;
 
 export default function AdminSEOPage({permissions}: {permissions: readonly string[]}) {
   const productPage=useAdminCollection<CMSProduct>("products");
   const blogPage=useAdminCollection<CMSBlog>("blogs");
   const products=productPage.items, blogs=blogPage.items, loading=productPage.loading||blogPage.loading;
   const fetchData=()=>{productPage.reload();blogPage.reload();};
+  // ru/kk SEO overlays are stored by the legacy JSON CMS only.
+  const translatable = productPage.backend !== "postgres" && blogPage.backend !== "postgres";
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState<"all" | "product" | "blog" | "needs_work">("all");
   const [activeTab, setActiveTab] = useState<"audit" | "sitemap" | "robots" | "schema">("audit");
@@ -43,6 +52,14 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
     type: "product" | "blog";
     data: CMSProduct | CMSBlog;
   } | null>(null);
+  const [seoLocale, setSeoLocale] = useState<ContentLocale>("en");
+  const [seoSaveError, setSeoSaveError] = useState("");
+
+  const openSeoEditor = (item: { type: "product" | "blog"; data: CMSProduct | CMSBlog }) => {
+    setSeoLocale("en");
+    setSeoSaveError("");
+    setEditingItem(item);
+  };
 
 
   // Current-page Audit Report
@@ -89,14 +106,16 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
     seoTitle:string;seoDescription:string;focusKeywords:string[];canonicalUrl?:string;noIndex?:boolean;ogImage?:string;
   }) => {
     if(!editingItem)return;
-    setActionError("");setSuccessToast("");
+    setActionError("");setSuccessToast("");setSeoSaveError("");
     if(!canEditSeo(editingItem.type,permissions)){setActionError("Your current permissions do not allow this metadata change.");return;}
     try {
-      await saveSeoMetadata(fetch,editingItem.type,editingItem.data.id,updates,editingItem.data.version);
+      // editingItem.data carries `translations` (RU/KK SEO edits); the legacy API merges them per locale.
+      const translations = translatable && editingItem.data.translations ? { translations: editingItem.data.translations } : {};
+      await saveSeoMetadata(fetch,editingItem.type,editingItem.data.id,{...updates,...translations},editingItem.data.version);
       setEditingItem(null);
       await fetchData();
       setSuccessToast("SEO metadata saved.");
-    }catch(failure){setActionError(failure instanceof Error?failure.message:"SEO metadata could not be saved.");}
+    }catch(failure){setSeoSaveError(failure instanceof Error?failure.message:"SEO metadata could not be saved.");}
   };
 
   const scoreBadgeColor =
@@ -437,10 +456,10 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
                               if (!canEditSeo(page.type==="product"?"product":"blog",permissions)) return;
                               if (page.type === "product") {
                                 const prod = products.find((p) => p.id === page.id);
-                                if (prod) setEditingItem({ type: "product", data: prod });
+                                if (prod) openSeoEditor({ type: "product", data: prod });
                               } else {
                                 const blog = blogs.find((b) => b.id === page.id);
-                                if (blog) setEditingItem({ type: "blog", data: blog });
+                                if (blog) openSeoEditor({ type: "blog", data: blog });
                               }
                             }}
                             className="px-3 py-1.5 bg-white hover:bg-neutral-100 text-neutral-800 border border-neutral-300 rounded-none text-xs font-semibold uppercase tracking-wider inline-flex items-center gap-1.5 transition-colors"
@@ -611,6 +630,53 @@ Sitemap: https://www.garmin.com/sitemap.xml`}
           maxWidth="4xl"
         >
           <div className="space-y-6">
+            {translatable && <LocaleTabs
+              value={seoLocale}
+              onChange={setSeoLocale}
+              status={{
+                ru: translationStatus(editingItem.data, "ru", SEO_FIELDS),
+                kk: translationStatus(editingItem.data, "kk", SEO_FIELDS),
+              }}
+            />}
+            {seoLocale !== "en" ? (
+              <div className="space-y-4">
+                <TranslationField
+                  label="SEO title"
+                  field="seoTitle"
+                  value={getOverlayString(editingItem.data.translations, seoLocale, ["seoTitle"])}
+                  source={editingItem.data.seoTitle}
+                  onChange={(v) =>
+                    setEditingItem({
+                      type: editingItem.type,
+                      data: {
+                        ...editingItem.data,
+                        translations: setOverlayValue(editingItem.data.translations, seoLocale, ["seoTitle"], v),
+                      },
+                    })
+                  }
+                />
+                <TranslationField
+                  label="SEO description"
+                  field="seoDescription"
+                  multiline
+                  rows={3}
+                  value={getOverlayString(editingItem.data.translations, seoLocale, ["seoDescription"])}
+                  source={editingItem.data.seoDescription}
+                  onChange={(v) =>
+                    setEditingItem({
+                      type: editingItem.type,
+                      data: {
+                        ...editingItem.data,
+                        translations: setOverlayValue(editingItem.data.translations, seoLocale, ["seoDescription"], v),
+                      },
+                    })
+                  }
+                />
+                <p className="text-[11px] text-neutral-500">
+                  Focus keywords, canonical URL, robots and social image are shared across languages — edit them in the EN tab.
+                </p>
+              </div>
+            ) : (
             <SEOEditor
               type={editingItem.type}
               nameOrTitle={
@@ -655,6 +721,13 @@ Sitemap: https://www.garmin.com/sitemap.xml`}
                 });
               }}
             />
+            )}
+
+            {seoSaveError && (
+              <p role="alert" className="border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+                {seoSaveError}
+              </p>
+            )}
 
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-neutral-200">
               <button

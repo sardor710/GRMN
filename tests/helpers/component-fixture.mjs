@@ -1,5 +1,28 @@
 import fs from "node:fs";
 import ts from "typescript";
+import { createTranslator } from "use-intl/core";
+import * as i18nFormat from "../../src/i18n/format.js";
+import * as i18nConfig from "../../src/i18n/config.js";
+import { localizeHref } from "../../src/i18n/routing.js";
+import * as translationInput from "../../src/lib/cms/translation-input.js";
+import * as translationEdit from "../../src/lib/cms/translation-edit.ts";
+import * as translateRecord from "../../src/i18n/translate-record.js";
+import * as seoCore from "../../src/i18n/seo-core.js";
+
+// Storefront components read their text through next-intl. Fixtures render with the real English
+// catalog so assertions keep reading the English interface (ru/kk are covered by the i18n tests).
+const enMessages = JSON.parse(fs.readFileSync(new URL("../../messages/en.json", import.meta.url), "utf8"));
+const i18nModules = {
+  "next-intl": { useTranslations: namespace => createTranslator({ locale: "en", messages: enMessages, namespace }), useLocale: () => "en" },
+  "@/i18n/useAppLocale": { useAppLocale: () => "en" },
+  "@/i18n/useLocalizeHref": { useLocalizeHref: () => href => localizeHref(href, "en") },
+  "@/i18n/format": i18nFormat,
+  "@/i18n/config": i18nConfig,
+  "@/i18n/seo": seoCore,
+  "@/i18n/translate-record": translateRecord,
+  "@/lib/cms/translation-input": translationInput,
+  "@/lib/cms/translation-edit": translationEdit,
+};
 
 // Execute the real component's handlers and JSX against synthetic state. No DOM,
 // CMS files, sessions or network are replaced with real user data.
@@ -10,7 +33,7 @@ export function componentFixture(file,{backend="postgres",items=[],fetcher=async
   const jsx={jsx:(type,props)=>({type,props}),jsxs:(type,props)=>({type,props})};
   const output={};const code=ts.transpileModule(fs.readFileSync(file,"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true,target:ts.ScriptTarget.ES2022}}).outputText;
   new Function("require","exports","fetch","confirm","setTimeout",code)(name=>{
-    if(name in modules)return modules[name];if(name==="react")return hooks;if(name==="react/jsx-runtime")return jsx;
+    if(name in modules)return modules[name];if(name in i18nModules)return i18nModules[name];if(name==="react")return hooks;if(name==="react/jsx-runtime")return jsx;
     if(name.includes("useAdminCollection"))return{useAdminCollection:(resource,input)=>collectionFactory?collectionFactory(resource,input,collection):collection};
     if(name.includes("admin-collection"))return{writeAdminRecord:async(_fetch,resource,body,method)=>{writes.push({resource,body,method});return{success:true};},archiveAdminRecord:async()=>({success:true})};
     return{};

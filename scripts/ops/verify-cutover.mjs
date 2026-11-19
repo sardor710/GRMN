@@ -90,18 +90,21 @@ if (opt("--create-product")) {
   const key = product?.slug ?? product?.id;
   if (key) products.push(key);
   // The admin product DTO carries no variant ids; the storefront page does (as a shopper's browser sees it).
-  const page = key ? await call(customer, "GET", `/p/${encodeURIComponent(key)}`) : { text: "" };
+  const page = key ? await call(customer, "GET", `/ru/p/${encodeURIComponent(key)}`) : { text: "" };
   createdVariant = page.text.match(/selectedVariantId\\?":\\?"([0-9a-f-]{36})/)?.[1] ?? page.text.match(/variants\\?":\[\{\\?"id\\?":\\?"([0-9a-f-]{36})/)?.[1];
   check("created product page offers a sellable variant", Boolean(createdVariant), `page ${page.status ?? "-"}`);
 }
 
 // 3. Public pages through the bypass.
-const pages = ["/", "/c/wearables-smartwatches", "/c/wearables-smartwatches?sort=price-asc", "/c/wearables-smartwatches?sort=price-desc", "/c/wearables-smartwatches?search=a", "/robots.txt", "/sitemap.xml"];
+// Every public page carries a language prefix (en/ru/kk); unprefixed paths redirect (307) to one.
+const root = await call(customer, "GET", "/");
+check("unprefixed / redirects to a language", root.status === 307 && /^\/(en|ru|kk)(\/|$)/.test(new URL(root.headers.get("location") ?? "/", BASE).pathname), `status ${root.status} → ${root.headers.get("location")}`);
+const pages = ["/en", "/ru", "/kk", "/ru/c/wearables-smartwatches", "/kk/c/wearables-smartwatches?sort=price-asc", "/en/c/wearables-smartwatches?sort=price-desc", "/ru/c/wearables-smartwatches?search=a", "/ru/blog", "/ru/cart", "/robots.txt", "/sitemap.xml"];
 for (const path of pages) { const r = await call(customer, "GET", path); check(`page ${path}`, r.status === 200, `status ${r.status}`); }
 const sitemap = await call(customer, "GET", "/sitemap.xml");
 for (const key of products) {
-  const r = await call(customer, "GET", `/p/${encodeURIComponent(key)}`);
-  check(`product /p/${key}`, r.status === 200, `status ${r.status}`);
+  const r = await call(customer, "GET", `/ru/p/${encodeURIComponent(key)}`);
+  check(`product /ru/p/${key}`, r.status === 200, `status ${r.status}`);
   check(`product ${key} has a canonical link`, /<link[^>]+rel="canonical"/.test(r.text));
   check(`product ${key} is in the sitemap`, sitemap.text.includes(`/p/${encodeURIComponent(key)}`));
   const images = [...new Set([...r.text.matchAll(/(?:src|srcSet|srcset)="(\/images\/[^" ?]+)/g)].map(m => m[1]))].slice(0, 5);
@@ -179,7 +182,7 @@ if (args.includes("--open")) {
     const opened = await call(staff, "PUT", "/api/admin/settings", { body: { expectedVersion: settings.json?.version, maintenanceMode: false } });
     check("staff turn maintenance off", opened.status === 200 && opened.json?.maintenanceMode === false, `status ${opened.status}`);
     await new Promise(r => setTimeout(r, 6000));
-    const visitor = jar(), home = await call(visitor, "GET", "/"), cart = await call(visitor, "GET", "/api/cart");
+    const visitor = jar(), home = await call(visitor, "GET", "/ru"), cart = await call(visitor, "GET", "/api/cart");
     check("reopened: a customer without the bypass gets the store", home.status === 200 && cart.status === 200, `home ${home.status}, cart ${cart.status}`);
   }
 }

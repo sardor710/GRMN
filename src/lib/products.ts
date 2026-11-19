@@ -6,36 +6,40 @@ import { catalogCardView } from "@/lib/public-catalog";
 import type { ProductQuery } from "@/contracts/commerce";
 import type { CMSProduct } from "@/lib/cms/types";
 import { usesCmsDetail } from "@/lib/cms/product-variants";
+import type { Locale } from "@/i18n/config";
+import { localizeProduct } from "@/i18n/translate-record";
 
 
-export { watchFamilies, products, activityFilters, levelFilters, caseSizeFilters } from "./public-products";
+export { watchFamilies, products } from "./public-products";
+export { activityFilters, levelFilters, caseSizeFilters, filterLabelKey, type FilterOption } from "./catalog-constants";
 
 export interface CatalogueDef {
   slug: string;
-  title: string;
-  heading: string;
+  /** Message keys (`CataloguePage.*`), resolved with `t()` where rendered. */
+  titleKey: string;
+  headingKey: string;
   showFamilies: boolean;
-  hero?: { image: string; label: string; blurb: string };
+  hero?: { image: string; labelKey: string; blurbKey: string };
   filter: (p: Product) => boolean;
 }
 
 export const catalogues: CatalogueDef[] = [
   {
     slug: "wearables-smartwatches",
-    title: "Smartwatches",
-    heading: "ALL SMARTWATCHES",
+    titleKey: "CataloguePage.smartwatches.title",
+    headingKey: "CataloguePage.smartwatches.heading",
     showFamilies: true,
     filter: () => true,
   },
   {
     slug: "sports-fitness/running-smartwatches",
-    title: "GPS Running Watches",
-    heading: "ALL RUNNING SMARTWATCHES",
+    titleKey: "CataloguePage.running.title",
+    headingKey: "CataloguePage.running.heading",
     showFamilies: false,
     hero: {
       image: "/images/74662-sports-and-fitness-pod.jpg",
-      label: "SPORTS & FITNESS",
-      blurb: "Running Smartwatches",
+      labelKey: "CataloguePage.running.heroLabel",
+      blurbKey: "CataloguePage.running.heroBlurb",
     },
     filter: (p) => p.activities.includes("Running"),
   },
@@ -49,30 +53,36 @@ function publicProduct(cp: CMSProduct): Product {
   return {currency:cp.currency??"USD",purchasable:cp.stockManaged===false?false:undefined,id:cp.id,name:cp.name,price:cp.price,priceSuffix:cp.priceSuffix,description:cp.description,image:cp.image,badge:cp.badge&&cp.badge!=="NONE"?cp.badge:undefined,family:cp.family,activities:cp.activities,level:cp.level,caseSize:cp.caseSize};
 }
 export const defaultProductQuery:ProductQuery={market:"default",locale:"en",displayCurrency:"KZT"};
-export async function getAllProducts(): Promise<Product[]> {
-  if(cmsBackend()==="postgres")return (await getCatalogService().listProducts(defaultProductQuery,{limit:100})).items.map(p=>catalogCardView(p));
-  return (await readProductsPage({limit:100})).items.map(publicProduct);
+/** Product query for a storefront locale (the PostgreSQL catalog has no translations yet, so it returns English text). */
+function queryFor(locale:Locale):ProductQuery{return locale===defaultProductQuery.locale?defaultProductQuery:{...defaultProductQuery,locale};}
+/** Legacy CMS records carry `translations`; overlay the visitor's language (blank fields fall back to English). */
+function localized(cp:CMSProduct,locale:Locale):CMSProduct{return locale==="en"?cp:localizeProduct(cp,locale);}
+export async function getAllProducts(locale:Locale="en"): Promise<Product[]> {
+  if(cmsBackend()==="postgres")return (await getCatalogService().listProducts(queryFor(locale),{limit:100})).items.map(p=>catalogCardView(p));
+  return (await readProductsPage({limit:100})).items.map(cp=>publicProduct(localized(cp,locale)));
 }
-export async function getProductsByKeys(keys:string[]):Promise<Product[]> {
-  if(cmsBackend()==="postgres")return (await getCatalogService().getProductsByKeys(keys,defaultProductQuery)).items.map(p=>catalogCardView(p));
-  return (await Promise.all(keys.slice(0,100).map(getProduct))).filter((p):p is Product=>p!==undefined);
+export async function getProductsByKeys(keys:string[],locale:Locale="en"):Promise<Product[]> {
+  if(cmsBackend()==="postgres")return (await getCatalogService().getProductsByKeys(keys,queryFor(locale))).items.map(p=>catalogCardView(p));
+  return (await Promise.all(keys.slice(0,100).map(key=>getProduct(key,locale)))).filter((p):p is Product=>p!==undefined);
 }
-export async function catalogueProducts(def:CatalogueDef,input:Partial<ProductQuery>&{cursor?:string}={}) {
+export async function catalogueProducts(def:CatalogueDef,input:Partial<ProductQuery>&{cursor?:string}={},locale:Locale="en") {
   const {cursor,...filters}=input;
-  const query:ProductQuery={...defaultProductQuery,...filters,...(def.slug.includes("running-smartwatches")?{activitiesAll:["running"]}:{})};
+  const query:ProductQuery={...queryFor(locale),...filters,...(def.slug.includes("running-smartwatches")?{activitiesAll:["running"]}:{})};
   if(cmsBackend()==="postgres"){const page=await getCatalogService().listProducts(query,{limit:24,cursor});return{items:page.items.map(p=>catalogCardView(p,query.displayCurrency)),nextCursor:page.nextCursor};}
-  const page=await readProductsPage({limit:24,cursor,...filters,...(def.slug.includes("running-smartwatches")?{activitiesAll:["running"]}:{})});return {items:page.items.map(publicProduct),nextCursor:page.nextCursor};
+  const page=await readProductsPage({limit:24,cursor,...filters,...(def.slug.includes("running-smartwatches")?{activitiesAll:["running"]}:{})});return {items:page.items.map(cp=>publicProduct(localized(cp,locale))),nextCursor:page.nextCursor};
 }
 
 // Back-compat: simple metadata lookup keyed by slug.
-export const catalogueMeta: Record<string, { title: string; heading: string }> = Object.fromEntries(
-  catalogues.map((c) => [c.slug, { title: c.title, heading: c.heading }]),
+export const catalogueMeta: Record<string, { titleKey: string; headingKey: string }> = Object.fromEntries(
+  catalogues.map((c) => [c.slug, { titleKey: c.titleKey, headingKey: c.headingKey }]),
 );
 
-export async function getCMSProduct(id:string){return cmsBackend()==="legacy"?readProduct(id):undefined;}
-export async function getProduct(id:string):Promise<Product|undefined> {
+/** Untranslated CMS record (English source plus its `translations` overlay), legacy backend only. */
+export async function getRawCMSProduct(id:string):Promise<CMSProduct|undefined>{return cmsBackend()==="legacy"?readProduct(id):undefined;}
+export async function getCMSProduct(id:string,locale:Locale="en"){const raw=await getRawCMSProduct(id);return raw?localized(raw,locale):undefined;}
+export async function getProduct(id:string,locale:Locale="en"):Promise<Product|undefined> {
   if(cmsBackend()==="postgres"){const found=await getCatalogService().getProductByPublicKey(id,"default","KZT");return found?catalogCardView(found):undefined;}
-  const found=await readProduct(id);return found?publicProduct(found):undefined;
+  const found=await readProduct(id);return found?publicProduct(localized(found,locale)):undefined;
 }
 
 
@@ -222,7 +232,7 @@ export const fenix8Detail: ProductDetail = {
 };
 
 // Build a functional detail page for products without hand-authored data.
-async function buildFallbackDetail(p: Product): Promise<ProductDetail> {
+async function buildFallbackDetail(p: Product, locale: Locale): Promise<ProductDetail> {
   let specs = [
     { label: "Family", value: p.family },
     { label: "Level", value: p.level },
@@ -232,7 +242,8 @@ async function buildFallbackDetail(p: Product): Promise<ProductDetail> {
   let inTheBox = [p.name, "Charging/data cable", "Documentation"];
   let gallery = [{ view: "Front", src: p.image }];
 
-  const found=await readProduct(p.id);
+  const raw=await readProduct(p.id);
+  const found=raw?localized(raw,locale):undefined;
   if(found?.specs?.length)specs=found.specs;
   if(found?.inTheBox?.length)inTheBox=found.inTheBox;
   // Photos uploaded in the admin show on the legacy page too (default photo first).
@@ -268,7 +279,7 @@ async function buildFallbackDetail(p: Product): Promise<ProductDetail> {
     ],
     specs,
     inTheBox,
-    related: (await getAllProducts())
+    related: (await getAllProducts(locale))
       .filter((x) => x.id !== p.id && x.family === p.family)
       .slice(0, 4)
       .map((x) => x.id),
@@ -276,7 +287,7 @@ async function buildFallbackDetail(p: Product): Promise<ProductDetail> {
 }
 
 /** Storefront detail for CMS products that use the media/options/variants model. */
-export async function buildDetailFromCms(p: CMSProduct): Promise<ProductDetail> {
+export async function buildDetailFromCms(p: CMSProduct, locale: Locale = "en"): Promise<ProductDetail> {
   const images = p.images || [];
   const ordered = [
     ...images.filter((i) => i.id === p.defaultImageId),
@@ -308,7 +319,7 @@ export async function buildDetailFromCms(p: CMSProduct): Promise<ProductDetail> 
     features: p.features || [],
     specs: p.specs || [],
     inTheBox: p.inTheBox || [],
-    related: (await getAllProducts())
+    related: (await getAllProducts(locale))
       .filter((x) => x.id !== p.id && x.family === p.family)
       .slice(0, 4)
       .map((x) => x.id),
@@ -319,7 +330,7 @@ export async function buildDetailFromCms(p: CMSProduct): Promise<ProductDetail> 
 }
 
 
-export async function getProductDetail(id: string): Promise<ProductDetail | undefined> {
+export async function getProductDetail(id: string, locale: Locale = "en"): Promise<ProductDetail | undefined> {
   if(cmsBackend()==="postgres"){
     const detail=await getCatalogService().getProductByPublicKey(id,"default","KZT");if(!detail)return undefined;
     const view=catalogCardView(detail),editorial=id==="1228429"?fenix8Detail:undefined;
@@ -329,11 +340,11 @@ export async function getProductDetail(id: string): Promise<ProductDetail | unde
       caseSizes:[],defaultCaseSize:"",versions:[],defaultVersion:"",colors:[],
       features:detail.features.length?detail.features.map(f=>({title:f.title,body:f.body,image:f.image?.url})):editorial?.features??[],specs:detail.specs.length?detail.specs:editorial?.specs??[],inTheBox:detail.inTheBox.length?detail.inTheBox:editorial?.inTheBox??[],related:detail.relatedProductKeys??[]};
   }
-  const cms = await getCMSProduct(id);
+  const cms = await getCMSProduct(id, locale);
   // Only products with variants or an overview get the CMS page; legacy products keep their hand-built page
   // (re-saving one in the admin must not change its storefront).
-  if (cms && usesCmsDetail(cms)) return buildDetailFromCms(cms);
-  const dynamicProduct = await getProduct(id);
+  if (cms && usesCmsDetail(cms)) return buildDetailFromCms(cms, locale);
+  const dynamicProduct = await getProduct(id, locale);
 
   if (id === "1228429") {
     if (!dynamicProduct) return undefined;
@@ -348,5 +359,5 @@ export async function getProductDetail(id: string): Promise<ProductDetail | unde
     };
   }
 
-  return dynamicProduct ? buildFallbackDetail(dynamicProduct) : undefined;
+  return dynamicProduct ? buildFallbackDetail(dynamicProduct, locale) : undefined;
 }

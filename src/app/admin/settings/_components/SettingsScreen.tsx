@@ -10,12 +10,19 @@ import {
   Search,
 } from "lucide-react";
 import type { StoreSettings } from "@/lib/cms/types";
+import { LocaleTabs, type ContentLocale } from "@/components/admin/LocaleTabs";
+import { TranslationField } from "@/components/admin/TranslationField";
+import { translationStatus } from "@/lib/cms/translation-input";
+import { getOverlayString, setOverlayValue } from "@/lib/cms/translation-edit";
+import { SETTINGS_SPEC } from "@/i18n/translate-record";
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<StoreSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [seoLocale, setSeoLocale] = useState<ContentLocale>("en");
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -38,6 +45,7 @@ export default function AdminSettingsPage() {
     if (!settings) return;
     setSaving(true);
     setSavedSuccess(false);
+    setSaveError("");
 
     try {
       const res = await fetch("/api/admin/settings", {
@@ -49,9 +57,14 @@ export default function AdminSettingsPage() {
       if (res.ok) {
         setSavedSuccess(true);
         setTimeout(() => setSavedSuccess(false), 3000);
+      } else {
+        const data = (await res.json().catch(() => ({}))) as { error?: string | { message?: string } };
+        const message = typeof data.error === "string" ? data.error : data.error?.message;
+        setSaveError(message || `Save failed (HTTP ${res.status}).`);
       }
     } catch (err) {
       console.error("Failed to save settings:", err);
+      setSaveError("Network error — settings were not saved.");
     } finally {
       setSaving(false);
     }
@@ -276,6 +289,42 @@ export default function AdminSettingsPage() {
             <h3 className="g-heading text-base uppercase tracking-tight text-neutral-900 font-semibold">Search Engine Optimization (SEO)</h3>
           </div>
 
+          <LocaleTabs
+            value={seoLocale}
+            onChange={setSeoLocale}
+            status={{
+              ru: translationStatus(settings, "ru", SETTINGS_SPEC),
+              kk: translationStatus(settings, "kk", SETTINGS_SPEC),
+            }}
+          />
+
+          {seoLocale !== "en" ? (
+            <div className="space-y-4">
+              <TranslationField
+                label="Default SEO meta title"
+                field="seoTitle"
+                value={getOverlayString(settings.translations, seoLocale, ["seoTitle"])}
+                source={settings.seoTitle}
+                onChange={(v) =>
+                  setSettings({ ...settings, translations: setOverlayValue(settings.translations, seoLocale, ["seoTitle"], v) })
+                }
+              />
+              <TranslationField
+                label="Default SEO meta description"
+                field="seoDescription"
+                multiline
+                rows={3}
+                value={getOverlayString(settings.translations, seoLocale, ["seoDescription"])}
+                source={settings.seoDescription}
+                onChange={(v) =>
+                  setSettings({
+                    ...settings,
+                    translations: setOverlayValue(settings.translations, seoLocale, ["seoDescription"], v),
+                  })
+                }
+              />
+            </div>
+          ) : (
           <div className="space-y-4">
             <div>
               <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
@@ -301,7 +350,13 @@ export default function AdminSettingsPage() {
               />
             </div>
           </div>
+          )}
         </div>
+        {saveError && (
+          <p role="alert" className="border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+            {saveError}
+          </p>
+        )}
       </form>
     </div>
   );

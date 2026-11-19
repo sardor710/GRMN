@@ -2,13 +2,24 @@
 
 import {useRouter,usePathname,useSearchParams} from "next/navigation";
 import Image from "next/image";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { blogCategories, type BlogPost } from "@/lib/blog-constants";
 import { categoryIcons } from "@/components/blog-icons";
 import { SearchIcon } from "@/components/icons";
 
-export function BlogExplorer({posts}:{posts:BlogPost[]}) {
+/** A CMS post plus its display text for the page locale (localized on the server, R17). */
+export interface BlogExplorerPost extends BlogPost {
+  displayTitle: string;
+  displayExcerpt: string;
+  displayCategories: string[];
+  dateLabel: string;
+}
+
+export function BlogExplorer({ posts }: { posts: BlogExplorerPost[] }) {
+  const t = useTranslations("BlogExplorer");
   const router=useRouter(),pathname=usePathname(),params=useSearchParams();
+  // Category and search are server-side filters (URL params); the page passes the matching page of posts.
   const active=params.get("category"),query=params.get("search")??"",filtered=posts;
   const update=(name:string,value:string)=>{const next=new URLSearchParams(params.toString());next.delete("cursor");if(value)next.set(name,value);else next.delete(name);router.push(pathname+"?"+next.toString());};
   const setActive=(value:string|null)=>update("category",value??"");
@@ -31,7 +42,7 @@ export function BlogExplorer({posts}:{posts:BlogPost[]}) {
               >
                 <Icon className="h-8 w-8" />
                 <span className="text-[11px] font-medium uppercase leading-tight tracking-[0.03em]">
-                  {c.label}
+                  {t(`categories.${c.key}`)}
                 </span>
               </button>
             );
@@ -41,14 +52,14 @@ export function BlogExplorer({posts}:{posts:BlogPost[]}) {
 
       {/* Heading + search */}
       <div className="mx-auto max-w-[1280px] px-4 py-10 text-center">
-        <h1 className="g-heading text-[40px] text-black">Blog</h1>
-        <p className="mt-2 text-[16px] text-neutral-600">The latest on our products and technology.</p>
+        <h1 className="g-heading text-[40px] text-black">{t("heading")}</h1>
+        <p className="mt-2 text-[16px] text-neutral-600">{t("intro")}</p>
         <div className="mx-auto mt-6 flex max-w-[420px] items-center border border-neutral-300 px-3">
           <SearchIcon className="h-4 w-4 text-neutral-400" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search Blog"
+            placeholder={t("searchPlaceholder")}
             className="h-11 w-full bg-transparent px-2 text-[15px] outline-none placeholder:text-neutral-400"
           />
         </div>
@@ -57,7 +68,7 @@ export function BlogExplorer({posts}:{posts:BlogPost[]}) {
             onClick={() => { setActive(null); setQuery(""); }}
             className="mt-3 text-[13px] text-[#007cc3] underline"
           >
-            Clear filters
+            {t("clearFilters")}
           </button>
         )}
       </div>
@@ -65,7 +76,7 @@ export function BlogExplorer({posts}:{posts:BlogPost[]}) {
       {/* Post grid */}
       <div className="mx-auto max-w-[1280px] px-4 pb-16">
         {filtered.length === 0 ? (
-          <p className="py-16 text-center text-neutral-500">No articles found.</p>
+          <p className="py-16 text-center text-neutral-500">{t("empty")}</p>
         ) : (
           <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
             {filtered.map((post) => (
@@ -73,23 +84,23 @@ export function BlogExplorer({posts}:{posts:BlogPost[]}) {
                 <div className="relative aspect-[16/10] w-full overflow-hidden">
                   {post.image&&<Image
                     src={post.image}
-                    alt={post.title}
+                    alt={post.displayTitle}
                     fill
                     sizes="(max-width: 768px) 100vw, 420px"
                     className="object-cover transition-transform duration-500 group-hover:scale-105"
                   />}
                 </div>
                 <div className="mt-4 flex gap-3">
-                  {post.categories.map((c) => (
+                  {post.displayCategories.map((c) => (
                     <span key={c} className="text-[12px] font-medium uppercase tracking-[0.06em] text-neutral-500">
                       {c}
                     </span>
                   ))}
                 </div>
                 <h2 className="g-heading mt-2 text-[22px] leading-tight text-black group-hover:text-[#007cc3]">
-                  {post.title}
+                  {post.displayTitle}
                 </h2>
-                <p className="mt-2 text-[13px] text-neutral-500">{post.date}</p>
+                <p className="mt-2 text-[13px] text-neutral-500">{post.dateLabel}</p>
               </Link>
             ))}
           </div>

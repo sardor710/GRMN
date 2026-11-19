@@ -64,7 +64,7 @@ test("actual product, article and breadcrumb JSON-LD markup has one inert script
     const source=fs.readFileSync("src/components/seo/JsonLd.tsx","utf8");
     const compiled=ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX}}).outputText;
     const components={};
-    new Function("require","exports",compiled)(name=>name.startsWith("@/lib/")?require(path.resolve("src/lib/"+name.slice(6)+".ts")):require(name),components);
+    new Function("require","exports",compiled)(name=>name==="@/i18n/seo"?require(path.resolve("src/i18n/seo-core.js")):name.startsWith("@/lib/")?require(path.resolve("src/lib/"+name.slice(6)+".ts")):require(name),components);
     const inert="inert </script> delimiter <section> & text";
     const cases=[
       [components.ProductJsonLd,{product:{id:"synthetic",name:inert,image:"/safe.jpg",description:inert,price:10,stock:1},url:"https://example.invalid/synthetic"}],

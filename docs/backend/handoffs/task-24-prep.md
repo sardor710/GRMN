@@ -73,3 +73,36 @@ The owner gave the go, but chose "prepare, don't switch yet" and "don't touch Od
 3. **A real certificate** for garmin.kz, in `grmn-production/tls/`; reload the proxy.
 4. **Staff preparation:** create products and stock, fix the banner images and the KZT announcement, publish banners, blogs and the homepage.
 5. **Open the store:** turn maintenance off in admin settings.
+
+## Odoo removed, shared front door, garmin.tigr.uz (2026-11-19, owner)
+
+The owner asked to delete Odoo completely, keep erp.tigr.uz and zanko.uz, and put the store on **garmin.tigr.uz**.
+
+- **Front door.** `odoo-nginx` also fronted erp.tigr.uz, zanko.uz, agent.tigr.uz and hermes.tigr.uz. It is replaced by `edge-nginx`:
+  - compose project `edge` in `/home/nick/edge`, outside this repository, with host networking;
+  - the same site configs, with upstreams changed to 127.0.0.1;
+  - unknown hosts and the bare IP are refused;
+  - the swap took about 1.4 s, and every kept site answered exactly as before.
+- **Certificates.** The certbot deploy hook now copies into `/home/nick/edge/ssl` and reloads edge-nginx. A Let's Encrypt certificate was issued for garmin.tigr.uz. `certbot renew --dry-run` succeeds for all 5 names.
+- **Odoo deleted:**
+  - containers `odoo-app`, `odoo-db` and `odoo-nginx`, their network and images;
+  - `/home/nick/odoo-production`;
+  - the crm.tigr.uz certificate.
+  - A final archive (database dump, filestore and config, 27 MB) is kept at `/home/nick/odoo-final-backup-20261119.tar.gz` (0600); delete it when no longer wanted.
+  - tigr.uz and crm.tigr.uz no longer answer.
+- **The store moves to garmin.tigr.uz.**
+  - `GRMN_DOMAIN=garmin.tigr.uz`.
+  - Edge proxies to the store's proxy on 127.0.0.1:58543, and the store's nginx trusts `X-Real-IP` from the edge only (`GRMN_TRUSTED_PROXY`, the grmn network gateway), so the per-IP limits see real customers.
+  - The store is still **closed** (503 to visitors).
+  - Staff sign in at `https://garmin.tigr.uz/admin/login`; no SSH tunnel is needed any more.
+
+## Language update (beta2) merged
+
+`origin/beta2` (English, Russian and Kazakh: every public URL is `/en|ru|kk/…`, and unprefixed paths redirect by cookie and Accept-Language) is merged into `beta`. Conflicts were resolved as follows:
+- **`src/proxy.ts`.** The maintenance gate runs first. The matcher still covers `/api` and `/admin`, which the freeze gates; locale and CMS redirects skip non-localized paths through `NOT_LOCALIZED` (beta2's original exclusions).
+- **`CheckoutPanel.tsx`.** The manual-payment receipt (how to pay, instructions, hold time, paid status) is now translated: new `Checkout` keys in `messages/{en,ru,kk}.json`; the `demoNotice` key was replaced by `paymentNotice`.
+- **Tests.** The proxy tests keep the gate mock and add the beta2 routing helpers. The matcher test now expects `/api` and `/admin` to run the proxy, and a new test covers `NOT_LOCALIZED`.
+
+The image needs the public origin at build time: `docker build --build-arg NEXT_PUBLIC_SITE_URL=https://garmin.tigr.uz` (Dockerfile ARG). Compose also passes it at runtime.
+
+**Limit on PostgreSQL:** beta2 translates the whole interface. CMS content translations (product, blog and banner text) are stored only by the legacy JSON store; in PostgreSQL mode the admin hides those tabs and content stays English (`/ru` and `/kk` product pages are `noindex` until translated). Storing content translations in PostgreSQL is a follow-up; beta2's handoff sketches `*_translations` tables.

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { sections, BUY } from "./sections";
+import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
 /** Convenience: render a section whose innerHTML comes from the extracted map. */
 function Html({ id, className }: { id: string; className?: string }) {
@@ -254,6 +255,7 @@ export function Fenix8Client() {
  * Clicking a color dot swaps the shown product image and size.
  */
 function SpecSection() {
+  const localize = useLocalizeHref();
   const ref = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -345,7 +347,7 @@ function SpecSection() {
                       )}
                     </dl>
                     <div className="price-con align-center margin-top-m">
-                      <a className="btn-black-fill btn-size-small" target="_blank" rel="noreferrer" href={BUY}>
+                      <a className="btn-black-fill btn-size-small" target="_blank" rel="noreferrer" href={localize(BUY)}>
                         Buy Now
                       </a>
                     </div>
@@ -380,7 +382,7 @@ function SpecSection() {
                       ))}
                     </dl>
                     <div className="price-con align-center margin-top-m">
-                      <a className="btn-black-fill btn-size-small" target="_blank" rel="noreferrer" href={BUY}>
+                      <a className="btn-black-fill btn-size-small" target="_blank" rel="noreferrer" href={localize(BUY)}>
                         Buy Now
                       </a>
                     </div>

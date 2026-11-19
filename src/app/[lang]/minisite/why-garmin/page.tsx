@@ -1,0 +1,71 @@
+import type { Metadata } from "next";
+import "./why-garmin.css";
+import { SiteHeader } from "@/components/SiteHeader";
+import { SiteFooter } from "@/components/SiteFooter";
+import { WhyGarminHero } from "@/components/why-garmin/WhyGarminHero";
+import { CommentsCarousel } from "@/components/why-garmin/CommentsCarousel";
+import { StickyNav } from "@/components/why-garmin/StickyNav";
+import { HealthSection } from "@/components/why-garmin/HealthSection";
+import { ExerciseSection } from "@/components/why-garmin/ExerciseSection";
+import { LifeSection } from "@/components/why-garmin/LifeSection";
+import { initPageLocale } from "@/i18n/page-locale";
+import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
+import { localizeHref } from "@/i18n/routing";
+
+export async function generateMetadata({ params }: PageProps<"/[lang]/minisite/why-garmin">): Promise<Metadata> {
+  const locale = await initPageLocale(params);
+  return {
+    title: "Why Garmin Watches? | Garmin Singapore",
+    description:
+      "Based on feedbacks we collected from 513 users, Garmin watches allow you to tune in to your health 24/7, develop exercise habits and pay for transits or purchases to make your life easier!",
+    ...localizedSeo({ path: "/minisite/why-garmin", locale, indexedLocales: ROUTE_LOCALES["minisite:why-garmin"] }),
+  };
+}
+
+const BUY_NOW = "/c/wearables-smartwatches";
+
+export default async function WhyGarminPage({ params }: PageProps<"/[lang]/minisite/why-garmin">) {
+  const locale = await initPageLocale(params);
+  return (
+    <div className="flex min-h-screen flex-col bg-white">
+      <SiteHeader />
+
+      <main className="wg-root flex-1">
+        <WhyGarminHero />
+        <CommentsCarousel />
+
+        <section id="feedback-form">
+          <div className="wrapper">
+            <div className="container">
+              <small>
+                * Each model has a slightly different way of displaying information. The
+                above watch face is for demonstration only.
+              </small>
+            </div>
+          </div>
+        </section>
+
+        <StickyNav />
+        <HealthSection />
+        <ExerciseSection />
+        <LifeSection />
+
+        <section id="style">
+          <div className="container">
+            <a
+              className="btn-black-border btn-size-default uppercase"
+              href={localizeHref(BUY_NOW, locale)}
+            >
+              Choose from All Watches
+            </a>
+            <a className="btn-black-fill btn-size-default uppercase" href={localizeHref(BUY_NOW, locale)}>
+              Recommend A Watch For Me
+            </a>
+          </div>
+        </section>
+      </main>
+
+      <SiteFooter />
+    </div>
+  );
+}

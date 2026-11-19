@@ -1,32 +1,38 @@
+import type { Metadata } from "next";
+import "../globals.css";
+import "../garmin-fonts.css";
 import { getCurrentAdmin } from "@/lib/cms/auth";
 import { AdminLayoutShell } from "@/components/admin/AdminLayoutShell";
+import { bodyClassName, htmlClassName, siteIcons } from "../fonts";
 
-export const metadata = {
+export const metadata: Metadata = {
   title: "Garmin CMS Admin Portal",
   description: "Administrative Content & Commerce Management System",
+  icons: siteIcons,
 };
 
-export default async function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+/** Root layout for the English-only, unprefixed admin panel. */
+export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
   const admin = await getCurrentAdmin();
 
   return (
-    <AdminLayoutShell
-      user={
-        admin
-          ? {
-              name: admin.name,
-              email: admin.email,
-              role: admin.role,
-              permissions: admin.permissions,
-            }
-          : undefined
-      }
-    >
-      {children}
-    </AdminLayoutShell>
+    <html lang="en" className={htmlClassName}>
+      <body className={bodyClassName}>
+        <AdminLayoutShell
+          user={
+            admin
+              ? {
+                  name: admin.name,
+                  email: admin.email,
+                  role: admin.role,
+                  permissions: admin.permissions,
+                }
+              : undefined
+          }
+        >
+          {children}
+        </AdminLayoutShell>
+      </body>
+    </html>
   );
 }

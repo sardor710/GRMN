@@ -4,7 +4,8 @@ export function canEditSeo(type: SeoKind, permissions: readonly string[]) {
   return permissions.includes(type==="product" ? "catalog:write" : "content:write");
 }
 export async function saveSeoMetadata(fetcher: typeof fetch, type: SeoKind, id: string, updates: Record<string,unknown>, version?:number) {
-  const allowed = ["seoTitle","seoDescription","focusKeywords","canonicalUrl","noIndex","ogImage"];
+  // `translations` (ru/kk SEO overlays) is accepted by the legacy JSON CMS only.
+  const allowed = ["seoTitle","seoDescription","focusKeywords","canonicalUrl","noIndex","ogImage","translations"];
   const body = { id, ...(version===undefined?{}:{version}), ...Object.fromEntries(allowed.filter(key=>Object.hasOwn(updates,key)).map(key=>[key,updates[key]])) };
   const response = await fetcher("/api/admin/"+(type==="product"?"products":"blogs"),{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
   if (!response.ok) throw new Error("SEO metadata could not be saved ("+response.status+")");

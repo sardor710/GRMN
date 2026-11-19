@@ -2,18 +2,28 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import type { AccessoryItem } from "@/types";
 import { useCart } from "@/lib/cart";
+import { formatMoney } from "@/i18n/format";
+import { useAppLocale } from "@/i18n/useAppLocale";
 
-const CATEGORIES = [
-  "All",
-  "Bands & Straps",
-  "Heart Rate & Sensors",
-  "Cables & Power",
-  "Satellite & Navigation",
-] as const;
+/** Accessory categories (data values) and their `ProductAccessories.categories.*` message keys. */
+const CATEGORY_KEYS: Record<string, string> = {
+  All: "all",
+  "Bands & Straps": "bands",
+  "Heart Rate & Sensors": "sensors",
+  "Cables & Power": "power",
+  "Mounts & Protection": "protection",
+  "Satellite & Navigation": "navigation",
+};
+
+const CATEGORIES = ["All", "Bands & Straps", "Heart Rate & Sensors", "Cables & Power", "Satellite & Navigation"] as const;
 
 export function ProductAccessories({ accessories = [] }: { accessories?: AccessoryItem[] }) {
+  const t = useTranslations("ProductAccessories");
+  const locale = useAppLocale();
+  const categoryLabel = (category: string) => (CATEGORY_KEYS[category] ? t(`categories.${CATEGORY_KEYS[category]}`) : category);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [addedId, setAddedId] = useState<string | null>(null);
   const { add } = useCart();
@@ -40,15 +50,13 @@ export function ProductAccessories({ accessories = [] }: { accessories?: Accesso
       <div className="rounded border border-neutral-200 bg-neutral-50 p-6">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <h3 className="text-[17px] font-bold text-black">QuickFit® Watch Band Compatibility</h3>
+            <h3 className="text-[17px] font-bold text-black">{t("quickFitHeading")}</h3>
             <p className="mt-1 text-[14px] text-neutral-600">
-              The fēnix® 8 series supports QuickFit bands: <strong>20 mm</strong> for 43 mm models,{" "}
-              <strong>22 mm</strong> for 47 mm models, and <strong>26 mm</strong> for 51 mm models. Swap in seconds
-              with no tools required.
+              {t.rich("quickFitBody", { b: (chunks) => <strong>{chunks}</strong> })}
             </p>
           </div>
           <span className="shrink-0 self-start rounded bg-black px-3 py-1.5 text-[12px] font-semibold uppercase tracking-wider text-white md:self-center">
-            Tool-Free Swap
+            {t("toolFree")}
           </span>
         </div>
       </div>
@@ -65,14 +73,14 @@ export function ProductAccessories({ accessories = [] }: { accessories?: Accesso
                 : "border border-neutral-300 bg-white text-neutral-700 hover:border-black hover:text-black"
             }`}
           >
-            {cat}
+            {categoryLabel(cat)}
           </button>
         ))}
       </div>
 
       {/* Accessories Grid */}
       {filteredAccessories.length === 0 ? (
-        <div className="py-12 text-center text-neutral-500">No accessories found in this category.</div>
+        <div className="py-12 text-center text-neutral-500">{t("empty")}</div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredAccessories.map((acc) => (
@@ -98,12 +106,12 @@ export function ProductAccessories({ accessories = [] }: { accessories?: Accesso
 
                 <div className="mt-4">
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500">
-                    {acc.category}
+                    {categoryLabel(acc.category)}
                   </span>
                   <h4 className="mt-1 line-clamp-2 text-[15px] font-bold leading-tight text-black">
                     {acc.name}
                   </h4>
-                  <p className="mt-1 text-[12px] text-neutral-500">Part Number {acc.partNumber}</p>
+                  <p className="mt-1 text-[12px] text-neutral-500">{t("partNumber", { partNumber: acc.partNumber })}</p>
                   {acc.description && (
                     <p className="mt-2 line-clamp-2 text-[13px] leading-snug text-neutral-600">
                       {acc.description}
@@ -114,8 +122,8 @@ export function ProductAccessories({ accessories = [] }: { accessories?: Accesso
 
               <div className="mt-6 border-t border-neutral-100 pt-4">
                 <div className="flex items-baseline justify-between">
-                  <span className="text-[18px] font-bold text-black">${acc.price.toFixed(2)}</span>
-                  <span className="text-[12px] text-neutral-500">USD</span>
+                  <span className="text-[18px] font-bold text-black">{formatMoney(acc.price, locale)}</span>
+                  <span className="text-[12px] text-neutral-500">{t("currency")}</span>
                 </div>
 
                 <button
@@ -127,7 +135,7 @@ export function ProductAccessories({ accessories = [] }: { accessories?: Accesso
                       : "bg-black text-white hover:bg-neutral-800"
                   }`}
                 >
-                  {addedId === acc.id ? "Added to Cart ✓" : "Add to Cart"}
+                  {addedId === acc.id ? t("added") : t("addToCart")}
                 </button>
               </div>
             </div>

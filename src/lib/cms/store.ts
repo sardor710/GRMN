@@ -16,6 +16,15 @@ import { generateOrderNumber, generateOrderMilestones } from "./order-lifecycle"
 import { createDefaultHomepageConfig } from "./homepage-schema";
 import { syncLegacyFields } from "./product-variants";
 import dataJson from "./data.json";
+import type { Locale } from "../../i18n/config";
+import {
+  localizeList,
+  localizeProduct,
+  localizeBlog,
+  localizeBanner,
+  localizeHomepage,
+  localizeSettings,
+} from "../../i18n/translate-record";
 
 // In-memory cache
 let inMemoryData: CMSData = dataJson as unknown as CMSData;
@@ -307,6 +316,7 @@ export function saveBanner(banner: Partial<Banner> & { title: string }): Banner 
       active: banner.active ?? true,
       order: banner.order ?? data.banners.length + 1,
       createdAt: new Date().toISOString(),
+      ...(banner.translations ? { translations: banner.translations } : {}),
     };
     data.banners.push(saved);
   }
@@ -354,6 +364,7 @@ export function saveBlog(blog: Partial<CMSBlog> & { title: string; content: stri
       status: blog.status || "published",
       publishedAt: blog.publishedAt || new Date().toISOString().split("T")[0],
       createdAt: new Date().toISOString(),
+      ...(blog.translations ? { translations: blog.translations } : {}),
     };
     data.blogs.unshift(saved);
   }
@@ -512,3 +523,26 @@ export function saveHomepageConfig(config: HomepageConfig): HomepageConfig {
   return data.homepage;
 }
 
+
+// ----------------- LOCALIZED READERS (storefront) -----------------
+// Return localized copies (the `translations` overlay applied, then stripped). The un-localized
+// getters above stay as-is for the admin and the sitemap.
+export function getProductsFor(locale: Locale): CMSProduct[] {
+  return localizeList(getProducts(), locale, localizeProduct);
+}
+
+export function getBlogsFor(locale: Locale): CMSBlog[] {
+  return localizeList(getBlogs(), locale, localizeBlog);
+}
+
+export function getBannersFor(locale: Locale): Banner[] {
+  return localizeList(getBanners(), locale, localizeBanner);
+}
+
+export function getHomepageConfigFor(locale: Locale): HomepageConfig {
+  return localizeHomepage(getHomepageConfig(), locale);
+}
+
+export function getSettingsFor(locale: Locale): StoreSettings {
+  return localizeSettings(getSettings(), locale);
+}

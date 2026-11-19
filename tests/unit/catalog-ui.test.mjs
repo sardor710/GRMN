@@ -13,7 +13,7 @@ test("legacy cursor length and decoded identity are bounded",()=>{
  for(const cursor of ["x".repeat(2049),Buffer.from(JSON.stringify({scope:JSON.stringify(["products","",null,null,null]),last:"x".repeat(501)})).toString("base64url"),""]){assert.throws(()=>legacyAdminPage("products",[],new URLSearchParams({cursor})),e=>e.status===400);}
 });
 test("server-paged catalog preserves products and sends filter changes to the URL before slicing",()=>{
- const calls=[],params=new URLSearchParams(),fixture=componentFixture("src/components/CatalogueGrid.tsx",{modules:{"@/lib/public-products":{activityFilters:["Running"],levelFilters:[],caseSizeFilters:[]},"@/lib/catalog-constants":{activityFilters:["Running"],levelFilters:[],caseSizeFilters:[]},"next/navigation":{useRouter:()=>({push:url=>calls.push(url)}),useSearchParams:()=>params,usePathname:()=>"/c/wearables-smartwatches"}}});
+ const calls=[],params=new URLSearchParams(),fixture=componentFixture("src/components/CatalogueGrid.tsx",{modules:{"@/lib/public-products":{activityFilters:["Running"],levelFilters:[],caseSizeFilters:[]},"@/lib/catalog-constants":{activityFilters:[{value:"Running",labelKey:"CatalogueGrid.activities.running"}],levelFilters:[],caseSizeFilters:[]},"next/navigation":{useRouter:()=>({push:url=>calls.push(url)}),useSearchParams:()=>params,usePathname:()=>"/c/wearables-smartwatches"}}});
  const tree=fixture.render({products:[{id:"one",name:"One",activities:[],level:"Unknown",caseSize:"Unknown",price:"1.00"}]});
  const check=nodes(tree).find(n=>n.props?.label==="Running");assert.ok(check);check.props.onChange();assert.match(calls[0]??"",/activities=Running/);assert.ok(!calls[0].includes("cursor="));
 });

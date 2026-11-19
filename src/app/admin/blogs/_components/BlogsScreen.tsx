@@ -14,17 +14,29 @@ import type { CMSBlog, BlogStatus } from "@/lib/cms/types";
 import { useAdminCollection } from "@/hooks/useAdminCollection";
 import { AdminPageControls } from "@/components/admin/AdminPageControls";
 import { writeAdminRecord, archiveAdminRecord } from "@/lib/admin-collection";
+import type { BlogTranslatable, Translations } from "@/lib/cms/types";
 import { AdminModal } from "@/components/admin/AdminModal";
 import { SEOEditor } from "@/components/admin/SEOEditor";
+import { LocaleTabs, SharedAcrossLanguages, type ContentLocale } from "@/components/admin/LocaleTabs";
+import { TranslationField } from "@/components/admin/TranslationField";
+import { translationStatus } from "@/lib/cms/translation-input";
+import { getOverlayString, setOverlayValue } from "@/lib/cms/translation-edit";
+import { BLOG_SPEC } from "@/i18n/translate-record";
+
+/** RU/KK tab is "complete" once title and body are translated (storefront indexing rule). */
+const BLOG_REQUIRED_FIELDS = ["title", "content"] as const;
 
 export default function AdminBlogsPage() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const collection = useAdminCollection<CMSBlog>("blogs", {search, category:categoryFilter});
   const {items:blogs, loading} = collection;
+  const translatable = collection.backend !== "postgres";
   const fetchBlogs = () => {collection.reload();categoryPage.reload();};
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBlog, setEditingBlog] = useState<CMSBlog | null>(null);
+  const [contentLocale, setContentLocale] = useState<ContentLocale>("en");
+  const [saveError, setSaveError] = useState("");
 
   // Form State
   const [formData, setFormData] = useState({
@@ -43,6 +55,7 @@ export default function AdminBlogsPage() {
     canonicalUrl: "",
     noIndex: false,
     ogImage: "",
+    translations: {} as Translations<BlogTranslatable>,
   });
 
 
@@ -64,7 +77,10 @@ export default function AdminBlogsPage() {
       canonicalUrl: "",
       noIndex: false,
       ogImage: "",
+      translations: {},
     });
+    setContentLocale("en");
+    setSaveError("");
     setIsModalOpen(true);
   };
 
@@ -86,7 +102,10 @@ export default function AdminBlogsPage() {
       canonicalUrl: b.canonicalUrl || "",
       noIndex: b.noIndex || false,
       ogImage: b.ogImage || "",
+      translations: b.translations || {},
     });
+    setContentLocale("en");
+    setSaveError("");
     setIsModalOpen(true);
   };
 
@@ -101,10 +120,14 @@ export default function AdminBlogsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSaveError("");
     try {
+      // ru/kk overlays are stored by the legacy JSON CMS only (the PostgreSQL service rejects them).
+      const { translations, ...base } = formData;
       const payload = {
         ...(editingBlog ? { id: editingBlog.id, ...(editingBlog.version===undefined?{}:{version:editingBlog.version}) } : {}),
-        ...formData,
+        ...base,
+        ...(translatable ? { translations } : {}),
         slug: formData.slug || formData.title.toLowerCase().replace(/[^\p{L}\p{N}_-]+/gu, "-").replace(/^-|-$/g,""),
       };
 
@@ -112,7 +135,10 @@ export default function AdminBlogsPage() {
       setIsModalOpen(false);
       fetchBlogs();
     } catch (err) {
-      collection.setError(err instanceof Error ? err.message : "Change failed");
+      const message = err instanceof Error ? err.message : "Change failed";
+      const badLocale = /^translations\.(ru|kk)\b/.exec(message)?.[1] as "ru" | "kk" | undefined;
+      if (badLocale) { setContentLocale(badLocale); setSaveError(message); return; }
+      collection.setError(message);
     }
   };
 
@@ -290,6 +316,24 @@ export default function AdminBlogsPage() {
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {collection.error&&<div role="alert" className="border border-red-200 bg-red-50 p-3 text-sm text-red-800">{collection.error}<button type="button" className="ml-3 underline" onClick={()=>{setIsModalOpen(false);collection.reload();}}>Reload records</button></div>}
+          {translatable && <LocaleTabs
+            value={contentLocale}
+            onChange={setContentLocale}
+            status={{
+              ru: translationStatus(formData, "ru", BLOG_SPEC, BLOG_REQUIRED_FIELDS),
+              kk: translationStatus(formData, "kk", BLOG_SPEC, BLOG_REQUIRED_FIELDS),
+            }}
+          />}
+
+          {contentLocale !== "en" ? (
+            <BlogTranslationFields
+              key={contentLocale}
+              locale={contentLocale}
+              blog={formData}
+              onChange={(translations) => setFormData((prev) => ({ ...prev, translations }))}
+            />
+          ) : (
+          <>
           <div>
             <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
               Article Title *
@@ -424,6 +468,14 @@ export default function AdminBlogsPage() {
               }}
             />
           </div>
+          </>
+          )}
+
+          {saveError && (
+            <p role="alert" className="border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+              {saveError}
+            </p>
+          )}
 
           <div className="flex justify-between items-center pt-4 border-t border-neutral-200">
             <div>
@@ -455,6 +507,99 @@ export default function AdminBlogsPage() {
           </div>
         </form>
       </AdminModal>
+    </div>
+  );
+}
+
+type BlogTranslations = Translations<BlogTranslatable>;
+
+interface BlogTranslationFieldsProps {
+  locale: "ru" | "kk";
+  blog: {
+    title: string;
+    slug: string;
+    excerpt: string;
+    content: string;
+    coverImage: string;
+    category: string;
+    readingTime: string;
+    author: string;
+    status: BlogStatus;
+    seoTitle: string;
+    seoDescription: string;
+    translations: BlogTranslations;
+  };
+  onChange: (next: BlogTranslations) => void;
+}
+
+/** RU/KK tab: translatable article text; slug, cover, author and status are shared. */
+function BlogTranslationFields({ locale, blog, onChange }: BlogTranslationFieldsProps) {
+  const get = (field: keyof BlogTranslatable) => getOverlayString(blog.translations, locale, [field]);
+  const set = (field: keyof BlogTranslatable) => (value: string) =>
+    onChange(setOverlayValue(blog.translations, locale, [field], value));
+  return (
+    <div className="space-y-4">
+      <section className="space-y-2 border border-dashed border-neutral-300 bg-neutral-50 p-3">
+        <SharedAcrossLanguages />
+        <dl className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
+          <div>
+            <dt className="font-semibold uppercase tracking-wider text-neutral-500">Slug</dt>
+            <dd className="mt-1 font-mono text-neutral-800">/blog/{blog.slug || "—"}</dd>
+          </div>
+          <div>
+            <dt className="font-semibold uppercase tracking-wider text-neutral-500">Cover image</dt>
+            <dd className="mt-1 truncate font-mono text-neutral-800">{blog.coverImage || "—"}</dd>
+          </div>
+          <div>
+            <dt className="font-semibold uppercase tracking-wider text-neutral-500">Author</dt>
+            <dd className="mt-1 text-neutral-800">{blog.author || "—"}</dd>
+          </div>
+          <div>
+            <dt className="font-semibold uppercase tracking-wider text-neutral-500">Status</dt>
+            <dd className="mt-1 uppercase text-neutral-800">{blog.status}</dd>
+          </div>
+        </dl>
+      </section>
+      <TranslationField label="Article title" field="title" value={get("title")} source={blog.title} onChange={set("title")} />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <TranslationField label="Category" field="category" value={get("category")} source={blog.category} onChange={set("category")} />
+        <TranslationField
+          label="Reading time"
+          field="readingTime"
+          value={get("readingTime")}
+          source={blog.readingTime}
+          onChange={set("readingTime")}
+        />
+      </div>
+      <TranslationField
+        label="Summary / excerpt"
+        field="excerpt"
+        multiline
+        rows={2}
+        value={get("excerpt")}
+        source={blog.excerpt}
+        onChange={set("excerpt")}
+      />
+      <TranslationField
+        label="Full article body (markdown, shown as plain text)"
+        field="content"
+        multiline
+        rows={8}
+        mono
+        value={get("content")}
+        source={blog.content}
+        onChange={set("content")}
+      />
+      <TranslationField label="SEO title" field="seoTitle" value={get("seoTitle")} source={blog.seoTitle} onChange={set("seoTitle")} />
+      <TranslationField
+        label="SEO description"
+        field="seoDescription"
+        multiline
+        rows={2}
+        value={get("seoDescription")}
+        source={blog.seoDescription}
+        onChange={set("seoDescription")}
+      />
     </div>
   );
 }

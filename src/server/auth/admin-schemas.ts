@@ -8,8 +8,11 @@ const money = z.number().finite().min(0).max(1e12);
 const count = z.number().int().min(0).max(1e8);
 const list = z.array(short).max(200);
 const link = z.string().max(2048).refine(value => !value || value === "#" || /^\/(?!\/)/.test(value) || /^https?:\/\//i.test(value), "Use a relative or HTTP(S) URL");
+// ru/kk overlays (i18n). Shape, field limits and per-locale merge are checked by the content
+// sanitizers (src/lib/cms/translation-input.js) after this parse.
+const translations = z.record(z.string(), z.unknown()).optional();
 const seo = { seoTitle: short.optional(), seoDescription: text.optional(), focusKeywords: list.optional(), canonicalUrl: link.optional(), noIndex: z.boolean().optional(), ogImage: link.optional() };
-export const seoPatchInput = z.object({id,...seo}).strict().refine(value=>Object.keys(value).length>1);
+export const seoPatchInput = z.object({id,...seo,translations}).strict().refine(value=>Object.keys(value).length>1);
 // Product media, options and variants (legacy JSON CMS). The admin route additionally sanitizes
 // overview HTML, allowlists image and swatch URLs and enforces SKU uniqueness (product-input/product-variants).
 const optionValueInput = z.object({id,key:short,label:short,swatchColor:short.optional(),swatchImage:link.optional()}).strict();
@@ -27,18 +30,18 @@ export const productInput = z.object({
   specs: z.array(z.object({label: short, value: text}).strict()).max(200).optional(), inTheBox: list.optional(), compatibleAccessories: list.optional(),
   features: z.array(z.object({title: short, body: text, image: link.optional()}).strict()).max(200).optional(), ...seo,
   images: z.array(productImageInput).max(100).optional(), defaultImageId: short.optional(), options: z.array(productOptionInput).max(10).optional(),
-  variants: z.array(productVariantInput).max(500).optional(), overviewHtml: z.string().max(200000).optional(), specGroups: z.array(specGroupInput).max(100).optional(), source: productSourceInput.optional(),
+  variants: z.array(productVariantInput).max(500).optional(), overviewHtml: z.string().max(200000).optional(), specGroups: z.array(specGroupInput).max(100).optional(), source: productSourceInput.optional(), translations,
 }).strict();
-export const bannerInput = z.object({id:id.optional(),title:short.min(1),subtitle:text.optional(),ctaLabel:short.optional(),ctaUrl:link.optional(),image:link.optional(),position:z.enum(["hero","promo_pod","announcement"]).optional(),active:z.boolean().optional(),order:count.optional()}).strict();
-export const blogInput = z.object({id:id.optional(),slug:short.optional(),title:short.min(1),excerpt:text.optional(),content:z.string().min(1).max(50000),coverImage:link.optional(),category:short.optional(),readingTime:short.optional(),author:short.optional(),status:z.enum(["published","draft"]).optional(),publishedAt:short.optional(),...seo}).strict();
+export const bannerInput = z.object({id:id.optional(),title:short.min(1),subtitle:text.optional(),ctaLabel:short.optional(),ctaUrl:link.optional(),image:link.optional(),position:z.enum(["hero","promo_pod","announcement"]).optional(),active:z.boolean().optional(),order:count.optional(),translations}).strict();
+export const blogInput = z.object({id:id.optional(),slug:short.optional(),title:short.min(1),excerpt:text.optional(),content:z.string().min(1).max(50000),coverImage:link.optional(),category:short.optional(),readingTime:short.optional(),author:short.optional(),status:z.enum(["published","draft"]).optional(),publishedAt:short.optional(),...seo,translations}).strict();
 export const discountInput = z.object({id:id.optional(),code:short.min(1),description:text.optional(),type:z.enum(["percentage","fixed"]).optional(),value:money,minSpend:money.optional(),usageLimit:count.optional(),perCustomerLimit:count.optional(),applyType:z.enum(["all","categories","skus"]).optional(),targetCategories:list.optional(),targetSkus:list.optional(),startDate:short.optional(),expiresAt:short.optional(),isStackable:z.boolean().optional(),status:z.enum(["active","expired","disabled"]).optional()}).strict();
-export const settingsInput = z.object({storeName:short,contactEmail:z.email().max(254),supportPhone:short,currency:short,currencySymbol:short,freeShippingThreshold:money,taxRate:z.number().min(0).max(100),maintenanceMode:z.boolean(),garminPaySandbox:z.boolean(),stripeEnabled:z.boolean(),seoTitle:short,seoDescription:text}).strict();
+export const settingsInput = z.object({storeName:short,contactEmail:z.email().max(254),supportPhone:short,currency:short,currencySymbol:short,freeShippingThreshold:money,taxRate:z.number().min(0).max(100),maintenanceMode:z.boolean(),garminPaySandbox:z.boolean(),stripeEnabled:z.boolean(),seoTitle:short,seoDescription:text,translations}).strict();
 const tile = z.object({id,title:short,image:link,href:link,cta:short,order:count}).strict();
 const carouselItem = z.object({id,title:short,description:text,price:short.optional(),originalPrice:short.optional(),badge:short.optional(),image:link,href:link,ctaText:short.optional(),order:count,variant:z.enum(["product","promo"]).optional(),imageAlt:short.optional()}).strict();
 export const homepageInput = z.object({
   heroBanners:z.array(z.object({id,key:short,title:short,subtitle:text,disclaimer:text.optional(),image:link,href:link,active:z.boolean(),order:count}).strict()).max(100),
   carousels:z.array(z.object({id,title:short,subtitle:text.optional(),type:z.enum(["product","promo"]),collectionKey:z.string().regex(/^[a-z0-9][a-z0-9_-]{0,63}$/).optional(),active:z.boolean(),order:count,items:z.array(carouselItem).max(200)}).strict()).max(100),
-  promoTiles:z.array(tile).max(100),storyTiles:z.array(tile).max(100),categoryTiles:z.array(tile).max(100),updatedAt:short.optional(),
+  promoTiles:z.array(tile).max(100),storyTiles:z.array(tile).max(100),categoryTiles:z.array(tile).max(100),updatedAt:short.optional(),translations,
 }).strict();
 export const orderUpdateInput = z.object({id,fulfillmentStatus:z.enum(["new","processing","shipped","delivered","canceled","returned","cancelled"]).optional(),trackingNumber:short.optional(),carrier:short.optional(),estimatedDeliveryDate:short.optional(),notes:text.optional(),paymentStatus:z.enum(["paid","pending","refunded"]).optional()}).strict().refine(value=>Object.keys(value).length>1);
 export const emptyInput = z.object({}).strict();
@@ -55,24 +58,39 @@ const dtoKeys = {
   settings:Object.keys(settingsInput.shape),
 };
 type OutputShape = { readonly [key: string]: OutputType };
-type OutputType = "string" | "number" | "boolean" | "stringRecord" | readonly [OutputType] | OutputShape;
+type OutputType = "string" | "number" | "boolean" | "stringRecord" | "translations" | readonly [OutputType] | OutputShape;
 const strings = (keys: readonly string[]): OutputShape => Object.fromEntries(keys.map(key => [key, "string"]));
 const productOutput: OutputShape = { ...strings(dtoKeys.products), price: "number", originalPrice: "number", stock: "number", isFeatured: "boolean", noIndex: "boolean", activities: ["string"], inTheBox: ["string"], compatibleAccessories: ["string"], focusKeywords: ["string"], specs: [{label:"string",value:"string"}], features: [{title:"string",body:"string",image:"string"}],
   images: [{id:"string",src:"string",alt:"string",source:"string",width:"number",height:"number"}],
   options: [{id:"string",key:"string",name:"string",display:"string",values:[{id:"string",key:"string",label:"string",swatchColor:"string",swatchImage:"string"}]}],
   variants: [{id:"string",sku:"string",title:"string",selections:"stringRecord",price:"number",originalPrice:"number",stock:"number",status:"string",isDefault:"boolean",imageIds:["string"],sourcePartNumber:"string",sourcePrice:{currency:"string",list:"number",sale:"number",rateKztPerUsd:"number"}}],
   specGroups: [{title:"string",items:[{label:"string",value:"string"}]}],
-  source: {provider:"string",url:"string",productId:"string",partNumber:"string",importedAt:"string"} };
+  source: {provider:"string",url:"string",productId:"string",partNumber:"string",importedAt:"string"}, translations: "translations" };
 const outputs: Record<keyof typeof dtoKeys, OutputShape> = {
   products: productOutput,
-  banners: { ...strings(dtoKeys.banners), active:"boolean",order:"number" },
-  blogs: { ...strings(dtoKeys.blogs), noIndex:"boolean",focusKeywords:["string"] },
+  banners: { ...strings(dtoKeys.banners), active:"boolean",order:"number",translations:"translations" },
+  blogs: { ...strings(dtoKeys.blogs), noIndex:"boolean",focusKeywords:["string"],translations:"translations" },
   discounts: { ...strings(dtoKeys.discounts), value:"number",minSpend:"number",usageLimit:"number",perCustomerLimit:"number",usageCount:"number",isStackable:"boolean",targetCategories:["string"],targetSkus:["string"] },
   clients: { ...strings(dtoKeys.clients), totalSpent:"number",ordersCount:"number" },
   orders: { ...strings(dtoKeys.orders), total:"number",itemsCount:"number",items:[{productId:"string",name:"string",price:"number",quantity:"number",image:"string"}],milestones:[{stage:"string",label:"string",date:"string",description:"string",completed:"boolean",current:"boolean",location:"string"}],coordinates:{lat:"number",lng:"number"} },
-  settings: { ...strings(dtoKeys.settings), importRateKztPerUsd:"number", freeShippingThreshold:"number",taxRate:"number",maintenanceMode:"boolean",garminPaySandbox:"boolean",stripeEnabled:"boolean" },
+  settings: { ...strings(dtoKeys.settings), importRateKztPerUsd:"number", freeShippingThreshold:"number",taxRate:"number",maintenanceMode:"boolean",garminPaySandbox:"boolean",stripeEnabled:"boolean",translations:"translations" },
 };
+/** Translation overlays: plain JSON with string leaves only (objects and arrays nest; anything else is dropped). */
+function stringTree(value: unknown, depth = 0): unknown {
+  if (typeof value === "string") return value;
+  if (depth > 6) return undefined;
+  if (Array.isArray(value)) return value.map(item => stringTree(item, depth + 1)).filter(item => item !== undefined);
+  if (!value || typeof value !== "object") return undefined;
+  const output: Record<string, unknown> = {};
+  for (const [key, item] of Object.entries(value)) {
+    if (key === "__proto__" || key === "constructor" || key === "prototype") continue;
+    const safe = stringTree(item, depth + 1);
+    if (safe !== undefined) output[key] = safe;
+  }
+  return output;
+}
 function typedOutput(value: unknown, shape: OutputType): unknown {
+  if (shape === "translations") return stringTree(value);
   if (shape === "stringRecord") {
     if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
     return Object.fromEntries(Object.entries(value).filter(([, v]) => typeof v === "string"));

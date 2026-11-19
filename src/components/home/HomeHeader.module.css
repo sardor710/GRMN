@@ -112,7 +112,7 @@
   align-items: center;
   justify-content: flex-end;
   column-gap: 10px;
-  min-width: 185px;
+  min-width: max-content; /* never let the utility group spill over the nav */
   height: 64px;
 }
 

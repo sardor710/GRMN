@@ -47,6 +47,11 @@ COPY --from=dependencies /app/node_modules ./node_modules
 COPY . .
 
 ENV NODE_ENV=production
+# The public store origin (canonical URLs, hreflang, sitemap, JSON-LD). NEXT_PUBLIC_* values are
+# inlined at build time, so each environment's image is built with its own origin, e.g.
+#   docker build --build-arg NEXT_PUBLIC_SITE_URL=https://garmin.tigr.uz ...
+ARG NEXT_PUBLIC_SITE_URL=
+ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry

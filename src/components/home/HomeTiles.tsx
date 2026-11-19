@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { useTranslations } from "next-intl";
 import {
   homeCategoryTiles,
   homePromoTiles,
@@ -6,6 +7,7 @@ import {
 } from "@/lib/homepage-content";
 import type { HomepageTileBlock } from "@/lib/cms/types";
 import styles from "./HomeTiles.module.css";
+import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
 interface TileData {
   title: string;
@@ -15,8 +17,9 @@ interface TileData {
 }
 
 function PromoCard({ tile }: { tile: TileData }) {
+  const localize = useLocalizeHref();
   return (
-    <a href={tile.href} className={styles.promoCard}>
+    <a href={localize(tile.href)} className={styles.promoCard}>
       <div className={styles.promoImage}>
         <Image
           src={tile.image}
@@ -37,8 +40,9 @@ function PromoCard({ tile }: { tile: TileData }) {
 }
 
 function OverlayTile({ tile, kind }: { tile: TileData; kind: "story" | "category" }) {
+  const localize = useLocalizeHref();
   return (
-    <a href={tile.href} className={kind === "story" ? styles.storyTile : styles.categoryTile}>
+    <a href={localize(tile.href)} className={kind === "story" ? styles.storyTile : styles.categoryTile}>
       <Image
         src={tile.image}
         alt=""
@@ -65,6 +69,7 @@ interface HomeTilesProps {
 }
 
 export function HomeTiles({ promoTiles, storyTiles, categoryTiles }: HomeTilesProps) {
+  const t = useTranslations("HomeTiles");
   // CMS tiles win even when empty; static tiles only without CMS data.
   const promos = promoTiles ?? homePromoTiles;
   const stories = storyTiles ?? homeStoryTiles;
@@ -72,21 +77,21 @@ export function HomeTiles({ promoTiles, storyTiles, categoryTiles }: HomeTilesPr
 
   return (
     <>
-      <section className={styles.promoSection} id="home-promo" data-section="home-promo" aria-label="Featured collections">
+      <section className={styles.promoSection} id="home-promo" data-section="home-promo" aria-label={t("promoLabel")}>
         <div className={styles.promoRow}>
           {promos.map((tile) => (
             <PromoCard key={tile.title} tile={tile} />
           ))}
         </div>
       </section>
-      <section className={`${styles.tileGrid} ${styles.storyGrid}`} id="home-stories" data-section="home-stories" aria-label="Garmin stories">
+      <section className={`${styles.tileGrid} ${styles.storyGrid}`} id="home-stories" data-section="home-stories" aria-label={t("storiesLabel")}>
         {stories.map((tile) => (
           <OverlayTile key={tile.title} tile={tile} kind="story" />
         ))}
       </section>
       <section className={styles.categories} aria-labelledby="home-categories-heading">
         <h2 id="home-categories-heading" className={styles.sectionHeading}>
-          SHOP BY CATEGORY
+          {t("categoriesHeading")}
         </h2>
         <div className={`${styles.tileGrid} ${styles.categoryGrid}`} id="home-categories" data-section="home-categories">
           {categories.map((tile) => (
