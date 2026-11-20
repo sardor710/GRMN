@@ -26,8 +26,9 @@ export interface CompareItem {
   /** A legacy USD price with no KZT rate: pass to `<Price unconverted>`. */
   unconverted?: true;
   /**
-   * The size picker: on-sale variants in the detail read's order (PostgreSQL: default first). Empty for a product
-   * without variants, or with a single variant and no options (nothing to choose).
+   * The size picker: on-sale variants in the product's own option order (legacy: option value positions;
+   * PostgreSQL, whose detail carries no positions: numeric-aware label order). Empty for a product without
+   * variants, or with a single variant and no options (nothing to choose).
    */
   variants: CompareVariantOption[];
   /** The chosen variant's effective, localized specs (feed to `buildCompareRows`). */
@@ -38,6 +39,8 @@ export interface CompareItem {
 export type CompareDetailReader = (productId: string, locale: Locale) => Promise<ProductDetail | undefined>;
 
 const LABEL_SEPARATOR = " · ";
+/** Numeric-aware label order ("42 mm" < "47 mm" < "51 mm"), for variant lists that carry no positions. */
+const labelOrder = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
 const FALLBACK_IMAGE = "/images/products/1228429.jpg";
 
 const amountFromMajor = (value: number | string | undefined): KztAmount | null =>
@@ -58,7 +61,10 @@ function fromCommerce(detail: ProductDetail, commerce: NonNullable<ProductDetail
   };
   // Every PostgreSQL product has at least one variant; a single variant without options is not a size choice.
   const choosable = commerce.variants.length > 1 || commerce.variants.some((v) => Object.keys(v.options).length > 0);
-  const variants = choosable ? commerce.variants.map((v) => ({ sku: v.sku, label: label(v.options, v.name, v.sku) })) : [];
+  // The PostgreSQL detail lists variants default-first and carries no option value positions: sort by label.
+  const variants = choosable
+    ? commerce.variants.map((v) => ({ sku: v.sku, label: label(v.options, v.name, v.sku) })).sort((a, b) => labelOrder.compare(a.label, b.label))
+    : [];
   const base = { productId: detail.id, name: detail.title, variants };
   const chosenId = resolveInitialVariantId(commerce.variants, requestedSku, commerce.selectedVariantId);
   const chosen = commerce.variants.find((v) => v.id === chosenId);
@@ -76,9 +82,21 @@ function fromCommerce(detail: ProductDetail, commerce: NonNullable<ProductDetail
 function fromLegacy(detail: ProductDetail, requestedSku: string | undefined): CompareItem {
   const productImage = detail.gallery[0]?.src || FALLBACK_IMAGE;
   const model = detail.variantModel;
+  const options = model?.options ?? [];
   const onSale = (model?.variants ?? []).filter((v) => v.status === "active");
-  const variants = onSale.map((v) => {
-    const values = (model?.options ?? []).map((o) => {
+  type LegacyVariant = (typeof onSale)[number];
+  // The picker follows the product's own option order: each option's value position, option by option.
+  const rank = (v: LegacyVariant) => options.map((o) => {
+    const at = o.values.findIndex((value) => value.id === v.selections[o.id]);
+    return at < 0 ? Number.MAX_SAFE_INTEGER : at;
+  });
+  const byOptionOrder = (a: LegacyVariant, b: LegacyVariant) => {
+    const ra = rank(a), rb = rank(b);
+    const at = ra.findIndex((value, i) => value !== rb[i]);
+    return at < 0 ? 0 : ra[at] - rb[at];
+  };
+  const variants = [...onSale].sort(byOptionOrder).map((v) => {
+    const values = options.map((o) => {
       const valueId = v.selections[o.id];
       return valueId ? o.values.find((value) => value.id === valueId)?.label.trim() : undefined;
     }).filter((value): value is string => Boolean(value));

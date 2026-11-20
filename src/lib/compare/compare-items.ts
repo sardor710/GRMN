@@ -96,6 +96,44 @@ export function compareQueryString(items: readonly CompareItemRef[]): string {
   return serializeCompareItems(items).toString().replace(/%7E/gi, COMPARE_SKU_SEPARATOR);
 }
 
+/** The compare page path, without the locale prefix (localise it with `@/i18n/navigation` or `localizeHref`). */
+export const COMPARE_PATH = "/compare";
+/** "Show only differences" in the URL: `diff=1`. */
+export const COMPARE_DIFF_PARAM = "diff";
+/** The compare page's product search (the "+" tile): `q=<text>`. */
+export const COMPARE_SEARCH_PARAM = "q";
+
+export interface CompareHrefOptions {
+  /** Adds `diff=1`. */
+  onlyDifferences?: boolean;
+  /** Adds `q=<text>` (trimmed; blank is left out). */
+  search?: string;
+}
+
+/** The query (no leading `?`) for these columns plus the page's own options; "" when there is nothing to say. */
+export function compareSearch(items: readonly CompareItemRef[], options: CompareHrefOptions = {}): string {
+  const parts = [compareQueryString(items)];
+  if (options.onlyDifferences) parts.push(`${COMPARE_DIFF_PARAM}=1`);
+  const search = options.search?.trim();
+  if (search) parts.push(new URLSearchParams({ [COMPARE_SEARCH_PARAM]: search }).toString());
+  return parts.filter(Boolean).join("&");
+}
+
+/**
+ * The compare page link for these columns, e.g. `/compare?item=fenix-8~F8-47&item=venu-4` (no locale prefix).
+ * For the catalogue compare bar and the product page's "Add to comparison" (task C-c).
+ */
+export function compareHref(items: readonly CompareItemRef[], options: CompareHrefOptions = {}): string {
+  const search = compareSearch(items, options);
+  return search ? `${COMPARE_PATH}?${search}` : COMPARE_PATH;
+}
+
+/** Whether a page `searchParams` record asks for "Show only differences" (`diff=1`). */
+export function readOnlyDifferences(query: Readonly<Record<string, string | readonly string[] | undefined>> | null | undefined): boolean {
+  const raw = query?.[COMPARE_DIFF_PARAM];
+  return (Array.isArray(raw) ? raw[0] : raw) === "1";
+}
+
 /**
  * The key two spec labels (or group titles) are matched by: case-insensitive, whitespace collapsed, ™ ® ©
  * removed and trailing colons dropped ("Garmin Pay™:" and "GARMIN PAY" match).

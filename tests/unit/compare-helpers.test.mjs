@@ -183,7 +183,11 @@ test("compareItemFromDetail (PostgreSQL) picks the SKU's variant: price, image, 
   assert.deepEqual(compareItemFromDetail(single, undefined).variants, []);
   assert.equal(compareItemFromDetail(single, undefined).sku, "W-51");
   single.commerce.variants.push({ ...single.commerce.variants[0], id: "v2", sku: "W-2", name: "Second" });
-  assert.deepEqual(compareItemFromDetail(single, undefined).variants, [{ sku: "W-51", label: "W-51" }, { sku: "W-2", label: "Second" }]);
+  // C-b: the picker is sorted by label (numeric-aware), since PostgreSQL details carry no option positions.
+  assert.deepEqual(compareItemFromDetail(single, undefined).variants, [{ sku: "W-2", label: "Second" }, { sku: "W-51", label: "W-51" }]);
+  const sizes = postgresDetail();
+  sizes.commerce.variants = ["51 mm", "42 mm", "47 mm"].map((size, i) => ({ ...sizes.commerce.variants[0], id: "s" + i, sku: "S-" + size, options: { size } }));
+  assert.deepEqual(compareItemFromDetail(sizes, undefined).variants.map((v) => v.label), ["42 mm", "47 mm", "51 mm"]);
 });
 
 function legacyDetail(currency = "KZT") {
@@ -206,6 +210,10 @@ test("compareItemFromDetail (legacy JSON) uses active variants, the default one,
   assert.equal(item.image, "/2.jpg");
   assert.deepEqual(item.variants, [{ sku: "L-42", label: "42 mm" }, { sku: "L-46", label: "46 mm" }]);
   assert.deepEqual(item.content, { specs: [{ label: "Weight", value: "40 g" }], specGroups: [] });
+  // C-b: the picker follows the option value order, not the order the variants were stored in.
+  const reversed = legacyDetail();
+  reversed.variantModel.variants.reverse();
+  assert.deepEqual(compareItemFromDetail(reversed, undefined).variants.map((v) => v.sku), ["L-42", "L-46"]);
   const small = compareItemFromDetail(legacyDetail(), "l-42");
   assert.equal(small.sku, "L-42");
   assert.equal(small.image, "/1.jpg");
