@@ -59,7 +59,7 @@ async function productsListScenario({cms,headers,send,evaluate,navigate,text}){
     // Clicking the product name lands on the edit overlay and opens the editor.
     assert.equal(await evaluate(`(()=>{const name=document.querySelector(${JSON.stringify(row("C"))}).querySelector('p.font-medium');const r=name.getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.getAttribute('aria-label');})()`),"Edit UI LIST C");
     await pressAt(`document.querySelector(${JSON.stringify(row("C"))}).querySelector('p.font-medium')`);
-    await until(async()=>await evaluate("!!document.querySelector('form')")&&/edit model: ui list c/i.test(await text()),"Clicking the name did not open the editor");
+    await until(async()=>await evaluate("!!document.querySelector('form')")&&/edit ui list c/i.test(await text()),"Clicking the name did not open the editor");
     await evaluate("window.confirm=()=>true;window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}));true");await until(()=>evaluate("!document.querySelector('form')"),"Editor did not close");
     // Inline status menu: draft -> published, persisted across a reload.
     await tap(`${row("C")} button[aria-label^="Status of"]`);
@@ -508,8 +508,8 @@ async function adminShotsScenario({cms,headers,send,evaluate,navigate,text,click
       await evaluate("window.scrollTo(0,0);true");await shoot(`products-selected-${width}.png`);});
       await step(`product-variants-${width}.png`,async()=>{await ui.open();await ui.openContent(51).catch(()=>{});await shoot(`product-variants-${width}.png`);await ui.close();});
       await navigate("/admin/orders");await until(()=>evaluate("!!document.querySelector('select[aria-label=\"Payment mode filter\"]')"),"Orders did not load");
-      await evaluate(`(()=>{const select=document.querySelector('select[aria-label="Payment mode filter"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,'demo');select.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
-      await until(()=>evaluate("document.querySelectorAll('section[aria-label=\"Order queue\"] li button [data-demo-badge]').length>0"),"The Demo filter listed nothing");
+      // Set again on each try: a value set before hydration finishes is dropped.
+      await until(()=>evaluate(`(()=>{const select=document.querySelector('select[aria-label="Payment mode filter"]');if(select.value!=='demo'){Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,'demo');select.dispatchEvent(new Event('change',{bubbles:true}));}else select.dispatchEvent(new Event('change',{bubbles:true}));return document.querySelectorAll('section[aria-label="Order queue"] li button [data-demo-badge]').length>0;})()`),"The Demo filter listed nothing").catch(async error=>{await writeFile(path.join(receipt,`admin-shots-orders-${width}.txt`),await evaluate("document.querySelector('main')?.innerText??''"));throw error;});
       await evaluate("document.querySelector('section[aria-label=\"Order queue\"] li button').click();true");
       await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Order detail\"] [data-demo-badge]')"),"Order detail did not open");
       await shoot(`orders-demo-${width}.png`);
