@@ -42,7 +42,7 @@ function collect(record: Record<string, unknown>, spec: FieldSpec, existing: Ove
   let counter = 0;
   const add = (path: (string | number)[], field: string, text: string) => {
     if (!translatable(text) || !blank(read(existing, [...path, field]))) return;
-    if (htmlFields.has(field) && path.length === 0) {
+    if (htmlFields.has(field)) {
       // HTML: one slot per text node; the overlay field is rebuilt from the translated nodes.
       const parts = text.split(/(<[^>]+>)/);
       const translated = [...parts];
@@ -68,6 +68,11 @@ function collect(record: Record<string, unknown>, spec: FieldSpec, existing: Ove
     for (const [field, sub] of Object.entries(nodeSpec.lists ?? {})) {
       const list = node[field];
       if (Array.isArray(list)) list.forEach((item, index) => { if (isObject(item)) walk(item, sub, [...path, field, index]); });
+    }
+    // A nested object (a variant's `content`): only the blocks it actually has are walked.
+    for (const [field, sub] of Object.entries(nodeSpec.objects ?? {})) {
+      const child = node[field];
+      if (isObject(child)) walk(child, sub, [...path, field]);
     }
     for (const [field, sub] of Object.entries(nodeSpec.keyed ?? {})) {
       const list = node[field];

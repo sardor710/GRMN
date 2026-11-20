@@ -7,6 +7,8 @@ import { SiteFooter } from "@/components/SiteFooter";
 import { ProductTop } from "@/components/ProductTop";
 import { ProductTabs } from "@/components/ProductTabs";
 import { RelatedProducts } from "@/components/RelatedProducts";
+import { ProductVariantProvider } from "@/components/product/ProductVariantContext";
+import { resolveInitialVariantId, variantParam } from "@/lib/catalog/variant-selection";
 import { getProductDetail, getAllProducts, getCMSProduct, getRawCMSProduct } from "@/lib/products";
 import { ProductJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
@@ -83,11 +85,16 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/p/[id]">):
   };
 }
 
-export default async function ProductPage({ params }: PageProps<"/[lang]/p/[id]">) {
+export default async function ProductPage({ params, searchParams }: PageProps<"/[lang]/p/[id]">) {
   const locale = await initPageLocale(params);
   const id = decodeRouteParam((await params).id);
   const detail = await readOr(getProductDetail(id, locale), () => undefined);
   if (!detail) notFound();
+  // Task 2.4: `?variant=<sku>` picks the first variant shown (unknown or archived SKUs fall back to the default).
+  // The canonical URL stays `/p/<id>` (generateMetadata), so variant links are not duplicate pages.
+  const initialVariantId = detail.commerce
+    ? resolveInitialVariantId(detail.commerce.variants, variantParam(await searchParams), detail.commerce.selectedVariantId)
+    : "";
 
   const rawProduct = detail.commerce ? undefined : await getRawCMSProduct(id);
   const cmsProduct = rawProduct ? await getCMSProduct(id, locale) : undefined;
@@ -135,8 +142,10 @@ export default async function ProductPage({ params }: PageProps<"/[lang]/p/[id]"
 
       <SiteHeader />
       <main className="flex-1">
-        <ProductTop product={detail} />
-        <ProductTabs product={detail} />
+        <ProductVariantProvider initialVariantId={initialVariantId}>
+          <ProductTop product={detail} />
+          <ProductTabs product={detail} />
+        </ProductVariantProvider>
         <RelatedProducts ids={detail.related} locale={locale} />
       </main>
       <SiteFooter />

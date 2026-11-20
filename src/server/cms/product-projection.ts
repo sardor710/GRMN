@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { resolveUploadFile, sniffImageType } from "../../lib/media/storage.ts";
 import { AuthFailure } from "../auth/config.ts";
+import type { VariantContent } from "../../lib/catalog/variant-content.ts";
 
 // Owner, 2026-11-19 (commits 5cbad06/e7dc91c on PostgreSQL): the admin product document keeps its
 // options, variants and photos in products.legacy_content; this projects them into the commerce
@@ -15,7 +16,7 @@ import { AuthFailure } from "../auth/config.ts";
 // only through the inventory workflow.
 
 export interface EditorOption { id: string; key: string; name: string; values: { id: string; key: string; label: string }[] }
-export interface EditorVariant { id: string; sku: string; title: string; selections: Record<string, string>; price: number | string; originalPrice?: number | string; status: "draft" | "active" | "archived"; isDefault: boolean; imageIds: string[] }
+export interface EditorVariant { id: string; sku: string; title: string; selections: Record<string, string>; price: number | string; originalPrice?: number | string; status: "draft" | "active" | "archived"; isDefault: boolean; imageIds: string[]; /** Task 2.1: own Specs/Overview/In the box; absent keys inherit. */ content?: VariantContent }
 export interface EditorImage { id: string; src: string; alt?: string }
 export interface ProductDocument { status: string; sku: string; priceMinor: string; compareMinor: string | null; options: EditorOption[]; variants: EditorVariant[]; images: EditorImage[]; defaultImageId?: string; image?: string }
 
@@ -34,6 +35,12 @@ export function toMinor(value: number | string, field: string): string {
   return (BigInt(match[1]) * BigInt(100) + BigInt((match[2] ?? "").padEnd(2, "0"))).toString();
 }
 const variantStatus = (product: string, variant: string) => product === "archived" || variant === "archived" ? "archived" : product === "published" && variant === "active" ? "active" : variant === "draft" || product === "draft" ? "draft" : "active";
+/** Only the known content blocks leave the editor document (a non-object is "inherit everything"). */
+const overrides = (content: unknown): VariantContent => {
+  if (content === null || typeof content !== "object" || Array.isArray(content)) return {};
+  const source = content as Record<string, unknown>;
+  return Object.fromEntries((["specs", "specGroups", "overviewHtml", "inTheBox"] as const).filter(key => source[key] !== undefined).map(key => [key, source[key]])) as VariantContent;
+};
 /** Local photo paths the store serves itself; external URLs are never registered as media. */
 const localPhoto = (src: string) => /^\/(uploads|media|images)\/[^\s\\]+$/.test(src) && !src.includes("..") && !src.startsWith("//");
 
@@ -94,10 +101,11 @@ export async function projectProduct(client: PoolClient, productId: string, doc:
   const editorToRow = new Map<string, string>(), keepVariants: string[] = [];
   await client.query("UPDATE product_variants SET is_default=false WHERE product_id=$1 AND is_default", [productId]);
   // option_signature is derived by a database trigger from variant_option_values; it is never written here.
-  const upsertVariant = async (id: string, sku: string, name: string | null, status: string, isDefault: boolean, amount: string, compare: string | null) => {
-    await client.query(`INSERT INTO product_variants(id,product_id,sku,name,status,is_default) VALUES($1,$2,$3,$4,$5,$6)
-      ON CONFLICT(id) DO UPDATE SET sku=excluded.sku,name=excluded.name,status=excluded.status,is_default=excluded.is_default,version=product_variants.version+1,updated_at=clock_timestamp()`,
-      [id, productId, sku, name, status, isDefault]);
+  // Task 2.1: the variant's content overrides are copied as-is (a present key is "Own", even when empty).
+  const upsertVariant = async (id: string, sku: string, name: string | null, status: string, isDefault: boolean, amount: string, compare: string | null, content: VariantContent = {}) => {
+    await client.query(`INSERT INTO product_variants(id,product_id,sku,name,status,is_default,content_overrides) VALUES($1,$2,$3,$4,$5,$6,$7)
+      ON CONFLICT(id) DO UPDATE SET sku=excluded.sku,name=excluded.name,status=excluded.status,is_default=excluded.is_default,content_overrides=excluded.content_overrides,version=product_variants.version+1,updated_at=clock_timestamp()`,
+      [id, productId, sku, name, status, isDefault, JSON.stringify(overrides(content))]);
     const price = (await client.query<{ id: string }>("SELECT id FROM prices WHERE variant_id=$1 AND is_active AND market='default' AND currency='KZT'", [id])).rows[0];
     if (price) await client.query("UPDATE prices SET amount_minor=$2,compare_at_minor=$3,version=version+1 WHERE id=$1", [price.id, amount, compare]);
     else await client.query("INSERT INTO prices(id,variant_id,amount_minor,compare_at_minor) VALUES($1,$2,$3,$4)", [randomUUID(), id, amount, compare]);
@@ -109,7 +117,7 @@ export async function projectProduct(client: PoolClient, productId: string, doc:
       editorToRow.set(v.id, id); keepVariants.push(id);
       const amount = toMinor(v.price, `Price of ${sku}`), compare = v.originalPrice === undefined || v.originalPrice === "" ? null : toMinor(v.originalPrice, `Compare-at price of ${sku}`);
       const status = variantStatus(doc.status, v.status);
-      await upsertVariant(id, sku, v.title?.trim() || null, status, v.isDefault, amount, compare);
+      await upsertVariant(id, sku, v.title?.trim() || null, status, v.isDefault, amount, compare, v.content);
       await client.query("DELETE FROM variant_option_values WHERE variant_id=$1", [id]);
       for (const option of doc.options) await client.query("INSERT INTO variant_option_values(variant_id,product_id,option_id,option_value_id) VALUES($1,$2,$3,$4)", [id, productId, optionIds.get(option.id), valueIds.get(`${option.id}\u0000${v.selections[option.id]}`)]);
     }

@@ -88,3 +88,30 @@ test("a daily free-model limit is reported in plain words with its reset time", 
   const model = openRouterModel({ apiKey: "sk-test", model: "m", fetch: async () => new Response(JSON.stringify(body), { status: 429 }) });
   await assert.rejects(model.complete({ locale: "ru", segments: { s0: "x" } }), e => /daily limit reached \(resets 2026-11-20 00:00 UTC\)/.test(e.message) && !e.message.includes("sk-test"));
 });
+
+test("auto-translate covers variant override text and keys it by variant id", async () => {
+  const { translateRecord } = await load(), { PRODUCT_SPEC: REAL_SPEC } = await import("../../src/i18n/translate-record.ts"), model = fakeModel();
+  const product = {
+    name: "Fenix", overviewHtml: "<p>Product overview</p>", inTheBox: ["Watch"], specs: [{ label: "Screen", value: "AMOLED" }],
+    variants: [
+      { id: "var-0", sku: "A-0", title: "47 mm" },
+      { id: "var-1", sku: "A-1", title: "51 mm", content: { overviewHtml: '<div class="x"><p>Big <b>screen</b></p></div>', inTheBox: ["Watch 51 mm"], specs: [{ label: "Weight", value: "Very light" }], specGroups: [{ title: "Physical", items: [{ label: "Case", value: "Titanium" }] }] } },
+      { id: "var-2", sku: "A-2", title: "Own empty", content: { specs: [], inTheBox: [] } },
+    ],
+  };
+  const result = await translateRecord({ record: product, spec: REAL_SPEC, htmlFields: ["overviewHtml"], existing: {}, locales: ["ru", "kk"], model });
+  const ru = result.translations.ru.variants;
+  assert.deepEqual(ru["var-1"].content, {
+    overviewHtml: '<div class="x"><p>[ru] Big <b>[ru] screen</b></p></div>', inTheBox: ["[ru] Watch 51 mm"],
+    specs: [{ label: "[ru] Weight", value: "[ru] Very light" }], specGroups: [{ title: "[ru] Physical", items: [{ label: "[ru] Case", value: "[ru] Titanium" }] }],
+  });
+  assert.equal(result.translations.kk.variants["var-1"].content.inTheBox[0], "[kk] Watch 51 mm");
+  // A variant that owns nothing translatable gets no entry; a variant without content never does; absent blocks are never invented.
+  assert.deepEqual(Object.keys(ru), ["var-1"]);
+  assert.equal(result.translations.ru.name, "[ru] Fenix");
+  // A second run keeps a staff translation of one variant row and fills only what is empty.
+  const existing = { ru: { variants: { "var-1": { content: { inTheBox: ["Своё"] } } } } };
+  const again = await translateRecord({ record: product, spec: REAL_SPEC, htmlFields: ["overviewHtml"], existing, locales: ["ru"], model });
+  assert.deepEqual(again.translations.ru.variants["var-1"].content.inTheBox, ["Своё"]);
+  assert.equal(again.translations.ru.variants["var-1"].content.specs[0].label, "[ru] Weight");
+});

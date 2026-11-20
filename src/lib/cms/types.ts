@@ -1,3 +1,5 @@
+import type { VariantContent } from '../catalog/variant-content';
+
 export type AdminRole = 'super_admin' | 'editor' | 'product_manager' | 'support';
 export type AdminStatus = 'active' | 'inactive';
 
@@ -112,6 +114,8 @@ export interface ProductVariant {
   imageIds: string[];
   sourcePartNumber?: string;
   sourcePrice?: SourcePrice;
+  /** Own Specs/Overview/In the box (PostgreSQL only); a missing key inherits the product's block. */
+  content?: VariantContent;
 }
 
 export interface SpecGroup {

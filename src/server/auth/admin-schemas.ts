@@ -22,10 +22,12 @@ const productImageInput = z.object({id,src:link,alt:short,source:z.enum(["upload
 const sourcePriceInput = z.object({currency:z.literal("USD"),list:money,sale:money.optional(),rateKztPerUsd:money}).strict();
 const productVariantInput = z.object({id,sku:short,title:short,selections:z.record(id,id),price:money,originalPrice:money.optional(),stock:count,status:z.enum(["draft","active","archived"]),isDefault:z.boolean(),imageIds:z.array(id).max(200),sourcePartNumber:short.optional(),sourcePrice:sourcePriceInput.optional()}).strict();
 const specGroupInput = z.object({title:short,items:z.array(z.object({label:short,value:text}).strict()).max(500)}).strict();
+// Task 2.1: per-variant content overrides (PostgreSQL route only). A present key means "Own", even when empty.
+const variantContentInput = z.object({specs:z.array(z.object({label:short,value:text}).strict()).max(500).optional(),specGroups:z.array(specGroupInput).max(100).optional(),overviewHtml:z.string().max(200000).optional(),inTheBox:list.optional()}).strict();
 const productSourceInput = z.object({provider:z.literal("garmin"),url:link,productId:short,partNumber:short,importedAt:short}).strict();
 // The PostgreSQL admin route keeps exact money lexemes, so its variant prices may arrive as decimal text.
 const variantMoney = z.union([money, z.string().regex(/^(0|[1-9][0-9]{0,13})(\.[0-9]{1,2})?$/)]);
-export const exactMoneyVariantInput = productVariantInput.extend({price:variantMoney,originalPrice:variantMoney.optional()});
+export const exactMoneyVariantInput = productVariantInput.extend({price:variantMoney,originalPrice:variantMoney.optional(),content:variantContentInput.optional()});
 export const productInput = z.object({
   id: id.optional(), name: short.min(1), price: money, sku: short.optional(), originalPrice: money.optional(), priceSuffix: short.optional(),
   description: text.optional(), image: link.optional(), badge: short.optional(), family: short.optional(), category: short.optional(), subCategory: short.optional(),
@@ -67,7 +69,7 @@ const strings = (keys: readonly string[]): OutputShape => Object.fromEntries(key
 const productOutput: OutputShape = { ...strings(dtoKeys.products), price: "number", originalPrice: "number", stock: "number", isFeatured: "boolean", noIndex: "boolean", activities: ["string"], inTheBox: ["string"], compatibleAccessories: ["string"], focusKeywords: ["string"], specs: [{label:"string",value:"string"}], features: [{title:"string",body:"string",image:"string"}],
   images: [{id:"string",src:"string",alt:"string",source:"string",width:"number",height:"number"}],
   options: [{id:"string",key:"string",name:"string",display:"string",values:[{id:"string",key:"string",label:"string",swatchColor:"string",swatchImage:"string"}]}],
-  variants: [{id:"string",sku:"string",title:"string",selections:"stringRecord",price:"number",originalPrice:"number",stock:"number",status:"string",isDefault:"boolean",imageIds:["string"],sourcePartNumber:"string",sourcePrice:{currency:"string",list:"number",sale:"number",rateKztPerUsd:"number"}}],
+  variants: [{id:"string",sku:"string",title:"string",selections:"stringRecord",price:"number",originalPrice:"number",stock:"number",status:"string",isDefault:"boolean",imageIds:["string"],content:{specs:[{label:"string",value:"string"}],specGroups:[{title:"string",items:[{label:"string",value:"string"}]}],overviewHtml:"string",inTheBox:["string"]},sourcePartNumber:"string",sourcePrice:{currency:"string",list:"number",sale:"number",rateKztPerUsd:"number"}}],
   specGroups: [{title:"string",items:[{label:"string",value:"string"}]}],
   source: {provider:"string",url:"string",productId:"string",partNumber:"string",importedAt:"string"}, translations: "translations" };
 const outputs: Record<keyof typeof dtoKeys, OutputShape> = {
