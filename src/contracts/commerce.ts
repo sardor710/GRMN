@@ -1,4 +1,5 @@
 // Browser-safe wire contracts. Runtime validation belongs to the owning service.
+import type { VariantContent } from "../lib/catalog/variant-content";
 export type Locale = "kk" | "ru" | "en";
 export type DisplayCurrency = "KZT" | "USD";
 
@@ -64,8 +65,13 @@ export interface VariantDTO {
   gallery?: MediaDTO[];
 }
 
+/** Task 2.1: a product-page variant carries its effective (inherited or own), localized content. */
+export interface ProductDetailVariantDTO extends VariantDTO {
+  content: Required<VariantContent>;
+}
+
 export interface ProductDetailDTO extends ProductCardDTO {
-  variants: VariantDTO[];
+  variants: ProductDetailVariantDTO[];
   gallery: MediaDTO[];
   specs: { label: string; value: string }[];
   features: { title: string; body: string; image: MediaDTO | null }[];

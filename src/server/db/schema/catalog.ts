@@ -57,6 +57,7 @@ export const productVariants = pgTable("product_variants", {
   lengthMm: integer("length_mm"),
   widthMm: integer("width_mm"),
   heightMm: integer("height_mm"),
+  contentOverrides: jsonb("content_overrides").notNull().default({}),
   version: integer("version").notNull().default(1),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
@@ -70,6 +71,7 @@ export const productVariants = pgTable("product_variants", {
   check("product_variants_status_valid", sql`${table.status} IN ('draft','active','archived')`),
   check("product_variants_measurements_valid", sql`(${table.weightGrams} IS NULL OR ${table.weightGrams}>0) AND (${table.lengthMm} IS NULL OR ${table.lengthMm}>0) AND (${table.widthMm} IS NULL OR ${table.widthMm}>0) AND (${table.heightMm} IS NULL OR ${table.heightMm}>0)`),
   check("product_variants_version_valid", sql`${table.version}>=1`),
+  check("product_variants_content_overrides_object", sql`jsonb_typeof(${table.contentOverrides})='object'`),
 ]);
 
 export const productOptions = pgTable("product_options", {

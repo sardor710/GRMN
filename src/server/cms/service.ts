@@ -237,9 +237,10 @@ export function createCMSService({pool,authorize}:Options) {
           // Overview HTML, image URLs and swatch colours are sanitized like the legacy admin route.
           const clean=sanitizeProductInput(unsafe as Record<string,unknown>,undefined);
           if(!clean.ok)return fail("INVALID_INPUT",400,clean.error);
+          // Task 2.1: a variant's own overview HTML is sanitized like the product overview.
           // Variant prices may arrive as exact text (the admin route keeps money lexemes); the editor
           // document stores them as numbers in KZT major units, like the legacy store.
-          const base={...(clean.product as typeof unsafe),...(Array.isArray(unsafe.variants)?{variants:(clean.product as typeof unsafe).variants!.map(v=>({...v,price:Number(toMinor(v.price,`Price of ${v.sku}`))/100,
+          const base={...(clean.product as typeof unsafe),...(Array.isArray(unsafe.variants)?{variants:(clean.product as typeof unsafe).variants!.map(v=>({...v,...(v.content?.overviewHtml===undefined?{}:{content:{...v.content,overviewHtml:PRODUCT_HTML_FIELDS.overviewHtml(v.content.overviewHtml)}}),price:Number(toMinor(v.price,`Price of ${v.sku}`))/100,
             ...(v.originalPrice===undefined||v.originalPrice===""?{}:{originalPrice:Number(toMinor(v.originalPrice,`Compare-at price of ${v.sku}`))/100})}))}:{})} as typeof unsafe;
           const translations=mergedTranslations(old?.translations,sentTranslations,PRODUCT_SPEC,PRODUCT_HTML_FIELDS);
           const metadata={...record(old?.legacy_content),...base,price:Number(data.price)/100,originalPrice:compareAt===null?undefined:Number(compareAt)/100};
