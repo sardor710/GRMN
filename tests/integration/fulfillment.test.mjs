@@ -341,3 +341,40 @@ test("review I4: support sees no carrier, tracking reference or internal note",a
   const staff=JSON.stringify(await fulfillment.getOrder(fulfiller,orderId));
   for(const value of ["Support-hidden carrier","SUPPORT-HIDDEN-TRK","Support-hidden note"])assert.ok(staff.includes(value),value+" missing for orders:fulfill");
 });
+
+// Task 3.3: staff find demo-checkout orders with the "Demo" filter; customers see them labelled demo.
+test("listOrders({paymentMode:'demo'}) returns only demo orders, and the account DTOs carry the payment mode",async()=>{
+  await load();
+  const p=await product();
+  const live=await paidOrder([[p.variant,1]]);
+  // A new store starts in demo checkout, so this purchase is a captured demo order (Task 3.2).
+  const buyer=await owner(),quote=await quoted(buyer.headers,[[p.variant,1]]);
+  const demo=await carts.checkout(buyer.headers,key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"});
+  assert.deepEqual([demo.paymentMode,demo.status],["demo","confirmed"]);
+  const demoOnly=await fulfillment.listOrders(support,{paymentMode:"demo"});
+  assert.ok(demoOnly.items.length>=1);
+  assert.ok(demoOnly.items.every(o=>o.paymentMode==="demo"),"only demo orders");
+  assert.ok(demoOnly.items.some(o=>o.id===demo.orderId));
+  assert.ok(!demoOnly.items.some(o=>o.id===live.orderId),"a live order is not listed under Demo");
+  const liveOnly=await fulfillment.listOrders(support,{paymentMode:"live"});
+  assert.ok(liveOnly.items.every(o=>o.paymentMode==="live"));
+  assert.ok(liveOnly.items.some(o=>o.id===live.orderId));assert.ok(!liveOnly.items.some(o=>o.id===demo.orderId));
+  // Combined with the fulfillment status, and paged with the same cursor rules.
+  const combined=await fulfillment.listOrders(support,{paymentMode:"demo",fulfillmentStatus:"unfulfilled",limit:1});
+  assert.ok(combined.items.every(o=>o.paymentMode==="demo"&&o.fulfillmentStatus==="unfulfilled"));
+  await rejectsWith(fulfillment.listOrders(support,{paymentMode:"legacy_unknown"}),400,"INVALID_INPUT");
+  // The HTTP query string reaches the same filter.
+  const {createFulfillmentHTTP}=await import("../../src/server/fulfillment/http.ts");
+  const handle=createFulfillmentHTTP({service:fulfillment,baseURL});
+  const response=await handle(new Request(baseURL+"/api/admin/orders?paymentMode=demo",{headers:support}));
+  assert.equal(response.status,200);
+  const listed=(await response.json()).items;
+  assert.ok(listed.length>=1&&listed.every(o=>o.paymentMode==="demo"));
+  assert.equal((await handle(new Request(baseURL+"/api/admin/orders?paymentMode=sandbox",{headers:support}))).status,400);
+  assert.equal((await fulfillment.getOrder(support,demo.orderId)).paymentMode,"demo");
+  // The customer's order history and detail say which orders were demo.
+  const history=await api.getOwnOrders(buyer.headers,{});
+  assert.equal(history.items.find(o=>o.id===demo.orderId)?.paymentMode,"demo");
+  assert.equal((await api.getOwnOrder(buyer.headers,demo.orderId)).paymentMode,"demo");
+  assert.equal((await api.getOwnOrders(live.buyer.headers,{})).items.find(o=>o.id===live.orderId)?.paymentMode,"live");
+});

@@ -8,7 +8,7 @@ import type { ManualPaymentService } from "../payments/manual.ts";
 import { requestURL } from "../auth/request-url.ts";
 
 // /api/admin/orders in PostgreSQL mode (Task 16A).
-// GET (orders:read): no query or ?fulfillmentStatus=&cursor=&limit= lists the queue; ?id= reads one order.
+// GET (orders:read): no query or ?fulfillmentStatus=&paymentMode=&cursor=&limit= lists the queue; ?id= reads one order.
 // POST (orders:fulfill, same origin): { action: "create_shipment", ... } or
 // { action: "dispatch" | "deliver" | "cancel" | "annotate", shipmentId, ... }; Task 16B adds
 // "cancel_order", "refund", "create_return" and "update_return" (the after-sales service). O07 (Task 21C)

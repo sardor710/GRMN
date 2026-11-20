@@ -65,6 +65,22 @@ A demo order now:
   `payments:refund`), idempotency keys, expected versions and audit entries. Manual confirmation still
   refuses demo orders (`PAYMENT_NOT_MANUAL`).
 
+## Labels (Task 3.3)
+
+- **Checkout.** While demo is on, the button reads "Pay (demo)" with one line under it: "Demo payment — no money
+  is charged." The manual payment notice is not shown. If the setting changes while checkout is open, the
+  server answers `PAYMENT_METHOD_UNAVAILABLE`; the panel re-reads the cart (every cart response carries
+  `paymentMethods`) and shows the localised `Checkout.methodChanged` message.
+- **Receipt.** A demo order shows a DEMO badge. If its capture failed (still `pending_payment`), the receipt says
+  "Payment not completed" with "Try again", which resends the same checkout with the same idempotency key.
+  The key is kept in session storage only while the order still needs that retry.
+- **Account.** `OrderSummaryDTO.paymentMode` labels demo orders DEMO in the order history and detail.
+- **Admin.** Orders has a Payment filter (All, Demo, Live; `GET /api/admin/orders?paymentMode=demo|live`) and a
+  DEMO badge in the queue and the order detail, so stray demo orders can be found and cancelled.
+- **Exports.** The order CSV has a `payment_mode` column (`demo`, `live`, `legacy_unknown`). No UI, DTO or export
+  adds demo totals to real ones.
+- **Cutover.** Turn demo checkout off before the cutover rehearsal (`docs/backend/cutover-runbook.md`, A5).
+
 ## Tests
 
 `tests/integration/demo-checkout.test.mjs` covers:

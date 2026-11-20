@@ -6,6 +6,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { Check, Plus, Trash2, Edit3, X, AlertCircle, Lock, KeyRound, Package, ChevronRight, Phone, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { AccountIcon } from "@/components/icons";
+import { DemoBadge } from "@/components/DemoBadge";
 import { Link } from "@/i18n/navigation";
 import { INTL_LOCALE } from "@/i18n/config";
 import { formatDate as formatLocaleDate } from "@/i18n/format";
@@ -704,6 +705,7 @@ export function AccountDashboard() {
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="bg-black px-2 py-0.5 font-mono text-xs font-bold text-white">{orders[0].orderNumber}</span>
+                          {orders[0].paymentMode === "demo" && <DemoBadge label={t("demoBadge")} className="text-[10px]" />}
                           <span className={`border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusTone(orders[0].fulfillmentStatus)}`}>{statusLabel(orders[0].fulfillmentStatus)}</span>
                         </div>
                         <p className="mt-0.5 font-mono text-[12px] text-neutral-500">
@@ -730,6 +732,7 @@ export function AccountDashboard() {
                         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-3">
                           <div className="flex items-center gap-2.5">
                             <span className="bg-black px-2.5 py-1 font-mono text-xs font-bold tracking-wider text-white">{order.orderNumber}</span>
+                            {order.paymentMode === "demo" && <DemoBadge label={t("demoBadge")} />}
                             <span className="font-mono text-xs text-neutral-500">{t("orders.placedOn", { date: formatDate(order.createdAt) })}</span>
                           </div>
                           <div className="flex items-center gap-2">
@@ -835,7 +838,9 @@ export function AccountDashboard() {
                   <span className="font-mono text-xs text-neutral-500">{t("orders.placedOn", { date: formatDate(orderDetail.createdAt) })}</span>
                   <span className={`border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusTone(orderDetail.fulfillmentStatus)}`}>{statusLabel(orderDetail.fulfillmentStatus)}</span>
                   <span className="border border-neutral-300 bg-neutral-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-neutral-700">{statusLabel(orderDetail.paymentStatus)}</span>
+                  {orderDetail.paymentMode === "demo" && <DemoBadge label={t("demoBadge")} className="text-[10px]" />}
                 </div>
+                {orderDetail.paymentMode === "demo" && <p className="text-xs text-neutral-500">{t("demoNote")}</p>}
                 {orderDetail.dataQuality !== "complete" && <p className="border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900">{t("order.legacy")}</p>}
                 <ul className="divide-y divide-neutral-100 border border-neutral-200">
                   {orderDetail.items.map(item => (

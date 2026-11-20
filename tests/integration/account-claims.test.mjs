@@ -25,7 +25,7 @@ async function legacyOrder({phone,userId=null}={}){
   const id=randomUUID(),client=await database.pool.connect();
   try{
     await client.query("BEGIN");
-    await client.query("INSERT INTO orders(id,user_id,contact_name,contact_phone,contact_email,data_quality,total_minor,legacy_summary) VALUES($1,$2,'Synthetic purchase',$3,'unverified@example.invalid','legacy_incomplete',100,$4)",[id,userId,phone??null,JSON.stringify({privateToken:"INERT-PRIVATE"})]);
+    await client.query("INSERT INTO orders(id,user_id,contact_name,contact_phone,contact_email,data_quality,total_minor,legacy_summary,payment_mode) VALUES($1,$2,'Synthetic purchase',$3,'unverified@example.invalid','legacy_incomplete',100,$4,'legacy_unknown')",[id,userId,phone??null,JSON.stringify({privateToken:"INERT-PRIVATE"})]);
     await client.query("INSERT INTO order_addresses(id,order_id,kind,legacy_raw) VALUES($1,$2,'legacy_unstructured','Synthetic historical address')",[randomUUID(),id]);
     await client.query("COMMIT");
   }catch(error){await client.query("ROLLBACK");throw error;}finally{client.release();}

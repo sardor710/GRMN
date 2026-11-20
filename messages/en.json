@@ -925,7 +925,9 @@
       "unpaid": "unpaid",
       "refunded": "refunded",
       "failed": "failed"
-    }
+    },
+    "demoBadge": "DEMO",
+    "demoNote": "Demo order — no money was charged."
   },
   "Checkout": {
     "fields": {
@@ -960,7 +962,7 @@
     "received": "Order {number} received",
     "statusLine": "Status: {status}",
     "totalLine": "Total {total}",
-    "demoReceipt": "This is a demo checkout: no payment has been taken, and the order is not paid.",
+    "demoReceipt": "Demo payment — no money was charged.",
     "continueShopping": "Continue Shopping",
     "paymentNotice": "No payment is taken online. After you place the order you will see how to pay; we confirm your payment by hand. This total is held until {time}.",
     "paid": "Paid",
@@ -968,6 +970,14 @@
     "payLine": "Pay {total} and use the order number {number} as the payment reference.",
     "contactLater": "We will contact you with payment details.",
     "heldUntil": "Your order is held until {time}. If we have not received payment by then, it is cancelled.",
-    "notPaidUntilConfirmed": "The order is not paid until we confirm your payment."
+    "notPaidUntilConfirmed": "The order is not paid until we confirm your payment.",
+    "payDemo": "Pay (demo)",
+    "demoNote": "Demo payment — no money is charged.",
+    "demoBadge": "DEMO",
+    "paymentNotCompleted": "Payment not completed",
+    "paymentNotCompletedBody": "Your order is saved, but the demo payment did not go through.",
+    "tryAgain": "Try again",
+    "tryAgainFailed": "The payment could not be retried. Reload the page and try again.",
+    "methodChanged": "Checkout options changed (demo checkout was turned off or on). Review your order and try again."
   }
 }
