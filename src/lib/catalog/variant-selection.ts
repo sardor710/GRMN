@@ -60,6 +60,11 @@ export function variantTabContent(product: ProductDetail, variantId: string): Va
     specs: inheritedEmpty(content.specs, commerce.specs) ? product.specs : content.specs,
     inTheBox: inheritedEmpty(content.inTheBox, commerce.inTheBox) ? product.inTheBox : content.inTheBox,
     ...(content.specGroups.length ? { specGroups: content.specGroups } : {}),
-    ...(content.overviewHtml ? { overviewHtml: content.overviewHtml } : {}),
+    // Overview: `""` means the variant owns an empty overview (the product has one): the tab shows nothing.
+    // Absent means there is no overview at all, and the page keeps its product-features fallback.
+    ...(content.overviewHtml || commerce.overviewHtml ? { overviewHtml: content.overviewHtml } : {}),
   };
 }
+
+/** True when the selected variant owns an empty overview (see `variantTabContent`): render nothing. */
+export const ownsEmptyOverview = (content: Pick<VariantTabContent, "overviewHtml">): boolean => content.overviewHtml === "";

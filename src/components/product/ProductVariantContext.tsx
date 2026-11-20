@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
 
 interface ProductVariantState {
   selectedVariantId: string;
@@ -16,9 +16,8 @@ const ProductVariantContext = createContext<ProductVariantState | null>(null);
  */
 export function ProductVariantProvider({ initialVariantId, children }: { initialVariantId: string; children: ReactNode }) {
   const [selectedVariantId, setSelectedVariantId] = useState(initialVariantId);
-  return (
-    <ProductVariantContext.Provider value={{ selectedVariantId, setSelectedVariantId }}>{children}</ProductVariantContext.Provider>
-  );
+  const value = useMemo(() => ({ selectedVariantId, setSelectedVariantId }), [selectedVariantId]);
+  return <ProductVariantContext.Provider value={value}>{children}</ProductVariantContext.Provider>;
 }
 
 export function useProductVariant(): ProductVariantState {

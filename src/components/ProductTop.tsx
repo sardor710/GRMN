@@ -86,8 +86,7 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
     setVariantId(next.id);
     setMainIdx(0);
     // Keep the choice in the URL (reload or a shared link shows the same variant); no navigation, no scroll.
-    const sku = initial.commerce?.variants.find((v) => v.id === next.id)?.sku;
-    if (sku) window.history.replaceState(window.history.state, "", withVariantParam(window.location.href, sku));
+    if (next.sku) window.history.replaceState(window.history.state, "", withVariantParam(window.location.href, next.sku));
   };
 
   const price = cmsVariant?.price ?? product.price;

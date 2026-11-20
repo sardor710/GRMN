@@ -8,7 +8,7 @@ import { ProductOverview } from "@/components/product/ProductOverview";
 import { ProductAccessories } from "@/components/product/ProductAccessories";
 import overviewStyles from "@/components/product/CmsOverview.module.css";
 import { useProductVariant } from "@/components/product/ProductVariantContext";
-import { variantTabContent } from "@/lib/catalog/variant-selection";
+import { ownsEmptyOverview, variantTabContent } from "@/lib/catalog/variant-selection";
 
 /** Tab ids; labels are `ProductTabs.tabs.<id>` messages. */
 const TABS = ["overview", "specs", "inTheBox", "accessories", "maps", "compatible"] as const;
@@ -27,7 +27,9 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
   // Overviews imported with garmin.com's layout blocks (banners, sections) run edge to edge like garmin.com;
   // older imports are plain flowing HTML and keep the narrow reading column.
   const fullBleedHtml = /class="ov-(?:banner|section)/.test(product.overviewHtml || "");
-  const isRichOverview = tab === "overview" && ((product.id === "1228429" && !product.overviewHtml) || fullBleedHtml);
+  // A variant that owns an empty overview shows nothing (no fallback to the product's features).
+  const emptyOverview = ownsEmptyOverview(product);
+  const isRichOverview = tab === "overview" && !emptyOverview && ((product.id === "1228429" && !product.overviewHtml) || fullBleedHtml);
 
   return (
     <section className="mt-8">
@@ -50,7 +52,7 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
 
       {/* Tab Content */}
       <div className={isRichOverview ? "w-full" : "mx-auto max-w-[1280px] px-4 py-12"}>
-        {tab === "overview" && (
+        {tab === "overview" && !emptyOverview && (
           product.id === "1228429" && !product.overviewHtml ? (
             <ProductOverview product={product} />
           ) : fullBleedHtml ? (

@@ -4,6 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   VARIANT_PARAM,
+  ownsEmptyOverview,
   resolveInitialVariantId,
   variantParam,
   variantTabContent,
@@ -53,6 +54,7 @@ const product = {
   commerce: {
     specs: [{ label: "Lens", value: "Glass" }],
     inTheBox: ["Watch"],
+    overviewHtml: "<p>Product</p>",
     variants: [
       { id: "v47", sku: "010-47MM", content: content([{ label: "Size", value: "47 mm" }], ["Watch 47", "Cable"], "<p>47</p>") },
       { id: "v51", sku: "010-51MM", content: content([{ label: "Size", value: "51 mm" }], [], "", [{ title: "Physical", items: [{ label: "Size", value: "51 mm" }] }]) },
@@ -69,9 +71,19 @@ test("the tabs show the selected variant's own content", () => {
   const v51 = variantTabContent(product, "v51");
   assert.deepEqual(v51.specs, [{ label: "Size", value: "51 mm" }]);
   assert.deepEqual(v51.specGroups, [{ title: "Physical", items: [{ label: "Size", value: "51 mm" }] }]);
-  // Owned and empty (the product has a list): In the box shows nothing; an empty overview is not rendered.
+  // Owned and empty (the product has content): In the box and the overview show nothing, no fallback.
   assert.deepEqual(v51.inTheBox, []);
-  assert.equal(v51.overviewHtml, undefined);
+  assert.equal(v51.overviewHtml, "");
+  assert.equal(ownsEmptyOverview(v51), true);
+  assert.equal(ownsEmptyOverview(variantTabContent(product, "v47")), false);
+});
+
+test("no overview anywhere (product and variant) keeps the product-features fallback", () => {
+  const plain = { ...product, overviewHtml: undefined, commerce: { ...product.commerce, overviewHtml: undefined } };
+  const v51 = variantTabContent(plain, "v51");
+  assert.equal("overviewHtml" in v51, false);
+  assert.equal(ownsEmptyOverview(v51), false);
+  assert.equal(variantTabContent(plain, "v47").overviewHtml, "<p>47</p>");
 });
 
 test("an unknown variant or a legacy (non-PostgreSQL) product keeps the product's blocks", () => {
@@ -94,7 +106,7 @@ test("ProductTabs: a variant switch swaps the open tab's content and keeps that 
   let selected = "v47";
   const fixture = componentFixture("src/components/ProductTabs.tsx", { modules: {
     "@/components/product/ProductVariantContext": { useProductVariant: () => ({ selectedVariantId: selected, setSelectedVariantId: (id) => { selected = id; } }) },
-    "@/lib/catalog/variant-selection": { variantTabContent },
+    "@/lib/catalog/variant-selection": { variantTabContent, ownsEmptyOverview },
   } });
   const props = { product: { id: "k", features: [], accessories: [], ...product } };
   const tabButton = (tree, label) => nodes(tree).find((n) => n.type === "button" && nodeText(n).trim() === label);
@@ -114,4 +126,24 @@ test("ProductTabs: a variant switch swaps the open tab's content and keeps that 
   selected = "v47";
   tree = fixture.render(props);
   assert.deepEqual(block(tree, "InTheBox").inTheBox, ["Watch 47", "Cable"]);
+});
+
+test("ProductTabs Overview: an owned empty overview renders nothing; no overview anywhere keeps the features fallback", async () => {
+  const { componentFixture, nodes } = await import("../helpers/component-fixture.mjs");
+  const render = (base, selected) => componentFixture("src/components/ProductTabs.tsx", { modules: {
+    "@/components/product/ProductVariantContext": { useProductVariant: () => ({ selectedVariantId: selected, setSelectedVariantId() {} }) },
+    "@/lib/catalog/variant-selection": { variantTabContent, ownsEmptyOverview },
+  } }).render({ product: { id: "k", features: [{ title: "Feature", body: "Body" }], accessories: [], ...base } });
+  const html = (tree) => nodes(tree).filter((n) => n.props?.dangerouslySetInnerHTML).map((n) => n.props.dangerouslySetInnerHTML.__html);
+  const fallback = (tree) => nodes(tree).some((n) => typeof n.type === "function" && /Overview$/.test(n.type.name));
+  // 47 mm owns an overview; 51 mm owns an empty one (the product has one): nothing, not the features.
+  assert.deepEqual(html(render(product, "v47")), ["<p>47</p>"]);
+  const owned = render(product, "v51");
+  assert.deepEqual(html(owned), []);
+  assert.equal(fallback(owned), false);
+  // Neither the product nor the variant has an overview: the product-features fallback stays.
+  const plain = { ...product, overviewHtml: undefined, commerce: { ...product.commerce, overviewHtml: undefined } };
+  const none = render(plain, "v51");
+  assert.deepEqual(html(none), []);
+  assert.equal(fallback(none), true);
 });
