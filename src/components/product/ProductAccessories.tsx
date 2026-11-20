@@ -122,8 +122,8 @@ export function ProductAccessories({ accessories = [] }: { accessories?: Accesso
 
               <div className="mt-6 border-t border-neutral-100 pt-4">
                 <div className="flex items-baseline justify-between">
-                  <span className="text-[18px] font-bold text-black">{formatMoney(acc.price, locale)}</span>
-                  <span className="text-[12px] text-neutral-500">{t("currency")}</span>
+                  {/* Store prices are KZT; the formatted amount carries the currency. */}
+                  <span className="text-[18px] font-bold text-black">{formatMoney(acc.price, locale, "KZT")}</span>
                 </div>
 
                 <button
