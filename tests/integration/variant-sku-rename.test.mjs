@@ -127,13 +127,27 @@ test("removing one variant and renaming another to its SKU in the same save is a
   const before=await snapshot(saved.id),product=(await q("SELECT version,legacy_content FROM products WHERE public_key=$1",[saved.id])).rows[0];
   const doc=watch("RN4","RN4-B","RN4-B");doc.variants=[doc.variants[0]];
   await assert.rejects(cms.save("products",admin,{...doc,id:saved.id,version:saved.version}),
-    error=>error.status===409&&error.code==="CONFLICT"&&error.message==="SKU RN4-B belongs to an archived variant of this product. Save the removal first, then rename.");
+    error=>error.status===409&&error.code==="CONFLICT"&&error.message==="SKU RN4-B belongs to an archived variant of this product. Add a variant with that SKU to restore the archived one, or choose a different SKU.");
   assert.deepEqual(await snapshot(saved.id),before,"no variant row changed");
   const after=(await q("SELECT version,legacy_content FROM products WHERE public_key=$1",[saved.id])).rows[0];
   assert.deepEqual(after,product,"the product and its editor document are unchanged");
-  // Saving the removal first, then the rename, works.
+  // Once the removal is saved, the archived row keeps its SKU, so the rename is still refused with the same message.
   const removed=await cms.save("products",admin,{...watch("RN4","RN4-A","RN4-B"),variants:[watch("RN4","RN4-A","RN4-B").variants[0]],id:saved.id,version:saved.version});
-  await assert.rejects(cms.save("products",admin,{...doc,id:saved.id,version:removed.version}),error=>error.status===409&&/belongs to an archived variant/.test(error.message),"an archived row keeps its SKU");
+  const archivedB=before.find(r=>r.sku==="RN4-B");
+  assert.equal((await snapshot(saved.id)).find(r=>r.id===archivedB.id).status,"archived");
+  await assert.rejects(cms.save("products",admin,{...doc,id:saved.id,version:removed.version}),
+    error=>error.status===409&&error.message==="SKU RN4-B belongs to an archived variant of this product. Add a variant with that SKU to restore the archived one, or choose a different SKU.","an archived row keeps its SKU");
+  // The message's advice works: adding a variant with that SKU (a new editor id) restores the archived row.
+  const restore=watch("RN4","RN4-A","RN4-B");restore.variants[1]={...restore.variants[1],id:"var-b-restored"};
+  const restored=await cms.save("products",admin,{...restore,id:saved.id,version:removed.version});
+  const rows=await snapshot(restored.id);
+  assert.equal(rows.length,2,"no new row");
+  const back=rows.find(r=>r.sku==="RN4-B");
+  assert.equal(back.id,archivedB.id,"the archived row is restored");assert.equal(back.status,"active");
+  // Choosing a different SKU also works.
+  const other=watch("RN4","RN4-A","RN4-D");
+  const renamed=await cms.save("products",admin,{...other,variants:[other.variants[0],{...other.variants[1],id:"var-b-restored"}],id:saved.id,version:restored.version});
+  assert.equal((await snapshot(renamed.id)).find(r=>r.sku==="RN4-D").id,archivedB.id);
 });
 
 test("a status round trip (published -> draft -> published) keeps every variant row id",async()=>{

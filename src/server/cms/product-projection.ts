@@ -122,7 +122,7 @@ export async function projectProduct(client: PoolClient, productId: string, doc:
     const claimedRows = new Set(matched.values());
     for (const v of doc.variants) {
       const holder = bySku.get(v.sku.trim().toLowerCase());
-      if (holder && !claimedRows.has(holder.id)) fail(409, `SKU ${v.sku.trim()} belongs to an archived variant of this product. Save the removal first, then rename.`);
+      if (holder && !claimedRows.has(holder.id)) fail(409, `SKU ${v.sku.trim()} belongs to an archived variant of this product. Add a variant with that SKU to restore the archived one, or choose a different SKU.`);
     }
   }
 
