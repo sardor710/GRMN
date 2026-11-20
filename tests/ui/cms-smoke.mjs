@@ -20,6 +20,13 @@ import {createCMSService} from "../../src/server/cms/service.ts";
 const execute=promisify(execFile),root=path.resolve("temp"),receipt=path.resolve(process.env.CMS_SMOKE_RECEIPT??"temp/backend-next-three/08");
 const source=path.resolve("src/lib/cms/data.json"),hash=()=>createHash("sha256").update(fs.readFileSync(source)).digest("hex"),before=hash();
 const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+// Screenshots go to the receipt folder (or `dir`); the committed reference copies in docs/design-references/
+// are refreshed only with CMS_SMOKE_SAVE_SHOTS=1, so an ordinary run leaves the working tree clean.
+const references=path.resolve("docs/design-references");
+async function saveShot(name,base64,dir=receipt){
+  const bytes=Buffer.from(base64,"base64");fs.mkdirSync(dir,{recursive:true});await writeFile(path.join(dir,name),bytes);
+  if(process.env.CMS_SMOKE_SAVE_SHOTS==="1"){fs.mkdirSync(references,{recursive:true});await writeFile(path.join(references,name),bytes);}
+}
 async function until(action,message,timeout=90000){const end=Date.now()+timeout;while(Date.now()<end){try{const value=await action();if(value)return value;}catch{}await delay(200);}throw Error(message);}
 async function port(){const server=createServer();await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));const value=server.address().port;await new Promise(resolve=>server.close(resolve));return value;}
 // Task 1.3 products list: no per-row trash/delete, row selection + bulk bar, click-to-edit, inline status, bulk archive.
@@ -45,7 +52,7 @@ async function productsListScenario({cms,headers,send,evaluate,navigate,text}){
     await tap(`${row("A")} [role=checkbox]`);await tap(`${row("B")} [role=checkbox]`);
     await until(async()=>/2 products selected/.test(await bar()),"Selecting 2 rows did not show the bulk bar");
     assert.equal(await evaluate(`document.querySelector(${JSON.stringify(row("C")+" [role=checkbox]")}).getAttribute('aria-checked')`),"false");
-    await delay(300);const shot=await send("Page.captureScreenshot",{format:"png"});await writeFile(path.join(receipt,"admin-products-bulk.png"),Buffer.from(shot.data,"base64"));
+    await delay(300);const shot=await send("Page.captureScreenshot",{format:"png"});await saveShot("admin-products-bulk.png",shot.data);
     // Changing the search clears the selection.
     await search("UI-LIST-");await until(async()=>await bar()==="","Selection survived a search change");await until(async()=>await rows()===3,"Search UI-LIST- lost rows");
     // Clicking the product name lands on the edit overlay and opens the editor.
@@ -261,8 +268,7 @@ async function variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,
     await tab("In the Box");await until(async()=>await shows("Box item 51 mm","Strap 51 mm")&&!(await shows("Box item 47 mm")),"In the box did not swap to 51 mm");
     await tab("Overview");await until(async()=>await shows("Overview for the 51 mm model")&&!(await shows("Overview for the 47 mm model")),"Overview did not swap to 51 mm");
     await tab("Specs");await until(()=>shows("Case 51 mm only"),"Specs tab did not reopen on 51 mm");
-    const shotPath=path.resolve("docs/design-references/variant-switch.png");fs.mkdirSync(path.dirname(shotPath),{recursive:true});
-    const image=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:true,clip:{x:0,y:0,width:1440,height:1600,scale:1}});await writeFile(shotPath,Buffer.from(image.data,"base64"));
+    const image=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:true,clip:{x:0,y:0,width:1440,height:1600,scale:1}});await saveShot("variant-switch.png",image.data);
 
     // Reload: still 51 mm, from the first paint.
     await send("Page.reload",{ignoreCache:true});await delay(300);
@@ -282,7 +288,7 @@ let temporary,database,app,chrome,ws,profile,logFile;
 // not listed), then dispatch and deliver it. Screenshots go to CMS_SMOKE_DEMO_SHOTS (or the receipt).
 async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,setInput,until,customerCookie,staffCookie,customerId,liveOrderNumber,receipt}){
   const shots=path.resolve(process.env.CMS_SMOKE_DEMO_SHOTS??receipt);fs.mkdirSync(shots,{recursive:true});
-  const shoot=async name=>{const image=await send("Page.captureScreenshot",{format:"png"});await writeFile(path.join(shots,name),Buffer.from(image.data,"base64"));};
+  const shoot=async name=>{const image=await send("Page.captureScreenshot",{format:"png"});await saveShot(name,image.data,shots);};
   const signOut=()=>send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
   const product=randomUUID(),variant=randomUUID();
   await pool.query("INSERT INTO products(id,public_key,name,status) VALUES($1,'ui-demo-fixture','UI DEMO FIXTURE','published')",[product]);
@@ -416,7 +422,7 @@ try{
     await until(()=>evaluate("!document.querySelector('form')"),"Product update failed");saved=(await cms.list("products",headers,{search:"UI-CREATED"})).items[0];assert.equal(saved.version,2);assert.equal(saved.name,"UI UPDATED PRODUCT");assert.equal(saved.compatibleAccessories.length,1);
     await productsListScenario({cms,headers,send,evaluate,navigate,text});
     await navigate("/");await until(async()=>(await text()).includes("UI HOMEPAGE FIXTURE"),"Persisted homepage did not render");
-    const screenshot=await send("Page.captureScreenshot",{format:"png"});await writeFile(path.join(receipt,"ui-homepage.png"),Buffer.from(screenshot.data,"base64"));
+    const screenshot=await send("Page.captureScreenshot",{format:"png"});await saveShot("ui-homepage.png",screenshot.data);
     await navigate(`/p/${saved.id}`);await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Saved product did not render");assert.ok((await text()).includes("KZT"));
     await navigate("/admin/homepage");await until(async()=>(await text()).includes("Save All Changes"),"Homepage editor did not load");await click("Save All Changes");await until(async()=>(await cms.homepage(headers)).version===2,"Homepage UI save failed");
     await navigate("/admin/blogs");await until(async()=>(await text()).toLowerCase().includes("write new article"),"Blog editor did not load");await click("Write New Article");await until(()=>evaluate("!!document.querySelector('form')"),"Blog modal missing");
@@ -589,7 +595,7 @@ try{
   await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
   await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
   const variantContext={cms,headers,send,evaluate,navigate,text,click,receipt,
-    shot:async name=>{const image=await send("Page.captureScreenshot",{format:"png"});await writeFile(path.join(receipt,name),Buffer.from(image.data,"base64"));}};
+    shot:async name=>{const image=await send("Page.captureScreenshot",{format:"png"});await saveShot(name,image.data);}};
   await variantContentScenario(variantContext);
   console.log("PASS Task2.3 variant content: 51 mm Own specs copied from the product, one value changed and saved, kept after reopening while 47 mm inherits, Same as product removes the override; the Content column is not cut off at 1440 px");
   await variantGroupsScenario(variantContext);
