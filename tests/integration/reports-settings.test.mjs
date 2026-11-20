@@ -391,6 +391,9 @@ test("status counts include unpaid and demo orders",async()=>{
   assert.equal(n(after.fulfillmentStatus,"unfulfilled")-n(before.fulfillmentStatus,"unfulfilled"),2);
   assert.equal(after.demo-before.demo,1);
   assert.equal(after.real-before.real,1);
+  // Task 4.2: the paid demo order awaits shipment (demo); the unpaid real order does not.
+  assert.equal(after.awaitingShipment.demo-before.awaitingShipment.demo,1);
+  assert.equal(after.awaitingShipment.real-before.awaitingShipment.real,0);
   const sum=record=>Object.values(record).reduce((a,b)=>a+b,0);
   assert.equal(sum(after.orderStatus),after.demo+after.real);
   assert.equal(sum(after.fulfillmentStatus),after.demo+after.real);

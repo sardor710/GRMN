@@ -33,7 +33,8 @@ export type ReportEnvironment = "sandbox" | "live" | "demo";
 export interface CurrencyTotalDTO { currency: string; environment: ReportEnvironment; capturedMinor: string; refundedMinor: string; netMinor: string; ordersPaid: number }
 export interface DayTotalDTO { date: string; currency: string; environment: ReportEnvironment; capturedMinor: string; refundedMinor: string; netMinor: string }
 export interface SummaryDTO { from: string; to: string; timeZone: string; totals: CurrencyTotalDTO[]; days: DayTotalDTO[] }
-export interface StatusCountsDTO { orderStatus: Record<string, number>; fulfillmentStatus: Record<string, number>; demo: number; real: number }
+/** Task 4.2: awaitingShipment counts paid, confirmed orders not yet fully shipped, real and demo apart. */
+export interface StatusCountsDTO { orderStatus: Record<string, number>; fulfillmentStatus: Record<string, number>; demo: number; real: number; awaitingShipment: { real: number; demo: number } }
 export interface RecentOrderDTO { id: string; number: string; createdAt: string; totalMinor: string; currency: string; paymentStatus: string; fulfillmentStatus: string; demo: boolean }
 /** A best-selling variant in one currency. units and revenueMinor are net of refunds (refunded line quantities and amounts). */
 export interface BestSellerDTO { variantId: string; sku: string | null; name: string; currency: string; units: number; revenueMinor: string }
@@ -85,14 +86,16 @@ export function createReportsService({ pool, authorize }: Options) {
     /** Every order shown in the window (real and demo, any status) counted by order and fulfillment status. */
     async statusCounts(headers: Headers, input: unknown): Promise<StatusCountsDTO> {
       const command = await windowed(headers, summaryInput, input);
-      const rows = (await pool.query<{ order_status: string; fulfillment_status: string; demo: boolean; n: number }>(
-        `SELECT o.order_status,o.fulfillment_status,(o.payment_mode='demo') AS demo,count(*)::int AS n FROM orders o
-         WHERE ${ordersInWindow} GROUP BY 1,2,3`, [command.from, command.to, command.timeZone])).rows;
-      const result: StatusCountsDTO = { orderStatus: {}, fulfillmentStatus: {}, demo: 0, real: 0 };
+      const rows = (await pool.query<{ order_status: string; fulfillment_status: string; demo: boolean; n: number; awaiting: number }>(
+        `SELECT o.order_status,o.fulfillment_status,(o.payment_mode='demo') AS demo,count(*)::int AS n,
+           (count(*) FILTER (WHERE o.order_status='confirmed' AND o.payment_status IN ('paid','partially_refunded')
+             AND o.fulfillment_status IN ('unfulfilled','processing','partially_shipped')))::int AS awaiting
+         FROM orders o WHERE ${ordersInWindow} GROUP BY 1,2,3`, [command.from, command.to, command.timeZone])).rows;
+      const result: StatusCountsDTO = { orderStatus: {}, fulfillmentStatus: {}, demo: 0, real: 0, awaitingShipment: { real: 0, demo: 0 } };
       for (const row of rows) {
         result.orderStatus[row.order_status] = (result.orderStatus[row.order_status] ?? 0) + row.n;
         result.fulfillmentStatus[row.fulfillment_status] = (result.fulfillmentStatus[row.fulfillment_status] ?? 0) + row.n;
-        if (row.demo) result.demo += row.n; else result.real += row.n;
+        if (row.demo) { result.demo += row.n; result.awaitingShipment.demo += row.awaiting; } else { result.real += row.n; result.awaitingShipment.real += row.awaiting; }
       }
       return result;
     },
