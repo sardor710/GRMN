@@ -251,10 +251,44 @@ test("collectCompareItems reads each product once, however many sizes of it are 
   const calls = new Map();
   const read = async (id) => { calls.set(id, (calls.get(id) ?? 0) + 1); return id === "P1" ? postgresDetail() : legacyDetail(); };
   const items = await collectCompareItems([{ productId: "P1", sku: "W-47" }, { productId: "P1", sku: "W-51" }, { productId: "L1", sku: "L-42" }, { productId: "P1" }, { productId: "L1" }], "en", read);
-  assert.deepEqual(items.map((i) => i.sku), ["W-47", "W-51", "L-42", "W-47", "L-46"]);
+  // Final review I3: the bare P1 ref resolves to W-47, already compared, so it is one column, not two.
+  assert.deepEqual(items.map((i) => i.sku), ["W-47", "W-51", "L-42", "L-46"]);
   assert.deepEqual(Object.fromEntries(calls), { P1: 1, L1: 1 });
   // A failing product is read once too, and every column of it is dropped (onError per column).
   let boom = 0; const errors = [];
   const failing = await collectCompareItems([{ productId: "B", sku: "1" }, { productId: "B", sku: "2" }], "en", async () => { boom++; throw new Error("down"); }, (e) => errors.push(e));
   assert.deepEqual(failing, []); assert.equal(boom, 1); assert.equal(errors.length, 2);
+});
+
+// Final review I2: detail reads bypass the listing limit and the pool is small (DATABASE_POOL_MAX 5), so a
+// compare request never has more than two product reads in flight.
+test("collectCompareItems never has more than 2 reads in flight and keeps the column order", async () => {
+  let inFlight = 0, peak = 0;
+  const read = async (id) => {
+    inFlight++; peak = Math.max(peak, inFlight);
+    await new Promise((resolve) => setTimeout(resolve, id === "A" ? 15 : 3));
+    inFlight--;
+    return { ...legacyDetail(), id, variantModel: undefined, partNumber: id };
+  };
+  const items = await collectCompareItems(["A", "B", "C", "D", "E"].map((productId) => ({ productId })), "en", read);
+  assert.equal(peak, 2);
+  assert.deepEqual(items.map((i) => i.productId), ["A", "B", "C", "D", "E"]);
+  // A failing read frees its slot too.
+  inFlight = 0; peak = 0;
+  const errors = [];
+  const some = await collectCompareItems(["A", "X", "C"].map((productId) => ({ productId })), "en",
+    async (id) => { if (id === "X") throw new Error("down"); return read(id); }, (error, ref) => errors.push(ref.productId));
+  assert.deepEqual(some.map((i) => i.productId), ["A", "C"]);
+  assert.deepEqual(errors, ["X"]);
+  assert.ok(peak <= 2);
+});
+
+// Final review I3: a stored ref to a renamed SKU falls back to the default variant; when the shopper also added
+// that default variant, the two must be one column (same product + resolved SKU, case-insensitive).
+test("collectCompareItems dedupes columns on product + resolved SKU", async () => {
+  const read = async (id) => (id === "P1" ? postgresDetail() : legacyDetail());
+  const renamed = await collectCompareItems([{ productId: "P1", sku: "W-OLD" }, { productId: "L1" }, { productId: "P1", sku: "w-47" }], "en", read);
+  assert.deepEqual(renamed.map((i) => `${i.productId}:${i.sku}`), ["P1:W-47", "L1:L-46"]);
+  const cased = await collectCompareItems([{ productId: "P1", sku: "W-51" }, { productId: "P1", sku: "w-51" }, { productId: "P1", sku: "W-47" }], "en", read);
+  assert.deepEqual(cased.map((i) => i.sku), ["W-51", "W-47"]);
 });

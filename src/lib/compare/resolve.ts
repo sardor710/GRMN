@@ -127,9 +127,31 @@ export function compareItemFromDetail(detail: ProductDetail, requestedSku: strin
 }
 
 /**
- * The compare columns for the requested refs, in order: at most five, read with `read` in parallel and once per
- * product (several sizes of one product share one read). Unknown, unpublished or failing products are dropped
- * (`onError` is told about each dropped column); never throws.
+ * Final review I2: product detail reads bypass the listing limit and the pool is small (DATABASE_POOL_MAX
+ * defaults to 5, with a 2 s connect timeout), so one compare request reads at most this many at a time and
+ * never starves checkout.
+ */
+export const COMPARE_READ_CONCURRENCY = 2;
+
+/** A tiny FIFO limiter: at most `limit` tasks run at once; a failing task frees its slot like any other. */
+function limiter(limit: number) {
+  let active = 0;
+  const waiting: (() => void)[] = [];
+  const release = () => { active--; waiting.shift()?.(); };
+  return async <T>(task: () => Promise<T>): Promise<T> => {
+    if (active >= limit) await new Promise<void>((resume) => waiting.push(resume));
+    active++;
+    try { return await task(); } finally { release(); }
+  };
+}
+
+/**
+ * The compare columns for the requested refs, in order: at most five, read with `read` at most
+ * COMPARE_READ_CONCURRENCY at a time and once per product (several sizes of one product share one read).
+ * Unknown, unpublished or failing products are dropped (`onError` is told about each dropped column, so the
+ * caller can log it with its product id); never throws. Columns that resolve to the same product and SKU
+ * (case-insensitive) are one column: a stored ref to a renamed SKU falls back to the default variant,
+ * which the shopper may also have added (final review I3). The first one keeps its place.
  */
 export async function collectCompareItems(
   items: readonly CompareItemRef[] | null | undefined,
@@ -143,11 +165,12 @@ export async function collectCompareItems(
     .slice(0, COMPARE_MAX_ITEMS)
     .map((ref) => ({ productId: ref.productId.trim(), ...(valid(ref.sku) ? { sku: ref.sku.trim() } : {}) }));
   const reads = new Map<string, Promise<ProductDetail | undefined>>();
+  const limit = limiter(COMPARE_READ_CONCURRENCY);
   const readOnce = (productId: string) => {
     let pending = reads.get(productId);
     if (!pending) {
       // Wrapped so a synchronous throw from `read` also becomes a rejection handled per column below.
-      pending = Promise.resolve().then(() => read(productId, locale));
+      pending = limit(() => Promise.resolve().then(() => read(productId, locale)));
       reads.set(productId, pending);
     }
     return pending;
@@ -161,5 +184,12 @@ export async function collectCompareItems(
       return null;
     }
   }));
-  return columns.filter((column): column is CompareItem => column !== null);
+  const seen = new Set<string>();
+  return columns.filter((column): column is CompareItem => {
+    if (column === null) return false;
+    const key = `${column.productId}\u0000${column.sku.toLowerCase()}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
