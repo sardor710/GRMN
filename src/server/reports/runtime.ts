@@ -53,7 +53,8 @@ export async function handleReportsRequest(request: Request): Promise<Response> 
     if (view === "summary") return adminJSON(await reports.summary(request.headers, rest));
     if (view === "status_counts") return adminJSON(await reports.statusCounts(request.headers, rest));
     if (view === "recent_orders" || view === "best_sellers") {
-      const { limit: raw, ...range } = rest, input = raw === undefined ? range : { ...range, limit: limit(raw) };
+      // A malformed limit is passed on as text, so the service authorizes first and then refuses it (400).
+      const { limit: raw, ...range } = rest, input = raw === undefined ? range : { ...range, limit: /^\d{1,3}$/.test(raw) ? Number(raw) : raw };
       return adminJSON(view === "recent_orders" ? await reports.recentOrders(request.headers, input) : await reports.bestSellers(request.headers, input));
     }
     if (view === "low_stock") { const { limit: raw, ...extra } = rest; if (Object.keys(extra).length) bad(); return adminJSON(await reports.lowStock(request.headers, raw === undefined ? {} : { limit: limit(raw) })); }

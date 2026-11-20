@@ -13,7 +13,8 @@ import { AuthFailure } from "../auth/config.ts";
 // as their own 'demo' environment row, so a demo total is never summed into a live or sandbox total.
 // The order views (status_counts, recent_orders, best_sellers) use the same window over the time an
 // order is shown (placed_at, else created_at). Status counts include every order, real and demo;
-// best-sellers count paid orders only (paid or partially refunded, not cancelled), real and demo apart.
+// best-sellers are net sales of paid orders (paid, partially refunded or refunded, never cancelled, minus
+// refunded line quantities and amounts), real and demo apart, one row per variant and currency.
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_DAYS = 92;
@@ -34,7 +35,8 @@ export interface DayTotalDTO { date: string; currency: string; environment: Repo
 export interface SummaryDTO { from: string; to: string; timeZone: string; totals: CurrencyTotalDTO[]; days: DayTotalDTO[] }
 export interface StatusCountsDTO { orderStatus: Record<string, number>; fulfillmentStatus: Record<string, number>; demo: number; real: number }
 export interface RecentOrderDTO { id: string; number: string; createdAt: string; totalMinor: string; currency: string; paymentStatus: string; fulfillmentStatus: string; demo: boolean }
-export interface BestSellerDTO { variantId: string; sku: string | null; name: string; units: number; revenueMinor: string }
+/** A best-selling variant in one currency. units and revenueMinor are net of refunds (refunded line quantities and amounts). */
+export interface BestSellerDTO { variantId: string; sku: string | null; name: string; currency: string; units: number; revenueMinor: string }
 export interface BestSellersDTO { real: BestSellerDTO[]; demo: BestSellerDTO[] }
 export interface LowStockDTO { variantId: string; productKey: string; name: string; sku: string | null; onHand: number; reserved: number; available: number }
 
@@ -106,23 +108,30 @@ export function createReportsService({ pool, authorize }: Options) {
     },
 
     /**
-     * Best-selling variants of the paid orders shown in the window (paid or partially refunded, never
-     * cancelled), real and demo listed apart (default 8 each). Revenue is the order lines' totals.
+     * Best-selling variants of the paid orders shown in the window (paid, partially refunded or refunded,
+     * never cancelled), net of refunds, real and demo listed apart (default 8 each), one row per variant
+     * and currency so currencies are never summed. Variants with no net units left are dropped.
      */
     async bestSellers(headers: Headers, input: unknown): Promise<BestSellersDTO> {
       const command = await windowed(headers, listInput, input);
-      const rows = (await pool.query<{ demo: boolean; variant_id: string; sku: string | null; name: string; units: number; revenue: string }>(
-        `SELECT demo,variant_id,sku,name,units,revenue FROM (
-           SELECT x.*,row_number() OVER (PARTITION BY x.demo ORDER BY x.units DESC,x.revenue_n DESC,x.variant_id) AS rank FROM (
-             SELECT (o.payment_mode='demo') AS demo,i.variant_id,
+      // Each line is netted against the item lines (refund_items kind 'item') of its succeeded refunds:
+      // refunded quantity off the units, refunded line amount off the revenue. Shipping and adjustment
+      // refunds have no line and do not change a variant's numbers.
+      const rows = (await pool.query<{ demo: boolean; currency: string; variant_id: string; sku: string | null; name: string; units: number; revenue: string }>(
+        `SELECT demo,currency,variant_id,sku,name,units,revenue FROM (
+           SELECT x.*,row_number() OVER (PARTITION BY x.demo ORDER BY x.units DESC,x.revenue_n DESC,x.currency,x.variant_id) AS rank FROM (
+             SELECT (o.payment_mode='demo') AS demo,o.currency,i.variant_id,
                (array_agg(i.sku ORDER BY COALESCE(o.placed_at,o.created_at) DESC,i.id))[1] AS sku,
                (array_agg(i.name ORDER BY COALESCE(o.placed_at,o.created_at) DESC,i.id))[1] AS name,
-               sum(i.quantity)::int AS units,sum(i.total_minor) AS revenue_n,sum(i.total_minor)::text AS revenue
+               sum(i.quantity-COALESCE(r.quantity,0))::int AS units,
+               sum(i.total_minor-COALESCE(r.amount,0)) AS revenue_n,sum(i.total_minor-COALESCE(r.amount,0))::text AS revenue
              FROM orders o JOIN order_items i ON i.order_id=o.id
-             WHERE ${ordersInWindow} AND o.payment_status IN ('paid','partially_refunded') AND o.order_status<>'cancelled' AND i.variant_id IS NOT NULL
-             GROUP BY 1,2) x) ranked
+             LEFT JOIN LATERAL (SELECT sum(ri.quantity) AS quantity,sum(ri.amount_minor) AS amount FROM refund_items ri JOIN refunds rf ON rf.id=ri.refund_id
+               WHERE ri.order_item_id=i.id AND ri.kind='item' AND rf.status='succeeded') r ON true
+             WHERE ${ordersInWindow} AND o.payment_status IN ('paid','partially_refunded','refunded') AND o.order_status<>'cancelled' AND i.variant_id IS NOT NULL
+             GROUP BY 1,2,3 HAVING sum(i.quantity-COALESCE(r.quantity,0))>0) x) ranked
          WHERE rank<=$4 ORDER BY demo,rank`, [command.from, command.to, command.timeZone, command.limit ?? 8])).rows;
-      const item = (row: (typeof rows)[number]): BestSellerDTO => ({ variantId: row.variant_id, sku: row.sku, name: row.name, units: row.units, revenueMinor: row.revenue });
+      const item = (row: (typeof rows)[number]): BestSellerDTO => ({ variantId: row.variant_id, sku: row.sku, name: row.name, currency: row.currency, units: row.units, revenueMinor: row.revenue });
       return { real: rows.filter(row => !row.demo).map(item), demo: rows.filter(row => row.demo).map(item) };
     },
 
