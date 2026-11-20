@@ -425,3 +425,68 @@ test("a demo capture that finds no stock cancels the order, settles its demo ref
   const bTotal=(await q("SELECT COALESCE(sum(t.amount_minor),0)::text AS t FROM payment_transactions t JOIN orders o ON o.id=t.order_id WHERE t.kind='capture' AND t.provider='demo' AND o.user_id=$1",[b.id])).rows[0].t;
   assertDemoOnly(reportBefore,await daySummary(),{captured:BigInt(aTotal)+BigInt(bTotal),refunded:aTotal});
 });
+
+// Final review I1: demo orders are captured like real ones (stock, promo uses, Telegram), so a
+// visitor looping checkout is capped: at most MAX_DEMO_ORDERS_PER_DAY demo orders per customer or
+// guest session, and per client address, in 24 h. Over the cap: 429 TOO_MANY_DEMO_ORDERS, nothing held.
+test("demo orders are capped per customer and per client address in 24 h",async()=>{
+  await setDemo(true);
+  const cap=checkout.MAX_DEMO_ORDERS_PER_DAY;
+  assert.equal(cap,5);
+  const p=await product({stock:100});
+  // Per customer: the cap-th order is placed, the next is refused with a readable message.
+  const who=await buyer();
+  for(let i=0;i<cap;i++)assert.equal((await place(who,await quoted(who.headers,[[p.variant,1]]),"demo")).status,"confirmed");
+  const over=await quoted(who.headers,[[p.variant,1]]);
+  const before=await balance(p.variant);
+  await assert.rejects(place(who,over,"demo"),error=>{
+    assert.equal(error.status,429);assert.equal(error.code,"TOO_MANY_DEMO_ORDERS");
+    assert.match(error.message,/at most 5 demo orders a day/);
+    return true;
+  });
+  assert.deepEqual(await balance(p.variant),before,"a refused demo checkout holds and consumes nothing");
+  assert.equal(await count("SELECT count(*)::int AS n FROM checkout_attempts WHERE quote_id=$1",[over.id]),0);
+  assert.equal((await q("SELECT status FROM carts WHERE id=(SELECT cart_id FROM checkout_quotes WHERE id=$1)",[over.id])).rows[0].status,"active");
+  // Orders older than the window no longer count.
+  // (checkout attempts are immutable by trigger, so age them with triggers bypassed for this session)
+  const aging=await database.pool.connect();
+  try{await aging.query("SET session_replication_role=replica");await aging.query("UPDATE checkout_attempts SET created_at=now()-interval '25 hours' WHERE actor_scope=$1",["user:"+who.id]);}
+  finally{await aging.query("RESET session_replication_role");aging.release();}
+  assert.equal((await place(who,over,"demo")).status,"confirmed");
+  // Per address: different customers on one connection, racing; the advisory lock lets exactly cap through.
+  const address="198.51.100."+(++serial%250),buyers=await Promise.all(Array.from({length:cap+2},()=>buyer()));
+  const quotes=[];for(const b of buyers)quotes.push(await quoted(b.headers,[[p.variant,1]]));
+  const results=await Promise.allSettled(buyers.map((b,i)=>checkout.placeOrder(database.pool,secret,{userId:b.id,guestTokenHash:null},key(),{quoteId:quotes[i].id,cartVersion:quotes[i].cartVersion,paymentMethod:"demo"},{clientAddress:address})));
+  assert.equal(results.filter(r=>r.status==="fulfilled").length,cap,JSON.stringify(results.map(r=>r.status==="fulfilled"?"ok":r.reason.code)));
+  for(const r of results.filter(r=>r.status==="rejected")){assert.equal(r.reason.status,429);assert.equal(r.reason.code,"TOO_MANY_DEMO_ORDERS");assert.match(r.reason.message,/from this connection/);}
+  // Another address is unaffected.
+  const fresh=await buyer(),freshQuote=await quoted(fresh.headers,[[p.variant,1]]);
+  assert.equal((await checkout.placeOrder(database.pool,secret,{userId:fresh.id,guestTokenHash:null},key(),{quoteId:freshQuote.id,cartVersion:freshQuote.cartVersion,paymentMethod:"demo"},{clientAddress:"203.0.113.77"})).status,"confirmed");
+  assert.equal(await count("SELECT count(*)::int AS n FROM orders WHERE user_id=$1 AND payment_mode='demo'",[who.id]),cap+1);
+});
+
+// Final review M5: a same-key replay of a still-pending demo order never captures once demo is off.
+test("a same-key replay of a pending demo order does not capture after demo checkout is turned off",async()=>{
+  await setDemo(true);
+  const who=await buyer(),p=await product({stock:5}),quote=await quoted(who.headers,[[p.variant,1]]);
+  const idem=key(),input={quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"},actor={userId:who.id,guestTokenHash:null};
+  const placed=await withDemoCaptureFailing(()=>checkout.placeOrder(database.pool,secret,actor,idem,input));
+  assert.equal(placed.status,"pending_payment");
+  try{
+    await setDemo(false);
+    const replay=await checkout.placeOrder(database.pool,secret,actor,idem,input);
+    assert.deepEqual([replay.orderId,replay.replayed,replay.status],[placed.orderId,true,"pending_payment"]);
+    assert.equal((await captures(placed.orderId)).length,0,"no demo capture while the setting is off");
+  }finally{await setDemo(true);}
+  const previous=process.env.DEMO_CHECKOUT_DISABLED;
+  process.env.DEMO_CHECKOUT_DISABLED="1";
+  try{
+    const replay=await checkout.placeOrder(database.pool,secret,actor,idem,input);
+    assert.equal(replay.status,"pending_payment");
+    assert.equal((await captures(placed.orderId)).length,0,"no demo capture while DEMO_CHECKOUT_DISABLED=1");
+    assert.deepEqual(await balance(p.variant),{on_hand:5,reserved:1});
+  }finally{if(previous===undefined)delete process.env.DEMO_CHECKOUT_DISABLED;else process.env.DEMO_CHECKOUT_DISABLED=previous;}
+  // With demo back on, the same key captures it once, as before.
+  assert.equal((await checkout.placeOrder(database.pool,secret,actor,idem,input)).status,"confirmed");
+  assert.equal((await captures(placed.orderId)).length,1);
+});

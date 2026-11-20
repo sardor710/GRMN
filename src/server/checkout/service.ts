@@ -11,7 +11,7 @@ import { appendOutboxEvent } from "../operations/outbox.ts";
 import type { PaymentMethodCode } from "../../contracts/commerce.ts";
 import type { PaymentProvider, PaymentProviders } from "../payments/provider.ts";
 import { createManualProvider } from "../payments/manual-provider.ts";
-import { availablePaymentMethods } from "../payments/demo-mode.ts";
+import { availablePaymentMethods, demoCheckoutEnabled } from "../payments/demo-mode.ts";
 import { confirmDemoCapture } from "../payments/service.ts";
 
 // Task 14A. Idempotent checkout inside the exact plan Section 6 boundary, in ONE short
@@ -20,7 +20,7 @@ import { confirmDemoCapture } from "../payments/service.ts";
 // order snapshot (GRM- sequence number), a demo payment attempt, an order event, an outbox event,
 // a hashed guest status token and the idempotency result, and convert the cart. The deferred
 // orders_seal trigger checks that lines, address and totals reconcile and commits the attempt.
-// Lock order: checkout attempt, cart, unpaid-order limit (advisory, customer then address),
+// Lock order: checkout attempt, cart, unpaid-order limit or demo cap (advisory, customer then address),
 // promotion, stock balances (then order rows it creates).
 // Any failure rolls everything back, so the key can simply be retried.
 
@@ -133,6 +133,33 @@ async function enforceUnpaidLimit(client: PoolClient, userId: string | null, add
 }
 
 /**
+ * Demo abuse cap (final review I1): a demo order is captured like a paid one, so it consumes on_hand
+ * stock and limited promo uses and announces itself on Telegram. One customer or guest session, and
+ * one client address, may place at most this many demo orders in DEMO_ORDER_WINDOW_HOURS, whatever
+ * became of them (captured, cancelled and refunded orders all count).
+ */
+export const MAX_DEMO_ORDERS_PER_DAY = 5;
+const DEMO_ORDER_WINDOW_HOURS = 24;
+
+/**
+ * Refuses a demo checkout over the cap with 429 TOO_MANY_DEMO_ORDERS. Same pattern as the unpaid
+ * limit: a transaction-scoped advisory lock per identity (actor scope first, then address) serialises
+ * concurrent checkouts, so they cannot pass the cap together.
+ */
+async function enforceDemoCap(client: PoolClient, scope: string, addressHash: string | null): Promise<void> {
+  await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`demo-orders:scope:${scope}`]);
+  if (addressHash) await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`demo-orders:address:${addressHash}`]);
+  const count = async (column: "actor_scope" | "client_address_hash", value: string) => (await client.query<{ n: number }>(
+    `SELECT count(*)::int AS n FROM (SELECT 1 FROM checkout_attempts c JOIN orders o ON o.checkout_attempt_id=c.id
+       WHERE c.${column}=$1 AND c.operation=$2 AND c.created_at>now()-make_interval(hours=>${DEMO_ORDER_WINDOW_HOURS}) AND o.payment_mode='demo' LIMIT $3) x`,
+    [value, OPERATION, MAX_DEMO_ORDERS_PER_DAY])).rows[0].n;
+  if (await count("actor_scope", scope) >= MAX_DEMO_ORDERS_PER_DAY)
+    fail("TOO_MANY_DEMO_ORDERS", 429, `This is a demo store: you can place at most ${MAX_DEMO_ORDERS_PER_DAY} demo orders a day. Please try again tomorrow.`);
+  if (addressHash && await count("client_address_hash", addressHash) >= MAX_DEMO_ORDERS_PER_DAY)
+    fail("TOO_MANY_DEMO_ORDERS", 429, `This is a demo store: at most ${MAX_DEMO_ORDERS_PER_DAY} demo orders a day can be placed from this connection. Please try again tomorrow.`);
+}
+
+/**
  * Places a pending order for the actor's quoted cart revision. A repeated key returns the original
  * order. "manual" (O07) is real checkout: staff confirm the payment later, and the stock and coupon
  * are held for the configured manual hold. "demo" is the simulated method of the "Demo checkout"
@@ -188,6 +215,7 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
     const cart = (await client.query<{ status: string; version: number }>("SELECT status,version FROM carts WHERE id=$1 FOR UPDATE", [owned.cart_id])).rows[0];
     if (!cart || cart.status !== "active" || cart.version !== command.cartVersion) stale();
     if (command.paymentMethod === "manual") await enforceUnpaidLimit(client, actor.userId, addressHash);
+    else if (command.paymentMethod === "demo") await enforceDemoCap(client, scope, addressHash);
 
     // 3. Revalidate (ignoring this attempt's own coupon hold), then hold the coupon and the stock.
     await revalidateQuote(client, { quoteId: command.quoteId, cartId: owned.cart_id, cartVersion: command.cartVersion, checkoutAttemptId: attemptId });
@@ -276,6 +304,10 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
   // captured in the same request, like a paid order. The capture is idempotent on the demo payment
   // attempt, so a replayed key (retry, double click, a crash before this step) captures at most once.
   if (placed.paymentMode !== "demo" || placed.status !== "pending_payment") return placed;
+  // Final review M5: a same-key replay of a still-pending demo order (its capture failed earlier) is
+  // never captured once demo checkout is off (the setting or DEMO_CHECKOUT_DISABLED=1). It stays
+  // pending and the unpaid-order sweep cancels it when its hold ends.
+  if (!(await demoCheckoutEnabled(pool))) return placed;
   const demoAttempt = (await pool.query<{ id: string }>(
     "SELECT id FROM payment_attempts WHERE order_id=$1 AND provider='demo' AND environment='demo' AND merchant_account='demo' ORDER BY created_at,id LIMIT 1", [placed.orderId])).rows[0];
   if (!demoAttempt) return placed;

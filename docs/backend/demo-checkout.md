@@ -61,6 +61,17 @@ A demo order now:
   database guard (`payments_guard_attempt`, replaced in 0021) still ties a demo attempt to a demo order and
   its total, and now allows it to end `captured`; it never allows the real-money states (authorized,
   unknown, late_captured, superseded).
+- **Abuse cap (final review I1).** Because a demo order captures like a paid one (it consumes on_hand stock
+  and limited promo uses and sends a Telegram alert), one customer or guest session (the checkout actor scope),
+  and one trusted client address, may place at most `MAX_DEMO_ORDERS_PER_DAY` (5,
+  `src/server/checkout/service.ts`) demo orders in 24 hours. Every demo order counts, whatever became of it.
+  The check runs inside the checkout transaction after the cart lock, under the same transaction-scoped
+  advisory locks as the manual unpaid-order limit (scope first, then address), so concurrent checkouts cannot
+  pass it together. Over the cap checkout answers 429 `TOO_MANY_DEMO_ORDERS` with a readable message, and
+  nothing is claimed, held or consumed. Without a trusted proxy header (development) only the scope is capped.
+- **No capture after demo is turned off (final review M5).** A same-key replay of a demo order that is still
+  `pending_payment` (its capture failed) is returned as is, never captured, while demo checkout is off (the
+  setting or `DEMO_CHECKOUT_DISABLED=1`). The unpaid-order sweep cancels it when its hold ends.
 - **Staff writes unchanged.** Shipments, refunds and cancellations keep their permissions (`orders:fulfill`,
   `payments:refund`), idempotency keys, expected versions and audit entries. Manual confirmation still
   refuses demo orders (`PAYMENT_NOT_MANUAL`).
@@ -91,7 +102,10 @@ A demo order now:
 - the recovery paths: a capture that fails after commit still returns the order, its demo session starts with
   demo provenance, and a same-key retry captures it once; an unpaid demo order is cancelled by the sweep with
   its stock released; a capture with no stock left is cancelled, its demo refund settled, and it is not
-  reported paid.
+  reported paid;
+- the abuse cap: the sixth demo order of a customer in 24 h is refused (429) and holds nothing, older orders
+  stop counting, and seven customers racing on one address get exactly five orders through;
+- a same-key replay of a pending demo order is not captured while demo is off.
 
 `tests/integration/fulfillment.test.mjs` pins that a demo order with no capture fact, even forced to paid,
 cannot ship.
