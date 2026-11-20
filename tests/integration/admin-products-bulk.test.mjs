@@ -130,7 +130,8 @@ test("bulk delete refuses an ordered product and deletes the other",async()=>{
   const client=await database.pool.connect();
   try{
     await client.query("BEGIN");
-    await client.query("INSERT INTO orders(id,contact_name,data_quality,total_minor) VALUES($1,'Synthetic buyer','legacy_incomplete',1000)",[order]);
+    // Migration 0021 dropped the payment_mode default (demo checkout), so the fixture names it.
+    await client.query("INSERT INTO orders(id,contact_name,data_quality,total_minor,payment_mode) VALUES($1,'Synthetic buyer','legacy_incomplete',1000,'live')",[order]);
     await client.query("INSERT INTO order_items(id,order_id,product_id,variant_id,name,quantity,unit_price_minor,discount_minor,tax_minor,total_minor) VALUES($1,$2,$3,$4,'Ordered',1,1000,0,0,1000)",[randomUUID(),order,row.product_id,row.variant_id]);
     await client.query("COMMIT");
   }catch(error){await client.query("ROLLBACK");throw error;}finally{client.release();}
