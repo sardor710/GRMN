@@ -103,9 +103,14 @@ export function toggleItem(items: readonly CompareSelectionItem[], item: Compare
 /**
  * What the product page treats as "this size is in the comparison": the exact product and SKU, or a catalogue card's
  * entry for the same product without a SKU (it stands for the default size). Null when neither is chosen.
+ *
+ * A ref without a SKU (no variants, or the variant has not loaded yet) matches any entry of the product, SKU or not:
+ * otherwise a page still loading its variant would not see the size already compared and would add a second,
+ * SKU-less entry for the same product (task C-d, from the C-c review). That entry counts as exact, so the toggle
+ * removes it.
  */
 export function findVariantEntry(items: readonly CompareSelectionItem[], ref: CompareItemRef): { item: CompareSelectionItem; exact: boolean } | null {
-  const exact = items.find((item) => sameItem(item, ref));
+  const exact = items.find((item) => sameItem(item, ref)) ?? (ref.sku ? undefined : items.find((item) => item.productId === ref.productId));
   if (exact) return { item: exact, exact: true };
   const bare = ref.sku ? items.find((item) => item.productId === ref.productId && !item.sku) : undefined;
   return bare ? { item: bare, exact: false } : null;
@@ -118,7 +123,7 @@ export function findVariantEntry(items: readonly CompareSelectionItem[], ref: Co
 export function toggleVariant(items: readonly CompareSelectionItem[], item: CompareSelectionItem): readonly CompareSelectionItem[] {
   const found = findVariantEntry(items, item);
   if (!found) return addItem(items, item);
-  if (found.exact) return removeItem(items, item);
+  if (found.exact) return items.filter((entry) => entry !== found.item);
   const next = toItem(item);
   return next ? items.map((entry) => (entry === found.item ? next : entry)) : items;
 }

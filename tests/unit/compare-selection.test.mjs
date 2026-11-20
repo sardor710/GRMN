@@ -132,3 +132,16 @@ test("product page toggle: exact size removes, a SKU-less card entry is replaced
   const full = [{ productId: "a" }, { productId: "b" }, { productId: "c" }, { productId: "d" }, { productId: "fenix-8" }];
   assert.deepEqual(ids(toggleVariant(full, { productId: "fenix-8", sku: "F8-47" })).at(-1), "fenix-8~F8-47");
 });
+
+// Task C-d (from the C-c review): the product page before its variant loads asks with no SKU. It must find the size
+// already compared for that product instead of adding a second, SKU-less entry.
+test("product page toggle without a SKU (variant not loaded yet) matches any entry of the product, never duplicates", () => {
+  const compared = [{ productId: "venu" }, { productId: "fenix-8", sku: "F8-51", name: "fēnix 8" }];
+  assert.deepEqual(findVariantEntry(compared, { productId: "fenix-8" }), { item: compared[1], exact: true });
+  assert.equal(findVariantEntry(compared, { productId: "instinct" }), null);
+  const toggled = toggleVariant(compared, { productId: "fenix-8", name: "fēnix 8" });
+  assert.deepEqual(ids(toggled), ["venu"], "the toggle removes the compared size; no SKU-less entry is added");
+  assert.ok(!toggled.some((item) => item.productId === "fenix-8"));
+  // With a SKU the rules are unchanged: another size is its own column.
+  assert.deepEqual(ids(toggleVariant(compared, { productId: "fenix-8", sku: "F8-47" })), ["venu", "fenix-8~F8-51", "fenix-8~F8-47"]);
+});
