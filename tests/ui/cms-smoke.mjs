@@ -84,6 +84,73 @@ async function productsListScenario({cms,headers,send,evaluate,navigate,text}){
     await until(async()=>await bar()==="","Fully applied bulk action left rows selected");
   }finally{await send("Emulation.clearDeviceMetricsOverride");}
 }
+// Task 2.3 per-variant content, self-contained (its own draft UI-VC product with 47 mm and 51 mm): the
+// 51 mm variant switches Specs to Own, one value is changed and saved; after reopening the value is kept
+// and 47 mm still inherits; switching back to Same as product removes the override.
+async function variantContentScenario({cms,headers,send,evaluate,navigate,text,click,receipt,shot}){
+  const size={id:"opt-size",key:"size",name:"Size",display:"buttons",values:[{id:"v-47",key:"47-mm",label:"47 mm"},{id:"v-51",key:"51-mm",label:"51 mm"}]};
+  const variant=(mm,isDefault)=>({id:`var-${mm}`,sku:`UI-VC-${mm}`,title:`${mm} mm`,selections:{"opt-size":`v-${mm}`},price:"300.00",stock:0,status:"active",isDefault,imageIds:[]});
+  const product=await cms.save("products",headers,{name:"UI VARIANT CONTENT",sku:"UI-VC",price:"300.00",status:"draft",family:"Test",image:"/images/products/1228429.jpg",description:"UI variant content fixture",activities:[],level:"Entry",caseSize:"Large",
+    specs:[{label:"Battery Life",value:"Up to 29 days"},{label:"Water Rating",value:"10 ATM"}],inTheBox:["Watch","Charging cable"],options:[size],variants:[variant(47,true),variant(51,false)]});
+  const stored=async()=>{const p=await cms.get("products",headers,product.id);return Object.fromEntries(p.variants.map(v=>[v.title,v.content]));};
+  const q=JSON.stringify;
+  const panel=mm=>`document.querySelector('[data-variant-content="var-${mm}"]')`;
+  const choice=(mm,block,label)=>`[...document.querySelectorAll('[role=group][aria-label="${block} for ${mm} mm"] button')].find(b=>b.textContent.trim()===${q(label)})`;
+  const pressed=(mm,block,label)=>evaluate(`${choice(mm,block,label)}?.getAttribute('aria-pressed')==='true'`);
+  const press=(mm,block,label)=>evaluate(`(()=>{${choice(mm,block,label)}.click();return true;})()`);
+  const openContent=mm=>evaluate(`(()=>{const b=document.querySelector('button[aria-label="Content for ${mm} mm"]');if(b.getAttribute('aria-expanded')!=='true')b.click();return true;})()`);
+  const specValue=mm=>`${panel(mm)}?.querySelector('[data-block=specs] input[aria-label="Spec value 1"]')`;
+  const save=async()=>{await evaluate("document.querySelector('form').requestSubmit();true");await until(()=>evaluate("!document.querySelector('form')"),"Variant content save failed",30000).catch(async error=>{await writeFile(path.join(receipt,"variant-content-save-body.txt"),await text());throw error;});};
+  const openEditor=async()=>{
+    await navigate("/admin/products");
+    await until(()=>evaluate("document.querySelectorAll('tbody tr[data-product-id]').length>0"),"Products list did not load");
+    // Typed again on each try: a value set before hydration finishes is dropped.
+    await until(()=>evaluate(`(()=>{const input=document.querySelector('input[placeholder*="Search by model"]');if(!input)return false;if(input.value!=='UI-VC'){Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'UI-VC');input.dispatchEvent(new Event('input',{bubbles:true}));}return document.querySelectorAll('tbody tr[data-product-id]').length===1&&document.body.innerText.includes('UI VARIANT CONTENT');})()`),"Search did not find the UI-VC product").catch(async error=>{await writeFile(path.join(receipt,"variant-content-list-body.txt"),await text());throw error;});
+    await evaluate("document.querySelector('tbody tr button[aria-label^=\"Edit \"]').click();true");
+    await until(()=>evaluate("!!document.querySelector('form')"),"Editor did not open");
+    await click("Options & Variants");
+    await until(()=>evaluate("!!document.querySelector('button[aria-label=\"Content for 51 mm\"]')"),"The variants table has no Content column");
+  };
+  await send("Emulation.setDeviceMetricsOverride",{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+  try{
+    await openEditor();
+    assert.equal(await evaluate("document.querySelector('button[aria-label=\"Content for 47 mm\"]').textContent.trim()"),"Same as product");
+    // 1. 51 mm: Specs -> Own copies the product's specs in as the starting point.
+    await openContent(51);await until(()=>pressed(51,"Specs","Same as product"),"51 mm Specs did not start as Same as product");
+    await press(51,"Specs","Own");
+    await until(()=>evaluate(`${specValue(51)}?.value==='Up to 29 days'`),"Own did not copy the product's specs");
+    assert.ok(await pressed(51,"Overview","Same as product")&&await pressed(51,"In the box","Same as product"),"other blocks still inherit");
+    // 2. Change one value and save.
+    await evaluate(`(()=>{const input=${specValue(51)};Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'Up to 31 days');input.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`);
+    await until(()=>evaluate(`${specValue(51)}.value==='Up to 31 days'`),"The spec value did not change");
+    assert.equal(await evaluate("document.querySelector('button[aria-label=\"Content for 51 mm\"]').textContent.trim()"),"Own: Specs");
+    await evaluate(`${panel(51)}.closest('section').scrollIntoView({block:'start'});true`);await delay(300);await shot("variant-content-editor.png");
+    await save();
+    let content=await stored();
+    assert.equal(content["51 mm"]?.specs?.[0]?.value,"Up to 31 days","51 mm stored its own spec value");
+    assert.deepEqual(content["51 mm"].specGroups,[],"own specs keep the product's groups out");
+    assert.equal(content["51 mm"].overviewHtml,undefined);assert.equal(content["51 mm"].inTheBox,undefined);
+    assert.equal(content["47 mm"]?.specs,undefined,"47 mm still inherits");
+    // 3. Reopen: the value is kept and 47 mm still inherits.
+    await openEditor();
+    assert.equal(await evaluate("document.querySelector('button[aria-label=\"Content for 51 mm\"]').textContent.trim()"),"Own: Specs");
+    await openContent(51);await until(()=>pressed(51,"Specs","Own"),"51 mm Specs is not Own after reopening");
+    assert.equal(await evaluate(`${specValue(51)}.value`),"Up to 31 days","the own value survived the reopen");
+    await openContent(47);await until(()=>pressed(47,"Specs","Same as product"),"47 mm Specs did not inherit after reopening");
+    assert.equal(await evaluate(`!!${specValue(47)}`),false,"an inheriting block shows no editor");
+    // 4. Back to Same as product, save and reopen: the override is gone.
+    await openContent(51);await until(()=>pressed(51,"Specs","Own"),"51 mm panel did not reopen");
+    await evaluate("window.confirm=()=>true;true");await press(51,"Specs","Same as product");
+    await until(()=>pressed(51,"Specs","Same as product"),"Same as product did not apply");
+    await save();
+    content=await stored();
+    assert.equal(content["51 mm"]?.specs,undefined,"the 51 mm specs override is gone");assert.equal(content["51 mm"]?.specGroups,undefined);
+    await openEditor();
+    assert.equal(await evaluate("document.querySelector('button[aria-label=\"Content for 51 mm\"]').textContent.trim()"),"Same as product");
+    await openContent(51);await until(()=>pressed(51,"Specs","Same as product"),"51 mm Specs is not Same as product after reopening");
+    await evaluate("window.confirm=()=>true;window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}));true");await until(()=>evaluate("!document.querySelector('form')"),"Editor did not close");
+  }finally{await send("Emulation.clearDeviceMetricsOverride");}
+}
 let temporary,database,app,chrome,ws,profile,logFile;
 
 // Task 3.3 demo-order scenario, self-contained (its own product, stock and store setting): with demo
@@ -201,6 +268,8 @@ try{
   const click=label=>evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent.trim().includes(${JSON.stringify(label)}));if(!button||button.disabled)throw Error('Missing button');button.click();return true;})()`);
   const fill=(label,value)=>evaluate(`(()=>{const label=[...document.querySelectorAll('form label')].find(l=>l.textContent.includes(${JSON.stringify(label)}));const input=label?.parentElement.querySelector('input,textarea');if(!input)throw Error('Missing input');Object.getOwnPropertyDescriptor(input.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
   await send("Network.enable");await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
+  // CMS_SMOKE_ONLY=variant-content runs just the Task 2.3 block below (the rest is skipped).
+  if(process.env.CMS_SMOKE_ONLY!=="variant-content"){
   let saved;
   if(process.env.CMS_SMOKE_PUBLIC_ONLY!=="1"){
   await navigate("/admin/products");await until(async()=>(await text()).toLowerCase().includes("ui fixture"),"Product page did not load").catch(async error=>{await writeFile(path.join(receipt,"admin-products-body.txt"),await text());throw error;});
@@ -388,6 +457,14 @@ try{
   await demoOrderScenario({pool:database.pool,origin,send,evaluate,navigate,text,click,setInput,until,staffCookie,customerId,liveOrderNumber:placedOrders[0].order_number,receipt,
     customerCookie:()=>send("Network.setCookie",{name:"grmn-auth.session_token",value:customerCookie,url:origin,httpOnly:true,sameSite:"Lax"})});
   console.log("PASS Task3.3 demo checkout: Pay (demo) with one demo note, a setting change between review and pay refetches the method both ways, DEMO receipt and account label, admin Demo filter with badge, dispatched and delivered");
+  }
+
+  // Task 2.3: per-variant content in the product editor (an independent block; staff session).
+  await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
+  await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
+  await variantContentScenario({cms,headers,send,evaluate,navigate,text,click,receipt,
+    shot:async name=>{const image=await send("Page.captureScreenshot",{format:"png"});await writeFile(path.join(receipt,name),Buffer.from(image.data,"base64"));}});
+  console.log("PASS Task2.3 variant content: 51 mm Own specs copied from the product, one value changed and saved, kept after reopening while 47 mm inherits, Same as product removes the override");
 
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");
