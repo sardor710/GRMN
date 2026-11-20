@@ -291,25 +291,210 @@ async function variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,
     // Final review I2: prices are formatted on the server and again in the browser, so the strings must be
     // identical. Every console error is recorded; there must be no hydration warning on either page.
     for(const [name,page] of [["en-variant",`${route}?variant=UI-VS-51`],["ru",`/ru/p/${saved.id}`]]){
-      const messages=[];
-      const listener=event=>{const m=JSON.parse(String(event.data));
-        if(m.method==="Runtime.consoleAPICalled"&&["error","warning","assert"].includes(m.params.type))messages.push(`console.${m.params.type}: `+m.params.args.map(a=>a.value??a.description??"").join(" "));
-        else if(m.method==="Runtime.exceptionThrown")messages.push("exception: "+(m.params.exceptionDetails.exception?.description??m.params.exceptionDetails.text));
-        else if(m.method==="Log.entryAdded"&&["error","warning"].includes(m.params.entry.level))messages.push(`log.${m.params.entry.level}: ${m.params.entry.text} ${m.params.entry.url??""}`);};
-      ws.addEventListener("message",listener);
-      try{
-        await send("Runtime.enable");await send("Log.enable");
+      await assertNoHydrationWarnings({send,receipt},name,page,async()=>{
         await navigate(page);
         // Hydrated: React has attached its fiber to the tabs; then give late recoverable errors a moment.
         await until(()=>evaluate("(()=>{const el=document.querySelector('[data-product-tabs]');return !!el&&Object.keys(el).some(k=>k.startsWith('__reactFiber'));})()"),`${page} did not hydrate`,60000);
         await until(async()=>(await text()).includes(name==="ru"?"₸":"KZT"),`${page} shows no KZT price`);
         await delay(2000);
-      }finally{ws.removeEventListener("message",listener);await send("Log.disable").catch(()=>{});await send("Runtime.disable").catch(()=>{});}
-      await writeFile(path.join(receipt,`hydration-console-${name}.txt`),messages.join("\n")||"(no console errors or warnings)");
-      const hydration=messages.filter(m=>/hydrat|did not match|server rendered (html|text)|text content does not match/i.test(m));
-      assert.deepEqual(hydration,[],`${page} logged hydration warnings:\n${hydration.join("\n")}`);
+      });
     }
   }finally{await send("Emulation.clearDeviceMetricsOverride");}
+}
+/**
+ * Records every console error/warning, uncaught exception and log error while `action` runs (it should load and
+ * hydrate one page), writes them to hydration-console-<name>.txt in the receipt and fails on any hydration warning.
+ */
+async function assertNoHydrationWarnings({send,receipt},name,page,action){
+  const messages=[];
+  const listener=event=>{const m=JSON.parse(String(event.data));
+    if(m.method==="Runtime.consoleAPICalled"&&["error","warning","assert"].includes(m.params.type))messages.push(`console.${m.params.type}: `+m.params.args.map(a=>a.value??a.description??"").join(" "));
+    else if(m.method==="Runtime.exceptionThrown")messages.push("exception: "+(m.params.exceptionDetails.exception?.description??m.params.exceptionDetails.text));
+    else if(m.method==="Log.entryAdded"&&["error","warning"].includes(m.params.entry.level))messages.push(`log.${m.params.entry.level}: ${m.params.entry.text} ${m.params.entry.url??""}`);};
+  ws.addEventListener("message",listener);
+  try{await send("Runtime.enable");await send("Log.enable");await action();}
+  finally{ws.removeEventListener("message",listener);await send("Log.disable").catch(()=>{});await send("Runtime.disable").catch(()=>{});}
+  await writeFile(path.join(receipt,`hydration-console-${name}.txt`),messages.join("\n")||"(no console errors or warnings)");
+  const hydration=messages.filter(m=>/hydrat|did not match|server rendered (html|text)|text content does not match/i.test(m));
+  assert.deepEqual(hydration,[],`${page} logged hydration warnings:\n${hydration.join("\n")}`);
+}
+// Task C-e (plan 2026-11-21 §6 C3): the whole compare flow in the browser. Self-contained: its own two published
+// products (UI COMPARE ALPHA with 47/51 mm variants owning different spec groups, UI COMPARE BRAVO without
+// variants), a catalogue narrowed to them by search and an emptied compare selection, so data left by earlier
+// blocks does not matter. CMS_SMOKE_ONLY=compare runs it alone.
+async function compareScenario({cms,headers,send,evaluate,navigate,text,receipt}){
+  const q=JSON.stringify,KEY="garmin-compare-v1";
+  const content=groups=>({specs:groups.flatMap(g=>g.items),specGroups:groups});
+  const s=(label,value)=>({label,value});
+  // Lens is equal in both products; Battery life differs; Water rating is BRAVO's only, Heart rate (and the 51 mm
+  // Flashlight) ALPHA's only, so the other column shows an empty cell there.
+  const alpha47=[{title:"General",items:[s("Lens","Sapphire crystal"),s("Battery life","Up to 20 days")]},{title:"Sensors",items:[s("Heart rate","Elevate Gen5")]}];
+  const alpha51=[{title:"General",items:[s("Lens","Sapphire crystal"),s("Battery life","Up to 29 days")]},{title:"Sensors",items:[s("Heart rate","Elevate Gen5"),s("Flashlight","LED")]}];
+  const bravo=[{title:"General",items:[s("Lens","Sapphire crystal"),s("Battery life","Up to 14 days"),s("Water rating","5 ATM")]}];
+  const ruAlpha51=[{title:"Общие",items:[s("Стекло","Сапфировое"),s("Время работы","До 29 дней")]},{title:"Датчики",items:[s("Пульс","Elevate Gen5"),s("Фонарик","LED")]}];
+  const ruAlpha47=[{title:"Общие",items:[s("Стекло","Сапфировое"),s("Время работы","До 20 дней")]},{title:"Датчики",items:[s("Пульс","Elevate Gen5")]}];
+  const ruBravo=[{title:"Общие",items:[s("Стекло","Сапфировое"),s("Время работы","До 14 дней"),s("Водозащита","5 ATM")]}];
+  const ALPHA="UI COMPARE ALPHA",BRAVO="UI COMPARE BRAVO",SKU51="UI-CMPA-51";
+  const alpha=await cms.save("products",headers,variantProduct("UI-CMPA",ALPHA,{status:"published",...content(alpha47),options:[SIZE_OPTION(47,51)],
+    variants:[sizeVariant("UI-CMPA",47,true,{content:content(alpha47)}),sizeVariant("UI-CMPA",51,false,{price:"340.00",content:content(alpha51)})],
+    translations:{ru:{name:"UI СРАВНЕНИЕ АЛЬФА",...content(ruAlpha47),variants:{"var-47":{content:content(ruAlpha47)},"var-51":{content:content(ruAlpha51)}}}}}));
+  const bravoSaved=await cms.save("products",headers,variantProduct("UI-CMPB",BRAVO,{status:"published",price:"250.00",...content(bravo),translations:{ru:{name:"UI СРАВНЕНИЕ БРАВО",...content(ruBravo)}}}));
+  const catalogue="/en/c/wearables-smartwatches?search=UI%20COMPARE";
+  const hydrated=element=>evaluate(`(()=>{const el=${element};return !!el&&Object.keys(el).some(k=>k.startsWith('__reactProps'));})()`);
+  const press=element=>evaluate(`(()=>{const el=${element};if(!el)throw Error('Missing element');el.click();return true;})()`);
+  const dump=name=>async error=>{await writeFile(path.join(receipt,name),`${await evaluate("location.href")}\n${await text()}`);throw error;};
+  const shoot=async name=>{await delay(300);const image=await send("Page.captureScreenshot",{format:"png"});await saveShot(name,image.data);};
+  const reload=async()=>{await evaluate("window.__compareReload='old';true");await send("Page.reload",{ignoreCache:true});await until(()=>evaluate("document.readyState==='complete'&&!window.__compareReload"),"Reload did not finish");};
+  const stored=()=>evaluate(`(()=>{try{return JSON.parse(localStorage.getItem(${q(KEY)})??'[]').map(i=>i.sku?i.productId+'~'+i.sku:i.productId);}catch{return null;}})()`);
+  const urlItems=()=>evaluate("new URL(location.href).searchParams.getAll('item')");
+  // Catalogue.
+  const modeToggle="[...document.querySelectorAll('button[aria-pressed]')].find(b=>b.offsetParent!==null&&b.textContent.trim()==='Compare')";
+  const cardToggle=name=>`[...document.querySelectorAll('[data-product-card]')].find(c=>c.querySelector('h3')?.textContent.trim()===${q(name)})?.querySelector('button[aria-pressed]')`;
+  const pressed=name=>evaluate(`${cardToggle(name)}?.getAttribute('aria-pressed')??null`);
+  const bar="document.querySelector('[data-compare-bar]')";
+  const filledSlots=()=>evaluate(`${bar}?[...${bar}.querySelectorAll('ul li')].filter(li=>!li.hasAttribute('aria-hidden')).length:-1`);
+  const barCompare=`[...(${bar}?.querySelectorAll('a,button')??[])].find(el=>el.textContent.trim()==='Compare')`;
+  const barCompareState=()=>evaluate(`(()=>{const el=${barCompare};return el?el.tagName+':'+(el.getAttribute('aria-disabled')??'enabled'):null;})()`);
+  const cardNames=()=>evaluate("[...document.querySelectorAll('[data-product-card] h3')].map(h=>h.textContent.trim())");
+  // Comparison page.
+  const removeButtons="[...document.querySelectorAll('button[aria-label^=\"Remove UI COMPARE\"]')]";
+  const columns=()=>evaluate(`${removeButtons}.map(b=>b.getAttribute('aria-label').slice(7))`);
+  const columnText=i=>evaluate(`${removeButtons}[${i}]?.parentElement.parentElement.innerText??''`);
+  const groupButton=title=>`[...document.querySelectorAll('h2 button[aria-controls^="compare-group-"]')].find(b=>b.querySelector('span')?.textContent.trim()===${q(title)})`;
+  const groupTitles=()=>evaluate("[...document.querySelectorAll('h2 button[aria-controls^=\"compare-group-\"]')].map(b=>b.querySelector('span').textContent.trim())");
+  // Visible spec rows: [label, ...one value per column]; a collapsed group's rows are hidden.
+  const rows=()=>evaluate("[...document.querySelectorAll('[role=table] [role=row]')].filter(r=>r.querySelector('[role=rowheader]')&&r.offsetParent!==null).map(r=>[r.querySelector('[role=rowheader]').textContent.trim(),...[...r.querySelectorAll('[role=cell]')].map(c=>c.textContent.trim())])");
+  const diffBox="[...document.querySelectorAll('main label')].find(l=>l.textContent.trim()==='Show only differences')?.querySelector('input[type=checkbox]')";
+  const sameRows=async expected=>JSON.stringify(await rows())===JSON.stringify(expected);
+  const at47=[["Lens","Sapphire crystal","Sapphire crystal"],["Battery life","Up to 20 days","Up to 14 days"],["Water rating","","5 ATM"],["Heart rate","Elevate Gen5",""]];
+  const at51=[["Lens","Sapphire crystal","Sapphire crystal"],["Battery life","Up to 29 days","Up to 14 days"],["Water rating","","5 ATM"],["Heart rate","Elevate Gen5",""],["Flashlight","LED",""]];
+  await send("Emulation.setDeviceMetricsOverride",{width:1440,height:900,deviceScaleFactor:1,mobile:false});
+  try{
+    // a. Catalogue compare mode: add 2 cards; Compare is inert under 2; the selection survives a reload.
+    await navigate(catalogue);
+    await evaluate(`(()=>{try{localStorage.removeItem(${q(KEY)});}catch{}return true;})()`);
+    await navigate(catalogue);
+    await until(async()=>JSON.stringify((await cardNames()).sort())===q([ALPHA,BRAVO])&&await hydrated(modeToggle),"The catalogue did not list the two compare fixtures").catch(dump("compare-catalogue-body.txt"));
+    assert.equal(await evaluate(`!!${bar}`),false,"no compare bar before compare mode with an empty selection");
+    assert.equal(await evaluate(`${cardToggle(ALPHA)}==null`),true,"cards have no compare control outside compare mode");
+    await press(modeToggle);
+    await until(()=>evaluate("new URL(location.href).searchParams.get('compare')==='1'"),"Compare did not put compare=1 in the URL");
+    await until(async()=>await pressed(ALPHA)==="false"&&await pressed(BRAVO)==="false"&&await hydrated(cardToggle(ALPHA)),"Cards did not show Add to comparison").catch(dump("compare-mode-body.txt"));
+    assert.equal(await evaluate(`${modeToggle}.getAttribute('aria-pressed')`),"true","the Compare toggle is pressed in compare mode");
+    assert.equal(await filledSlots(),0);assert.equal(await barCompareState(),"BUTTON:true","Compare is disabled with nothing selected");
+    await press(cardToggle(ALPHA));
+    await until(async()=>await pressed(ALPHA)==="true"&&await filledSlots()===1,"Adding ALPHA did not press its card or fill a slot");
+    assert.equal(await barCompareState(),"BUTTON:true","Compare is disabled (aria-disabled) with 1 item");
+    assert.match(await evaluate(`${bar}.innerText`),/Select at least 2 products/);
+    await press(cardToggle(BRAVO));
+    await until(async()=>await pressed(BRAVO)==="true"&&await filledSlots()===2,"Adding BRAVO did not press its card or fill a second slot");
+    await until(async()=>await barCompareState()==="A:enabled","Compare is not enabled with 2 items");
+    assert.deepEqual(await stored(),[alpha.id,bravoSaved.id],"the selection is in localStorage");
+    await shoot("compare-catalogue.png");
+    await reload();
+    await until(async()=>await hydrated(cardToggle(ALPHA))&&await pressed(ALPHA)==="true"&&await pressed(BRAVO)==="true"&&await filledSlots()===2,"The selection did not survive a reload").catch(dump("compare-reload-body.txt"));
+    assert.equal(await barCompareState(),"A:enabled");
+    // b. Compare in the bar opens the comparison with both columns and grouped specs; a missing spec is an empty cell.
+    await press(barCompare);
+    await until(async()=>/\/compare$/.test(await evaluate("location.pathname"))&&(await columns()).length===2,"Compare did not open the comparison with two columns").catch(dump("compare-page-body.txt"));
+    assert.equal(await evaluate("location.pathname"),"/en/compare");
+    assert.deepEqual(await urlItems(),[alpha.id,bravoSaved.id]);
+    assert.deepEqual(await columns(),[ALPHA,BRAVO]);
+    assert.equal(await evaluate("document.querySelector('h1').textContent.trim()"),"Product Comparison");
+    assert.deepEqual(await groupTitles(),["General","Sensors"],"group headings in first-seen order");
+    await until(()=>sameRows(at47),"The 47 mm comparison rows are not as expected").catch(async error=>{await writeFile(path.join(receipt,"compare-rows.json"),q(await rows()));throw error;});
+    assert.equal(await evaluate("[...document.querySelectorAll('[role=rowheader]')].find(h=>h.textContent.trim()==='Water rating').closest('[role=row]').querySelector('[role=cell]').textContent"),"","ALPHA's missing Water rating is an empty cell");
+    assert.equal(await evaluate("getComputedStyle([...document.querySelectorAll('[role=rowheader]')][0]).textTransform"),"uppercase","the label band is Garmin's uppercase band");
+    await shoot("compare-page.png");
+    // c. ALPHA's size picker 47 -> 51 mm: its specs and price change and its URL item carries the 51 mm SKU, with no document load.
+    const price47=await columnText(0);assert.match(price47,/\b300\b/,`ALPHA 47 mm price: ${price47}`);
+    assert.equal(await evaluate("document.getElementById('compare-size-0')?.value"),"UI-CMPA-47");
+    assert.equal(await evaluate("document.getElementById('compare-size-1')"),null,"a product without variants has no size picker");
+    await evaluate("window.__compareMarker='kept';true");
+    await until(()=>hydrated("document.getElementById('compare-size-0')"),"The size picker did not hydrate");
+    await evaluate(`(()=>{const s=document.getElementById('compare-size-0');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,${q(SKU51)});s.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
+    await until(async()=>(await urlItems())[0]===`${alpha.id}~${SKU51}`&&await sameRows(at51),"Choosing 51 mm did not update the URL item and the specs").catch(async error=>{await writeFile(path.join(receipt,"compare-rows.json"),q({url:await evaluate("location.href"),rows:await rows()}));throw error;});
+    await until(async()=>/\b340\b/.test(await columnText(0)),"ALPHA's price did not change to the 51 mm price");
+    assert.equal((await urlItems())[1],bravoSaved.id,"the other column's item is unchanged");
+    assert.equal(await evaluate("document.getElementById('compare-size-0').value"),SKU51);
+    assert.equal(await evaluate("window.__compareMarker"),"kept","the size change reloaded the document");
+    assert.equal(await evaluate("performance.getEntriesByType('navigation').length"),1);
+    // d. Show only differences: the equal Lens row goes, the differing rows stay; kept on reload via diff=1; unticking restores.
+    const onlyDiff=at51.filter(([label])=>label!=="Lens");
+    await until(()=>hydrated(diffBox),"The differences checkbox did not hydrate");
+    await press(diffBox);
+    await until(()=>sameRows(onlyDiff),"Show only differences did not hide the equal row");
+    assert.equal(await evaluate("new URL(location.href).searchParams.get('diff')"),"1");
+    await reload();
+    await until(async()=>await hydrated(diffBox)&&await evaluate(`${diffBox}.checked`)&&await sameRows(onlyDiff),"diff=1 did not keep the filter after a reload").catch(dump("compare-diff-body.txt"));
+    assert.deepEqual(await urlItems(),[`${alpha.id}~${SKU51}`,bravoSaved.id]);
+    await press(diffBox);
+    await until(()=>sameRows(at51),"Unticking did not bring the equal rows back");
+    assert.equal(await evaluate("new URL(location.href).searchParams.has('diff')"),false);
+    // e. Collapse Sensors: aria-expanded false and its rows hidden; expanding brings them back.
+    await press(groupButton("Sensors"));
+    await until(async()=>await evaluate(`${groupButton("Sensors")}.getAttribute('aria-expanded')`)==="false"&&await sameRows(at51.slice(0,3)),"Collapsing Sensors did not hide its rows");
+    assert.equal(await evaluate(`document.getElementById(${groupButton("Sensors")}.getAttribute('aria-controls')).hidden`),true);
+    assert.equal(await evaluate(`${groupButton("General")}.getAttribute('aria-expanded')`),"true","the other group stays open");
+    await press(groupButton("Sensors"));await until(()=>sameRows(at51),"Expanding Sensors did not show its rows again");
+    // f. Scrolling past the column cards shows the compact bar; scrolling back up hides it.
+    assert.equal(await evaluate("!!document.querySelector('[data-compare-compact]')"),false);
+    await evaluate("window.scrollTo(0,document.documentElement.scrollHeight);true");
+    await until(()=>evaluate("!!document.querySelector('[data-compare-compact]')"),"The compact bar did not appear on scroll");
+    assert.deepEqual(await evaluate("[...document.querySelectorAll('[data-compare-compact] p.line-clamp-2')].map(p=>p.textContent.trim())"),[ALPHA,BRAVO]);
+    await shoot("compare-compact.png");
+    await evaluate("window.scrollTo(0,0);true");
+    await until(()=>evaluate("!document.querySelector('[data-compare-compact]')"),"The compact bar did not go away on scrolling up");
+    // g. Remove BRAVO with its ×: the column goes and the URL follows.
+    await press(`document.querySelector(${q(`button[aria-label="Remove ${BRAVO}"]`)})`);
+    await until(async()=>JSON.stringify(await columns())===q([ALPHA])&&JSON.stringify(await urlItems())===q([`${alpha.id}~${SKU51}`]),"Removing BRAVO did not drop its column and URL item");
+    await until(()=>sameRows([["Lens","Sapphire crystal"],["Battery life","Up to 29 days"],["Heart rate","Elevate Gen5"],["Flashlight","LED"]]),"The rows did not follow the removed column");
+    // h. Product page: choose 51 mm, Add to comparison; the comparison then holds that SKU. The shopper starts with BRAVO chosen.
+    await evaluate(`(()=>{localStorage.setItem(${q(KEY)},${q(JSON.stringify([{productId:bravoSaved.id,name:BRAVO}]))});return true;})()`);
+    await navigate(`/en/p/${alpha.id}`);
+    const size=mm=>`[...document.querySelectorAll('[role=group][aria-label="Size"] button')].find(b=>b.textContent.trim()==='${mm} mm')`;
+    const action="document.querySelector('[data-compare-action] button')";
+    await until(async()=>await hydrated(size(51))&&await hydrated(action),"The product page did not hydrate").catch(dump("compare-pdp-body.txt"));
+    await until(async()=>{await press(size(51));return await evaluate(`${size(51)}.getAttribute('aria-pressed')==='true'`);},"51 mm could not be selected");
+    await until(async()=>await evaluate(`${action}.textContent.trim()`)==="Add to comparison","The product page does not offer Add to comparison for 51 mm");
+    await press(action);
+    await until(async()=>JSON.stringify(await stored())===q([bravoSaved.id,`${alpha.id}~${SKU51}`]),"Add to comparison did not store the 51 mm SKU");
+    await until(async()=>await evaluate(`${action}.textContent.trim()`)==="Remove from comparison","The control did not switch to Remove from comparison");
+    await press("[...document.querySelectorAll('[data-compare-action] a')].find(a=>a.textContent.trim()==='View comparison')");
+    await until(async()=>/\/compare$/.test(await evaluate("location.pathname"))&&(await columns()).length===2,"View comparison did not open the comparison").catch(dump("compare-from-pdp-body.txt"));
+    assert.deepEqual(await urlItems(),[bravoSaved.id,`${alpha.id}~${SKU51}`]);
+    assert.deepEqual(await columns(),[BRAVO,ALPHA]);
+    await until(async()=>await evaluate("document.getElementById('compare-size-1')?.value")===SKU51&&/\b340\b/.test(await columnText(1)),"The comparison does not show ALPHA in 51 mm");
+    // i. The same items in Russian: Russian headings and no hydration warning.
+    const search=await evaluate("location.search"),ruPage=`/ru/compare${search}`;
+    await assertNoHydrationWarnings({send,receipt},"compare-ru",ruPage,async()=>{
+      await navigate(ruPage);
+      await until(()=>hydrated("document.querySelector('main input[type=checkbox]')"),`${ruPage} did not hydrate`,60000).catch(dump("compare-ru-body.txt"));
+      await delay(2000);
+    });
+    assert.equal(await evaluate("document.querySelector('h1').textContent.trim()"),"Сравнение товаров");
+    assert.deepEqual(await groupTitles(),["Общие","Датчики"],"Russian group headings");
+    assert.deepEqual((await rows()).map(([label])=>label),["Стекло","Время работы","Водозащита","Пульс","Фонарик"],"Russian spec labels");
+    assert.ok((await text()).includes("Показать только различия"),"the Russian differences label");
+    assert.equal(await evaluate("document.querySelectorAll('button[aria-label^=\"Убрать UI СРАВНЕНИЕ\"]').length"),2,"two Russian columns");
+    await shoot("compare-ru.png");
+    // j. Catalogue sort Z to A: the first card is the last one of A to Z.
+    await navigate(catalogue);
+    await until(()=>hydrated("document.getElementById('sort')"),"The catalogue sort did not hydrate");
+    const sortBy=value=>evaluate(`(()=>{const s=document.getElementById('sort');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,${q(value)});s.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
+    await sortBy("name");
+    await until(async()=>await evaluate("new URL(location.href).searchParams.get('sort')")==="name"&&JSON.stringify(await cardNames())===q([ALPHA,BRAVO]),"A to Z did not order the fixtures").catch(dump("compare-sort-body.txt"));
+    const az=await cardNames();
+    await sortBy("name-desc");
+    await until(async()=>await evaluate("new URL(location.href).searchParams.get('sort')")==="name-desc"&&(await cardNames())[0]!==az[0],"Z to A did not reorder the catalogue").catch(dump("compare-sort-body.txt"));
+    const za=await cardNames();
+    assert.equal(za[0],az.at(-1),"Z to A starts with A to Z's last card");
+    assert.ok(za[0].localeCompare(az[0])>0,"Z to A's first name sorts after A to Z's first");
+    assert.deepEqual(za,[...az].reverse());
+  }finally{
+    await evaluate(`(()=>{try{localStorage.removeItem(${q(KEY)});}catch{}return true;})()`).catch(()=>{});
+    await send("Emulation.clearDeviceMetricsOverride");
+  }
 }
 let temporary,database,app,chrome,ws,profile,logFile;
 
@@ -785,10 +970,10 @@ try{
       customerCookie:()=>send("Network.setCookie",{name:"grmn-auth.session_token",value:customerCookie,url:origin,httpOnly:true,sameSite:"Lax"})});
     console.log("PASS Task3.3 demo checkout: Pay (demo) with one demo note, a setting change between review and pay refetches the method both ways, DEMO receipt and account label, admin Demo filter with badge, dispatched and delivered");
   };
-  const onlyAdminShots=process.env.CMS_SMOKE_ONLY==="admin-shots",onlyVariantContent=process.env.CMS_SMOKE_ONLY==="variant-content",onlyVariantSwitch=process.env.CMS_SMOKE_ONLY==="variant-switch",onlyDashboard=process.env.CMS_SMOKE_ONLY==="dashboard"||onlyAdminShots;
-  if(!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard)await fullSuite();
+  const onlyAdminShots=process.env.CMS_SMOKE_ONLY==="admin-shots",onlyVariantContent=process.env.CMS_SMOKE_ONLY==="variant-content",onlyVariantSwitch=process.env.CMS_SMOKE_ONLY==="variant-switch",onlyDashboard=process.env.CMS_SMOKE_ONLY==="dashboard"||onlyAdminShots,onlyCompare=process.env.CMS_SMOKE_ONLY==="compare";
+  if(!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare)await fullSuite();
 
-  if(!onlyVariantSwitch&&!onlyDashboard){
+  if(!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
   // Task 2.3: per-variant content in the product editor (independent blocks; staff session).
   await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
   await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
@@ -803,18 +988,26 @@ try{
   }
 
   // Task 2.4: the storefront variant switch (independent block: its own published product).
-  if(!onlyVariantContent&&!onlyDashboard){
+  if(!onlyVariantContent&&!onlyDashboard&&!onlyCompare){
     await variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,text,receipt});
     console.log("PASS Task2.4 variant switch: 47 -> 51 mm swaps Specs, In the box and Overview with no document navigation, ?variant= kept, reload and server render show 51 mm, canonical unchanged, unknown SKU falls back; no hydration warnings on /en/p/<id>?variant=<sku> and /ru/p/<id> (console recorded)");
   }
 
+  // Task C-e: the compare flow (an independent block: its own published products; CMS_SMOKE_ONLY=compare runs only this).
+  if(!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard){
+    await compareScenario({cms,headers,send,evaluate,navigate,text,receipt});
+    console.log("PASS C-e compare: catalogue compare mode, 2 cards added (aria-pressed, 2 slots, Compare disabled at 1), kept on reload; comparison with grouped specs and an empty cell; 47 -> 51 mm changes specs, price and URL item with no document load; only differences with diff=1 across a reload; group collapse; compact bar on scroll; column removal; PDP adds the 51 mm SKU; /ru/compare Russian headings with no hydration warning; Z to A sort");
+  }
+
   // Task 4.2: the PostgreSQL dashboard (an independent block; CMS_SMOKE_ONLY=dashboard runs only this).
-  if(!onlyVariantContent&&!onlyVariantSwitch){await dashboardScenario({pool:database.pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue:cookie,receipt,alone:onlyDashboard});
+  if(!onlyVariantContent&&!onlyVariantSwitch&&!onlyCompare){await dashboardScenario({pool:database.pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue:cookie,receipt,alone:onlyDashboard});
   console.log("PASS Task4.2 dashboard: one demo order via checkout; Demo revenue > 0 and Revenue only real money, the order in Recent orders linking to its detail, its product under Best-sellers > Demo only, empty range says so; screenshot saved");}
   if(onlyAdminShots){await adminShotsScenario({cms,headers,send,evaluate,navigate,text,click});console.log("Admin screenshots saved (CMS_SMOKE_ONLY=admin-shots).");}
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");
-  console.log(onlyDashboard
+  console.log(onlyCompare
+    ?"Browser smoke passed (CMS_SMOKE_ONLY=compare): only the C-e compare block ran; the rest of the suite was skipped."
+    :onlyDashboard
     ?"Browser smoke passed (CMS_SMOKE_ONLY=dashboard): only the Task 4.2 dashboard block ran; the rest of the suite was skipped."
     :onlyVariantSwitch
     ?"Browser smoke passed (CMS_SMOKE_ONLY=variant-switch): only the Task 2.4 variant switch block ran; the rest of the suite was skipped."
