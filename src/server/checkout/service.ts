@@ -175,9 +175,12 @@ async function enforceDemoCap(client: PoolClient, userId: string | null, scope: 
   if (limit === 0 || await isStaffUser(client, userId)) return;
   await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`demo-orders:scope:${scope}`]);
   if (addressHash) await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`demo-orders:address:${addressHash}`]);
+  // Staff demo orders never use up an address's allowance (office testing must not lock customers on
+  // the same connection out); the actor count needs no such filter, as staff never reach it.
   const count = async (column: "actor_scope" | "client_address_hash", value: string) => (await client.query<{ n: number }>(
     `SELECT count(*)::int AS n FROM (SELECT 1 FROM checkout_attempts c JOIN orders o ON o.checkout_attempt_id=c.id
-       WHERE c.${column}=$1 AND c.operation=$2 AND c.created_at>now()-make_interval(hours=>${DEMO_ORDER_WINDOW_HOURS}) AND o.payment_mode='demo' LIMIT $3) x`,
+       WHERE c.${column}=$1 AND c.operation=$2 AND c.created_at>now()-make_interval(hours=>${DEMO_ORDER_WINDOW_HOURS}) AND o.payment_mode='demo'
+       ${column === "client_address_hash" ? "AND NOT EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id=o.user_id)" : ""} LIMIT $3) x`,
     [value, OPERATION, limit])).rows[0].n;
   if (await count("actor_scope", scope) >= limit)
     fail("TOO_MANY_DEMO_ORDERS", 429, `This is a demo store: you can place at most ${limit} demo orders a day. Please try again tomorrow.`);

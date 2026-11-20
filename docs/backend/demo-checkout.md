@@ -67,13 +67,13 @@ A demo order now:
 - **Abuse cap (final review I1).** Because a demo order captures like a paid one (it consumes on_hand stock
   and limited promo uses and sends a Telegram alert), one customer or guest session (the checkout actor scope),
   and one trusted client address, may place at most `DEMO_ORDER_LIMIT` demo orders in 24 hours (follow-up F-b;
-  env, read on every demo checkout through `readDemoOrderLimit` in `src/server/config/env.ts`: a whole number,
-  unset or empty = 5, `0` = no cap, anything else falls back to 5 and is logged once per value). Every demo
+  env, read on every demo checkout through `readDemoOrderLimit` in `src/server/config/env.ts`: a whole number
+  from 0 to 1,000,000, unset or empty = 5, `0` = no cap, anything else falls back to 5 and is logged once per value). Every demo
   order counts, whatever became of it. **Staff are exempt:** when the checkout actor is a signed-in user with
   a staff role (the auth foundation's own staff definition, `user_roles`; `requirePrincipal` has already
-  refused a staff session that is not MFA-admitted), nothing is locked or counted. Staff demo orders still
-  count towards their address, so heavy staff testing from a shared office address can use up that address's
-  allowance for customers on it.
+  refused a staff session that is not MFA-admitted), nothing is locked or counted. Staff demo orders also do
+  not count towards an address (F-b review fix): the address count skips orders whose user has a staff role,
+  so staff testing from a shared office address never uses up that address's allowance for customers on it.
   The check runs inside the checkout transaction after the cart lock, under the same transaction-scoped
   advisory locks as the manual unpaid-order limit (scope first, then address), so concurrent checkouts cannot
   pass it together. Over the cap checkout answers 429 `TOO_MANY_DEMO_ORDERS` with a readable message, and
@@ -116,7 +116,8 @@ A demo order now:
   stop counting, and seven customers racing on one address get exactly five orders through;
 - `DEMO_ORDER_LIMIT` (F-b): `2` allows exactly two per customer and per address, `0` lets seven through, an
   invalid value falls back to 5 with a warning, and a staff session (through the cart service, as the route
-  calls it) places more than the limit while a customer over it still gets 429
+  calls it) places more than the limit while a customer over it still gets 429, and staff orders at an address
+  leave that address's full allowance to customers
   (`tests/unit/demo-order-limit.test.mjs` pins the parsing);
 - a same-key replay of a pending demo order is not captured while demo is off.
 

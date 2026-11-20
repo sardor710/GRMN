@@ -575,3 +575,18 @@ test("a signed-in staff session is exempt from the demo cap; a customer over it 
   });
   assert.equal(await count("SELECT count(*)::int AS n FROM orders WHERE user_id=$1 AND payment_mode='demo'",[staff.id]),6);
 });
+
+// F-b review fix 1: staff demo orders do not use up a shared address's allowance for customers.
+test("staff demo orders at an address do not count toward that address's customer cap",async()=>{
+  await setDemo(true);
+  const p=await product({stock:100}),staff=await staffBuyer(),address="198.51.100."+(++serial%250);
+  const at=async who=>{const quote=await quoted(who.headers,[[p.variant,1]]);return checkout.placeOrder(database.pool,secret,{userId:who.id,guestTokenHash:null},key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"},{clientAddress:address});};
+  await withDemoLimit("2",async()=>{
+    for(let i=0;i<2;i++)assert.equal((await at(staff)).status,"confirmed");
+    const customer=await buyer();
+    assert.equal((await at(customer)).status,"confirmed","a customer on the staff's address still gets through");
+    assert.equal((await at(await buyer())).status,"confirmed");
+    // Customer orders still count: the address is now at its limit for customers.
+    await assert.rejects(at(await buyer()),error=>error.status===429&&error.code==="TOO_MANY_DEMO_ORDERS"&&/from this connection/.test(error.message));
+  });
+});

@@ -42,8 +42,9 @@ export async function settleDemoRefund(client: PoolClient, input: DemoRefundSett
   if (settled.rowCount !== 1) throw new AuthFailure("REFUND_NOT_SETTLED", 409, "The demo refund could not be settled");
   await input.refreshPaymentSummary(client, input.orderId);
   // The rowCount guard above lets each refund reach this insert once; ON CONFLICT only keeps a
-  // replayed dedupe key from aborting the transaction.
-  await client.query(
+  // replayed dedupe key from aborting the transaction, and a skipped duplicate is logged.
+  const event = await client.query(
     "INSERT INTO order_events(id,order_id,type,source,actor_user_id,dedupe_key,visibility,occurred_at,payload) VALUES($1,$2,'refund.succeeded',$3,$4,$5,'customer',clock_timestamp(),$6) ON CONFLICT (dedupe_key) DO NOTHING",
     [randomUUID(), input.orderId, input.source, input.actorUserId, `refund-succeeded:${input.refundId}`, JSON.stringify({ refundId: input.refundId, amountMinor: input.amountMinor, demo: true })]);
+  if (event.rowCount === 0) console.warn(`Demo refund ${input.refundId}: a refund.succeeded event with dedupe key refund-succeeded:${input.refundId} already exists; the duplicate was skipped`);
 }
