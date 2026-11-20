@@ -23,6 +23,78 @@ const delay=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 async function until(action,message,timeout=90000){const end=Date.now()+timeout;while(Date.now()<end){try{const value=await action();if(value)return value;}catch{}await delay(200);}throw Error(message);}
 async function port(){const server=createServer();await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));const value=server.address().port;await new Promise(resolve=>server.close(resolve));return value;}
 let temporary,database,app,chrome,ws,profile,logFile;
+
+// Task 3.3 demo-order scenario, self-contained (its own product, stock and store setting): with demo
+// checkout on, a customer adds to cart, checks out with "Pay (demo)", and the receipt and the account
+// history say DEMO; staff find the order with the admin "Demo" filter (badge shown, the live order is
+// not listed), then dispatch and deliver it. Screenshots go to CMS_SMOKE_DEMO_SHOTS (or the receipt).
+async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,setInput,until,customerCookie,staffCookie,customerId,liveOrderNumber,receipt}){
+  const shots=path.resolve(process.env.CMS_SMOKE_DEMO_SHOTS??receipt);fs.mkdirSync(shots,{recursive:true});
+  const shoot=async name=>{const image=await send("Page.captureScreenshot",{format:"png"});await writeFile(path.join(shots,name),Buffer.from(image.data,"base64"));};
+  const signOut=()=>send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
+  const product=randomUUID(),variant=randomUUID();
+  await pool.query("INSERT INTO products(id,public_key,name,status) VALUES($1,'ui-demo-fixture','UI DEMO FIXTURE','published')",[product]);
+  await pool.query("INSERT INTO product_variants(id,product_id,sku,name,is_default,status) VALUES($1,$2,'UI-DEMO-SKU','Base',true,'active')",[variant,product]);
+  await pool.query("INSERT INTO prices(id,variant_id,amount_minor) VALUES($1,$2,100000)",[randomUUID(),variant]);
+  const main=(await pool.query("SELECT id FROM stock_locations WHERE key='main'")).rows[0].id;
+  await pool.query("INSERT INTO inventory_balances(variant_id,location_id) VALUES($1,$2)",[variant,main]);
+  await pool.query("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key,source_reference) VALUES($1,$2,$3,5,0,'opening','ui-demo-opening','synthetic:ui-smoke')",[randomUUID(),variant,main]);
+  await pool.query("UPDATE store_settings SET payment_mode='demo',version=version+1 WHERE id=1");
+  await send("Emulation.setDeviceMetricsOverride",{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+  try{
+    // Storefront: add to cart, review, Pay (demo).
+    await signOut();await customerCookie();
+    await navigate("/p/ui-demo-fixture");await until(async()=>(await text()).includes("UI DEMO FIXTURE"),"Demo fixture product did not render");
+    await until(async()=>{try{await click("Add to Cart");return true;}catch{return false;}},"Add to Cart was not clickable");
+    await until(async()=>(await pool.query("SELECT 1 FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=$1 AND c.status='active' AND ci.variant_id=$2",[customerId,variant])).rowCount===1,"The demo fixture did not reach the account cart");
+    await navigate("/cart");await until(async()=>(await text()).includes("UI DEMO FIXTURE")&&/review order/i.test(await text()),"Cart with the demo fixture missing");
+    for(const [name,value] of [["recipientName","UI Demo Buyer"],["phone","+77000000077"],["city","Almaty"],["line1","UI demo street 3"]])await until(()=>setInput(name,value),"Could not fill "+name);
+    await until(async()=>{try{await click("Review order");return true;}catch{return false;}},"Review order stayed disabled");
+    await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Pay (demo)')"),"The demo pay button did not render").catch(async error=>{await writeFile(path.join(receipt,"demo-checkout-body.txt"),await text());throw error;});
+    assert.ok((await text()).includes("Demo payment — no money is charged."),"one line under the demo pay button");
+    assert.equal(await evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Place order')"),false,"demo and manual are never offered together");
+    assert.ok(!/we confirm your payment by hand/i.test(await text()),"no manual payment notice in demo checkout");
+    await click("Pay (demo)");
+    await until(async()=>/order grm-\d+ received/i.test(await text()),"The demo receipt did not render").catch(async error=>{await writeFile(path.join(receipt,"demo-receipt-body.txt"),await text());throw error;});
+    await until(()=>evaluate("document.querySelector('[data-demo-badge]')?.textContent.trim()==='DEMO'"),"The receipt shows no DEMO label");
+    await until(async()=>/status: paid/i.test(await text())&&(await text()).includes("Demo payment — no money was charged."),"The demo receipt did not show the paid demo status").catch(async error=>{await writeFile(path.join(receipt,"demo-receipt-body.txt"),await text());throw error;});
+    assert.ok(!/payment not completed/i.test(await text()));
+    // Checkout orders only: the Task 10C legacy fixture row is inserted without a payment mode (column default).
+    const order=(await pool.query("SELECT id,order_number,order_status,payment_status FROM orders WHERE user_id=$1 AND payment_mode='demo' AND checkout_attempt_id IS NOT NULL",[customerId])).rows;
+    assert.equal(order.length,1,"exactly one demo checkout order");
+    assert.deepEqual([order[0].order_status,order[0].payment_status],["confirmed","paid"]);
+    assert.ok((await text()).toUpperCase().includes(order[0].order_number.toUpperCase()));
+    await shoot("demo-confirmation.png");
+    const number=JSON.stringify(order[0].order_number.toUpperCase()),live=JSON.stringify(liveOrderNumber.toUpperCase());
+    // Account history: the demo order carries the DEMO label.
+    await navigate("/account");await until(async()=>(await text()).toLowerCase().includes("ui account owner"),"Account page did not load");
+    await click("Orders");
+    await until(()=>evaluate(`[...document.querySelectorAll('button')].some(b=>b.textContent.toUpperCase().includes(${number})&&!!b.querySelector('[data-demo-badge]'))`),"The account history does not label the demo order");
+    // Admin: the Demo filter lists the demo order with its badge and leaves out the live (manual) order.
+    await signOut();await staffCookie();
+    await navigate("/admin/orders");
+    await until(async()=>(await text()).toUpperCase().includes(liveOrderNumber.toUpperCase()),"The admin queue did not load");
+    await evaluate(`(()=>{const select=document.querySelector('select[aria-label="Payment mode filter"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,'demo');select.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
+    const queue=`[...document.querySelectorAll('section[aria-label="Order queue"] li button')]`;
+    await until(()=>evaluate(`${queue}.length>0&&${queue}.every(b=>!!b.querySelector('[data-demo-badge]'))&&!${queue}.some(b=>b.textContent.toUpperCase().includes(${live}))`),"The Demo filter did not list only demo orders").catch(async error=>{await writeFile(path.join(receipt,"demo-admin-body.txt"),await text());throw error;});
+    assert.ok(await evaluate(`${queue}.some(b=>b.textContent.toUpperCase().includes(${number}))`),"the demo order is listed under Demo");
+    await evaluate(`(()=>{${queue}.find(b=>b.textContent.toUpperCase().includes(${number})).click();return true;})()`);
+    await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Order detail\"] [data-demo-badge]')"),"The order detail shows no DEMO label");
+    await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>/create shipment/i.test(b.textContent))"),"A captured demo order offered no shipment action");
+    await shoot("demo-orders.png");
+    // Dispatch and deliver it like a paid order.
+    await until(()=>evaluate(`(()=>{const input=document.querySelector('input[aria-label="Ship quantity for UI DEMO FIXTURE"]');if(!input)return false;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'1');input.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`),"No ship quantity input for the demo order");
+    await click("Create shipment");
+    await until(async()=>{try{await click("Dispatch");return true;}catch{return false;}},"The demo shipment offered no dispatch");
+    await until(async()=>(await pool.query("SELECT count(*)::int AS n FROM shipments WHERE order_id=$1 AND status='dispatched'",[order[0].id])).rows[0].n===1,"The demo shipment was not dispatched");
+    await until(async()=>{try{await click("Mark delivered");return true;}catch{return false;}},"The dispatched demo shipment offered no delivery");
+    await until(async()=>(await pool.query("SELECT fulfillment_status FROM orders WHERE id=$1",[order[0].id])).rows[0].fulfillment_status==="delivered","The demo order was not delivered");
+    assert.equal((await pool.query("SELECT payment_mode FROM orders WHERE id=$1",[order[0].id])).rows[0].payment_mode,"demo","still labelled demo after delivery");
+  }finally{
+    await send("Emulation.clearDeviceMetricsOverride");
+    await pool.query("UPDATE store_settings SET payment_mode='live',version=version+1 WHERE id=1");
+  }
+}
 try{
   temporary=await startTemporaryPostgres();database=createDatabase(parseServerEnv({DATABASE_URL:temporary.url}));const migration=createDatabase(parseServerEnv({DATABASE_URL:temporary.url,DATABASE_POOL_MAX:"1",DATABASE_CONNECT_TIMEOUT_MS:"10000",DATABASE_STATEMENT_TIMEOUT_MS:"60000"}));try{await migrate(migration.db,{migrationsFolder:"drizzle"});}finally{await migration.close();}
   const appPort=await port(),origin=`http://localhost:${appPort}`,secret=randomBytes(32).toString("hex");
@@ -231,6 +303,11 @@ try{
   const customerStatus=await(await fetch(origin+"/api/cart/checkout/status",{method:"POST",headers:{cookie:"grmn-auth.session_token="+customerCookie,origin,"content-type":"application/json"},body:JSON.stringify({orderId:placedOrders[0].id})})).json();
   assert.equal(customerStatus.paymentStatus,"paid",JSON.stringify(customerStatus));assert.equal(customerStatus.paymentInstructions,null);
   console.log("PASS O07 manual payment: staff-edited instructions on the receipt, admin confirmation with method and reference, order paid through the capture path and shippable");
+
+  // Task 3.3: demo checkout end to end (an independent block).
+  await demoOrderScenario({pool:database.pool,origin,send,evaluate,navigate,text,click,setInput,until,staffCookie,customerId,liveOrderNumber:placedOrders[0].order_number,receipt,
+    customerCookie:()=>send("Network.setCookie",{name:"grmn-auth.session_token",value:customerCookie,url:origin,httpOnly:true,sameSite:"Lax"})});
+  console.log("PASS Task3.3 demo checkout: Pay (demo) with one demo note, DEMO receipt and account label, admin Demo filter with badge, dispatched and delivered");
 
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");

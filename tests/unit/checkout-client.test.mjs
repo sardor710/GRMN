@@ -83,3 +83,30 @@ test("review I1: a pending checkout is resumed after a reload with the same key 
   const broken = createCheckoutStorage(() => { throw new Error("SecurityError"); });
   assert.equal(beginCheckout(broken, command), beginCheckout(broken, command), "memory fallback keeps the key when storage is unavailable");
 });
+
+test("Task 3.3: a demo order whose capture failed keeps its key, and Try again resends it once with that key", async () => {
+  const { beginCheckout, settleCheckoutKey, needsPaymentRetry, retryOrderPayment, resumePendingCheckout } = await load();
+  const store = new Map(), storage = { get: k => store.get(k) ?? null, set: (k, v) => store.set(k, v), remove: k => store.delete(k) };
+  const command = { quoteId: "q-demo", cartVersion: 4, paymentMethod: "demo" };
+  const key = beginCheckout(storage, command);
+  const pending = { orderId: "o-demo", orderNumber: "GRM-9", statusToken: null, paymentMode: "demo", status: "pending_payment" };
+  assert.equal(needsPaymentRetry(pending), true);
+  assert.equal(needsPaymentRetry({ paymentMode: "demo", status: "confirmed" }), false);
+  assert.equal(needsPaymentRetry({ paymentMode: "live", status: "pending_payment" }), false, "a manual order awaiting payment is not retried");
+  settleCheckoutKey(storage, pending);
+  assert.equal(beginCheckout(storage, command), key, "the key is kept for the retry");
+  const sent = [];
+  // A failed retry throws and keeps the key; a retry for another order is not this order's retry.
+  await assert.rejects(retryOrderPayment({ placeOrder: async (c, k) => { sent.push(k); throw new TypeError("Failed to fetch"); } }, storage, "o-demo"));
+  assert.equal(await retryOrderPayment({ placeOrder: async (c, k) => { sent.push(k); return { ...pending, orderId: "o-other" }; } }, storage, "o-demo"), null);
+  // Still not captured: the key stays; captured: the key is forgotten.
+  assert.equal((await retryOrderPayment({ placeOrder: async (c, k) => { sent.push(k); return pending; } }, storage, "o-demo")).status, "pending_payment");
+  const paid = await retryOrderPayment({ placeOrder: async (c, k) => { sent.push(k); return { ...pending, status: "confirmed" }; } }, storage, "o-demo");
+  assert.equal(paid.status, "confirmed");
+  assert.deepEqual(sent, [key, key, key, key], "every retry uses the original key");
+  assert.equal(await retryOrderPayment({ placeOrder: async () => { throw new Error("not sent"); } }, storage, "o-demo"), null, "nothing left to retry");
+  // A reload also resends a kept demo checkout, and keeps it while the capture is still missing.
+  beginCheckout(storage, command);
+  await resumePendingCheckout({ placeOrder: async () => pending }, storage);
+  assert.ok(store.has("grmn-checkout-attempt"));
+});

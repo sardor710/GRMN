@@ -76,6 +76,31 @@ export function beginCheckout(storage: CheckoutStorage, command: CheckoutCommand
 export function forgetCheckoutKey(storage: CheckoutStorage): void { storage.remove(ATTEMPT_KEY); }
 
 /**
+ * Task 3.3: a demo order whose demo capture failed comes back still awaiting payment. Its key is kept,
+ * because a same-key retry replays the order and captures it once; any other result is final.
+ */
+export const needsPaymentRetry = (result: Pick<CheckoutResultDTO, "paymentMode" | "status">) => result.paymentMode === "demo" && result.status === "pending_payment";
+
+/** Forgets the key unless the order still needs a payment retry (needsPaymentRetry). */
+export function settleCheckoutKey(storage: CheckoutStorage, result: Pick<CheckoutResultDTO, "paymentMode" | "status">): void {
+  if (!needsPaymentRetry(result)) forgetCheckoutKey(storage);
+}
+
+/**
+ * Task 3.3 "Try again" on the receipt: resends this order's kept checkout with its original key. The
+ * server replays the same order and retries its demo capture. Returns null when no kept checkout
+ * belongs to this order (nothing to retry); a failed request throws and keeps the key.
+ */
+export async function retryOrderPayment(client: Pick<CheckoutClient, "placeOrder">, storage: CheckoutStorage, orderId: string): Promise<CheckoutResultDTO | null> {
+  const pending = readPending(storage);
+  if (!pending) return null;
+  const result = await client.placeOrder(pending.command, pending.key);
+  if (result.orderId !== orderId) return null;
+  settleCheckoutKey(storage, result);
+  return result;
+}
+
+/**
  * After a reload or a lost response: resends a pending checkout with its original key. The server
  * replays the order if it was placed (or places it now). Returns the order, or null when nothing is
  * pending, the outcome is still unknown (kept for the next try), or the answer was final (dropped).
@@ -86,7 +111,7 @@ export async function resumePendingCheckout(client: Pick<CheckoutClient, "placeO
   try {
     const result = await client.placeOrder(pending.command, pending.key);
     const order = { orderId: result.orderId, orderNumber: result.orderNumber, statusToken: result.statusToken };
-    forgetCheckoutKey(storage);
+    settleCheckoutKey(storage, result);
     rememberOrder(storage, order);
     return order;
   } catch (error) {

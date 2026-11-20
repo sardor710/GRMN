@@ -34,8 +34,8 @@ function emptyCart(t: Translate) {
 
 // Task 13A server cart: every amount is the server's KZT value; nothing is computed or trusted here.
 // Checkout is the server checkout panel (Task 14A); notices must be resolved first.
-function serverCart(t: Translate, kzt: (money: Parameters<typeof formatKzt>[0]) => string, cart: CartDTO, actions: { busy: boolean; error: string | null; setQty: (id: string, qty: number) => unknown; remove: (id: string) => unknown; clear: () => unknown; acknowledge: () => unknown; placeOrder: (order: PlacedOrder) => unknown }) {
-  const { busy, error, setQty, remove, clear, acknowledge, placeOrder } = actions;
+function serverCart(t: Translate, kzt: (money: Parameters<typeof formatKzt>[0]) => string, cart: CartDTO, actions: { busy: boolean; error: string | null; setQty: (id: string, qty: number) => unknown; remove: (id: string) => unknown; clear: () => unknown; acknowledge: () => unknown; placeOrder: (order: PlacedOrder) => unknown; refresh: () => unknown }) {
+  const { busy, error, setQty, remove, clear, acknowledge, placeOrder, refresh } = actions;
   if (cart.lines.length === 0) return emptyCart(t);
   const priceChanged = cart.notices.some(n => n.code === "price_changed");
   const adjusted = cart.notices.some(n => n.code === "quantity_adjusted");
@@ -102,7 +102,7 @@ function serverCart(t: Translate, kzt: (money: Parameters<typeof formatKzt>[0]) 
             <button type="button" disabled={busy} onClick={() => clear()} className="text-[14px] text-neutral-500 underline hover:text-black disabled:opacity-50">{t("clear")}</button>
           </div>
         </div>
-        <CheckoutPanel cart={cart} disabled={busy || unavailable || priceChanged} onPlaced={placeOrder} />
+        <CheckoutPanel cart={cart} disabled={busy || unavailable || priceChanged} onPlaced={placeOrder} onCartStale={refresh} />
       </div>
     </div>
   );
@@ -128,7 +128,7 @@ export function CartView({ catalog = {} }: { catalog?: CartCatalog }) {
   if (mode === "server" && !server && error) return <div className="mx-auto max-w-[640px] px-4 py-24 text-center"><p role="alert" className="border border-red-200 bg-red-50 p-3 text-[14px] text-red-800">{t("loadFailed", { error })}</p></div>;
   // The server converted the cart when it placed the order; re-read it rather than clearing it here.
   const placeOrder = (order: PlacedOrder) => { setPlaced(order); void refresh(); };
-  if (mode === "server") return server ? serverCart(t, kzt, server, { busy, error, setQty, remove, clear, acknowledge, placeOrder }) : emptyCart(t);
+  if (mode === "server") return server ? serverCart(t, kzt, server, { busy, error, setQty, remove, clear, acknowledge, placeOrder, refresh }) : emptyCart(t);
 
   if (items.length === 0) return emptyCart(t);
 

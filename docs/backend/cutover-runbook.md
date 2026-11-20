@@ -269,6 +269,7 @@ $DC run --rm -T ops node --conditions=react-server scripts/ops/store-setup.ts te
 # A4 switch (the store stays closed)
 $DC up -d app worker proxy
 # A5 verification (from a host that resolves the domain to the proxy)
+# Turn Demo checkout off first (admin Settings -> Payments): the rehearsal confirms a manual payment, and demo checkout refuses manual.
 node scripts/ops/verify-cutover.mjs --base https://<domain> --credentials <operator.json> \
   --products <key,key> --variant <uuid> --publish <homepage pageId>:<version> --out <receipt>
 $DC exec -T db psql -U grmn_owner -d grmn < scripts/perf/invariants.sql      # every row t

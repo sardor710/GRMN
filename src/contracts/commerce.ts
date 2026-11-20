@@ -303,6 +303,8 @@ export interface OrderSummaryDTO {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   fulfillmentStatus: FulfillmentStatus;
+  /** Task 3.3: "demo" for a demo-checkout order (no money was charged), shown with a DEMO label. */
+  paymentMode: "demo" | "live" | "legacy_unknown";
   total: Money;
   itemsCount: number;
 }
