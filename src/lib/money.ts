@@ -11,6 +11,9 @@ export type KztAmount = { minor: string | number | bigint } | { major: string | 
 
 const MINOR = /^-?(0|[1-9][0-9]*)$/;
 const MAJOR = /^-?[0-9]+(\.[0-9]{1,2})?$/;
+/** Every space-like separator ICU may print (space, U+00A0, U+2007, U+2009, U+202F) becomes U+00A0. */
+const SPACE_LIKE = /[\s\u00a0\u2007\u2009\u202f]/g;
+const NBSP = "\u00a0";
 
 /** "135000000" minor units to "1350000.00". BigInt-safe; throws on anything but a non-negative integer string. */
 export function minorToMajor(amount: string): string {
@@ -25,7 +28,7 @@ export function minorToMajor(amount: string): string {
 export function groupMinor(minor: string, intlLocale: string): string {
   const [whole, cents] = minorToMajor(minor).split(".");
   const parts = new Intl.NumberFormat(intlLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).formatToParts(BigInt(whole));
-  return parts.map(part => (part.type === "fraction" ? cents : part.value)).join("");
+  return parts.map(part => (part.type === "fraction" ? cents : part.value.replace(SPACE_LIKE, NBSP))).join("");
 }
 
 /** The Intl locale for tenge in a storefront language: ru → ru-KZ, kk → kk-KZ, en (and anything else) → en-KZ. Accepts "ru" or "ru-RU". */
@@ -52,7 +55,8 @@ export function toMinor(amount: KztAmount): string | null {
 }
 
 /**
- * Garmin's price rule for KZT: `Intl.NumberFormat(locale, { style: "currency", currency: "KZT" })`, two decimals.
+ * Garmin's price rule for KZT: the locale's number format with two decimals and a currency token pinned per
+ * locale (never ICU's), joined with U+00A0 (see formatAmount).
  * ru → "1 350 000,00 ₸", kk → "1 350 000,00 ₸", en → "KZT 1,350,000.00". An invalid amount returns "—".
  */
 export function formatKzt(amount: KztAmount, locale: string): string {
@@ -67,17 +71,22 @@ export function formatUnconverted(amount: KztAmount, locale: string): string {
   return formatAmount(amount, locale, false);
 }
 
+/**
+ * Final review I2: the output must be identical in Node (SSR) and in every browser, or hydration fails.
+ * ICU versions differ in the KZT token ("KZT" or "₸"), in its position and in the space they use (U+00A0 or
+ * U+202F). So only the digits, group and decimal symbols come from Intl (formatToParts of the plain number,
+ * every separator normalised to U+00A0) and the currency part is pinned per locale: "KZT 1,350,000.00" for
+ * en, "1 350 000,00 ₸" for ru and kk, always joined with U+00A0.
+ */
 function formatAmount(amount: KztAmount, locale: string, currency: boolean): string {
   const minor = toMinor(amount);
   if (minor === null) return "—";
   const negative = minor.startsWith("-");
   const [whole, cents] = minorToMajor(negative ? minor.slice(1) : minor).split(".");
-  const parts = new Intl.NumberFormat(kztIntlLocale(locale), {
-    ...(currency ? ({ style: "currency", currency: "KZT" } as const) : {}),
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).formatToParts(BigInt(whole));
-  const text = parts.map(part => (part.type === "fraction" ? cents : part.value)).join("");
+  const intlLocale = kztIntlLocale(locale);
+  const parts = new Intl.NumberFormat(intlLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2, useGrouping: true }).formatToParts(BigInt(whole));
+  const number = parts.map(part => (part.type === "fraction" ? cents : part.value.replace(SPACE_LIKE, NBSP))).join("");
+  const text = !currency ? number : intlLocale === "en-KZ" ? "KZT" + NBSP + number : number + NBSP + "₸";
   return negative ? "-" + text : text;
 }
 

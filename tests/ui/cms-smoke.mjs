@@ -279,6 +279,28 @@ async function variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,
     assert.ok(!(await shows("Overview for the 47 mm model")));
     await until(()=>pressed(51),"51 mm is not selected after the reload");
     await until(()=>tab("Specs"),"Specs tab missing after reload");await until(()=>shows("Case 51 mm only"),"51 mm specs not shown after reload");
+
+    // Final review I2: prices are formatted on the server and again in the browser, so the strings must be
+    // identical. Every console error is recorded; there must be no hydration warning on either page.
+    for(const [name,page] of [["en-variant",`${route}?variant=UI-VS-51`],["ru",`/ru/p/${saved.id}`]]){
+      const messages=[];
+      const listener=event=>{const m=JSON.parse(String(event.data));
+        if(m.method==="Runtime.consoleAPICalled"&&["error","warning","assert"].includes(m.params.type))messages.push(`console.${m.params.type}: `+m.params.args.map(a=>a.value??a.description??"").join(" "));
+        else if(m.method==="Runtime.exceptionThrown")messages.push("exception: "+(m.params.exceptionDetails.exception?.description??m.params.exceptionDetails.text));
+        else if(m.method==="Log.entryAdded"&&["error","warning"].includes(m.params.entry.level))messages.push(`log.${m.params.entry.level}: ${m.params.entry.text} ${m.params.entry.url??""}`);};
+      ws.addEventListener("message",listener);
+      try{
+        await send("Runtime.enable");await send("Log.enable");
+        await navigate(page);
+        // Hydrated: React has attached its fiber to the tabs; then give late recoverable errors a moment.
+        await until(()=>evaluate("(()=>{const el=document.querySelector('[data-product-tabs]');return !!el&&Object.keys(el).some(k=>k.startsWith('__reactFiber'));})()"),`${page} did not hydrate`,60000);
+        await until(async()=>(await text()).includes(name==="ru"?"₸":"KZT"),`${page} shows no KZT price`);
+        await delay(2000);
+      }finally{ws.removeEventListener("message",listener);await send("Log.disable").catch(()=>{});await send("Runtime.disable").catch(()=>{});}
+      await writeFile(path.join(receipt,`hydration-console-${name}.txt`),messages.join("\n")||"(no console errors or warnings)");
+      const hydration=messages.filter(m=>/hydrat|did not match|server rendered (html|text)|text content does not match/i.test(m));
+      assert.deepEqual(hydration,[],`${page} logged hydration warnings:\n${hydration.join("\n")}`);
+    }
   }finally{await send("Emulation.clearDeviceMetricsOverride");}
 }
 let temporary,database,app,chrome,ws,profile,logFile;
