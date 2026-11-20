@@ -38,7 +38,7 @@ export function Price({ amount, compareAt, locale, size = "inline", suffix, save
       <div data-price="pdp" className={cn("mt-4 mb-1 flex flex-col text-[20px] font-bold leading-[24px] text-black", className)}>
         {original && (
           <p className="text-[14px] font-normal leading-[24px]">
-            <span data-price-original className="mr-[11px] line-through">{original}</span>
+            <span data-price-original className="mr-[11px] inline-block line-through">{original}</span>
             {save && <span data-price-save className="ml-2 inline-flex text-[14px] leading-[21px]">{save}</span>}
           </p>
         )}

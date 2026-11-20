@@ -62,7 +62,7 @@ function Check({
         type="checkbox"
         checked={checked}
         onChange={onChange}
-        className="h-4 w-4 accent-black"
+        className="g-checkbox"
       />
       {label}
     </label>
@@ -146,7 +146,7 @@ export function CatalogueGrid({ products }: { products: Product[] }) {
             id="sort"
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
-            className="h-10 border border-neutral-300 bg-white px-3 text-[14px] text-black outline-none"
+            className="g-select w-[270px]"
           >
             {(Object.keys(sortLabels) as SortKey[]).map((k) => (
               <option key={k} value={k}>

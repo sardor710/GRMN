@@ -289,17 +289,17 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <button
               disabled={!sellable} onClick={handleAdd}
-              className="g-btn g-btn--lg g-btn--primary"
+              className="g-btn g-btn--lg g-btn--primary w-full md:w-auto"
             >
               {addLabel}
             </button>
-            <button className="g-btn g-btn--lg g-btn--secondary">
+            <button className="g-btn g-btn--lg g-btn--secondary w-full md:w-auto">
               {t("customize")}
             </button>
             {mode === "server" && (
               <button
                 type="button" onClick={handleWishlist} disabled={wish === "saving"}
-                className="g-btn g-btn--lg g-btn--secondary"
+                className="g-btn g-btn--lg g-btn--secondary w-full md:w-auto"
               >
                 {wish === "saved" ? t("savedToWishlist") : t("saveToWishlist")}
               </button>
