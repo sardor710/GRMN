@@ -191,11 +191,22 @@ function liveSpy(){
 const orderRow=async id=>(await q("SELECT order_status,payment_status,fulfillment_status,payment_mode,version FROM orders WHERE id=$1",[id])).rows[0];
 const captures=async id=>(await q("SELECT provider,environment,merchant_account,kind,amount_minor::text AS amount,external_id,evidence FROM payment_transactions WHERE order_id=$1 ORDER BY created_at,id",[id])).rows;
 const today=()=>new Date().toISOString().slice(0,10);
+// Task 4.1: demo money is reported as its own "demo" environment row and never inside a real one.
+const daySummary=()=>reports.summary(as("reader"),{from:today(),to:today(),timeZone:"UTC"});
+const realRows=summary=>JSON.stringify(summary.totals.filter(row=>row.environment!=="demo"));
+const demoRow=summary=>summary.totals.find(row=>row.environment==="demo"&&row.currency==="KZT")??{capturedMinor:"0",refundedMinor:"0"};
+function assertDemoOnly(before,after,{captured,refunded}){
+  assert.equal(realRows(after),realRows(before),"real totals are untouched by demo money");
+  assert.ok(after.totals.filter(row=>row.environment==="demo").length<=1,"one demo row");
+  assert.equal(BigInt(demoRow(after).capturedMinor)-BigInt(demoRow(before).capturedMinor),BigInt(captured),"demo captured");
+  assert.equal(BigInt(demoRow(after).refundedMinor)-BigInt(demoRow(before).refundedMinor),BigInt(refunded),"demo refunded");
+}
 
 test("a demo purchase becomes confirmed and paid and consumes its stock reservation",async()=>{
   await setDemo(true);
   const sent=[],sender={async send(text){sent.push(text);}};
   await notifications.notifyOrderEvents(database.pool,sender,{settleMs:0});
+  const reportBefore=await daySummary();
   const who=await buyer(),p=await product({stock:5}),quote=await quoted(who.headers,[[p.variant,2]]);
   const placed=await place(who,quote,"demo");
   assert.equal(placed.paymentMode,"demo");assert.equal(placed.status,"confirmed");assert.equal(placed.paymentState,"simulated");
@@ -219,9 +230,8 @@ test("a demo purchase becomes confirmed and paid and consumes its stock reservat
   // The customer sees a paid order.
   const status=await checkout.readCheckoutStatus(database.pool,{userId:who.id,guestTokenHash:null},{orderId:placed.orderId});
   assert.deepEqual([status.status,status.paymentStatus,status.paymentMode],["confirmed","paid","demo"]);
-  // Demo money is never real money: the revenue report leaves it out.
-  const summary=await reports.summary(as("reader"),{from:today(),to:today(),timeZone:"UTC"});
-  assert.ok(summary.totals.every(row=>row.environment!=="demo"),"demo captures are not revenue: "+JSON.stringify(summary.totals));
+  // Demo money is never real money: the report shows it only in its own demo row (Task 4.1).
+  assertDemoOnly(reportBefore,await daySummary(),{captured:placed.total.amountMinor,refunded:0});
 });
 
 test("submitting the same demo attempt twice records one capture and consumes stock once",async()=>{
@@ -278,6 +288,7 @@ test("a demo order can be shipped, delivered and refunded",async()=>{
 
 test("demo refund writes provider demo and never touches a live provider",async()=>{
   await setDemo(true);
+  const reportBefore=await daySummary();
   const spy=liveSpy(),providers=payments.createPaymentProviders([payments.createDemoProvider(),spy.provider]);
   const api=aftersales.createAfterSalesService({pool:database.pool,authorize,providers});
   const who=await buyer(),p=await product({stock:5}),quote=await quoted(who.headers,[[p.variant,2]]);
@@ -303,9 +314,8 @@ test("demo refund writes provider demo and never touches a live provider",async(
   assert.deepEqual(await balance(p.variant),{on_hand:5,reserved:0});
   await aftersales.processRefunds(database.pool,providers);
   assert.deepEqual(spy.calls,[]);
-  // Demo refunds are not real refunds in the report either.
-  const summary=await reports.summary(as("reader"),{from:today(),to:today(),timeZone:"UTC"});
-  assert.ok(summary.totals.every(row=>row.environment!=="demo"));
+  // Demo refunds are not real refunds in the report either: they stay in the demo row (Task 4.1).
+  assertDemoOnly(reportBefore,await daySummary(),{captured:placed.total.amountMinor,refunded:placed.total.amountMinor});
 });
 
 // Task 3.2 fix round 1: the recovery paths. The demo capture runs after the checkout commits, so a
@@ -376,6 +386,7 @@ test("a demo order left unpaid is cancelled by the unpaid-order sweep and its st
 
 test("a demo capture that finds no stock cancels the order, settles its demo refund and is not reported paid",async()=>{
   await setDemo(true);
+  const reportBefore=await daySummary();
   const spy=liveSpy(),providers=payments.createPaymentProviders([payments.createDemoProvider(),spy.provider]);
   const inventory=await import("../../src/server/inventory/reservations.ts");
   const p=await product({stock:1});
@@ -408,7 +419,9 @@ test("a demo capture that finds no stock cancels the order, settles its demo ref
   assert.equal((await checkout.placeOrder(database.pool,secret,actor,idem,input)).status,"cancelled");
   await aftersales.processRefunds(database.pool,providers);
   assert.deepEqual(spy.calls,[]);
-  // Demo money: absent from the revenue report.
-  const summary=await reports.summary(as("reader"),{from:today(),to:today(),timeZone:"UTC"});
-  assert.ok(summary.totals.every(row=>row.environment!=="demo"));
+  // Demo money appears only in the demo row of the report (Task 4.1): A's capture is fully refunded,
+  // and B's demo purchase is captured too.
+  const aTotal=(await q("SELECT total_minor::text AS t FROM orders WHERE id=$1",[placed.orderId])).rows[0].t;
+  const bTotal=(await q("SELECT COALESCE(sum(t.amount_minor),0)::text AS t FROM payment_transactions t JOIN orders o ON o.id=t.order_id WHERE t.kind='capture' AND t.provider='demo' AND o.user_id=$1",[b.id])).rows[0].t;
+  assertDemoOnly(reportBefore,await daySummary(),{captured:BigInt(aTotal)+BigInt(bTotal),refunded:aTotal});
 });
