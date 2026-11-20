@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Draft – plan | – | 0/18 | 2026-11-19 | Await plan approval, then wave 1 (M1 ‖ M3) |
+| Done | 5 | 18/18 | 2026-11-21 | Pushed to origin/beta4 (owner revision); follow-ups listed in Result |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -139,7 +139,8 @@ Migration numbering is fixed to avoid collisions: M3 = `0021_demo-payments.sql`,
 
 ---
 
-### M1 — Admin product list (wave 1, owner: `frontend-developer`)
+### M1 — Admin product list (wave 1, owner: `frontend-developer`) — [x] merged 990f8f2
+> Evidence: 1.1 [x] 133f48a admin-products-stock 2/2; 1.2 [x] 8b4cdb7+1d8079f admin-products-bulk 8/8, cms-services 25/25, integration 402/403 (catalog-variants /tmp env issue); 1.3 [x] d1f556e+33823c3 test:cms-ui PASS incl. stale-row scenario, lint 0 errors; screenshot docs/design-references/admin-products-bulk.png. All reviews clean.
 
 #### Task 1.1: Product stock = sum over all active variants
 **Files:** Modify `src/server/cms/service.ts:89` (`productSelect` stock lateral). Test: `tests/integration/admin-products-stock.test.mjs` (new).
@@ -171,7 +172,8 @@ Migration numbering is fixed to avoid collisions: M3 = `0021_demo-payments.sql`,
 - [ ] Run `npm run test:cms-ui` → PASS. `npm run lint && npm run typecheck` → clean.
 - [ ] Commit `feat(admin): bulk actions, click-to-edit rows and inline status`.
 
-### M3 — Demo checkout (wave 1, owner: `payments-billing-engineer`)
+### M3 — Demo checkout (wave 1, owner: `payments-billing-engineer`) — [x] merged 09f2803
+> Evidence: 3.1 [x] 2ca0014+6603568 demo-checkout/store-setup/checkout 19/19; 3.2 [x] 3d61b21+5033079 integration 405/406 (catalog-variants /tmp env), covering files 72/72; 3.3 [x] 5154b09+669caab unit 235/235, 12 integration files 155/155, smoke blocks pass (webpack); payment_mode default dropped in 0021. Screenshots docs/design-references/demo-*.png. All reviews clean.
 
 #### Task 3.1: Demo setting, availability and placeOrder
 **Files:** Create `drizzle/0021_demo-payments.sql` (+ journal). Modify `src/server/settings/service.ts:58,119` (make `payment_mode` updatable), `src/server/cart/runtime.ts:28` (replace `NODE_ENV` rule), `src/server/checkout/service.ts:137-193`, `src/app/admin/settings/**` (Payments → "Demo checkout" toggle), `.env.example`, `deploy/env.example`. Test: `tests/integration/demo-checkout.test.mjs`.
@@ -197,7 +199,8 @@ Migration numbering is fixed to avoid collisions: M3 = `0021_demo-payments.sql`,
 - [ ] Run `npm run test:cms-ui` → PASS; lint + typecheck clean.
 - [ ] Commit `feat(checkout): demo pay button and DEMO labels across store and admin`.
 
-### M2 — Per-variant content (wave 2, owner: `backend-architect`)
+### M2 — Per-variant content (wave 2, owner: `backend-architect`) — [x] merged 6fa7d12
+> Evidence: 2.1 [x] ffa9489 variant-content 6/6; 2.2 [x] b460781 11/11; 2.3 [x] 5077a0e..34888f0 smoke variant-content (flat, grouped, single-variant) PASS; 2.4 [x] e60ca65..b89a651 smoke variant-switch PASS (no navigation, ?variant kept, canonical unchanged), ownsOverview flag; 2.5 [x] accdbd9..c9d6002 garmin-variant-content 9/9, legacy garmin 17/17 (in-page tab diff; save limit 4 MiB products-only). Screenshots variant-*.png. Reviews clean.
 
 #### Task 2.1: Data model, projection and read path
 **Files:** Create `drizzle/0022_variant-content.sql` (`product_variants.content_overrides jsonb NOT NULL DEFAULT '{}'` + CHECK `jsonb_typeof = 'object'`). Modify `src/server/cms/product-projection.ts:18,40`, `src/server/catalog/service.ts:137-175`, `src/types/` product DTO. Test: `tests/integration/variant-content.test.mjs`, `tests/unit/variant-content.test.mjs`.
@@ -226,7 +229,8 @@ Migration numbering is fixed to avoid collisions: M3 = `0021_demo-payments.sql`,
 **Files:** Modify `src/lib/import/garmin-parse.js:273-389` (export `parseGarminTabs(html) => { specGroups, overviewHtml, inTheBox }`), `src/app/api/admin/import/garmin/route.ts:31-129` (for each non-default sku fetch `<productUrl>?sku=<sku>`, 3 at a time, 20 s each; diff against default; set `variants[i].content` only for differing blocks; a failed fetch adds a warning and stores no override). Fixtures via `scripts/fetch-garmin-fixture.mjs` into `tests/fixtures/garmin/` (two sizes of one watch). Test: `tests/unit/garmin-variant-content.test.mjs`.
 - [ ] Tests: `variant with different specs gets an own specGroups override`; `identical tabs store no override`; `fetch failure yields a warning and no override`. FAIL → implement → PASS. Commit.
 
-### M4 — Dashboard (wave 2, owner: `backend-architect`)
+### M4 — Dashboard (wave 2, owner: `backend-architect`) — [x] merged 9cefcb9
+> Evidence: 4.1 [x] 5b37763+c5988fc reports-settings 16/16, demo-checkout 13/13 (best-sellers net of refunds — ruling); 4.2 [x] b6d0228+0f2ce93 dashboard unit 9/9, smoke ONLY=dashboard PASS, git clean after smoke; screenshot docs/design-references/dashboard.png. Reviews clean.
 
 #### Task 4.1: Reports service
 **Files:** Modify `src/server/reports/service.ts:25-65`, `src/server/reports/runtime.ts:51`. Test: extend `tests/integration/reports-settings.test.mjs`.
@@ -237,7 +241,8 @@ Migration numbering is fixed to avoid collisions: M3 = `0021_demo-payments.sql`,
 **Files:** Modify `src/app/admin/_components/ReportsScreen.tsx` (tiles: Revenue, Demo revenue, Orders, Awaiting shipment; daily revenue chart per `dataviz` rules; recent orders table linking to the order; low stock; best-sellers real/demo tabs; explicit empty and error states).
 - [ ] Browser check after one demo order: Demo revenue > 0, Revenue 0, the order in Recent orders, its product in best-sellers (Demo). Screenshot to `docs/design-references/dashboard.png`. Commit.
 
-### M5a — garmin.com measurement and storefront cleanup (wave 3, owner: `ui-designer`)
+### M5a — garmin.com measurement and storefront cleanup (wave 3, owner: `ui-designer`) — [x] merged 2ba8bb0
+> Evidence: 5a.1 [x] 9eb2485 research (TOKENS, COPY_GUIDE, 11 component specs); 5a.2 [x] ae40f17..40dc3ed tokens + one KZT Price (unit 293/293), buttons 3.86%/2.35% diff; 5a.3 [x] 9ea8aaf..9065aa7 header 2.19%/0.08%, filter 1.25%/1.30%, buy box 14.04%/26.15% (content), card shell matched; copy en/ru/kk key-synced. Reviews clean.
 
 #### Task 5a.1: Measure
 - [ ] Run `scripts/clone/inspect.mjs` (`recon`, `section`, `states`) on garmin.com product page, catalogue page, cart and the header mega menu (the region already used in `docs/research/www.garmin.com/recon.json`). Write `docs/research/www.garmin.com/components/{ProductBuyBox,ProductCard,Buttons,Price,MegaMenu,Forms,Badges}.spec.md` with exact values (font family/size/weight/tracking, number formatting, colours, radii, spacing, states).
@@ -251,24 +256,25 @@ Migration numbering is fixed to avoid collisions: M3 = `0021_demo-payments.sql`,
 - [ ] Copy rules: short, factual, Garmin terms ("Add to Cart", "Specs", "In the Box", "Compare"); remove filler/marketing sentences, emoji and decorative gradients. Keep RU/KZ keys in sync (re-run auto-translate for changed keys).
 - [ ] For each checklist item in R5.5: `node scripts/clone/diff.mjs` vs garmin.com at 390/1440 and side-by-side screenshots in `docs/design-references/garmin-compare/`. Record pixel % per item in section 6. Commit per area.
 
-### M5b — Admin cleanup (wave 4, owner: `ui-designer`)
+### M5b — Admin cleanup (wave 4, owner: `ui-designer`) — [x] merged 2ba8bb0
+> Evidence: 5b.1 [x] 196172d..01b1ee3 Garmin side menu, one KZT format, slop removed, FulfillmentScreen stale-response race fixed; before/after shots docs/design-references/admin/. Reviews clean.
 #### Task 5b.1: Admin tokens, shell, copy
 **Files:** `src/components/admin/{AdminLayoutShell,AdminSidebar,AdminHeader}.tsx`, admin screens under `src/app/admin/**/_components/` (styling and copy only, no behaviour).
 - [ ] Apply storefront tokens (font, colours, buttons, inputs, number formatting via the shared `Price`/number helpers); remove gradients, emoji, redundant icons and over-explaining helper text; sidebar styled like Garmin's side menu (measured in 5a.1).
 - [ ] `ui-finish-gate-reviewer` pass on dashboard, products, orders, settings; fix findings; `npm run test:cms-ui` → PASS. Commit.
 
 ### M6 — Verification and delivery (wave 5)
-- [ ] Run section 6 commands; record outputs here.
-- [ ] Browser end-to-end on local PostgreSQL: demo order product page → delivered; dashboard; variant switch; bulk archive 2 products; status dropdown.
-- [ ] `code-reviewer` whole-branch review; fix confirmed findings.
-- [ ] Merge `feat/admin-variants-demo-polish` into `beta3` (fast-forward or merge commit), rerun `npm test && npm run check` on `beta3`, `git push origin beta3`.
-- [ ] Clean up worktrees this run created.
+- [x] Run section 6 commands — see Outputs in section 6.
+- [x] Browser end-to-end on local PostgreSQL (tests/ui/cms-smoke.mjs full run, 13 PASS blocks): demo order → delivered, dashboard, variant switch, bulk archive, status dropdown, hydration on /en and /ru PDPs.
+- [x] Whole-branch review in 3 areas (server, storefront, admin): 0 Critical; 4 Important + 16 minors fixed in b5b2b1e..eee9d2f; scoped re-review ready to merge.
+- [-] Merge into `beta3` — dropped by owner revision 2026-11-20. [x] Pushed the verified branch as new `origin/beta4`.
+- [x] Clean up worktrees this run created (GRMN-wt-m1..m5, wt-fix, wt-final).
 
 ## 6. Verification
 - `npm run lint` · `npm run typecheck` · `npm run test:unit` · `npm run test:integration` · `npm run check:boundaries` · `npm run test:cms-ui` · `npm run build` · browser checks on the local dev server against local PostgreSQL (`npm run db:local:up`, `CMS_BACKEND=postgres`).
 - Design: `scripts/clone/diff.mjs` per R5.5 checklist item (390 and 1440 widths).
 
-Outputs: _(recorded during execution)_
+Outputs (final, 2026-11-21, GRMN-beta3 real checkout): typecheck 0 · lint 0 errors (24 pre-existing warnings) · test:unit 314/314 · test:legacy 302/302 · check:boundaries 0 · test:integration 442/442 · build (turbopack) OK (75a96f8) · test:cms-ui full webpack run PASS, 13 blocks (16c8b6d, test-only race fix after 75a96f8).
 
 ## 7. Rollback
 Migration 0021 is additive. Each wave is a separate set of commits on the feature branch; a failed wave is reverted by commit. Nothing reaches `beta3` until all checks pass.
@@ -279,10 +285,14 @@ Migration 0021 is additive. Each wave is a separate set of commits on the featur
 
 ## Revisions
 - 2026-11-19: requirement drafted from brainstorming (PostgreSQL; delete in bulk bar; full demo; inherit-with-override; Garmin auto-fill; approach A; push to beta3).
+- 2026-11-20: owner revision — push to a NEW branch `beta4` (created from the verified feature branch) instead of merging into `beta3`; beta3 stays untouched.
 - 2026-11-19: builder check folded in. Owner chose demo on live site until launch with `manual` hidden while demo is on (B). Builder's calls marked in R2.5, R3.6, R4.3, R5.5.
 
 ## Result
-Delivered: · Checks run: · Gaps: · Follow-ups:
+Delivered: R1 admin products (true stock, bulk bar, click-to-edit, status dropdown); R2 per-variant specs/overview/in-the-box (editor, PDP swap + ?variant=, RU/KK, Garmin auto-fill); R3 full demo checkout (setting, capture, fulfilment, refunds, DEMO labels, 5/24h demo cap); R4 connected dashboard (real vs demo revenue, status counts, recent orders, net best-sellers, low stock); R5 garmin.com tokens, KZT price, storefront + admin restyle, copy cleanup en/ru/kk. Migrations 0021, 0022.
+Checks run: see section 6 Outputs.
+Gaps: card colour swatches and Z→A sort need data/API; buy-box 390 diff remainder is content; Turbopack dev/build cannot run inside junction worktrees (fine in a real checkout).
+Follow-ups: mobile ProductTabs renders hidden duplicate body; price 0 can be saved; demo cap has no reset/override (shared per address); legacy compareAt ×1.1 default; product-projection chained SKU rename; duplicated demo-refund settle helper; dev-only non-hydration after webpack compile.
 
 ## Handoff
-Requirement drafted, awaiting owner approval. Next: builder check results folded in, then stage 4 plan.
+Done. All 18 tasks reviewed and merged on feat/admin-variants-demo-polish and pushed as origin/beta4 (beta3 untouched per owner). Before deploying: run `npm run db:migrate` (0021 demo payments, 0022 variant content); demo checkout is ON by default — turn it off in Admin → Settings → Payments (or DEMO_CHECKOUT_DISABLED=1) at launch. Next work = the Follow-ups list in Result.
