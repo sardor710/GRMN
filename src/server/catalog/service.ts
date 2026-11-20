@@ -177,7 +177,7 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
       const translations=(await translationsFor([detail.id])).get(detail.id);
       const translatedLocales:Locale[]=["en",...(["ru","kk"] as const).filter(l=>translations&&isRecordTranslated({translations},l,["name","description"]))];
       // Task 2.1: each variant's effective content (own blocks replace the product's, absent keys inherit).
-      const withVariants=(product:ProductContentDTO,localize?:(english:VariantContent,variant:VariantDTO)=>VariantContent)=>detail.variants.map(v=>{const english=overrides.get(v.id)??{};return{...v,content:effectiveVariantContent(product,{content:localize?localize(english,v):english})};});
+      const withVariants=(product:ProductContentDTO,localize?:(english:VariantContent,variant:VariantDTO)=>VariantContent)=>detail.variants.map(v=>{const english=overrides.get(v.id)??{};return{...v,content:effectiveVariantContent(product,{content:localize?localize(english,v):english}),ownsOverview:english.overviewHtml!==undefined};});
       if(locale==="en"||!translations)return{...detail,translatedLocales,variants:withVariants({specs:detail.specs,specGroups:detail.specGroups,overviewHtml:detail.overviewHtml,inTheBox:detail.inTheBox})};
       const local=localizeRecord({name:detail.name,description:detail.description,specs:detail.specs,features:detail.features.map(f=>({title:f.title,body:f.body})),inTheBox:detail.inTheBox,overviewHtml:detail.overviewHtml,specGroups:detail.specGroups,translations},locale,PRODUCT_SPEC);
       const seoTitle=resolveSeoText({seoTitle:detail.seo?.title,name:detail.name,translations} as {translations?:unknown},locale,["seoTitle","name"]);

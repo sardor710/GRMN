@@ -56,8 +56,8 @@ const product = {
     inTheBox: ["Watch"],
     overviewHtml: "<p>Product</p>",
     variants: [
-      { id: "v47", sku: "010-47MM", content: content([{ label: "Size", value: "47 mm" }], ["Watch 47", "Cable"], "<p>47</p>") },
-      { id: "v51", sku: "010-51MM", content: content([{ label: "Size", value: "51 mm" }], [], "", [{ title: "Physical", items: [{ label: "Size", value: "51 mm" }] }]) },
+      { id: "v47", sku: "010-47MM", content: content([{ label: "Size", value: "47 mm" }], ["Watch 47", "Cable"], "<p>47</p>"), ownsOverview: true },
+      { id: "v51", sku: "010-51MM", content: content([{ label: "Size", value: "51 mm" }], [], "", [{ title: "Physical", items: [{ label: "Size", value: "51 mm" }] }]), ownsOverview: true },
     ],
   },
 };
@@ -78,12 +78,23 @@ test("the tabs show the selected variant's own content", () => {
   assert.equal(ownsEmptyOverview(variantTabContent(product, "v47")), false);
 });
 
+// No product overview: v51 inherits (ownsOverview false), so the page keeps its features fallback.
+const plain = { ...product, overviewHtml: undefined, commerce: { ...product.commerce, overviewHtml: undefined,
+  variants: product.commerce.variants.map((v) => (v.id === "v51" ? { ...v, ownsOverview: false } : v)) } };
+// No product overview, but v51 owns an empty overview: the server flag, not a heuristic, decides.
+const ownedNoProduct = { ...plain, commerce: { ...plain.commerce, variants: product.commerce.variants } };
+
 test("no overview anywhere (product and variant) keeps the product-features fallback", () => {
-  const plain = { ...product, overviewHtml: undefined, commerce: { ...product.commerce, overviewHtml: undefined } };
   const v51 = variantTabContent(plain, "v51");
   assert.equal("overviewHtml" in v51, false);
   assert.equal(ownsEmptyOverview(v51), false);
   assert.equal(variantTabContent(plain, "v47").overviewHtml, "<p>47</p>");
+});
+
+test("product has no overview + variant owns an empty overview: an empty overview, no fallback", () => {
+  const v51 = variantTabContent(ownedNoProduct, "v51");
+  assert.equal(v51.overviewHtml, "");
+  assert.equal(ownsEmptyOverview(v51), true);
 });
 
 test("an unknown variant or a legacy (non-PostgreSQL) product keeps the product's blocks", () => {
@@ -142,8 +153,11 @@ test("ProductTabs Overview: an owned empty overview renders nothing; no overview
   assert.deepEqual(html(owned), []);
   assert.equal(fallback(owned), false);
   // Neither the product nor the variant has an overview: the product-features fallback stays.
-  const plain = { ...product, overviewHtml: undefined, commerce: { ...product.commerce, overviewHtml: undefined } };
   const none = render(plain, "v51");
   assert.deepEqual(html(none), []);
   assert.equal(fallback(none), true);
+  // No product overview, but 51 mm owns an empty one: nothing renders, no features fallback.
+  const ownedEmpty = render(ownedNoProduct, "v51");
+  assert.deepEqual(html(ownedEmpty), []);
+  assert.equal(fallback(ownedEmpty), false);
 });

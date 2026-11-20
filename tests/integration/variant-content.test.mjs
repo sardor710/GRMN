@@ -69,6 +69,8 @@ test("saving a variant override projects it and the product detail returns per-v
   const detail=await (await catalog()).getProductByPublicKey(saved.id,"default","KZT");
   assert.deepEqual(bySku(detail,"VC-A-0").content,{specs:[{label:"Screen",value:"AMOLED"}],specGroups:[{title:"General",items:[{label:"Lens",value:"Sapphire"}]}],overviewHtml:"<p>Product overview</p>",inTheBox:["Watch","Charging cable"]});
   assert.deepEqual(bySku(detail,"VC-A-1").content,{specs:[],specGroups:own51.specGroups,overviewHtml:"<p>51 mm overview</p>",inTheBox:["Watch 51 mm","Cable"]});
+  // Task 2.4: the page needs to know an overview is owned (an owned empty one shows nothing, no fallback).
+  assert.equal(bySku(detail,"VC-A-0").ownsOverview,false);assert.equal(bySku(detail,"VC-A-1").ownsOverview,true);
   // Product-level fields are unchanged.
   assert.deepEqual(detail.inTheBox,["Watch","Charging cable"]);assert.equal(detail.overviewHtml,"<p>Product overview</p>");
 

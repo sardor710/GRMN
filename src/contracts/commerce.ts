@@ -68,6 +68,8 @@ export interface VariantDTO {
 /** Task 2.1: a product-page variant carries its effective (inherited or own), localized content. */
 export interface ProductDetailVariantDTO extends VariantDTO {
   content: Required<VariantContent>;
+  /** Task 2.4: the variant owns its overview (even an empty one, which then shows nothing on the page). */
+  ownsOverview: boolean;
 }
 
 export interface ProductDetailDTO extends ProductCardDTO {

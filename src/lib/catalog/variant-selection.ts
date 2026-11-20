@@ -60,9 +60,9 @@ export function variantTabContent(product: ProductDetail, variantId: string): Va
     specs: inheritedEmpty(content.specs, commerce.specs) ? product.specs : content.specs,
     inTheBox: inheritedEmpty(content.inTheBox, commerce.inTheBox) ? product.inTheBox : content.inTheBox,
     ...(content.specGroups.length ? { specGroups: content.specGroups } : {}),
-    // Overview: `""` means the variant owns an empty overview (the product has one): the tab shows nothing.
-    // Absent means there is no overview at all, and the page keeps its product-features fallback.
-    ...(content.overviewHtml || commerce.overviewHtml ? { overviewHtml: content.overviewHtml } : {}),
+    // Overview: `""` means the variant owns an empty overview (server flag `ownsOverview`): the tab shows nothing.
+    // Absent means the variant inherits and the product has none, so the page keeps its product-features fallback.
+    ...(variant.ownsOverview || content.overviewHtml ? { overviewHtml: content.overviewHtml } : {}),
   };
 }
 
