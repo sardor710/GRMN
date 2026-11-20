@@ -82,6 +82,39 @@ test("the admin form blocks a published save at price 0 and shows the message ne
   assert.equal(price.props["aria-invalid"], true);
 });
 
+// Final review I1: every non-archived variant row needs a price above 0 to publish, not only the default one.
+const sized = (m, mStatus = "active") => ({ ...product,
+  options: [{ id: "size", key: "size", name: "Size", display: "buttons", values: [{ id: "s", key: "s", label: "S" }, { id: "m", key: "m", label: "M" }] }],
+  variants: [
+    { id: "va", sku: "FR-1-S", title: "S", selections: { size: "s" }, price: 224995, stock: 0, status: "active", isDefault: true, imageIds: [] },
+    { id: "vb", sku: "FR-1-M", title: "M", selections: { size: "m" }, price: m, stock: 0, status: mStatus, isDefault: false, imageIds: [] },
+  ] });
+const editAndSave = async (item) => {
+  const posts = [];
+  const fixture = componentFixture(FILE, {
+    backend: "postgres", items: [item],
+    // The variants table and its helpers are stubs here: the form's own guard is under test.
+    modules: { "@/components/admin/products/StatusMenu": statusMenu, "@/components/admin/product-editor": { VariantsTable: () => null, OptionsEditor: () => null, formatKzt: value => `${value} ₸`, newId: () => "id" } },
+    fetcher: async (url, options = {}) => { if (options.method === "POST") posts.push({ url, body: JSON.parse(options.body) }); return { ok: true, status: 200, json: async () => ({ items: [] }) }; },
+  });
+  nodes(fixture.render()).find(node => node.props?.["aria-label"] === "Edit Forerunner fixture").props.onClick();
+  await nodes(fixture.render()).find(node => node.type === "form").props.onSubmit({ preventDefault() {} });
+  return { posts, tree: fixture.render() };
+};
+
+test("the admin form blocks publishing when a non-default variant costs 0 and names it", async () => {
+  const { posts, tree } = await editAndSave(sized(0));
+  assert.equal(posts.length, 0, "nothing is sent");
+  assert.match(JSON.stringify(nodes(tree).map(node => node.props?.children).filter(c => typeof c === "string")), /Set a price above 0 for M \(FR-1-M\) before publishing\./);
+  const table = nodes(tree).find(node => node.props?.unpriced !== undefined);
+  assert.deepEqual(table?.props.unpriced, ["vb"], "the variants table marks the row");
+});
+
+test("an archived 0 variant, or a 0 variant on a draft, does not block the save", async () => {
+  assert.equal((await editAndSave(sized(0, "archived"))).posts.length, 1);
+  assert.equal((await editAndSave({ ...sized(0), status: "draft" })).posts.length, 1);
+});
+
 test("a price-0 draft still saves", async () => {
   const posts = [];
   const fixture = componentFixture(FILE, {

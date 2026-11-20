@@ -527,6 +527,12 @@ export default function AdminProductsPage() {
   // The default variant's price is the selling price when the product has variants.
   const sellingPrice = Number((formData.variants.find((v) => v.isDefault) || formData.variants[0])?.price ?? formData.price);
   const priceError = priceBlocked && formData.status === "published" && !(sellingPrice > 0);
+  // Final review I1: a published product sells every non-archived variant, so each row needs a price above 0
+  // (the server refuses the same, naming the variant).
+  const unpricedVariants =
+    formData.status === "published" && formData.options.length > 0
+      ? formData.variants.filter((v) => v.status !== "archived" && !(Number(v.price) > 0))
+      : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -536,6 +542,14 @@ export default function AdminProductsPage() {
       setPriceBlocked(true);
       setContentLocale("en");
       setActiveTab("general");
+      return;
+    }
+    if (unpricedVariants.length > 0) {
+      const first = unpricedVariants[0];
+      setPriceBlocked(true);
+      setSaveError(`Set a price above 0 for ${first.title.trim() ? `${first.title.trim()} (${first.sku.trim()})` : first.sku.trim()} before publishing.`);
+      setContentLocale("en");
+      setActiveTab("variants");
       return;
     }
     if (formData.images.length === 0 && !formData.image) {
@@ -1338,6 +1352,7 @@ export default function AdminProductsPage() {
                   images={formData.images}
                   base={{ sku: formData.sku, price: formData.price, stock: formData.stock }}
                   conflicts={skuConflicts}
+                  unpriced={priceBlocked ? unpricedVariants.map((v) => v.id) : []}
                   onChange={(variants) => setFormData((prev) => ({ ...prev, variants }))}
                   productContent={
                     postgresStore

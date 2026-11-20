@@ -15,6 +15,8 @@ interface VariantsTableProps {
   base: { sku: string; price: number; stock: number };
   /** Upper-cased SKUs the server rejected with 409. */
   conflicts: string[];
+  /** Ids of non-archived variants priced at 0 that block publishing (final review I1). */
+  unpriced?: string[];
   onChange: (variants: ProductVariant[]) => void;
   /**
    * The product's Specs/Overview/In the box. When given (PostgreSQL only), each variant gets an
@@ -49,7 +51,7 @@ function variantsOutOfDate(options: ProductOption[], variants: ProductVariant[])
   return usable.some((o) => o.values.some((val) => !used.has(val.id)));
 }
 
-export function VariantsTable({ options, variants, images, base, conflicts, onChange, productContent, onContentRemoved }: VariantsTableProps) {
+export function VariantsTable({ options, variants, images, base, conflicts, unpriced = [], onChange, productContent, onContentRemoved }: VariantsTableProps) {
   const [notice, setNotice] = useState<{ tone: "error" | "warning" | "info"; text: string } | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [bulk, setBulk] = useState({ price: "", originalPrice: "", stock: "", status: "" });
@@ -321,6 +323,8 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                   const imagesOpen = openImagesFor === v.id;
                   const contentOpen = contentColumn && openContentFor === v.id;
                   const owned = ownedBlockLabels(v.content);
+                  // Cleared as soon as the row's price is above 0 or it is archived.
+                  const priceError = unpriced.includes(v.id) && v.status !== "archived" && !(Number(v.price) > 0);
                   return (
                     <Fragment key={v.id}>
                       <tr className={`align-top ${v.status === "archived" ? "bg-neutral-50 text-muted-foreground" : ""}`}>
@@ -368,8 +372,15 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                             value={v.price}
                             onChange={(e) => patch(v.id, { price: Number(e.target.value) })}
                             aria-label={`Price for ${v.title}`}
-                            className={smallInputClass}
+                            aria-invalid={priceError}
+                            aria-describedby={priceError ? `variant-price-error-${v.id}` : undefined}
+                            className={`${smallInputClass} ${priceError ? "border-garmin-error bg-white" : ""}`}
                           />
+                          {priceError && (
+                            <p id={`variant-price-error-${v.id}`} className="mt-0.5 text-xs text-garmin-error">
+                              Set a price above 0 before publishing.
+                            </p>
+                          )}
                           {v.sourcePrice && (
                             <p className="mt-0.5 text-xs text-muted-foreground" title={`Garmin price at ${v.sourcePrice.rateKztPerUsd} ₸/USD`}>
                               Garmin {formatUsd(v.sourcePrice.sale ?? v.sourcePrice.list)}

@@ -160,9 +160,64 @@ test("publishing a variant product whose default variant costs 0 is refused thro
   const cms=await cmsService(),sku=`SYN-VAR-${++serial}`;
   const options=[{id:"size",key:"size",name:"Size",display:"buttons",values:[{id:"s",key:"s",label:"S"},{id:"m",key:"m",label:"M"}]}];
   const variants=(def)=>[{id:"va",sku:`${sku}-S`,title:"S",selections:{size:"s"},price:def,stock:0,status:"active",isDefault:true,imageIds:[]},{id:"vb",sku:`${sku}-M`,title:"M",selections:{size:"m"},price:5000,stock:0,status:"active",isDefault:false,imageIds:[]}];
-  await refusedPublish(cms.save("products",admin,product({sku,price:"5000",options,variants:variants(0)})));
+  await refusedVariant(cms.save("products",admin,product({sku,price:"5000",options,variants:variants(0)})),`S (${sku}-S)`);
   const saved=await cms.save("products",admin,product({sku,price:"5000",options,variants:variants(5000)}));
   assert.equal(saved.status,"published");
+});
+
+// Final review I1: every non-archived variant of a published product needs a price above 0, not only the
+// default one (the storefront picks the cheapest available size, so a 0 size would sell at 0).
+const refusedVariant = (promise,label) => assert.rejects(promise,error=>error.code==="INVALID_INPUT"&&error.status===400&&error.message===`Set a price above 0 for ${label} before publishing.`);
+const sizes = (sku,{m=5000,mStatus="active"}={}) => ({
+  options:[{id:"size",key:"size",name:"Size",display:"buttons",values:[{id:"s",key:"s",label:"S"},{id:"m",key:"m",label:"M"}]}],
+  variants:[{id:"va",sku:`${sku}-S`,title:"S",selections:{size:"s"},price:5000,stock:0,status:"active",isDefault:true,imageIds:[]},{id:"vb",sku:`${sku}-M`,title:"M",selections:{size:"m"},price:m,stock:0,status:mStatus,isDefault:false,imageIds:[]}],
+});
+
+test("a published product with a 0 non-default variant is refused through save; as a draft it saves",async()=>{
+  const cms=await cmsService(),sku=`SYN-VZ-${++serial}`;
+  await refusedVariant(cms.save("products",admin,product({sku,price:"5000",...sizes(sku,{m:0})})),`M (${sku}-M)`);
+  const draft=await cms.save("products",admin,product({sku,price:"5000",status:"draft",...sizes(sku,{m:0})}));
+  assert.equal(draft.status,"draft");
+  await refusedVariant(cms.save("products",admin,{...product({sku,price:"5000",...sizes(sku,{m:0})}),id:draft.id,version:draft.version}),`M (${sku}-M)`);
+  assert.equal((await cms.get("products",admin,draft.id)).status,"draft");
+});
+
+test("a 0 non-default variant blocks publishing through the status PATCH and bulk publish",async()=>{
+  const cms=await cmsService(),sku=`SYN-VZ-${++serial}`;
+  const draft=await cms.save("products",admin,product({sku,price:"5000",status:"draft",...sizes(sku,{m:0})}));
+  await refusedVariant(cms.setProductStatus(admin,{id:draft.id,version:draft.version,status:"published"}),`M (${sku}-M)`);
+  const after=await cms.get("products",admin,draft.id);
+  assert.equal(after.status,"draft");assert.equal(after.version,draft.version);
+  const out=await cms.bulkProducts(admin,{action:"publish",items:[{id:draft.id,version:draft.version}]});
+  assert.equal(out.results[0].ok,false);assert.equal(out.results[0].code,"INVALID_INPUT");
+  assert.equal(out.results[0].message,`Set a price above 0 for M (${sku}-M) before publishing.`);
+  assert.equal((await cms.get("products",admin,draft.id)).status,"draft");
+  const variant=(await q("SELECT v.status FROM product_variants v WHERE v.sku=$1",[`${sku}-M`])).rows[0];
+  assert.notEqual(variant.status,"active");
+});
+
+test("the read-only data check lists a published product with an active 0 variant (pre-I1 data)",async()=>{
+  const {listUnpricedPublished}=await import("../../scripts/check-unpriced-published.mjs");
+  const cms=await cmsService(),sku=`SYN-VZ-${++serial}`;
+  const draft=await cms.save("products",admin,product({sku,price:"5000",status:"draft",...sizes(sku,{m:0})}));
+  // Data written before I1: the product row is published while its M size costs 0.
+  await q("UPDATE products SET status='published' WHERE public_key=$1",[draft.id]);
+  await q("UPDATE product_variants SET status='active' WHERE product_id=(SELECT id FROM products WHERE public_key=$1)",[draft.id]);
+  const client=await database.pool.connect();
+  let rows;
+  try{rows=await listUnpricedPublished(sql=>client.query(sql));}finally{client.release();}
+  const mine=rows.filter(row=>row.product===draft.id);
+  assert.deepEqual(mine.map(row=>[row.sku,String(row.amount_minor)]),[[`${sku}-M`,"0"]]);
+  assert.equal(rows.some(row=>row.sku.startsWith("SYN-VZ-")&&row.product!==draft.id&&row.variant_status==="archived"),false);
+});
+
+test("an archived 0 variant does not block publishing",async()=>{
+  const cms=await cmsService(),sku=`SYN-VZ-${++serial}`;
+  const saved=await cms.save("products",admin,product({sku,price:"5000",...sizes(sku,{m:0,mStatus:"archived"})}));
+  assert.equal(saved.status,"published");
+  const draft=await cms.setProductStatus(admin,{id:saved.id,version:saved.version,status:"draft"});
+  const out=await cms.bulkProducts(admin,{action:"publish",items:[{id:saved.id,version:draft.version}]});
+  assert.equal(out.results[0].ok,true);
 });
 
 test("publishing a price-0 draft through the status PATCH is refused and the product stays a draft",async()=>{

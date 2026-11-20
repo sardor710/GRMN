@@ -139,7 +139,7 @@ export function createCMSService({pool,authorize}:Options) {
     if(data.version!==Number(old.version))return fail("VERSION_CONFLICT",409,"Product changed; reload before saving");
     // No default variant or no price row at all: only the editor can repair it (409), whatever the target status.
     if(old.sku==null||old.amount_minor==null)return fail("CONFLICT",409,"This product has no default variant or price; open it in the editor and save it first");
-    // The default variant's price is what counts: a published product needs a selling price above 0.
+    // Fast path for the default variant's price; projectProduct below checks every non-archived variant (I1).
     if(data.status==="published"&&BigInt(old.amount_minor)<=BigInt(0))return fail("INVALID_INPUT",400,PRICE_TO_PUBLISH);
     // The column and the editor document keep the same status, like save.
     await client.query("UPDATE products SET status=$2,legacy_content=jsonb_set(legacy_content,'{status}',to_jsonb($2::text)),version=version+1,updated_at=clock_timestamp() WHERE id=$1",[old.id,data.status]);
@@ -265,10 +265,8 @@ export function createCMSService({pool,authorize}:Options) {
           if(old&&data.version!==old.version)return fail("VERSION_CONFLICT",409,"Product changed; reload before saving");
           const id=old?.id??randomUUID(),publicKey=old?.public_key??randomUUID(),next=old?Number(old.version)+1:1;
           const status=data.status??old?.status??"draft";
-          // With variants the default variant's price is the selling price; otherwise the product price.
-          const defaultVariant=data.variants?.find(v=>v.isDefault)??data.variants?.[0];
-          const sellingMinor=defaultVariant?toMinor(defaultVariant.price,`Price of ${defaultVariant.sku}`):data.price;
-          if(status==="published"&&BigInt(sellingMinor)<=BigInt(0))return fail("INVALID_INPUT",400,PRICE_TO_PUBLISH);
+          // Final review I1: "price above 0 to publish" is checked by projectProduct on the projected document
+          // (every non-archived variant, or the product price without options), inside this transaction.
           const compareAt=data.originalPrice===undefined?old?.compare_at_minor??null:data.originalPrice;
           if(compareAt!==null&&BigInt(compareAt)<BigInt(data.price))return fail("INVALID_INPUT",400,"Compare-at price cannot be below selling price");
           const {translations:sentTranslations,...unsafe}=data;
