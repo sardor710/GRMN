@@ -33,7 +33,13 @@ export type ReportEnvironment = "sandbox" | "live" | "demo";
 export interface CurrencyTotalDTO { currency: string; environment: ReportEnvironment; capturedMinor: string; refundedMinor: string; netMinor: string; ordersPaid: number }
 export interface DayTotalDTO { date: string; currency: string; environment: ReportEnvironment; capturedMinor: string; refundedMinor: string; netMinor: string }
 export interface SummaryDTO { from: string; to: string; timeZone: string; totals: CurrencyTotalDTO[]; days: DayTotalDTO[] }
-/** Task 4.2: awaitingShipment counts paid, confirmed orders not yet fully shipped, real and demo apart. */
+/**
+ * Task 4.2: awaitingShipment counts orders shown in the window that staff should still ship, real and
+ * demo apart: order_status 'confirmed', payment_status 'paid' or 'partially_refunded', and
+ * fulfillment_status 'unfulfilled', 'processing' or 'partially_shipped' (not yet shipped in full).
+ * Excluded: cancel_requested (and every other non-confirmed order status), unpaid or fully refunded
+ * orders, fulfillment 'exception' orders (they must not ship), and shipped or delivered orders.
+ */
 export interface StatusCountsDTO { orderStatus: Record<string, number>; fulfillmentStatus: Record<string, number>; demo: number; real: number; awaitingShipment: { real: number; demo: number } }
 export interface RecentOrderDTO { id: string; number: string; createdAt: string; totalMinor: string; currency: string; paymentStatus: string; fulfillmentStatus: string; demo: boolean }
 /** A best-selling variant in one currency. units and revenueMinor are net of refunds (refunded line quantities and amounts). */

@@ -2,7 +2,7 @@
 // sandbox stay apart and are never summed into it. Money is BigInt-safe minor units in strings.
 import assert from "node:assert/strict";
 import {test} from "node:test";
-import {splitTotals,formatMinor,dailyRevenue,dateRange,seriesTotal,niceMax,axisLabel,currenciesOf,statusRows,ORDER_STATUS_LABELS} from "../../src/lib/admin/dashboard.ts";
+import {splitTotals,formatMinor,createRequestGate,dailyRevenue,dateRange,seriesTotal,niceMax,axisLabel,currenciesOf,statusRows,ORDER_STATUS_LABELS} from "../../src/lib/admin/dashboard.ts";
 
 const total=(environment,currency,captured,refunded,orders=1)=>({currency,environment,capturedMinor:captured,refundedMinor:refunded,netMinor:(BigInt(captured)-BigInt(refunded)).toString(),ordersPaid:orders});
 
@@ -30,8 +30,28 @@ test("formatMinor groups thousands, keeps cents and sign, and is exact for huge 
   assert.equal(formatMinor("5","KZT"),"0.05 KZT");
   assert.equal(formatMinor("-1550","KZT"),"-15.50 KZT");
   assert.equal(formatMinor("123456789012345678901","KZT"),"1,234,567,890,123,456,789.01 KZT");
-  assert.throws(()=>formatMinor("1.5","KZT"),RangeError);
-  assert.throws(()=>formatMinor("abc","KZT"),RangeError);
+  // Fix round 1: a malformed amount never throws during render; it is shown raw with its currency.
+  assert.equal(formatMinor("1.5","KZT"),"1.5 KZT");
+  assert.equal(formatMinor("abc","KZT"),"abc KZT");
+  assert.equal(formatMinor("","KZT")," KZT");
+  assert.equal(formatMinor(null,"KZT"),"null KZT");
+});
+
+test("createRequestGate drops a superseded generation and aborts its fetches",()=>{
+  const gate=createRequestGate();
+  const older=gate.begin();
+  assert.equal(older.isCurrent(),true);assert.equal(older.signal.aborted,false);
+  const newer=gate.begin();
+  assert.equal(older.isCurrent(),false,"a slow answer for the older range is dropped");
+  assert.equal(older.signal.aborted,true,"the older range's requests are aborted");
+  assert.equal(newer.isCurrent(),true);
+  gate.abort();
+  assert.equal(newer.isCurrent(),false);assert.equal(newer.signal.aborted,true);
+  // Out-of-order arrival: only the latest generation's response is applied.
+  const applied=[];const gate2=createRequestGate();
+  const a=gate2.begin(),b=gate2.begin();
+  for(const [ticket,value] of [[b,"new range"],[a,"old range"]])if(ticket.isCurrent())applied.push(value);
+  assert.deepEqual(applied,["new range"]);
 });
 
 test("dailyRevenue fills every day of the range and keeps real and demo as separate series",()=>{

@@ -32,13 +32,36 @@ export function splitTotals(totals: CurrencyTotal[]): SplitTotals {
   return { real: sumLines(groups.real), demo: sumLines(groups.demo), sandbox: sumLines(groups.sandbox) };
 }
 
-/** "123456789012345678" KZT minor units to "1,234,567,890,123,456.78 KZT"; negative nets keep their sign. BigInt-safe. */
+/**
+ * "123456789012345678" KZT minor units to "1,234,567,890,123,456.78 KZT"; negative nets keep their sign. BigInt-safe.
+ * A malformed amount is shown as it came ("1.5 KZT") rather than throwing during render.
+ */
 export function formatMinor(minor: string, currency: string, locale = "en-US"): string {
-  if (!MINOR.test(minor)) throw new RangeError("Invalid minor amount");
+  if (typeof minor !== "string" || !MINOR.test(minor)) return `${String(minor)} ${currency}`;
   const negative = minor.startsWith("-");
   const [whole, cents] = minorToMajor(negative ? minor.slice(1) : minor).split(".");
   const parts = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).formatToParts(BigInt(whole));
   return (negative ? "-" : "") + parts.map(part => part.type === "fraction" ? cents : part.value).join("") + " " + currency;
+}
+
+/**
+ * Fix round 1: one request generation at a time. `begin()` aborts the previous generation's fetches
+ * and returns its signal plus `isCurrent()`, which is false once a newer generation has begun, so a
+ * late response from an older date range is dropped instead of landing under newer dates.
+ */
+export function createRequestGate() {
+  let generation = 0;
+  let controller: AbortController | null = null;
+  return {
+    begin(): { signal: AbortSignal; isCurrent: () => boolean } {
+      controller?.abort();
+      controller = new AbortController();
+      const mine = ++generation;
+      return { signal: controller.signal, isCurrent: () => mine === generation };
+    },
+    /** Aborts the current generation (unmount); its responses are dropped too. */
+    abort() { controller?.abort(); controller = null; generation++; },
+  };
 }
 
 /** Minor units to a plain number of major units, for chart geometry only (never for displayed amounts). */

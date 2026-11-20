@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react
 import Link from "next/link";
 import { createPendingActions, createStockAdjuster } from "@/lib/admin/inventory-client";
 import {
-  FULFILLMENT_STATUS_LABELS, ORDER_STATUS_LABELS, currenciesOf, dailyRevenue, formatMinor, splitTotals, statusRows,
+  FULFILLMENT_STATUS_LABELS, ORDER_STATUS_LABELS, createRequestGate, currenciesOf, dailyRevenue, formatMinor, splitTotals, statusRows,
   type CurrencyTotal, type DayTotal, type MoneyLine,
 } from "@/lib/admin/dashboard";
 import { DemoBadge } from "@/components/DemoBadge";
@@ -69,7 +69,8 @@ function Tile({ name, title, demo, children, foot }: { name: string; title: stri
 }
 function MoneyTile({ name, title, lines, value, demo }: { name: string; title: string; lines: MoneyLine[]; value: Loadable<unknown>; demo?: boolean }) {
   if (value.state !== "ready") return <Tile name={name} title={title} demo={demo}>{value.state === "loading" ? <Loading /> : <Failure message={value.message} />}</Tile>;
-  if (lines.length === 0) return <Tile name={name} title={title} demo={demo} foot={demo ? "No demo payments in this range yet." : "No payments in this range yet."}>{formatMinor("0", "KZT")}</Tile>;
+  // No payments: "—" and a plain note, never a zero posing as data.
+  if (lines.length === 0) return <Tile name={name} title={title} demo={demo} foot={demo ? "No demo payments in this range yet." : "No payments in this range yet."}>—</Tile>;
   return (
     <Tile name={name} title={title} demo={demo} foot={lines.map(line => (
       <p key={line.currency}>Captured {formatMinor(line.capturedMinor, line.currency)} · Refunded {formatMinor(line.refundedMinor, line.currency)} · {line.ordersPaid} paid{demo ? " · no money charged" : ""}</p>
@@ -104,14 +105,22 @@ export function ReportsScreen() {
   const pending = useMemo(() => createPendingActions(createStockAdjuster()), []);
   const [adjust, setAdjust] = useState<Record<string, string>>({});
 
-  const load = useCallback(async () => {
+  // Fix round 1: one request generation at a time. A new load aborts the previous one, and a response
+  // from a superseded load is dropped, so an older range's data never lands under newer dates.
+  const gate = useMemo(() => createRequestGate(), []);
+  /** `reset` (a range change) puts every section back to loading; a reload after an action keeps the frame. */
+  const load = useCallback(async (reset = false) => {
+    const ticket = gate.begin();
     setError(null);
+    if (reset) { setSummary(LOADING); setCounts(LOADING); setRecent(LOADING); setBest(LOADING); setStock(LOADING); }
     const range = `from=${from}&to=${to}&timeZone=${encodeURIComponent(ZONE)}`;
-    const get = <T,>(query: string) => fetch(`/api/admin/reports?${query}`, { cache: "no-store" }).then(response => json<T>(response));
-    // Each section settles on its own; a failure shows that section's message, never zeros. The
-    // previous data stays on screen until the new response arrives.
+    const get = <T,>(query: string) => fetch(`/api/admin/reports?${query}`, { cache: "no-store", signal: ticket.signal }).then(response => json<T>(response));
+    // Each section settles on its own; a failure shows that section's message, never zeros.
     const settle = <T,>(promise: Promise<T>, set: (value: Loadable<T>) => void) =>
-      promise.then(data => set({ state: "ready", data }), (reason: unknown) => set({ state: "error", message: reason instanceof Error ? reason.message : String(reason) }));
+      promise.then(
+        data => { if (ticket.isCurrent()) set({ state: "ready", data }); },
+        (reason: unknown) => { if (ticket.isCurrent()) set({ state: "error", message: reason instanceof Error ? reason.message : String(reason) }); },
+      );
     fetch("/api/admin/exports", { cache: "no-store" }).then(r => json<{ items: ExportJob[] }>(r)).then(data => setExports(data.items)).catch(() => setExports(null));
     await Promise.all([
       settle(get<Summary>(`view=summary&${range}`), setSummary),
@@ -120,8 +129,8 @@ export function ReportsScreen() {
       settle(get<BestSellers>(`view=best_sellers&${range}&limit=8`), setBest),
       settle(get<{ items: LowStock[] }>("view=low_stock&limit=8").then(data => data.items), setStock),
     ]);
-  }, [from, to]);
-  useEffect(() => { void load(); }, [load]);
+  }, [from, to, gate]);
+  useEffect(() => { void load(true); return () => gate.abort(); }, [load, gate]);
 
   const split = summary.state === "ready" ? splitTotals(summary.data.totals) : { real: [], demo: [], sandbox: [] };
   const chartCurrency = summary.state === "ready" ? currenciesOf(summary.data.totals, summary.data.days)[0] ?? "KZT" : "KZT";
@@ -229,7 +238,7 @@ export function ReportsScreen() {
             <Section value={best} empty={data => data[bestTab].length === 0} emptyText={bestTab === "real" ? "No sales in this date range yet." : "No demo sales in this date range yet."}>
               {data => (
                 <table className="w-full text-sm">
-                  <thead><tr className="text-left text-xs uppercase text-neutral-500"><th className="py-1 font-bold">Product</th><th className="px-3 text-right font-bold">Units</th><th className="whitespace-nowrap text-right font-bold">Net revenue</th></tr></thead>
+                  <thead><tr className="text-left text-xs uppercase text-neutral-500"><th className="py-1 font-bold">Product</th><th className="px-3 text-right font-bold">Units</th><th className="whitespace-nowrap text-right font-bold">Item revenue</th></tr></thead>
                   <tbody>{data[bestTab].map(item => (
                     <tr key={item.variantId + item.currency} className="border-t border-neutral-100">
                       <td className="py-1.5"><span className="flex flex-wrap items-center gap-2">{item.name}{item.sku && <span className="font-mono text-xs text-neutral-500">{item.sku}</span>}{bestTab === "demo" && <DemoBadge label="DEMO" className="text-[10px]" />}</span></td>
@@ -240,6 +249,7 @@ export function ReportsScreen() {
                 </table>
               )}
             </Section>
+            <p className="mt-2 text-xs text-neutral-500">Item revenue is net of refunds, incl. tax, excl. shipping.</p>
           </div>
         </Card>
       </div>

@@ -45,6 +45,7 @@ export default function FulfillmentScreen() {
   const [selected, setSelected] = useState<string | null>(null);
   const [detail, setDetail] = useState<AdminOrderDetailDTO | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [quantities, setQuantities] = useState<Record<string, string>>({});
   const [carrier, setCarrier] = useState("");
@@ -66,9 +67,12 @@ export default function FulfillmentScreen() {
     if (!response.ok) { setError(await readError(response)); setOrders([]); return; }
     setOrders((await response.json() as { items: AdminOrderSummaryDTO[] }).items);
   }, [status, mode]);
+  // Fix round 1: the detail's own error (e.g. a linked order that does not exist) lives apart from the
+  // list error, so loadOrders clearing its error never hides why the detail did not open.
   const loadDetail = useCallback(async (id: string) => {
     const response = await fetch(`/api/admin/orders?id=${id}`, { cache: "no-store" });
-    if (!response.ok) { setError(await readError(response)); return; }
+    if (!response.ok) { setDetail(null); setDetailError(await readError(response)); return; }
+    setDetailError(null);
     const next = await response.json() as AdminOrderDetailDTO;
     setDetail(next);
     setQuantities({});
@@ -84,7 +88,7 @@ export default function FulfillmentScreen() {
     if (linked && /^[0-9a-f-]{36}$/i.test(linked)) setSelected(linked);
   }, []);
   useEffect(() => { void loadOrders(); }, [loadOrders]);
-  useEffect(() => { if (selected) void loadDetail(selected); else setDetail(null); }, [selected, loadDetail]);
+  useEffect(() => { if (selected) void loadDetail(selected); else { setDetail(null); setDetailError(null); } }, [selected, loadDetail]);
 
   // The manual payment actions are keyed by their reference instead of an idempotency key.
   async function post(body: Record<string, unknown>, keyed = true) {
@@ -170,7 +174,8 @@ export default function FulfillmentScreen() {
           )}
         </section>
         <section aria-label="Order detail" className="border border-neutral-200 p-4">
-          {!detail ? <p className="text-sm text-neutral-500">Select an order.</p> : (
+          {detailError && <p role="alert" className="mb-3 border border-red-200 bg-red-50 p-3 text-sm text-red-800">{detailError}</p>}
+          {!detail ? (detailError ? null : <p className="text-sm text-neutral-500">Select an order.</p>) : (
             <div className="space-y-5">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="font-mono text-lg font-bold">{detail.orderNumber}</h2>

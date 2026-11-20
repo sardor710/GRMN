@@ -174,9 +174,10 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
 // CMS_SMOKE_ONLY=dashboard runs it alone): a customer places one demo order through the real checkout,
 // then /admin shows Demo revenue > 0 and Revenue unchanged (0 when run alone), the order in Recent
 // orders linking to its detail, its product under Best-sellers > Demo only, and the empty-range text.
-// The screenshot goes to CMS_SMOKE_DASHBOARD_SHOT (default docs/design-references/dashboard.png).
+// The screenshot goes to the receipt folder; CMS_SMOKE_SAVE_SHOTS=1 also copies it to the committed
+// docs/design-references/dashboard.png (never by default, so a plain run leaves the tree clean).
 async function dashboardScenario({pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue,receipt,alone}){
-  const shot=path.resolve(process.env.CMS_SMOKE_DASHBOARD_SHOT??"docs/design-references/dashboard.png");fs.mkdirSync(path.dirname(shot),{recursive:true});
+  fs.mkdirSync(receipt,{recursive:true});const shot=path.join(receipt,"dashboard.png");
   const setCookie=value=>send("Network.setCookie",{name:"grmn-auth.session_token",value,url:origin,httpOnly:true,sameSite:"Lax"});
   const signOut=()=>send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
   const dump=name=>async error=>{await writeFile(path.join(receipt,name),await text());throw error;};
@@ -226,11 +227,14 @@ async function dashboardScenario({pool,runtime,secret,origin,send,evaluate,navig
     // 2-3. /admin: Demo revenue > 0, Revenue is the real money (0 alone), never the two added.
     await signOut();await setCookie(staffCookieValue);
     await navigate("/admin");
-    await until(async()=>/\d/.test(await tile("demo-revenue"))&&/\d/.test(await tile("revenue")),"The revenue tiles did not load").catch(dump("dashboard-body.txt"));
+    await until(async()=>/\d/.test(await tile("demo-revenue"))&&!/^$|loading/i.test(await tile("revenue")),"The revenue tiles did not load").catch(dump("dashboard-body.txt"));
     const demoValue=await tile("demo-revenue"),realValue=await tile("revenue");
     assert.ok(BigInt(demoValue.replace(/\D/g,""))>BigInt(0),"Demo revenue is greater than 0: "+demoValue);
-    assert.equal(realValue,formatMinor(live,"KZT"),"Revenue shows only real money");
-    if(alone)assert.equal(realValue,"0.00 KZT","Revenue is 0 with only a demo order");
+    if(alone){
+      // No real payments: the tile says so ("—" and the plain note), it does not pose a zero as data.
+      assert.equal(realValue,"—","Revenue shows no amount with only a demo order");
+      assert.ok((await evaluate("document.querySelector('[data-tile=\"revenue\"]').innerText")).includes("No payments in this range yet."),"Revenue says there are no payments yet");
+    }else assert.equal(realValue,formatMinor(live,"KZT"),"Revenue shows only real money");
     assert.equal(await evaluate("!!document.querySelector('[data-tile=\"demo-revenue\"] [data-demo-badge]')"),true,"the Demo revenue tile carries the DEMO label");
     // 4. Recent orders: the demo order, with its DEMO label, links to its admin detail.
     const href=`/admin/orders?order=${order.id}`;
@@ -247,6 +251,7 @@ async function dashboardScenario({pool,runtime,secret,origin,send,evaluate,navig
     const metrics=await send("Page.getLayoutMetrics");
     const image=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:true,clip:{x:0,y:0,width:1280,height:Math.ceil(metrics.cssContentSize.height),scale:1}});
     await writeFile(shot,Buffer.from(image.data,"base64"));
+    if(process.env.CMS_SMOKE_SAVE_SHOTS==="1"){const kept=path.resolve("docs/design-references/dashboard.png");fs.mkdirSync(path.dirname(kept),{recursive:true});fs.copyFileSync(shot,kept);}
     // The link opens that order's detail on the orders page.
     await evaluate(`document.querySelector('section[aria-label="Recent orders"] a[href="${href}"]').click();true`);
     await until(()=>evaluate("location.pathname==='/admin/orders'"),"The recent order link did not open the orders page");
@@ -258,6 +263,17 @@ async function dashboardScenario({pool,runtime,secret,origin,send,evaluate,navig
     await until(async()=>(await section("Orders by status")).includes("No orders in this date range yet.")&&(await section("Best-sellers")).includes("No sales in this date range yet.")&&(await section("Totals")).includes("No demo payments in this range yet."),"Not every section showed its empty state");
     assert.ok((await section("Daily revenue")).includes("No revenue in this date range yet."),"the chart says it has no data");
     assert.equal(await evaluate("document.querySelectorAll('[role=alert]').length"),0,"an empty range is not an error");
+    // 7. Out-of-order responses: an older range's slow answer never lands under newer dates. Delay
+    // every report response except the empty range's, pick "Last 7 days" (slow, has the order), then
+    // the empty range again (fast); after the slow answers arrive the empty state must still show.
+    await evaluate("(()=>{const real=window.fetch.bind(window);window.fetch=(url,init)=>{const p=real(url,init);return String(url).includes('from=2020-01-01')?p:p.then(r=>new Promise(done=>setTimeout(()=>done(r),2500)));};return true;})()");
+    await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Last 7 days').click();true");
+    await delay(100);await setDate("To date","2020-01-01");await setDate("From date","2020-01-01");
+    await until(async()=>(await section("Recent orders")).includes("No orders in this date range yet."),"The empty range did not render while the older range was pending");
+    await delay(4000);
+    assert.ok((await section("Recent orders")).includes("No orders in this date range yet."),"a slow response for an older range replaced the newer empty range");
+    assert.ok(!(await section("Best-sellers")).includes("UI DASH FIXTURE")&&(await section("Totals")).includes("No demo payments in this range yet."),"older range data leaked into the newer range");
+    assert.equal(await evaluate("document.querySelectorAll('[role=alert]').length"),0,"responses of superseded ranges show no error");
   }finally{
     await send("Emulation.clearDeviceMetricsOverride");
     if(previous)await pool.query("UPDATE store_settings SET active_tax_configuration_id=$1,active_shipping_policy_id=$2,payment_mode=$3,version=version+1 WHERE id=1",[previous.tax,previous.policy,previous.payment_mode]);
