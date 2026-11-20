@@ -176,8 +176,8 @@ export function HomeHeader() {
           </ul>
         </nav>
 
+        {/* garmin.com keeps the locale out of the utility bar (MegaMenu.spec.md): the switcher is in the footer and the mobile menu. */}
         <div className={styles.utility}>
-          <LanguageSwitcher variant="header" />
           <a href={HELP_HREF} className={styles.help}>
             <GhHelpIcon />
             {t("Header.help")}
