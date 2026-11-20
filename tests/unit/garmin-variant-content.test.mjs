@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { extractBootstrap, parseGarminProduct, parseGarminTabs, variantContentOverrides } from "../../src/lib/import/garmin-parse.js";
-import { fillVariantContentFromPages } from "../../src/lib/import/garmin-variant-content.ts";
+import { fillVariantContentFromPages, fitDraftToSaveLimit } from "../../src/lib/import/garmin-variant-content.ts";
 import { PRODUCT_HTML_FIELDS } from "../../src/lib/cms/product-input.js";
 
 const fixture = (name) => fs.readFileSync(new URL(`../fixtures/garmin/${name}.html`, import.meta.url), "utf8");
@@ -31,9 +31,12 @@ test("variant with different specs gets an own specGroups override", () => {
   assert.ok(flat(v.content.specGroups).includes("General|Weight=78 g (case only: 56 g)"));
   assert.ok(flat(product.specGroups).includes("General|Weight=99 g (case only: 73 g)"), "product keeps the default (51 mm) specs");
   assert.equal(variant(product, "010-04337-00").content, undefined, "the default variant never gets an override");
+  // Flat-spec readers get the variant's values too.
+  assert.deepEqual(v.content.specs, v.content.specGroups.flatMap((g) => g.items));
   // Blocks that are equal are not stored: the 47 mm in-the-box matches the 51 mm one on garmin.com.
   for (const v2 of product.variants.filter((x) => x.content)) {
-    for (const key of Object.keys(v2.content)) assert.ok(["specGroups", "overviewHtml", "inTheBox"].includes(key));
+    for (const key of Object.keys(v2.content)) assert.ok(["specs", "specGroups", "overviewHtml", "inTheBox"].includes(key));
+    assert.equal("specs" in v2.content, "specGroups" in v2.content, "specs is owned exactly when specGroups is");
     if (v2.content.inTheBox) assert.notDeepEqual(v2.content.inTheBox, product.inTheBox);
     if (v2.content.specGroups) assert.notDeepEqual(flat(v2.content.specGroups), flat(product.specGroups));
   }
@@ -46,6 +49,10 @@ test("identical tabs store no override", () => {
   const base = { specGroups: [{ title: "General", items: [{ label: "Weight", value: "99 g" }, { label: "Size", value: "51 mm" }] }], overviewHtml: "<p>Hi</p>", inTheBox: ["Watch", "Cable"] };
   const spaced = { specGroups: [{ title: " General ", items: [{ label: "Weight ", value: " 99  g" }, { label: "Size", value: "51 mm" }] }], overviewHtml: "  <p>Hi</p>\n", inTheBox: [" Watch", "Cable "] };
   assert.equal(variantContentOverrides(base, spaced), undefined);
+  // Whitespace between tags is not a difference either.
+  const twoParas = { ...base, overviewHtml: "<p>A</p><p>B</p>" };
+  assert.equal(variantContentOverrides(twoParas, { ...twoParas, overviewHtml: "<p>A</p>\n  <p>B</p>" }), undefined);
+  assert.deepEqual(variantContentOverrides(twoParas, { ...twoParas, overviewHtml: "<p>A</p><p>C</p>" }), { overviewHtml: "<p>A</p><p>C</p>" });
   const reordered = { ...base, inTheBox: ["Cable", "Watch"] };
   assert.deepEqual(variantContentOverrides(base, reordered), { inTheBox: ["Cable", "Watch"] });
   // A block the variant's page doesn't carry is inherited, never stored as an own empty block.
@@ -102,6 +109,52 @@ test("variant pages are fetched at most 3 at a time", async () => {
     return fixture("fenix9-47mm-sku-page");
   });
   assert.equal(peak, 3);
+});
+
+test("the variant-page budget aborts fetches already in flight", async () => {
+  const { product } = parse(fixture("fenix9"));
+  const sku = product.variants.find((v) => !v.isDefault && !v.content).sku;
+  const started = Date.now();
+  let aborted = false;
+  const warnings = await fillVariantContentFromPages(product, [sku], new URL(SOURCE), (_url, signal) =>
+    new Promise((_resolve, reject) => signal.addEventListener("abort", () => { aborted = true; reject(signal.reason); })),
+  { budgetMs: 50, pageTimeoutMs: 60_000 });
+  assert.ok(aborted, "the in-flight fetch is aborted by the budget, not by its 60 s page timeout");
+  assert.ok(Date.now() - started < 5_000);
+  assert.equal(variant(product, sku).content, undefined);
+  assert.ok(warnings.some((w) => w.includes(sku)), warnings.join("\n"));
+});
+
+test("an oversized draft drops variant overviews largest-first to fit the save limit", () => {
+  // Synthetic: a 60-variant family whose variants own a ~36 KB overview each (≈2.1 MB); limit 1 MiB here.
+  const ov = (n) => `<p>${"x".repeat(n)}</p>`;
+  const groups = [{ title: "General", items: [{ label: "Weight", value: "78 g" }] }];
+  const variants = Array.from({ length: 60 }, (_, i) => ({
+    id: `var-${i}`, sku: `SKU-${i}`, title: `Variant ${i}`, isDefault: i === 0, imageIds: [],
+    ...(i === 0 ? {} : { content: { overviewHtml: ov(36_000 + i * 10), ...(i % 2 ? { specGroups: groups, specs: groups[0].items, inTheBox: ["Watch"] } : {}) } }),
+  }));
+  const before = new Map(variants.map((v) => [v.id, v.content?.overviewHtml?.length ?? 0]));
+  const draft = { name: "Big", sku: "GARMIN-1", price: 1, overviewHtml: ov(1000), variants };
+  const limit = 1024 * 1024;
+  const warnings = fitDraftToSaveLimit(draft, limit);
+
+  assert.ok(new TextEncoder().encode(JSON.stringify(draft)).byteLength <= limit);
+  const dropped = variants.filter((v) => !v.isDefault && v.content?.overviewHtml === undefined);
+  const kept = variants.filter((v) => v.content?.overviewHtml !== undefined);
+  assert.ok(dropped.length > 0 && kept.length > 0);
+  assert.equal(warnings.length, dropped.length, "one warning per dropped overview");
+  assert.equal(warnings[0], "Overview for Variant 59 kept the product overview to fit the save limit.");
+  assert.ok(Math.max(...kept.map((v) => before.get(v.id))) < Math.min(...dropped.map((v) => before.get(v.id))), "largest first");
+  for (const v of variants.filter((_, i) => i % 2 === 1)) {
+    assert.deepEqual(v.content.specGroups, groups, "specs are kept");
+    assert.deepEqual(v.content.inTheBox, ["Watch"], "in-the-box is kept");
+  }
+  for (const v of dropped.filter((x) => Number(x.id.slice(4)) % 2 === 0)) assert.equal("content" in v, false, "an emptied override is removed (inherit)");
+
+  // Under the limit nothing changes.
+  const small = { name: "S", sku: "S", price: 1, variants: [{ id: "a", sku: "a", title: "A", content: { overviewHtml: ov(10) } }] };
+  assert.deepEqual(fitDraftToSaveLimit(small, limit), []);
+  assert.equal(small.variants[0].content.overviewHtml, ov(10));
 });
 
 test("imported variant overviewHtml is sanitized", async () => {

@@ -242,7 +242,8 @@ export function parseGarminTabs(html, { sku } = {}) {
   return s && hasTabs(s) ? tabsOfSku(s) : null;
 }
 
-const norm = (s) => String(s ?? '').replace(/\s+/g, ' ').trim();
+// Whitespace between tags is layout only: `</p>\n<p>` equals `</p><p>`.
+const norm = (s) => String(s ?? '').replace(/>\s+</g, '><').replace(/\s+/g, ' ').trim();
 const groupsKey = (groups) => JSON.stringify((groups || []).map((g) => [norm(g.title), (g.items || []).map((i) => [norm(i.label), norm(i.value)])]));
 const listKey = (list) => JSON.stringify((list || []).map(norm));
 
@@ -253,7 +254,11 @@ const listKey = (list) => JSON.stringify((list || []).map(norm));
  */
 export function variantContentOverrides(base, own) {
   const out = {};
-  if (own.specGroups?.length && groupsKey(own.specGroups) !== groupsKey(base.specGroups)) out.specGroups = own.specGroups;
+  if (own.specGroups?.length && groupsKey(own.specGroups) !== groupsKey(base.specGroups)) {
+    out.specGroups = own.specGroups;
+    // Flat-spec readers get the variant's values too (the product mirrors specs from specGroups the same way).
+    out.specs = own.specGroups.flatMap((g) => g.items.map((i) => ({ label: i.label, value: i.value })));
+  }
   if (norm(own.overviewHtml) && norm(own.overviewHtml) !== norm(base.overviewHtml)) out.overviewHtml = own.overviewHtml;
   if (own.inTheBox?.length && listKey(own.inTheBox) !== listKey(base.inTheBox)) out.inTheBox = own.inTheBox;
   return Object.keys(out).length ? out : undefined;

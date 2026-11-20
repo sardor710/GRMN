@@ -3,7 +3,7 @@ import { requireCatalogWriter } from "@/lib/cms/admin-guard";
 import { saveSettings } from "@/lib/cms/store";
 import { downloadRemoteImage, type DownloadResult } from "@/lib/media/storage";
 import { parseGarminProduct, validateGarminUrl, type GarminDraft } from "@/lib/import/garmin-parse";
-import { fillVariantContentFromPages, VARIANT_PAGE_TIMEOUT_MS } from "@/lib/import/garmin-variant-content";
+import { fillVariantContentFromPages, fitDraftToSaveLimit } from "@/lib/import/garmin-variant-content";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -163,11 +163,11 @@ export async function POST(request: Request) {
     // only: the URL is re-validated and every redirect hop is checked by fetchGarminPage). Before localizing,
     // so their overview photos are downloaded with the product's.
     warnings.push(
-      ...(await fillVariantContentFromPages(product, variantSkusWithoutTabs, finalUrl, async (url) =>
-        (await fetchGarminPage(url, AbortSignal.timeout(VARIANT_PAGE_TIMEOUT_MS))).html,
-      )),
+      ...(await fillVariantContentFromPages(product, variantSkusWithoutTabs, finalUrl, async (url, signal) => (await fetchGarminPage(url, signal)).html)),
     );
     if (body.downloadImages !== false) warnings.push(...(await localizeImages(product, remoteImages)));
+    // The editor saves this draft through cms.save (4 MiB body limit): drop variant overviews that don't fit.
+    warnings.push(...fitDraftToSaveLimit(product));
     // Remember the rate for the next import (legacy JSON store only; PostgreSQL uses the USD rate editor).
     if (process.env.CMS_BACKEND !== "postgres") saveSettings({ importRateKztPerUsd: rate });
     return NextResponse.json({ draft: product, warnings });
