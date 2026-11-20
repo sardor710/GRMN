@@ -127,7 +127,7 @@ export function ProductCard({ product, compare }: { product: Product; compare?: 
           </span>
         </button>
       </div>
-      <Link href={`/p/${product.id}`} className="flex flex-1 flex-col transition-colors duration-200 hover:text-garmin-black-hover">
+      <Link href={`/p/${product.id}`} className="relative flex flex-1 flex-col transition-colors duration-200 hover:text-garmin-black-hover">
         {body}
       </Link>
     </div>

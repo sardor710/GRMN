@@ -27,6 +27,7 @@ const CLIENT_NAMESPACES: readonly string[] = [
   "Newsletter",
   "OrderDetails",
   "ProductAccessories",
+  "ProductBadge",
   "ProductCard",
   "ProductTabs",
   "ProductTop",

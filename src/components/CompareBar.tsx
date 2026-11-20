@@ -112,10 +112,12 @@ export function CompareBar({ items, onChange, products, search, compareMode }: C
       role="region"
       aria-label={t("region")}
       data-compare-bar
-      className="sticky bottom-0 z-[2] order-last border-t border-garmin-control bg-muted p-4 text-black shadow-garmin-raised lg:top-0 lg:bottom-auto lg:order-first lg:border-b lg:shadow-none"
+      className="sticky bottom-0 z-20 order-last border-t border-garmin-control bg-muted p-4 text-black shadow-garmin-raised lg:top-0 lg:bottom-auto lg:order-first lg:border-b lg:shadow-none"
     >
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-0">
-        <div className="flex min-h-6 items-center justify-between gap-4 lg:mr-auto lg:justify-start">
+      {/* Below 1024px garmin.com stacks slots, search (12px under) and Compare (16px under); our status line and
+          "Clear all" go last there, and first (Garmin's empty left side) from 1024px. */}
+      <div className="flex flex-col lg:flex-row lg:items-center">
+        <div className="order-4 mt-3 flex min-h-6 items-center justify-between gap-4 lg:order-none lg:mt-0 lg:mr-auto lg:justify-start">
           <p id={full ? COMPARE_LIMIT_NOTE_ID : undefined} className="text-[14px] leading-[21px]">{status}</p>
           {items.length > 0 && (
             <button type="button" onClick={() => onChange(() => [])} className="g-btn g-btn--text py-0 text-[14px] leading-[21px] underline hover:no-underline">
@@ -124,7 +126,7 @@ export function CompareBar({ items, onChange, products, search, compareMode }: C
           )}
         </div>
 
-        <form role="search" method="get" action={pathname} onSubmit={submitSearch} className="relative order-2 lg:order-none lg:w-[238px]">
+        <form role="search" method="get" action={pathname} onSubmit={submitSearch} className="relative order-2 mt-3 lg:order-none lg:mt-0 lg:w-[238px]">
           {[...params.entries()]
             .filter(([name]) => name !== CATALOGUE_COMPARE_SEARCH_PARAM)
             .map(([name, value], index) => <input key={`${name}-${index}`} type="hidden" name={name} value={value} />)}
@@ -174,7 +176,7 @@ export function CompareBar({ items, onChange, products, search, compareMode }: C
           </div>
         </form>
 
-        <ul className="order-1 flex gap-2 lg:order-none lg:ml-2">
+        <ul className="order-1 flex gap-2 pt-[5.6px] lg:order-none lg:ml-2 lg:pt-0">
           {Array.from({ length: COMPARE_MAX_ITEMS }, (_, slot) => {
             const item = items[slot];
             const box = "relative aspect-square w-[calc((100%-2rem)/5)] max-w-[75px] lg:size-[53px] lg:max-w-none";
@@ -197,7 +199,7 @@ export function CompareBar({ items, onChange, products, search, compareMode }: C
           })}
         </ul>
 
-        <div className="order-3 lg:order-none lg:ml-2">
+        <div className="order-3 mt-4 lg:order-none lg:mt-0 lg:ml-2">
           {canCompare ? (
             <Link href={selectionHref(items)} className="g-btn g-btn--lg g-btn--primary h-[52px] w-full lg:w-[140px]">
               {t("compare")}
