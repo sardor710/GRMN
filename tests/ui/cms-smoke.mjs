@@ -437,7 +437,15 @@ async function dashboardScenario({pool,runtime,secret,origin,send,evaluate,navig
     await until(()=>evaluate(`!!document.querySelector('section[aria-label="Recent orders"] a[href="${href}"]')`),"The demo order is not in Recent orders").catch(dump("dashboard-recent-body.txt"));
     assert.equal(await evaluate(`!!document.querySelector('tr[data-order-row="${order.id}"] [data-demo-badge]')`),true,"the recent demo order carries the DEMO label");
     // 5. Best-sellers: the product is under Demo, not under Real.
-    await until(async()=>/no sales in this date range yet|UI-DASH-SKU/i.test(await section("Best-sellers")),"Best-sellers did not load");
+    // Earlier blocks may have left real paid orders (the full run confirms a manual payment), so the Real
+    // tab shows the empty text only when the database has no real sale; otherwise it lists those sales.
+    const realSales=(await pool.query("SELECT count(*)::int AS n FROM orders WHERE payment_mode<>'demo' AND payment_status IN ('paid','partially_refunded','refunded') AND order_status<>'cancelled'")).rows[0].n;
+    if(alone)assert.equal(realSales,0,"no real sales when the block runs alone");
+    const realLoaded=async()=>realSales===0?/no sales in this date range yet/i.test(await section("Best-sellers")):await evaluate("document.querySelectorAll('[data-best-tab=\"real\"] tbody tr').length>0");
+    await until(realLoaded,"Best-sellers did not load").catch(async error=>{
+      await writeFile(path.join(receipt,"dashboard-best-real-section.txt"),await section("Best-sellers"));
+      await writeFile(path.join(receipt,"dashboard-best-real-api.json"),String(await evaluate("(async()=>{const url=performance.getEntriesByType('resource').map(e=>e.name).filter(n=>n.includes('view=best_sellers')).pop();if(!url)return 'no best_sellers request';const r=await fetch(url,{cache:'no-store'});return url+'\\n'+r.status+' '+await r.text();})()")));
+      await dump("dashboard-best-real-body.txt")(error);});
     assert.ok(!(await section("Best-sellers")).includes("UI DASH FIXTURE"),"a demo sale is not a real best-seller");
     await evaluate("[...document.querySelectorAll('[role=tab]')].find(t=>t.textContent.trim()==='Demo').click();true");
     await until(async()=>(await section("Best-sellers")).includes("UI DASH FIXTURE")&&await evaluate("!!document.querySelector('[data-best-tab=\"demo\"] [data-demo-badge]')"),"The product is not under Best-sellers > Demo").catch(dump("dashboard-best-body.txt"));

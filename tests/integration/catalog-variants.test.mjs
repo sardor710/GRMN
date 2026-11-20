@@ -205,7 +205,8 @@ test("admin editor: editing a saved imported product (Save Changes) is accepted,
     const posted=[];
     const fixture=componentFixture("src/app/admin/products/_components/ProductsScreen.tsx",{items:[listed],modules:{"@/components/admin/product-editor":{formatKzt:value=>String(value),newId:prefix=>`${prefix}-fixture`}},
       fetcher:async(_url,options)=>{if(options?.body)posted.push(options.body);return{ok:true,status:200,json:async()=>({success:true})};}});
-    nodes(fixture.render()).find(node=>node.props?.title==="Edit Product").props.onClick();
+    // The row opens the editor through its click-to-edit control (the row "Edit Product" button was removed).
+    nodes(fixture.render()).find(node=>node.props?.["aria-label"]===`Edit ${listed.name}`).props.onClick();
     if(reimport)nodes(fixture.render()).find(node=>node.props?.onApply&&node.props?.formHasData!==undefined).props.onApply(draft);
     await nodes(fixture.render()).find(node=>node.type==="form").props.onSubmit({preventDefault(){}});
     const current=(await cms.get("products",admin,saved.id)).version;
