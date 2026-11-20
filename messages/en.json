@@ -976,9 +976,9 @@
     "title": "Select a Location",
     "intro": "You are on the Garmin Kazakhstan website. Choose another country to visit its official Garmin website or distributor.",
     "current": "You are here",
-    "dialogTitle": "Leaving Garmin Kazakhstan",
-    "dialogBody": "You are leaving the Garmin Kazakhstan website and going to the Garmin website for {country}. It will open in a new tab. Do you want to continue?",
-    "continue": "Open website",
-    "stay": "Stay here"
+    "dialogTitle": "You are leaving Garmin.kz",
+    "dialogBody": "You clicked a link to leave Garmin.kz and visit the website of an external distributor. Do you want to continue?",
+    "continue": "Continue",
+    "stay": "Cancel"
   }
 }

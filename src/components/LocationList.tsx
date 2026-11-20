@@ -77,9 +77,8 @@ export function LocationList() {
           <div className="p-6 sm:p-8">
             <h2 id="leave-site-title" className="g-heading text-[22px] leading-tight">{t("dialogTitle")}</h2>
             <p className="mt-4 text-[15px] leading-relaxed text-neutral-700">
-              {t("dialogBody", { country: target.native ? `${target.native} | ${target.name}` : target.name })}
+              {t("dialogBody")}
             </p>
-            <p className="mt-2 break-all text-[13px] text-neutral-500">{target.url}</p>
             <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
               <button
                 type="button"
