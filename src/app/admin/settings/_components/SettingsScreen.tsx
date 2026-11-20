@@ -92,8 +92,8 @@ export default function AdminSettingsPage() {
           {saving ? (
             <span>Saving...</span>
           ) : savedSuccess ? (
-            <span className="flex items-center gap-1.5 text-black">
-              <CheckCircle2 className="h-4 w-4" /> Saved!
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 aria-hidden="true" className="h-4 w-4" /> Saved
             </span>
           ) : (
             <>
@@ -186,11 +186,13 @@ export default function AdminSettingsPage() {
                 value={settings.currency}
                 onChange={(e) => {
                   const curr = e.target.value;
-                  const sym = curr === "SGD" ? "S$" : curr === "USD" ? "$" : curr === "EUR" ? "€" : "£";
+                  // Task 5b.1 fix 2: the symbol is the currency code (₸ for tenge); never a "$" that implies USD.
+                  const sym = curr === "KZT" ? "₸" : curr;
                   setSettings({ ...settings, currency: curr, currencySymbol: sym });
                 }}
                 className="h-10 w-full border border-border bg-white px-3 text-sm font-semibold text-black focus:border-black focus:outline-none rounded-none"
               >
+                <option value="KZT">KZT (Kazakhstani tenge)</option>
                 <option value="SGD">SGD (Singapore Dollar)</option>
                 <option value="USD">USD (US Dollar)</option>
                 <option value="EUR">EUR (Euro)</option>

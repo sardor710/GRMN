@@ -16,7 +16,8 @@ function screen() {
     modules: { "@/lib/admin/dashboard": dashboard },
     fetcher: (url, options) => { const pending = deferred(); calls.push({ url, signal: options?.signal, ...pending }); return pending.promise; },
   });
-  // Effect 1 is the queue load (effect 0 reads ?order= from window.location, effect 2 loads the detail).
+  // Effects in order: 0 reads ?order= from window.location, 1 loads the queue, 2 aborts the queue gate on unmount,
+  // 3 loads the detail. Only effect 1 is run here.
   const loadQueue = () => { fixture.render(); return fixture.effects[1](); };
   return { fixture, calls, loadQueue };
 }

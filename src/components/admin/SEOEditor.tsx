@@ -213,8 +213,8 @@ export function SEOEditor({
               <label className="text-xs font-semibold text-neutral-700">
                 SEO Meta Title
               </label>
-              <span className={`text-xs tabular-nums ${displayTitle.length >= 45 && displayTitle.length <= 65 ? "text-black" : "text-black"}`}>
-                {displayTitle.length} / 65 chars
+              <span className={`text-xs tabular-nums ${displayTitle.length >= 45 && displayTitle.length <= 65 ? "text-black" : "text-garmin-error"}`}>
+                {displayTitle.length} / 65 chars{displayTitle.length > 65 ? " · over limit" : displayTitle.length < 45 ? " · too short" : ""}
               </span>
             </div>
             <input
@@ -244,8 +244,8 @@ export function SEOEditor({
               <label className="text-xs font-semibold text-neutral-700">
                 SEO Meta Description
               </label>
-              <span className={`text-xs tabular-nums ${displayDesc.length >= 120 && displayDesc.length <= 160 ? "text-black" : "text-black"}`}>
-                {displayDesc.length} / 160 chars
+              <span className={`text-xs tabular-nums ${displayDesc.length >= 120 && displayDesc.length <= 160 ? "text-black" : "text-garmin-error"}`}>
+                {displayDesc.length} / 160 chars{displayDesc.length > 160 ? " · over limit" : displayDesc.length < 120 ? " · too short" : ""}
               </span>
             </div>
             <textarea
@@ -464,14 +464,6 @@ export function SEOEditor({
                 {displayDesc}
               </p>
 
-              {/* Product Rich Snippet badges simulator */}
-              {type === "product" && (
-                <div className="mt-2.5 pt-2 border-t border-neutral-100 flex items-center gap-3 text-xs text-[#5f6368]">
-                  <span className="font-semibold text-black">★ 4.9 (128 reviews)</span>
-                  <span>• In Stock</span>
-                  <span>• Fast Shipping</span>
-                </div>
-              )}
             </div>
           ) : socialPlatform === "facebook" ? (
             <div className="rounded-none border border-border bg-white overflow-hidden text-black">

@@ -343,7 +343,7 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
                 className={`px-3 py-1.5 rounded-none text-xs font-semibold transition-colors ${
                   typeFilter === "needs_work"
                     ? "bg-garmin-badge-gold/20 text-black border border-garmin-badge-gold"
-                    : "bg-white border border-border text-black hover:text-black"
+                    : "bg-white border border-border text-black hover:border-black"
                 }`}
               >
                 Needs Work ({auditReport.stats.needsWork + auditReport.stats.critical})

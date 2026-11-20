@@ -344,10 +344,10 @@ export default function AdminHomepagePage() {
       <div className="border border-garmin-error bg-white p-6 text-garmin-error">
         {notification?.type==="error"&&<p role="alert">{notification.message}</p>}
         <p className="font-semibold">{version===0?"No homepage has been published.":"Unable to load homepage configuration."}</p>
-        {version===0&&<button className="mt-3  border p-3" disabled={saving} onClick={handleReset}>Create from default template</button>}
+        {version===0&&<button className="g-btn g-btn--black mt-3" disabled={saving} onClick={handleReset}>Create from default template</button>}
         <button
           onClick={loadConfig}
-          className="mt-3  bg-garmin-badge-red px-4 py-2 text-sm font-medium text-white hover:bg-garmin-badge-red"
+          className="g-btn mt-3 border-garmin-badge-red bg-garmin-badge-red text-white hover:border-garmin-error hover:bg-garmin-error"
         >
           Reload configuration
         </button>
@@ -397,7 +397,7 @@ export default function AdminHomepagePage() {
           <Link
             href="/"
             target="_blank"
-            className="inline-flex items-center gap-1.5 border border-border bg-white px-3.5 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+            className="g-btn g-btn--secondary"
           >
             <ExternalLink className="h-3.5 w-3.5" />
             View Storefront
@@ -406,7 +406,7 @@ export default function AdminHomepagePage() {
           <button
             onClick={handleReset}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 border border-border bg-white px-3.5 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50 disabled:opacity-50"
+            className="g-btn g-btn--secondary"
             title="Reset to default template"
           >
             <RotateCcw className="h-3.5 w-3.5" />
@@ -416,7 +416,7 @@ export default function AdminHomepagePage() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1] disabled:opacity-50"
+            className="g-btn g-btn--black"
           >
             <Save className="h-3.5 w-3.5" />
             {saving ? "Saving Changes..." : "Save All Changes"}
@@ -443,22 +443,22 @@ export default function AdminHomepagePage() {
               </button>
             </div>
             <div className="mt-2.5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className=" border border-white/80 bg-white/80 p-2.5">
+              <div className="border border-white/80 bg-white/80 p-2.5">
                 <span className="text-xs font-semibold text-muted-foreground block">Hero Banners</span>
                 <span className="text-xs font-bold text-black tabular-nums">1920 × 800 px</span>
                 <span className="text-xs text-muted-foreground block mt-0.5">Ratio: 2.4:1 / 16:9 (Max 2MB)</span>
               </div>
-              <div className=" border border-white/80 bg-white/80 p-2.5">
+              <div className="border border-white/80 bg-white/80 p-2.5">
                 <span className="text-xs font-semibold text-muted-foreground block">Product Carousel</span>
                 <span className="text-xs font-bold text-black tabular-nums">800 × 800 px</span>
                 <span className="text-xs text-muted-foreground block mt-0.5">Ratio: 1:1 Square (Max 1MB)</span>
               </div>
-              <div className=" border border-white/80 bg-white/80 p-2.5">
+              <div className="border border-white/80 bg-white/80 p-2.5">
                 <span className="text-xs font-semibold text-muted-foreground block">Promo Card Carousel</span>
                 <span className="text-xs font-bold text-black tabular-nums">1200 × 600 px</span>
                 <span className="text-xs text-muted-foreground block mt-0.5">Ratio: 2:1 Landscape (Max 1.5MB)</span>
               </div>
-              <div className=" border border-white/80 bg-white/80 p-2.5">
+              <div className="border border-white/80 bg-white/80 p-2.5">
                 <span className="text-xs font-semibold text-muted-foreground block">Containing Pods</span>
                 <span className="text-xs font-bold text-black tabular-nums">600 × 400 px</span>
                 <span className="text-xs text-muted-foreground block mt-0.5">Ratio: 3:2 Landscape (Max 1MB)</span>
@@ -568,7 +568,7 @@ export default function AdminHomepagePage() {
                 }`}
               >
                 {/* Thumbnail Preview */}
-                <div className="relative h-20 w-36 shrink-0 overflow-hidden  bg-neutral-100 border border-border">
+                <div className="relative h-20 w-36 shrink-0 overflow-hidden bg-neutral-100 border border-border">
                   <Image
                     src={banner.image || "/homepage/featured/holiday.jpg"}
                     alt={banner.title || "Banner"}
@@ -576,7 +576,7 @@ export default function AdminHomepagePage() {
                     className="object-cover"
                     unoptimized
                   />
-                  <span className="absolute bottom-1 right-1  bg-black/70 px-1 py-0.5 text-xs tabular-nums text-white">
+                  <span className="absolute bottom-1 right-1 bg-black/70 px-1 py-0.5 text-xs tabular-nums text-white">
                     1920x800
                   </span>
                 </div>
@@ -584,7 +584,7 @@ export default function AdminHomepagePage() {
                 {/* Banner Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className=" bg-neutral-100 px-1.5 py-0.5 text-xs tabular-nums text-neutral-600 font-bold">
+                    <span className="bg-neutral-100 px-1.5 py-0.5 text-xs tabular-nums text-neutral-600 font-bold">
                       #{index + 1}
                     </span>
                     <h3 className="font-sans truncate text-sm font-bold text-black">
@@ -611,7 +611,7 @@ export default function AdminHomepagePage() {
                   <button
                     onClick={() => handleMoveBanner(index, "up")}
                     disabled={index === 0}
-                    className=" p-1 text-muted-foreground hover:bg-neutral-100 hover:text-black disabled:opacity-20"
+                    className="p-1 text-muted-foreground hover:bg-neutral-100 hover:text-black disabled:opacity-20"
                     title="Move slide up"
                   >
                     <ArrowUp className="h-4 w-4" />
@@ -619,21 +619,21 @@ export default function AdminHomepagePage() {
                   <button
                     onClick={() => handleMoveBanner(index, "down")}
                     disabled={index === config.heroBanners.length - 1}
-                    className=" p-1 text-muted-foreground hover:bg-neutral-100 hover:text-black disabled:opacity-20"
+                    className="p-1 text-muted-foreground hover:bg-neutral-100 hover:text-black disabled:opacity-20"
                     title="Move slide down"
                   >
                     <ArrowDown className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleOpenEditBanner(index)}
-                    className=" p-1.5 text-neutral-600 hover:bg-neutral-100 hover:text-garmin-blue"
+                    className="p-1.5 text-neutral-600 hover:bg-neutral-100 hover:text-garmin-blue"
                     title="Edit banner"
                   >
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDeleteBanner(index)}
-                    className=" p-1.5 text-muted-foreground hover:bg-neutral-100 hover:text-garmin-error"
+                    className="p-1.5 text-muted-foreground hover:bg-neutral-100 hover:text-garmin-error"
                     title="Delete banner"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -721,14 +721,14 @@ export default function AdminHomepagePage() {
                       </button>
                       <button
                         onClick={() => handleOpenEditCarousel(cIndex)}
-                        className=" p-1 text-muted-foreground hover:bg-neutral-100 hover:text-black"
+                        className="p-1 text-muted-foreground hover:bg-neutral-100 hover:text-black"
                         title="Edit Carousel Settings"
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteCarousel(cIndex)}
-                        className=" p-1 text-muted-foreground hover:bg-neutral-100 hover:text-garmin-error"
+                        className="p-1 text-muted-foreground hover:bg-neutral-100 hover:text-garmin-error"
                         title="Delete Carousel"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -772,7 +772,7 @@ export default function AdminHomepagePage() {
                                 {prodItem.badge}
                               </span>
                             )}
-                            <span className="absolute bottom-1 right-1  bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
+                            <span className="absolute bottom-1 right-1 bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
                               {isProductType ? "800x800" : "1200x600"}
                             </span>
                           </div>
@@ -800,7 +800,7 @@ export default function AdminHomepagePage() {
                               </div>
                             ) : (
                               <div className="mt-2 flex items-center gap-1.5">
-                                <span className=" bg-neutral-200 px-2 py-0.5 text-xs font-bold text-neutral-700">
+                                <span className="bg-neutral-200 px-2 py-0.5 text-xs font-bold text-neutral-700">
                                   CTA: {promoItem.ctaText || "SHOP"}
                                 </span>
                               </div>
@@ -813,14 +813,14 @@ export default function AdminHomepagePage() {
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => handleOpenEditCarouselItem(cIndex, iIndex)}
-                                className=" p-1 text-muted-foreground hover:text-black"
+                                className="p-1 text-muted-foreground hover:text-black"
                                 title="Edit item"
                               >
                                 <Edit2 className="h-3.5 w-3.5" />
                               </button>
                               <button
                                 onClick={() => handleDeleteCarouselItem(cIndex, iIndex)}
-                                className=" p-1 text-muted-foreground hover:text-garmin-error"
+                                className="p-1 text-muted-foreground hover:text-garmin-error"
                                 title="Delete item"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
@@ -867,9 +867,9 @@ export default function AdminHomepagePage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {config.promoTiles.map((tile, index) => (
                 <div key={tile.id || index} className="border border-border bg-white p-3.5 shadow-2xs">
-                  <div className="relative aspect-3/2 w-full overflow-hidden  bg-neutral-100 mb-2.5">
+                  <div className="relative aspect-3/2 w-full overflow-hidden bg-neutral-100 mb-2.5">
                     <Image src={tile.image} alt={tile.title} fill className="object-cover" unoptimized />
-                    <span className="absolute bottom-1 right-1  bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
+                    <span className="absolute bottom-1 right-1 bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
                       600x400
                     </span>
                   </div>
@@ -905,9 +905,9 @@ export default function AdminHomepagePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {config.storyTiles.map((tile, index) => (
                 <div key={tile.id || index} className="border border-border bg-white p-3.5 shadow-2xs">
-                  <div className="relative aspect-3/2 w-full overflow-hidden  bg-neutral-100 mb-2.5">
+                  <div className="relative aspect-3/2 w-full overflow-hidden bg-neutral-100 mb-2.5">
                     <Image src={tile.image} alt={tile.title} fill className="object-cover" unoptimized />
-                    <span className="absolute bottom-1 right-1  bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
+                    <span className="absolute bottom-1 right-1 bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
                       600x400
                     </span>
                   </div>
@@ -943,9 +943,9 @@ export default function AdminHomepagePage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {config.categoryTiles.map((tile, index) => (
                 <div key={tile.id || index} className="border border-border bg-white p-2.5 shadow-2xs">
-                  <div className="relative aspect-3/2 w-full overflow-hidden  bg-neutral-100 mb-2">
+                  <div className="relative aspect-3/2 w-full overflow-hidden bg-neutral-100 mb-2">
                     <Image src={tile.image} alt={tile.title} fill className="object-cover" unoptimized />
-                    <span className="absolute bottom-1 right-1  bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
+                    <span className="absolute bottom-1 right-1 bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
                       600x400
                     </span>
                   </div>
@@ -986,7 +986,7 @@ export default function AdminHomepagePage() {
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className=" bg-muted px-2 py-0.5 text-xs font-bold text-garmin-blue">
+                    <span className="bg-muted px-2 py-0.5 text-xs font-bold text-garmin-blue">
                       {key}
                     </span>
                     <span className="text-xs tabular-nums text-muted-foreground font-semibold">
@@ -1054,7 +1054,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingBanner.data, title: e.target.value },
                   })
                 }
-                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="e.g. HOLIDAY GIFT GUIDE"
               />
             </div>
@@ -1072,7 +1072,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingBanner.data, subtitle: e.target.value },
                   })
                 }
-                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="e.g. Where 'best gift ever' begins"
               />
             </div>
@@ -1095,7 +1095,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingBanner.data, image: e.target.value },
                   })
                 }
-                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="/homepage/featured/holiday.jpg"
               />
               <p className="mt-1 text-xs text-muted-foreground">
@@ -1116,7 +1116,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingBanner.data, href: e.target.value },
                   })
                 }
-                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="https://www.garmin.com/en-US/p/..."
               />
             </div>
@@ -1132,7 +1132,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingBanner.data, active: e.target.checked },
                   })
                 }
-                className="h-4 w-4  border-border text-garmin-blue focus:ring-garmin-blue"
+                className="h-4 w-4 border-border text-garmin-blue focus:ring-garmin-blue"
               />
               <label htmlFor="bannerActive" className="text-xs font-medium text-neutral-700">
                 Display this slide on storefront
@@ -1143,14 +1143,14 @@ export default function AdminHomepagePage() {
               <button
                 type="button"
                 onClick={() => setBannerModalOpen(false)}
-                className=" border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                className="border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveBannerModal}
-                className=" bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1]"
+                className="bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-garmin-blue-hover"
               >
                 Save Slide
               </button>
@@ -1180,7 +1180,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarousel.data, type: e.target.value as CarouselType },
                   })
                 }
-                className="mt-1 w-full  border border-border bg-white px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full border border-border bg-white px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
               >
                 <option value="product">Type 1: Product Carousel (Product, Price, NEW/SALE Tag)</option>
                 <option value="promo">Type 2: Promo Carousel (Photo, Hyperlink Button, Title)</option>
@@ -1205,7 +1205,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarousel.data, title: e.target.value },
                   })
                 }
-                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="e.g. Featured Smartwatches"
               />
             </div>
@@ -1223,7 +1223,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarousel.data, subtitle: e.target.value },
                   })
                 }
-                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="e.g. Top picks for training and health"
               />
             </div>
@@ -1243,7 +1243,7 @@ export default function AdminHomepagePage() {
                   });
                 }}
                 pattern="[a-z0-9][a-z0-9_\-]{0,63}"
-                className="mt-1 w-full  border border-border px-3 py-2 text-sm tabular-nums focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full border border-border px-3 py-2 text-sm tabular-nums focus:border-garmin-blue focus:outline-hidden"
                 placeholder="e.g. homepage-featured"
               />
               <p className="mt-1 text-xs text-muted-foreground">
@@ -1262,7 +1262,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarousel.data, active: e.target.checked },
                   })
                 }
-                className="h-4 w-4  border-border text-garmin-blue focus:ring-garmin-blue"
+                className="h-4 w-4 border-border text-garmin-blue focus:ring-garmin-blue"
               />
               <label htmlFor="carouselActive" className="text-xs font-medium text-neutral-700">
                 Section is active on storefront
@@ -1273,14 +1273,14 @@ export default function AdminHomepagePage() {
               <button
                 type="button"
                 onClick={() => setCarouselModalOpen(false)}
-                className=" border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                className="border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveCarouselModal}
-                className=" bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1]"
+                className="bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-garmin-blue-hover"
               >
                 Save Section
               </button>
@@ -1319,7 +1319,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarouselItem.data, title: e.target.value },
                   })
                 }
-                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder={editingCarouselItem.type === "product" ? "e.g. FĒNIX® 9" : "e.g. HOLIDAY GIFT GUIDE"}
               />
             </div>
@@ -1337,7 +1337,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarouselItem.data, description: e.target.value },
                   })
                 }
-                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="Brief summary or marketing callout..."
               />
             </div>
@@ -1360,7 +1360,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarouselItem.data, image: e.target.value },
                   })
                 }
-                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="/homepage/featured/fenix9.jpg"
               />
               <p className="mt-1 text-xs text-muted-foreground">
@@ -1386,7 +1386,7 @@ export default function AdminHomepagePage() {
                         data: { ...editingCarouselItem.data, price: e.target.value },
                       })
                     }
-                    className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden tabular-nums"
+                    className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden tabular-nums"
                     placeholder="KZT 349,995.00"
                   />
                 </div>
@@ -1403,7 +1403,7 @@ export default function AdminHomepagePage() {
                         data: { ...editingCarouselItem.data, badge: e.target.value || undefined },
                       })
                     }
-                    className="mt-1 w-full  border border-border bg-white px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                    className="mt-1 w-full border border-border bg-white px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                   >
                     <option value="">No Badge</option>
                     <option value="NEW">NEW (Blue badge)</option>
@@ -1429,7 +1429,7 @@ export default function AdminHomepagePage() {
                       data: { ...editingCarouselItem.data, ctaText: e.target.value },
                     })
                   }
-                  className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                  className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                   placeholder="e.g. SHOP NOW, LEARN MORE, WATCH VIDEO"
                 />
               </div>
@@ -1448,7 +1448,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarouselItem.data, href: e.target.value },
                   })
                 }
-                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="https://www.garmin.com/en-US/p/..."
               />
             </div>
@@ -1457,14 +1457,14 @@ export default function AdminHomepagePage() {
               <button
                 type="button"
                 onClick={() => setCarouselItemModalOpen(false)}
-                className=" border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                className="border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveCarouselItemModal}
-                className=" bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1]"
+                className="bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-garmin-blue-hover"
               >
                 Save Card
               </button>
@@ -1495,7 +1495,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingTile.data, title: e.target.value },
                   })
                 }
-                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
               />
             </div>
 
@@ -1517,7 +1517,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingTile.data, image: e.target.value },
                   })
                 }
-                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
               />
               <p className="mt-1 text-xs text-muted-foreground">
                 Recommended 600 × 400 px landscape image (3:2 ratio).
@@ -1537,7 +1537,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingTile.data, href: e.target.value },
                   })
                 }
-                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
               />
             </div>
 
@@ -1554,7 +1554,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingTile.data, cta: e.target.value },
                   })
                 }
-                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="SHOP or LEARN MORE"
               />
             </div>
@@ -1563,14 +1563,14 @@ export default function AdminHomepagePage() {
               <button
                 type="button"
                 onClick={() => setTileModalOpen(false)}
-                className=" border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                className="border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveTileModal}
-                className=" bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1]"
+                className="bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-garmin-blue-hover"
               >
                 Save Tile
               </button>
