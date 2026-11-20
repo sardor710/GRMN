@@ -15,21 +15,23 @@ interface AdminLayoutShellProps {
   };
 }
 
+// Task 5b.1: white page, black Roboto text, Garmin rules; the menu is a fixed 256px rail from 1024px and a
+// folding bar above the page below that.
 export function AdminLayoutShell({ children, user }: AdminLayoutShellProps) {
   const pathname = usePathname();
   const isLoginPage = pathname === "/admin/login";
 
   if (isLoginPage) {
-    return <div className="min-h-screen bg-neutral-100 text-black antialiased">{children}</div>;
+    return <div className="min-h-screen bg-white font-sans text-black antialiased">{children}</div>;
   }
-  if (!user) return <main className="min-h-screen bg-neutral-100 p-8 text-black">{children}</main>;
+  if (!user) return <main className="min-h-screen bg-white p-4 font-sans text-black md:p-8">{children}</main>;
 
   return (
-    <div className="min-h-screen bg-neutral-100 text-black flex flex-col antialiased">
+    <div className="flex min-h-screen flex-col bg-white font-sans text-black antialiased">
       <AdminSidebar permissions={user.permissions ?? []} />
-      <div className="pl-64 flex flex-col flex-1 min-h-screen">
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col lg:pl-64">
         <AdminHeader user={user} />
-        <main className="flex-1 p-6 md:p-8 bg-neutral-50 overflow-x-hidden">
+        <main className="flex-1 overflow-x-hidden px-4 py-6 md:px-8 md:py-8">
           {children}
         </main>
       </div>

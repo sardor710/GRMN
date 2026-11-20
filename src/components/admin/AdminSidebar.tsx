@@ -1,132 +1,106 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Users,
-  ShieldCheck,
-  Package,
-  Percent,
-  Image as ImageIcon,
-  BookOpen,
-  ShoppingBag,
-  Settings,
-  ExternalLink,
-  Globe,
-  LayoutTemplate,
-} from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { GarminLogo } from "@/components/icons";
+import { cn } from "@/lib/utils";
+
+// Task 5b.1: the admin menu follows garmin.com's side menu (SideFilterMenu.spec.md, MegaMenu.spec.md):
+// Roboto 14px, group headings 14px 500 with a 1px #D8D8D8 rule, links 14px / 34px pitch, hover underline,
+// the open item bold with Garmin's inset black bar. No icons or pseudo-badges. Below 1024px the menu folds
+// into one bar like Garmin's mobile "Filter and Sort" bar.
 
 interface NavItem {
   label: string;
   href: string;
-  icon: React.ElementType;
-  badge?: string | number;
 }
 
 const navSections: { title: string; items: NavItem[] }[] = [
+  { title: "Overview", items: [{ label: "Dashboard", href: "/admin" }] },
   {
-    title: "Analytics",
+    title: "Store",
     items: [
-      { label: "Executive Dashboard", href: "/admin", icon: LayoutDashboard },
+      { label: "Orders", href: "/admin/orders" },
+      { label: "Products", href: "/admin/products" },
+      { label: "Discounts", href: "/admin/discounts" },
     ],
   },
   {
-    title: "Store Management",
+    title: "Content",
     items: [
-      { label: "Products & Inventory", href: "/admin/products", icon: Package },
-      { label: "Customer Orders", href: "/admin/orders", icon: ShoppingBag },
-      { label: "Discounts & Promos", href: "/admin/discounts", icon: Percent },
+      { label: "Homepage", href: "/admin/homepage" },
+      { label: "Banners", href: "/admin/banners" },
+      { label: "Blog", href: "/admin/blogs" },
+      { label: "SEO", href: "/admin/seo" },
     ],
   },
   {
-    title: "Media & Content",
+    title: "People",
     items: [
-      { label: "Homepage Management", href: "/admin/homepage", icon: LayoutTemplate, badge: "NEW" },
-      { label: "Banners & Hero Rotators", href: "/admin/banners", icon: ImageIcon },
-      { label: "Editorial & Blogs", href: "/admin/blogs", icon: BookOpen },
-      { label: "SEO Optimization", href: "/admin/seo", icon: Globe, badge: "PRO" },
+      { label: "Clients", href: "/admin/clients" },
+      { label: "Staff", href: "/admin/admins" },
     ],
   },
-  {
-    title: "User Management",
-    items: [
-      { label: "Clients & Customers", href: "/admin/clients", icon: Users },
-      { label: "Admins & Permissions", href: "/admin/admins", icon: ShieldCheck },
-    ],
-  },
-  {
-    title: "System Config",
-    items: [
-      { label: "Store Settings", href: "/admin/settings", icon: Settings },
-    ],
-  },
+  { title: "System", items: [{ label: "Settings", href: "/admin/settings" }] },
 ];
 
-const navPermissions: Record<string,string> = {
+const navPermissions: Record<string, string> = {
   "/admin/products": "catalog:read", "/admin/discounts": "catalog:read",
   "/admin/orders": "orders:read", "/admin/clients": "customers:read",
   "/admin/homepage": "content:write", "/admin/banners": "content:write",
   "/admin/blogs": "content:write", "/admin/seo": "content:write",
   "/admin/admins": "staff:manage", "/admin/settings": "settings:write",
 };
-export function AdminSidebar({permissions}: {permissions: readonly string[]}) {
+
+export function AdminSidebar({ permissions }: { permissions: readonly string[] }) {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const sections = navSections
+    .map(section => ({ ...section, items: section.items.filter(item => !navPermissions[item.href] || permissions.includes(navPermissions[item.href])) }))
+    .filter(section => section.items.length > 0);
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-neutral-200 bg-white text-black font-sans">
-      {/* Top Brand Header */}
-      <div className="flex h-16 items-center justify-between border-b border-neutral-200 px-5 bg-white">
-        <Link href="/admin" className="flex items-center gap-2">
+    <aside className="z-40 flex w-full flex-col border-b border-garmin-control bg-white text-black lg:fixed lg:inset-y-0 lg:left-0 lg:w-64 lg:border-b-0 lg:border-r">
+      <div className="flex h-16 shrink-0 items-center justify-between border-b border-garmin-rule px-4">
+        <Link href="/admin" className="flex items-center gap-3">
           <GarminLogo className="h-4 w-auto text-black" />
-          <span className="font-heading tracking-widest text-[10px] font-bold text-[#007cc3] uppercase bg-[#007cc3]/10 px-1.5 py-0.5 border border-[#007cc3]/20">
-            ADMIN
-          </span>
+          <span className="text-sm font-medium tracking-[0.64px]">Admin</span>
         </Link>
-        <span className="text-[11px] font-mono text-neutral-400 uppercase tracking-wider">
-          v2.4
-        </span>
+        <button
+          type="button"
+          aria-expanded={open}
+          aria-controls="admin-menu"
+          onClick={() => setOpen(value => !value)}
+          className="flex items-center gap-2 py-3.5 text-base font-bold lg:hidden"
+        >
+          Menu
+          <svg aria-hidden="true" viewBox="0 0 18.2 11.2" className={cn("h-2 w-3 fill-current transition-transform", open && "rotate-180")}>
+            <path d="M9.1 11.2L0 2.2 2.2 0l6.9 7L16 0l2.2 2.2-9.1 9z" />
+          </svg>
+        </button>
       </div>
 
-      {/* Navigation menu */}
-      <div className="flex-1 overflow-y-auto px-2 py-4 space-y-5">
-        {navSections.map((section) => (
+      <nav id="admin-menu" aria-label="Admin" className={cn("flex-1 overflow-y-auto overscroll-contain px-4 pb-6 lg:block", open ? "block" : "hidden")}>
+        {sections.map(section => (
           <div key={section.title}>
-            <p className="px-3 pb-1 text-[11px] font-heading font-normal uppercase tracking-[0.08em] text-neutral-400">
-              {section.title}
-            </p>
-            <ul className="space-y-0.5">
-              {section.items.filter(item => !navPermissions[item.href] || permissions.includes(navPermissions[item.href])).map((item) => {
-                const Icon = item.icon;
-                const isActive =
-                  item.href === "/admin"
-                    ? pathname === "/admin"
-                    : pathname.startsWith(item.href);
-
+            <p className="mb-2 border-b border-garmin-rule pb-3.5 pt-6 text-sm font-medium tracking-[0.64px]">{section.title}</p>
+            <ul>
+              {section.items.map(item => {
+                const isActive = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
                 return (
                   <li key={item.href}>
                     <Link
                       href={item.href}
-                      className={`flex items-center justify-between px-3 py-2 text-[13px] transition-colors border-l-2 ${
-                        isActive
-                          ? "border-black bg-neutral-100 text-black font-semibold"
-                          : "border-transparent text-neutral-600 hover:bg-neutral-50 hover:text-black font-normal"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <Icon
-                          className={`h-4 w-4 shrink-0 ${
-                            isActive ? "text-black" : "text-neutral-500"
-                          }`}
-                        />
-                        <span>{item.label}</span>
-                      </div>
-                      {item.badge && (
-                        <span className="font-mono text-[9px] px-1.5 py-0.5 bg-[#007cc3]/10 text-[#007cc3] border border-[#007cc3]/20 font-bold">
-                          {item.badge}
-                        </span>
+                      aria-current={isActive ? "page" : undefined}
+                      onClick={() => setOpen(false)}
+                      className={cn(
+                        "block py-2 pl-3 text-sm leading-[17.5px] tracking-[0.64px] text-black hover:underline",
+                        isActive ? "font-bold shadow-[inset_3.2px_0_0_#000]" : "font-normal",
                       )}
+                    >
+                      {item.label}
                     </Link>
                   </li>
                 );
@@ -134,21 +108,19 @@ export function AdminSidebar({permissions}: {permissions: readonly string[]}) {
             </ul>
           </div>
         ))}
-      </div>
+      </nav>
 
-      {/* Bottom Storefront shortcut */}
-      <div className="border-t border-neutral-200 p-3 bg-neutral-50">
-        <Link
+      <div className={cn("border-t border-garmin-rule px-4 py-3 lg:block", open ? "block" : "hidden")}>
+        <a
           href="/"
           target="_blank"
-          className="group flex items-center justify-between border border-neutral-300 bg-white px-3 py-2 text-[12px] text-neutral-700 transition-colors hover:border-black hover:text-black"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-2 text-sm tracking-[0.64px] text-black hover:underline"
         >
-          <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-[#007cc3]" />
-            <span className="font-heading uppercase tracking-wider font-semibold">Live Storefront</span>
-          </div>
-          <ExternalLink className="h-3.5 w-3.5 text-neutral-400 group-hover:text-black" />
-        </Link>
+          View store
+          <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
+          <span className="sr-only">(opens in a new tab)</span>
+        </a>
       </div>
     </aside>
   );

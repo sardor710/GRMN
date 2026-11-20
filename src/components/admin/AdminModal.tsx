@@ -47,34 +47,35 @@ export function AdminModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div role="dialog" aria-modal="true" aria-label={title} className="fixed inset-0 z-50 flex items-center justify-center p-2 md:p-4">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-black/60 transition-opacity"
         onClick={onClose}
       />
 
       {/* Dialog container */}
       <div
-        className={`relative z-10 w-full ${maxWidthClasses[maxWidth]} max-h-[90vh] flex flex-col border border-neutral-300 bg-white shadow-2xl overflow-hidden font-sans rounded-none`}
+        className={`relative z-10 w-full ${maxWidthClasses[maxWidth]} max-h-[90vh] flex flex-col border border-garmin-rule bg-white shadow-garmin-raised overflow-hidden font-sans rounded-none`}
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4 bg-white">
+        <div className="flex items-center justify-between gap-4 border-b border-garmin-rule px-4 py-4 md:px-6 bg-white">
           <div>
-            <h3 className="g-heading uppercase tracking-wider text-[18px] text-black font-normal">{title}</h3>
-            {subtitle && <p className="text-[12px] text-neutral-500 mt-0.5">{subtitle}</p>}
+            <h2 className="g-heading g-h4 text-black">{title}</h2>
+            {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-black rounded-none"
+            aria-label="Close"
+            className="p-1.5 text-black transition-colors hover:bg-muted"
           >
-            <X className="h-5 w-5" />
+            <X aria-hidden="true" className="h-5 w-5" />
           </button>
         </div>
 
         {/* Modal Body */}
-        <div className="flex-1 overflow-y-auto p-6 bg-white text-black">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-white text-black">
           {children}
         </div>
       </div>
