@@ -2,78 +2,49 @@
 
 import type { ProductVariant } from "@/lib/cms/types";
 import type { ProductContentDTO, VariantContent } from "@/lib/catalog/variant-content";
-import { InTheBoxEditor, OverviewHtmlEditor, SpecsListEditor } from "./ContentBlockEditors";
+import {
+  BLOCK_KEYS,
+  copyProductBlock,
+  ownsBlock,
+  unchangedFromProduct,
+  withoutBlock,
+  type ContentBlock,
+} from "@/lib/cms/variant-content-edit";
+import { InTheBoxEditor, OverviewHtmlEditor, SpecsBlockEditor } from "./ContentBlockEditors";
 
-// Task 2.3: per-variant Specs, Overview and In the box (inherit with override, Task 2.1). Each block
-// is "Same as product" (no key in variant.content) or "Own" (key present, even when empty). Switching
-// to Own copies the product's current block as a starting point; switching back removes the key.
+// Task 2.3: per-variant Specs (incl. grouped specs), Overview and In the box (inherit with override,
+// Task 2.1). Each block is "Same as product" (no key in variant.content) or "Own" (key present, even
+// when empty). Own deep-copies the product's current block; Same as product removes the keys.
 
-type Block = "specs" | "overview" | "box";
-
-const BLOCKS: { id: Block; label: string }[] = [
+const BLOCKS: { id: ContentBlock; label: string }[] = [
   { id: "specs", label: "Specs" },
   { id: "overview", label: "Overview" },
   { id: "box", label: "In the box" },
 ];
 
-/** Whether the variant owns a block. Specs covers both the flat list and grouped specs. */
-export function ownsBlock(content: VariantContent | undefined, block: Block): boolean {
-  if (!content) return false;
-  if (block === "specs") return content.specs !== undefined || content.specGroups !== undefined;
-  if (block === "overview") return content.overviewHtml !== undefined;
-  return content.inTheBox !== undefined;
-}
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /** Short names of the blocks a variant owns (for the variants table). */
 export function ownedBlockLabels(content: VariantContent | undefined): string[] {
   return BLOCKS.filter((b) => ownsBlock(content, b.id)).map((b) => b.label);
 }
 
-const withoutBlock = (content: VariantContent, block: Block): VariantContent => {
-  const next = { ...content };
-  if (block === "specs") {
-    delete next.specs;
-    delete next.specGroups;
-  } else if (block === "overview") {
-    delete next.overviewHtml;
-  } else {
-    delete next.inTheBox;
-  }
-  return next;
-};
-
-/** The product's block copied into a new override. Grouped specs are flattened so the list editor can edit them. */
-const copyOfProduct = (product: ProductContentDTO, block: Block): VariantContent => {
-  if (block === "specs") {
-    const rows = product.specGroups?.length ? product.specGroups.flatMap((g) => g.items) : product.specs;
-    // An own, empty specGroups keeps the product's groups from replacing this variant's list.
-    return { specs: rows.map((r) => ({ label: r.label, value: r.value })), specGroups: [] };
-  }
-  if (block === "overview") return { overviewHtml: product.overviewHtml ?? "" };
-  return { inTheBox: [...product.inTheBox] };
-};
-
-/** True while an owned block still equals the product's (nothing would be lost by switching back). */
-const unchangedFromProduct = (product: ProductContentDTO, content: VariantContent, block: Block): boolean => {
-  const copy = copyOfProduct(product, block);
-  return (Object.keys(copy) as (keyof VariantContent)[]).every((key) => JSON.stringify(content[key]) === JSON.stringify(copy[key]));
-};
-
 interface VariantContentEditorProps {
   variant: ProductVariant;
   product: ProductContentDTO;
-  /** `undefined` when the variant inherits every block. */
-  onChange: (content: VariantContent | undefined) => void;
+  /** `content` is `undefined` when the variant inherits every block; `removed` lists keys switched back to Same as product. */
+  onChange: (content: VariantContent | undefined, removed?: (keyof VariantContent)[]) => void;
 }
 
 export function VariantContentEditor({ variant, product, onChange }: VariantContentEditorProps) {
   const content = variant.content ?? {};
-  const emit = (next: VariantContent) => onChange(Object.keys(next).length ? next : undefined);
+  const emit = (next: VariantContent, removed?: (keyof VariantContent)[]) =>
+    onChange(Object.keys(next).length ? next : undefined, removed);
 
-  const setOwn = (block: Block, own: boolean) => {
+  const setOwn = (block: ContentBlock, own: boolean) => {
     if (own === ownsBlock(content, block)) return;
     if (own) {
-      emit({ ...content, ...copyOfProduct(product, block) });
+      emit({ ...content, ...copyProductBlock(product, block) });
       return;
     }
     if (
@@ -82,16 +53,18 @@ export function VariantContentEditor({ variant, product, onChange }: VariantCont
     ) {
       return;
     }
-    emit(withoutBlock(content, block));
+    emit(withoutBlock(content, block), BLOCK_KEYS[block]);
   };
 
-  const inheritedSummary = (block: Block): string => {
+  const inheritedSummary = (block: ContentBlock): string => {
     if (block === "specs") {
-      const rows = product.specGroups?.length ? product.specGroups.reduce((n, g) => n + g.items.length, 0) : product.specs.length;
-      return `Uses the product's specs (${rows} rows).`;
+      const groups = product.specGroups ?? [];
+      return groups.length
+        ? `Uses the product's specs (${plural(groups.length, "section")}, ${plural(groups.reduce((n, g) => n + g.items.length, 0), "row")}).`
+        : `Uses the product's specs (${plural(product.specs.length, "row")}).`;
     }
     if (block === "overview") return product.overviewHtml ? "Uses the product's overview." : "The product has no overview.";
-    return `Uses the product's list (${product.inTheBox.length} items).`;
+    return `Uses the product's list (${plural(product.inTheBox.length, "item")}).`;
   };
 
   return (
@@ -129,30 +102,12 @@ export function VariantContentEditor({ variant, product, onChange }: VariantCont
             {!own && <p className="text-[12px] text-neutral-500">{inheritedSummary(block.id)}</p>}
 
             {own && block.id === "specs" && (
-              <div className="space-y-3">
-                {(content.specGroups?.length ?? 0) > 0 && (
-                  <div className="flex flex-wrap items-center justify-between gap-2 border border-sky-200 bg-sky-50 px-3 py-2 text-[12px] text-sky-900">
-                    <span>
-                      This variant has {content.specGroups?.length} grouped spec sections. Shoppers see them instead of the list
-                      below.
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        emit({ ...content, specs: (content.specGroups ?? []).flatMap((g) => g.items), specGroups: [] })
-                      }
-                      className="font-semibold underline"
-                    >
-                      Use the flat list instead
-                    </button>
-                  </div>
-                )}
-                <SpecsListEditor
-                  specs={content.specs ?? []}
-                  onChange={(specs) => emit({ ...content, specs, specGroups: content.specGroups ?? [] })}
-                  hint={`Specs shown for ${variant.title}.`}
-                />
-              </div>
+              <SpecsBlockEditor
+                specs={content.specs ?? []}
+                specGroups={content.specGroups ?? []}
+                onChange={(next) => emit({ ...content, ...next })}
+                hint={`Specs shown for ${variant.title}.`}
+              />
             )}
 
             {own && block.id === "overview" && (

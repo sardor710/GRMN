@@ -52,7 +52,7 @@ import {
   ProductImagesEditor,
   ProductPreviewModal,
   ProductTranslationPanel,
-  SpecsListEditor,
+  SpecsBlockEditor,
   VariantsTable,
   formatKzt,
   newId,
@@ -62,6 +62,7 @@ import {
 import { LocaleTabs, type ContentLocale } from "@/components/admin/LocaleTabs";
 import { translationStatus } from "@/lib/cms/translation-input";
 import { PRODUCT_SPEC } from "@/i18n/translate-record";
+import { dropVariantTranslation } from "@/lib/cms/variant-content-edit";
 
 /** RU/KK tab is "complete" once the product title and description are translated (storefront indexing rule). */
 const PRODUCT_REQUIRED_FIELDS = ["name", "description"] as const;
@@ -1333,6 +1334,9 @@ export default function AdminProductsPage() {
                         }
                       : undefined
                   }
+                  onContentRemoved={(variantId, keys) =>
+                    setFormData((prev) => ({ ...prev, translations: dropVariantTranslation(prev.translations, variantId, keys) }))
+                  }
                 />
               </section>
             </div>
@@ -1341,29 +1345,10 @@ export default function AdminProductsPage() {
           {/* TAB 4: Tech Specs Key-Value Builder */}
           {activeTab === "specs" && (
             <div className="space-y-4">
-              {formData.specGroups.length > 0 && (
-                <div className="flex flex-wrap items-center justify-between gap-2 border border-sky-200 bg-sky-50 px-3 py-2 text-[12px] text-sky-900">
-                  <span>
-                    {formData.specGroups.length} grouped spec sections (
-                    {formData.specGroups.reduce((n, g) => n + g.items.length, 0)} rows) were imported. The flat list below
-                    is rebuilt from them on save, so edits here are replaced.
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (window.confirm("Drop the grouped spec sections and keep only the flat list below?")) {
-                        setFormData((prev) => ({ ...prev, specs: prev.specGroups.flatMap((g) => g.items), specGroups: [] }));
-                      }
-                    }}
-                    className="font-semibold underline"
-                  >
-                    Use the flat list instead
-                  </button>
-                </div>
-              )}
-              <SpecsListEditor
+              <SpecsBlockEditor
                 specs={formData.specs}
-                onChange={(specs) => setFormData((prev) => ({ ...prev, specs }))}
+                specGroups={formData.specGroups}
+                onChange={(next) => setFormData((prev) => ({ ...prev, ...next }))}
                 hint="Define technical attributes (lens, bezel, battery, water rating, sensors)."
               />
             </div>

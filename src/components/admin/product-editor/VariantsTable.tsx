@@ -4,7 +4,7 @@ import { Fragment, useMemo, useState } from "react";
 import { AlertTriangle, Images, RefreshCw, Star } from "lucide-react";
 import type { ProductImage, ProductOption, ProductVariant, VariantStatus } from "@/lib/cms/types";
 import { generateVariants } from "@/lib/cms/product-variants";
-import type { ProductContentDTO } from "@/lib/catalog/variant-content";
+import type { ProductContentDTO, VariantContent } from "@/lib/catalog/variant-content";
 import { formatKzt, formatUsd, labelClass, primaryButtonClass, secondaryButtonClass, smallInputClass } from "./shared";
 import { VariantContentEditor, ownedBlockLabels } from "./VariantContentEditor";
 
@@ -21,6 +21,8 @@ interface VariantsTableProps {
    * Own / Same as product switch per block. Omitted in legacy JSON mode, which cannot store overrides.
    */
   productContent?: ProductContentDTO;
+  /** A variant switched blocks back to Same as product: its translated copies of those keys should go too. */
+  onContentRemoved?: (variantId: string, keys: (keyof VariantContent)[]) => void;
 }
 
 const STATUSES: VariantStatus[] = ["active", "draft", "archived"];
@@ -47,14 +49,18 @@ function variantsOutOfDate(options: ProductOption[], variants: ProductVariant[])
   return usable.some((o) => o.values.some((val) => !used.has(val.id)));
 }
 
-export function VariantsTable({ options, variants, images, base, conflicts, onChange, productContent }: VariantsTableProps) {
+export function VariantsTable({ options, variants, images, base, conflicts, onChange, productContent, onContentRemoved }: VariantsTableProps) {
   const [notice, setNotice] = useState<{ tone: "error" | "warning" | "info"; text: string } | null>(null);
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [bulk, setBulk] = useState({ price: "", originalPrice: "", stock: "", status: "" });
   const [openImagesFor, setOpenImagesFor] = useState<string | null>(null);
   const [openContentFor, setOpenContentFor] = useState<string | null>(null);
-  // Per-variant content only means something when shoppers can pick between two or more variants.
-  const contentColumn = Boolean(productContent) && variants.length > 1;
+  // Per-variant content only means something when shoppers can pick between two or more variants, but an
+  // override saved earlier (e.g. before a variant was removed) stays visible so it can be reset; an open
+  // panel stays open after that reset until it is closed.
+  const contentColumn =
+    Boolean(productContent) &&
+    (variants.length > 1 || variants.some((v) => v.content !== undefined || v.id === openContentFor));
   const columnCount = contentColumn ? 9 : 8;
   const contentVariant = contentColumn ? variants.find((v) => v.id === openContentFor) : undefined;
 
@@ -288,14 +294,14 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                   <th className="px-2 py-2 font-semibold" scope="col">
                     Status
                   </th>
-                  <th className="px-2 py-2 font-semibold" scope="col">
-                    Photos
-                  </th>
                   {contentColumn && (
                     <th className="px-2 py-2 font-semibold" scope="col">
                       Content
                     </th>
                   )}
+                  <th className="px-2 py-2 font-semibold" scope="col">
+                    Photos
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100">
@@ -406,6 +412,21 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                             ))}
                           </select>
                         </td>
+                        {contentColumn && (
+                          <td className="w-36 px-2 py-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setOpenContentFor(contentOpen ? null : v.id)}
+                              aria-expanded={contentOpen}
+                              aria-label={`Content for ${v.title}`}
+                              className={`flex min-h-7 items-center border px-1.5 py-0.5 text-left text-[11px] ${
+                                contentOpen ? "border-black bg-neutral-100" : "border-neutral-300 bg-white hover:border-black"
+                              }`}
+                            >
+                              {owned.length ? `Own: ${owned.join(", ")}` : "Same as product"}
+                            </button>
+                          </td>
+                        )}
                         <td className="w-24 px-2 py-1.5">
                           <button
                             type="button"
@@ -424,21 +445,6 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                             {v.imageIds.length}
                           </button>
                         </td>
-                        {contentColumn && (
-                          <td className="w-36 px-2 py-1.5">
-                            <button
-                              type="button"
-                              onClick={() => setOpenContentFor(contentOpen ? null : v.id)}
-                              aria-expanded={contentOpen}
-                              aria-label={`Content for ${v.title}`}
-                              className={`flex min-h-7 items-center border px-1.5 py-0.5 text-left text-[11px] ${
-                                contentOpen ? "border-black bg-neutral-100" : "border-neutral-300 bg-white hover:border-black"
-                              }`}
-                            >
-                              {owned.length ? `Own: ${owned.join(", ")}` : "Same as product"}
-                            </button>
-                          </td>
-                        )}
                       </tr>
                       {imagesOpen && (
                         <tr className="bg-neutral-50">
@@ -521,7 +527,10 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                 key={contentVariant.id}
                 variant={contentVariant}
                 product={productContent}
-                onChange={(content) => patch(contentVariant.id, { content })}
+                onChange={(content, removed) => {
+                  patch(contentVariant.id, { content });
+                  if (removed?.length) onContentRemoved?.(contentVariant.id, removed);
+                }}
               />
             </section>
           )}
@@ -529,7 +538,7 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
             Default variant price {formatKzt(variants.find((v) => v.isDefault)?.price)} is mirrored to the product price and
             stock on save. Archived variants are hidden from shoppers.
           </p>
-          {productContent && variants.length === 1 && (
+          {productContent && !contentColumn && variants.length === 1 && (
             <p className="text-[11px] text-neutral-500">
               With one variant, Specs, Overview and In the box come from the product tabs. Per-variant content needs two or
               more variants.
