@@ -15,6 +15,9 @@ import { requestURL } from "../auth/request-url.ts";
 
 // Task 18B routes, PostgreSQL mode only (permissions are checked in each service):
 // /api/admin/reports   GET ?view=summary&from=&to=&timeZone=  (orders:read)
+//                      GET ?view=status_counts&from=&to=&timeZone=             (orders:read, Task 4.1)
+//                      GET ?view=recent_orders&from=&to=&timeZone=[&limit=10]  (orders:read, Task 4.1)
+//                      GET ?view=best_sellers&from=&to=&timeZone=[&limit=8]    (orders:read, Task 4.1)
 //                      GET ?view=low_stock[&limit=]           (catalog:read)
 // /api/admin/exports   GET (own jobs) | GET ?id=<uuid> (download CSV) | POST { kind, ... }   (exports:create)
 // /api/admin/settings  GET | PUT { expectedVersion, ...fields } | POST { action: "set_exchange_rate", ... } (settings:write)
@@ -48,6 +51,12 @@ export async function handleReportsRequest(request: Request): Promise<Response> 
     if (request.method !== "GET") throw new AuthFailure("METHOD_NOT_ALLOWED", 405, "Method not allowed");
     const { view, ...rest } = params;
     if (view === "summary") return adminJSON(await reports.summary(request.headers, rest));
+    if (view === "status_counts") return adminJSON(await reports.statusCounts(request.headers, rest));
+    if (view === "recent_orders" || view === "best_sellers") {
+      // A malformed limit is passed on as text, so the service authorizes first and then refuses it (400).
+      const { limit: raw, ...range } = rest, input = raw === undefined ? range : { ...range, limit: /^\d{1,3}$/.test(raw) ? Number(raw) : raw };
+      return adminJSON(view === "recent_orders" ? await reports.recentOrders(request.headers, input) : await reports.bestSellers(request.headers, input));
+    }
     if (view === "low_stock") { const { limit: raw, ...extra } = rest; if (Object.keys(extra).length) bad(); return adminJSON(await reports.lowStock(request.headers, raw === undefined ? {} : { limit: limit(raw) })); }
     return bad();
   } catch (error) { return authErrorResponse(error); }

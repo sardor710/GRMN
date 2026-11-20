@@ -289,7 +289,7 @@ test("review I5/I6: revenue is split by payment environment, and a refund keeps 
   const before=await reports.summary(support,range);
   const sandbox=before.totals.find(t=>t.currency==="KZT"&&t.environment==="sandbox");
   assert.ok(sandbox,"sandbox money is reported under its own environment");
-  assert.ok(before.totals.every(t=>["sandbox","live"].includes(t.environment)));
+  assert.ok(before.totals.every(t=>["sandbox","live","demo"].includes(t.environment)));
   // Touching updated_at later must not move the refund out of the day it succeeded.
   const client=await database.pool.connect();
   try{await client.query("BEGIN");await client.query("SET LOCAL session_replication_role=replica");await client.query("UPDATE refunds SET updated_at='2020-01-01T00:00:00Z' WHERE id=$1",[refund.id]);await client.query("COMMIT");}catch(error){await client.query("ROLLBACK");throw error;}finally{client.release();}
@@ -333,4 +333,194 @@ test("the order export has a payment_mode column that marks demo orders",async()
   const liveNumber=(await q("SELECT order_number FROM orders WHERE id=$1",[live.orderId])).rows[0].order_number;
   assert.equal(modeOf(demo.orderNumber),"demo");
   assert.equal(modeOf(liveNumber),"live");
+});
+
+// Task 4.1: the dashboard reports demo money as its own environment (never summed with real money),
+// counts every order by status, lists recent orders and splits best-sellers into real and demo.
+async function demoOrder(lines){
+  await load();
+  const buyer=await owner(),quote=await quoted(buyer.headers,lines);
+  const placed=await carts.checkout(buyer.headers,key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"});
+  assert.equal(placed.paymentMode,"demo");
+  return placed;
+}
+const zero={capturedMinor:"0",refundedMinor:"0",netMinor:"0",ordersPaid:0};
+const totalOf=(summary,environment)=>summary.totals.find(t=>t.currency==="KZT"&&t.environment===environment)??zero;
+const delta=(after,before,field)=>BigInt(after[field])-BigInt(before[field]);
+async function forceCancelled(orderId){
+  const client=await database.pool.connect();
+  try{await client.query("BEGIN");await client.query("SET LOCAL session_replication_role=replica");await client.query("UPDATE orders SET order_status='cancelled' WHERE id=$1",[orderId]);await client.query("COMMIT");}catch(error){await client.query("ROLLBACK");throw error;}finally{client.release();}
+}
+
+test("demo captures are reported in a separate demo total, never in live",async()=>{
+  await services();
+  const range={from:today(),to:today(),timeZone:"Asia/Almaty"};
+  const before=await reports.summary(support,range);
+  const p=await product({stock:20});
+  const placed=await demoOrder([[p.variant,2]]);
+  const total=(await orderRow(placed.orderId)).total;
+  const demoApi=aftersales.createAfterSalesService({pool:database.pool,authorize,providers:payments.createPaymentProviders([payments.createDemoProvider(),provider])});
+  const item=(await q("SELECT id FROM order_items WHERE order_id=$1",[placed.orderId])).rows[0].id;
+  const {refund}=await demoApi.refund(refunder,{orderId:placed.orderId,idempotencyKey:key(),reason:"Demo return",items:[{orderItemId:item,quantity:1}]});
+  assert.equal(refund.status,"succeeded");
+  const after=await reports.summary(support,range);
+  const demoBefore=totalOf(before,"demo"),demoAfter=totalOf(after,"demo");
+  assert.equal(delta(demoAfter,demoBefore,"capturedMinor"),BigInt(total));
+  assert.equal(delta(demoAfter,demoBefore,"refundedMinor"),BigInt(refund.amountMinor));
+  assert.equal(BigInt(demoAfter.netMinor),BigInt(demoAfter.capturedMinor)-BigInt(demoAfter.refundedMinor));
+  assert.equal(demoAfter.ordersPaid-demoBefore.ordersPaid,1);
+  // Demo money never lands in a real environment's total.
+  for(const environment of ["live","sandbox"])for(const field of ["capturedMinor","refundedMinor"])assert.equal(delta(totalOf(after,environment),totalOf(before,environment),field),0n,environment+" "+field);
+  assert.ok(after.totals.every(t=>["sandbox","live","demo"].includes(t.environment)));
+  assert.equal(new Set(after.totals.map(t=>t.environment+"|"+t.currency)).size,after.totals.length,"one row per environment and currency");
+  assert.ok(after.days.some(d=>d.date===today()&&d.environment==="demo"),"demo day row");
+});
+
+test("status counts include unpaid and demo orders",async()=>{
+  await services();
+  const range={from:today(),to:today(),timeZone:"Asia/Almaty"};
+  const before=await reports.statusCounts(support,range);
+  const p=await product({stock:20});
+  const unpaid=await placedOrder([[p.variant,1]]);
+  await demoOrder([[p.variant,1]]);
+  assert.equal((await orderRow(unpaid.orderId)).payment_status,"unpaid");
+  const after=await reports.statusCounts(support,range);
+  const n=(record,name)=>record[name]??0;
+  assert.equal(n(after.orderStatus,"pending_payment")-n(before.orderStatus,"pending_payment"),1);
+  assert.equal(n(after.orderStatus,"confirmed")-n(before.orderStatus,"confirmed"),1);
+  assert.equal(n(after.fulfillmentStatus,"unfulfilled")-n(before.fulfillmentStatus,"unfulfilled"),2);
+  assert.equal(after.demo-before.demo,1);
+  assert.equal(after.real-before.real,1);
+  // Task 4.2: the paid demo order awaits shipment (demo); the unpaid real order does not.
+  assert.equal(after.awaitingShipment.demo-before.awaitingShipment.demo,1);
+  assert.equal(after.awaitingShipment.real-before.awaitingShipment.real,0);
+  const sum=record=>Object.values(record).reduce((a,b)=>a+b,0);
+  assert.equal(sum(after.orderStatus),after.demo+after.real);
+  assert.equal(sum(after.fulfillmentStatus),after.demo+after.real);
+  await rejectsWith(reports.statusCounts(support,{from:"2026-01-01",to:"2026-12-31",timeZone:"Asia/Almaty"}),400,"INVALID_INPUT");
+  await rejectsWith(reports.statusCounts(support,{from:today(),to:today(),timeZone:"Mars/Olympus"}),400,"INVALID_INPUT");
+  await rejectsWith(reports.statusCounts(support,{...range,extra:"1"}),400,"INVALID_INPUT");
+  await rejectsWith(reports.statusCounts(new Headers({"x-test-role":"none"}),range),403,"FORBIDDEN");
+});
+
+test("recent orders are newest first and mark demo orders",async()=>{
+  await services();
+  const range={from:today(),to:today(),timeZone:"Asia/Almaty"};
+  const p=await product({stock:20});
+  const live=await placedOrder([[p.variant,1]]);
+  const demo=await demoOrder([[p.variant,1]]);
+  const {items}=await reports.recentOrders(support,{...range,limit:10});
+  assert.ok(items.length<=10);
+  assert.deepEqual(items.slice(0,2).map(i=>i.id),[demo.orderId,live.orderId]);
+  const [d,l]=items;
+  assert.equal(d.demo,true);assert.equal(l.demo,false);
+  assert.equal(d.number,demo.orderNumber);
+  assert.equal(d.totalMinor,(await orderRow(demo.orderId)).total);
+  assert.equal(d.currency,"KZT");assert.equal(d.paymentStatus,"paid");assert.equal(l.paymentStatus,"unpaid");
+  assert.equal(d.fulfillmentStatus,"unfulfilled");
+  assert.ok(!Number.isNaN(Date.parse(d.createdAt)));
+  assert.ok(items.every((item,i,all)=>i===0||Date.parse(all[i-1].createdAt)>=Date.parse(item.createdAt)));
+  assert.equal((await reports.recentOrders(support,{...range,limit:1})).items.length,1);
+  assert.ok((await reports.recentOrders(support,range)).items.length<=10,"default limit 10");
+  await rejectsWith(reports.recentOrders(support,{...range,limit:0}),400,"INVALID_INPUT");
+  await rejectsWith(reports.recentOrders(support,{...range,limit:51}),400,"INVALID_INPUT");
+  await rejectsWith(reports.recentOrders(new Headers({"x-test-role":"none"}),range),403,"FORBIDDEN");
+});
+
+test("best sellers split real and demo and exclude cancelled",async()=>{
+  await services();
+  const range={from:today(),to:today(),timeZone:"Asia/Almaty"};
+  const p=await product({stock:30});
+  const live=await paidOrder([[p.variant,2]]);
+  const demo=await demoOrder([[p.variant,1]]);
+  await placedOrder([[p.variant,5]]);
+  const cancelledLive=await paidOrder([[p.variant,3]]);
+  const cancelledDemo=await demoOrder([[p.variant,4]]);
+  await forceCancelled(cancelledLive.orderId);await forceCancelled(cancelledDemo.orderId);
+  const result=await reports.bestSellers(support,{...range,limit:50});
+  const itemTotal=async id=>(await q("SELECT total_minor::text AS t FROM order_items WHERE order_id=$1",[id])).rows[0].t;
+  const sku=(await q("SELECT sku FROM product_variants WHERE id=$1",[p.variant])).rows[0].sku;
+  const real=result.real.find(i=>i.variantId===p.variant),demoRow=result.demo.find(i=>i.variantId===p.variant);
+  assert.ok(real&&demoRow,"listed in both");
+  assert.equal(real.units,2);assert.equal(real.revenueMinor,await itemTotal(live.orderId));
+  assert.equal(demoRow.units,1);assert.equal(demoRow.revenueMinor,await itemTotal(demo.orderId));
+  assert.equal(real.sku,sku);assert.ok(real.name.length>0);
+  assert.equal(real.currency,"KZT");assert.equal(demoRow.currency,"KZT");
+  for(const list of [result.real,result.demo])assert.ok(list.every((item,i,all)=>i===0||all[i-1].units>=item.units),"sorted by units");
+  for(const list of [result.real,result.demo])assert.equal(new Set(list.map(i=>i.variantId+"|"+i.currency)).size,list.length,"one row per variant and currency");
+  assert.ok((await reports.bestSellers(support,range)).real.length<=8,"default limit 8");
+  await rejectsWith(reports.bestSellers(support,{...range,limit:51}),400,"INVALID_INPUT");
+  await rejectsWith(reports.bestSellers(support,{from:today(),to:today(),timeZone:"Mars/Olympus"}),400,"INVALID_INPUT");
+  await rejectsWith(reports.bestSellers(new Headers({"x-test-role":"none"}),range),403,"FORBIDDEN");
+});
+
+// Task 4.1 fix round 1: best-sellers are net of refunds. Refunds record item lines (refund_items kind
+// 'item' with a quantity and amount), so refunded units and line amounts come off exactly.
+test("best sellers are net of refunds: half refunded shows half, fully refunded is dropped",async()=>{
+  await services();
+  const range={from:today(),to:today(),timeZone:"Asia/Almaty"};
+  const half=await product({stock:10}),whole=await product({stock:10});
+  const halfOrder=await paidOrder([[half.variant,2]]),wholeOrder=await paidOrder([[whole.variant,2]]);
+  const lineTotal=async id=>BigInt((await q("SELECT total_minor::text AS t FROM order_items WHERE order_id=$1",[id])).rows[0].t);
+  const fullHalf=await lineTotal(halfOrder.orderId);
+  const before=await reports.bestSellers(support,{...range,limit:50});
+  assert.equal(before.real.find(i=>i.variantId===half.variant)?.units,2);
+  assert.equal(before.real.find(i=>i.variantId===whole.variant)?.units,2);
+  const refundLines=async(order,variant,quantity)=>{
+    const {refund}=await api.refund(refunder,{orderId:order.orderId,idempotencyKey:key(),reason:"Return",items:[{orderItemId:order.item[variant],quantity}]});
+    provider.refundScript.length=0;
+    await aftersales.submitRefund(database.pool,providers,refund.id);
+    assert.equal((await q("SELECT status FROM refunds WHERE id=$1",[refund.id])).rows[0].status,"succeeded");
+  };
+  await refundLines(halfOrder,half.variant,1);
+  await refundLines(wholeOrder,whole.variant,2);
+  assert.notEqual((await orderRow(wholeOrder.orderId)).payment_status,"paid");
+  const after=await reports.bestSellers(support,{...range,limit:50});
+  const halfRow=after.real.find(i=>i.variantId===half.variant);
+  assert.ok(halfRow,"a partly refunded variant stays listed");
+  assert.equal(halfRow.units,1);
+  assert.equal(BigInt(halfRow.revenueMinor),fullHalf/2n,"half the revenue");
+  assert.equal(after.real.find(i=>i.variantId===whole.variant),undefined,"a fully refunded variant is dropped");
+  assert.equal(after.demo.find(i=>i.variantId===half.variant||i.variantId===whole.variant),undefined);
+});
+
+// Task 4.1 fix round 1: the HTTP route for the new views, through the real staff session and permission checks.
+test("report views over HTTP: unknown view, bad limit and extra params are 400; no session is 401",async()=>{
+  await services();
+  const names=["CMS_BACKEND","DATABASE_URL","DATABASE_POOL_MAX","AUTH_ENABLED","AUTH_SECRET","AUTH_BASE_URL","NODE_ENV","STAFF_MFA_REQUIRED"];
+  const saved=Object.fromEntries(names.map(name=>[name,process.env[name]]));
+  Object.assign(process.env,{CMS_BACKEND:"postgres",DATABASE_URL:temporary.url,DATABASE_POOL_MAX:"4",AUTH_ENABLED:"1",AUTH_SECRET:secret,AUTH_BASE_URL:baseURL,NODE_ENV:"test",STAFF_MFA_REQUIRED:"0"});
+  const {closeDatabase}=await import("../../src/server/db/client.ts");
+  try{
+    const {handleReportsRequest}=await import("../../src/server/reports/runtime.ts");
+    // This file does not bootstrap staff, so give a support role orders:read here (idempotently).
+    const role="support";
+    await q("INSERT INTO permissions(id,code) VALUES($1,'orders:read') ON CONFLICT(code) DO NOTHING",[randomUUID()]);
+    await q("INSERT INTO roles(id,code) VALUES($1,$2) ON CONFLICT(code) DO NOTHING",[randomUUID(),role]);
+    await q("INSERT INTO role_permissions(role_id,permission_id) SELECT r.id,p.id FROM roles r,permissions p WHERE r.code=$1 AND p.code='orders:read' ON CONFLICT DO NOTHING",[role]);
+    const staff=randomUUID();
+    await q("INSERT INTO users(id,name,email) VALUES($1,'Synthetic report reader',$2)",[staff,`report-reader-${staff.slice(0,8)}@example.invalid`]);
+    await q("INSERT INTO user_roles(user_id,role_id) SELECT $1,id FROM roles WHERE code=$2",[staff,role]);
+    const cookie=await sessionCookie(staff),buyer=await owner();
+    const range=`from=${today()}&to=${today()}&timeZone=Asia%2FAlmaty`;
+    const get=async(search,headers={cookie})=>{const response=await handleReportsRequest(new Request(`${baseURL}/api/admin/reports?${search}`,{headers}));return{status:response.status,body:await response.json()};};
+    const ok=await get(`view=status_counts&${range}`);
+    assert.equal(ok.status,200,JSON.stringify(ok.body));assert.equal(typeof ok.body.real,"number");
+    const recent=await get(`view=recent_orders&${range}&limit=2`);
+    assert.equal(recent.status,200,JSON.stringify(recent.body));assert.ok(recent.body.items.length<=2);
+    const best=await get(`view=best_sellers&${range}`);
+    assert.equal(best.status,200,JSON.stringify(best.body));assert.ok(Array.isArray(best.body.real)&&Array.isArray(best.body.demo));
+    for(const search of [`view=nope&${range}`,`view=recent_orders&${range}&limit=abc`,`view=best_sellers&${range}&limit=0`,`view=best_sellers&${range}&limit=51`,`view=status_counts&${range}&limit=5`,`view=status_counts&${range}&extra=1`,`view=recent_orders&from=${today()}&to=${today()}`]){
+      const result=await get(search);
+      assert.equal(result.status,400,search+" "+JSON.stringify(result.body));assert.equal(result.body.error.code,"INVALID_INPUT");
+    }
+    // Authorization runs before limit validation: no session is 401 and a non-staff session is 403, even with a bad limit.
+    for(const search of [`view=status_counts&${range}`,`view=recent_orders&${range}&limit=abc`,`view=best_sellers&${range}&limit=999`]){
+      assert.equal((await get(search,{})).status,401,search);
+      assert.equal((await get(search,{cookie:buyer.headers.get("cookie")})).status,403,search);
+    }
+  }finally{
+    await closeDatabase();
+    for(const name of names){if(saved[name]===undefined)delete process.env[name];else process.env[name]=saved[name];}
+  }
 });
