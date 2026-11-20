@@ -43,7 +43,7 @@ async function order({ legacy = false, unit = "100", quantity = 2, attemptId = n
   const client = await handle.pool.connect();
   try {
     await client.query("BEGIN");
-    await client.query("INSERT INTO orders(id,contact_name,contact_phone,data_quality,subtotal_minor,discount_minor,shipping_minor,tax_minor,total_minor,placed_at,checkout_attempt_id) VALUES($1,'Синтетический покупатель',$2,$3,$4,0,0,0,$4,now(),$5)", [id, legacy ? null : "+77000000000", legacy ? "legacy_incomplete" : "complete", subtotal, attemptId]);
+    await client.query("INSERT INTO orders(id,contact_name,contact_phone,data_quality,subtotal_minor,discount_minor,shipping_minor,tax_minor,total_minor,placed_at,checkout_attempt_id,payment_mode) VALUES($1,'Синтетический покупатель',$2,$3,$4,0,0,0,$4,now(),$5,$6)", [id, legacy ? null : "+77000000000", legacy ? "legacy_incomplete" : "complete", subtotal, attemptId, legacy ? "legacy_unknown" : "demo"]);
     if (!legacy) {
       await client.query("INSERT INTO order_addresses(id,order_id,kind,recipient_name,phone,country_code,city,line1) VALUES($1,$2,'structured','Synthetic buyer','+77000000000','KZ','Алматы','Synthetic street')", [randomUUID(), id]);
       await client.query("INSERT INTO order_items(id,order_id,variant_id,product_id,product_key,sku,name,quantity,unit_price_minor,discount_minor,tax_minor,total_minor) VALUES($1,$2,$3,$4,'commerce-sentinel','Commerce-SKU','Қазақша товар',$5,$6,0,0,$7)", [item, id, variant, product, quantity, unit, subtotal]);
@@ -106,17 +106,17 @@ test("order snapshots seal, preserve exact bigint values, and survive catalog/ac
 });
 
 test("complete orders reject missing snapshots and inconsistent line totals; legacy facts stay explicit", async () => {
-  await rejects("INSERT INTO orders(id,contact_name,contact_phone,subtotal_minor,discount_minor,shipping_minor,tax_minor,total_minor,placed_at) VALUES($1,'Synthetic','+77000000000',100,0,0,0,100,now())", [randomUUID()]);
+  await rejects("INSERT INTO orders(id,contact_name,contact_phone,subtotal_minor,discount_minor,shipping_minor,tax_minor,total_minor,placed_at,payment_mode) VALUES($1,'Synthetic','+77000000000',100,0,0,0,100,now(),'demo')", [randomUUID()]);
   const legacy = await order({ legacy: true });
   assert.equal((await query("SELECT data_quality,contact_phone FROM orders WHERE id=$1", [legacy.id])).rows[0].contact_phone, null);
-  await rejects("INSERT INTO orders(id,order_number,contact_name,data_quality,currency,total_minor) VALUES($1,'legacy-usd','Historical','legacy_incomplete','USD',100)", [randomUUID()]);
+  await rejects("INSERT INTO orders(id,order_number,contact_name,data_quality,currency,total_minor,payment_mode) VALUES($1,'legacy-usd','Historical','legacy_incomplete','USD',100,'legacy_unknown')", [randomUUID()]);
   const saved = await order();
-  await rejects("INSERT INTO orders(id,order_number,contact_name,data_quality,total_minor) SELECT $1,order_number,'Duplicate','legacy_incomplete',0 FROM orders WHERE id=$2", [randomUUID(), saved.id], "23505");
+  await rejects("INSERT INTO orders(id,order_number,contact_name,data_quality,total_minor,payment_mode) SELECT $1,order_number,'Duplicate','legacy_incomplete',0,'legacy_unknown' FROM orders WHERE id=$2", [randomUUID(), saved.id], "23505");
   await query("UPDATE orders SET order_status='cancel_requested',version=version+1 WHERE id=$1", [saved.id]);
   const client = await handle.pool.connect(), mismatch = randomUUID();
   try {
     await client.query("BEGIN");
-    await client.query("INSERT INTO orders(id,contact_name,contact_phone,subtotal_minor,discount_minor,shipping_minor,tax_minor,total_minor,placed_at) VALUES($1,'Synthetic','+77000000000',100,0,0,0,100,now())", [mismatch]);
+    await client.query("INSERT INTO orders(id,contact_name,contact_phone,subtotal_minor,discount_minor,shipping_minor,tax_minor,total_minor,placed_at,payment_mode) VALUES($1,'Synthetic','+77000000000',100,0,0,0,100,now(),'demo')", [mismatch]);
     await client.query("INSERT INTO order_addresses(id,order_id,kind,recipient_name,phone,country_code,city,line1) VALUES($1,$2,'structured','Synthetic','+77000000000','KZ','Almaty','Synthetic street')", [randomUUID(), mismatch]);
     await client.query("INSERT INTO order_items(id,order_id,name,quantity,unit_price_minor,discount_minor,tax_minor,total_minor) VALUES($1,$2,'Mismatched sum',1,99,0,0,99)", [randomUUID(), mismatch]);
     await assert.rejects(client.query("COMMIT"), error => error.code === "23514");

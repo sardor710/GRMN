@@ -51,11 +51,16 @@ export function createCheckoutStorage(getStorage: () => Pick<Storage, "getItem" 
   };
 }
 
-interface PendingCheckout { command: CheckoutCommand; key: string }
+/**
+ * `orderId` is set only once this key has placed an order that is kept for a payment retry (Task 3.3).
+ * Such an order has already been shown on its receipt, so a reload never shows it again.
+ */
+interface PendingCheckout { command: CheckoutCommand; key: string; orderId?: string }
 function readPending(storage: CheckoutStorage): PendingCheckout | null {
   try {
     const saved = JSON.parse(storage.get(ATTEMPT_KEY) ?? "null") as Partial<PendingCheckout> | null;
-    return saved && typeof saved.key === "string" && saved.command && typeof saved.command.quoteId === "string" ? saved as PendingCheckout : null;
+    if (!saved || typeof saved.key !== "string" || !saved.command || typeof saved.command.quoteId !== "string") return null;
+    return { command: saved.command, key: saved.key, ...(typeof saved.orderId === "string" ? { orderId: saved.orderId } : {}) };
   } catch { return null; }
 }
 const sameCommand = (a: CheckoutCommand, b: CheckoutCommand) =>
@@ -81,19 +86,24 @@ export function forgetCheckoutKey(storage: CheckoutStorage): void { storage.remo
  */
 export const needsPaymentRetry = (result: Pick<CheckoutResultDTO, "paymentMode" | "status">) => result.paymentMode === "demo" && result.status === "pending_payment";
 
-/** Forgets the key unless the order still needs a payment retry (needsPaymentRetry). */
-export function settleCheckoutKey(storage: CheckoutStorage, result: Pick<CheckoutResultDTO, "paymentMode" | "status">): void {
-  if (!needsPaymentRetry(result)) forgetCheckoutKey(storage);
+/**
+ * Forgets the key unless the order still needs a payment retry (needsPaymentRetry). A kept key records
+ * the order it placed: the caller shows that order's receipt, so the order counts as shown from here on.
+ */
+export function settleCheckoutKey(storage: CheckoutStorage, result: Pick<CheckoutResultDTO, "orderId" | "paymentMode" | "status">): void {
+  if (!needsPaymentRetry(result)) { forgetCheckoutKey(storage); return; }
+  const pending = readPending(storage);
+  if (pending) storage.set(ATTEMPT_KEY, JSON.stringify({ command: pending.command, key: pending.key, orderId: result.orderId }));
 }
 
 /**
  * Task 3.3 "Try again" on the receipt: resends this order's kept checkout with its original key. The
- * server replays the same order and retries its demo capture. Returns null when no kept checkout
- * belongs to this order (nothing to retry); a failed request throws and keeps the key.
+ * server replays the same order and retries its demo capture. Returns null, sending nothing, when the
+ * kept checkout is not this order's; a failed request throws and keeps the key.
  */
 export async function retryOrderPayment(client: Pick<CheckoutClient, "placeOrder">, storage: CheckoutStorage, orderId: string): Promise<CheckoutResultDTO | null> {
   const pending = readPending(storage);
-  if (!pending) return null;
+  if (!pending || pending.orderId !== orderId) return null;
   const result = await client.placeOrder(pending.command, pending.key);
   if (result.orderId !== orderId) return null;
   settleCheckoutKey(storage, result);
@@ -104,6 +114,8 @@ export async function retryOrderPayment(client: Pick<CheckoutClient, "placeOrder
  * After a reload or a lost response: resends a pending checkout with its original key. The server
  * replays the order if it was placed (or places it now). Returns the order, or null when nothing is
  * pending, the outcome is still unknown (kept for the next try), or the answer was final (dropped).
+ * Task 3.3: a kept demo order whose receipt was already shown is resent (a silent same-key capture
+ * retry) but never returned again, so the cart page shows the cart rather than the old receipt.
  */
 export async function resumePendingCheckout(client: Pick<CheckoutClient, "placeOrder">, storage: CheckoutStorage): Promise<PlacedOrder | null> {
   const pending = readPending(storage);
@@ -112,6 +124,7 @@ export async function resumePendingCheckout(client: Pick<CheckoutClient, "placeO
     const result = await client.placeOrder(pending.command, pending.key);
     const order = { orderId: result.orderId, orderNumber: result.orderNumber, statusToken: result.statusToken };
     settleCheckoutKey(storage, result);
+    if (pending.orderId === result.orderId) return null;
     rememberOrder(storage, order);
     return order;
   } catch (error) {

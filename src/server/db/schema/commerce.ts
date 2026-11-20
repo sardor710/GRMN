@@ -91,7 +91,7 @@ export const orders = pgTable("orders", {
   usdSnapshot: object("usd_snapshot"), policyVersions: object("policy_versions").notNull().default({}),
   legacySummary: object("legacy_summary").notNull().default({}),
   orderStatus: text("order_status").notNull().default("pending_payment"), paymentStatus: text("payment_status").notNull().default("unpaid"),
-  fulfillmentStatus: text("fulfillment_status").notNull().default("unfulfilled"), paymentMode: text("payment_mode").notNull().default("demo"),
+  fulfillmentStatus: text("fulfillment_status").notNull().default("unfulfilled"), paymentMode: text("payment_mode").notNull(),
   snapshotSealed: boolean("snapshot_sealed").notNull().default(false),
   version: integer("version").notNull().default(1), placedAt: time("placed_at"), createdAt: createdAt(), updatedAt: updatedAt(),
 }, t => [

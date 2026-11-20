@@ -39,7 +39,10 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
   const main=(await pool.query("SELECT id FROM stock_locations WHERE key='main'")).rows[0].id;
   await pool.query("INSERT INTO inventory_balances(variant_id,location_id) VALUES($1,$2)",[variant,main]);
   await pool.query("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key,source_reference) VALUES($1,$2,$3,5,0,'opening','ui-demo-opening','synthetic:ui-smoke')",[randomUUID(),variant,main]);
-  await pool.query("UPDATE store_settings SET payment_mode='demo',version=version+1 WHERE id=1");
+  // The setting is restored to whatever it was before this block.
+  const previousMode=(await pool.query("SELECT payment_mode FROM store_settings WHERE id=1")).rows[0].payment_mode;
+  const setMode=mode=>pool.query("UPDATE store_settings SET payment_mode=$1,version=version+1 WHERE id=1",[mode]);
+  await setMode("demo");
   await send("Emulation.setDeviceMetricsOverride",{width:1280,height:900,deviceScaleFactor:1,mobile:false});
   try{
     // Storefront: add to cart, review, Pay (demo).
@@ -54,14 +57,23 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     assert.ok((await text()).includes("Demo payment — no money is charged."),"one line under the demo pay button");
     assert.equal(await evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Place order')"),false,"demo and manual are never offered together");
     assert.ok(!/we confirm your payment by hand/i.test(await text()),"no manual payment notice in demo checkout");
+    // The setting flips between review and pay: the server refuses the stale method (409), the panel
+    // re-reads the cart and shows its own message and the method offered now, in both directions.
+    const changed="Checkout options changed (demo checkout was turned off or on). Review your order and try again.";
+    const offers=(shown,hidden)=>`[...document.querySelectorAll('button')].some(b=>b.textContent.trim()===${JSON.stringify(shown)})&&![...document.querySelectorAll('button')].some(b=>b.textContent.trim()===${JSON.stringify(hidden)})`;
+    const ordersBefore=(await pool.query("SELECT count(*)::int AS n FROM orders WHERE user_id=$1",[customerId])).rows[0].n;
+    await setMode("live");await click("Pay (demo)");
+    await until(async()=>(await text()).includes(changed)&&await evaluate(offers("Place order","Pay (demo)")),"Turning demo off did not refetch the cart and show the message").catch(async error=>{await writeFile(path.join(receipt,"demo-409-body.txt"),await text());throw error;});
+    await setMode("demo");await click("Place order");
+    await until(async()=>(await text()).includes(changed)&&await evaluate(offers("Pay (demo)","Place order")),"Turning demo on did not refetch the cart and show the message");
+    assert.equal((await pool.query("SELECT count(*)::int AS n FROM orders WHERE user_id=$1",[customerId])).rows[0].n,ordersBefore,"a refused method places nothing");
     await click("Pay (demo)");
     await until(async()=>/order grm-\d+ received/i.test(await text()),"The demo receipt did not render").catch(async error=>{await writeFile(path.join(receipt,"demo-receipt-body.txt"),await text());throw error;});
     await until(()=>evaluate("document.querySelector('[data-demo-badge]')?.textContent.trim()==='DEMO'"),"The receipt shows no DEMO label");
     await until(async()=>/status: paid/i.test(await text())&&(await text()).includes("Demo payment — no money was charged."),"The demo receipt did not show the paid demo status").catch(async error=>{await writeFile(path.join(receipt,"demo-receipt-body.txt"),await text());throw error;});
     assert.ok(!/payment not completed/i.test(await text()));
-    // Checkout orders only: the Task 10C legacy fixture row is inserted without a payment mode (column default).
-    const order=(await pool.query("SELECT id,order_number,order_status,payment_status FROM orders WHERE user_id=$1 AND payment_mode='demo' AND checkout_attempt_id IS NOT NULL",[customerId])).rows;
-    assert.equal(order.length,1,"exactly one demo checkout order");
+    const order=(await pool.query("SELECT id,order_number,order_status,payment_status FROM orders WHERE user_id=$1 AND payment_mode='demo'",[customerId])).rows;
+    assert.equal(order.length,1,"exactly one demo order");
     assert.deepEqual([order[0].order_status,order[0].payment_status],["confirmed","paid"]);
     assert.ok((await text()).toUpperCase().includes(order[0].order_number.toUpperCase()));
     await shoot("demo-confirmation.png");
@@ -92,7 +104,7 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     assert.equal((await pool.query("SELECT payment_mode FROM orders WHERE id=$1",[order[0].id])).rows[0].payment_mode,"demo","still labelled demo after delivery");
   }finally{
     await send("Emulation.clearDeviceMetricsOverride");
-    await pool.query("UPDATE store_settings SET payment_mode='live',version=version+1 WHERE id=1");
+    await setMode(previousMode);
   }
 }
 try{
@@ -173,7 +185,7 @@ try{
   // Task 10C: the mounted account page shows only the signed-in customer's own records.
   const customerId=randomUUID();await database.pool.query("INSERT INTO users(id,name,email,phone_number,phone_number_verified) VALUES($1,'UI Account Owner','ui-owner@example.invalid','+77000000077',true)",[customerId]);
   const legacyId=randomUUID(),orderClient=await database.pool.connect();
-  try{await orderClient.query("BEGIN");await orderClient.query("INSERT INTO orders(id,user_id,contact_name,contact_phone,data_quality,total_minor) VALUES($1,$2,'UI Account Owner','+77000000077','legacy_incomplete',4321)",[legacyId,customerId]);await orderClient.query("INSERT INTO order_addresses(id,order_id,kind,legacy_raw) VALUES($1,$2,'legacy_unstructured','UI legacy typed address')",[randomUUID(),legacyId]);await orderClient.query("COMMIT");}catch(error){await orderClient.query("ROLLBACK");throw error;}finally{orderClient.release();}
+  try{await orderClient.query("BEGIN");await orderClient.query("INSERT INTO orders(id,user_id,contact_name,contact_phone,data_quality,total_minor,payment_mode) VALUES($1,$2,'UI Account Owner','+77000000077','legacy_incomplete',4321,'legacy_unknown')",[legacyId,customerId]);await orderClient.query("INSERT INTO order_addresses(id,order_id,kind,legacy_raw) VALUES($1,$2,'legacy_unstructured','UI legacy typed address')",[randomUUID(),legacyId]);await orderClient.query("COMMIT");}catch(error){await orderClient.query("ROLLBACK");throw error;}finally{orderClient.release();}
   const legacyNumber=(await database.pool.query("SELECT order_number FROM orders WHERE id=$1",[legacyId])).rows[0].order_number;
   const low=async()=>(await text()).toLowerCase();
   await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
@@ -307,7 +319,7 @@ try{
   // Task 3.3: demo checkout end to end (an independent block).
   await demoOrderScenario({pool:database.pool,origin,send,evaluate,navigate,text,click,setInput,until,staffCookie,customerId,liveOrderNumber:placedOrders[0].order_number,receipt,
     customerCookie:()=>send("Network.setCookie",{name:"grmn-auth.session_token",value:customerCookie,url:origin,httpOnly:true,sameSite:"Lax"})});
-  console.log("PASS Task3.3 demo checkout: Pay (demo) with one demo note, DEMO receipt and account label, admin Demo filter with badge, dispatched and delivered");
+  console.log("PASS Task3.3 demo checkout: Pay (demo) with one demo note, a setting change between review and pay refetches the method both ways, DEMO receipt and account label, admin Demo filter with badge, dispatched and delivered");
 
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");
