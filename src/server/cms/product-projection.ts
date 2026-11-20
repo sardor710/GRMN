@@ -9,12 +9,12 @@ import type { VariantContent } from "../../lib/catalog/variant-content.ts";
 
 // Owner, 2026-11-19 (commits 5cbad06/e7dc91c on PostgreSQL): the admin product document keeps its
 // options, variants and photos in products.legacy_content; this projects them into the commerce
-// tables the storefront, cart and checkout read. Variants are matched by editor identity (the row they
-// had at the last save, then a stable id derived from the editor id; SKU only for variants new to the
-// editor, see matchVariants) so their ids, stock and prices survive edits and SKU renames; a variant removed in the editor is
-// archived, never deleted (orders, stock and reservations reference it). Options and values the
-// editor removed are deleted together with their selections. Stock is not written here: it moves
-// only through the inventory workflow.
+// tables the storefront, cart and checkout read. Variants are matched by editor identity (the row
+// they had at the last save, then a stable id derived from the editor id; SKU only for variants new
+// to the editor, see matchVariants), so their ids, stock and prices survive edits and SKU renames.
+// A variant removed in the editor is archived, never deleted (orders, stock and reservations
+// reference it). Options and values the editor removed are deleted together with their selections.
+// Stock is not written here: it moves only through the inventory workflow.
 
 export interface EditorOption { id: string; key: string; name: string; values: { id: string; key: string; label: string }[] }
 export interface EditorVariant { id: string; sku: string; title: string; selections: Record<string, string>; price: number | string; originalPrice?: number | string; status: "draft" | "active" | "archived"; isDefault: boolean; imageIds: string[]; /** Task 2.1: own Specs/Overview/In the box; absent keys inherit. */ content?: VariantContent }
@@ -59,8 +59,8 @@ type ExistingVariant = { id: string; sku: string; status: string; is_default: bo
  *    variant the editor now lists, or a re-added SKU of an archived row);
  * otherwise a new row with the stable id. A row is never given to two editor variants.
  */
-function matchVariants(productId: string, variants: readonly EditorVariant[], existing: readonly ExistingVariant[], previous: readonly PreviousVariant[]): Map<string, string> {
-  const byId = new Map(existing.map(v => [v.id, v])), bySku = new Map(existing.map(v => [v.sku.toLowerCase(), v]));
+function matchVariants(productId: string, variants: readonly EditorVariant[], existing: readonly ExistingVariant[], bySku: ReadonlyMap<string, ExistingVariant>, previous: readonly PreviousVariant[]): Map<string, string> {
+  const byId = new Map(existing.map(v => [v.id, v]));
   const previousSku = new Map<string, string>();
   for (const p of previous) if (typeof p.id === "string" && typeof p.sku === "string" && p.sku.trim()) previousSku.set(p.id, p.sku.trim().toLowerCase());
   const claimed = new Set<string>(), rows = new Map<string, string>();
@@ -114,6 +114,17 @@ export async function projectProduct(client: PoolClient, productId: string, doc:
       if (v.originalPrice !== undefined && v.originalPrice !== "" && BigInt(toMinor(v.originalPrice, `Compare-at price of ${sku}`)) < BigInt(amount)) fail(400, `Compare-at price of ${sku} is below its price`);
     }
   }
+  // F-c: rows are matched before any write. A final SKU still held by a row of this product that no
+  // variant claimed (a variant removed in this save, or archived earlier) would hit the global unique
+  // index; refuse it with a reason instead (archived rows keep their SKU for orders and history).
+  const matched = hasVariants ? matchVariants(productId, doc.variants, existing, bySku, previous) : new Map<string, string>();
+  if (hasVariants) {
+    const claimedRows = new Set(matched.values());
+    for (const v of doc.variants) {
+      const holder = bySku.get(v.sku.trim().toLowerCase());
+      if (holder && !claimedRows.has(holder.id)) fail(409, `SKU ${v.sku.trim()} belongs to an archived variant of this product. Save the removal first, then rename.`);
+    }
+  }
 
   // Selections of options or values that are going away, then the options and values themselves.
   await client.query("DELETE FROM variant_option_values WHERE product_id=$1 AND (NOT option_id=ANY($2::uuid[]) OR NOT option_value_id=ANY($3::uuid[]))", [productId, keepOptions, keepValues]);
@@ -144,7 +155,6 @@ export async function projectProduct(client: PoolClient, productId: string, doc:
     else await client.query("INSERT INTO prices(id,variant_id,amount_minor,compare_at_minor) VALUES($1,$2,$3,$4)", [randomUUID(), id, amount, compare]);
   };
   if (hasVariants) {
-    const matched = matchVariants(productId, doc.variants, existing, previous);
     // Two phases: the SKU unique index is global and not deferrable, so every kept row whose SKU changes
     // first takes a temporary SKU of its own ('~' + id), then its final one below. Chained renames in one
     // save (A->C with B->A, or a swap) never collide mid-update. Unchanged rows are not touched here.

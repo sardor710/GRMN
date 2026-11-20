@@ -118,3 +118,70 @@ test("a variant row the importer created (its id is not the stable editor id) is
   assert.equal(rows.filter(r=>r.status==="archived").length,0,"nothing is archived");
   assert.equal(rows.length,2);
 });
+
+// ---- F-c fix round 1 ----
+const snapshot=async publicKey=>(await q(`SELECT v.id,v.sku,v.status,v.is_default,v.version,v.content_overrides FROM product_variants v JOIN products p ON p.id=v.product_id WHERE p.public_key=$1 ORDER BY v.id`,[publicKey])).rows;
+
+test("removing one variant and renaming another to its SKU in the same save is a readable 409 and changes nothing",async()=>{
+  const cms=await cmsService(),saved=await cms.save("products",admin,watch("RN4","RN4-A","RN4-B"));
+  const before=await snapshot(saved.id),product=(await q("SELECT version,legacy_content FROM products WHERE public_key=$1",[saved.id])).rows[0];
+  const doc=watch("RN4","RN4-B","RN4-B");doc.variants=[doc.variants[0]];
+  await assert.rejects(cms.save("products",admin,{...doc,id:saved.id,version:saved.version}),
+    error=>error.status===409&&error.code==="CONFLICT"&&error.message==="SKU RN4-B belongs to an archived variant of this product. Save the removal first, then rename.");
+  assert.deepEqual(await snapshot(saved.id),before,"no variant row changed");
+  const after=(await q("SELECT version,legacy_content FROM products WHERE public_key=$1",[saved.id])).rows[0];
+  assert.deepEqual(after,product,"the product and its editor document are unchanged");
+  // Saving the removal first, then the rename, works.
+  const removed=await cms.save("products",admin,{...watch("RN4","RN4-A","RN4-B"),variants:[watch("RN4","RN4-A","RN4-B").variants[0]],id:saved.id,version:saved.version});
+  await assert.rejects(cms.save("products",admin,{...doc,id:saved.id,version:removed.version}),error=>error.status===409&&/belongs to an archived variant/.test(error.message),"an archived row keeps its SKU");
+});
+
+test("a status round trip (published -> draft -> published) keeps every variant row id",async()=>{
+  // An importer row renamed once (its id is neither stable nor found by the new SKU), plus an editor variant.
+  const productId=randomUUID(),publicKey=randomUUID(),rowId=randomUUID();
+  const doc=watch("RN5","RN5-A","RN5-B");doc.variants=[doc.variants[0]];
+  await q("INSERT INTO products(id,public_key,name,description,status,legacy_content) VALUES($1,$2,$3,'Multisport watch','published',$4)",[productId,publicKey,doc.name,JSON.stringify({...doc,id:publicKey})]);
+  await q("INSERT INTO product_variants(id,product_id,sku,status,is_default) VALUES($1,$2,'RN5-A','active',true)",[rowId,productId]);
+  await q("INSERT INTO prices(id,variant_id,amount_minor,compare_at_minor) VALUES($1,$2,10000000,NULL)",[randomUUID(),rowId]);
+  const cms=await cmsService(),editor=await cms.get("products",admin,publicKey);
+  const saved=await cms.save("products",admin,{...watch("RN5","RN5-Z","RN5-B"),id:publicKey,version:editor.version});
+  const ids=async()=>(await snapshot(publicKey)).map(r=>({id:r.id,sku:r.sku,status:r.status,is_default:r.is_default}));
+  const start=await ids();
+  assert.equal(start.find(r=>r.sku==="RN5-Z").id,rowId);
+  const draft=await cms.setProductStatus(admin,{id:publicKey,version:saved.version,status:"draft"});
+  assert.deepEqual((await ids()).map(r=>[r.id,r.sku]),start.map(r=>[r.id,r.sku]));
+  assert.ok((await ids()).every(r=>r.status==="draft"));
+  await cms.setProductStatus(admin,{id:publicKey,version:draft.version,status:"published"});
+  assert.deepEqual(await ids(),start,"ids, SKUs, statuses and the default are back as they were");
+});
+
+test("a new variant can take a SKU another variant renamed away in the same save",async()=>{
+  const cms=await cmsService(),saved=await cms.save("products",admin,watch("RN6","RN6-A","RN6-B"));
+  const before=await rowsOf(saved.id),a=bySku(before,"RN6-A");
+  await stock(a.id,2);
+  const doc=watch("RN6","RN6-C","RN6-B");
+  doc.options=[{...size,values:[...size.values,{id:"val-55",key:"55mm",label:"55 mm"}]}];
+  doc.variants.push(variant("var-c","RN6-A","val-55",false,130000));
+  const next=await cms.save("products",admin,{...doc,id:saved.id,version:saved.version});
+  const after=await rowsOf(next.id);
+  assert.equal(after.length,3);
+  assert.equal(bySku(after,"RN6-C").id,a.id,"the renamed variant keeps its row");assert.equal(Number(bySku(after,"RN6-C").on_hand),2);
+  const fresh=bySku(after,"RN6-A");
+  assert.ok(fresh&&fresh.id!==a.id,"the new variant gets its own row with the freed SKU");
+  assert.equal(Number(fresh.on_hand),0);assert.equal(String(fresh.amount_minor),"13000000");assert.equal(fresh.status,"active");
+});
+
+test("re-adding an archived SKU reuses the archived row",async()=>{
+  const cms=await cmsService(),saved=await cms.save("products",admin,watch("RN7","RN7-A","RN7-B"));
+  const b=bySku(await rowsOf(saved.id),"RN7-B");
+  await stock(b.id,6);
+  const only=watch("RN7","RN7-A","RN7-B");only.variants=[only.variants[0]];
+  const removed=await cms.save("products",admin,{...only,id:saved.id,version:saved.version});
+  assert.equal(bySku(await rowsOf(saved.id),"RN7-B").status,"archived");
+  // The editor re-adds the SKU as a new variant (a new editor id).
+  const doc=watch("RN7","RN7-A","RN7-B");doc.variants[1]={...doc.variants[1],id:"var-b2"};
+  const readded=await cms.save("products",admin,{...doc,id:saved.id,version:removed.version});
+  const rows=await rowsOf(readded.id),back=bySku(rows,"RN7-B");
+  assert.equal(rows.length,2,"no new row");
+  assert.equal(back.id,b.id,"the archived row is reused");assert.equal(back.status,"active");assert.equal(Number(back.on_hand),6);
+});
