@@ -91,7 +91,8 @@ export function CompareBar({ items, onChange, products, search, compareMode, ann
   const hits = (search?.results ?? []).filter((hit) => !hasProduct(items, hit.id));
 
   // Task C-d (WCAG 2.4.11): publish the bar's height as --compare-bar-height on <html>; globals.css turns it into
-  // scroll-padding-bottom below 1024px, so a card focused by keyboard is scrolled above the sticky bar, not behind it.
+  // scroll-padding-bottom below 1024px (bar at the bottom) and scroll-padding-top from 1024px (bar at the top), so a
+  // card focused by keyboard is scrolled clear of the sticky bar, not behind it.
   const visible = compareMode || items.length > 0;
   const barRef = useRef<HTMLElement>(null);
   useEffect(() => {

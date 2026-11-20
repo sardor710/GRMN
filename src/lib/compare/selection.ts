@@ -107,7 +107,7 @@ export function toggleItem(items: readonly CompareSelectionItem[], item: Compare
  * A ref without a SKU (no variants, or the variant has not loaded yet) matches any entry of the product, SKU or not:
  * otherwise a page still loading its variant would not see the size already compared and would add a second,
  * SKU-less entry for the same product (task C-d, from the C-c review). That entry counts as exact, so the toggle
- * removes it.
+ * removes it (with every other entry of the product, see toggleVariant).
  */
 export function findVariantEntry(items: readonly CompareSelectionItem[], ref: CompareItemRef): { item: CompareSelectionItem; exact: boolean } | null {
   const exact = items.find((item) => sameItem(item, ref)) ?? (ref.sku ? undefined : items.find((item) => item.productId === ref.productId));
@@ -119,11 +119,14 @@ export function findVariantEntry(items: readonly CompareSelectionItem[], ref: Co
 /**
  * The product page's control. The exact size chosen: remove it. A SKU-less card entry for the product: replace it, in
  * place, with the size on screen (no second column for the same product). Neither: add it.
+ *
+ * Without a SKU the control stands for the whole product (it showed "Added" because some size was compared), so
+ * turning it off drops every entry of the product; removing one size would leave the control selected.
  */
 export function toggleVariant(items: readonly CompareSelectionItem[], item: CompareSelectionItem): readonly CompareSelectionItem[] {
   const found = findVariantEntry(items, item);
   if (!found) return addItem(items, item);
-  if (found.exact) return items.filter((entry) => entry !== found.item);
+  if (found.exact) return item.sku ? items.filter((entry) => entry !== found.item) : removeProduct(items, item.productId);
   const next = toItem(item);
   return next ? items.map((entry) => (entry === found.item ? next : entry)) : items;
 }

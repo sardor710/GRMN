@@ -145,3 +145,14 @@ test("product page toggle without a SKU (variant not loaded yet) matches any ent
   // With a SKU the rules are unchanged: another size is its own column.
   assert.deepEqual(ids(toggleVariant(compared, { productId: "fenix-8", sku: "F8-47" })), ["venu", "fenix-8~F8-51", "fenix-8~F8-47"]);
 });
+
+// Review fix: with no SKU the control means "this product", so turning it off removes every size of it; otherwise the
+// control would still read "Added" because another size of the product remains.
+test("product page toggle without a SKU turns off every entry of the product", () => {
+  const compared = [{ productId: "fenix-8", sku: "F8-47" }, { productId: "venu" }, { productId: "fenix-8", sku: "F8-51" }];
+  const off = toggleVariant(compared, { productId: "fenix-8" });
+  assert.deepEqual(ids(off), ["venu"]);
+  assert.equal(findVariantEntry(off, { productId: "fenix-8" }), null, "the control is no longer selected");
+  // With a SKU only that size goes.
+  assert.deepEqual(ids(toggleVariant(compared, { productId: "fenix-8", sku: "F8-47" })), ["venu", "fenix-8~F8-51"]);
+});
