@@ -7,7 +7,6 @@ import type { ProductDetail } from "@/types";
 import { ProductOverview } from "@/components/product/ProductOverview";
 import { ProductAccessories } from "@/components/product/ProductAccessories";
 import overviewStyles from "@/components/product/CmsOverview.module.css";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useProductVariant } from "@/components/product/ProductVariantContext";
 import { ownsEmptyOverview, variantTabContent } from "@/lib/catalog/variant-selection";
 
@@ -24,9 +23,6 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
   const [tab, setTab] = useState<Tab>("overview");
   // Below 1024 garmin.com closes the open accordion row when it is tapped again; the desktop bar always shows a tab.
   const [collapsed, setCollapsed] = useState(false);
-  // The open tab's body is rendered exactly once: after its accordion row below 1024, in the desktop panel from 1024.
-  // Mobile-first until hydrated (matches the server render); the lg: classes keep the right chrome visible meanwhile.
-  const isDesktop = useMediaQuery("(min-width:1024px)");
   const openTab = (id: Tab) => { setTab(id); setCollapsed(false); };
   // Task 2.4: Specs, Overview and In the box follow the selected variant (the open tab stays open on a switch).
   const { selectedVariantId } = useProductVariant();
@@ -100,6 +96,7 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
               <button
                 type="button"
                 aria-current={tab === id ? "true" : undefined}
+                aria-controls="product-tab-panel"
                 onClick={() => openTab(id)}
                 className={`${tabType} whitespace-nowrap border-black px-[14px] py-7 transition-colors active:text-garmin-black-hover ${
                   tab === id ? "border-b-4" : "hover:border-b-4"
@@ -111,30 +108,32 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
           ))}
         </ul>
       </nav>
-      {/* The desktop panel (≥1024) follows the tab bar. */}
-      {isDesktop && <div id="product-tab-panel" className={panelClass}>{body}</div>}
-
-      {/* Below 1024 every tab is an accordion row (50px, #DCDCDC rule, chevron). Final review M14 (WCAG 2.4.3): the
-          open panel is rendered directly after its row in DOM order, so focus and reading order follow the layout. */}
-      <div className="border-b border-[#DCDCDC] lg:hidden">
+      {/* One layout at every width, so the server render, first paint and resize are identical (no JS media query).
+          Below 1024 every tab is an accordion row (50px, #DCDCDC rule, chevron); from 1024 the rows are hidden and the
+          single body, rendered right after the open tab's row (WCAG 2.4.3 focus order), sits under the tab bar. */}
+      <div className="border-b border-[#DCDCDC] lg:border-0">
         {TABS.map((id) => {
-          const open = tab === id && !collapsed;
+          const selected = tab === id;
+          const open = selected && !collapsed;
           return (
             <Fragment key={id}>
               <button
                 id={`product-tab-row-${id}`}
                 type="button"
                 aria-expanded={open}
-                aria-controls={open && !isDesktop ? "product-tab-panel" : undefined}
+                aria-controls={open ? "product-tab-panel" : undefined}
                 onClick={() => (open ? setCollapsed(true) : openTab(id))}
-                className={`${tabType} flex h-[50px] w-full items-center justify-between border-t border-[#DCDCDC] px-7 py-[14px] text-left`}
+                className={`${tabType} flex h-[50px] w-full items-center justify-between border-t border-[#DCDCDC] px-7 py-[14px] text-left lg:hidden`}
               >
                 {t(`tabs.${id}`)}
                 <svg viewBox="0 0 18.2 11.2" aria-hidden="true" className={`h-[9px] w-[14px] shrink-0 fill-black ${open ? "rotate-180" : ""}`}>
                   <path d="M9.1 11.2L0 2.2 2.2 0l6.9 7L16 0l2.2 2.2-9.1 9z" />
                 </svg>
               </button>
-              {open && !isDesktop && <div id="product-tab-panel" role="region" aria-labelledby={`product-tab-row-${id}`} className={panelClass}>{body}</div>}
+              {selected && (
+                /* Collapsing the mobile row hides the panel below 1024 only; the desktop tab always shows its body. */
+                <div id="product-tab-panel" role="region" aria-labelledby={`product-tab-row-${id}`} className={collapsed ? `hidden lg:block ${panelClass}` : panelClass}>{body}</div>
+              )}
             </Fragment>
           );
         })}

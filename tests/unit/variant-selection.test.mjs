@@ -46,7 +46,6 @@ test("withVariantParam keeps the path, other parameters and the hash", () => {
   assert.equal(withVariantParam("http://x.test/en/p/k?variant=OLD", "NEW"), "http://x.test/en/p/k?variant=NEW");
 });
 
-let desktop = false; // what useMediaQuery reports to the ProductTabs fixtures
 const content = (specs, inTheBox, overviewHtml = "", specGroups = []) => ({ specs, specGroups, overviewHtml, inTheBox });
 const product = {
   specs: [{ label: "Lens", value: "Glass" }],
@@ -117,7 +116,6 @@ test("ProductTabs: a variant switch swaps the open tab's content and keeps that 
   const { componentFixture, nodes, nodeText } = await import("../helpers/component-fixture.mjs");
   let selected = "v47";
   const fixture = componentFixture("src/components/ProductTabs.tsx", { modules: {
-    "@/hooks/useMediaQuery": { useMediaQuery: () => desktop },
     "@/components/product/ProductVariantContext": { useProductVariant: () => ({ selectedVariantId: selected, setSelectedVariantId: (id) => { selected = id; } }) },
     "@/lib/catalog/variant-selection": { variantTabContent, ownsEmptyOverview },
   } });
@@ -144,7 +142,6 @@ test("ProductTabs: a variant switch swaps the open tab's content and keeps that 
 test("ProductTabs Overview: an owned empty overview renders nothing; no overview anywhere keeps the features fallback", async () => {
   const { componentFixture, nodes } = await import("../helpers/component-fixture.mjs");
   const render = (base, selected) => componentFixture("src/components/ProductTabs.tsx", { modules: {
-    "@/hooks/useMediaQuery": { useMediaQuery: () => desktop },
     "@/components/product/ProductVariantContext": { useProductVariant: () => ({ selectedVariantId: selected, setSelectedVariantId() {} }) },
     "@/lib/catalog/variant-selection": { variantTabContent, ownsEmptyOverview },
   } }).render({ product: { id: "k", features: [{ title: "Feature", body: "Body" }], accessories: [], ...base } });
@@ -166,84 +163,76 @@ test("ProductTabs Overview: an owned empty overview renders nothing; no overview
   assert.equal(fallback(ownedEmpty), false);
 });
 
-// Final review M14 (WCAG 2.4.3) + F-d: exactly one copy of the open tab's body. Below 1024 it follows its own
-// accordion row in DOM order; from 1024 it is the desktop panel after the tab bar.
-const tabsFixture = async (selected = "v47") => {
+// Final review M14 (WCAG 2.4.3) + F-d: one CSS-only layout at every width, one copy of the open tab's body. The desktop
+// nav is hidden below 1024, the accordion rows are hidden from 1024, and the body follows the open row in DOM order.
+const tabsFixture = async (selected = () => "v47") => {
   const { componentFixture, nodes, nodeText } = await import("../helpers/component-fixture.mjs");
   const fixture = componentFixture("src/components/ProductTabs.tsx", { modules: {
-    "@/hooks/useMediaQuery": { useMediaQuery: () => desktop },
-    "@/components/product/ProductVariantContext": { useProductVariant: () => ({ selectedVariantId: selected, setSelectedVariantId() {} }) },
+    "@/components/product/ProductVariantContext": { useProductVariant: () => ({ selectedVariantId: selected(), setSelectedVariantId() {} }) },
     "@/lib/catalog/variant-selection": { variantTabContent, ownsEmptyOverview },
   } });
   const props = { product: { id: "k", features: [], accessories: [], ...product } };
-  const ids = tree => nodes(tree).filter(n => n.props?.id?.startsWith?.("product-tab-")).map(n => n.props.id);
+  const panels = tree => nodes(tree).filter(n => n.props?.id === "product-tab-panel");
   const row = (t, id) => nodes(t).find(n => n.props?.id === "product-tab-row-" + id);
-  const bodies = tree => nodes(tree).filter(n => n.props?.dangerouslySetInnerHTML);
-  return { fixture, props, nodes, nodeText, ids, row, bodies };
+  const rows = tree => nodes(tree).filter(n => n.props?.id?.startsWith?.("product-tab-row-"));
+  const order = tree => nodes(tree).filter(n => n.props?.id?.startsWith?.("product-tab-")).map(n => n.props.id);
+  const bar = tree => nodes(tree).find(n => n.props?.["data-product-tabs"]);
+  return { fixture, props, nodes, nodeText, panels, row, rows, order, bar };
 };
 
-test("ProductTabs (mobile layout): one body, right after the open accordion row", async () => {
-  desktop = false;
-  const { fixture, props, nodes, ids, row, bodies } = await tabsFixture();
+test("ProductTabs: one body node, right after the open row; chrome is CSS-only (hidden lg:block nav, lg:hidden rows)", async () => {
+  const { fixture, props, nodes, nodeText, panels, row, rows, order, bar } = await tabsFixture();
   let tree = fixture.render(props);
-  assert.deepEqual(ids(tree), ["product-tab-row-overview", "product-tab-panel", "product-tab-row-specs", "product-tab-row-inTheBox", "product-tab-row-maps", "product-tab-row-accessories", "product-tab-row-compatible"]);
-  assert.equal(bodies(tree).length, 1, "the open tab's body renders exactly once");
-  assert.equal(nodes(tree).filter(n => n.props?.id === "product-tab-panel").length, 1, "the panel id is unique");
-  const panel = nodes(tree).find(n => n.props?.id === "product-tab-panel");
+  assert.match(bar(tree).props.className, /\bhidden\b.*\blg:block\b/, "the desktop nav is hidden below 1024");
+  assert.equal(rows(tree).length, 6);
+  for (const r of rows(tree)) assert.match(r.props.className, /\blg:hidden\b/, "accordion rows are hidden from 1024");
+  assert.ok(!/lg:hidden/.test(nodes(tree).find(n => /border-b border-\[#DCDCDC\]/.test(n.props?.className ?? "")).props.className), "the accordion wrapper stays visible at every width");
+  assert.equal(panels(tree).length, 1, "exactly one panel, id unique");
+  assert.equal(nodes(tree).filter(n => n.props?.dangerouslySetInnerHTML).length, 1, "the body renders once");
+  assert.deepEqual(order(tree), ["product-tab-row-overview", "product-tab-panel", "product-tab-row-specs", "product-tab-row-inTheBox", "product-tab-row-maps", "product-tab-row-accessories", "product-tab-row-compatible"]);
+  const panel = panels(tree)[0];
+  assert.equal(panel.props.role, "region");
+  assert.equal(panel.props["aria-labelledby"], "product-tab-row-overview");
+  assert.ok(!/\bhidden\b/.test(panel.props.className));
   assert.equal(row(tree, "overview").props["aria-controls"], panel.props.id);
   assert.equal(row(tree, "overview").props["aria-expanded"], true);
-  assert.equal(panel.props["aria-labelledby"], "product-tab-row-overview");
+  for (const b of nodes(bar(tree)).filter(n => n.type === "button")) assert.equal(b.props["aria-controls"], panel.props.id, "desktop tabs control the panel");
+  assert.equal(nodes(bar(tree)).find(n => n.type === "button" && nodeText(n).trim() === "Overview").props["aria-current"], "true");
+
+  // Opening another tab moves the single panel after that row.
   row(tree, "specs").props.onClick();
   tree = fixture.render(props);
-  assert.deepEqual(ids(tree).slice(0, 4), ["product-tab-row-overview", "product-tab-row-specs", "product-tab-panel", "product-tab-row-inTheBox"]);
+  assert.deepEqual(order(tree).slice(0, 4), ["product-tab-row-overview", "product-tab-row-specs", "product-tab-panel", "product-tab-row-inTheBox"]);
+  assert.equal(panels(tree).length, 1);
   assert.equal(row(tree, "overview").props["aria-controls"], undefined);
+  assert.equal(row(tree, "overview").props["aria-expanded"], false);
   assert.equal(row(tree, "specs").props["aria-controls"], "product-tab-panel");
-  assert.equal(bodies(tree).length, 0);
   assert.equal(nodes(tree).filter(n => typeof n.type === "function" && n.type.name === "Specs").length, 1, "Specs renders once");
-  row(tree, "specs").props.onClick();
+  assert.equal(nodes(bar(tree)).find(n => n.type === "button" && nodeText(n).trim() === "Specs").props["aria-current"], "true");
+});
+
+test("ProductTabs: tapping the open row collapses the panel on mobile only (hidden lg:block), reopening restores it", async () => {
+  const { fixture, props, panels, row, nodes, bar } = await tabsFixture();
+  let tree = fixture.render(props);
+  row(tree, "overview").props.onClick();
   tree = fixture.render(props);
-  assert.ok(!ids(tree).includes("product-tab-panel"), "tapping the open row collapses it");
-  assert.equal(row(tree, "specs").props["aria-expanded"], false);
-  assert.equal(row(tree, "specs").props["aria-controls"], undefined);
+  assert.equal(panels(tree).length, 1, "the body stays in the output so desktop keeps its content");
+  assert.match(panels(tree)[0].props.className, /\bhidden lg:block\b/);
+  assert.equal(row(tree, "overview").props["aria-expanded"], false);
+  assert.equal(row(tree, "overview").props["aria-controls"], undefined);
+  assert.equal(nodes(tree).filter(n => n.props?.dangerouslySetInnerHTML).length, 1);
+  // A desktop tab click opens (and expands) a tab again.
+  nodes(bar(tree)).find(n => n.type === "button" && n.props.onClick).props.onClick();
+  tree = fixture.render(props);
+  assert.ok(!/\bhidden\b/.test(panels(tree)[0].props.className));
+  assert.equal(row(tree, "overview").props["aria-expanded"], true);
 });
 
-test("ProductTabs (desktop layout): one body, in the desktop panel under the tab bar", async () => {
-  desktop = true;
-  try {
-    const { fixture, props, nodes, ids, row, bodies, nodeText } = await tabsFixture();
-    let tree = fixture.render(props);
-    assert.equal(bodies(tree).length, 1, "the open tab's body renders exactly once");
-    assert.equal(nodes(tree).filter(n => n.props?.id === "product-tab-panel").length, 1, "the panel id is unique");
-    assert.ok(!ids(tree).slice(1).includes("product-tab-panel") || ids(tree)[0] === "product-tab-panel", "the panel is not inside the accordion");
-    assert.equal(ids(tree)[0], "product-tab-panel", "the desktop panel comes right after the tab bar, before the accordion");
-    for (const id of ["overview", "specs", "inTheBox"]) assert.equal(row(tree, id).props["aria-controls"], undefined, "no dangling aria-controls without a mobile panel");
-    const tabBar = nodes(tree).find(n => n.props?.["data-product-tabs"]);
-    const specsTab = nodes(tabBar).find(n => n.type === "button" && nodeText(n).trim() === "Specs");
-    assert.equal(nodes(tabBar).find(n => n.type === "button" && nodeText(n).trim() === "Overview").props["aria-current"], "true");
-    specsTab.props.onClick();
-    tree = fixture.render(props);
-    const bar = nodes(tree).find(n => n.props?.["data-product-tabs"]);
-    assert.equal(nodes(bar).find(n => n.type === "button" && nodeText(n).trim() === "Specs").props["aria-current"], "true");
-    assert.equal(nodes(tree).filter(n => typeof n.type === "function" && n.type.name === "Specs").length, 1, "Specs renders once");
-  } finally { desktop = false; }
-});
-
-test("ProductTabs: the variant swap still changes the single body in both layouts", async () => {
-  try {
-    for (const isDesktop of [false, true]) {
-      desktop = isDesktop;
-      let selected = "v47";
-      const { componentFixture, nodes } = await import("../helpers/component-fixture.mjs");
-      const fixture = componentFixture("src/components/ProductTabs.tsx", { modules: {
-        "@/hooks/useMediaQuery": { useMediaQuery: () => desktop },
-        "@/components/product/ProductVariantContext": { useProductVariant: () => ({ selectedVariantId: selected, setSelectedVariantId() {} }) },
-        "@/lib/catalog/variant-selection": { variantTabContent, ownsEmptyOverview },
-      } });
-      const props = { product: { id: "k", features: [], accessories: [], ...product } };
-      const html = tree => nodes(tree).filter(n => n.props?.dangerouslySetInnerHTML).map(n => n.props.dangerouslySetInnerHTML.__html);
-      assert.deepEqual(html(fixture.render(props)), ["<p>47</p>"]);
-      selected = "v51";
-      assert.deepEqual(html(fixture.render(props)), [], "51 mm owns an empty overview: nothing renders");
-    }
-  } finally { desktop = false; }
+test("ProductTabs: the variant swap still changes the single body", async () => {
+  let selected = "v47";
+  const { fixture, props, nodes } = await tabsFixture(() => selected);
+  const html = tree => nodes(tree).filter(n => n.props?.dangerouslySetInnerHTML).map(n => n.props.dangerouslySetInnerHTML.__html);
+  assert.deepEqual(html(fixture.render(props)), ["<p>47</p>"]);
+  selected = "v51";
+  assert.deepEqual(html(fixture.render(props)), [], "51 mm owns an empty overview: nothing renders");
 });
