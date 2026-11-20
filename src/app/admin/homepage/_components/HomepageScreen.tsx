@@ -260,9 +260,9 @@ export default function AdminHomepagePage() {
         description: "",
         image: carousel.type === "product" ? "/homepage/featured/fenix9.jpg" : "/homepage/featured/holiday.jpg",
         href: "/c/wearables-smartwatches",
-        price: "$499.99",
+        price: "",
         badge: "NEW",
-        ctaText: "SHOP NOW",
+        ctaText: "Shop",
         order: carousel.items.length + 1,
       },
     });
@@ -791,7 +791,7 @@ export default function AdminHomepagePage() {
                             {isProductType ? (
                               <div className="mt-2 flex items-center gap-1.5">
                                 <span className="text-xs font-bold text-black tabular-nums">
-                                  {prodItem.price || "$0.00"}
+                                  {prodItem.price || "—"}
                                 </span>
                                 {prodItem.originalPrice && (
                                   <span className="text-xs text-muted-foreground line-through tabular-nums">
@@ -1392,7 +1392,7 @@ export default function AdminHomepagePage() {
                       })
                     }
                     className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden tabular-nums"
-                    placeholder="$799.99"
+                    placeholder="KZT 349,995.00"
                   />
                 </div>
 

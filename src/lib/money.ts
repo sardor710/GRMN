@@ -20,7 +20,7 @@ export function minorToMajor(amount: string): string {
 
 /**
  * Locale-aware grouping of a minor-unit amount with its exact two decimals and no currency, e.g.
- * "1,350,000.00" (en-US). Shared by the legacy `"… KZT"` labels (`formatMinorMoney`, admin `formatMinor`).
+ * "1,350,000.00" (en-US). Shared by the storefront `"… KZT"` labels (`formatMinorMoney`) and non-KZT admin `formatMinor` amounts.
  */
 export function groupMinor(minor: string, intlLocale: string): string {
   const [whole, cents] = minorToMajor(minor).split(".");

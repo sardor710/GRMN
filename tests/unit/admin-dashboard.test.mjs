@@ -1,5 +1,6 @@
 // Task 4.2: pure helpers of the PostgreSQL admin dashboard. Real money is "live" only; demo and
 // sandbox stay apart and are never summed into it. Money is BigInt-safe minor units in strings.
+import { formatKzt } from "../../src/lib/money.ts";
 import assert from "node:assert/strict";
 import {test} from "node:test";
 import {splitTotals,formatMinor,createRequestGate,dailyRevenue,dateRange,seriesTotal,niceMax,axisLabel,currenciesOf,statusRows,ORDER_STATUS_LABELS} from "../../src/lib/admin/dashboard.ts";
@@ -24,17 +25,20 @@ test("splitTotals sums beyond Number precision exactly",()=>{
   assert.equal(split.real[0].netMinor,"18014398509481986");
 });
 
+// Task 5b.1 fix 1: formatMinor is the shared formatKzt for KZT ("KZT 8,415.00", Intl en-KZ), one format across the admin.
+const plain=value=>value.replace(/\u00a0/g," ");
 test("formatMinor groups thousands, keeps cents and sign, and is exact for huge minor strings",()=>{
-  assert.equal(formatMinor("0","KZT"),"0.00 KZT");
-  assert.equal(formatMinor("841500","KZT"),"8,415.00 KZT");
-  assert.equal(formatMinor("5","KZT"),"0.05 KZT");
-  assert.equal(formatMinor("-1550","KZT"),"-15.50 KZT");
-  assert.equal(formatMinor("123456789012345678901","KZT"),"1,234,567,890,123,456,789.01 KZT");
+  assert.equal(plain(formatMinor("0","KZT")),"KZT 0.00");
+  assert.equal(plain(formatMinor("841500","KZT")),"KZT 8,415.00");
+  assert.equal(plain(formatMinor("5","KZT")),"KZT 0.05");
+  assert.equal(plain(formatMinor("-1550","KZT")),"-KZT 15.50");
+  assert.equal(plain(formatMinor("123456789012345678901","KZT")),"KZT 1,234,567,890,123,456,789.01");
+  assert.equal(formatMinor("841500","KZT"),formatKzt({minor:"841500"},"en"),"the same string as the shared money formatter");
   // Fix round 1: a malformed amount never throws during render; it is shown raw with its currency.
-  assert.equal(formatMinor("1.5","KZT"),"1.5 KZT");
-  assert.equal(formatMinor("abc","KZT"),"abc KZT");
-  assert.equal(formatMinor("","KZT")," KZT");
-  assert.equal(formatMinor(null,"KZT"),"null KZT");
+  assert.equal(formatMinor("1.5","KZT"),"KZT 1.5");
+  assert.equal(formatMinor("abc","KZT"),"KZT abc");
+  assert.equal(formatMinor("","KZT"),"KZT ");
+  assert.equal(formatMinor(null,"KZT"),"KZT null");
 });
 
 test("createRequestGate drops a superseded generation and aborts its fetches",()=>{
