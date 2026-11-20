@@ -223,6 +223,57 @@ async function singleVariantOverrideScenario(context){
     await ui.close();
   }finally{await send("Emulation.clearDeviceMetricsOverride");}
 }
+// Task 2.4: the storefront product page swaps Specs, Overview and In the box per variant with no navigation
+// and keeps the variant in ?variant=<sku>; a reload (server render) shows the same variant from the first paint.
+async function variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,text,receipt}){
+  const own=mm=>({specs:[{label:"Case",value:`Case ${mm} mm only`}],overviewHtml:`<p>Overview for the ${mm} mm model</p>`,inTheBox:[`Box item ${mm} mm`,`Strap ${mm} mm`]});
+  const saved=await cms.save("products",headers,variantProduct("UI-VS","UI VARIANT SWITCH",{status:"published",specs:[{label:"Case",value:"Product case"}],inTheBox:["Product box"],overviewHtml:"<p>Product overview</p>",
+    options:[SIZE_OPTION(47,51)],variants:[sizeVariant("UI-VS",47,true,{content:own(47)}),sizeVariant("UI-VS",51,false,{price:"320.00",content:own(51)})]}));
+  // The page's default is the catalog offer (available first, then cheapest): 47 mm here, as it is cheaper.
+  const route=`/en/p/${saved.id}`,q=JSON.stringify;
+  const tab=label=>evaluate(`(()=>{const b=[...document.querySelectorAll('section .sticky button')].find(b=>b.textContent.trim()===${q(label)});if(!b)return false;b.click();return true;})()`);
+  const size=mm=>`[...document.querySelectorAll('[role=group][aria-label="Size"] button')].find(b=>b.textContent.trim()==='${mm} mm')`;
+  const pressed=mm=>evaluate(`${size(mm)}?.getAttribute('aria-pressed')==='true'`);
+  const shows=async(...needles)=>{const body=await text();return needles.every(n=>body.includes(n));};
+  await send("Emulation.setDeviceMetricsOverride",{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+  try{
+    // The server render already holds the requested variant (no flash of the default), and the canonical URL
+    // stays the product's; an unknown SKU falls back to the default variant.
+    // Markup only: the RSC payload in <script> tags carries every variant's content (needed to switch).
+    const html=async query=>(await(await fetch(origin+route+query)).text()).replace(/<script\b[\s\S]*?<\/script>/g,"");
+    const for51=await html("?variant=UI-VS-51");await writeFile(path.join(receipt,"variant-switch-ssr.html"),for51);
+    assert.ok(for51.includes("Overview for the 51 mm model")&&!for51.includes("Overview for the 47 mm model"),"?variant=UI-VS-51 did not server-render the 51 mm overview");
+    const canonical=for51.match(/<link rel="canonical" href="([^"]+)"/)?.[1];assert.ok(canonical&&!canonical.includes("variant"),`canonical carries the variant: ${canonical}`);
+    assert.ok((await html("?variant=NO-SUCH-SKU")).includes("Overview for the 47 mm model"),"an unknown SKU did not fall back to the default variant");
+
+    await navigate(route);
+    await until(()=>shows("UI VARIANT SWITCH","Overview for the 47 mm model"),"The 47 mm product page did not render");
+    await until(()=>pressed(47),"47 mm is not the selected default");
+    await until(()=>tab("Specs"),"Specs tab missing");await until(()=>shows("Case 47 mm only"),"47 mm specs not shown");
+    // A full navigation would drop this marker and add a navigation entry.
+    await evaluate("window.__variantSwitchMarker='kept';true");
+    await until(async()=>{await evaluate(`(()=>{${size(51)}?.click();return true;})()`);return pressed(51);},"51 mm could not be selected");
+    await until(async()=>await shows("Case 51 mm only")&&!(await shows("Case 47 mm only")),"Specs did not swap to 51 mm (the Specs tab must stay open)");
+    assert.equal(await evaluate("window.__variantSwitchMarker"),"kept","the switch reloaded the document");
+    assert.equal(await evaluate("performance.getEntriesByType('navigation').length"),1);
+    assert.equal(await evaluate("new URL(location.href).searchParams.get('variant')"),"UI-VS-51","the URL does not keep the variant");
+    assert.equal(await evaluate("location.pathname"),route);
+    await tab("In the Box");await until(async()=>await shows("Box item 51 mm","Strap 51 mm")&&!(await shows("Box item 47 mm")),"In the box did not swap to 51 mm");
+    await tab("Overview");await until(async()=>await shows("Overview for the 51 mm model")&&!(await shows("Overview for the 47 mm model")),"Overview did not swap to 51 mm");
+    await tab("Specs");await until(()=>shows("Case 51 mm only"),"Specs tab did not reopen on 51 mm");
+    const shotPath=path.resolve("docs/design-references/variant-switch.png");fs.mkdirSync(path.dirname(shotPath),{recursive:true});
+    const image=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:true,clip:{x:0,y:0,width:1440,height:1600,scale:1}});await writeFile(shotPath,Buffer.from(image.data,"base64"));
+
+    // Reload: still 51 mm, from the first paint.
+    await send("Page.reload",{ignoreCache:true});await delay(300);
+    await until(()=>evaluate("document.readyState==='complete'&&!window.__variantSwitchMarker"),"Reload did not finish");
+    assert.equal(await evaluate("new URL(location.href).searchParams.get('variant')"),"UI-VS-51","the reloaded URL lost ?variant=");
+    await until(()=>shows("Overview for the 51 mm model"),"The reload did not show 51 mm content");
+    assert.ok(!(await shows("Overview for the 47 mm model")));
+    await until(()=>pressed(51),"51 mm is not selected after the reload");
+    await until(()=>tab("Specs"),"Specs tab missing after reload");await until(()=>shows("Case 51 mm only"),"51 mm specs not shown after reload");
+  }finally{await send("Emulation.clearDeviceMetricsOverride");}
+}
 let temporary,database,app,chrome,ws,profile,logFile;
 
 // Task 3.3 demo-order scenario, self-contained (its own product, stock and store setting): with demo
@@ -530,9 +581,10 @@ try{
       customerCookie:()=>send("Network.setCookie",{name:"grmn-auth.session_token",value:customerCookie,url:origin,httpOnly:true,sameSite:"Lax"})});
     console.log("PASS Task3.3 demo checkout: Pay (demo) with one demo note, a setting change between review and pay refetches the method both ways, DEMO receipt and account label, admin Demo filter with badge, dispatched and delivered");
   };
-  const onlyVariantContent=process.env.CMS_SMOKE_ONLY==="variant-content";
-  if(!onlyVariantContent)await fullSuite();
+  const onlyVariantContent=process.env.CMS_SMOKE_ONLY==="variant-content",onlyVariantSwitch=process.env.CMS_SMOKE_ONLY==="variant-switch";
+  if(!onlyVariantContent&&!onlyVariantSwitch)await fullSuite();
 
+  if(!onlyVariantSwitch){
   // Task 2.3: per-variant content in the product editor (independent blocks; staff session).
   await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
   await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
@@ -544,9 +596,18 @@ try{
   console.log("PASS Task2.3 grouped specs: the shared section editor on the product tab, Own copies the sections with titles, a renamed title is kept after save and reopen");
   await singleVariantOverrideScenario(variantContext);
   console.log("PASS Task2.3 single variant: an earlier override is shown and reset, its translated block is removed, the one-variant note returns");
+  }
+
+  // Task 2.4: the storefront variant switch (independent block: its own published product).
+  if(!onlyVariantContent){
+    await variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,text,receipt});
+    console.log("PASS Task2.4 variant switch: 47 -> 51 mm swaps Specs, In the box and Overview with no document navigation, ?variant= kept, reload and server render show 51 mm, canonical unchanged, unknown SKU falls back");
+  }
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");
-  console.log(onlyVariantContent
+  console.log(onlyVariantSwitch
+    ?"Browser smoke passed (CMS_SMOKE_ONLY=variant-switch): only the Task 2.4 variant switch block ran; the rest of the suite was skipped."
+    :onlyVariantContent
     ?"Browser smoke passed (CMS_SMOKE_ONLY=variant-content): only the Task 2.3 variant content blocks ran; the rest of the suite was skipped."
     :"Browser smoke passed: 20/5 cursor pages, server search, versioned product create/update, homepage editor save/render, article create/public render, banner create/archive, provisional customer create, KZT rendering and unchanged source bytes.");
 }finally{
