@@ -78,6 +78,11 @@ export default function FulfillmentScreen() {
     detailId.current = next.id;
   }, []);
 
+  // Task 4.2: /admin/orders?order=<id> (the dashboard's recent orders link) opens that order's detail.
+  useEffect(() => {
+    const linked = new URLSearchParams(window.location.search).get("order");
+    if (linked && /^[0-9a-f-]{36}$/i.test(linked)) setSelected(linked);
+  }, []);
   useEffect(() => { void loadOrders(); }, [loadOrders]);
   useEffect(() => { if (selected) void loadDetail(selected); else setDetail(null); }, [selected, loadDetail]);
 

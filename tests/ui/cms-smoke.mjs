@@ -16,6 +16,7 @@ import {createAuthFoundation} from "../../src/server/auth/http.ts";
 import {bootstrapFirstStaff} from "../../src/server/auth/bootstrap.ts";
 import {requireStaffPrincipal,requirePermission} from "../../src/server/auth/principal.ts";
 import {createCMSService} from "../../src/server/cms/service.ts";
+import {formatMinor} from "../../src/lib/admin/dashboard.ts";
 
 const execute=promisify(execFile),root=path.resolve("temp"),receipt=path.resolve(process.env.CMS_SMOKE_RECEIPT??"temp/backend-next-three/08");
 const source=path.resolve("src/lib/cms/data.json"),hash=()=>createHash("sha256").update(fs.readFileSync(source)).digest("hex"),before=hash();
@@ -169,6 +170,99 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     await setMode(previousMode);
   }
 }
+// Task 4.2 dashboard scenario, self-contained (its own customer, product, stock and store setting, so
+// CMS_SMOKE_ONLY=dashboard runs it alone): a customer places one demo order through the real checkout,
+// then /admin shows Demo revenue > 0 and Revenue unchanged (0 when run alone), the order in Recent
+// orders linking to its detail, its product under Best-sellers > Demo only, and the empty-range text.
+// The screenshot goes to CMS_SMOKE_DASHBOARD_SHOT (default docs/design-references/dashboard.png).
+async function dashboardScenario({pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue,receipt,alone}){
+  const shot=path.resolve(process.env.CMS_SMOKE_DASHBOARD_SHOT??"docs/design-references/dashboard.png");fs.mkdirSync(path.dirname(shot),{recursive:true});
+  const setCookie=value=>send("Network.setCookie",{name:"grmn-auth.session_token",value,url:origin,httpOnly:true,sameSite:"Lax"});
+  const signOut=()=>send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
+  const dump=name=>async error=>{await writeFile(path.join(receipt,name),await text());throw error;};
+  const setInput=(name,value)=>evaluate(`(()=>{const input=document.querySelector('input[name=${name}]');if(!input)throw Error('Missing input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`);
+  const setDate=(label,value)=>evaluate(`(()=>{const input=document.querySelector('input[aria-label="${label}"]');if(!input)throw Error('Missing date input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`);
+  const tile=name=>evaluate(`document.querySelector('[data-tile="${name}"] [data-tile-value]')?.innerText.trim()??""`);
+  const section=name=>evaluate(`document.querySelector('section[aria-label="${name}"]')?.innerText??""`);
+  // Fixture: a customer, a product with stock at the main location, and (when missing) tax and shipping.
+  const customerId=randomUUID(),product=randomUUID(),variant=randomUUID();
+  await pool.query("INSERT INTO users(id,name,email,phone_number,phone_number_verified) VALUES($1,'UI Dashboard Buyer','ui-dashboard@example.invalid','+77000000088',true)",[customerId]);
+  const customerSession=await(await runtime.auth.$context).internalAdapter.createSession(customerId);
+  const customerCookie=encodeURIComponent(customerSession.token+"."+createHmac("sha256",secret).update(customerSession.token).digest("base64"));
+  await pool.query("INSERT INTO stock_locations(id,key,name) VALUES($1,'main','Main stock location') ON CONFLICT (key) DO NOTHING",[randomUUID()]);
+  const main=(await pool.query("SELECT id FROM stock_locations WHERE key='main'")).rows[0].id;
+  await pool.query("INSERT INTO products(id,public_key,name,status) VALUES($1,'ui-dash-fixture','UI DASH FIXTURE','published')",[product]);
+  await pool.query("INSERT INTO product_variants(id,product_id,sku,name,is_default,status) VALUES($1,$2,'UI-DASH-SKU','Base',true,'active')",[variant,product]);
+  await pool.query("INSERT INTO prices(id,variant_id,amount_minor) VALUES($1,$2,100000)",[randomUUID(),variant]);
+  await pool.query("INSERT INTO inventory_balances(variant_id,location_id) VALUES($1,$2)",[variant,main]);
+  await pool.query("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key,source_reference) VALUES($1,$2,$3,5,0,'opening','ui-dash-opening','synthetic:ui-smoke')",[randomUUID(),variant,main]);
+  const previous=(await pool.query("SELECT active_tax_configuration_id AS tax,active_shipping_policy_id AS policy,payment_mode FROM store_settings WHERE id=1")).rows[0];
+  let tax=previous?.tax,policy=previous?.policy;
+  if(!tax){tax=randomUUID();await pool.query("INSERT INTO tax_configuration(id,version,mode,rate_bps,country_code) VALUES($1,9301,'exclusive',1200,'KZ')",[tax]);}
+  if(!policy){
+    policy=randomUUID();const zone=randomUUID();
+    await pool.query("INSERT INTO shipping_policy_versions(id,version) VALUES($1,9301)",[policy]);
+    await pool.query("INSERT INTO shipping_zones(id,key,name,countries,active) VALUES($1,'ui-dash-zone','UI dashboard zone','[\"KZ\"]'::jsonb,true)",[zone]);
+    await pool.query("INSERT INTO shipping_rates(id,policy_id,zone_id,key,amount_minor) VALUES($1,$2,$3,'standard',1500)",[randomUUID(),policy,zone]);
+  }
+  await pool.query("INSERT INTO store_settings(id,active_tax_configuration_id,active_shipping_policy_id,maintenance_mode,payment_mode) VALUES(1,$1,$2,false,'demo') ON CONFLICT (id) DO UPDATE SET active_tax_configuration_id=EXCLUDED.active_tax_configuration_id,active_shipping_policy_id=EXCLUDED.active_shipping_policy_id,maintenance_mode=false,payment_mode='demo',version=store_settings.version+1",[tax,policy]);
+  await send("Emulation.setDeviceMetricsOverride",{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+  try{
+    // 1. One demo order through the real checkout.
+    await signOut();await setCookie(customerCookie);
+    await navigate("/p/ui-dash-fixture");await until(async()=>(await text()).includes("UI DASH FIXTURE"),"Dashboard fixture product did not render");
+    await until(async()=>{try{await click("Add to Cart");return true;}catch{return false;}},"Add to Cart was not clickable");
+    await until(async()=>(await pool.query("SELECT 1 FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=$1 AND c.status='active' AND ci.variant_id=$2",[customerId,variant])).rowCount===1,"The dashboard fixture did not reach the account cart");
+    await navigate("/cart");await until(async()=>(await text()).includes("UI DASH FIXTURE")&&/review order/i.test(await text()),"Cart with the dashboard fixture missing");
+    for(const [name,value] of [["recipientName","UI Dashboard Buyer"],["phone","+77000000088"],["city","Almaty"],["line1","UI dashboard street 4"]])await until(()=>setInput(name,value),"Could not fill "+name);
+    await until(async()=>{try{await click("Review order");return true;}catch{return false;}},"Review order stayed disabled");
+    await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Pay (demo)')"),"The demo pay button did not render").catch(dump("dashboard-checkout-body.txt"));
+    await click("Pay (demo)");
+    await until(async()=>/order grm-\d+ received/i.test(await text()),"The demo receipt did not render").catch(dump("dashboard-receipt-body.txt"));
+    const order=await until(async()=>(await pool.query("SELECT id,order_number FROM orders WHERE user_id=$1 AND payment_mode='demo' AND payment_status='paid'",[customerId])).rows[0],"The demo order was not paid");
+    // Real (live) money in the window, from the database: 0 when this block runs alone.
+    const live=(await pool.query("SELECT ((SELECT COALESCE(sum(amount_minor),0) FROM payment_transactions WHERE kind='capture' AND environment='live')-(SELECT COALESCE(sum(amount_minor),0) FROM refunds WHERE status='succeeded' AND environment='live'))::text AS net")).rows[0].net;
+    if(alone)assert.equal(live,"0","no real money when the block runs alone");
+    // 2-3. /admin: Demo revenue > 0, Revenue is the real money (0 alone), never the two added.
+    await signOut();await setCookie(staffCookieValue);
+    await navigate("/admin");
+    await until(async()=>/\d/.test(await tile("demo-revenue"))&&/\d/.test(await tile("revenue")),"The revenue tiles did not load").catch(dump("dashboard-body.txt"));
+    const demoValue=await tile("demo-revenue"),realValue=await tile("revenue");
+    assert.ok(BigInt(demoValue.replace(/\D/g,""))>BigInt(0),"Demo revenue is greater than 0: "+demoValue);
+    assert.equal(realValue,formatMinor(live,"KZT"),"Revenue shows only real money");
+    if(alone)assert.equal(realValue,"0.00 KZT","Revenue is 0 with only a demo order");
+    assert.equal(await evaluate("!!document.querySelector('[data-tile=\"demo-revenue\"] [data-demo-badge]')"),true,"the Demo revenue tile carries the DEMO label");
+    // 4. Recent orders: the demo order, with its DEMO label, links to its admin detail.
+    const href=`/admin/orders?order=${order.id}`;
+    await until(()=>evaluate(`!!document.querySelector('section[aria-label="Recent orders"] a[href="${href}"]')`),"The demo order is not in Recent orders").catch(dump("dashboard-recent-body.txt"));
+    assert.equal(await evaluate(`!!document.querySelector('tr[data-order-row="${order.id}"] [data-demo-badge]')`),true,"the recent demo order carries the DEMO label");
+    // 5. Best-sellers: the product is under Demo, not under Real.
+    await until(async()=>/no sales in this date range yet|UI-DASH-SKU/i.test(await section("Best-sellers")),"Best-sellers did not load");
+    assert.ok(!(await section("Best-sellers")).includes("UI DASH FIXTURE"),"a demo sale is not a real best-seller");
+    await evaluate("[...document.querySelectorAll('[role=tab]')].find(t=>t.textContent.trim()==='Demo').click();true");
+    await until(async()=>(await section("Best-sellers")).includes("UI DASH FIXTURE")&&await evaluate("!!document.querySelector('[data-best-tab=\"demo\"] [data-demo-badge]')"),"The product is not under Best-sellers > Demo").catch(dump("dashboard-best-body.txt"));
+    assert.equal(await evaluate("document.querySelectorAll('[role=alert]').length"),0,"no section reports an error");
+    // With only demo money the chart opens on the Demo revenue series, which draws today's column.
+    if(alone)await until(()=>evaluate("document.querySelector('section[aria-label=\"Daily revenue\"] button[aria-pressed=true]')?.textContent.trim()==='Demo revenue'&&document.querySelectorAll('section[aria-label=\"Daily revenue\"] svg path').length>0"),"The daily chart did not draw the demo series");
+    const metrics=await send("Page.getLayoutMetrics");
+    const image=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:true,clip:{x:0,y:0,width:1280,height:Math.ceil(metrics.cssContentSize.height),scale:1}});
+    await writeFile(shot,Buffer.from(image.data,"base64"));
+    // The link opens that order's detail on the orders page.
+    await evaluate(`document.querySelector('section[aria-label="Recent orders"] a[href="${href}"]').click();true`);
+    await until(()=>evaluate("location.pathname==='/admin/orders'"),"The recent order link did not open the orders page");
+    await until(async()=>(await section("Order detail")).toUpperCase().includes(order.order_number.toUpperCase()),"The linked order detail did not open").catch(dump("dashboard-order-link-body.txt"));
+    // 6. An empty date range says so plainly, with no error and no zeros posing as data.
+    await navigate("/admin");await until(async()=>/\d/.test(await tile("demo-revenue")),"The dashboard did not reload");
+    await setDate("To date","2020-01-01");await setDate("From date","2020-01-01");
+    await until(async()=>(await section("Recent orders")).includes("No orders in this date range yet."),"The empty range did not show the empty-state text").catch(dump("dashboard-empty-body.txt"));
+    await until(async()=>(await section("Orders by status")).includes("No orders in this date range yet.")&&(await section("Best-sellers")).includes("No sales in this date range yet.")&&(await section("Totals")).includes("No demo payments in this range yet."),"Not every section showed its empty state");
+    assert.ok((await section("Daily revenue")).includes("No revenue in this date range yet."),"the chart says it has no data");
+    assert.equal(await evaluate("document.querySelectorAll('[role=alert]').length"),0,"an empty range is not an error");
+  }finally{
+    await send("Emulation.clearDeviceMetricsOverride");
+    if(previous)await pool.query("UPDATE store_settings SET active_tax_configuration_id=$1,active_shipping_policy_id=$2,payment_mode=$3,version=version+1 WHERE id=1",[previous.tax,previous.policy,previous.payment_mode]);
+  }
+}
 try{
   temporary=await startTemporaryPostgres();database=createDatabase(parseServerEnv({DATABASE_URL:temporary.url}));const migration=createDatabase(parseServerEnv({DATABASE_URL:temporary.url,DATABASE_POOL_MAX:"1",DATABASE_CONNECT_TIMEOUT_MS:"10000",DATABASE_STATEMENT_TIMEOUT_MS:"60000"}));try{await migrate(migration.db,{migrationsFolder:"drizzle"});}finally{await migration.close();}
   const appPort=await port(),origin=`http://localhost:${appPort}`,secret=randomBytes(32).toString("hex");
@@ -201,6 +295,9 @@ try{
   const click=label=>evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent.trim().includes(${JSON.stringify(label)}));if(!button||button.disabled)throw Error('Missing button');button.click();return true;})()`);
   const fill=(label,value)=>evaluate(`(()=>{const label=[...document.querySelectorAll('form label')].find(l=>l.textContent.includes(${JSON.stringify(label)}));const input=label?.parentElement.querySelector('input,textarea');if(!input)throw Error('Missing input');Object.getOwnPropertyDescriptor(input.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
   await send("Network.enable");await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
+  // CMS_SMOKE_ONLY=dashboard skips the suite below and runs only the Task 4.2 dashboard block.
+  const onlyDashboard=process.env.CMS_SMOKE_ONLY==="dashboard";
+  if(!onlyDashboard){
   let saved;
   if(process.env.CMS_SMOKE_PUBLIC_ONLY!=="1"){
   await navigate("/admin/products");await until(async()=>(await text()).toLowerCase().includes("ui fixture"),"Product page did not load").catch(async error=>{await writeFile(path.join(receipt,"admin-products-body.txt"),await text());throw error;});
@@ -388,10 +485,16 @@ try{
   await demoOrderScenario({pool:database.pool,origin,send,evaluate,navigate,text,click,setInput,until,staffCookie,customerId,liveOrderNumber:placedOrders[0].order_number,receipt,
     customerCookie:()=>send("Network.setCookie",{name:"grmn-auth.session_token",value:customerCookie,url:origin,httpOnly:true,sameSite:"Lax"})});
   console.log("PASS Task3.3 demo checkout: Pay (demo) with one demo note, a setting change between review and pay refetches the method both ways, DEMO receipt and account label, admin Demo filter with badge, dispatched and delivered");
+  }// end of the suite skipped by CMS_SMOKE_ONLY=dashboard
 
+  // Task 4.2: the PostgreSQL dashboard (an independent block; CMS_SMOKE_ONLY=dashboard runs only this).
+  await dashboardScenario({pool:database.pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue:cookie,receipt,alone:onlyDashboard});
+  console.log("PASS Task4.2 dashboard: one demo order via checkout; Demo revenue > 0 and Revenue only real money, the order in Recent orders linking to its detail, its product under Best-sellers > Demo only, empty range says so; screenshot saved");
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");
-  console.log("Browser smoke passed: 20/5 cursor pages, server search, versioned product create/update, homepage editor save/render, article create/public render, banner create/archive, provisional customer create, KZT rendering and unchanged source bytes.");
+  console.log(onlyDashboard
+    ?"Browser smoke passed (CMS_SMOKE_ONLY=dashboard): only the Task 4.2 dashboard block ran; the rest of the suite was skipped."
+    :"Browser smoke passed: 20/5 cursor pages, server search, versioned product create/update, homepage editor save/render, article create/public render, banner create/archive, provisional customer create, KZT rendering and unchanged source bytes.");
 }finally{
   ws?.close();
   for(const child of [chrome,app])if(child?.pid){
