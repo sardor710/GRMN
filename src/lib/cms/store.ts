@@ -176,18 +176,21 @@ export function getProducts(): CMSProduct[] {
   return loadData().products;
 }
 
+// Task 5a.2: the admin price fields are tenge ("₸ KZT"), so every legacy-mode save stamps currency KZT. Only seed
+// records explicitly marked currency "USD" (scripts/mark-legacy-usd-prices.mjs) are converted on the storefront.
 export function saveProduct(product: Partial<CMSProduct> & { name: string; price: number }): CMSProduct {
   const data = loadData();
   const existingIdx = data.products.findIndex((p) => p.id === product.id);
 
   let saved: CMSProduct;
   if (existingIdx >= 0) {
-    saved = syncLegacyFields({ ...data.products[existingIdx], ...product });
+    saved = syncLegacyFields({ ...data.products[existingIdx], ...product, currency: "KZT" });
     data.products[existingIdx] = saved;
   } else {
     saved = syncLegacyFields({
       // keep every optional field the editor sends (images, options, variants, SEO…)
       ...product,
+      currency: "KZT",
       id: product.id || `prod-${Date.now()}`,
       name: product.name,
       sku: product.sku || `GRM-${Date.now().toString().slice(-6)}`,

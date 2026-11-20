@@ -1,7 +1,9 @@
 // Task 5a.2 fix round 1: the ONE place where legacy JSON prices become tenge.
 // The seed catalogue in the JSON store predates the garmin.com importer and holds USD-scale numbers
-// (Forerunner 970 = 749.99) with no currency field. Imported products are already tenge (their variants
-// keep the USD original in `sourcePrice`). Legacy amounts are converted at the importer's remembered
+// (Forerunner 970 = 749.99). Those records are marked explicitly with `currency: "USD"`
+// (scripts/mark-legacy-usd-prices.mjs); everything else is tenge: imported products, and every product an
+// admin saves (store.saveProduct stamps `currency: "KZT"`, matching the "₸ KZT" admin price fields).
+// A record without a currency is therefore tenge, never multiplied by the rate (fix round 2). Legacy amounts are converted at the importer's remembered
 // "KZT per 1 USD" rate (StoreSettings.importRateKztPerUsd) before any of them reaches a KztAmount.
 // Without a rate the number is left as is and marked "USD" (unconverted): the storefront then prints the
 // bare number with no currency sign, never a wrong tenge value.
@@ -11,11 +13,9 @@ import { usdMajorToKztMajor } from "./money.ts";
 /** "KZT" = a tenge amount; "USD" = a legacy number that could not be converted (shown without a currency sign). */
 export type StorefrontCurrency = "KZT" | "USD";
 
-/** A JSON product whose prices carry no currency: no explicit KZT, not imported, no variant with a USD source price. */
-export function isLegacyUsdProduct(product: Pick<CMSProduct, "currency" | "source" | "variants">): boolean {
-  if (product.currency === "KZT") return false;
-  if (product.source || (product.variants ?? []).some(variant => variant.sourcePrice)) return false;
-  return true;
+/** Only an explicit `currency: "USD"` marks USD-scale numbers; a missing currency means tenge. */
+export function isLegacyUsdProduct(product: Pick<CMSProduct, "currency">): boolean {
+  return product.currency === "USD";
 }
 
 /** Product prices in tenge (legacy amounts converted at `rate`), with `currency` saying which one the numbers are. */

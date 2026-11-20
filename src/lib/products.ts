@@ -54,7 +54,7 @@ export function getCatalogue(slug: string): CatalogueDef | undefined {
 function publicProduct(raw: CMSProduct, rate: number | undefined): Product {
   const cp=withStorefrontPrices(raw,rate);
   return {currency:cp.currency,purchasable:cp.stockManaged===false?false:undefined,id:cp.id,name:cp.name,price:cp.price,
-    // A sale on an imported/KZT product shows on its card. Legacy seed records carry a generated originalPrice (+15%), not a sale.
+    // A sale shows on the card unless the record is marked currency "USD": those seed records carry a generated originalPrice (+15%), not a sale. An admin save stamps KZT, so a sale set there shows.
     ...(!isLegacyUsdProduct(raw)&&typeof cp.originalPrice==="number"&&cp.originalPrice>cp.price?{compareAt:cp.originalPrice}:{}),
     priceSuffix:cp.priceSuffix,description:cp.description,image:cp.image,badge:cp.badge&&cp.badge!=="NONE"?cp.badge:undefined,family:cp.family,activities:cp.activities,level:cp.level,caseSize:cp.caseSize};
 }

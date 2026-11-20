@@ -130,7 +130,9 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
     <div className="flex min-h-screen flex-col bg-white">
       {/* Google Structured Data */}
       <ProductJsonLd
-        product={detail.commerce ?? fullProduct}
+        // Task 5a.2: the offer uses the storefront price (legacy USD already converted to tenge in products.ts);
+        // an unconverted legacy price ("USD", no rate) gets no offer price at all rather than a USD claim.
+        product={detail.commerce ?? { ...fullProduct, price: Number(detail.price), currency: detail.currency === "USD" ? ("USD" as const) : ("KZT" as const) }}
         url={localizedUrl(`/p/${id}`, locale)}
         locale={locale}
         description={

@@ -15,15 +15,16 @@ import * as productVariants from "../../src/lib/cms/product-variants.js";
 import * as variantSelection from "../../src/lib/catalog/variant-selection.ts";
 
 const plain = value => value.replace(/[  ]/g, " ").replace(/\s+/g, " ").trim();
-const legacy = { id: "1462801", name: "Forerunner 970", sku: "", price: 749.99, originalPrice: 862.4884999999999, description: "", image: "", family: "Forerunner", category: "", subCategory: "", activities: [], level: "Premium", caseSize: "Medium", stock: 1, status: "published", specs: [], inTheBox: [], compatibleAccessories: [], createdAt: "" };
-const imported = { ...legacy, id: "prod-1", price: 224995, variants: [{ id: "v", sku: "V", title: "41 mm", selections: {}, price: 224995, originalPrice: 274995, stock: 1, status: "active", isDefault: true, imageIds: [], sourcePrice: { currency: "USD", list: 549.99, sale: 449.99, rateKztPerUsd: 500 } }] };
+const legacy = { id: "1462801", currency: "USD", name: "Forerunner 970", sku: "", price: 749.99, originalPrice: 862.4884999999999, description: "", image: "", family: "Forerunner", category: "", subCategory: "", activities: [], level: "Premium", caseSize: "Medium", stock: 1, status: "published", specs: [], inTheBox: [], compatibleAccessories: [], createdAt: "" };
+const imported = { ...legacy, currency: undefined, id: "prod-1", price: 224995, variants: [{ id: "v", sku: "V", title: "41 mm", selections: {}, price: 224995, originalPrice: 274995, stock: 1, status: "active", isDefault: true, imageIds: [], sourcePrice: { currency: "USD", list: 549.99, sale: 449.99, rateKztPerUsd: 500 } }] };
 
-test("only products whose prices carry no currency are legacy USD", () => {
-  assert.equal(isLegacyUsdProduct(legacy), true);
-  assert.equal(isLegacyUsdProduct({ ...legacy, currency: "USD" }), true, "the static catalogue fallback says USD explicitly");
-  assert.equal(isLegacyUsdProduct({ ...legacy, currency: "KZT" }), false);
+test("only records explicitly marked currency USD are legacy USD; a missing currency means tenge", () => {
+  assert.equal(isLegacyUsdProduct(legacy), true, "seed records are marked by scripts/mark-legacy-usd-prices.mjs");
+  assert.equal(isLegacyUsdProduct({ ...legacy, currency: "KZT" }), false, "an admin save stamps KZT");
+  assert.equal(isLegacyUsdProduct({ ...legacy, currency: undefined }), false, "no currency is tenge, never multiplied by the rate");
   assert.equal(isLegacyUsdProduct(imported), false, "garmin.com imports are already tenge");
-  assert.equal(isLegacyUsdProduct({ ...legacy, source: { provider: "garmin", url: "", productId: "", partNumber: "", importedAt: "" } }), false);
+  const unmarked = withStorefrontPrices({ ...legacy, currency: undefined, price: 1350000 }, 500);
+  assert.deepEqual([unmarked.price, unmarked.currency], [1350000, "KZT"]);
 });
 
 test("legacy USD amounts become tenge at the importer rate, exactly and half up", () => {

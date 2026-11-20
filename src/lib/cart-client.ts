@@ -20,6 +20,24 @@ export class CartRequestError extends Error {
 export const LEGACY_CART_KEY = "garmin-clone-cart";
 const MAX_LINES = 100, MAX_QUANTITY = 99;
 
+/**
+ * Task 5a.2: browser-only cart lines saved before prices became tenge hold USD-scale numbers with no unit, which
+ * would now display as ₸. The browser-only (legacy JSON) cart reads its lines back only when they were written
+ * under this price version; an older cart starts empty. The server-cart import (legacyCartItems) reads only ids
+ * and quantities from LEGACY_CART_KEY, so it is unaffected.
+ */
+export const LOCAL_CART_PRICE_VERSION_KEY = "garmin-clone-cart-prices";
+export const LOCAL_CART_PRICE_VERSION = "kzt-1";
+
+export function readLocalCart<T>(storage: { getItem(key: string): string | null }): T[] {
+  try {
+    if (storage.getItem(LOCAL_CART_PRICE_VERSION_KEY) !== LOCAL_CART_PRICE_VERSION) return [];
+    const raw = storage.getItem(LEGACY_CART_KEY);
+    const lines: unknown = raw ? JSON.parse(raw) : [];
+    return Array.isArray(lines) ? (lines as T[]) : [];
+  } catch { return []; }
+}
+
 /** Reduces the stored local cart to `{ id, quantity }` pairs: no names, prices or images leave the browser. */
 export function legacyCartItems(raw: string | null): { id: string; quantity: number }[] {
   if (!raw) return [];

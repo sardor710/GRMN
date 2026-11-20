@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import type { CartDTO } from "@/contracts/commerce";
-import { CART_SESSION_EVENT, cartBadgeCount, createCartClient, createCartController, LEGACY_CART_KEY, type CartFetcher, type CartState } from "@/lib/cart-client";
+import { CART_SESSION_EVENT, cartBadgeCount, createCartClient, createCartController, LEGACY_CART_KEY, LOCAL_CART_PRICE_VERSION, LOCAL_CART_PRICE_VERSION_KEY, readLocalCart, type CartFetcher, type CartState } from "@/lib/cart-client";
 
 // Task 13A: in PostgreSQL mode the cart lives on the server (/api/cart); the state machine is
 // createCartController (one-time import of the stored cart, merge after sign-in, version handling).
@@ -49,9 +49,8 @@ interface CartContextValue {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-const readLocal = (): CartItem[] => {
-  try { const raw = localStorage.getItem(LEGACY_CART_KEY); return raw ? (JSON.parse(raw) as CartItem[]) : []; } catch { return []; }
-};
+// Task 5a.2: only carts written under the tenge price version are read back (readLocalCart).
+const readLocal = (): CartItem[] => readLocalCart<CartItem>(localStorage);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<CartState>({ mode: "loading", server: null, error: null, busy: false });
@@ -75,7 +74,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (state.mode !== "local") return;
-    try { localStorage.setItem(LEGACY_CART_KEY, JSON.stringify(items)); } catch { /* ignore */ }
+    try {
+      localStorage.setItem(LEGACY_CART_KEY, JSON.stringify(items));
+      localStorage.setItem(LOCAL_CART_PRICE_VERSION_KEY, LOCAL_CART_PRICE_VERSION);
+    } catch { /* ignore */ }
   }, [items, state.mode]);
 
   const add = useCallback(async (item: AddItem, qty = 1) => {
