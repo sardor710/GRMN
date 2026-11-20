@@ -13,10 +13,10 @@ const ok = items => ({ ok: true, status: 200, json: async () => ({ items }) });
 function screen() {
   const calls = [];
   const fixture = componentFixture(FILE, {
-    modules: { "@/lib/admin/dashboard": dashboard },
+    modules: { "@/lib/admin/dashboard": dashboard, "next/navigation": { useSearchParams: () => new URLSearchParams() } },
     fetcher: (url, options) => { const pending = deferred(); calls.push({ url, signal: options?.signal, ...pending }); return pending.promise; },
   });
-  // Effects in order: 0 reads ?order= from window.location, 1 loads the queue, 2 aborts the queue gate on unmount,
+  // Effects in order: 0 follows ?order= (useSearchParams), 1 loads the queue, 2 aborts the queue gate on unmount,
   // 3 loads the detail. Only effect 1 is run here.
   const loadQueue = () => { fixture.render(); return fixture.effects[1](); };
   return { fixture, calls, loadQueue };
