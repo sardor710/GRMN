@@ -1,20 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { ProductDetail } from "@/types";
 import { ProductOverview } from "@/components/product/ProductOverview";
 import { ProductAccessories } from "@/components/product/ProductAccessories";
 import overviewStyles from "@/components/product/CmsOverview.module.css";
+import { useProductVariant } from "@/components/product/ProductVariantContext";
+import { variantTabContent } from "@/lib/catalog/variant-selection";
 
 /** Tab ids; labels are `ProductTabs.tabs.<id>` messages. */
 const TABS = ["overview", "specs", "inTheBox", "accessories", "maps", "compatible"] as const;
 type Tab = (typeof TABS)[number];
 
-export function ProductTabs({ product }: { product: ProductDetail }) {
+export function ProductTabs({ product: base }: { product: ProductDetail }) {
   const t = useTranslations("ProductTabs");
   const [tab, setTab] = useState<Tab>("overview");
+  // Task 2.4: Specs, Overview and In the box follow the selected variant (the open tab stays open on a switch).
+  const { selectedVariantId } = useProductVariant();
+  const product = useMemo<ProductDetail>(() => {
+    const content = variantTabContent(base, selectedVariantId);
+    return { ...base, specs: content.specs, inTheBox: content.inTheBox, specGroups: content.specGroups, overviewHtml: content.overviewHtml };
+  }, [base, selectedVariantId]);
 
   // Overviews imported with garmin.com's layout blocks (banners, sections) run edge to edge like garmin.com;
   // older imports are plain flowing HTML and keep the narrow reading column.

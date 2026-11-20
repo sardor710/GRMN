@@ -12,6 +12,8 @@ import { CartRequestError, createCartClient } from "@/lib/cart-client";
 import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { GarminBadge } from "@/components/GarminBadge";
 import { VariantPicker } from "@/components/product/VariantPicker";
+import { useProductVariant } from "@/components/product/ProductVariantContext";
+import { withVariantParam } from "@/lib/catalog/variant-selection";
 import { isPurchasable, selectValue } from "@/lib/cms/product-variants";
 import { commerceVariantModel } from "@/lib/cms/commerce-variant-model";
 import type { ProductOption, ProductVariant } from "@/lib/cms/types";
@@ -21,7 +23,8 @@ import { useAppLocale } from "@/i18n/useAppLocale";
 export function ProductTop({ product:initial }: { product: ProductDetail }) {
   const t = useTranslations("ProductTop");
   const locale = useAppLocale();
-  const [variantId,setVariantId]=useState(initial.commerce?.selectedVariantId??initial.commerce?.variants[0]?.id??"");
+  // Task 2.4: shared with ProductTabs; the server picked the initial variant from `?variant=<sku>`.
+  const { selectedVariantId: variantId, setSelectedVariantId: setVariantId } = useProductVariant();
   const variant=initial.commerce?.variants.find(v=>v.id===variantId);
   // PostgreSQL products get the same garmin.com pickers as JSON CMS products (no plain dropdown).
   const commerceModel = useMemo(
@@ -82,6 +85,9 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
     if (!next) return;
     setVariantId(next.id);
     setMainIdx(0);
+    // Keep the choice in the URL (reload or a shared link shows the same variant); no navigation, no scroll.
+    const sku = initial.commerce?.variants.find((v) => v.id === next.id)?.sku;
+    if (sku) window.history.replaceState(window.history.state, "", withVariantParam(window.location.href, sku));
   };
 
   const price = cmsVariant?.price ?? product.price;
