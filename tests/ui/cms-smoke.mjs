@@ -239,7 +239,7 @@ async function variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,
     options:[SIZE_OPTION(47,51)],variants:[sizeVariant("UI-VS",47,true,{content:own(47)}),sizeVariant("UI-VS",51,false,{price:"320.00",content:own(51)})]}));
   // The page's default is the catalog offer (available first, then cheapest): 47 mm here, as it is cheaper.
   const route=`/en/p/${saved.id}`,q=JSON.stringify;
-  const tab=label=>evaluate(`(()=>{const b=[...document.querySelectorAll('section .sticky button')].find(b=>b.textContent.trim()===${q(label)});if(!b)return false;b.click();return true;})()`);
+  const tab=label=>evaluate(`(()=>{const b=[...document.querySelectorAll('section [data-product-tabs] button')].find(b=>b.textContent.trim()===${q(label)});if(!b)return false;b.click();return true;})()`);
   const size=mm=>`[...document.querySelectorAll('[role=group][aria-label="Size"] button')].find(b=>b.textContent.trim()==='${mm} mm')`;
   const pressed=mm=>evaluate(`${size(mm)}?.getAttribute('aria-pressed')==='true'`);
   const shows=async(...needles)=>{const body=await text();return needles.every(n=>body.includes(n));};
@@ -307,7 +307,7 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     // Storefront: add to cart, review, Pay (demo).
     await signOut();await customerCookie();
     await navigate("/p/ui-demo-fixture");await until(async()=>(await text()).includes("UI DEMO FIXTURE"),"Demo fixture product did not render");
-    await until(async()=>{try{await click("Add to Cart");return true;}catch{return false;}},"Add to Cart was not clickable");
+    await until(async()=>{try{await click("Add To Cart");return true;}catch{return false;}},"Add To Cart was not clickable");
     await until(async()=>(await pool.query("SELECT 1 FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=$1 AND c.status='active' AND ci.variant_id=$2",[customerId,variant])).rowCount===1,"The demo fixture did not reach the account cart");
     await navigate("/cart");await until(async()=>(await text()).includes("UI DEMO FIXTURE")&&/review order/i.test(await text()),"Cart with the demo fixture missing");
     for(const [name,value] of [["recipientName","UI Demo Buyer"],["phone","+77000000077"],["city","Almaty"],["line1","UI demo street 3"]])await until(()=>setInput(name,value),"Could not fill "+name);
@@ -408,7 +408,7 @@ async function dashboardScenario({pool,runtime,secret,origin,send,evaluate,navig
     // 1. One demo order through the real checkout.
     await signOut();await setCookie(customerCookie);
     await navigate("/p/ui-dash-fixture");await until(async()=>(await text()).includes("UI DASH FIXTURE"),"Dashboard fixture product did not render");
-    await until(async()=>{try{await click("Add to Cart");return true;}catch{return false;}},"Add to Cart was not clickable");
+    await until(async()=>{try{await click("Add To Cart");return true;}catch{return false;}},"Add To Cart was not clickable");
     await until(async()=>(await pool.query("SELECT 1 FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=$1 AND c.status='active' AND ci.variant_id=$2",[customerId,variant])).rowCount===1,"The dashboard fixture did not reach the account cart");
     await navigate("/cart");await until(async()=>(await text()).includes("UI DASH FIXTURE")&&/review order/i.test(await text()),"Cart with the dashboard fixture missing");
     for(const [name,value] of [["recipientName","UI Dashboard Buyer"],["phone","+77000000088"],["city","Almaty"],["line1","UI dashboard street 4"]])await until(()=>setInput(name,value),"Could not fill "+name);
@@ -548,7 +548,7 @@ try{
     const productLinks=()=>evaluate("[...document.querySelectorAll('a[href]')].filter(a=>/^(?:\\/[a-z]{2})?\\/p\\//.test(a.getAttribute('href'))).length");
     await navigate("/c/wearables-smartwatches");await until(async()=>(await text()).toLowerCase().includes("ui fixture"),"Catalog did not load normalized products").catch(async error=>{await writeFile(path.join(receipt,"catalog-body.txt"),await text());await writeFile(path.join(receipt,"catalog-response.html"),await(await fetch(origin+"/c/wearables-smartwatches")).text());throw error;});assert.equal(await productLinks(),24);
     await navigate("/c/wearables-smartwatches?search=UI%20UPDATED%20PRODUCT");await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Catalog search missed newly added product");assert.equal(await productLinks(),1);
-    await navigate("/compare?selected="+saved.id+"&search=UI%20UPDATED%20PRODUCT");await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Compare did not read normalized product");assert.match(await text(),/\b123(?:[.,]00)? KZT/);assert.ok(!(await text()).includes("Forbidden seed"));
+    await navigate("/compare?selected="+saved.id+"&search=UI%20UPDATED%20PRODUCT");await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Compare did not read normalized product");assert.match(await text(),/KZT\s?123(?:[.,]00)?\b|\b123(?:[.,]00)?\s?₸/);assert.ok(!(await text()).includes("Forbidden seed"));
     await navigate("/p/"+saved.id);await until(()=>evaluate("!!document.querySelector('script[type=\"application/ld+json\"]')"),"Product metadata missing");const structured=await evaluate("JSON.parse(document.querySelector('script[type=\"application/ld+json\"]').textContent)");assert.match(String(structured.offers[0].price),/^123(?:\.00)?$/);assert.equal(structured.offers[0].priceCurrency,"KZT");
     const missing=await fetch(origin+"/p/absent-fixture");assert.equal(missing.status,404);const sitemap=await(await fetch(origin+"/sitemap.xml")).text();assert.ok(sitemap.includes(saved.id));
     const unicode=await cms.save("blogs",headers,{title:"Қазақша UI мақала",slug:"қазақша-ui-мақала",content:"UNICODE PUBLIC BODY",status:"published",category:"Fixture"});await navigate("/blog/"+encodeURIComponent(unicode.slug));await until(async()=>(await text()).includes("UNICODE PUBLIC BODY"),"Unicode URL failed");
@@ -599,7 +599,7 @@ try{
     await navigate("/c/wearables-smartwatches");
     await until(()=>evaluate("localStorage.getItem('garmin-clone-cart')===null"),"The stored local cart was not imported");
     await navigate("/p/ui-cart-fixture");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Cart fixture product did not render");
-    await until(async()=>{try{await click("Add to Cart");return true;}catch{return false;}},"Add to Cart was not clickable");
+    await until(async()=>{try{await click("Add To Cart");return true;}catch{return false;}},"Add To Cart was not clickable");
     await until(async()=>(await database.pool.query("SELECT ci.quantity FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.status='active' AND c.user_id IS NULL AND ci.variant_id=$1",[cartVariant])).rows[0]?.quantity===3,"Guest server cart did not hold the imported and added quantity");
     const guestCookie=(await send("Network.getCookies",{urls:[origin+"/api/cart"]})).cookies.find(c=>c.name==="grmn-cart");assert.ok(guestCookie?.httpOnly,"guest cart capability must be HttpOnly");
     await navigate("/cart");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Cart page did not show the server cart");

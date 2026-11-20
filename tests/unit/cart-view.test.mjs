@@ -64,7 +64,7 @@ test("a clean server cart enables checkout; a placed order shows the receipt and
 
 test("server mode with an empty cart shows the empty state", () => {
   const text = nodeText(mount({ ...CART, id: null, version: 0, lines: [], notices: [], subtotal: kzt("0") }).tree);
-  assert.match(text, /Your cart is empty/);
+  assert.match(text, /Your Cart is Empty/);
 });
 
 test("the legacy browser cart offers no fake checkout and never clears itself on checkout", () => {
