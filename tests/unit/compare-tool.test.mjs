@@ -6,13 +6,15 @@ import { test } from "node:test";
 import { componentFixture, nodes, nodeText } from "../helpers/component-fixture.mjs";
 import * as compareItems from "../../src/lib/compare/compare-items.ts";
 
-function setup(live = "") {
+function setup(initialQuery = "") {
   const calls = [];
+  // The address the component reads through useSearchParams; history.replaceState (mocked per test) can move it.
+  const address = { query: initialQuery };
   const router = { push: (href, options) => calls.push({ method: "push", href, options }), replace: (href, options) => calls.push({ method: "replace", href, options }), refresh: () => calls.push({ method: "refresh" }) };
   const fixture = componentFixture("src/components/CompareTool.tsx", {
-    modules: { "next/navigation": { useRouter: () => router, usePathname: () => "/en/compare", useSearchParams: () => new URLSearchParams(live) }, "@/lib/compare/compare-items": compareItems },
+    modules: { "next/navigation": { useRouter: () => router, usePathname: () => "/en/compare", useSearchParams: () => new URLSearchParams(address.query) }, "@/lib/compare/compare-items": compareItems },
   });
-  return { fixture, calls };
+  return { fixture, calls, address };
 }
 
 const watch = {
@@ -27,7 +29,7 @@ const groups = compareItems.buildCompareRows([
   { specGroups: [{ title: "General", items: [{ label: "Lens", value: "Sapphire" }, { label: "Weight", value: "56 g" }] }, { title: "Sensors", items: [{ label: "GPS", value: "Yes" }] }] },
 ], "Specs");
 
-const props = (overrides = {}) => ({ items: [watch, band], groups, onlyDifferences: false, search: null, catalogueHref: "/c/wearables-smartwatches", renderedFor: "", ...overrides });
+const props = (overrides = {}) => ({ items: [watch, band], groups, search: null, catalogueHref: "/c/wearables-smartwatches", renderedFor: "", ...overrides });
 const byRole = (tree, role) => nodes(tree).filter((n) => n.props?.role === role);
 const rowLabels = (tree) => byRole(tree, "rowheader").map(nodeText).map((s) => s.trim());
 const groupButtons = (tree) => nodes(tree).filter((n) => n.type === "button" && n.props["aria-controls"]?.startsWith("compare-group-"));
@@ -101,10 +103,10 @@ test("five columns leave no + tile", () => {
 });
 
 test("Show only differences hides equal rows and groups left empty, and is kept in the URL", () => {
-  const { fixture } = setup();
+  const { fixture, address } = setup("item=fenix-8~F8-47&item=band&utm=x");
   const writes = [];
   const previous = globalThis.window;
-  globalThis.window = { history: { state: { kept: true }, replaceState: (state, _title, url) => writes.push({ state, url }) } };
+  globalThis.window = { history: { state: { kept: true }, replaceState: (state, _title, url) => { writes.push({ state, url }); address.query = url.split("?")[1] ?? ""; } } };
   try {
     let tree = fixture.render(props());
     assert.deepEqual(rowLabels(tree), ["Lens", "Weight", "GPS"]);
@@ -113,13 +115,17 @@ test("Show only differences hides equal rows and groups left empty, and is kept 
     tree = fixture.render(props());
     assert.deepEqual(rowLabels(tree), ["Weight"]);
     assert.deepEqual(groupButtons(tree).map(nodeText).map((s) => s.trim()), ["General"]);
-    assert.deepEqual(writes, [{ state: { kept: true }, url: "/en/compare?item=fenix-8~F8-47&item=band&diff=1" }]);
+    // Only diff changes; the rest of the address is kept, and Next.js needs a null state to sync useSearchParams.
+    assert.deepEqual(writes, [{ state: null, url: "/en/compare?item=fenix-8~F8-47&item=band&utm=x&diff=1" }]);
   } finally {
     globalThis.window = previous;
   }
-  // diff=1 from the URL starts with the filter on.
-  const { fixture: fromUrl } = setup();
-  assert.deepEqual(rowLabels(fromUrl.render(props({ onlyDifferences: true }))), ["Weight"]);
+  // diff=1 from the URL starts with the filter on, and Back to an address without it turns it off again.
+  const { fixture: fromUrl, address: url } = setup("item=fenix-8~F8-47&item=band&diff=1");
+  assert.deepEqual(rowLabels(fromUrl.render(props())), ["Weight"]);
+  assert.equal(nodes(fromUrl.render(props())).find((n) => n.props?.type === "checkbox").props.checked, true);
+  url.query = "item=fenix-8~F8-47&item=band";
+  assert.deepEqual(rowLabels(fromUrl.render(props())), ["Lens", "Weight", "GPS"]);
 });
 
 test("a spec missing from a column shows an empty cell", () => {
@@ -187,4 +193,99 @@ test("a render that does not match the address is refetched once (Next.js keeps 
   assert.deepEqual(fresh.calls, []);
   assert.equal(compareItems.renderedQuery("selected=a&q=%20venu%20&diff=1"), "item=a&q=venu");
   assert.equal(compareItems.readCompareSearch({ q: ["x".repeat(150)] }).length, compareItems.COMPARE_SEARCH_MAX_LENGTH);
+});
+
+// ---- Fix round 1 ------------------------------------------------------------------------------------------------
+
+const sizes = { ...watch, variants: [{ sku: "F8-47", label: "47 mm" }, { sku: "F8-51", label: "51 mm" }] };
+const searchFor = (...ids) => ({ query: "x", results: ids.map((id) => ({ id, name: id, image: "/i.jpg" })) });
+const hitLabels = (tree) => nodes(tree).filter((n) => n.type === "button" && /to the comparison$/.test(n.props?.["aria-label"] ?? "")).map((n) => n.props["aria-label"]);
+
+test("a search hit already compared is added in its first size not compared yet, or not offered at all", () => {
+  const { fixture, calls } = setup();
+  // fēnix 8 47 mm is compared: the hit adds 51 mm. The band (no sizes) is compared: not offered. Venu is new.
+  let tree = fixture.render(props({ items: [sizes, band], search: searchFor("fenix-8", "band", "venu") }));
+  assert.deepEqual(hitLabels(tree), ["Add fenix-8 to the comparison", "Add venu to the comparison"]);
+  nodes(tree).find((n) => n.props?.["aria-label"] === "Add fenix-8 to the comparison").props.onClick();
+  assert.deepEqual(calls.at(-1), { method: "push", href: "/en/compare?item=fenix-8~F8-47&item=band&item=fenix-8~F8-51", options: { scroll: false } });
+  // Both sizes compared: the product is gone from the hits, and with no hits left the empty message shows.
+  tree = fixture.render(props({ items: [sizes, { ...sizes, sku: "F8-51" }], search: searchFor("fenix-8") }));
+  assert.deepEqual(hitLabels(tree), []);
+  assert.match(nodeText(tree), /No products found for “x”/);
+  // The results are announced politely.
+  assert.ok(nodes(tree).some((n) => n.props?.["aria-live"] === "polite" && /No products found/.test(nodeText(n))));
+});
+
+test("with only differences on and nothing different, a status says so instead of a blank table", () => {
+  const same = compareItems.buildCompareRows([{ specs: [{ label: "Lens", value: "Sapphire" }] }, { specs: [{ label: "Lens", value: "Sapphire" }] }], "Specs");
+  const { fixture } = setup("diff=1");
+  const tree = fixture.render(props({ groups: same }));
+  assert.equal(byRole(tree, "table").length, 0);
+  const status = byRole(tree, "status").find((n) => nodeText(n).trim());
+  assert.equal(nodeText(status).trim(), "No differences between these products.");
+  // Without the filter the status region stays empty.
+  const { fixture: off } = setup();
+  assert.ok(byRole(off.render(props({ groups: same })), "status").every((n) => !nodeText(n).trim()));
+});
+
+test("each size picker of a product compared twice has its own label; group toggles say Expand/Collapse", () => {
+  const { fixture } = setup();
+  let tree = fixture.render(props({ items: [sizes, { ...sizes, sku: "F8-51" }] }));
+  const labels = nodes(tree).filter((n) => n.type === "label" && /^compare-size-/.test(n.props.htmlFor ?? "")).map((n) => nodeText(n).trim());
+  assert.deepEqual(labels, ["Size for fēnix 8, column 1", "Size for fēnix 8, column 2"]);
+  let [general] = groupButtons(tree);
+  assert.equal(general.props["aria-label"], "Collapse General");
+  general.props.onClick();
+  tree = fixture.render(props({ items: [sizes, { ...sizes, sku: "F8-51" }] }));
+  [general] = groupButtons(tree);
+  assert.equal(general.props["aria-label"], "Expand General");
+});
+
+test("SKUs differing only in case are one column", () => {
+  assert.deepEqual(compareItems.parseCompareItems("item=a~F8&item=a~f8&item=b"), [{ productId: "a", sku: "F8" }, { productId: "b" }]);
+});
+
+test("the compact column bar appears when the cards scroll away, is aria-hidden and follows horizontal scroll", () => {
+  const { fixture } = setup();
+  const observers = [];
+  const previous = globalThis.IntersectionObserver;
+  globalThis.IntersectionObserver = class { constructor(callback) { this.callback = callback; this.observed = []; observers.push(this); } observe(el) { this.observed.push(el); } disconnect() { this.disconnected = true; } };
+  try {
+    const items = [sizes, band];
+    let tree = fixture.render(props({ items }));
+    assert.ok(!nodes(tree).some((n) => n.props?.["data-compare-compact"] !== undefined), "no bar at the top of the page");
+    const cards = nodes(tree).find((n) => n.props?.ref && /gap-4/.test(n.props.className ?? ""));
+    cards.props.ref.current = { id: "cards" };
+    fixture.effects.forEach((effect) => effect());
+    assert.equal(observers.length, 1);
+    assert.deepEqual(observers[0].observed, [{ id: "cards" }]);
+    // Scrolled past the cards (above the viewport): the bar shows.
+    observers[0].callback([{ isIntersecting: false, boundingClientRect: { top: -400 } }]);
+    tree = fixture.render(props({ items }));
+    const bar = nodes(tree).find((n) => n.props?.["data-compare-compact"] !== undefined);
+    assert.ok(bar, "compact bar rendered");
+    assert.equal(bar.props["aria-hidden"], "true");
+    assert.match(nodeText(bar), /fēnix 8\s+47 mm\s+Index Band/);
+    assert.ok(!nodes(bar).some((n) => n.type === "button" || n.type === "select" || n.props?.href), "nothing focusable in the bar");
+    // Horizontal scroll of the table is mirrored into the bar.
+    const listeners = {};
+    const scroller = { scrollLeft: 120, addEventListener: (type, fn, options) => { listeners[type] = { fn, options }; }, removeEventListener: (type) => { delete listeners[type]; } };
+    const compact = { scrollLeft: 0 };
+    nodes(tree).find((n) => n.props?.ref && /overflow-x-auto/.test(n.props.className ?? "")).props.ref.current = scroller;
+    nodes(bar).find((n) => n.props?.ref).props.ref.current = compact;
+    const cleanups = fixture.effects.map((effect) => effect()).filter(Boolean);
+    assert.equal(compact.scrollLeft, 120);
+    assert.deepEqual(listeners.scroll.options, { passive: true });
+    scroller.scrollLeft = 300;
+    listeners.scroll.fn();
+    assert.equal(compact.scrollLeft, 300);
+    cleanups.forEach((cleanup) => cleanup());
+    assert.equal(listeners.scroll, undefined);
+    // Back above the cards (or the cards visible again): the bar goes away.
+    observers.at(-1).callback([{ isIntersecting: true, boundingClientRect: { top: 200 } }]);
+    tree = fixture.render(props({ items }));
+    assert.ok(!nodes(tree).some((n) => n.props?.["data-compare-compact"] !== undefined));
+  } finally {
+    globalThis.IntersectionObserver = previous;
+  }
 });

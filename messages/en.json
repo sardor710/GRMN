@@ -306,7 +306,9 @@
     "empty": "There are no products to compare yet. Add up to {max} products to compare their specs side by side.",
     "emptyLink": "Shop smartwatches",
     "expand": "Expand {title}",
-    "collapse": "Collapse {title}"
+    "collapse": "Collapse {title}",
+    "sizeLabelColumn": "Size for {name}, column {position}",
+    "noDifferences": "No differences between these products."
   },
   "Footer": {
     "navLabel": "Global Footer Navigation",

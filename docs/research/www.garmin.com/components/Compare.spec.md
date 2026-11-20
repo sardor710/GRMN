@@ -82,5 +82,7 @@ Vue app. Breakpoints used: min 768, min 1024 (main switch), min 1200, min 1440.
 - Under 1024px the columns scroll horizontally (each column half the viewport minus gutters, so two are visible) and
   the label text stays pinned to the left edge of the scroller (`sticky left-0`) while the band spans every column.
 - Semantics: one ARIA table per group (columnheader per product, rowheader per spec, cell per value).
-- Not copied: Garmin's fixed compact bar on scroll (see report), USD formatting (tenge via `Price`), "and up" (each
+- Compact bar: when the cards leave the viewport (IntersectionObserver) a fixed, aria-hidden bar repeats each
+  column (60px image, name, size label) on the same grid, and mirrors the table scroller's scrollLeft under 1024px.
+- Not copied: USD formatting (tenge via `Price`), "and up" (each
   column shows the chosen size's exact price, so there is no price range to qualify).

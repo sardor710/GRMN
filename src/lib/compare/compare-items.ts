@@ -41,7 +41,8 @@ function normalizeRefs(refs: Iterable<CompareItemRef | null>): CompareItemRef[] 
   const seen = new Set<string>(), out: CompareItemRef[] = [];
   for (const ref of refs) {
     if (!ref) continue;
-    const key = `${ref.productId}\u0000${ref.sku ?? ""}`;
+    // SKUs match case-insensitively (as on the product page), so `a~F8` and `a~f8` are one column.
+    const key = `${ref.productId}\u0000${(ref.sku ?? "").toLowerCase()}`;
     if (seen.has(key)) continue;
     seen.add(key);
     out.push(ref);

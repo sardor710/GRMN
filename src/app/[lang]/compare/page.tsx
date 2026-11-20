@@ -4,7 +4,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CompareTool, type CompareColumn, type CompareSearch } from "@/components/CompareTool";
 import { catalogueProducts, catalogues } from "@/lib/products";
-import { COMPARE_MAX_ITEMS, buildCompareRows, parseCompareItems, readCompareSearch, readOnlyDifferences, renderedQuery } from "@/lib/compare/compare-items";
+import { COMPARE_MAX_ITEMS, buildCompareRows, parseCompareItems, readCompareSearch, renderedQuery } from "@/lib/compare/compare-items";
 import { getCompareItems, type CompareItem } from "@/lib/compare/server";
 import { VARIANT_PARAM } from "@/lib/catalog/variant-selection";
 import { cmsBackend } from "@/server/cms/source";
@@ -73,7 +73,6 @@ export default async function ComparePage({ params, searchParams }: PageProps<"/
         <CompareTool
           items={items.map((item) => toColumn(item, skuParam))}
           groups={groups}
-          onlyDifferences={readOnlyDifferences(query)}
           search={search}
           catalogueHref={CATALOGUE_HREF}
           renderedFor={renderedQuery(query)}

@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAppLocale } from "@/i18n/useAppLocale";
 import { Price } from "@/components/ui/price";
-import { COMPARE_MAX_ITEMS, COMPARE_SEARCH_MAX_LENGTH, compareSearch, isDifferentRow, renderedQuery, type CompareGroup, type CompareItemRef } from "@/lib/compare/compare-items";
+import { COMPARE_DIFF_PARAM, COMPARE_MAX_ITEMS, COMPARE_SEARCH_MAX_LENGTH, compareSearch, isDifferentRow, renderedQuery, type CompareGroup, type CompareItemRef } from "@/lib/compare/compare-items";
 import type { CompareItem } from "@/lib/compare/resolve";
 
 /** One compare column as the page sends it: the compare read without its spec content, plus the Shop link. */
@@ -21,8 +21,6 @@ export interface CompareToolProps {
   items: CompareColumn[];
   /** `buildCompareRows` over the columns' content, in column order. */
   groups: CompareGroup[];
-  /** `diff=1` in the URL. */
-  onlyDifferences: boolean;
   search?: CompareSearch | null;
   /** "Return to shopping" and the empty state link (no locale prefix). */
   catalogueHref: string;
@@ -39,14 +37,15 @@ const ADD_PANEL_ID = "compare-add-panel";
 const SEARCH_INPUT_ID = "compare-search";
 /** Text pinned to the left edge of the horizontal scroller under 1024px (the scroller is the viewport minus 32px). */
 const PINNED = "max-lg:sticky max-lg:left-0 max-lg:w-[calc(100vw-32px)]";
-const TILE_HOVER = "transition-shadow duration-[135ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:shadow-[0_1px_3px_1px_rgba(77,77,77,0.2),0_2px_8px_4px_rgba(77,77,77,0.1)]";
+const TILE_HOVER = "transition-shadow duration-[135ms] ease-[cubic-bezier(0.4,0,0.2,1)] hover:shadow-garmin-raised-hover";
 
 const refOf = (item: CompareColumn): CompareItemRef => ({ productId: item.productId, ...(item.variants.length ? { sku: item.sku } : {}) });
 const sameRef = (a: CompareItemRef, b: CompareItemRef) => a.productId === b.productId && (a.sku ?? "").toLowerCase() === (b.sku ?? "").toLowerCase();
+const sizeOf = (item: CompareColumn) => (item.variants.length >= 2 ? item.variants.find((v) => v.sku === item.sku)?.label : undefined);
 const refValue = (ref: CompareItemRef) => (ref.sku ? `${ref.productId}~${ref.sku}` : ref.productId);
 
 /** The Garmin product comparison (docs/research/www.garmin.com/components/Compare.spec.md). The URL is the state. */
-export function CompareTool({ items, groups, onlyDifferences, search, catalogueHref, renderedFor }: CompareToolProps) {
+export function CompareTool({ items, groups, search, catalogueHref, renderedFor }: CompareToolProps) {
   const t = useTranslations("Compare");
   const locale = useAppLocale();
   const router = useRouter();
@@ -58,12 +57,36 @@ export function CompareTool({ items, groups, onlyDifferences, search, catalogueH
   useEffect(() => {
     if (liveQuery !== renderedFor) router.refresh();
   }, [liveQuery, renderedFor, router]);
-  const [diff, setDiff] = useState(onlyDifferences);
+  // "Show only differences" lives in the URL (`diff=1`), so Back and Forward restore it.
+  const diff = params.get(COMPARE_DIFF_PARAM) === "1";
   const [collapsed, setCollapsed] = useState<string[]>([]);
   const [adding, setAdding] = useState(Boolean(search));
   const [query, setQuery] = useState(search?.query ?? "");
 
   const refs = items.map(refOf);
+  const hasItems = items.length > 0;
+
+  // Garmin's compact column bar: once the column cards scroll out of view a fixed bar repeats each column's image,
+  // name and size. It is aria-hidden (the real header stays in the DOM) and follows the table's horizontal scroll.
+  const cardsRef = useRef<HTMLDivElement>(null);
+  const scrollerRef = useRef<HTMLDivElement>(null);
+  const compactRef = useRef<HTMLDivElement>(null);
+  const [stuck, setStuck] = useState(false);
+  useEffect(() => {
+    const cards = cardsRef.current;
+    if (!hasItems || !cards || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => setStuck(!entry.isIntersecting && entry.boundingClientRect.top < 0));
+    observer.observe(cards);
+    return () => observer.disconnect();
+  }, [hasItems]);
+  useEffect(() => {
+    const scroller = scrollerRef.current, compact = compactRef.current;
+    if (!stuck || !scroller || !compact) return;
+    const sync = () => { compact.scrollLeft = scroller.scrollLeft; };
+    sync();
+    scroller.addEventListener("scroll", sync, { passive: true });
+    return () => scroller.removeEventListener("scroll", sync);
+  }, [stuck]);
   const canAdd = items.length < SLOTS;
   // Slots under 1024px: the columns plus the "+" tile, at least two.
   const mobileSlots = Math.max(2, Math.min(SLOTS, items.length + (canAdd ? 1 : 0)));
@@ -79,16 +102,32 @@ export function CompareTool({ items, groups, onlyDifferences, search, catalogueH
     else router.replace(href, { scroll: false });
   };
   const remove = (index: number) => go(refs.filter((_, i) => i !== index), "push");
-  const add = (productId: string) => {
+  const add = (ref: CompareItemRef) => {
     setAdding(false);
     setQuery("");
-    go([...refs, { productId }], "push");
+    go([...refs, ref], "push");
   };
+  // A product already compared is added in its first size not compared yet; with every size compared it is not offered.
+  const addRefFor = (productId: string): CompareItemRef | null => {
+    const present = items.find((item) => item.productId === productId);
+    if (!present) return { productId };
+    const free = present.variants.find((variant) => !refs.some((ref) => sameRef(ref, { productId, sku: variant.sku })));
+    return free ? { productId, sku: free.sku } : null;
+  };
+  const hits = (search?.results ?? []).flatMap((result) => {
+    const ref = addRefFor(result.id);
+    return ref ? [{ ...result, ref }] : [];
+  });
   const changeSize = (index: number, sku: string) => go(refs.map((ref, i) => (i === index ? { productId: ref.productId, sku } : ref)), "replace");
   const toggleDiff = (checked: boolean) => {
-    setDiff(checked);
-    // Client-only state: every row is already here, so only the address changes (Next.js syncs history.replaceState).
-    if (typeof window !== "undefined") window.history.replaceState(window.history.state, "", hrefFor(refs, { onlyDifferences: checked }));
+    // Client-only: every row is already here, so only `diff` in the address changes (the rest of the query is kept
+    // as is, so the columns are not refetched). Next.js syncs history.replaceState into useSearchParams, which
+    // re-renders with the new filter. The state argument must be null: Next.js ignores its own history entries.
+    const next = new URLSearchParams(params.toString());
+    if (checked) next.set(COMPARE_DIFF_PARAM, "1");
+    else next.delete(COMPARE_DIFF_PARAM);
+    const qs = next.toString().replace(/%7E/gi, "~");
+    if (typeof window !== "undefined") window.history.replaceState(null, "", qs ? `${pathname}?${qs}` : pathname);
   };
   const submitSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -99,6 +138,7 @@ export function CompareTool({ items, groups, onlyDifferences, search, catalogueH
   const shownGroups = groups
     .map((group) => ({ ...group, rows: diff ? group.rows.filter(isDifferentRow) : group.rows }))
     .filter((group) => group.rows.length > 0);
+  const noDifferences = diff && groups.length > 0 && shownGroups.length === 0;
 
   // Slot i is hidden under 1024px when it is past the visible mobile slots.
   const slotVisibility = (i: number) => (i >= mobileSlots ? "max-lg:hidden" : "");
@@ -108,8 +148,9 @@ export function CompareTool({ items, groups, onlyDifferences, search, catalogueH
   // A product compared in two sizes is told apart by its size in the column headers.
   const columnName = (item: CompareColumn) =>
     items.filter((other) => other.productId === item.productId).length > 1
-      ? `${item.name}, ${item.variants.find((v) => v.sku === item.sku)?.label ?? item.sku}`
+      ? `${item.name}, ${sizeOf(item) ?? item.sku}`
       : item.name;
+  const isRepeated = (item: CompareColumn) => items.filter((other) => other.productId === item.productId).length > 1;
 
   const renderCard = (item: CompareColumn, index: number) => {
     const others = refs.filter((_, i) => i !== index);
@@ -137,7 +178,9 @@ export function CompareTool({ items, groups, onlyDifferences, search, catalogueH
             </p>
             {item.variants.length >= 2 && (
               <div className="mb-4">
-                <label htmlFor={pickerId} className="sr-only">{t("sizeLabel", { name: item.name })}</label>
+                <label htmlFor={pickerId} className="sr-only">
+                  {isRepeated(item) ? t("sizeLabelColumn", { name: item.name, position: index + 1 }) : t("sizeLabel", { name: item.name })}
+                </label>
                 <select id={pickerId} value={item.sku} onChange={(event) => changeSize(index, event.target.value)} className="g-select my-0 text-[14px]">
                   {item.variants.map((variant) => (
                     // A size already compared in another column is not offered again (it would merge the two columns).
@@ -196,13 +239,14 @@ export function CompareTool({ items, groups, onlyDifferences, search, catalogueH
           />
           <button type="submit" className="g-btn g-btn--black g-btn--sm mt-2 w-full">{t("searchButton")}</button>
         </form>
-        {search && (search.results.length ? (
+        <div aria-live="polite">
+        {search && (hits.length ? (
           <ul className="mt-2">
-            {search.results.map((result) => (
+            {hits.map((result) => (
               <li key={result.id}>
                 <button
                   type="button"
-                  onClick={() => add(result.id)}
+                  onClick={() => add(result.ref)}
                   aria-label={t("addLabel", { name: result.name })}
                   className="flex w-full items-center gap-2 py-2 text-left text-[14px] leading-[21px] text-black hover:underline"
                 >
@@ -213,8 +257,9 @@ export function CompareTool({ items, groups, onlyDifferences, search, catalogueH
             ))}
           </ul>
         ) : (
-          <p role="status" className="mt-2 text-[14px] leading-[21px]">{t("searchEmpty", { query: search.query })}</p>
+          <p className="mt-2 text-[14px] leading-[21px]">{t("searchEmpty", { query: search.query })}</p>
         ))}
+        </div>
       </div>
     </div>
   );
@@ -240,6 +285,7 @@ export function CompareTool({ items, groups, onlyDifferences, search, catalogueH
             onClick={() => toggleGroup(group.key)}
             aria-expanded={open}
             aria-controls={bodyId}
+            aria-label={t(open ? "collapse" : "expand", { title: group.title })}
             className="flex w-full items-center p-2 text-left uppercase lg:w-auto"
           >
             <span className="g-heading min-w-0 flex-1">{group.title}</span>
@@ -281,8 +327,29 @@ export function CompareTool({ items, groups, onlyDifferences, search, catalogueH
     );
   };
 
+  const compactBar = stuck && hasItems && (
+    <div aria-hidden="true" data-compare-compact="" className="fixed inset-x-0 top-0 z-[1000] bg-white py-4 shadow-garmin-raised">
+      <div className="mx-auto max-w-[1024px] px-4">
+        <div ref={compactRef} className="max-lg:overflow-x-hidden">
+          <div className={`${grid} gap-4 ${MOBILE_WIDTH[mobileSlots]}`}>
+            {items.map((item, index) => (
+              <div key={refValue(refs[index])} className="flex h-24 min-w-0 items-center gap-2 bg-white px-3 shadow-garmin-raised">
+                <Image src={item.image} alt="" width={60} height={60} sizes="60px" className="h-[60px] w-[60px] shrink-0 object-contain" />
+                <div className="min-w-0 text-[14px] leading-[21px]">
+                  <p className="line-clamp-2">{item.name}</p>
+                  {sizeOf(item) && <p className="truncate text-[12px] leading-[18px] text-garmin-text-muted">{sizeOf(item)}</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="text-black">
+      {compactBar}
       <header className="flex flex-col justify-center p-4 lg:p-6">
         <Link href={catalogueHref} className="flex items-center self-start text-[14px] leading-[21px] text-black underline transition-colors hover:text-garmin-black-hover">
           <svg aria-hidden="true" viewBox="0 0 11.2 18.1" className="mr-[9.6px] h-[14.53px] w-[8.98px] rotate-180 fill-current">
@@ -294,11 +361,11 @@ export function CompareTool({ items, groups, onlyDifferences, search, catalogueH
       </header>
 
       <div className="mx-auto max-w-[1024px] px-4 pb-10">
-        <div className="max-lg:overflow-x-auto">
+        <div ref={scrollerRef} className="max-lg:overflow-x-auto">
           <div className={MOBILE_WIDTH[mobileSlots]}>
             <div className="bg-white py-4">
-              <div className={`${grid} gap-4`}>{slots}</div>
-              {items.length > 0 && (
+              <div ref={cardsRef} className={`${grid} gap-4`}>{slots}</div>
+              {hasItems && (
                 <div className={`pt-4 ${PINNED}`}>
                   <label className="inline-flex cursor-pointer items-center gap-[5.6px] py-2 text-[16px] leading-4">
                     <input type="checkbox" className="g-checkbox" checked={diff} onChange={(event) => toggleDiff(event.target.checked)} />
@@ -308,10 +375,15 @@ export function CompareTool({ items, groups, onlyDifferences, search, catalogueH
               )}
             </div>
             {shownGroups.map(renderGroup)}
+            {hasItems && (
+              <div role="status" className={PINNED}>
+                {noDifferences && <p className="py-6 text-[16px] leading-[24px]">{t("noDifferences")}</p>}
+              </div>
+            )}
           </div>
         </div>
 
-        {items.length === 0 && (
+        {!hasItems && (
           <div className="py-10 text-center">
             <p className="text-[16px] leading-[24px]">{t("empty", { max: SLOTS })}</p>
             <Link href={catalogueHref} className="g-btn g-btn--black mt-6">{t("emptyLink")}</Link>
