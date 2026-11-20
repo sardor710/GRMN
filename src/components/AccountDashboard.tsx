@@ -41,17 +41,18 @@ const statusTone = (status: string) => status === "delivered" ? "bg-emerald-50 t
   : status === "shipped" ? "bg-sky-50 text-sky-800 border-sky-300"
   : status === "processing" || status === "new" ? "bg-amber-50 text-amber-800 border-amber-300"
   : "bg-neutral-100 text-neutral-800 border-neutral-300";
-const inputClass = "mt-1 w-full border border-neutral-300 bg-white px-3 py-2 text-[14px] text-black focus:border-black focus:outline-none disabled:bg-neutral-100";
-const labelClass = "block text-[12px] font-semibold uppercase tracking-wider text-neutral-600";
-const primaryButton = "bg-black px-5 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 disabled:cursor-not-allowed disabled:bg-neutral-400";
-const secondaryButton = "border border-neutral-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-700 hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50";
-const linkButton = "inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#007cc3] hover:underline disabled:cursor-not-allowed disabled:text-neutral-400";
+// garmin.com form and button primitives (Forms.spec.md, Buttons.spec.md; Task 5a.2 .g-* classes).
+const inputClass = "g-input disabled:bg-muted";
+const labelClass = "g-label text-black";
+const primaryButton = "g-btn g-btn--black";
+const secondaryButton = "g-btn g-btn--secondary";
+const linkButton = "inline-flex items-center gap-1.5 text-[14px] font-medium text-garmin-blue hover:text-garmin-blue-hover hover:underline disabled:cursor-not-allowed disabled:opacity-50";
 
 function Card({ title, children, action }: { title: string; children: React.ReactNode; action?: React.ReactNode }) {
   return (
-    <div className="border border-neutral-200 bg-white p-6 shadow-xs">
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-3">
-        <h2 className="g-heading text-[18px] font-semibold text-black">{title}</h2>
+    <div className="border border-garmin-control bg-white p-6">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 border-b border-garmin-control pb-4">
+        <h2 className="g-heading g-h4 m-0 text-black">{title}</h2>
         {action}
       </div>
       {children}
@@ -408,8 +409,8 @@ export function AccountDashboard() {
   // ================================================================ render
   const toast = statusMessage && (
     <div className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 border px-5 py-3 shadow-xl transition-all ${statusMessage.type === "error" ? "border-red-300 bg-red-50 text-red-900" : "border-black bg-black text-white"}`} role="status">
-      {statusMessage.type === "error" ? <AlertCircle className="h-4 w-4 text-red-600" /> : <Check className="h-4 w-4 text-[#007cc3]" />}
-      <span className="text-xs font-semibold uppercase tracking-wider">{shown(statusMessage.text)}</span>
+      {statusMessage.type === "error" ? <AlertCircle className="h-4 w-4 text-red-600" /> : <Check className="h-4 w-4 text-garmin-blue" />}
+      <span className="text-[14px] font-medium">{shown(statusMessage.text)}</span>
     </div>
   );
 
@@ -424,11 +425,11 @@ export function AccountDashboard() {
   if (phase === "unavailable" || phase === "error") {
     return (
       <div className="mx-auto max-w-[640px] px-4 py-20 font-sans">
-        <div role="alert" className="border border-neutral-200 bg-white p-6 text-center shadow-xs">
+        <div role="alert" className="border border-neutral-200 bg-white p-6 text-center">
           <AlertCircle className="mx-auto h-6 w-6 text-red-600" />
           <h1 className="g-heading mt-3 text-[22px] font-semibold text-black">{phase === "unavailable" ? t("unavailableTitle") : t("errorTitle")}</h1>
           <p className="mt-2 text-[14px] text-neutral-600">{phase === "unavailable" ? t("unavailableBody") : t("errorBody")}</p>
-          {loadError && <p className="mt-2 font-mono text-[12px] text-neutral-400">{shown(loadError)}</p>}
+          {loadError && <p className="mt-2 text-[12px] text-garmin-text-muted">{shown(loadError)}</p>}
           {phase === "error" && <button type="button" onClick={retry} className={`${primaryButton} mt-5`}>{t("tryAgain")}</button>}
         </div>
       </div>
@@ -438,9 +439,9 @@ export function AccountDashboard() {
   if (phase === "signed_out") {
     return (
       <div className="mx-auto max-w-[480px] px-4 py-16 font-sans">
-        <div className="border border-neutral-200 bg-white p-6 shadow-xs">
+        <div className="border border-neutral-200 bg-white p-6">
           <div className="flex items-center gap-3 border-b border-neutral-100 pb-3">
-            <Phone className="h-5 w-5 text-[#007cc3]" />
+            <Phone className="h-5 w-5 text-garmin-blue" />
             <h1 className="g-heading text-[20px] font-semibold text-black">{t("signIn.title")}</h1>
           </div>
           {signInNotice && <p role="status" className="mt-4 border border-emerald-200 bg-emerald-50 p-2.5 text-xs text-emerald-900">{signInNotice}</p>}
@@ -496,7 +497,7 @@ export function AccountDashboard() {
           <AccountIcon className="h-8 w-8" />
         </div>
         <div>
-          <h1 className="g-heading text-[28px] font-semibold uppercase tracking-wide text-black">{profile.name}</h1>
+          <h1 className="g-heading g-h1 m-0 text-black">{profile.name}</h1>
           <p className="font-mono text-[13px] text-neutral-500">
             {[profile.email, profile.phone].filter(Boolean).join(" · ")}
           </p>
@@ -509,14 +510,14 @@ export function AccountDashboard() {
             {TABS.map(id => (
               <li key={id}>
                 <button type="button" onClick={() => { setTab(id); if (id === "Wishlist") void loadWishlist(); }} aria-current={tab === id ? "page" : undefined}
-                  className={`w-full whitespace-nowrap px-4 py-2.5 text-left text-[14px] transition-colors ${tab === id ? "bg-black font-medium text-white lg:border-l-4 lg:border-[#007cc3]" : "text-neutral-600 hover:bg-neutral-100/60 hover:text-black"}`}>
+                  className={`w-full whitespace-nowrap px-4 py-2.5 text-left text-[14px] transition-colors ${tab === id ? "bg-black font-medium text-white" : "text-black hover:bg-muted hover:underline"}`}>
                   {t(`tabs.${id}`)}
-                  {id === "Orders" && <span className="ml-2 bg-neutral-200 px-1.5 py-0.5 font-mono text-[11px] text-neutral-800">{orders.length}{nextCursor ? "+" : ""}</span>}
+                  {id === "Orders" && <span className="ml-2 bg-neutral-200 px-1.5 py-0.5 text-[11px] text-neutral-800">{orders.length}{nextCursor ? "+" : ""}</span>}
                 </button>
               </li>
             ))}
             <li className="pt-2">
-              <button type="button" onClick={handleSignOut} disabled={busy === "sign-out"} className="w-full px-4 py-2 text-left text-[13px] text-neutral-400 transition-colors hover:text-black">
+              <button type="button" onClick={handleSignOut} disabled={busy === "sign-out"} className="w-full px-4 py-2 text-left text-[13px] text-garmin-text-muted transition-colors hover:text-black">
                 {t("signOut")}
               </button>
             </li>
@@ -534,25 +535,25 @@ export function AccountDashboard() {
                 {!isEditingProfile ? (
                   <dl className="grid grid-cols-1 gap-4 text-[14px] sm:grid-cols-2">
                     <div className="border border-neutral-100 bg-neutral-50/50 p-3">
-                      <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">{t("details.fullName")}</dt>
+                      <dt className="text-[14px] font-bold text-black">{t("details.fullName")}</dt>
                       <dd className="mt-1 font-semibold text-black">{profile.name}</dd>
                     </div>
                     <div className="border border-neutral-100 bg-neutral-50/50 p-3">
-                      <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">{t("details.email")}</dt>
+                      <dt className="text-[14px] font-bold text-black">{t("details.email")}</dt>
                       <dd className="mt-1 flex flex-wrap items-center gap-2 font-semibold text-black">
                         <span>{profile.email ?? t("details.notProvided")}</span>
                         {profile.email && !profile.emailVerified && <span className="border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">{t("details.unverified")}</span>}
                       </dd>
                     </div>
                     <div className="border border-neutral-100 bg-neutral-50/50 p-3">
-                      <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">{t("details.phone")}</dt>
+                      <dt className="text-[14px] font-bold text-black">{t("details.phone")}</dt>
                       <dd className="mt-1 flex flex-wrap items-center gap-2 font-semibold text-black">
                         <span>{profile.phone ?? t("details.notProvided")}</span>
                         {profile.phoneVerified && <span className="flex items-center gap-1 text-[11px] font-medium text-emerald-700"><Check className="h-3 w-3" /> {t("details.verified")}</span>}
                       </dd>
                     </div>
                     <div className="border border-neutral-100 bg-neutral-50/50 p-3">
-                      <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">{t("details.profile")}</dt>
+                      <dt className="text-[14px] font-bold text-black">{t("details.profile")}</dt>
                       <dd className="mt-1 font-semibold text-black">{profile.profileState === "complete" ? t("details.complete") : t("details.incomplete")}</dd>
                     </div>
                   </dl>
@@ -566,12 +567,12 @@ export function AccountDashboard() {
                       <div>
                         <label className={labelClass} htmlFor="profileEmail">{t("form.email")}</label>
                         <input id="profileEmail" name="email" type="email" required maxLength={254} value={profileForm.email} onChange={e => setProfileForm({ ...profileForm, email: e.target.value })} className={inputClass} />
-                        <p className="mt-1 text-[11px] text-neutral-400">{t("form.emailNote")}</p>
+                        <p className="mt-1 text-[11px] text-garmin-text-muted">{t("form.emailNote")}</p>
                       </div>
                       <div className="sm:col-span-2">
                         <label className={labelClass} htmlFor="profilePhone">{t("details.phone")}</label>
                         <input id="profilePhone" type="tel" disabled value={profile.phone ?? ""} className={inputClass} />
-                        <p className="mt-1 flex items-center gap-1 text-[11px] text-neutral-400"><Lock className="h-3 w-3" /> {t("form.phoneNote")}</p>
+                        <p className="mt-1 flex items-center gap-1 text-[11px] text-garmin-text-muted"><Lock className="h-3 w-3" /> {t("form.phoneNote")}</p>
                       </div>
                     </div>
                     {showError(profileError)}
@@ -585,23 +586,23 @@ export function AccountDashboard() {
               </Card>
 
               <Card title={t("addresses.title", { count: addresses.length, max: MAX_ADDRESSES })} action={addresses.length < MAX_ADDRESSES ? (
-                <button type="button" onClick={handleOpenAddAddress} disabled={busy === "address"} className="inline-flex items-center gap-1.5 bg-black px-3.5 py-1.5 text-[12px] font-semibold uppercase tracking-wider text-white transition-colors hover:bg-neutral-800 disabled:bg-neutral-400">
+                <button type="button" onClick={handleOpenAddAddress} disabled={busy === "address"} className="g-btn g-btn--sm g-btn--black">
                   <Plus className="h-3.5 w-3.5" /><span>{t("addresses.add")}</span>
                 </button>
-              ) : <span className="text-[12px] font-medium text-neutral-400">{t("addresses.maxReached", { max: MAX_ADDRESSES })}</span>}>
+              ) : <span className="text-[12px] font-medium text-garmin-text-muted">{t("addresses.maxReached", { max: MAX_ADDRESSES })}</span>}>
                 {addresses.length === 0 ? (
                   <p className="text-[14px] text-neutral-500">{t("addresses.empty")}</p>
                 ) : (
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     {addresses.map(address => (
-                      <div key={address.id} className={`relative flex flex-col justify-between border p-4 transition-all ${address.isPrimary ? "border-black bg-neutral-50/70 shadow-xs" : "border-neutral-200 bg-white hover:border-neutral-300"}`}>
+                      <div key={address.id} className={`relative flex flex-col justify-between border p-4 transition-all ${address.isPrimary ? "border-black bg-neutral-50/70" : "border-neutral-200 bg-white hover:border-neutral-300"}`}>
                         <div>
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex items-center gap-2">
-                              <span className="font-heading text-[14px] font-bold uppercase tracking-wider text-black">{address.label}</span>
-                              {address.isPrimary && <span className="inline-flex items-center gap-1 bg-[#007cc3] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">{t("addresses.primary")}</span>}
+                              <span className="text-[14px] font-bold text-black">{address.label}</span>
+                              {address.isPrimary && <span className="inline-flex items-center gap-1 bg-garmin-blue px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">{t("addresses.primary")}</span>}
                             </div>
-                            <div className="flex items-center gap-1 text-neutral-400">
+                            <div className="flex items-center gap-1 text-garmin-text-muted">
                               <button type="button" onClick={() => handleOpenEditAddress(address)} disabled={busy === "address"} className="p-1 hover:text-black" title={t("addresses.edit")} aria-label={t("addresses.editLabel", { label: address.label })}><Edit3 className="h-3.5 w-3.5" /></button>
                               <button type="button" onClick={() => handleDeleteAddress(address)} disabled={busy === "address"} className="p-1 hover:text-red-600" title={t("addresses.delete")} aria-label={t("addresses.deleteLabel", { label: address.label })}><Trash2 className="h-3.5 w-3.5" /></button>
                             </div>
@@ -617,10 +618,10 @@ export function AccountDashboard() {
                         </div>
                         <div className="mt-4 flex items-center justify-between border-t border-neutral-100 pt-3">
                           <button type="button" onClick={() => handleSetPrimary(address)} disabled={address.isPrimary || busy === "address"} className="group flex items-center gap-2 text-left" title={address.isPrimary ? t("addresses.currentPrimary") : t("addresses.setPrimaryTitle")}>
-                            <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${address.isPrimary ? "border-[#007cc3] bg-[#007cc3] text-white" : "border-neutral-300 bg-white group-hover:border-black"}`}>
+                            <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border transition-colors ${address.isPrimary ? "border-garmin-blue bg-garmin-blue text-white" : "border-neutral-300 bg-white group-hover:border-black"}`}>
                               {address.isPrimary ? <Check className="h-3 w-3 stroke-[3]" /> : <span className="h-1.5 w-1.5 rounded-full opacity-0 group-hover:bg-neutral-400 group-hover:opacity-100" />}
                             </span>
-                            <span className={`text-[12px] font-medium transition-colors ${address.isPrimary ? "font-semibold text-[#007cc3]" : "text-neutral-600 group-hover:text-black"}`}>
+                            <span className={`text-[12px] font-medium transition-colors ${address.isPrimary ? "font-semibold text-garmin-blue" : "text-neutral-600 group-hover:text-black"}`}>
                               {address.isPrimary ? t("addresses.primaryAddress") : t("addresses.setPrimary")}
                             </span>
                           </button>
@@ -634,7 +635,7 @@ export function AccountDashboard() {
               <Card title={t("security.title")}>
                 {isStaff ? (
                   <div className="space-y-3 text-[13px] text-neutral-700">
-                    <p className="flex items-start gap-2"><KeyRound className="mt-0.5 h-4 w-4 text-[#007cc3]" /> {t("security.staffIntro")}</p>
+                    <p className="flex items-start gap-2"><KeyRound className="mt-0.5 h-4 w-4 text-garmin-blue" /> {t("security.staffIntro")}</p>
                     {!isPasswordChangeOpen ? (
                       <button type="button" onClick={() => { setPasswordError(null); setIsPasswordChangeOpen(true); }} className={linkButton}>{t("security.changePassword")}</button>
                     ) : (
@@ -659,7 +660,7 @@ export function AccountDashboard() {
                   </div>
                 ) : (
                   <div className="space-y-3 text-[13px] text-neutral-700">
-                    <p className="flex items-start gap-2"><Phone className="mt-0.5 h-4 w-4 text-[#007cc3]" /> {t("security.customerIntro")}</p>
+                    <p className="flex items-start gap-2"><Phone className="mt-0.5 h-4 w-4 text-garmin-blue" /> {t("security.customerIntro")}</p>
                     {!isPhoneChangeOpen ? (
                       <button type="button" onClick={() => { setPhoneChangeError(null); setPhoneChallenges(null); setIsPhoneChangeOpen(true); }} disabled={!profile.phone || !profile.phoneVerified} className={linkButton}>{t("security.changePhone")}</button>
                     ) : (
@@ -704,11 +705,11 @@ export function AccountDashboard() {
                       <div className="flex h-14 w-14 shrink-0 items-center justify-center border border-neutral-200 bg-neutral-50"><Package className="h-6 w-6 text-neutral-500" /></div>
                       <div>
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="bg-black px-2 py-0.5 font-mono text-xs font-bold text-white">{orders[0].orderNumber}</span>
+                          <span className="bg-black px-2 py-0.5 text-xs font-bold text-white">{orders[0].orderNumber}</span>
                           {orders[0].paymentMode === "demo" && <DemoBadge label={t("demoBadge")} className="text-[10px]" />}
                           <span className={`border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusTone(orders[0].fulfillmentStatus)}`}>{statusLabel(orders[0].fulfillmentStatus)}</span>
                         </div>
-                        <p className="mt-0.5 font-mono text-[12px] text-neutral-500">
+                        <p className="mt-0.5 text-[12px] text-neutral-500">
                           {t("recent.placed", { date: formatDate(orders[0].createdAt) })} · {t("items", { count: orders[0].itemsCount })}{primaryAddress ? ` · ${t("recent.primaryAddress", { label: primaryAddress.label })}` : ""}
                         </p>
                       </div>
@@ -728,22 +729,22 @@ export function AccountDashboard() {
                 ) : (
                   <div className="space-y-4">
                     {orders.map(order => (
-                      <button key={order.id} type="button" onClick={() => handleOpenOrder(order.id)} className="group block w-full border border-neutral-200 bg-white p-4 text-left transition-all hover:border-black hover:shadow-md">
+                      <button key={order.id} type="button" onClick={() => handleOpenOrder(order.id)} className="group block w-full border border-neutral-200 bg-white p-4 text-left transition-all hover:border-black">
                         <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-3">
                           <div className="flex items-center gap-2.5">
-                            <span className="bg-black px-2.5 py-1 font-mono text-xs font-bold tracking-wider text-white">{order.orderNumber}</span>
+                            <span className="bg-black px-2.5 py-1 text-xs font-bold tracking-wider text-white">{order.orderNumber}</span>
                             {order.paymentMode === "demo" && <DemoBadge label={t("demoBadge")} />}
                             <span className="font-mono text-xs text-neutral-500">{t("orders.placedOn", { date: formatDate(order.createdAt) })}</span>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className={`border px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${statusTone(order.fulfillmentStatus)}`}>{statusLabel(order.fulfillmentStatus)}</span>
                             <span className="border border-neutral-300 bg-neutral-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-neutral-700">{statusLabel(order.paymentStatus)}</span>
-                            <ChevronRight className="h-4 w-4 text-[#007cc3]" />
+                            <ChevronRight className="h-4 w-4 text-garmin-blue" />
                           </div>
                         </div>
                         <div className="flex flex-col justify-between gap-2 pt-3 sm:flex-row sm:items-center">
                           <span className="text-[13px] text-neutral-600">{t("items", { count: order.itemsCount })}</span>
-                          <span><span className="mr-2 font-mono text-xs text-neutral-400">{t("orders.total")}</span><span className="g-heading text-lg font-bold text-black">{formatKztLocal(order.total)}</span></span>
+                          <span><span className="mr-2 text-xs text-garmin-text-muted">{t("orders.total")}</span><span className="g-heading text-lg font-bold text-black">{formatKztLocal(order.total)}</span></span>
                         </div>
                       </button>
                     ))}
@@ -796,12 +797,12 @@ export function AccountDashboard() {
                   {wishlist.map(item => (
                     <li key={item.productKey} className="flex items-center justify-between gap-3 p-3">
                       <div>
-                        {item.archived ? <p className="font-semibold text-black">{item.name}</p> : <Link href={`/p/${encodeURIComponent(item.productKey)}`} className="font-semibold text-black hover:text-[#007cc3]">{item.name}</Link>}
+                        {item.archived ? <p className="font-semibold text-black">{item.name}</p> : <Link href={`/p/${encodeURIComponent(item.productKey)}`} className="font-semibold text-black hover:text-garmin-blue">{item.name}</Link>}
                         <p className="text-[12px] text-neutral-500">
                           {item.availability === "available" ? formatKztLocal(item.price) : item.availability === "out_of_stock" ? `${formatKztLocal(item.price)} · ${t("wishlist.outOfStock")}` : t("wishlist.unavailable")}
                         </p>
                       </div>
-                      <button type="button" onClick={() => removeFromWishlist(item.productKey)} aria-label={t("wishlist.remove", { name: item.name })} className="text-neutral-400 hover:text-black"><Trash2 className="h-4 w-4" /></button>
+                      <button type="button" onClick={() => removeFromWishlist(item.productKey)} aria-label={t("wishlist.remove", { name: item.name })} className="text-garmin-text-muted hover:text-black"><Trash2 className="h-4 w-4" /></button>
                     </li>
                   ))}
                 </ul>
@@ -824,11 +825,11 @@ export function AccountDashboard() {
       </div>
 
       {selectedOrderId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs" onClick={() => setSelectedOrderId(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setSelectedOrderId(null)}>
           <div role="dialog" aria-modal="true" aria-label={t("order.details")} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto border border-neutral-300 bg-white p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-              <h3 className="g-heading text-lg font-bold uppercase tracking-wider text-black">{orderDetail ? orderDetail.orderNumber : t("order.details")}</h3>
-              <button type="button" onClick={() => setSelectedOrderId(null)} className="text-neutral-400 hover:text-black" aria-label={t("order.close")}><X className="h-5 w-5" /></button>
+              <h3 className="g-heading g-h4 m-0 text-black">{orderDetail ? orderDetail.orderNumber : t("order.details")}</h3>
+              <button type="button" onClick={() => setSelectedOrderId(null)} className="text-garmin-text-muted hover:text-black" aria-label={t("order.close")}><X className="h-5 w-5" /></button>
             </div>
             {!orderDetail && !orderDetailError && <p className="mt-4 flex items-center gap-2 text-[13px] text-neutral-600"><Loader2 className="h-4 w-4 animate-spin" /> {t("order.loading")}</p>}
             <div className="mt-4">{showError(orderDetailError)}</div>
@@ -861,14 +862,14 @@ export function AccountDashboard() {
                   <div className="contents font-semibold text-black"><dt>{t("order.total")}</dt><dd className="text-right">{formatKztLocal(orderDetail.total)}</dd></div>
                 </dl>
                 <div>
-                  <h4 className="text-[12px] font-semibold uppercase tracking-wider text-neutral-500">{t("order.deliveryAddress")}</h4>
+                  <h4 className="text-[14px] font-bold text-black">{t("order.deliveryAddress")}</h4>
                   {deliveryAddressLines(orderDetail.deliveryAddress).length ? (
                     <div className="mt-1 leading-relaxed">{deliveryAddressLines(orderDetail.deliveryAddress).map((line, index) => <p key={index}>{line}</p>)}</div>
                   ) : <p className="mt-1 text-neutral-500">{t("order.noAddress")}</p>}
                 </div>
                 {orderDetail.events.length > 0 && (
                   <div>
-                    <h4 className="text-[12px] font-semibold uppercase tracking-wider text-neutral-500">{t("order.updates")}</h4>
+                    <h4 className="text-[14px] font-bold text-black">{t("order.updates")}</h4>
                     <ol className="mt-1 space-y-1">
                       {orderDetail.events.map(event => <li key={event.id} className="flex justify-between gap-3"><span>{event.label}</span><span className="font-mono text-[11px] text-neutral-500">{formatDate(event.occurredAt)}</span></li>)}
                     </ol>
@@ -876,7 +877,7 @@ export function AccountDashboard() {
                 )}
                 {(orderDetail.shipments?.length ?? 0) > 0 && (
                   <div>
-                    <h4 className="text-[12px] font-semibold uppercase tracking-wider text-neutral-500">{t("order.shipments")}</h4>
+                    <h4 className="text-[14px] font-bold text-black">{t("order.shipments")}</h4>
                     <ul className="mt-1 space-y-1">
                       {orderDetail.shipments.map(shipment => (
                         <li key={shipment.id} className="flex justify-between gap-3">
@@ -894,11 +895,11 @@ export function AccountDashboard() {
       )}
 
       {isAddressModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs" onClick={() => setIsAddressModalOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setIsAddressModalOpen(false)}>
           <div role="dialog" aria-modal="true" aria-label={editingAddress ? t("addressForm.editLabel") : t("addressForm.addLabel")} className="w-full max-w-lg border border-neutral-300 bg-white p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-              <h3 className="g-heading text-lg font-bold uppercase tracking-wider text-black">{editingAddress ? t("addressForm.editTitle") : t("addressForm.addTitle")}</h3>
-              <button type="button" onClick={() => setIsAddressModalOpen(false)} className="text-neutral-400 hover:text-black" aria-label={t("close")}><X className="h-5 w-5" /></button>
+              <h3 className="g-heading g-h4 m-0 text-black">{editingAddress ? t("addressForm.editTitle") : t("addressForm.addTitle")}</h3>
+              <button type="button" onClick={() => setIsAddressModalOpen(false)} className="text-garmin-text-muted hover:text-black" aria-label={t("close")}><X className="h-5 w-5" /></button>
             </div>
             <form name="address" onSubmit={handleSaveAddress} className="mt-4 space-y-3">
               <div>
