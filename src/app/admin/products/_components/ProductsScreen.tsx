@@ -6,7 +6,6 @@ import Image from "next/image";
 import {
   Plus,
   Search,
-  Trash2,
   Tag,
   Boxes,
   FileText,
@@ -47,10 +46,13 @@ import { StatusMenu, statusPillClass } from "@/components/admin/products/StatusM
 import { SEOEditor } from "@/components/admin/SEOEditor";
 import {
   GarminImportDialog,
+  InTheBoxEditor,
   OptionsEditor,
+  OverviewHtmlEditor,
   ProductImagesEditor,
   ProductPreviewModal,
   ProductTranslationPanel,
+  SpecsListEditor,
   VariantsTable,
   formatKzt,
   newId,
@@ -501,50 +503,6 @@ export default function AdminProductsPage() {
           : [...prev.compatibleAccessories, prodId],
       };
     });
-  };
-
-  const handleSpecChange = (index: number, field: "label" | "value", val: string) => {
-    setFormData((prev) => {
-      const newSpecs = [...prev.specs];
-      newSpecs[index] = { ...newSpecs[index], [field]: val };
-      return { ...prev, specs: newSpecs };
-    });
-  };
-
-  const handleAddSpec = () => {
-    setFormData((prev) => ({
-      ...prev,
-      specs: [...prev.specs, { label: "New Spec", value: "Value" }],
-    }));
-  };
-
-  const handleRemoveSpec = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      specs: prev.specs.filter((_, i) => i !== index),
-    }));
-  };
-
-  const handleInTheBoxChange = (index: number, text: string) => {
-    setFormData((prev) => {
-      const newBox = [...prev.inTheBox];
-      newBox[index] = text;
-      return { ...prev, inTheBox: newBox };
-    });
-  };
-
-  const handleAddInTheBox = () => {
-    setFormData((prev) => ({
-      ...prev,
-      inTheBox: [...prev.inTheBox, "Included Item in Packaging"],
-    }));
-  };
-
-  const handleRemoveInTheBox = (index: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      inTheBox: prev.inTheBox.filter((_, i) => i !== index),
-    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1303,36 +1261,12 @@ export default function AdminProductsPage() {
                 />
               </div>
 
-              <div>
-                <div className="flex items-center justify-between">
-                  <label
-                    htmlFor="product-overview-html"
-                    className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600"
-                  >
-                    Overview tab (HTML, optional)
-                  </label>
-                  {formData.overviewHtml && (
-                    <button
-                      type="button"
-                      onClick={() => setFormData({ ...formData, overviewHtml: "" })}
-                      className="text-[11px] font-medium text-rose-600 hover:underline"
-                    >
-                      Clear overview
-                    </button>
-                  )}
-                </div>
-                <textarea
-                  id="product-overview-html"
-                  rows={4}
-                  value={formData.overviewHtml}
-                  onChange={(e) => setFormData({ ...formData, overviewHtml: e.target.value })}
-                  placeholder="<h2>Headline</h2><p>Text…</p> — scripts, styles and event handlers are removed on save"
-                  className="mt-1 w-full border border-neutral-300 bg-white p-3 font-mono text-[12px] text-black focus:border-black focus:outline-none rounded-none"
-                />
-                <p className="mt-1 text-[11px] text-neutral-500">
-                  {formData.overviewHtml.length.toLocaleString()} characters · sanitized on save
-                </p>
-              </div>
+              <OverviewHtmlEditor
+                id="product-overview-html"
+                label="Overview tab (HTML, optional)"
+                value={formData.overviewHtml}
+                onChange={(overviewHtml) => setFormData((prev) => ({ ...prev, overviewHtml }))}
+              />
 
               {/* Activities Multi-Select */}
               <div>
@@ -1389,6 +1323,16 @@ export default function AdminProductsPage() {
                   base={{ sku: formData.sku, price: formData.price, stock: formData.stock }}
                   conflicts={skuConflicts}
                   onChange={(variants) => setFormData((prev) => ({ ...prev, variants }))}
+                  productContent={
+                    postgresStore
+                      ? {
+                          specs: formData.specs,
+                          specGroups: formData.specGroups,
+                          overviewHtml: formData.overviewHtml,
+                          inTheBox: formData.inTheBox,
+                        }
+                      : undefined
+                  }
                 />
               </section>
             </div>
@@ -1417,88 +1361,18 @@ export default function AdminProductsPage() {
                   </button>
                 </div>
               )}
-              <div className="flex items-center justify-between border-b border-neutral-200 pb-2">
-                <p className="text-[13px] text-neutral-500">
-                  Define technical attributes (lens, bezel, battery, water rating, sensors).
-                </p>
-                <button
-                  type="button"
-                  onClick={handleAddSpec}
-                  className="flex items-center gap-1 text-[11px] font-heading uppercase tracking-wider font-bold text-[#007cc3] hover:underline"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>Add Spec Row</span>
-                </button>
-              </div>
-
-              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {formData.specs.map((spec, idx) => (
-                  <div key={idx} className="flex items-center gap-2 bg-neutral-50 p-2 border border-neutral-200 rounded-none">
-                    <input
-                      type="text"
-                      value={spec.label}
-                      onChange={(e) => handleSpecChange(idx, "label", e.target.value)}
-                      placeholder="e.g. Battery Life"
-                      className="w-1/3 h-8 border border-neutral-300 bg-white px-2.5 text-[12px] text-black focus:border-black focus:outline-none font-medium rounded-none"
-                    />
-                    <input
-                      type="text"
-                      value={spec.value}
-                      onChange={(e) => handleSpecChange(idx, "value", e.target.value)}
-                      placeholder="e.g. Up to 16 days"
-                      className="flex-1 h-8 border border-neutral-300 bg-white px-2.5 text-[12px] text-neutral-800 focus:border-black focus:outline-none rounded-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveSpec(idx)}
-                      className="text-neutral-400 hover:text-rose-600 p-1"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <SpecsListEditor
+                specs={formData.specs}
+                onChange={(specs) => setFormData((prev) => ({ ...prev, specs }))}
+                hint="Define technical attributes (lens, bezel, battery, water rating, sensors)."
+              />
             </div>
           )}
 
           {/* TAB 5: In The Box */}
           {activeTab === "box" && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-neutral-200 pb-2">
-                <p className="text-[13px] text-neutral-500">
-                  Itemized list of hardware, cables, and packaging contents.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleAddInTheBox}
-                  className="flex items-center gap-1 text-[11px] font-heading uppercase tracking-wider font-bold text-[#007cc3] hover:underline"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>Add Item</span>
-                </button>
-              </div>
-
-              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {formData.inTheBox.map((item, idx) => (
-                  <div key={idx} className="flex items-center gap-2 bg-neutral-50 p-2 border border-neutral-200 rounded-none">
-                    <Box className="h-4 w-4 text-[#007cc3] shrink-0" />
-                    <input
-                      type="text"
-                      value={item}
-                      onChange={(e) => handleInTheBoxChange(idx, e.target.value)}
-                      placeholder="e.g. USB-C Charging / Data Cable"
-                      className="flex-1 h-8 border border-neutral-300 bg-white px-2.5 text-[12px] text-black focus:border-black focus:outline-none rounded-none"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveInTheBox(idx)}
-                      className="text-neutral-400 hover:text-rose-600 p-1"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+              <InTheBoxEditor items={formData.inTheBox} onChange={(inTheBox) => setFormData((prev) => ({ ...prev, inTheBox }))} />
             </div>
           )}
 

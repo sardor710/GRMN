@@ -1,6 +1,8 @@
 export { ProductImagesEditor } from "./ProductImagesEditor";
 export { OptionsEditor } from "./OptionsEditor";
 export { VariantsTable } from "./VariantsTable";
+export { InTheBoxEditor, OverviewHtmlEditor, SpecsListEditor } from "./ContentBlockEditors";
+export { VariantContentEditor } from "./VariantContentEditor";
 export { GarminImportDialog } from "./GarminImportDialog";
 export { ProductPreviewModal, type PreviewProduct } from "./ProductPreviewModal";
 export { ProductTranslationPanel, type ProductTranslations } from "./ProductTranslationPanel";
