@@ -483,6 +483,41 @@ async function dashboardScenario({pool,runtime,secret,origin,send,evaluate,navig
     if(previous)await pool.query("UPDATE store_settings SET active_tax_configuration_id=$1,active_shipping_policy_id=$2,payment_mode=$3,version=version+1 WHERE id=1",[previous.tax,previous.policy,previous.payment_mode]);
   }
 }
+// Task 5b.1 evidence (opt-in, CMS_SMOKE_ONLY=admin-shots): the admin screens at 1440 and 390 after the
+// dashboard block has placed one demo order. Files go to CMS_SMOKE_SHOTS_DIR (default: the receipt folder)
+// with the CMS_SMOKE_SHOTS_PREFIX prefix ("before-" / "after-"). Checks nothing; it only takes pictures.
+async function adminShotsScenario({cms,headers,send,evaluate,navigate,text,click}){
+  const dir=path.resolve(process.env.CMS_SMOKE_SHOTS_DIR??receipt),prefix=process.env.CMS_SMOKE_SHOTS_PREFIX??"";
+  const product=await cms.save("products",headers,variantProduct("UI-SHOT","UI SHOT VARIANTS",{options:[SIZE_OPTION(47,51)],variants:[sizeVariant("UI-SHOT",47,true),sizeVariant("UI-SHOT",51,false)]}));
+  const ui=variantEditor({cms,headers,evaluate,navigate,text,click,receipt},{id:product.id,sku:"UI-SHOT",name:"UI SHOT VARIANTS"});
+  const pressAt=async element=>{const {x,y}=await evaluate(`(()=>{const el=${element};if(!el)throw Error('Missing element');el.scrollIntoView({block:'center'});const r=el.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};})()`);
+    for(const type of ["mouseMoved","mousePressed","mouseReleased"])await send("Input.dispatchMouseEvent",{type,x,y,button:"left",clickCount:1});};
+  const shoot=async name=>{await delay(400);const height=await evaluate("Math.min(4000,Math.max(document.documentElement.scrollHeight,document.body.scrollHeight))");
+    const width=await evaluate("window.innerWidth");const image=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:true,clip:{x:0,y:0,width,height,scale:1}});
+    fs.mkdirSync(dir,{recursive:true});await writeFile(path.join(dir,`${prefix}${name}`),Buffer.from(image.data,"base64"));};
+  const step=async(name,action)=>{try{await action();}catch(error){console.log(`admin-shots: ${name} incomplete (${error.message}); shot taken as is`);await shoot(name).catch(()=>{});}};
+  const widths=(process.env.CMS_SMOKE_SHOTS_WIDTHS??"1440,390").split(",").map(Number);
+  for(const [width,height,mobile] of [[1440,900,false],[390,844,true]].filter(([w])=>widths.includes(w))){
+    await send("Emulation.setDeviceMetricsOverride",{width,height,deviceScaleFactor:1,mobile});
+    try{
+      await navigate("/admin");await until(async()=>/\d/.test(await evaluate(`document.querySelector('[data-tile="demo-revenue"] [data-tile-value]')?.innerText??""`)),"Dashboard did not load");
+      await shoot(`dashboard-${width}.png`);
+      await step(`products-selected-${width}.png`,async()=>{await navigate("/admin/products");await until(()=>evaluate("document.querySelectorAll('tbody tr[data-product-id] [role=checkbox]').length>=2"),"Products list did not load");
+      await pressAt("document.querySelectorAll('tbody tr[data-product-id] [role=checkbox]')[0]");await pressAt("document.querySelectorAll('tbody tr[data-product-id] [role=checkbox]')[1]");
+      await until(async()=>/2 products selected/.test(await text()),"Selecting 2 rows did not show the bulk bar");
+      await evaluate("window.scrollTo(0,0);true");await shoot(`products-selected-${width}.png`);});
+      await step(`product-variants-${width}.png`,async()=>{await ui.open();await ui.openContent(51).catch(()=>{});await shoot(`product-variants-${width}.png`);await ui.close();});
+      await navigate("/admin/orders");await until(()=>evaluate("!!document.querySelector('select[aria-label=\"Payment mode filter\"]')"),"Orders did not load");
+      await evaluate(`(()=>{const select=document.querySelector('select[aria-label="Payment mode filter"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,'demo');select.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
+      await until(()=>evaluate("document.querySelectorAll('section[aria-label=\"Order queue\"] li button [data-demo-badge]').length>0"),"The Demo filter listed nothing");
+      await evaluate("document.querySelector('section[aria-label=\"Order queue\"] li button').click();true");
+      await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Order detail\"] [data-demo-badge]')"),"Order detail did not open");
+      await shoot(`orders-demo-${width}.png`);
+      await navigate("/admin/settings");await until(async()=>/demo checkout/i.test(await text()),"Settings did not load");
+      await evaluate("[...document.querySelectorAll('h2,h3,legend')].find(e=>/payment/i.test(e.textContent))?.scrollIntoView();true");await shoot(`settings-payments-${width}.png`);
+    }finally{await send("Emulation.clearDeviceMetricsOverride");}
+  }
+}
 try{
   temporary=await startTemporaryPostgres();database=createDatabase(parseServerEnv({DATABASE_URL:temporary.url}));const migration=createDatabase(parseServerEnv({DATABASE_URL:temporary.url,DATABASE_POOL_MAX:"1",DATABASE_CONNECT_TIMEOUT_MS:"10000",DATABASE_STATEMENT_TIMEOUT_MS:"60000"}));try{await migrate(migration.db,{migrationsFolder:"drizzle"});}finally{await migration.close();}
   const appPort=await port(),origin=`http://localhost:${appPort}`,secret=randomBytes(32).toString("hex");
@@ -705,7 +740,7 @@ try{
       customerCookie:()=>send("Network.setCookie",{name:"grmn-auth.session_token",value:customerCookie,url:origin,httpOnly:true,sameSite:"Lax"})});
     console.log("PASS Task3.3 demo checkout: Pay (demo) with one demo note, a setting change between review and pay refetches the method both ways, DEMO receipt and account label, admin Demo filter with badge, dispatched and delivered");
   };
-  const onlyVariantContent=process.env.CMS_SMOKE_ONLY==="variant-content",onlyVariantSwitch=process.env.CMS_SMOKE_ONLY==="variant-switch",onlyDashboard=process.env.CMS_SMOKE_ONLY==="dashboard";
+  const onlyAdminShots=process.env.CMS_SMOKE_ONLY==="admin-shots",onlyVariantContent=process.env.CMS_SMOKE_ONLY==="variant-content",onlyVariantSwitch=process.env.CMS_SMOKE_ONLY==="variant-switch",onlyDashboard=process.env.CMS_SMOKE_ONLY==="dashboard"||onlyAdminShots;
   if(!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard)await fullSuite();
 
   if(!onlyVariantSwitch&&!onlyDashboard){
@@ -731,6 +766,7 @@ try{
   // Task 4.2: the PostgreSQL dashboard (an independent block; CMS_SMOKE_ONLY=dashboard runs only this).
   if(!onlyVariantContent&&!onlyVariantSwitch){await dashboardScenario({pool:database.pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue:cookie,receipt,alone:onlyDashboard});
   console.log("PASS Task4.2 dashboard: one demo order via checkout; Demo revenue > 0 and Revenue only real money, the order in Recent orders linking to its detail, its product under Best-sellers > Demo only, empty range says so; screenshot saved");}
+  if(onlyAdminShots){await adminShotsScenario({cms,headers,send,evaluate,navigate,text,click});console.log("Admin screenshots saved (CMS_SMOKE_ONLY=admin-shots).");}
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");
   console.log(onlyDashboard
