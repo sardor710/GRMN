@@ -58,7 +58,8 @@ export function componentFixture(file,{backend="postgres",items=[],fetcher=async
   let index=0;const state=[],effects=[],writes=[];
   const hooks={useState(initial){const key=index++;if(!(key in state))state[key]=typeof initial==="function"?initial():initial;return[state[key],value=>{state[key]=typeof value==="function"?value(state[key]):value;}];},useEffect(fn){effects.push(fn);},useMemo:fn=>fn(),useCallback:fn=>fn,useRef:value=>({current:value})};
   const collection={items,loading:false,error:null,backend,nextCursor:null,pageNumber:1,hasPrevious:false,reload(){},setError(value){collection.error=value;},next(){},previous(){}};
-  const expand=(type,props)=>typeof type==="function"&&type.inlineInFixtures?type(props):{type,props};const jsx={jsx:expand,jsxs:expand};
+  // React's key is kept non-enumerable, so deep-equality assertions over nodes are unchanged.
+  const expand=(type,props,key)=>{if(typeof type==="function"&&type.inlineInFixtures)return type(props);const node={type,props};if(key!==undefined)Object.defineProperty(node,"key",{value:key,enumerable:false});return node;};const jsx={jsx:expand,jsxs:expand};
   const output={};const code=ts.transpileModule(fs.readFileSync(file,"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true,target:ts.ScriptTarget.ES2022}}).outputText;
   new Function("require","exports","fetch","confirm","setTimeout",code)(name=>{
     if(name in modules)return modules[name];if(name in i18nModules)return i18nModules[name];if(name in primitives)return primitives[name];if(name==="react")return hooks;if(name==="react/jsx-runtime")return jsx;

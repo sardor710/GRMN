@@ -43,6 +43,8 @@ const refOf = (item: CompareColumn): CompareItemRef => ({ productId: item.produc
 const sameRef = (a: CompareItemRef, b: CompareItemRef) => a.productId === b.productId && (a.sku ?? "").toLowerCase() === (b.sku ?? "").toLowerCase();
 const sizeOf = (item: CompareColumn) => (item.variants.length >= 2 ? item.variants.find((v) => v.sku === item.sku)?.label : undefined);
 const refValue = (ref: CompareItemRef) => (ref.sku ? `${ref.productId}~${ref.sku}` : ref.productId);
+/** Final review I3: React keys are unique by position too, even if two columns ever share a ref. */
+const columnKey = (ref: CompareItemRef, index: number) => `${index}:${refValue(ref)}`;
 
 /** The Garmin product comparison (docs/research/www.garmin.com/components/Compare.spec.md). The URL is the state. */
 export function CompareTool({ items, groups, search, catalogueHref, renderedFor }: CompareToolProps) {
@@ -156,7 +158,7 @@ export function CompareTool({ items, groups, search, catalogueHref, renderedFor 
     const others = refs.filter((_, i) => i !== index);
     const pickerId = `compare-size-${index}`;
     return (
-      <div key={refValue(refs[index])} className="flex min-w-0 flex-col">
+      <div key={columnKey(refs[index], index)} className="flex min-w-0 flex-col">
         <div className="relative">
           <Link href={item.href} tabIndex={-1} aria-hidden="true" className={`flex h-[161px] items-center justify-center bg-white px-3 py-[18px] shadow-garmin-raised lg:h-[186px] ${TILE_HOVER}`}>
             <Image src={item.image} alt="" width={150} height={150} sizes="150px" className="h-[125px] w-[125px] object-contain lg:h-[150px] lg:w-[150px]" />
@@ -222,8 +224,8 @@ export function CompareTool({ items, groups, search, catalogueHref, renderedFor 
       <div id={ADD_PANEL_ID} hidden={!adding} className="pt-4">
         {/* A plain GET form: it also works before hydration; with JavaScript it navigates client-side. */}
         <form role="search" method="get" action={pathname} onSubmit={submitSearch}>
-          {refs.map((ref) => (
-            <input key={refValue(ref)} type="hidden" name="item" value={refValue(ref)} />
+          {refs.map((ref, i) => (
+            <input key={columnKey(ref, i)} type="hidden" name="item" value={refValue(ref)} />
           ))}
           {diff && <input type="hidden" name="diff" value="1" />}
           <label htmlFor={SEARCH_INPUT_ID} className="sr-only">{t("searchLabel")}</label>
@@ -285,7 +287,6 @@ export function CompareTool({ items, groups, search, catalogueHref, renderedFor 
             onClick={() => toggleGroup(group.key)}
             aria-expanded={open}
             aria-controls={bodyId}
-            aria-label={t(open ? "collapse" : "expand", { title: group.title })}
             className="flex w-full items-center p-2 text-left uppercase lg:w-auto"
           >
             <span className="g-heading min-w-0 flex-1">{group.title}</span>
@@ -300,7 +301,7 @@ export function CompareTool({ items, groups, search, catalogueHref, renderedFor 
             <div role="row">
               <span role="columnheader">{t("specColumn")}</span>
               {items.map((item, i) => (
-                <span key={refValue(refs[i])} role="columnheader">{columnName(item)}</span>
+                <span key={columnKey(refs[i], i)} role="columnheader">{columnName(item)}</span>
               ))}
             </div>
           </div>
@@ -333,7 +334,7 @@ export function CompareTool({ items, groups, search, catalogueHref, renderedFor 
         <div ref={compactRef} className="max-lg:overflow-x-hidden">
           <div className={`${grid} gap-4 ${MOBILE_WIDTH[mobileSlots]}`}>
             {items.map((item, index) => (
-              <div key={refValue(refs[index])} className="flex h-24 min-w-0 items-center gap-2 bg-white px-3 shadow-garmin-raised">
+              <div key={columnKey(refs[index], index)} className="flex h-24 min-w-0 items-center gap-2 bg-white px-3 shadow-garmin-raised">
                 <Image src={item.image} alt="" width={60} height={60} sizes="60px" className="h-[60px] w-[60px] shrink-0 object-contain" />
                 <div className="min-w-0 text-[14px] leading-[21px]">
                   <p className="line-clamp-2">{item.name}</p>

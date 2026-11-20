@@ -238,6 +238,11 @@
       scroll-padding-top: calc(var(--compare-bar-height, 0px) + 16px);
     }
   }
+  /* Final review M6 (WCAG 2.4.11): the compare page's fixed compact column bar (CompareTool: 16px padding around a
+     96px row = 128px, at every width) must not cover a control focused while tabbing backwards. */
+  html:has([data-compare-compact]) {
+    scroll-padding-top: calc(128px + 16px);
+  }
 }
 
 /* ---- Garmin design-system utilities (Task 5a.2: values from docs/research/www.garmin.com) ---- */

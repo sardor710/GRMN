@@ -50,6 +50,9 @@ test("card: the compare control is a pressed/unpressed button beside the link, a
   tree = fixture.render({ product: product("fenix-8", "fēnix 8"), compare: { ...compare, selected: true } });
   assert.equal(compareButton(tree).props["aria-pressed"], true);
   assert.match(nodeText(compareButton(tree)), /^Added/);
+  // Final review M7: the visible "Added" is aria-hidden; the accessible name stays "Add to comparison, <name>".
+  const spokenText = (n) => (typeof n === "string" ? n : n?.props?.["aria-hidden"] ? "" : Array.isArray(n) ? n.map(spokenText).join("") : n?.props ? [].concat(n.props.children ?? []).map(spokenText).join("") : "");
+  assert.equal(spokenText(compareButton(tree)).replace(/\s+/g, " ").trim(), "Add to comparison, fēnix 8");
   assert.ok(nodes(compareButton(tree)).some((n) => n.type?.name === "CheckMark"), "✓ mark when added");
   assert.ok("data-compare-selected" in tree.props);
 });
@@ -258,6 +261,17 @@ test("bar: item= links seed the selection with names from the page, then leave t
     fixture.effects.forEach((effect) => effect());
     assert.deepEqual(state.items, [{ productId: "fenix-8", sku: "F8-47" }, { productId: "venu", name: "Venu 4", image: "/images/venu.jpg" }]);
     assert.deepEqual(writes, [{ state: null, url: "/en/c/wearables-smartwatches?compare=1" }]);
+  } finally { restore(); }
+});
+
+// Final review M4: the seeded values go to the parser as they are (no join/split on "&"), so a SKU with "&" survives.
+test("bar: an item= value whose SKU contains & seeds that SKU whole", () => {
+  const { fixture, restore } = bar(`compare=1&item=${encodeURIComponent("edge~A&B-1")}&item=venu`);
+  try {
+    const { state, props } = barProps([]);
+    fixture.render(props);
+    fixture.effects.forEach((effect) => effect());
+    assert.deepEqual(state.items.map((item) => [item.productId, item.sku]), [["edge", "A&B-1"], ["venu", undefined]]);
   } finally { restore(); }
 });
 

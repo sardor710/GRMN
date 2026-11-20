@@ -149,7 +149,10 @@ export function ProductCard({ product, compare }: { product: Product; compare?: 
           onClick={toggle}
           className="group flex items-center gap-3 text-[14px] font-bold leading-[21px] text-black focus-visible:outline focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-ring aria-disabled:cursor-not-allowed"
         >
-          <span>{selected ? tc("added") : tc("add")}</span>
+          {/* Final review M7: the name stays "Add to comparison, <product>" and aria-pressed carries the state;
+              the visible "Added" is hidden from screen readers so name and state never change together. */}
+          <span aria-hidden={selected || undefined}>{selected ? tc("added") : tc("add")}</span>
+          {selected && <span className="sr-only">{tc("add")}</span>}
           <span className="sr-only">, {product.name}</span>
           <span
             aria-hidden="true"

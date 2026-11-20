@@ -225,17 +225,38 @@ test("with only differences on and nothing different, a status says so instead o
   assert.ok(byRole(off.render(props({ groups: same })), "status").every((n) => !nodeText(n).trim()));
 });
 
-test("each size picker of a product compared twice has its own label; group toggles say Expand/Collapse", () => {
+test("each size picker of a product compared twice has its own label; group toggles keep the heading as their name", () => {
   const { fixture } = setup();
   let tree = fixture.render(props({ items: [sizes, { ...sizes, sku: "F8-51" }] }));
   const labels = nodes(tree).filter((n) => n.type === "label" && /^compare-size-/.test(n.props.htmlFor ?? "")).map((n) => nodeText(n).trim());
   assert.deepEqual(labels, ["Size for fēnix 8, column 1", "Size for fēnix 8, column 2"]);
+  // Final review M5: no aria-label replacing the heading text; aria-expanded alone carries the state.
   let [general] = groupButtons(tree);
-  assert.equal(general.props["aria-label"], "Collapse General");
+  assert.equal(general.props["aria-label"], undefined);
+  assert.equal(nodeText(general).trim(), "General");
   general.props.onClick();
   tree = fixture.render(props({ items: [sizes, { ...sizes, sku: "F8-51" }] }));
   [general] = groupButtons(tree);
-  assert.equal(general.props["aria-label"], "Expand General");
+  assert.equal(general.props["aria-label"], undefined);
+  assert.equal(general.props["aria-expanded"], false);
+});
+
+// Final review I3: React keys are unique per column position, even if two columns ever carry the same ref.
+test("column keys are unique even when two columns share a ref", () => {
+  const { fixture } = setup();
+  const tree = fixture.render(props({ items: [watch, watch] }));
+  const keyed = (predicate) => nodes(tree).filter(predicate).map((n) => n.key);
+  const cards = keyed((n) => typeof n.key === "string" && /^\d+:fenix-8~F8-47$/.test(n.key) && n.type === "div");
+  assert.deepEqual(cards, ["0:fenix-8~F8-47", "1:fenix-8~F8-47"]);
+  // One sr-only header row per spec group: unique within each row.
+  const headers = keyed((n) => n.props?.role === "columnheader" && n.key !== undefined);
+  assert.deepEqual(headers, ["0:fenix-8~F8-47", "1:fenix-8~F8-47", "0:fenix-8~F8-47", "1:fenix-8~F8-47"]);
+});
+
+// Final review M6 (WCAG 2.4.11): while the fixed compact bar shows, the page keeps focused controls clear of it.
+test("globals.css adds scroll-padding-top while the compact compare bar is on the page", () => {
+  const css = readFileSync(new URL("../../src/app/globals.css", import.meta.url), "utf8");
+  assert.match(css, /html:has\(\[data-compare-compact\]\)\s*\{\s*scroll-padding-top:\s*calc\(128px \+ 16px\);/);
 });
 
 test("SKUs differing only in case are one column", () => {

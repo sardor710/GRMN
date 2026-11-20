@@ -68,10 +68,13 @@ export function CompareBar({ items, onChange, products, search, compareMode, ann
 
   // A link can carry the selection (`item=<id>~<sku>`, like the compare page): add it, then drop it from the
   // address without a server round trip (Next.js syncs useSearchParams for `history.replaceState(null, …)`).
-  const seeded = params.getAll(COMPARE_ITEM_PARAM).join("&");
+  // Final review M4: the values go to the parser as they are (a SKU may contain "&"); the JSON key only keeps
+  // the effect from re-running while the values stay the same.
+  const seeded = JSON.stringify(params.getAll(COMPARE_ITEM_PARAM));
   useEffect(() => {
-    if (!seeded) return;
-    const refs = parseCompareItems(new URLSearchParams(seeded.split("&").map((value) => [COMPARE_ITEM_PARAM, value])));
+    const values = JSON.parse(seeded) as string[];
+    if (!values.length) return;
+    const refs = parseCompareItems(new URLSearchParams(values.map((value) => [COMPARE_ITEM_PARAM, value])));
     onChange((current) =>
       refs.reduce<readonly CompareSelectionItem[]>((list, ref) => {
         const product = products.find((p) => p.id === ref.productId);
