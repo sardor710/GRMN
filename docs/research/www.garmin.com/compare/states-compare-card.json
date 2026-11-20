@@ -1,0 +1,74 @@
+[
+ {
+  "sel": "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(1)>a",
+  "label": "fēnix® 9 Pro – inReach®, 51 mm",
+  "transition": "box-shadow 0.135s cubic-bezier(0.4, 0, 0.2, 1)",
+  "hover": {
+   "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(1)>a": {
+    "box-shadow": "rgba(77, 77, 77, 0.08) 0px 1px 1px 0px, rgba(77, 77, 77, 0.16) 0px 1px 3px 1px → rgba(77, 77, 77, 0.2) 0px 1px 3px 1px, rgba(77, 77, 77, 0.1) 0px 2px 8px 4px"
+   }
+  },
+  "focus-visible": {
+   "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(1)>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  },
+  "active": {
+   "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(1)>a": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(1)>a>img": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   }
+  }
+ },
+ {
+  "sel": "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(1)>button",
+  "label": "Remove product",
+  "transition": "all",
+  "focus-visible": {
+   "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(1)>button": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)"
+   }
+  }
+ },
+ {
+  "sel": "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(2)>g-button>a",
+  "label": "SHOP",
+  "transition": "background 0.2s, border 0.2s, color 0.2s",
+  "hover": {
+   "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(2)>g-button>a": {
+    "background-color": "rgb(109, 207, 246) → rgb(15, 176, 240)",
+    "border-top-color": "rgb(109, 207, 246) → rgb(15, 176, 240)",
+    "border-right-color": "rgb(109, 207, 246) → rgb(15, 176, 240)",
+    "border-bottom-color": "rgb(109, 207, 246) → rgb(15, 176, 240)",
+    "border-left-color": "rgb(109, 207, 246) → rgb(15, 176, 240)"
+   }
+  },
+  "focus-visible": {
+   "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(2)>g-button>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  }
+ }
+]

@@ -1,0 +1,1636 @@
+{
+ "1440": {
+  "topology": [
+   {
+    "sel": "body>header",
+    "tag": "header",
+    "cls": "gh__header en-US",
+    "r": [
+     0,
+     0,
+     1440,
+     100
+    ],
+    "pos": "static",
+    "z": "99999",
+    "bg": "rgb(255, 255, 255)",
+    "h": "HOLIDAY SALE"
+   },
+   {
+    "sel": "#main",
+    "tag": "main",
+    "cls": "",
+    "r": [
+     0,
+     100,
+     1440,
+     38007
+    ],
+    "pos": "static",
+    "z": "auto",
+    "bg": "rgba(0, 0, 0, 0)",
+    "h": "Product Comparison"
+   },
+   {
+    "sel": "body>footer",
+    "tag": "footer",
+    "cls": "gf__footer en-US",
+    "r": [
+     0,
+     38108,
+     1440,
+     501
+    ],
+    "pos": "static",
+    "z": "auto",
+    "bg": "rgb(0, 0, 0)",
+    "h": "CUSTOMER SERVICE Support Center Contact Us Shipping, Returns"
+   }
+  ],
+  "layers": [
+   {
+    "sel": "#consent_blackbar",
+    "pos": "fixed",
+    "z": "100000",
+    "top": "900px",
+    "r": [
+     0,
+     900,
+     1440,
+     0
+    ],
+    "bg": "rgb(0, 0, 0)"
+   },
+   {
+    "sel": "#js__skip-link",
+    "pos": "absolute",
+    "z": "99",
+    "top": "-400px",
+    "r": [
+     32,
+     -400,
+     132,
+     27
+    ],
+    "bg": "rgb(0, 0, 0)"
+   },
+   {
+    "sel": "#js__gh__nav>ul>li:nth-of-type(1)>div",
+    "pos": "absolute",
+    "z": "999",
+    "top": "64px",
+    "r": [
+     0,
+     64,
+     1440,
+     722
+    ],
+    "bg": "rgb(255, 255, 255)"
+   },
+   {
+    "sel": "#js__gh__nav>ul>li:nth-of-type(2)>div",
+    "pos": "absolute",
+    "z": "999",
+    "top": "64px",
+    "r": [
+     0,
+     64,
+     1440,
+     740
+    ],
+    "bg": "rgb(255, 255, 255)"
+   },
+   {
+    "sel": "#js__gh__nav>ul>li:nth-of-type(3)>div",
+    "pos": "absolute",
+    "z": "999",
+    "top": "64px",
+    "r": [
+     0,
+     64,
+     1440,
+     722
+    ],
+    "bg": "rgb(255, 255, 255)"
+   },
+   {
+    "sel": "#js__gh__nav>ul>li:nth-of-type(4)>div",
+    "pos": "absolute",
+    "z": "999",
+    "top": "64px",
+    "r": [
+     0,
+     64,
+     1440,
+     765
+    ],
+    "bg": "rgb(255, 255, 255)"
+   },
+   {
+    "sel": "#js__gh__nav>ul>li:nth-of-type(5)>div",
+    "pos": "absolute",
+    "z": "999",
+    "top": "64px",
+    "r": [
+     0,
+     64,
+     1440,
+     609
+    ],
+    "bg": "rgb(255, 255, 255)"
+   },
+   {
+    "sel": "#js__gh__nav>ul>li:nth-of-type(6)>div",
+    "pos": "absolute",
+    "z": "999",
+    "top": "64px",
+    "r": [
+     0,
+     64,
+     1440,
+     758
+    ],
+    "bg": "rgb(255, 255, 255)"
+   },
+   {
+    "sel": "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>div:nth-of-type(2)>div",
+    "pos": "absolute",
+    "z": "1",
+    "top": "64px",
+    "r": [
+     1264,
+     64,
+     176,
+     159
+    ],
+    "bg": "rgb(255, 255, 255)"
+   },
+   {
+    "sel": "#sticky-menu",
+    "pos": "relative",
+    "z": "1000",
+    "top": "0px",
+    "r": [
+     0,
+     235,
+     1440,
+     484
+    ],
+    "bg": "rgb(255, 255, 255)"
+   },
+   {
+    "sel": "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(4)>div:nth-of-type(2)",
+    "pos": "relative",
+    "z": "2",
+    "top": "0px",
+    "r": [
+     829,
+     437,
+     186,
+     210
+    ],
+    "bg": "rgba(0, 0, 0, 0)"
+   }
+  ],
+  "tokens": {
+   "colors": [
+    {
+     "v": "text rgb(0, 0, 0)",
+     "n": 1115,
+     "ex": "#js__gh__nav>ul>li:nth-of-type(1)>span"
+    },
+    {
+     "v": "bg rgb(242, 242, 242)",
+     "n": 376,
+     "ex": "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(5)>div"
+    },
+    {
+     "v": "border rgb(217, 217, 217)",
+     "n": 375,
+     "ex": "#app-body>div>div:nth-of-type(1)>g-collapsible-region>div:nth-of-type(2)>div>div:nth-of-type(1)>table>thead>tr>th"
+    },
+    {
+     "v": "text rgb(255, 255, 255)",
+     "n": 48,
+     "ex": "#js__skip-link"
+    },
+    {
+     "v": "bg rgb(0, 0, 0)",
+     "n": 43,
+     "ex": "#consent_blackbar"
+    },
+    {
+     "v": "border rgb(216, 216, 216)",
+     "n": 18,
+     "ex": "#js__gh__nav>ul>li:nth-of-type(1)>div"
+    },
+    {
+     "v": "bg rgb(255, 255, 255)",
+     "n": 11,
+     "ex": "body>header"
+    },
+    {
+     "v": "bg rgb(109, 207, 246)",
+     "n": 3,
+     "ex": "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(2)>g-button>a"
+    },
+    {
+     "v": "border rgb(109, 207, 246)",
+     "n": 3,
+     "ex": "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(2)>g-button>a"
+    }
+   ],
+   "type": [
+    {
+     "v": "Superscripts-Roboto | 14px | 400 | 21px | normal | none | normal",
+     "n": 488,
+     "ex": "#main>div:nth-of-type(1)>div>a"
+    },
+    {
+     "v": "Superscripts-Roboto | 12px | 700 | 18px | normal | uppercase | normal",
+     "n": 386,
+     "ex": "#app-body>div>div:nth-of-type(1)>g-collapsible-region>div:nth-of-type(2)>div>div:nth-of-type(1)>table>thead>tr>th>a"
+    },
+    {
+     "v": "Superscripts-Roboto | 14px | 400 | 17.5px | 0.64px | none | normal",
+     "n": 138,
+     "ex": "#js__gh__nav>ul>li:nth-of-type(1)>div>div:nth-of-type(1)>div>a:nth-of-type(1)"
+    },
+    {
+     "v": "Superscripts-Roboto | 14px | 500 | normal | 0.64px | none | normal",
+     "n": 36,
+     "ex": "#js__gh__nav>ul>li:nth-of-type(1)>span"
+    },
+    {
+     "v": "Superscripts-Roboto | 12.8px | 400 | 24px | 0.8px | none | normal",
+     "n": 33,
+     "ex": "#js__gf__menu>li:nth-of-type(1)>div>ul>li:nth-of-type(1)>span>a"
+    },
+    {
+     "v": "Superscripts-Oswald | 32px | 400 | 40px | 0.8px | uppercase | normal",
+     "n": 23,
+     "ex": "#app-body>div>div:nth-of-type(1)>g-collapsible-region>div:nth-of-type(1)>div>g-heading>h2"
+    },
+    {
+     "v": "Superscripts-Oswald | 20px | 400 | 25px | 0.8px | none | normal",
+     "n": 11,
+     "ex": "#js__gh__nav>ul>li:nth-of-type(1)>div>div:nth-of-type(4)>div:nth-of-type(1)>a>div>h3"
+    },
+    {
+     "v": "Superscripts-Roboto | 14.4px | 400 | normal | 0.64px | none | normal",
+     "n": 11,
+     "ex": "#js__gh__nav>ul>li:nth-of-type(1)>div>div:nth-of-type(4)>div:nth-of-type(1)>a>div>div>p"
+    },
+    {
+     "v": "Superscripts-Roboto | 16px | 400 | 24px | normal | none | normal",
+     "n": 6,
+     "ex": "#js__cart-item-count-live"
+    },
+    {
+     "v": "Superscripts-Roboto | 12.8px | 500 | 19.2px | normal | none | normal",
+     "n": 6,
+     "ex": "body>footer>div:nth-of-type(3)>div>p"
+    },
+    {
+     "v": "Superscripts-Roboto | 16px | 700 | 24px | normal | none | normal",
+     "n": 5,
+     "ex": "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(2)>div>div>g-price>div>span:nth-of-type(1)"
+    },
+    {
+     "v": "Superscripts-Oswald | 20px | 400 | 32px | 0.8px | uppercase | normal",
+     "n": 4,
+     "ex": "#js__gf__menu>li:nth-of-type(1)>button>span"
+    },
+    {
+     "v": "Superscripts-Roboto | 28px | 400 | 32.2px | normal | none | normal",
+     "n": 3,
+     "ex": "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(1)>button"
+    },
+    {
+     "v": "Superscripts-Roboto | 14px | 500 | 16.1px | normal | uppercase | normal",
+     "n": 3,
+     "ex": "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(2)>g-button>a"
+    },
+    {
+     "v": "Superscripts-Roboto | 14px | 500 | 17.5px | normal | none | normal",
+     "n": 2,
+     "ex": "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>div:nth-of-type(2)>div>a:nth-of-type(1)"
+    },
+    {
+     "v": "Superscripts-Roboto | 12.8px | 400 | 19.2px | normal | none | normal",
+     "n": 1,
+     "ex": "#js__skip-link"
+    },
+    {
+     "v": "Superscripts-Roboto | 14px | 500 | 21px | normal | none | normal",
+     "n": 1,
+     "ex": "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)>a"
+    },
+    {
+     "v": "Superscripts-Roboto | 14px | 400 | 17.5px | normal | uppercase | normal",
+     "n": 1,
+     "ex": "#js__account-link__SignIn"
+    },
+    {
+     "v": "Superscripts-Roboto | 12px | 400 | 20px | normal | none | normal",
+     "n": 1,
+     "ex": "#js__cart-number"
+    },
+    {
+     "v": "Superscripts-Roboto | 12.8px | 400 | 19.2px | 0.32px | none | normal",
+     "n": 1,
+     "ex": "#js__gh__header>div:nth-of-type(2)>a"
+    },
+    {
+     "v": "Superscripts-Oswald | 40px | 400 | 50px | 0.8px | uppercase | normal",
+     "n": 1,
+     "ex": "#main>div:nth-of-type(1)>div>g-heading>h1"
+    },
+    {
+     "v": "Superscripts-Roboto | 16px | 400 | 16px | normal | none | normal",
+     "n": 1,
+     "ex": "#sticky-menu>div>div:nth-of-type(3)>g-checkbox>label>span>span"
+    },
+    {
+     "v": "Superscripts-Roboto | 14.4px | 500 | 21.6px | normal | none | normal",
+     "n": 1,
+     "ex": "body>footer>div:nth-of-type(2)>div:nth-of-type(1)>a"
+    }
+   ],
+   "radii": [
+    {
+     "v": "3px",
+     "n": 11,
+     "ex": "#js__gh__nav>ul>li:nth-of-type(1)>div>div:nth-of-type(4)>div:nth-of-type(1)"
+    },
+    {
+     "v": "100%",
+     "n": 1,
+     "ex": "#js__cart-number"
+    }
+   ],
+   "shadows": [
+    {
+     "v": "rgb(216, 216, 216) 0px 0px 6px 0px",
+     "n": 11,
+     "ex": "#js__gh__nav>ul>li:nth-of-type(1)>div>div:nth-of-type(4)>div:nth-of-type(1)"
+    },
+    {
+     "v": "rgba(77, 77, 77, 0.08) 0px 1px 1px 0px, rgba(77, 77, 77, 0.16) 0px 1px 3px 1px",
+     "n": 4,
+     "ex": "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(1)>a"
+    },
+    {
+     "v": "rgb(0, 0, 0) 0px 1px 0px 0px",
+     "n": 1,
+     "ex": "#js__gh__header>div:nth-of-type(2)"
+    }
+   ],
+   "spacing": [
+    {
+     "v": "16px",
+     "n": 4194,
+     "ex": "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(1)>a"
+    },
+    {
+     "v": "5.6px",
+     "n": 375,
+     "ex": "#app-body>div>div:nth-of-type(1)>g-collapsible-region>div:nth-of-type(2)>div>div:nth-of-type(1)>table>thead>tr>th"
+    },
+    {
+     "v": "8px",
+     "n": 218,
+     "ex": "#js__skip-link"
+    },
+    {
+     "v": "32px",
+     "n": 33,
+     "ex": "#js__gh__header>div:nth-of-type(1)"
+    },
+    {
+     "v": "24px",
+     "n": 10,
+     "ex": "#js__gh__header>div:nth-of-type(1)"
+    },
+    {
+     "v": "12px",
+     "n": 6,
+     "ex": "#js__search-close"
+    },
+    {
+     "v": "18px",
+     "n": 5,
+     "ex": "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(1)>a"
+    },
+    {
+     "v": "4px",
+     "n": 1,
+     "ex": "#js__skip-link"
+    },
+    {
+     "v": "10px",
+     "n": 1,
+     "ex": "#js__gh__header>div:nth-of-type(1)>div:nth-of-type(2)"
+    },
+    {
+     "v": "5px",
+     "n": 1,
+     "ex": "#js__account-link__SignIn"
+    }
+   ],
+   "vars": {
+    "--g-breakpoint-sm": "768px",
+    "--g-breakpoint-lg": "1200px",
+    "--g-breakpoint-xl": "1350px",
+    "--g-spacing-xs": "0.25rem",
+    "--g-breakpoint-xxl": "1440px",
+    "--g-spacing-lg": "1.5rem",
+    "--g-spacing-md": "1rem",
+    "--g-breakpoint-xs": "480px",
+    "--g-spacing-sm": "0.5rem",
+    "--g-spacing-xxl": "5rem",
+    "--g-breakpoint-xxxl": "1824px",
+    "--g-spacing-xl": "2rem",
+    "--g-breakpoint-standard": "768px",
+    "--g-spacing-none": "0",
+    "--g-breakpoint-md": "1024px"
+   },
+   "body": {
+    "bg": "rgba(0, 0, 0, 0)",
+    "color": "rgb(0, 0, 0)",
+    "font": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+    "smoothing": "auto",
+    "scrollBehavior": "auto"
+   }
+  },
+  "fonts": [
+   {
+    "family": "Roboto",
+    "weight": "400",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+460-52F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "400",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+301, U+400-45F, U+490-491, U+4B0-4B1, U+2116",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "400",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+1F00-1FFF",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "400",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+370-3FF",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "400",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+102-103, U+110-111, U+128-129, U+168-169, U+1A0-1A1, U+1AF-1B0, U+1EA0-1EF9, U+20AB",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "400",
+    "style": "normal",
+    "status": "loaded",
+    "unicodeRange": "U+100-24F, U+259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "400",
+    "style": "normal",
+    "status": "loaded",
+    "unicodeRange": "U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "500",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+460-52F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "500",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+301, U+400-45F, U+490-491, U+4B0-4B1, U+2116",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "500",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+1F00-1FFF",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "500",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+370-3FF",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "500",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+102-103, U+110-111, U+128-129, U+168-169, U+1A0-1A1, U+1AF-1B0, U+1EA0-1EF9, U+20AB",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "500",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+100-24F, U+259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "500",
+    "style": "normal",
+    "status": "loaded",
+    "unicodeRange": "U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "700",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+460-52F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "700",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+301, U+400-45F, U+490-491, U+4B0-4B1, U+2116",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "700",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+1F00-1FFF",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "700",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+370-3FF",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "700",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+102-103, U+110-111, U+128-129, U+168-169, U+1A0-1A1, U+1AF-1B0, U+1EA0-1EF9, U+20AB",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "700",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+100-24F, U+259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF",
+    "display": "swap"
+   },
+   {
+    "family": "Roboto",
+    "weight": "700",
+    "style": "normal",
+    "status": "loaded",
+    "unicodeRange": "U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "display": "swap"
+   },
+   {
+    "family": "Oswald",
+    "weight": "400",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+460-52F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F",
+    "display": "swap"
+   },
+   {
+    "family": "Oswald",
+    "weight": "400",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+301, U+400-45F, U+490-491, U+4B0-4B1, U+2116",
+    "display": "swap"
+   },
+   {
+    "family": "Oswald",
+    "weight": "400",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+102-103, U+110-111, U+128-129, U+168-169, U+1A0-1A1, U+1AF-1B0, U+1EA0-1EF9, U+20AB",
+    "display": "swap"
+   },
+   {
+    "family": "Oswald",
+    "weight": "400",
+    "style": "normal",
+    "status": "loaded",
+    "unicodeRange": "U+100-24F, U+259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF",
+    "display": "swap"
+   },
+   {
+    "family": "Oswald",
+    "weight": "400",
+    "style": "normal",
+    "status": "loaded",
+    "unicodeRange": "U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "display": "swap"
+   },
+   {
+    "family": "Oswald",
+    "weight": "500",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+460-52F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F",
+    "display": "swap"
+   },
+   {
+    "family": "Oswald",
+    "weight": "500",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+301, U+400-45F, U+490-491, U+4B0-4B1, U+2116",
+    "display": "swap"
+   },
+   {
+    "family": "Oswald",
+    "weight": "500",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+102-103, U+110-111, U+128-129, U+168-169, U+1A0-1A1, U+1AF-1B0, U+1EA0-1EF9, U+20AB",
+    "display": "swap"
+   },
+   {
+    "family": "Oswald",
+    "weight": "500",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+100-24F, U+259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF",
+    "display": "swap"
+   },
+   {
+    "family": "Oswald",
+    "weight": "500",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "display": "swap"
+   },
+   {
+    "family": "Oswald",
+    "weight": "700",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+460-52F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F",
+    "display": "swap"
+   },
+   {
+    "family": "Oswald",
+    "weight": "700",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+301, U+400-45F, U+490-491, U+4B0-4B1, U+2116",
+    "display": "swap"
+   },
+   {
+    "family": "Oswald",
+    "weight": "700",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+102-103, U+110-111, U+128-129, U+168-169, U+1A0-1A1, U+1AF-1B0, U+1EA0-1EF9, U+20AB",
+    "display": "swap"
+   },
+   {
+    "family": "Oswald",
+    "weight": "700",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+100-24F, U+259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF",
+    "display": "swap"
+   },
+   {
+    "family": "Oswald",
+    "weight": "700",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+0-FF, U+131, U+152-153, U+2BB-2BC, U+2C6, U+2DA, U+2DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+    "display": "swap"
+   },
+   {
+    "family": "Superscripts-InsideSup-Oswald",
+    "weight": "normal",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+AE, U+2122, U+2120",
+    "display": "auto"
+   },
+   {
+    "family": "Superscripts-Oswald",
+    "weight": "normal",
+    "style": "normal",
+    "status": "loaded",
+    "unicodeRange": "U+AE, U+2122, U+2120",
+    "display": "auto"
+   },
+   {
+    "family": "Superscripts-InsideSup-Roboto",
+    "weight": "normal",
+    "style": "normal",
+    "status": "unloaded",
+    "unicodeRange": "U+AE, U+2122, U+2120",
+    "display": "auto"
+   },
+   {
+    "family": "Superscripts-Roboto",
+    "weight": "normal",
+    "style": "normal",
+    "status": "loaded",
+    "unicodeRange": "U+AE, U+2122, U+2120",
+    "display": "auto"
+   }
+  ],
+  "css": {
+   "breakpoints": [
+    "min 1024px ×44",
+    "min 1200px ×21",
+    "min 768px ×12",
+    "max 1024px ×3",
+    "min 1440px ×1"
+   ],
+   "otherMedia": [
+    "print",
+    "screen and (-ms-high-contrast:active),(-ms-high-contrast:none)"
+   ],
+   "keyframes": {
+    "gloader": "0%{transform:scale(0.8);opacity:0.3}10%{transform:scale(1);opacity:1}100%{transform:scale(0.8);opacity:0.3}"
+   },
+   "fontFaces": [
+    {
+     "family": "Superscripts-InsideSup-Oswald",
+     "unicodeRange": "U+00AE,U+2122,U+2120",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/superscripts-oswald/Superscript-Oswald-InsideSup-Regular.otf",
+       "format": "opentype"
+      }
+     ]
+    },
+    {
+     "family": "Superscripts-Oswald",
+     "unicodeRange": "U+00AE,U+2122,U+2120",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/superscripts-oswald/Superscript-Oswald-Regular.otf",
+       "format": "opentype"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "400",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOmCnqEu92Fr1Mu72xKKTU1Kvnz.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "400",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOmCnqEu92Fr1Mu5mxKKTU1Kvnz.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "400",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+1F00-1FFF",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOmCnqEu92Fr1Mu7mxKKTU1Kvnz.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "400",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0370-03FF",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOmCnqEu92Fr1Mu4WxKKTU1Kvnz.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "400",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOmCnqEu92Fr1Mu7WxKKTU1Kvnz.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "400",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOmCnqEu92Fr1Mu7GxKKTU1Kvnz.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "400",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOmCnqEu92Fr1Mu4mxKKTU1Kg.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "500",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOlCnqEu92Fr1MmEU9fCRc4AMP6lbBP.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "500",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOlCnqEu92Fr1MmEU9fABc4AMP6lbBP.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "500",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+1F00-1FFF",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOlCnqEu92Fr1MmEU9fCBc4AMP6lbBP.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "500",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0370-03FF",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOlCnqEu92Fr1MmEU9fBxc4AMP6lbBP.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "500",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOlCnqEu92Fr1MmEU9fCxc4AMP6lbBP.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "500",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOlCnqEu92Fr1MmEU9fChc4AMP6lbBP.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "500",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOlCnqEu92Fr1MmEU9fBBc4AMP6lQ.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "700",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOlCnqEu92Fr1MmWUlfCRc4AMP6lbBP.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "700",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOlCnqEu92Fr1MmWUlfABc4AMP6lbBP.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "700",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+1F00-1FFF",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOlCnqEu92Fr1MmWUlfCBc4AMP6lbBP.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "700",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0370-03FF",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOlCnqEu92Fr1MmWUlfBxc4AMP6lbBP.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "700",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOlCnqEu92Fr1MmWUlfCxc4AMP6lbBP.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "700",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOlCnqEu92Fr1MmWUlfChc4AMP6lbBP.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Roboto",
+     "weight": "700",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/roboto-standard/KFOlCnqEu92Fr1MmWUlfBBc4AMP6lQ.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Oswald",
+     "weight": "400",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/oswald/TK3IWkUHHAIjg75cFRf3bXL8LICs1_Fv40pKlN4NNSeSASz7FmlbHYjMdZwlou4.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Oswald",
+     "weight": "400",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/oswald/TK3IWkUHHAIjg75cFRf3bXL8LICs1_Fv40pKlN4NNSeSASz7FmlSHYjMdZwlou4.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Oswald",
+     "weight": "400",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/oswald/TK3IWkUHHAIjg75cFRf3bXL8LICs1_Fv40pKlN4NNSeSASz7FmlZHYjMdZwlou4.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Oswald",
+     "weight": "400",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/oswald/TK3IWkUHHAIjg75cFRf3bXL8LICs1_Fv40pKlN4NNSeSASz7FmlYHYjMdZwlou4.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Oswald",
+     "weight": "400",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/oswald/TK3IWkUHHAIjg75cFRf3bXL8LICs1_Fv40pKlN4NNSeSASz7FmlWHYjMdZwl.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Oswald",
+     "weight": "500",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/oswald/TK3IWkUHHAIjg75cFRf3bXL8LICs1_Fv40pKlN4NNSeSASz7FmlbHYjMdZwlou4.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Oswald",
+     "weight": "500",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/oswald/TK3IWkUHHAIjg75cFRf3bXL8LICs1_Fv40pKlN4NNSeSASz7FmlSHYjMdZwlou4.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Oswald",
+     "weight": "500",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/oswald/TK3IWkUHHAIjg75cFRf3bXL8LICs1_Fv40pKlN4NNSeSASz7FmlZHYjMdZwlou4.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Oswald",
+     "weight": "500",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/oswald/TK3IWkUHHAIjg75cFRf3bXL8LICs1_Fv40pKlN4NNSeSASz7FmlYHYjMdZwlou4.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Oswald",
+     "weight": "500",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/oswald/TK3IWkUHHAIjg75cFRf3bXL8LICs1_Fv40pKlN4NNSeSASz7FmlWHYjMdZwl.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Oswald",
+     "weight": "700",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0460-052F, U+1C80-1C88, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/oswald/TK3IWkUHHAIjg75cFRf3bXL8LICs1_Fv40pKlN4NNSeSASz7FmlbHYjMdZwlou4.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Oswald",
+     "weight": "700",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/oswald/TK3IWkUHHAIjg75cFRf3bXL8LICs1_Fv40pKlN4NNSeSASz7FmlSHYjMdZwlou4.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Oswald",
+     "weight": "700",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+1EA0-1EF9, U+20AB",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/oswald/TK3IWkUHHAIjg75cFRf3bXL8LICs1_Fv40pKlN4NNSeSASz7FmlZHYjMdZwlou4.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Oswald",
+     "weight": "700",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20CF, U+2113, U+2C60-2C7F, U+A720-A7FF",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/oswald/TK3IWkUHHAIjg75cFRf3bXL8LICs1_Fv40pKlN4NNSeSASz7FmlYHYjMdZwlou4.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Oswald",
+     "weight": "700",
+     "style": "normal",
+     "display": "swap",
+     "unicodeRange": "U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/oswald/TK3IWkUHHAIjg75cFRf3bXL8LICs1_Fv40pKlN4NNSeSASz7FmlWHYjMdZwl.woff2",
+       "format": "woff2"
+      }
+     ]
+    },
+    {
+     "family": "Superscripts-InsideSup-Roboto",
+     "unicodeRange": "U+00AE,U+2122,U+2120",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/superscripts-roboto/Superscript-Roboto-InsideSup-Regular.otf",
+       "format": "opentype"
+      }
+     ]
+    },
+    {
+     "family": "Superscripts-Roboto",
+     "unicodeRange": "U+00AE,U+2122,U+2120",
+     "urls": [
+      {
+       "url": "https://fonts.garmin.com/fonts/superscripts-roboto/Superscript-Roboto-Regular.otf",
+       "format": "opentype"
+      }
+     ]
+    }
+   ]
+  },
+  "libs": {
+   "vue": true
+  },
+  "assets": {
+   "images": [
+    {
+     "sel": "#js__gh__nav>ul>li:nth-of-type(1)>div>div:nth-of-type(4)>div:nth-of-type(1)>a>img",
+     "alt": "Stack of wrapped holiday gift boxes in red, green, and pink patterns, arranged on a green surface with decorative sparkles around them.",
+     "r": [
+      961,
+      82,
+      248,
+      217
+     ],
+     "fit": "cover",
+     "src": "https://res.garmin.com/homepage/2025-HOLIDAY/2-HOLIDAY-SALE/HOLIDAY-SALE-TOP-NAV.jpg",
+     "natural": [
+      600,
+      525
+     ],
+     "loading": "eager"
+    },
+    {
+     "sel": "#js__gh__nav>ul>li:nth-of-type(1)>div>div:nth-of-type(4)>div:nth-of-type(2)>a>img",
+     "alt": "FĒNIX® 9",
+     "r": [
+      961,
+      426,
+      248,
+      217
+     ],
+     "fit": "cover",
+     "src": "https://res.garmin.com/homepage/87582/87582-TN-NEW.jpg",
+     "natural": [
+      600,
+      525
+     ],
+     "loading": "eager"
+    },
+    {
+     "sel": "#js__gh__nav>ul>li:nth-of-type(2)>div>div:nth-of-type(4)>div:nth-of-type(1)>a>img",
+     "alt": "Stack of wrapped holiday gift boxes in red, green, and pink patterns, arranged on a green surface with decorative sparkles around them.",
+     "r": [
+      956,
+      82,
+      248,
+      217
+     ],
+     "fit": "cover",
+     "src": "https://res.garmin.com/homepage/2025-HOLIDAY/2-HOLIDAY-SALE/HOLIDAY-SALE-TOP-NAV.jpg",
+     "natural": [
+      600,
+      525
+     ],
+     "loading": "eager"
+    },
+    {
+     "sel": "#js__gh__nav>ul>li:nth-of-type(2)>div>div:nth-of-type(4)>div:nth-of-type(2)>a>img",
+     "alt": "EDGE® 1060",
+     "r": [
+      956,
+      426,
+      248,
+      217
+     ],
+     "fit": "cover",
+     "src": "https://res.garmin.com/homepage/87258/87258-TN-NEW.jpg",
+     "natural": [
+      600,
+      525
+     ],
+     "loading": "eager"
+    },
+    {
+     "sel": "#js__gh__nav>ul>li:nth-of-type(3)>div>div:nth-of-type(4)>div:nth-of-type(1)>a>img",
+     "alt": "Stack of wrapped holiday gift boxes in red, green, and pink patterns, arranged on a green surface with decorative sparkles around them.",
+     "r": [
+      956,
+      82,
+      248,
+      217
+     ],
+     "fit": "cover",
+     "src": "https://res.garmin.com/homepage/2025-HOLIDAY/2-HOLIDAY-SALE/HOLIDAY-SALE-TOP-NAV.jpg",
+     "natural": [
+      600,
+      525
+     ],
+     "loading": "eager"
+    },
+    {
+     "sel": "#js__gh__nav>ul>li:nth-of-type(3)>div>div:nth-of-type(4)>div:nth-of-type(2)>a>img",
+     "alt": "FĒNIX® 9",
+     "r": [
+      956,
+      426,
+      248,
+      217
+     ],
+     "fit": "cover",
+     "src": "https://res.garmin.com/homepage/87582/87582-TN-NEW.jpg",
+     "natural": [
+      600,
+      525
+     ],
+     "loading": "eager"
+    },
+    {
+     "sel": "#js__gh__nav>ul>li:nth-of-type(4)>div>div:nth-of-type(4)>div:nth-of-type(1)>a>img",
+     "alt": "Stack of wrapped holiday gift boxes in red, green, and pink patterns, arranged on a green surface with decorative sparkles around them.",
+     "r": [
+      956,
+      82,
+      248,
+      217
+     ],
+     "fit": "cover",
+     "src": "https://res.garmin.com/homepage/2025-HOLIDAY/2-HOLIDAY-SALE/HOLIDAY-SALE-TOP-NAV.jpg",
+     "natural": [
+      600,
+      525
+     ],
+     "loading": "eager"
+    },
+    {
+     "sel": "#js__gh__nav>ul>li:nth-of-type(4)>div>div:nth-of-type(4)>div:nth-of-type(2)>a>img",
+     "alt": "GARMIN DRIVE™ NAVIGATORS",
+     "r": [
+      956,
+      426,
+      248,
+      217
+     ],
+     "fit": "cover",
+     "src": "https://res.garmin.com/homepage/86252/en_US/86252-TOP-NAV.jpg",
+     "natural": [
+      600,
+      525
+     ],
+     "loading": "eager"
+    },
+    {
+     "sel": "#js__gh__nav>ul>li:nth-of-type(5)>div>div:nth-of-type(4)>div>a>img",
+     "alt": "Stack of wrapped holiday gift boxes in red, green, and pink patterns, arranged on a green surface with decorative sparkles around them.",
+     "r": [
+      956,
+      82,
+      248,
+      217
+     ],
+     "fit": "cover",
+     "src": "https://res.garmin.com/homepage/2025-HOLIDAY/2-HOLIDAY-SALE/HOLIDAY-SALE-TOP-NAV.jpg",
+     "natural": [
+      600,
+      525
+     ],
+     "loading": "eager"
+    },
+    {
+     "sel": "#js__gh__nav>ul>li:nth-of-type(6)>div>div:nth-of-type(4)>div:nth-of-type(1)>a>img",
+     "alt": "Stack of wrapped holiday gift boxes in red, green, and pink patterns, arranged on a green surface with decorative sparkles around them.",
+     "r": [
+      956,
+      82,
+      248,
+      217
+     ],
+     "fit": "cover",
+     "src": "https://res.garmin.com/homepage/2025-HOLIDAY/2-HOLIDAY-SALE/HOLIDAY-SALE-TOP-NAV.jpg",
+     "natural": [
+      600,
+      525
+     ],
+     "loading": "eager"
+    },
+    {
+     "sel": "#js__gh__nav>ul>li:nth-of-type(6)>div>div:nth-of-type(4)>div:nth-of-type(2)>a>img",
+     "alt": "AXIS",
+     "r": [
+      956,
+      426,
+      248,
+      217
+     ],
+     "fit": "cover",
+     "src": "https://res.garmin.com/homepage/80687/80687-TN-NEW.jpg",
+     "natural": [
+      600,
+      525
+     ],
+     "loading": "eager"
+    },
+    {
+     "sel": "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(1)>div:nth-of-type(1)>a>img",
+     "alt": "",
+     "r": [
+      242,
+      269,
+      150,
+      150
+     ],
+     "fit": "contain",
+     "src": "https://res.garmin.com/en/products/010-04337-00/g/cf-sm.jpg",
+     "srcset": "https://res.garmin.com/en/products/010-04337-00/g/cf-sm.jpg, https://res.garmin.com/en/products/010-04337-00/g/cf-md.jpg 2x",
+     "natural": [
+      150,
+      150
+     ]
+    },
+    {
+     "sel": "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(2)>div:nth-of-type(1)>a>img",
+     "alt": "",
+     "r": [
+      443,
+      269,
+      150,
+      150
+     ],
+     "fit": "contain",
+     "src": "https://res.garmin.com/en/products/010-04675-10/g/cf-sm.jpg",
+     "srcset": "https://res.garmin.com/en/products/010-04675-10/g/cf-sm.jpg, https://res.garmin.com/en/products/010-04675-10/g/cf-md.jpg 2x",
+     "natural": [
+      150,
+      150
+     ]
+    },
+    {
+     "sel": "#sticky-menu>div>div:nth-of-type(1)>div:nth-of-type(3)>div:nth-of-type(1)>a>img",
+     "alt": "",
+     "r": [
+      645,
+      269,
+      150,
+      150
+     ],
+     "fit": "contain",
+     "src": "https://res.garmin.com/en/products/010-D1761-00/g/cf-sm.jpg",
+     "srcset": "https://res.garmin.com/en/products/010-D1761-00/g/cf-sm.jpg, https://res.garmin.com/en/products/010-D1761-00/g/cf-md.jpg 2x",
+     "natural": [
+      150,
+      150
+     ]
+    },
+    {
+     "sel": "#batBeacon396779596131",
+     "alt": "",
+     "r": [
+      0,
+      0,
+      0,
+      0
+     ],
+     "fit": "fill",
+     "src": "https://bat.bing.com/action/0?ti=97095079&Ver=2&mid=2700beb0-dc9e-42b3-aa9b-6f641f89bb5d&bo=3&sid=51ae9890e52111f1beeba9f3247e5dd7&vid=51aedee0e52111f19b8b1949823dd817&vids=1&msclkid=N&pi=918639831&lg=en-US&sw=800&sh=600&sc=24&nwd=1&tl=Garmin%20%7C%20Product%20Compare&p=https%3A%2F%2Fwww.garmin.com%2Fen-US%2Fcompare%2F%3FcompareProduct%3D1953453%26compareProduct%3D1989182%26compareProduct%3D730831&r=&lt=1782&evt=pageLoad&sv=2&asc=G&cdb=AQwR&rn=424839",
+     "natural": [
+      0,
+      0
+     ]
+    }
+   ],
+   "backgrounds": [],
+   "videos": [],
+   "icons": [
+    {
+     "rel": "apple-touch-icon",
+     "href": "https://share-assets.fe.garmin.com/apple-touch-icon.png",
+     "sizes": "180x180"
+    },
+    {
+     "rel": "icon",
+     "href": "https://share-assets.fe.garmin.com/favicon-32x32.png",
+     "sizes": "32x32"
+    },
+    {
+     "rel": "icon",
+     "href": "https://share-assets.fe.garmin.com/favicon-16x16.png",
+     "sizes": "16x16"
+    },
+    {
+     "rel": "manifest",
+     "href": "https://share-assets.fe.garmin.com/site.webmanifest"
+    },
+    {
+     "rel": "mask-icon",
+     "href": "https://share-assets.fe.garmin.com/safari-pinned-tab.svg"
+    },
+    {
+     "rel": "shortcut icon",
+     "href": "https://share-assets.fe.garmin.com/favicon.ico"
+    }
+   ],
+   "meta": {
+    "title": "Garmin | Product Compare",
+    "lang": "en-US",
+    "description": "Garmin | Compare App",
+    "theme-color": "#ffffff",
+    "og:description": "Garmin | Compare App",
+    "og:image": "https://share-assets.fe.garmin.com/facebook-default.jpg",
+    "og:locale": "en_US",
+    "og:site_name": "Garmin",
+    "og:title": "Garmin | Product Compare",
+    "og:type": "website",
+    "og:url": "https://www.garmin.com/en-US/compare/?compareProduct=1953453&compareProduct=1989182&compareProduct=730831"
+   },
+   "other": {
+    "canvas": 0,
+    "iframes": [
+     "",
+     "about:blank",
+     "https://pixel.mathtag.com/sync/iframe?mt_uuid=bfd06b00-ae0d-4500-8a51-5fc30ea703ec&no_iframe=1&mt_adid=433678&source=mathtag"
+    ],
+    "lottie": 0
+   }
+  },
+  "animations": [],
+  "hooks": {
+   "io": [],
+   "scroll": 3,
+   "wheel": 0,
+   "resizeObs": 0
+  }
+ }
+}
