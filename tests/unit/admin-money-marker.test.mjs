@@ -3,7 +3,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { formatRecordAmount, formatKzt } from "../../src/lib/money.ts";
-import { componentFixture, nodes, nodeText } from "../helpers/component-fixture.mjs";
+import { componentFixture, nodeText } from "../helpers/component-fixture.mjs";
 
 const plain = value => value.replace(/ /g, " ");
 
