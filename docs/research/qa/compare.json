@@ -1,0 +1,848 @@
+{
+ "target": "https://www.garmin.com/en-US/compare/?compareProduct=1953453&compareProduct=1989182&compareProduct=730831",
+ "clone": "http://localhost:3107/en/compare?item=prod-1794926441776&item=prod-1794921197218&item=1228429",
+ "sel": "#main",
+ "cloneSel": "main",
+ "widths": {
+  "390": {
+   "mismatchPct": 11.51,
+   "size": {
+    "target": [
+     390,
+     6000
+    ],
+    "clone": [
+     390,
+     6000
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "480-520",
+     "pct": 43.5
+    },
+    {
+     "y": "200-240",
+     "pct": 38.7
+    },
+    {
+     "y": "440-480",
+     "pct": 31.3
+    },
+    {
+     "y": "160-200",
+     "pct": 27.7
+    },
+    {
+     "y": "240-280",
+     "pct": 24.8
+    },
+    {
+     "y": "4360-4400",
+     "pct": 23.2
+    }
+   ],
+   "file": "docs/design-references/qa/compare-390-diff.png",
+   "text": {
+    "matched": 274,
+    "of": 400,
+    "issues": [
+     {
+      "t": "Return to shopping",
+      "ff": "Superscripts-Roboto → Roboto",
+      "size": "358×21 → 136×21"
+     },
+     {
+      "t": "Product Comparison",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Shop",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,462 → 16,497"
+     },
+     {
+      "t": "Shop",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "203,462 → 199,497"
+     },
+     {
+      "t": "Show only differences",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "40,538 → 16,563",
+      "size": "157×19 → 181×34"
+     },
+     {
+      "t": "What You'll Love",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "pos": "16,608 → 24,645",
+      "size": "323×46 → 312×30"
+     },
+     {
+      "t": "Sleep score and insights",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "115,687 → 32,714",
+      "size": "160×14 → 160×18"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,726 → 16,737",
+      "size": "23×17 → 179×53"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "212,726 → 195,737",
+      "size": "23×17 → 179×53"
+     },
+     {
+      "t": "Battery life (smartwatch mode)",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,762 → 32,797",
+      "size": "358×30 → 208×18"
+     },
+     {
+      "t": "Built-in mapping",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,845 → 32,901",
+      "size": "358×30 → 104×18"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,893 → 16,925",
+      "size": "23×17 → 179×53"
+     },
+     {
+      "t": "Pulse Ox blood oxygen",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "122,936 → 32,984",
+      "size": "146×14 → 146×18"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,976 → 16,1008",
+      "size": "23×17 → 179×116"
+     },
+     {
+      "t": "Garmin ECG app",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,1033 → 32,1131",
+      "size": "358×30 → 99×18"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,1080 → 16,1154",
+      "size": "23×17 → 179×53"
+     },
+     {
+      "t": "LED flashlight",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,1116 → 32,1214",
+      "size": "358×30 → 95×18"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,1163 → 195,1154",
+      "size": "23×17 → 179×53"
+     },
+     {
+      "t": "Garmin Pay™",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,1199 → 32,1297",
+      "size": "358×30 → 78×18"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,1247 → 16,1237",
+      "size": "23×17 → 179×53"
+     },
+     {
+      "t": "Multi-band GPS",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,1282 → 32,1380",
+      "size": "358×30 → 98×18"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,1330 → 195,1237",
+      "size": "23×17 → 179×53"
+     },
+     {
+      "t": "Music storage",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,1365 → 32,1463",
+      "size": "358×30 → 94×18"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,1413 → 16,1321",
+      "size": "23×17 → 179×53"
+     },
+     {
+      "t": "Make calls and send texts via voice",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,1448 → 32,1547",
+      "size": "358×30 → 232×18"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,1496 → 195,1321",
+      "size": "23×17 → 179×53"
+     },
+     {
+      "t": "Satellite communication",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,1532 → 32,1672",
+      "size": "358×30 → 162×18"
+     },
+     {
+      "t": "LTE communication",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,1657 → 32,1776",
+      "size": "358×30 → 122×18"
+     },
+     {
+      "t": "Training readiness",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "134,1790 → 32,1901",
+      "size": "122×14 → 122×18"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,1830 → 16,1404",
+      "size": "23×17 → 179×53"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "212,1830 → 195,1404",
+      "size": "23×17 → 179×53"
+     },
+     {
+      "t": "Training status",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "144,1873 → 32,1984",
+      "size": "102×14 → 103×18"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,1913 → 16,1487",
+      "size": "23×17 → 179×53"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "212,1913 → 195,1487",
+      "size": "23×17 → 179×53"
+     },
+     {
+      "t": "Display type",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,1948 → 32,2068",
+      "size": "358×30 → 80×18"
+     },
+     {
+      "t": "Touchscreen",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,2053 → 32,2172",
+      "size": "358×30 → 85×18"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,2100 → 16,1570",
+      "size": "23×17 → 179×95"
+     },
+     {
+      "t": "Water rating",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "152,2144 → 32,2255",
+      "size": "85×14 → 85×18"
+     },
+     {
+      "t": "10 ATM",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,2183 → 16,2278",
+      "size": "48×17 → 179×53"
+     },
+     {
+      "t": "Swim, 5 ATM",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "212,2183 → 195,2278",
+      "size": "81×17 → 179×53"
+     },
+     {
+      "t": "Wheelchair mode",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,2219 → 32,2338",
+      "size": "358×30 → 111×18"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "212,2267 → 16,1925",
+      "size": "23×17 → 179×53"
+     },
+     {
+      "t": "General",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "pos": "16,2342 → 24,2447",
+      "size": "323×46 → 312×30"
+     },
+     {
+      "t": "Strap material",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,2412 → 32,2515",
+      "size": "358×30 → 99×18"
+     },
+     {
+      "t": "silicone",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,2472 → 195,2539",
+      "size": "147×21 → 179×74"
+     },
+     {
+      "t": "Lens material",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,2544 → 32,2619",
+      "size": "358×30 → 90×18"
+     },
+     {
+      "t": "sapphire crystal",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,2604 → 16,2643",
+      "size": "147×21 → 179×74"
+     },
+     {
+      "t": "Bezel material",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,2656 → 32,2724",
+      "size": "358×30 → 96×18"
+     },
+     {
+      "t": "Case material",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,2767 → 32,2828",
+      "size": "358×30 → 91×18"
+     },
+     {
+      "t": "QuickFit® watch band compatible",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,2871 → 32,2953",
+      "size": "358×30 → 217×18"
+     },
+     {
+      "t": "Quick Release bands",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,2982 → 32,4643",
+      "size": "358×30 → 130×18"
+     },
+     {
+      "t": "Physical size",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,3107 → 32,3036",
+      "size": "358×30 → 85×18"
+     },
+     {
+      "t": "Weight",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,3505 → 32,3245",
+      "size": "358×30 → 45×18"
+     },
+     {
+      "t": "Leakproof inductive buttons",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,3701 → 32,3371",
+      "size": "358×30 → 189×18"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,3748 → 195,1925",
+      "size": "23×17 → 179×53"
+     },
+     {
+      "t": "Built-in speaker/microphone",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,3784 → 32,3454",
+      "size": "358×30 → 184×18"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "32,3832 → 16,2008",
+      "size": "23×17 → 179×53"
+     },
+     {
+      "t": "Display Size",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,3867 → 32,3537",
+      "size": "358×30 → 76×18"
+     },
+     {
+      "t": "Display resolution",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,3971 → 32,3641",
+      "size": "358×30 → 123×18"
+     },
+     {
+      "t": "Color display",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,4054 → 32,3724",
+      "size": "358×30 → 89×18"
+     }
+    ],
+    "missing": [
+     "We're sorry but this page doesn't work properly without Java",
+     "fēnix® 9 Pro – inReach®, 51 mm",
+     "$1,299.99 USD",
+     "and up",
+     "CIRQA™ Smart Band",
+     "$199.99 USD",
+     "Up to 31 days",
+     "yes (optionally all-day and in sleep)",
+     "yes (inReach plan required, )",
+     "coverage details",
+     "yes (inReach plan required, )",
+     "coverage details",
+     "AMOLED (up to 3000 NITS)",
+     "fabric (ComfortFit bands)",
+     "titanium",
+     "titanium",
+     "fiber-reinforced polymer",
+     "included (26 mm)",
+     "yes (14 mm quick release pins with a 24 mm wide strap)",
+     "51 x 51 x 15.8 mm"
+    ]
+   }
+  },
+  "1440": {
+   "mismatchPct": 4.45,
+   "size": {
+    "target": [
+     1440,
+     6000
+    ],
+    "clone": [
+     1440,
+     6000
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "200-240",
+     "pct": 18.4
+    },
+    {
+     "y": "240-280",
+     "pct": 18.3
+    },
+    {
+     "y": "520-560",
+     "pct": 17.7
+    },
+    {
+     "y": "480-520",
+     "pct": 13.6
+    },
+    {
+     "y": "5760-5800",
+     "pct": 12
+    },
+    {
+     "y": "5400-5440",
+     "pct": 9
+    }
+   ],
+   "file": "docs/design-references/qa/compare-1440-diff.png",
+   "text": {
+    "matched": 275,
+    "of": 400,
+    "issues": [
+     {
+      "t": "Return to shopping",
+      "ff": "Superscripts-Roboto → Roboto",
+      "size": "1392×21 → 136×21"
+     },
+     {
+      "t": "Product Comparison",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald"
+     },
+     {
+      "t": "Shop",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,497 → 224,532"
+     },
+     {
+      "t": "Shop",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "426,497 → 426,532"
+     },
+     {
+      "t": "Shop",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "627,497 → 627,532"
+     },
+     {
+      "t": "Show only differences",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "248,573 → 224,598",
+      "size": "157×19 → 181×34"
+     },
+     {
+      "t": "What You'll Love",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "pos": "224,643 → 232,680",
+      "size": "251×56 → 235×40"
+     },
+     {
+      "t": "Sleep score and insights",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,732 → 240,761"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,771 → 224,782",
+      "size": "23×17 → 198×53"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "439,771 → 422,782",
+      "size": "23×17 → 198×53"
+     },
+     {
+      "t": "Battery life (smartwatch mode)",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,807 → 240,844",
+      "size": "992×30 → 208×14"
+     },
+     {
+      "t": "Built-in mapping",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,890 → 240,948",
+      "size": "992×30 → 104×14"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,938 → 224,970",
+      "size": "23×17 → 198×53"
+     },
+     {
+      "t": "Pulse Ox blood oxygen",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,981 → 240,1031"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,1021 → 224,1053",
+      "size": "23×17 → 198×95"
+     },
+     {
+      "t": "Garmin ECG app",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,1078 → 240,1157",
+      "size": "992×30 → 99×14"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,1125 → 224,1178",
+      "size": "23×17 → 198×53"
+     },
+     {
+      "t": "LED flashlight",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,1161 → 240,1240",
+      "size": "992×30 → 95×14"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,1208 → 422,1178",
+      "size": "23×17 → 198×53"
+     },
+     {
+      "t": "Garmin Pay™",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,1244 → 240,1323",
+      "size": "992×30 → 78×14"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,1292 → 224,1261",
+      "size": "23×17 → 198×53"
+     },
+     {
+      "t": "Multi-band GPS",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,1327 → 240,1406",
+      "size": "992×30 → 98×14"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,1375 → 422,1261",
+      "size": "23×17 → 198×53"
+     },
+     {
+      "t": "Music storage",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,1410 → 240,1489",
+      "size": "992×30 → 94×14"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,1458 → 224,1345",
+      "size": "23×17 → 198×53"
+     },
+     {
+      "t": "Make calls and send texts via voice",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,1493 → 240,1573",
+      "size": "992×30 → 232×14"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,1541 → 422,1345",
+      "size": "23×17 → 198×53"
+     },
+     {
+      "t": "Satellite communication",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,1577 → 240,1677",
+      "size": "992×30 → 162×14"
+     },
+     {
+      "t": "LTE communication",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,1681 → 240,1781",
+      "size": "992×30 → 122×14"
+     },
+     {
+      "t": "Training readiness",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,1793 → 240,1885"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,1833 → 224,1428",
+      "size": "23×17 → 198×53"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "439,1833 → 422,1428",
+      "size": "23×17 → 198×53"
+     },
+     {
+      "t": "Training status",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,1876 → 240,1968"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,1916 → 224,1511",
+      "size": "23×17 → 198×53"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "439,1916 → 422,1511",
+      "size": "23×17 → 198×53"
+     },
+     {
+      "t": "Display type",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,1951 → 240,2052",
+      "size": "992×30 → 80×14"
+     },
+     {
+      "t": "Touchscreen",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,2056 → 240,2156",
+      "size": "992×30 → 85×14"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,2103 → 224,1594",
+      "size": "23×17 → 198×74"
+     },
+     {
+      "t": "Water rating",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,2147 → 240,2239"
+     },
+     {
+      "t": "10 ATM",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,2186 → 224,2260",
+      "size": "48×17 → 198×53"
+     },
+     {
+      "t": "Swim, 5 ATM",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "439,2186 → 422,2260",
+      "size": "81×17 → 198×53"
+     },
+     {
+      "t": "Wheelchair mode",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,2222 → 240,2322",
+      "size": "992×30 → 111×14"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "439,2270 → 224,1907",
+      "size": "23×17 → 198×53"
+     },
+     {
+      "t": "General",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "pos": "224,2345 → 232,2429",
+      "size": "127×56 → 111×40"
+     },
+     {
+      "t": "Strap material",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,2425 → 240,2509",
+      "size": "992×30 → 99×14"
+     },
+     {
+      "t": "silicone",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,2485 → 422,2531",
+      "size": "166×21 → 198×74"
+     },
+     {
+      "t": "Lens material",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,2536 → 240,2613",
+      "size": "992×30 → 90×14"
+     },
+     {
+      "t": "sapphire crystal",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,2596 → 224,2635",
+      "size": "166×21 → 198×53"
+     },
+     {
+      "t": "Bezel material",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,2648 → 240,2697",
+      "size": "992×30 → 96×14"
+     },
+     {
+      "t": "Case material",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,2759 → 240,2801",
+      "size": "992×30 → 91×14"
+     },
+     {
+      "t": "QuickFit® watch band compatible",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,2842 → 240,2905",
+      "size": "992×30 → 217×14"
+     },
+     {
+      "t": "Quick Release bands",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,2953 → 240,4490",
+      "size": "992×30 → 130×14"
+     },
+     {
+      "t": "Physical size",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,3078 → 240,2988",
+      "size": "992×30 → 85×14"
+     },
+     {
+      "t": "Weight",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,3455 → 240,3176",
+      "size": "992×30 → 45×14"
+     },
+     {
+      "t": "Leakproof inductive buttons",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,3651 → 240,3302",
+      "size": "992×30 → 189×14"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,3698 → 422,1907",
+      "size": "23×17 → 198×53"
+     },
+     {
+      "t": "Built-in speaker/microphone",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,3734 → 240,3385",
+      "size": "992×30 → 184×14"
+     },
+     {
+      "t": "Yes",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "240,3782 → 224,1990",
+      "size": "23×17 → 198×53"
+     },
+     {
+      "t": "Display Size",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,3817 → 240,3468",
+      "size": "992×30 → 76×14"
+     },
+     {
+      "t": "Display resolution",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "224,3900 → 240,3551",
+      "size": "992×30 → 123×14"
+     }
+    ],
+    "missing": [
+     "We're sorry but this page doesn't work properly without Java",
+     "fēnix® 9 Pro – inReach®, 51 mm",
+     "$1,299.99 USD",
+     "and up",
+     "CIRQA™ Smart Band",
+     "$199.99 USD",
+     "TopoActive Maps",
+     "$49.99 USD",
+     "and up",
+     "Up to 31 days",
+     "yes (optionally all-day and in sleep)",
+     "yes (inReach plan required, )",
+     "coverage details",
+     "yes (inReach plan required, )",
+     "coverage details",
+     "AMOLED (up to 3000 NITS)",
+     "fabric (ComfortFit bands)",
+     "titanium",
+     "titanium",
+     "fiber-reinforced polymer"
+    ]
+   }
+  }
+ }
+}
