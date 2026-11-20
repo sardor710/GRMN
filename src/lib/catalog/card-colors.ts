@@ -1,7 +1,8 @@
 // Task C-d: the colour dots of a catalogue card (garmin.com `g-color-swatches`, ProductCard.spec.md). They come only
-// from real data: the product's colour option, each value with its own swatch photo or hex colour. Nothing is
-// guessed from a colour name; when any colour on sale lacks a swatch, the card shows no dots at all (a partial row
-// would misstate the colours on offer).
+// from real data: the product's colour option, each value with its own swatch photo, or a hex colour staff picked in
+// the editor (`swatchColorSource: "editor"`). A hex the importer guessed from the colour's name ("name") or one of
+// unknown origin (older records carry no source) is not real swatch data and is ignored. When any colour on sale
+// lacks a real swatch, the card shows no dots at all (a partial row would misstate the colours on offer).
 
 /** One dot: the colour's name and its swatch photo or hex colour (the photo wins when both exist). */
 export interface CardColor {
@@ -32,11 +33,6 @@ export function swatchImage(value: unknown): string | undefined {
   return undefined;
 }
 
-/** The option key the PostgreSQL projection gives an editor option (src/server/cms/product-projection.ts `slug`). */
-export function projectedOptionKey(option: { key?: unknown; name?: unknown }): string {
-  return (text(option.key) || text(option.name)).toLowerCase().normalize("NFKD").replace(/[^\p{L}\p{N}]+/gu, "-").replace(/^-|-$/g, "") || "option";
-}
-
 /** The values of a variant's options that are on sale, per option (the caller decides what "on sale" means). */
 export type ColourInUse = (option: { id: string; key: string; name: string }, value: { id: string; label: string }) => boolean;
 
@@ -44,8 +40,8 @@ export type ColourInUse = (option: { id: string; key: string; name: string }, va
  * The card's dots from an editor option list (CMS product `options`, or PostgreSQL `legacy_content.options`).
  *
  * The colour option is the first one named like a colour (Color/Colour/Цвет/Түс), else the first shown as swatches.
- * Only values `inUse` (chosen by a variant on sale) count. At least two such colours, each with a swatch photo or a
- * hex colour, give dots (at most CARD_COLOR_MAX); anything less gives none.
+ * Only values `inUse` (chosen by a variant on sale) count. At least two such colours, each with a swatch photo or an
+ * editor-picked hex colour, give dots (at most CARD_COLOR_MAX); anything less gives none.
  */
 export function cardColors(options: unknown, inUse: ColourInUse): CardColor[] {
   if (!Array.isArray(options)) return [];
@@ -60,7 +56,7 @@ export function cardColors(options: unknown, inUse: ColourInUse): CardColor[] {
     if (!label || seen.has(label.toLowerCase()) || !inUse(ref, { id: text(raw.id), label })) continue;
     seen.add(label.toLowerCase());
     const image = swatchImage(raw.swatchImage);
-    const hex = HEX.test(text(raw.swatchColor)) ? text(raw.swatchColor).toLowerCase() : undefined;
+    const hex = raw.swatchColorSource === "editor" && HEX.test(text(raw.swatchColor)) ? text(raw.swatchColor).toLowerCase() : undefined;
     if (!image && !hex) return [];
     colours.push(image ? { label, image } : { label, hex });
   }

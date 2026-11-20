@@ -10,7 +10,8 @@ import { PRODUCT_SPEC, isRecordTranslated, localizeRecord, resolveSeoText } from
 import type { Locale } from "../../i18n/config.ts";
 import { effectiveVariantContent, localizeVariantOverride, parseVariantContent, type ProductContentDTO, type VariantContent } from "../../lib/catalog/variant-content.ts";
 import { PRODUCT_HTML_FIELDS } from "../../lib/cms/product-input.ts";
-import { cardColors, projectedOptionKey } from "../../lib/catalog/card-colors.ts";
+import { cardColors } from "../../lib/catalog/card-colors.ts";
+import { stableUuid } from "../cms/product-projection.ts";
 
 const fail = (): never => { throw new AuthFailure("INVALID_INPUT", 400, "Invalid catalog query or cursor"); };
 const text = z.string().trim().min(1).max(200);
@@ -85,6 +86,7 @@ const pageColumns = `p.id,p.public_key,p.name,p.description,p.family,p.badge,p.p
 const offersSQL = `JOIN products p ON p.id=selected.id
  JOIN LATERAL (SELECT jsonb_agg(jsonb_build_object('id',v.id,'sku',v.sku,'name',v.name,'amount',pr.amount_minor::text,'compare',pr.compare_at_minor::text,
  'options',COALESCE((SELECT jsonb_object_agg(po.key,ov.label) FROM variant_option_values vo JOIN product_options po ON po.id=vo.option_id JOIN option_values ov ON ov.id=vo.option_value_id WHERE vo.variant_id=v.id),'{}'),
+ 'optionValueIds',COALESCE((SELECT jsonb_agg(vo.option_value_id) FROM variant_option_values vo WHERE vo.variant_id=v.id),'[]'),
  'availability',${stateSQL},
  'gallery',CASE WHEN EXISTS(SELECT 1 FROM product_media pm WHERE pm.product_id=p.id AND (pm.variant_id=v.id OR pm.variant_id IS NULL)) THEN COALESCE((SELECT jsonb_agg(im.image) FROM (${imageSQL}) im),'[]') ELSE CASE WHEN p.legacy_content->>'image' IS NOT NULL THEN jsonb_build_array(jsonb_build_object('url',p.legacy_content->>'image','alt',p.name)) ELSE '[]' END END
  ) ORDER BY v.is_default DESC,v.id) AS variants ${variantsFrom}) offers ON offers.variants IS NOT NULL
@@ -105,10 +107,11 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
     return result;
   }
   // Task C-d: the card's colour dots, from the editor's colour option (legacy_content, already on the selected row)
-  // and only the colours an eligible variant of this page's offers is in: no extra query per card.
+  // and only the colours an eligible variant of this page's offers is in: no extra query per card. An editor value
+  // is matched exactly by the id the projection gave its option_values row (product-projection.ts stableUuid).
   function colors(row:Row):NonNullable<ProductCardDTO["colors"]>{
-    const variants=array(row.variants).map(v=>obj(obj(v).options));
-    return cardColors(row.editor_options,(option,value)=>{const key=projectedOptionKey(option);return variants.some(o=>o[key]===value.label);});
+    const productId=String(row.id),chosen=new Set(array(row.variants).flatMap(v=>strings(obj(v).optionValueIds)));
+    return cardColors(row.editor_options,(option,value)=>option.id!==""&&value.id!==""&&chosen.has(stableUuid(stableUuid(productId,"option",option.id),"value",value.id)));
   }
   function card(row:Row,fx:ExchangeRateSnapshotDTO|null):ProductCardDTO {
     const offer=obj(row.offer),dots=colors(row);return {...(dots.length?{colors:dots}:{}),id:String(row.id),publicKey:String(row.public_key),name:String(row.name),description:String(row.description),noIndex:row.no_index===true,canonicalUrl:row.canonical_url==null?null:String(row.canonical_url),updatedAt:String(row.created_key),family:String(row.family??""),badge:row.badge==null?null:String(row.badge),priceSuffix:row.price_suffix==null?undefined:String(row.price_suffix),activities:strings(row.activity_keys),level:level.safeParse(row.level).success?row.level as ProductCardDTO["level"]:null,caseSize:size.safeParse(row.case_size).success?row.case_size as ProductCardDTO["caseSize"]:null,image:array(offer.gallery).map(media).find(Boolean)??null,price:price(offer,fx),availability:row.availability as Availability};

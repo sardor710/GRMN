@@ -73,6 +73,12 @@ export interface ProductOptionValue {
   key: string;
   label: string;
   swatchColor?: string;
+  /**
+   * Task C-d: where `swatchColor` came from. "editor" = picked by staff in the product editor (a real colour);
+   * "name" = guessed by the garmin.com importer from the colour's name. Older records carry none; catalogue cards
+   * show a hex only when it is "editor".
+   */
+  swatchColorSource?: "editor" | "name";
   swatchImage?: string;
 }
 

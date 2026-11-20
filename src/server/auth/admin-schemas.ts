@@ -16,7 +16,7 @@ export const seoPatchInput = z.object({id,...seo,translations}).strict().refine(
 // Product media, options and variants (both stores; the garmin.com importer keeps up to 300 photos and
 // full spec tables, so images allow 300 and flat specs 500 rows). The admin route additionally sanitizes
 // overview HTML, allowlists image and swatch URLs and enforces SKU uniqueness (product-input/product-variants).
-const optionValueInput = z.object({id,key:short,label:short,swatchColor:short.optional(),swatchImage:link.optional()}).strict();
+const optionValueInput = z.object({id,key:short,label:short,swatchColor:short.optional(),swatchColorSource:z.enum(["editor","name"]).optional(),swatchImage:link.optional()}).strict();
 const productOptionInput = z.object({id,key:short,name:short.min(1),display:z.enum(["buttons","swatch","dropdown"]),values:z.array(optionValueInput).max(200)}).strict();
 const productImageInput = z.object({id,src:link,alt:short,source:z.enum(["upload","import","url"]),width:count.optional(),height:count.optional()}).strict();
 const sourcePriceInput = z.object({currency:z.literal("USD"),list:money,sale:money.optional(),rateKztPerUsd:money}).strict();
@@ -68,7 +68,7 @@ type OutputType = "string" | "number" | "boolean" | "stringRecord" | "translatio
 const strings = (keys: readonly string[]): OutputShape => Object.fromEntries(keys.map(key => [key, "string"]));
 const productOutput: OutputShape = { ...strings(dtoKeys.products), price: "number", originalPrice: "number", stock: "number", isFeatured: "boolean", noIndex: "boolean", activities: ["string"], inTheBox: ["string"], compatibleAccessories: ["string"], focusKeywords: ["string"], specs: [{label:"string",value:"string"}], features: [{title:"string",body:"string",image:"string"}],
   images: [{id:"string",src:"string",alt:"string",source:"string",width:"number",height:"number"}],
-  options: [{id:"string",key:"string",name:"string",display:"string",values:[{id:"string",key:"string",label:"string",swatchColor:"string",swatchImage:"string"}]}],
+  options: [{id:"string",key:"string",name:"string",display:"string",values:[{id:"string",key:"string",label:"string",swatchColor:"string",swatchColorSource:"string",swatchImage:"string"}]}],
   variants: [{id:"string",sku:"string",title:"string",selections:"stringRecord",price:"number",originalPrice:"number",stock:"number",status:"string",isDefault:"boolean",imageIds:["string"],content:{specs:[{label:"string",value:"string"}],specGroups:[{title:"string",items:[{label:"string",value:"string"}]}],overviewHtml:"string",inTheBox:["string"]},sourcePartNumber:"string",sourcePrice:{currency:"string",list:"number",sale:"number",rateKztPerUsd:"number"}}],
   specGroups: [{title:"string",items:[{label:"string",value:"string"}]}],
   source: {provider:"string",url:"string",productId:"string",partNumber:"string",importedAt:"string"}, translations: "translations" };

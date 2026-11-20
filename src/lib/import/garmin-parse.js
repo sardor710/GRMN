@@ -369,7 +369,9 @@ export function parseGarminProduct(html, { sourceUrl, rateKztPerUsd, now = new D
       const value = { id, key: String(key), label };
       if (d?.image) value.swatchImage = d.image;
       const hex = isColor ? colorHex(label) : undefined;
-      if (hex) value.swatchColor = hex;
+      // Task C-d: a hex guessed from the colour's name is marked, so catalogue cards never show it as real data
+      // (the product page's swatch picker keeps using it as before).
+      if (hex) { value.swatchColor = hex; value.swatchColorSource = 'name'; }
       return value;
     });
     const allSwatched = values.every((v) => v.swatchImage || v.swatchColor);

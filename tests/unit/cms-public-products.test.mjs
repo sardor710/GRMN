@@ -40,7 +40,7 @@ test("missing normalized offers cannot invoke transitional admin DTOs through me
 });
 // Task C-d: legacy JSON cards get colour dots from the record's colour option, only for colours an active variant is in.
 test("legacy cards carry colour dots from swatch data for active variants only, and none without swatches",async()=>{
-  const color={id:"opt-color",key:"color",name:"Color",display:"swatch",values:[{id:"c-black",key:"black",label:"Black",swatchColor:"#000000"},{id:"c-white",key:"white",label:"White",swatchImage:"/uploads/w.jpg"},{id:"c-red",key:"red",label:"Red"}]};
+  const color={id:"opt-color",key:"color",name:"Color",display:"swatch",values:[{id:"c-black",key:"black",label:"Black",swatchColor:"#000000",swatchColorSource:"editor"},{id:"c-white",key:"white",label:"White",swatchImage:"/uploads/w.jpg"},{id:"c-red",key:"red",label:"Red"}]};
   const variant=(id,c,status="active")=>({id,sku:id,title:id,selections:{"opt-color":c},price:1,stock:1,status,isDefault:id==="v1",imageIds:[]});
   const record=extra=>({id:"dots",name:"Dots",price:10,status:"published",description:"",family:"",activities:[],level:"Entry",caseSize:"Medium",image:"/i.jpg",currency:"KZT",options:[color],...extra});
   const list=async item=>(await products({readProduct:async()=>item,readProductsPage:async()=>({items:[item],nextCursor:null})}).getAllProducts())[0].colors;
