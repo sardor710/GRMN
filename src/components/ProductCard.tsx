@@ -3,7 +3,8 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { Product } from "@/types";
 import { GarminBadge } from "@/components/GarminBadge";
-import { formatMoney } from "@/i18n/format";
+import { Price } from "@/components/ui/price";
+import { toMinor } from "@/lib/money";
 import { useAppLocale } from "@/i18n/useAppLocale";
 
 const swatchColors = ["#111", "#c9c4bd", "#e8792b", "#c9d94b", "#6b7280", "#b8a6d9"];
@@ -43,17 +44,18 @@ export function ProductCard({ product }: { product: Product }) {
 
       <h3 className="g-heading mt-3 text-[22px] leading-tight text-black">{product.name}</h3>
       <p className="mt-2 text-[14px] leading-snug text-[#5b5b5b]">{product.description}</p>
-      <p className="mt-3 text-[15px] text-black">
-        <span className="font-medium">
-          {product.priceLabel ??
-            (product.currency === "KZT"
-              ? formatMoney(Number(product.price), locale, "KZT")
-              : t("price", { price: formatMoney(Number(product.price), locale) }))}
-        </span>
-        {product.priceSuffix && (
-          <span className="text-[#5b5b5b]"> {product.priceSuffix === "and up" ? t("andUp") : product.priceSuffix}</span>
-        )}
-      </p>
+      {/* Task 5a.2: tenge in the page locale (Price.spec.md card rule), never the old USD label. */}
+      {toMinor({ major: product.price }) !== null ? (
+        <Price
+          size="card"
+          className="mt-3 text-black"
+          locale={locale}
+          amount={{ major: product.price }}
+          suffix={product.priceSuffix ? (product.priceSuffix === "and up" ? t("andUp") : product.priceSuffix) : undefined}
+        />
+      ) : (
+        <p className="mt-3 text-[16px] font-bold leading-[24px] text-black">{product.priceLabel ?? product.price}</p>
+      )}
     </Link>
   );
 }

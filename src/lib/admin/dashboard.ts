@@ -1,7 +1,7 @@
 // Task 4.2: pure helpers for the PostgreSQL admin dashboard (src/app/admin/_components/ReportsScreen.tsx).
 // Money stays in minor units held in strings and is summed with BigInt. Real money is the "live"
 // environment only; demo and sandbox are kept apart and never added to it.
-import { minorToMajor } from "../public-catalog.ts";
+import { groupMinor } from "../money.ts";
 
 export type ReportEnvironment = "sandbox" | "live" | "demo";
 export interface CurrencyTotal { currency: string; environment: ReportEnvironment; capturedMinor: string; refundedMinor: string; netMinor: string; ordersPaid: number }
@@ -39,9 +39,7 @@ export function splitTotals(totals: CurrencyTotal[]): SplitTotals {
 export function formatMinor(minor: string, currency: string, locale = "en-US"): string {
   if (typeof minor !== "string" || !MINOR.test(minor)) return `${String(minor)} ${currency}`;
   const negative = minor.startsWith("-");
-  const [whole, cents] = minorToMajor(negative ? minor.slice(1) : minor).split(".");
-  const parts = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).formatToParts(BigInt(whole));
-  return (negative ? "-" : "") + parts.map(part => part.type === "fraction" ? cents : part.value).join("") + " " + currency;
+  return (negative ? "-" : "") + groupMinor(negative ? minor.slice(1) : minor, locale) + " " + currency;
 }
 
 /**

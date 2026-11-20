@@ -10,7 +10,7 @@ import { CartIcon } from "@/components/icons";
 import { CheckoutPanel, OrderReceived, resumeCheckout } from "@/components/CheckoutPanel";
 import type { PlacedOrder } from "@/lib/checkout-client";
 import type { CartDTO } from "@/contracts/commerce";
-import { formatMoney } from "@/i18n/format";
+import { formatKzt as formatKztAmount } from "@/lib/money";
 import { INTL_LOCALE } from "@/i18n/config";
 import { useAppLocale } from "@/i18n/useAppLocale";
 
@@ -25,7 +25,7 @@ function emptyCart(t: Translate) {
       <CartIcon className="mx-auto h-12 w-12 text-neutral-300" />
       <h1 className="g-heading mt-4 text-[28px] text-black">{t("emptyHeading")}</h1>
       <p className="mt-2 text-neutral-600">{t("emptyBody")}</p>
-      <Link href="/c/wearables-smartwatches" className="g-btn g-btn--solid mt-8">
+      <Link href="/c/wearables-smartwatches" className="g-btn g-btn--black mt-8">
         {t("shopSmartwatches")}
       </Link>
     </div>
@@ -111,7 +111,8 @@ function serverCart(t: Translate, kzt: (money: Parameters<typeof formatKzt>[0]) 
 export function CartView({ catalog = {} }: { catalog?: CartCatalog }) {
   const t = useTranslations("Cart");
   const locale = useAppLocale();
-  const money = (n: number) => formatMoney(n, locale);
+  // Task 5a.2: the browser-only cart shows its stored amounts in tenge too (never USD).
+  const money = (n: number) => formatKztAmount({ major: n }, locale);
   const kzt = (value: Parameters<typeof formatKzt>[0]) => formatKzt(value, INTL_LOCALE[locale]);
   const { mode, server, error, busy, items, subtotal, setQty, remove, clear, acknowledge, refresh } = useCart();
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
@@ -223,7 +224,7 @@ export function CartView({ catalog = {} }: { catalog?: CartCatalog }) {
           </dl>
           {/* Task 14A: the browser-only cart cannot place orders (the fake "order placed" screen,
               its invented tax and its cart clearing are removed). Checkout needs the server cart. */}
-          <button type="button" disabled className="g-btn g-btn--solid mt-6 w-full disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="button" disabled className="g-btn g-btn--black mt-6 w-full">
             {t("checkout")}
           </button>
           <p className="mt-3 text-center text-[12px] text-neutral-500">

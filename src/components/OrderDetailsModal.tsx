@@ -28,7 +28,8 @@ import {
   calculateOrderRouteProgress,
   calculateOrderSubtotal,
 } from "@/lib/cms/order-lifecycle";
-import { formatDateTime, formatMoney } from "@/i18n/format";
+import { formatDateTime } from "@/i18n/format";
+import { formatKzt } from "@/lib/money";
 import { useAppLocale } from "@/i18n/useAppLocale";
 
 /** Statuses with an `Account.status.*` message (shared with the account order list). */
@@ -47,7 +48,7 @@ export function OrderDetailsModal({ order, isOpen, onClose }: OrderDetailsModalP
   const ts = useTranslations("Account.status");
   const locale = useAppLocale();
   // Same ungrouped price look as before ($1099.99); separators follow the locale.
-  const money = (n: number) => formatMoney(n, locale, "USD", { grouping: false });
+  const money = (n: number) => formatKzt({ major: n }, locale);
   const when = (iso?: string) => formatDateTime(iso, locale) || t("notAvailable");
   const [copiedTracking, setCopiedTracking] = useState(false);
   const [copiedOrderNum, setCopiedOrderNum] = useState(false);

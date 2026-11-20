@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { activityFilters, caseSizeFilters, filterLabelKey, levelFilters } from "@/lib/catalog-constants";
 import type { Product } from "@/types";
-import { formatMoney } from "@/i18n/format";
+import { formatKzt, toMinor } from "@/lib/money";
 import { useAppLocale } from "@/i18n/useAppLocale";
 
 const MAX = 4;
@@ -32,8 +32,8 @@ export function CompareTool({products,selectedProducts}:{products:Product[];sele
   const t = useTranslations("Compare");
   const tk = useTranslations();
   const locale = useAppLocale();
-  // Backend cards carry an exact, preformatted KZT label; legacy prices are formatted per locale.
-  const money = (p: Product) => p.priceLabel ?? formatMoney(Number(p.price), locale, p.currency === "KZT" ? "KZT" : "USD");
+  // Task 5a.2: every price is tenge in the page locale (Garmin price rule), never USD.
+  const money = (p: Product) => (toMinor({ major: p.price }) !== null ? formatKzt({ major: p.price }, locale) : p.priceLabel ?? String(p.price));
   const router=useRouter(),pathname=usePathname(),params=useSearchParams();
   const chosen=selectedProducts,selected=chosen.map(p=>p.id),available=products.filter(p=>!selected.includes(p.id));
   const change=(ids:string[])=>{const next=new URLSearchParams(params.toString());next.delete("selected");ids.forEach(id=>next.append("selected",id));router.push(pathname+"?"+next.toString());};
@@ -91,7 +91,7 @@ export function CompareTool({products,selectedProducts}:{products:Product[];sele
                       <Link href={`/p/${p.id}`} className="g-heading mt-2 text-[18px] text-black hover:text-[#007cc3]">
                         {p.name}
                       </Link>
-                      <Link href={`/p/${p.id}`} className="g-btn g-btn--outline-dark mt-3 text-[12px]">
+                      <Link href={`/p/${p.id}`} className="g-btn g-btn--secondary mt-3 text-[12px]">
                         {t("shop")}
                       </Link>
                     </div>

@@ -2,7 +2,7 @@
 // session cookie; no call accepts an email, phone or user ID as a selector.
 import type { CustomerProfileDTO, Money, OrderDetailDTO, OrderSummaryDTO, SavedAddressDTO, WishlistItemDTO } from "../contracts/commerce.ts";
 import type { Page } from "../contracts/pagination.ts";
-import { formatMinorMoney } from "./public-catalog.ts";
+import { formatKzt as formatKztAmount } from "./money.ts";
 // Sign-in and sign-out in the account page tell the cart to re-sync (and merge a guest cart).
 export { announceSessionChange } from "./cart-client.ts";
 
@@ -33,7 +33,7 @@ export const COUNTRY_OPTIONS: ReadonlyArray<{ code: string; name: string }> = [
 export const countryName = (code: string) => COUNTRY_OPTIONS.find(option => option.code === code)?.name ?? code;
 
 export function formatKzt(money: Money | null | undefined, locale = "en-US"): string {
-  return money ? formatMinorMoney(money.amountMinor, "KZT", locale) : "—";
+  return money ? formatKztAmount({ minor: money.amountMinor }, locale) : "—";
 }
 
 export function deliveryAddressLines(delivery: OrderDetailDTO["deliveryAddress"]): string[] {

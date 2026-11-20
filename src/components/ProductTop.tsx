@@ -17,7 +17,9 @@ import { withVariantParam } from "@/lib/catalog/variant-selection";
 import { isPurchasable, selectValue } from "@/lib/cms/product-variants";
 import { commerceVariantModel } from "@/lib/cms/commerce-variant-model";
 import type { ProductOption, ProductVariant } from "@/lib/cms/types";
-import { formatMoney } from "@/i18n/format";
+import { Price } from "@/components/ui/price";
+import { badgeClass } from "@/components/ui/badge";
+import { toMinor } from "@/lib/money";
 import { useAppLocale } from "@/i18n/useAppLocale";
 
 export function ProductTop({ product:initial }: { product: ProductDetail }) {
@@ -92,12 +94,10 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   const price = cmsVariant?.price ?? product.price;
   const compareAt = cmsVariant?.originalPrice;
   const partNumber = cmsVariant?.sku || product.partNumber;
-  // garmin.com imports are converted to tenge (sourcePrice keeps the USD original); legacy products stay USD (plan L9).
+  // garmin.com imports are converted to tenge (sourcePrice keeps the USD original). Only legacy products still show the US financing lines below.
   const isKzt = Boolean(cmsVariant?.sourcePrice?.rateKztPerUsd);
-  const money = (n: number) =>
-    isKzt
-      ? `${new Intl.NumberFormat(INTL_LOCALE[locale], { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} KZT`
-      : t("price", { price: formatMoney(n, locale) });
+  // Task 5a.2: every price is tenge in the page locale through <Price> (never USD); the stored amount is shown as is.
+  const priceAmount = price !== undefined && price !== "" && toMinor({ major: price }) !== null ? { major: price } : null;
   const onSale = typeof price === "number" && compareAt !== undefined && compareAt > price;
 
   // Server cart (Task 13A): the selected variant's real availability decides; the server prices it.
@@ -206,22 +206,20 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
               <GarminBadge badge={product.badge} variant="pill" />
             </div>
           ) : onSale ? (
-            <span className="mt-3 inline-block rounded-full bg-[#6dcff6] px-4 py-[7px] text-[14px] leading-[21px] text-black">
-              {t("sale")}
-            </span>
+            <span className={badgeClass({ className: "mt-3" })}>{t("sale")}</span>
           ) : null}
 
-          <div className="mt-4">
-            {onSale && typeof price === "number" && (
-              <p className="text-[14px] leading-[21px] text-black">
-                <span className="line-through">{money(compareAt as number)}</span>{" "}
-                {t("save", { amount: money((compareAt as number) - price) })}
-              </p>
-            )}
-            <p className="text-[20px] font-bold leading-[24px] text-black">
-              {product.priceLabel ?? (typeof price === "number" ? money(price) : price)}
-            </p>
-          </div>
+          {priceAmount ? (
+            <Price
+              size="pdp"
+              locale={locale}
+              amount={priceAmount}
+              compareAt={onSale ? { major: compareAt as number } : null}
+              saveLabel={(amount) => t("save", { amount })}
+            />
+          ) : (
+            <p className="mt-4 mb-1 text-[20px] font-bold leading-[24px] text-black">{price}</p>
+          )}
           {product.currency !== "KZT" && !isKzt && (
             <>
               <p className="mt-1 text-[14px] text-black">
@@ -287,21 +285,21 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
           </div>
           </>}
 
-          {/* garmin.com CTAs: 52px, 16px/500 uppercase, candy blue #6dcff6 and a white outlined button */}
+          {/* garmin.com CTAs (Buttons.spec.md): large candy-blue buy button and large secondary buttons, 8px apart */}
           <div className="mt-4 flex flex-wrap items-center gap-2">
             <button
               disabled={!sellable} onClick={handleAdd}
-              className="h-[52px] border-[0.8px] border-[#6dcff6] bg-[#6dcff6] px-8 text-[16px] font-medium uppercase leading-[18.4px] text-black transition-colors hover:border-[#3fbef0] hover:bg-[#3fbef0] disabled:cursor-not-allowed disabled:border-neutral-200 disabled:bg-neutral-200 disabled:text-neutral-500"
+              className="g-btn g-btn--lg g-btn--primary"
             >
               {addLabel}
             </button>
-            <button className="h-[52px] border-[0.8px] border-black bg-white px-8 text-[16px] font-medium uppercase leading-[18.4px] text-black transition-colors hover:bg-black hover:text-white">
+            <button className="g-btn g-btn--lg g-btn--secondary">
               {t("customize")}
             </button>
             {mode === "server" && (
               <button
                 type="button" onClick={handleWishlist} disabled={wish === "saving"}
-                className="h-[52px] border-[0.8px] border-black bg-white px-8 text-[16px] font-medium uppercase leading-[18.4px] text-black transition-colors hover:bg-black hover:text-white disabled:opacity-50"
+                className="g-btn g-btn--lg g-btn--secondary"
               >
                 {wish === "saved" ? t("savedToWishlist") : t("saveToWishlist")}
               </button>

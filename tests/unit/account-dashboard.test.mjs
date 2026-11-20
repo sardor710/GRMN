@@ -133,7 +133,7 @@ test("the wishlist tab lists the session's saved products, marks archived ones a
   const gone = { productKey: "old-watch", name: "Retired watch", image: null, price: null, availability: "unavailable", archived: true, addedAt: "2026-11-09T10:00:00.000Z" };
   const view = await mount(signedIn({ "GET /api/account/wishlist": [200, { items: [saved, gone] }], "DELETE /api/account/wishlist/old-watch": [200, { items: [saved] }] }));
   await view.click("Wishlist");
-  assert.match(view.text(), /Saved watch/); assert.match(view.text(), /450[\s ,.]?000[.,]00 KZT/);
+  assert.match(view.text(), /Saved watch/); assert.match(view.text(), /KZT\s?450,000\.00/);
   assert.match(view.text(), /Retired watch/); assert.match(view.text(), /no longer available/i);
   const remove = nodes(view.tree).find(node => node.type === "button" && node.props["aria-label"] === "Remove Retired watch from wishlist");
   assert.ok(remove); await remove.props.onClick(); await settle(); view.rerender();
@@ -150,7 +150,7 @@ test("order detail shows exact KZT and marks missing legacy money and addresses"
   const view = await mount(signedIn({ "GET /api/account/orders?limit=20": [200, { items: [ORDER], nextCursor: null }], [`GET /api/account/orders/${ORDER.id}`]: [200, DETAIL] }));
   await view.click("Orders");
   assert.match(view.text(), /GRM-SYN-1/);
-  assert.match(view.text(), /123\.45 KZT/);
+  assert.match(view.text(), /KZT\s?123\.45/);
   await view.click("GRM-SYN-1");
   const text = view.text();
   assert.match(text, /Legacy item/);

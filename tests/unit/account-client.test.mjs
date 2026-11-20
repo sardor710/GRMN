@@ -62,8 +62,11 @@ test("failures surface the server status, code and message instead of a fake suc
 });
 
 test("money is exact KZT from minor units and missing legacy money stays visibly missing", () => {
-  assert.equal(formatKzt({ amountMinor: "9007199254740993", currency: "KZT" }), "90,071,992,547,409.93 KZT");
-  assert.equal(formatKzt({ amountMinor: "5", currency: "KZT" }), "0.05 KZT");
+  // Task 5a.2: Garmin price rule, Intl currency KZT in the page locale (en default here), never USD.
+  const plain = value => value.replace(/[\u00a0\u202f]/g, " ");
+  assert.equal(plain(formatKzt({ amountMinor: "9007199254740993", currency: "KZT" })), "KZT 90,071,992,547,409.93");
+  assert.equal(plain(formatKzt({ amountMinor: "9007199254740993", currency: "KZT" }, "ru-RU")), "90 071 992 547 409,93 ₸");
+  assert.equal(plain(formatKzt({ amountMinor: "5", currency: "KZT" })), "KZT 0.05");
   assert.equal(formatKzt(null), "—");
   assert.equal(formatKzt(undefined), "—");
 });

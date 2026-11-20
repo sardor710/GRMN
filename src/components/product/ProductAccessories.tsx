@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { AccessoryItem } from "@/types";
 import { useCart } from "@/lib/cart";
-import { formatMoney } from "@/i18n/format";
+import { Price } from "@/components/ui/price";
 import { useAppLocale } from "@/i18n/useAppLocale";
 
 /** Accessory categories (data values) and their `ProductAccessories.categories.*` message keys. */
@@ -122,7 +122,7 @@ export function ProductAccessories({ accessories = [] }: { accessories?: Accesso
 
               <div className="mt-6 border-t border-neutral-100 pt-4">
                 <div className="flex items-baseline justify-between">
-                  <span className="text-[18px] font-bold text-black">{formatMoney(acc.price, locale)}</span>
+                  <Price className="text-[18px] font-bold text-black" locale={locale} amount={{ major: acc.price }} />
                   <span className="text-[12px] text-neutral-500">{t("currency")}</span>
                 </div>
 

@@ -1,14 +1,12 @@
 import type { DisplayCurrency, PriceDTO, ProductCardDTO } from "../contracts/commerce.ts";
 
-export function minorToMajor(amount: string): string {
-  if (!/^(0|[1-9][0-9]*)$/.test(amount)) throw new RangeError("Invalid minor amount");
-  return (BigInt(amount) / BigInt(100)).toString() + "." + (BigInt(amount) % BigInt(100)).toString().padStart(2, "0");
-}
+import { groupMinor, minorToMajor } from "./money.ts";
 
+export { minorToMajor };
+
+/** Legacy `"1,350,000.00 KZT"` label (admin, the USD estimate). Storefront prices use `formatKzt` / `<Price>` (Task 5a.2). */
 export function formatMinorMoney(amount: string, currency: DisplayCurrency, locale = "en-US"): string {
-  const [whole, cents] = minorToMajor(amount).split(".");
-  const parts = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).formatToParts(BigInt(whole));
-  return parts.map(part => part.type === "fraction" ? cents : part.value).join("") + " " + currency;
+  return groupMinor(amount, locale) + " " + currency;
 }
 
 export function catalogPriceLabel(price: PriceDTO, requested: DisplayCurrency, locale = "en-US"): string {

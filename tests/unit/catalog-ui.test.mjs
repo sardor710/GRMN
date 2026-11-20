@@ -38,7 +38,7 @@ test("variant selection changes the actual price and media without fabricating o
  const fixture=componentFixture("src/components/ProductTop.tsx",{modules:{...variantModules("a"),"@/lib/cart":{useCart:()=>({add(){throw Error("Forbidden old cart");}})},"@/lib/public-catalog":{minorToMajor:v=>String(BigInt(v)/100n),catalogPriceLabel:p=>p.selling.amountMinor+" KZT"},"@/lib/cms/commerce-variant-model":commerceVariantModel,"@/lib/cms/product-variants":productVariants}});
  const props={product:{id:"fixture",title:"Model",price:"10.00",priceLabel:"1000 KZT",currency:"KZT",purchasable:false,breadcrumb:[],gallery:[{src:"/images/a.jpg",view:"A"}],caseSizes:[],versions:[],colors:[],commerce}};
  urlWrites.length=0;
- let tree=fixture.render(props);choose(tree,"Large");tree=fixture.render(props);assert.match(nodeText(tree),/2500 KZT/);assert.ok(nodes(tree).some(n=>n.props?.src==="/images/b.jpg"));assert.doesNotMatch(nodeText(tree),/1–3 business days/);
+ let tree=fixture.render(props);choose(tree,"Large");tree=fixture.render(props);assert.match(nodeText(tree),/KZT\s25\.00/);assert.ok(nodes(tree).some(n=>n.props?.src==="/images/b.jpg"));assert.doesNotMatch(nodeText(tree),/1–3 business days/);
  // The pick is kept in the URL (other parameters and the router's history state are preserved).
  assert.deepEqual(urlWrites,[{state:{kept:true},url:"https://shop.test/en/p/fixture?utm=x&variant=B"}]);
 });
