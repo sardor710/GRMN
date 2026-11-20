@@ -83,6 +83,10 @@ function variantTranslations(translations:Record<string,unknown>,stored:unknown,
   }
   return out;
 }
+/** JSON with object keys sorted, so a jsonb round trip (which reorders keys) compares equal. */
+const sortedJSON=(value:unknown):string=>Array.isArray(value)?"["+value.map(sortedJSON).join(",")+"]"
+  :value!==null&&typeof value==="object"?"{"+Object.keys(value).sort().map(key=>JSON.stringify(key)+":"+sortedJSON((value as Record<string,unknown>)[key])).join(",")+"}"
+  :JSON.stringify(value);
 const translationsColumn=(table:string,key:string,ref:string)=>`(SELECT jsonb_object_agg(t.locale,t.content) FROM ${table} t WHERE t.${key}=${ref}) AS translations`;
 const translationsOf=(row:Record<string,unknown>)=>row.translations&&typeof row.translations==="object"?row.translations as Record<string,unknown>:undefined;
 const entityTypes={products:"product",blogs:"blog",banners:"banner",clients:"customer",homepage:"homepage"} as const;
@@ -279,7 +283,11 @@ export function createCMSService({pool,authorize}:Options) {
             options:(Array.isArray(metadata.options)?metadata.options:[]) as ProductDocument["options"],variants:(Array.isArray(metadata.variants)?metadata.variants:[]) as ProductDocument["variants"],
             images:(Array.isArray(metadata.images)?metadata.images:[]) as ProductDocument["images"],defaultImageId:typeof metadata.defaultImageId==="string"?metadata.defaultImageId:undefined};
           await projectProduct(client,id,document);
-          if(sentTranslations!==undefined)for(const locale of LOCALES){
+          // Final review M8: stale variant translations (a removed variant, a block no longer owned) are pruned on
+          // every save, not only when translations are sent; a locale that did not change is left untouched.
+          const storedTranslations=record(old?.translations);
+          for(const locale of LOCALES){
+            if(sentTranslations===undefined&&sortedJSON(translations[locale]??null)===sortedJSON(storedTranslations[locale]??null))continue;
             if(translations[locale])await client.query("INSERT INTO product_translations(product_id,locale,content,updated_by) VALUES($1,$2,$3,$4) ON CONFLICT(product_id,locale) DO UPDATE SET content=excluded.content,updated_by=excluded.updated_by,updated_at=clock_timestamp()",[id,locale,json(translations[locale]),principal.userId]);
             else await client.query("DELETE FROM product_translations WHERE product_id=$1 AND locale=$2",[id,locale]);
           }
@@ -327,7 +335,12 @@ export function createCMSService({pool,authorize}:Options) {
           else{const done=await tx(client=>setStatusIn(client,principal,{...item,status:BULK_STATUS[action]}));results.push({id:item.id,ok:true,version:done.version});}
         }catch(error){
           if(error instanceof AuthFailure)results.push({id:item.id,ok:false,code:error.code,message:error.message});
-          else results.push({id:item.id,ok:false,code:"INTERNAL_ERROR",message:"Product could not be updated"});
+          else{
+            // Final review M7: an unexpected failure is logged (product id and error code only, no data) before it is mapped.
+            const code=(error as {code?:unknown}|null)?.code;
+            console.error("Bulk product action failed",action,item.id,typeof code==="string"?code:error instanceof Error?error.name:"UNKNOWN");
+            results.push({id:item.id,ok:false,code:"INTERNAL_ERROR",message:"Product could not be updated"});
+          }
         }
       }
       return{results};

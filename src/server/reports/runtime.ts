@@ -32,7 +32,7 @@ function ready() {
   const authorize = async (headers: Headers, permission: Permission) => { await requireStaffPrincipal(runtime, headers); return requirePermission(runtime, headers, permission); };
   return {
     reports: createReportsService({ pool, authorize }), exports: createExportService({ pool, authorize, storageDir: storageDir() }),
-    settings: createSettingsService({ pool, authorize }), baseURL: new URL(process.env.AUTH_BASE_URL!).origin,
+    settings: createSettingsService({ pool, authorize }), authorize, baseURL: new URL(process.env.AUTH_BASE_URL!).origin,
   };
 }
 function query(request: Request, baseURL: string): Record<string, string> {
@@ -83,9 +83,12 @@ export async function handleExportsRequest(request: Request): Promise<Response> 
 
 export async function handleSettingsRequest(request: Request): Promise<Response> {
   try {
-    const { settings, baseURL } = ready(), params = query(request, baseURL);
+    const { settings, authorize, baseURL } = ready(), params = query(request, baseURL);
     if (Object.keys(params).length) bad();
     if (request.method === "GET") return adminJSON(await settings.get(request.headers));
+    // Final review M6: a write is authorized before its body is read, so an unauthorized caller never makes
+    // the server parse a body. The service checks the permission again inside its own transaction.
+    if (request.method === "PUT" || request.method === "POST") await authorize(request.headers, "settings:write");
     if (request.method === "PUT") return adminJSON(await settings.update(request.headers, await readAdminJSON(request)));
     if (request.method === "POST") {
       const body = await readAdminJSON(request);
