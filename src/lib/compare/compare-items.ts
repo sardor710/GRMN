@@ -129,12 +129,6 @@ export function compareHref(items: readonly CompareItemRef[], options: CompareHr
   return search ? `${COMPARE_PATH}?${search}` : COMPARE_PATH;
 }
 
-/** Whether a page `searchParams` record asks for "Show only differences" (`diff=1`). */
-export function readOnlyDifferences(query: Readonly<Record<string, string | readonly string[] | undefined>> | null | undefined): boolean {
-  const raw = query?.[COMPARE_DIFF_PARAM];
-  return (Array.isArray(raw) ? raw[0] : raw) === "1";
-}
-
 /**
  * The key two spec labels (or group titles) are matched by: case-insensitive, whitespace collapsed, ™ ® ©
  * removed and trailing colons dropped ("Garmin Pay™:" and "GARMIN PAY" match).

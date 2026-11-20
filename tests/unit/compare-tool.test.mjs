@@ -164,9 +164,6 @@ test("compareHref and compareSearch build the compare link for the catalogue and
   assert.equal(compareItems.compareHref([]), "/compare");
   assert.equal(compareItems.compareHref([{ productId: "fenix-8", sku: "F8-47" }, { productId: "venu" }]), "/compare?item=fenix-8~F8-47&item=venu");
   assert.equal(compareItems.compareSearch([{ productId: "a" }], { onlyDifferences: true, search: "  fēnix " }), "item=a&diff=1&q=f%C4%93nix");
-  assert.equal(compareItems.readOnlyDifferences({ diff: "1" }), true);
-  assert.equal(compareItems.readOnlyDifferences({ diff: ["0"] }), false);
-  assert.equal(compareItems.readOnlyDifferences(undefined), false);
 });
 
 test("the compare messages exist in en, ru and kk with Garmin's wording in English", () => {
