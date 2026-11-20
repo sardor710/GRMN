@@ -44,13 +44,15 @@ export function ProductCard({ product }: { product: Product }) {
 
       <h3 className="g-heading mt-3 text-[22px] leading-tight text-black">{product.name}</h3>
       <p className="mt-2 text-[14px] leading-snug text-[#5b5b5b]">{product.description}</p>
-      {/* Task 5a.2: tenge in the page locale (Price.spec.md card rule), never the old USD label. */}
+      {/* Task 5a.2: tenge in the page locale (Price.spec.md card rule: strike, then the bold sale price), never a USD label. */}
       {toMinor({ major: product.price }) !== null ? (
         <Price
           size="card"
           className="mt-3 text-black"
           locale={locale}
           amount={{ major: product.price }}
+          compareAt={product.compareAt !== undefined ? { major: product.compareAt } : null}
+          unconverted={product.currency === "USD"}
           suffix={product.priceSuffix ? (product.priceSuffix === "and up" ? t("andUp") : product.priceSuffix) : undefined}
         />
       ) : (

@@ -39,6 +39,7 @@ export function ProductAccessories({ accessories = [] }: { accessories?: Accesso
       name: acc.name,
       price: acc.price,
       image: acc.image,
+      ...(acc.currency === "USD" ? { unconverted: true } : {}),
     });
     setAddedId(acc.id);
     setTimeout(() => setAddedId(null), 2000);
@@ -122,7 +123,7 @@ export function ProductAccessories({ accessories = [] }: { accessories?: Accesso
 
               <div className="mt-6 border-t border-neutral-100 pt-4">
                 <div className="flex items-baseline justify-between">
-                  <Price className="text-[18px] font-bold text-black" locale={locale} amount={{ major: acc.price }} />
+                  <Price className="text-[18px] font-bold text-black" locale={locale} amount={{ major: acc.price }} unconverted={acc.currency === "USD"} />
                   <span className="text-[12px] text-neutral-500">{t("currency")}</span>
                 </div>
 

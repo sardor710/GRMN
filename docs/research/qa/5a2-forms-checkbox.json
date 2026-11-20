@@ -5,7 +5,7 @@
  "cloneSel": "label:has(input.g-checkbox)",
  "widths": {
   "1440": {
-   "mismatchPct": 10.07,
+   "mismatchPct": 10.15,
    "size": {
     "target": [
      282,

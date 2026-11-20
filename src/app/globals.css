@@ -50,6 +50,11 @@
   --color-garmin-disabled: var(--garmin-disabled);
   --color-garmin-error: var(--garmin-error);
   --color-garmin-badge-red: var(--garmin-badge-red);
+  --color-garmin-badge-pink: var(--garmin-badge-pink);
+  --color-garmin-badge-lime: var(--garmin-badge-lime);
+  --color-garmin-badge-gold: var(--garmin-badge-gold);
+  --color-garmin-badge-gray: var(--garmin-badge-gray);
+  --color-garmin-demo: var(--garmin-demo);
 
   /* Garmin elevation (TOKENS.md §4): no hover lift anywhere. */
   --shadow-garmin-card: 0 2px 3px 1px #e5e5e5;
@@ -124,6 +129,12 @@
   --garmin-disabled: #d9d9d9;
   --garmin-error: #920000;
   --garmin-badge-red: #c20f2f;
+  --garmin-badge-pink: #f7607b;
+  --garmin-badge-lime: #cad54f;
+  --garmin-badge-gold: #f0b800;
+  --garmin-badge-gray: #d9d9d9;
+  /* Not a garmin.com colour: the demo-order operator label must never match a product badge (Task 5a.2). */
+  --garmin-demo: #ffe08a;
   /* MARQ minisite tokens */
   --marq-bg: #000000;
   --marq-nav: #141414;
@@ -361,6 +372,8 @@
   /* Checkbox: 1.15em square, 2px #737373, checked = black border + black check; focus = soft shadow. */
   .g-checkbox {
     appearance: none;
+    box-sizing: border-box;
+    font-size: inherit;
     flex-shrink: 0;
     width: 1.15em;
     height: 1.15em;
@@ -380,6 +393,16 @@
   }
   .g-checkbox:focus-visible { outline: none; border-color: #000; box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.4); }
   .g-checkbox:disabled { cursor: not-allowed; opacity: 0.5; }
+  /* Filter-row label (measured on garmin.com PLP): 14/21 400 black; box 16.1px, text starts 21px from the box edge. */
+  .g-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: calc(21px - 1.15em);
+    font-size: 14px;
+    line-height: 21px;
+    font-weight: 400;
+    color: #000;
+  }
 }
 
 /* Hide scrollbar for horizontal carousels */

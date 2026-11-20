@@ -4,8 +4,8 @@ import { cn } from "@/lib/utils";
 /**
  * Task 5a.2: the one badge pill (garmin.com `.g__badge`, docs/research/www.garmin.com/components/Badges.spec.md).
  * Roboto 14/21 400, padding 7px 14px (.5em 1em), radius 22.75px (1.625em), no uppercase, no tracking, no shadow.
- * Product badges are candy-blue `New` / `Sale`. The operator `demo` tone (DemoBadge) keeps the pill shape but is
- * gold, bold and uppercase so it never reads as merchandising.
+ * Product badges are candy-blue `New` / `Sale`. The operator `demo` tone (DemoBadge) keeps the pill shape but has its
+ * own colour (--garmin-demo, used by no product tone), a dashed border and bold uppercase text, so it never reads as merchandising.
  */
 export type BadgeTone = "candy-blue" | "black" | "red" | "pink" | "lime" | "gold" | "gray" | "demo";
 
@@ -13,11 +13,12 @@ const TONE: Record<BadgeTone, string> = {
   "candy-blue": "bg-garmin-candy-blue text-black",
   black: "bg-black text-white",
   red: "bg-garmin-badge-red text-white",
-  pink: "bg-[#f7607b] text-black",
-  lime: "bg-[#cad54f] text-black",
-  gold: "bg-[#f0b800] text-black",
-  gray: "bg-[#d9d9d9] text-black",
-  demo: "border border-black bg-[#f0b800] font-bold uppercase text-black",
+  pink: "bg-garmin-badge-pink text-black",
+  lime: "bg-garmin-badge-lime text-black",
+  gold: "bg-garmin-badge-gold text-black",
+  gray: "bg-garmin-badge-gray text-black",
+  // Operator label, not merchandising: its own colour (no product tone uses it), dashed border, bold uppercase.
+  demo: "border border-dashed border-black bg-garmin-demo font-bold uppercase text-black",
 };
 
 /** Class string for the pill, for places that cannot render the component (e.g. a CSS-module card). */

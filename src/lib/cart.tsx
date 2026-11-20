@@ -19,6 +19,8 @@ export interface CartItem {
   sku?: string;
   /** Human label of the chosen variant, e.g. "43 mm / Black" */
   variantLabel?: string;
+  /** Legacy price left unconverted (no KZT-per-USD rate): shown without a currency sign (Task 5a.2). */
+  unconverted?: boolean;
 }
 
 /** One cart line per product + variant. Old saved carts (no sku) keep using the product id. */

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { formatKzt, kztSaving, type KztAmount } from "@/lib/money";
+import { formatKzt, formatUnconverted, kztSaving, type KztAmount } from "@/lib/money";
 import { cn } from "@/lib/utils";
 
 /**
@@ -24,21 +24,25 @@ export interface PriceProps {
   suffix?: ReactNode;
   /** Renders the saving text (e.g. `t("save", { amount })` → "Save 50 000,00 ₸"). Omit to hide it (Garmin cards show none). */
   saveLabel?: (amount: string) => ReactNode;
+  /** A legacy amount with no KZT-per-USD rate: print the bare number, no currency sign (src/lib/legacy-prices.ts). */
+  unconverted?: boolean;
   className?: string;
 }
 
-export function Price({ amount, compareAt, locale, size = "inline", suffix, saveLabel, className }: PriceProps) {
-  const price = formatKzt(amount, locale);
+export function Price({ amount, compareAt, locale, size = "inline", suffix, saveLabel, unconverted, className }: PriceProps) {
+  const format = unconverted ? formatUnconverted : formatKzt;
+  const price = format(amount, locale);
   const saving = compareAt ? kztSaving(compareAt, amount) : null;
-  const original = saving && compareAt ? formatKzt(compareAt, locale) : null;
-  const save = saving && saveLabel ? saveLabel(formatKzt(saving, locale)) : null;
+  const original = saving && compareAt ? format(compareAt, locale) : null;
+  const save = saving && saveLabel ? saveLabel(format(saving, locale)) : null;
 
   if (size === "pdp") {
     return (
       <div data-price="pdp" className={cn("mt-4 mb-1 flex flex-col text-[20px] font-bold leading-[24px] text-black", className)}>
         {original && (
-          <p className="text-[14px] font-normal leading-[24px]">
-            <span data-price-original className="mr-[11px] inline-block line-through">{original}</span>
+          // garmin.com .g__price--strike: the line is struck; "Save" is inline-flex (so not struck) 8px after the amount.
+          <p className="text-[14px] font-normal leading-[24px] line-through">
+            <span data-price-original>{original}</span>
             {save && <span data-price-save className="ml-2 inline-flex text-[14px] leading-[21px]">{save}</span>}
           </p>
         )}

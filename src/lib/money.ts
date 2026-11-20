@@ -56,18 +56,43 @@ export function toMinor(amount: KztAmount): string | null {
  * ru → "1 350 000,00 ₸", kk → "1 350 000,00 ₸", en → "KZT 1,350,000.00". An invalid amount returns "—".
  */
 export function formatKzt(amount: KztAmount, locale: string): string {
+  return formatAmount(amount, locale, true);
+}
+
+/**
+ * The same number with no currency sign ("749,99" for ru), for a legacy amount that could not be converted to
+ * tenge because no KZT-per-USD rate is set. Showing it as tenge would be a wrong price.
+ */
+export function formatUnconverted(amount: KztAmount, locale: string): string {
+  return formatAmount(amount, locale, false);
+}
+
+function formatAmount(amount: KztAmount, locale: string, currency: boolean): string {
   const minor = toMinor(amount);
   if (minor === null) return "—";
   const negative = minor.startsWith("-");
   const [whole, cents] = minorToMajor(negative ? minor.slice(1) : minor).split(".");
   const parts = new Intl.NumberFormat(kztIntlLocale(locale), {
-    style: "currency",
-    currency: "KZT",
+    ...(currency ? ({ style: "currency", currency: "KZT" } as const) : {}),
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).formatToParts(BigInt(whole));
   const text = parts.map(part => (part.type === "fraction" ? cents : part.value)).join("");
   return negative ? "-" + text : text;
+}
+
+/**
+ * A legacy USD major amount in tenge at the importer's "KZT per 1 USD" rate, rounded half up to the tiyn.
+ * Exact: minor units times the rate scaled to 4 decimals, in BigInt. Null when the amount or the rate is unusable.
+ */
+export function usdMajorToKztMajor(major: number | string, rateKztPerUsd: number | undefined): number | null {
+  if (typeof rateKztPerUsd !== "number" || !Number.isFinite(rateKztPerUsd) || rateKztPerUsd <= 0) return null;
+  const minor = toMinor({ major });
+  if (minor === null || minor.startsWith("-")) return null;
+  const scale = BigInt(10000);
+  const product = BigInt(minor) * BigInt(Math.round(rateKztPerUsd * 10000));
+  const kztMinor = (product + scale / BigInt(2)) / scale;
+  return Number(minorToMajor(kztMinor.toString()));
 }
 
 /** The saving between an original and a sale price, or null when there is no saving. */
@@ -76,4 +101,9 @@ export function kztSaving(original: KztAmount, sale: KztAmount): KztAmount | nul
   if (a === null || b === null) return null;
   const diff = BigInt(a) - BigInt(b);
   return diff > BigInt(0) ? { minor: diff } : null;
+}
+
+/** True when `original` is a valid amount higher than `sale` (exact, minor units). */
+export function isKztSale(original: KztAmount | null | undefined, sale: KztAmount | null | undefined): boolean {
+  return Boolean(original && sale && kztSaving(original, sale));
 }

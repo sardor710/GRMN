@@ -19,7 +19,7 @@ import { commerceVariantModel } from "@/lib/cms/commerce-variant-model";
 import type { ProductOption, ProductVariant } from "@/lib/cms/types";
 import { Price } from "@/components/ui/price";
 import { badgeClass } from "@/components/ui/badge";
-import { toMinor } from "@/lib/money";
+import { isKztSale, toMinor, type KztAmount } from "@/lib/money";
 import { useAppLocale } from "@/i18n/useAppLocale";
 
 export function ProductTop({ product:initial }: { product: ProductDetail }) {
@@ -62,6 +62,19 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
     if (match) setCmsVariantId(match.id);
   }, [vm]);
 
+  // Task 5a.2: every price is tenge in the page locale through <Price> (never USD). Backend amounts are exact
+  // minor-unit strings, so the sale test compares minor units (isKztSale), never JS numbers.
+  // Computed before the memo below so the React Compiler sees no later use of its dependencies.
+  const salePrice = cmsVariant?.price ?? product.price;
+  const priceAmount: KztAmount | null = variant
+    ? { minor: variant.price.selling.amountMinor }
+    : salePrice !== undefined && salePrice !== "" && toMinor({ major: salePrice }) !== null ? { major: salePrice } : null;
+  const compareAtAmount: KztAmount | null = variant?.price.compareAt
+    ? { minor: variant.price.compareAt.amountMinor }
+    : cmsVariant?.originalPrice !== undefined ? { major: cmsVariant.originalPrice } : null;
+  const onSale = isKztSale(compareAtAmount, priceAmount);
+  // A legacy price with no KZT-per-USD rate (src/lib/legacy-prices.ts) is shown without a currency sign.
+  const unconverted = product.currency === "USD";
   const gallery = useMemo(() => {
     if (!vm || !cmsVariant) return product.gallery;
     const byId = new Map(vm.images.map((img) => [img.id, img]));
@@ -92,13 +105,9 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   };
 
   const price = cmsVariant?.price ?? product.price;
-  const compareAt = cmsVariant?.originalPrice;
   const partNumber = cmsVariant?.sku || product.partNumber;
   // garmin.com imports are converted to tenge (sourcePrice keeps the USD original). Only legacy products still show the US financing lines below.
   const isKzt = Boolean(cmsVariant?.sourcePrice?.rateKztPerUsd);
-  // Task 5a.2: every price is tenge in the page locale through <Price> (never USD); the stored amount is shown as is.
-  const priceAmount = price !== undefined && price !== "" && toMinor({ major: price }) !== null ? { major: price } : null;
-  const onSale = typeof price === "number" && compareAt !== undefined && compareAt > price;
 
   // Server cart (Task 13A): the selected variant's real availability decides; the server prices it.
   // In the browser-only cart a JSON CMS variant must be active and in stock.
@@ -118,6 +127,7 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
         image: gallery[0]?.src,
         ...(variant ? { variantId: variant.id } : {}),
         ...(cmsVariant ? { sku: cmsVariant.sku, variantLabel: cmsVariant.title } : {}),
+        ...(unconverted ? { unconverted: true } : {}),
       });
     } catch (error) { setNotice(error instanceof Error ? error.message : t("addFailed")); return; }
     setAdded(true);
@@ -214,7 +224,8 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
               size="pdp"
               locale={locale}
               amount={priceAmount}
-              compareAt={onSale ? { major: compareAt as number } : null}
+              compareAt={onSale ? compareAtAmount : null}
+              unconverted={unconverted}
               saveLabel={(amount) => t("save", { amount })}
             />
           ) : (

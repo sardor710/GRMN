@@ -2,9 +2,10 @@ import assert from "node:assert/strict";
 import {test} from "node:test";
 import fs from "node:fs";
 import ts from "typescript";
+import * as legacyPrices from "../../src/lib/legacy-prices.ts";
 function products(provider,catalog){
   const exports={};const code=ts.transpileModule(fs.readFileSync("src/lib/products.ts","utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
-  new Function("require","exports","console",code)(name=>name.includes("cms/source")?{cmsBackend:()=>catalog?"postgres":"legacy",...provider}:name.includes("catalog/runtime")?{getCatalogService:()=>catalog}:name.includes("public-catalog")?{catalogCardView:card=>({id:card.publicKey,name:card.name,price:"90071992547409.93",priceLabel:"90,071,992,547,409.93 KZT",currency:"KZT",purchasable:false,activities:[],family:"",level:"Unknown",caseSize:"Unknown",image:""})}:name.includes("product-variants")?{usesCmsDetail:()=>false}:name.includes("cms/store")?{getProducts:()=>[]}:name.includes("public-products")?{products:[{id:"1228429",name:"Forbidden static resurrection"}]}:{},exports,{error(){}});return exports;
+  new Function("require","exports","console",code)(name=>name.includes("cms/source")?{cmsBackend:()=>catalog?"postgres":"legacy",readLegacyKztPerUsd:async()=>undefined,...provider}:name.includes("legacy-prices")?legacyPrices:name.includes("catalog/runtime")?{getCatalogService:()=>catalog}:name.includes("public-catalog")?{catalogCardView:card=>({id:card.publicKey,name:card.name,price:"90071992547409.93",priceLabel:"90,071,992,547,409.93 KZT",currency:"KZT",purchasable:false,activities:[],family:"",level:"Unknown",caseSize:"Unknown",image:""})}:name.includes("product-variants")?{usesCmsDetail:()=>false}:name.includes("cms/store")?{getProducts:()=>[]}:name.includes("public-products")?{products:[{id:"1228429",name:"Forbidden static resurrection"}]}:{},exports,{error(){}});return exports;
 }
 test("public product lookup never resurrects an archived record from static catalog data",async()=>{
   const api=products({readProduct:async()=>undefined,readProductsPage:async()=>({items:[],nextCursor:null})});

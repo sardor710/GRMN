@@ -20,9 +20,11 @@ test("a carousel bound to a published collection shows its products in order wit
   const carousel = result.carousels[0];
   assert.deepEqual(reads, ["featured"]);
   assert.equal(carousel.type, "product");
-  assert.deepEqual(carousel.items.map((i) => [i.title, i.price, i.originalPrice, i.badge, i.href, i.order]), [
-    ["Second", "1,500.00 KZT", "2,000.00 KZT", "SALE", "/p/b", 0],
-    ["First", "99.50 KZT", undefined, undefined, "/p/a%2Fx", 1],
+  // Task 5a.2: labels use the shared Intl KZT format (en default); Intl puts a no-break space after "KZT".
+  const plain = (v) => (typeof v === "string" ? v.replace(/[\u00a0\u202f]/g, " ") : v);
+  assert.deepEqual(carousel.items.map((i) => [i.title, plain(i.price), plain(i.originalPrice), i.badge, i.href, i.order]), [
+    ["Second", "KZT 1,500.00", "KZT 2,000.00", "SALE", "/p/b", 0],
+    ["First", "KZT 99.50", undefined, undefined, "/p/a%2Fx", 1],
   ]);
 });
 

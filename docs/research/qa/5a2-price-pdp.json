@@ -5,7 +5,7 @@
  "cloneSel": "[data-price",
  "widths": {
   "390": {
-   "mismatchPct": 19.78,
+   "mismatchPct": 19.41,
    "size": {
     "target": [
      358,
@@ -19,7 +19,7 @@
    "hotBands": [
     {
      "y": "0-40",
-     "pct": 20.1
+     "pct": 19.7
     },
     {
      "y": "40-48",
@@ -40,7 +40,7 @@
    }
   },
   "1440": {
-   "mismatchPct": 11.72,
+   "mismatchPct": 11.4,
    "size": {
     "target": [
      566,
@@ -54,7 +54,7 @@
    "hotBands": [
     {
      "y": "0-40",
-     "pct": 12.7
+     "pct": 12.3
     },
     {
      "y": "40-48",

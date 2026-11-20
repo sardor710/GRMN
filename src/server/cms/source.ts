@@ -7,6 +7,16 @@ export function cmsBackend(source:Readonly<Record<string,string|undefined>>=proc
   if(mode!=="legacy"&&mode!=="postgres")throw new AuthFailure("UNAVAILABLE",503,"CMS configuration is unavailable");
   return mode;
 }
+/**
+ * Task 5a.2: the importer's remembered "KZT per 1 USD" rate (StoreSettings.importRateKztPerUsd) in the JSON store,
+ * used to show legacy USD-scale prices in tenge. Undefined in PostgreSQL mode (prices there are KZT) or when unset.
+ */
+export async function readLegacyKztPerUsd():Promise<number|undefined> {
+  if(cmsBackend()!=="legacy")return undefined;
+  const store=await import("../../lib/cms/store");
+  const rate=store.getSettings().importRateKztPerUsd;
+  return typeof rate==="number"&&Number.isFinite(rate)&&rate>0?rate:undefined;
+}
 type Resource="products"|"blogs"|"homepage";
 interface Page {items:unknown[];nextCursor:string|null}
 export function createCMSReadAdapter(options:{mode:"legacy"|"postgres";postgres:(resource:Resource,input:Record<string,unknown>)=>Promise<Page>;legacy:(resource:Resource,input:Record<string,unknown>)=>Promise<unknown[]|Page>}) {

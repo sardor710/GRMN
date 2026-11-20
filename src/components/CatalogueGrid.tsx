@@ -57,7 +57,7 @@ function Check({
   onChange: () => void;
 }) {
   return (
-    <label className="flex cursor-pointer items-center gap-2 text-[14px] text-neutral-700">
+    <label className="g-checkbox-label cursor-pointer">
       <input
         type="checkbox"
         checked={checked}

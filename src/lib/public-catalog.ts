@@ -20,6 +20,8 @@ export function catalogCardView(card: ProductCardDTO, currency: DisplayCurrency 
     id: card.publicKey, name: card.name, description: card.description,
     image: card.image?.url ?? "", badge: card.badge ?? undefined,
     price: minorToMajor(card.price.selling.amountMinor), priceLabel: catalogPriceLabel(card.price, currency, locale),
+    // Task 5a.2: keep the sale (PriceDTO.compareAt) so the card can show the struck original.
+    ...(card.price.compareAt ? { compareAt: minorToMajor(card.price.compareAt.amountMinor) } : {}),
     currency: "KZT" as const, purchasable: false, availability: card.availability,
     family: card.family ?? "", activities: card.activities ?? [], level: card.level ?? "Unknown", caseSize: card.caseSize ?? "Unknown",
     priceSuffix: card.priceSuffix,

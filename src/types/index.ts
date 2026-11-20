@@ -61,11 +61,14 @@ export interface FooterColumn {
 export interface Product {
   availability?: import("../contracts/commerce").Availability;
   priceLabel?: string;
+  /** "KZT" = tenge; "USD" = a legacy number with no conversion rate (shown without a currency sign). */
   currency?: "KZT" | "USD";
   purchasable?: boolean;
   id: string;
   name: string;
   price: number | string;
+  /** Original (higher) price when on sale, same unit as `price` (Task 5a.2). */
+  compareAt?: number | string;
   priceSuffix?: string; // e.g. "and up"
   description: string;
   image: string;
@@ -91,6 +94,8 @@ export interface AccessoryItem {
   partNumber: string;
   description?: string;
   badge?: string;
+  /** "USD" = legacy number left unconverted (no rate). */
+  currency?: "KZT" | "USD";
 }
 
 export interface ProductDetail {

@@ -10,7 +10,7 @@ import { CartIcon } from "@/components/icons";
 import { CheckoutPanel, OrderReceived, resumeCheckout } from "@/components/CheckoutPanel";
 import type { PlacedOrder } from "@/lib/checkout-client";
 import type { CartDTO } from "@/contracts/commerce";
-import { formatKzt as formatKztAmount } from "@/lib/money";
+import { formatKzt as formatKztAmount, formatUnconverted } from "@/lib/money";
 import { INTL_LOCALE } from "@/i18n/config";
 import { useAppLocale } from "@/i18n/useAppLocale";
 
@@ -112,7 +112,9 @@ export function CartView({ catalog = {} }: { catalog?: CartCatalog }) {
   const t = useTranslations("Cart");
   const locale = useAppLocale();
   // Task 5a.2: the browser-only cart shows its stored amounts in tenge too (never USD).
-  const money = (n: number) => formatKztAmount({ major: n }, locale);
+  // Prices were converted to tenge when the products were read (src/lib/legacy-prices.ts); a line added while no
+  // KZT-per-USD rate was set is "unconverted" and is shown without a currency sign, as is a subtotal that includes one.
+  const money = (n: number, unconverted = false) => (unconverted ? formatUnconverted : formatKztAmount)({ major: n }, locale);
   const kzt = (value: Parameters<typeof formatKzt>[0]) => formatKzt(value, INTL_LOCALE[locale]);
   const { mode, server, error, busy, items, subtotal, setQty, remove, clear, acknowledge, refresh } = useCart();
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
@@ -198,7 +200,7 @@ export function CartView({ catalog = {} }: { catalog?: CartCatalog }) {
                   </div>
                 </div>
                 <div className="text-right text-[15px] font-medium text-black">
-                  {money(item.price * item.qty)}
+                  {money(item.price * item.qty, item.unconverted)}
                 </div>
               </li>
             ))}
@@ -219,7 +221,7 @@ export function CartView({ catalog = {} }: { catalog?: CartCatalog }) {
           <dl className="mt-4 space-y-3 text-[15px]">
             <div className="flex justify-between">
               <dt className="text-neutral-600">{t("subtotal")}</dt>
-              <dd className="text-black">{money(subtotal)}</dd>
+              <dd className="text-black">{money(subtotal, items.some((item) => item.unconverted))}</dd>
             </div>
           </dl>
           {/* Task 14A: the browser-only cart cannot place orders (the fake "order placed" screen,

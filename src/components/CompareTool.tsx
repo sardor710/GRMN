@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { activityFilters, caseSizeFilters, filterLabelKey, levelFilters } from "@/lib/catalog-constants";
 import type { Product } from "@/types";
-import { formatKzt, toMinor } from "@/lib/money";
+import { formatKzt, formatUnconverted, toMinor } from "@/lib/money";
 import { useAppLocale } from "@/i18n/useAppLocale";
 
 const MAX = 4;
@@ -33,7 +33,7 @@ export function CompareTool({products,selectedProducts}:{products:Product[];sele
   const tk = useTranslations();
   const locale = useAppLocale();
   // Task 5a.2: every price is tenge in the page locale (Garmin price rule), never USD.
-  const money = (p: Product) => (toMinor({ major: p.price }) !== null ? formatKzt({ major: p.price }, locale) : p.priceLabel ?? String(p.price));
+  const money = (p: Product) => (toMinor({ major: p.price }) !== null ? (p.currency === "USD" ? formatUnconverted : formatKzt)({ major: p.price }, locale) : p.priceLabel ?? String(p.price));
   const router=useRouter(),pathname=usePathname(),params=useSearchParams();
   const chosen=selectedProducts,selected=chosen.map(p=>p.id),available=products.filter(p=>!selected.includes(p.id));
   const change=(ids:string[])=>{const next=new URLSearchParams(params.toString());next.delete("selected");ids.forEach(id=>next.append("selected",id));router.push(pathname+"?"+next.toString());};

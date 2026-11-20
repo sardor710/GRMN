@@ -1,6 +1,7 @@
 import "server-only";
 import type { Product, ProductDetail, AccessoryItem } from "@/types";
-import { cmsBackend, readProduct, readProductsPage } from "@/server/cms/source";
+import { cmsBackend, readLegacyKztPerUsd, readProduct, readProductsPage } from "@/server/cms/source";
+import { isLegacyUsdProduct, legacyAmountsInKzt, withStorefrontPrices } from "@/lib/legacy-prices";
 import { getCatalogService } from "@/server/catalog/runtime";
 import { catalogCardView } from "@/lib/public-catalog";
 import type { ProductQuery } from "@/contracts/commerce";
@@ -49,8 +50,13 @@ export function getCatalogue(slug: string): CatalogueDef | undefined {
   return catalogues.find((c) => c.slug === slug);
 }
 
-function publicProduct(cp: CMSProduct): Product {
-  return {currency:cp.currency??"USD",purchasable:cp.stockManaged===false?false:undefined,id:cp.id,name:cp.name,price:cp.price,priceSuffix:cp.priceSuffix,description:cp.description,image:cp.image,badge:cp.badge&&cp.badge!=="NONE"?cp.badge:undefined,family:cp.family,activities:cp.activities,level:cp.level,caseSize:cp.caseSize};
+/** Task 5a.2: legacy USD-scale prices become tenge here, once, at the importer rate (src/lib/legacy-prices.ts). */
+function publicProduct(raw: CMSProduct, rate: number | undefined): Product {
+  const cp=withStorefrontPrices(raw,rate);
+  return {currency:cp.currency,purchasable:cp.stockManaged===false?false:undefined,id:cp.id,name:cp.name,price:cp.price,
+    // A sale on an imported/KZT product shows on its card. Legacy seed records carry a generated originalPrice (+15%), not a sale.
+    ...(!isLegacyUsdProduct(raw)&&typeof cp.originalPrice==="number"&&cp.originalPrice>cp.price?{compareAt:cp.originalPrice}:{}),
+    priceSuffix:cp.priceSuffix,description:cp.description,image:cp.image,badge:cp.badge&&cp.badge!=="NONE"?cp.badge:undefined,family:cp.family,activities:cp.activities,level:cp.level,caseSize:cp.caseSize};
 }
 export const defaultProductQuery:ProductQuery={market:"default",locale:"en",displayCurrency:"KZT"};
 /** Product query for a storefront locale (the PostgreSQL catalog overlays product_translations, Task 24). */
@@ -59,7 +65,8 @@ function queryFor(locale:Locale):ProductQuery{return locale===defaultProductQuer
 function localized(cp:CMSProduct,locale:Locale):CMSProduct{return locale==="en"?cp:localizeProduct(cp,locale);}
 export async function getAllProducts(locale:Locale="en"): Promise<Product[]> {
   if(cmsBackend()==="postgres")return (await getCatalogService().listProducts(queryFor(locale),{limit:100})).items.map(p=>catalogCardView(p));
-  return (await readProductsPage({limit:100})).items.map(cp=>publicProduct(localized(cp,locale)));
+  const rate=await readLegacyKztPerUsd();
+  return (await readProductsPage({limit:100})).items.map(cp=>publicProduct(localized(cp,locale),rate));
 }
 export async function getProductsByKeys(keys:string[],locale:Locale="en"):Promise<Product[]> {
   if(cmsBackend()==="postgres")return (await getCatalogService().getProductsByKeys(keys,queryFor(locale))).items.map(p=>catalogCardView(p));
@@ -69,7 +76,8 @@ export async function catalogueProducts(def:CatalogueDef,input:Partial<ProductQu
   const {cursor,...filters}=input;
   const query:ProductQuery={...queryFor(locale),...filters,...(def.slug.includes("running-smartwatches")?{activitiesAll:["running"]}:{})};
   if(cmsBackend()==="postgres"){const page=await getCatalogService().listProducts(query,{limit:24,cursor});return{items:page.items.map(p=>catalogCardView(p,query.displayCurrency)),nextCursor:page.nextCursor};}
-  const page=await readProductsPage({limit:24,cursor,...filters,...(def.slug.includes("running-smartwatches")?{activitiesAll:["running"]}:{})});return {items:page.items.map(cp=>publicProduct(localized(cp,locale))),nextCursor:page.nextCursor};
+  const rate=await readLegacyKztPerUsd();
+  const page=await readProductsPage({limit:24,cursor,...filters,...(def.slug.includes("running-smartwatches")?{activitiesAll:["running"]}:{})});return {items:page.items.map(cp=>publicProduct(localized(cp,locale),rate)),nextCursor:page.nextCursor};
 }
 
 // Back-compat: simple metadata lookup keyed by slug.
@@ -82,7 +90,7 @@ export async function getRawCMSProduct(id:string):Promise<CMSProduct|undefined>{
 export async function getCMSProduct(id:string,locale:Locale="en"){const raw=await getRawCMSProduct(id);return raw?localized(raw,locale):undefined;}
 export async function getProduct(id:string,locale:Locale="en"):Promise<Product|undefined> {
   if(cmsBackend()==="postgres"){const found=await getCatalogService().getProductByPublicKey(id,"default","KZT",locale);return found?catalogCardView(found):undefined;}
-  const found=await readProduct(id);return found?publicProduct(localized(found,locale)):undefined;
+  const found=await readProduct(id);return found?publicProduct(localized(found,locale),await readLegacyKztPerUsd()):undefined;
 }
 
 
@@ -305,6 +313,7 @@ export async function buildDetailFromCms(p: CMSProduct, locale: Locale = "en"): 
     subtitle: p.description,
     partNumber: defaultVariant?.sku || p.sku,
     price: p.price,
+    currency: p.currency,
     badge: p.badge && p.badge !== "NONE" ? p.badge : undefined,
     breadcrumb: [
       // garmin.com: "Sports & Fitness / Fitness Tracking" — category, then subcategory (family as a fallback).
@@ -345,14 +354,15 @@ export async function getProductDetail(id: string, locale: Locale = "en"): Promi
   const cms = await getCMSProduct(id, locale);
   // Only products with variants or an overview get the CMS page; legacy products keep their hand-built page
   // (re-saving one in the admin must not change its storefront).
-  if (cms && usesCmsDetail(cms)) return buildDetailFromCms(cms, locale);
+  if (cms && usesCmsDetail(cms)) return buildDetailFromCms(withStorefrontPrices(cms, await readLegacyKztPerUsd()), locale);
   const dynamicProduct = await getProduct(id, locale);
 
   if (id === "1228429") {
     if (!dynamicProduct) return undefined;
     return {
       ...fenix8Detail,
-      accessories:dynamicProduct.currency==="KZT"?undefined:fenix8Detail.accessories,
+      // Static USD accessories are only offered on the legacy (USD-priced) record, converted like its own price.
+      accessories:cms&&isLegacyUsdProduct(cms)?legacyAmountsInKzt(fenix8Detail.accessories??[],await readLegacyKztPerUsd()):undefined,
       title: dynamicProduct.name || fenix8Detail.title,
       subtitle: dynamicProduct.description || fenix8Detail.subtitle,
       currency:dynamicProduct.currency,purchasable:dynamicProduct.purchasable,
