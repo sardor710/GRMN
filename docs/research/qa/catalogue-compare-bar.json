@@ -5,7 +5,7 @@
  "cloneSel": "[data-compare-bar]",
  "widths": {
   "390": {
-   "mismatchPct": 22.48,
+   "mismatchPct": 32.1,
    "size": {
     "target": [
      390,
@@ -18,28 +18,28 @@
    },
    "hotBands": [
     {
-     "y": "40-80",
-     "pct": 39
+     "y": "240-247",
+     "pct": 91.8
     },
     {
      "y": "160-200",
-     "pct": 28.8
+     "pct": 53.6
     },
     {
-     "y": "240-247",
-     "pct": 26.9
+     "y": "40-80",
+     "pct": 39.6
     },
     {
      "y": "200-240",
-     "pct": 26.3
+     "pct": 35.6
     },
     {
      "y": "80-120",
-     "pct": 14.7
+     "pct": 27.7
     },
     {
      "y": "0-40",
-     "pct": 14.2
+     "pct": 16.4
     }
    ],
    "file": "docs/design-references/qa/catalogue-compare-bar-390-diff.png",
@@ -53,12 +53,12 @@
       "fs": "14.4px → 16px",
       "fw": "700 → 400",
       "lh": "21.6px → 24px",
-      "pos": "194,108 → 15,99"
+      "pos": "194,108 → 15,135"
      },
      {
       "t": "COMPARE",
       "ff": "Superscripts-Roboto → Roboto",
-      "pos": "16,179 → 16,169"
+      "pos": "16,179 → 16,205"
      }
     ],
     "missing": []
