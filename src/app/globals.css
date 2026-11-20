@@ -225,6 +225,14 @@
     outline: auto 1px var(--ring);
     outline-offset: 1px;
   }
+  /* Task C-d (WCAG 2.4.11 Focus Not Obscured): below 1024px the catalogue compare bar sticks to the bottom of the
+     viewport. While it is on the page, scrolling a focused card into view keeps it above the bar (CompareBar keeps
+     --compare-bar-height equal to the bar's measured height). */
+  @media (width < 64rem) {
+    html:has([data-compare-bar]) {
+      scroll-padding-bottom: calc(var(--compare-bar-height, 0px) + 16px);
+    }
+  }
 }
 
 /* ---- Garmin design-system utilities (Task 5a.2: values from docs/research/www.garmin.com) ---- */

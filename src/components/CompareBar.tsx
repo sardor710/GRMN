@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
@@ -90,7 +90,25 @@ export function CompareBar({ items, onChange, products, search, compareMode, ann
   const showHits = Boolean(search && search.query && liveSearch.trim() === search.query);
   const hits = (search?.results ?? []).filter((hit) => !hasProduct(items, hit.id));
 
-  if (!compareMode && items.length === 0) return null;
+  // Task C-d (WCAG 2.4.11): publish the bar's height as --compare-bar-height on <html>; globals.css turns it into
+  // scroll-padding-bottom below 1024px, so a card focused by keyboard is scrolled above the sticky bar, not behind it.
+  const visible = compareMode || items.length > 0;
+  const barRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const bar = barRef.current;
+    if (!visible || !bar) return;
+    const root = document.documentElement;
+    const publish = () => root.style.setProperty("--compare-bar-height", `${Math.ceil(bar.getBoundingClientRect().height)}px`);
+    publish();
+    const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(publish);
+    observer?.observe(bar);
+    return () => {
+      observer?.disconnect();
+      root.style.removeProperty("--compare-bar-height");
+    };
+  }, [visible]);
+
+  if (!visible) return null;
 
   const withSearch = (text: string) => {
     const next = new URLSearchParams(params.toString());
@@ -118,6 +136,7 @@ export function CompareBar({ items, onChange, products, search, compareMode, ann
 
   return (
     <section
+      ref={barRef}
       role="region"
       aria-label={t("region")}
       data-compare-bar
