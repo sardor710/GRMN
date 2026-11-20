@@ -54,7 +54,10 @@ A demo order now:
 - **Not paid when nothing can ship.** If a demo capture finds its hold ended and no stock left, `capture()`
   records the fact, cancels the order as a fulfilment exception and requests a refund, as for real money.
   For demo that refund is settled at once with a `demo-refund:<id>` reference, because the refund worker
-  never submits simulated providers. The order ends `cancelled/refunded/exception`, and
+  never submits simulated providers. Capture-time and staff demo refunds settle through one helper,
+  `settleDemoRefund` (`src/server/payments/demo-refund.ts`, F-b): succeeded, `demo-refund:<id>`, version bump,
+  exactly one demo row or 409 `REFUND_NOT_SETTLED`, the caller's payment-summary rule, then the customer
+  `refund.succeeded` event (`demo: true`, dedupe `refund-succeeded:<id>`). The order ends `cancelled/refunded/exception`, and
   `confirmDemoCapture` answers `DEMO_CAPTURE_NOT_PAID` (409) rather than reporting `paid`.
 - **Only demo orders.** `confirmDemoCapture` refuses anything but a demo order's own demo attempt
   (`PAYMENT_NOT_DEMO`, 409), and only while the order still awaits payment for exactly its total. The
@@ -63,8 +66,14 @@ A demo order now:
   unknown, late_captured, superseded).
 - **Abuse cap (final review I1).** Because a demo order captures like a paid one (it consumes on_hand stock
   and limited promo uses and sends a Telegram alert), one customer or guest session (the checkout actor scope),
-  and one trusted client address, may place at most `MAX_DEMO_ORDERS_PER_DAY` (5,
-  `src/server/checkout/service.ts`) demo orders in 24 hours. Every demo order counts, whatever became of it.
+  and one trusted client address, may place at most `DEMO_ORDER_LIMIT` demo orders in 24 hours (follow-up F-b;
+  env, read on every demo checkout through `readDemoOrderLimit` in `src/server/config/env.ts`: a whole number,
+  unset or empty = 5, `0` = no cap, anything else falls back to 5 and is logged once per value). Every demo
+  order counts, whatever became of it. **Staff are exempt:** when the checkout actor is a signed-in user with
+  a staff role (the auth foundation's own staff definition, `user_roles`; `requirePrincipal` has already
+  refused a staff session that is not MFA-admitted), nothing is locked or counted. Staff demo orders still
+  count towards their address, so heavy staff testing from a shared office address can use up that address's
+  allowance for customers on it.
   The check runs inside the checkout transaction after the cart lock, under the same transaction-scoped
   advisory locks as the manual unpaid-order limit (scope first, then address), so concurrent checkouts cannot
   pass it together. Over the cap checkout answers 429 `TOO_MANY_DEMO_ORDERS` with a readable message, and
@@ -105,6 +114,10 @@ A demo order now:
   reported paid;
 - the abuse cap: the sixth demo order of a customer in 24 h is refused (429) and holds nothing, older orders
   stop counting, and seven customers racing on one address get exactly five orders through;
+- `DEMO_ORDER_LIMIT` (F-b): `2` allows exactly two per customer and per address, `0` lets seven through, an
+  invalid value falls back to 5 with a warning, and a staff session (through the cart service, as the route
+  calls it) places more than the limit while a customer over it still gets 429
+  (`tests/unit/demo-order-limit.test.mjs` pins the parsing);
 - a same-key replay of a pending demo order is not captured while demo is off.
 
 `tests/integration/fulfillment.test.mjs` pins that a demo order with no capture fact, even forced to paid,

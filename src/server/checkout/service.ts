@@ -13,6 +13,7 @@ import type { PaymentProvider, PaymentProviders } from "../payments/provider.ts"
 import { createManualProvider } from "../payments/manual-provider.ts";
 import { availablePaymentMethods, demoCheckoutEnabled } from "../payments/demo-mode.ts";
 import { confirmDemoCapture } from "../payments/service.ts";
+import { DEFAULT_DEMO_ORDER_LIMIT, readDemoOrderLimit } from "../config/env.ts";
 
 // Task 14A. Idempotent checkout inside the exact plan Section 6 boundary, in ONE short
 // transaction with no network call: claim the idempotency key (checkout_attempts), lock the cart
@@ -135,28 +136,53 @@ async function enforceUnpaidLimit(client: PoolClient, userId: string | null, add
 /**
  * Demo abuse cap (final review I1): a demo order is captured like a paid one, so it consumes on_hand
  * stock and limited promo uses and announces itself on Telegram. One customer or guest session, and
- * one client address, may place at most this many demo orders in DEMO_ORDER_WINDOW_HOURS, whatever
- * became of them (captured, cancelled and refunded orders all count).
+ * one client address, may place at most DEMO_ORDER_LIMIT demo orders (default this many, 0 = no cap;
+ * follow-up F-b) in DEMO_ORDER_WINDOW_HOURS, whatever became of them (captured, cancelled and refunded
+ * orders all count). Signed-in staff are exempt: they test the store and are not the abuse it stops.
  */
-export const MAX_DEMO_ORDERS_PER_DAY = 5;
+export const MAX_DEMO_ORDERS_PER_DAY = DEFAULT_DEMO_ORDER_LIMIT;
 const DEMO_ORDER_WINDOW_HOURS = 24;
+
+// An invalid DEMO_ORDER_LIMIT is reported once per distinct value, not on every checkout.
+const reportedDemoLimits = new Set<string>();
+function demoOrderLimit(): number {
+  return readDemoOrderLimit(process.env, message => {
+    const raw = process.env.DEMO_ORDER_LIMIT ?? "";
+    if (reportedDemoLimits.has(raw)) return;
+    reportedDemoLimits.add(raw);
+    console.warn(message);
+  });
+}
+
+/**
+ * Staff, by the auth foundation's own definition (getSessionIdentity: a user with at least one role).
+ * The actor's userId comes from requirePrincipal, which already refused a staff session that is not
+ * MFA-admitted, so a signed-in staff session is the only way to get here as staff.
+ */
+async function isStaffUser(client: PoolClient, userId: string | null): Promise<boolean> {
+  if (!userId) return false;
+  return Boolean((await client.query("SELECT 1 FROM user_roles WHERE user_id=$1 LIMIT 1", [userId])).rowCount);
+}
 
 /**
  * Refuses a demo checkout over the cap with 429 TOO_MANY_DEMO_ORDERS. Same pattern as the unpaid
  * limit: a transaction-scoped advisory lock per identity (actor scope first, then address) serialises
- * concurrent checkouts, so they cannot pass the cap together.
+ * concurrent checkouts, so they cannot pass the cap together. With no cap (0) or a staff actor nothing
+ * is locked or counted.
  */
-async function enforceDemoCap(client: PoolClient, scope: string, addressHash: string | null): Promise<void> {
+async function enforceDemoCap(client: PoolClient, userId: string | null, scope: string, addressHash: string | null): Promise<void> {
+  const limit = demoOrderLimit();
+  if (limit === 0 || await isStaffUser(client, userId)) return;
   await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`demo-orders:scope:${scope}`]);
   if (addressHash) await client.query("SELECT pg_advisory_xact_lock(hashtextextended($1,0))", [`demo-orders:address:${addressHash}`]);
   const count = async (column: "actor_scope" | "client_address_hash", value: string) => (await client.query<{ n: number }>(
     `SELECT count(*)::int AS n FROM (SELECT 1 FROM checkout_attempts c JOIN orders o ON o.checkout_attempt_id=c.id
        WHERE c.${column}=$1 AND c.operation=$2 AND c.created_at>now()-make_interval(hours=>${DEMO_ORDER_WINDOW_HOURS}) AND o.payment_mode='demo' LIMIT $3) x`,
-    [value, OPERATION, MAX_DEMO_ORDERS_PER_DAY])).rows[0].n;
-  if (await count("actor_scope", scope) >= MAX_DEMO_ORDERS_PER_DAY)
-    fail("TOO_MANY_DEMO_ORDERS", 429, `This is a demo store: you can place at most ${MAX_DEMO_ORDERS_PER_DAY} demo orders a day. Please try again tomorrow.`);
-  if (addressHash && await count("client_address_hash", addressHash) >= MAX_DEMO_ORDERS_PER_DAY)
-    fail("TOO_MANY_DEMO_ORDERS", 429, `This is a demo store: at most ${MAX_DEMO_ORDERS_PER_DAY} demo orders a day can be placed from this connection. Please try again tomorrow.`);
+    [value, OPERATION, limit])).rows[0].n;
+  if (await count("actor_scope", scope) >= limit)
+    fail("TOO_MANY_DEMO_ORDERS", 429, `This is a demo store: you can place at most ${limit} demo orders a day. Please try again tomorrow.`);
+  if (addressHash && await count("client_address_hash", addressHash) >= limit)
+    fail("TOO_MANY_DEMO_ORDERS", 429, `This is a demo store: at most ${limit} demo orders a day can be placed from this connection. Please try again tomorrow.`);
 }
 
 /**
@@ -215,7 +241,7 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
     const cart = (await client.query<{ status: string; version: number }>("SELECT status,version FROM carts WHERE id=$1 FOR UPDATE", [owned.cart_id])).rows[0];
     if (!cart || cart.status !== "active" || cart.version !== command.cartVersion) stale();
     if (command.paymentMethod === "manual") await enforceUnpaidLimit(client, actor.userId, addressHash);
-    else if (command.paymentMethod === "demo") await enforceDemoCap(client, scope, addressHash);
+    else if (command.paymentMethod === "demo") await enforceDemoCap(client, actor.userId, scope, addressHash);
 
     // 3. Revalidate (ignoring this attempt's own coupon hold), then hold the coupon and the stock.
     await revalidateQuote(client, { quoteId: command.quoteId, cartId: owned.cart_id, cartVersion: command.cartVersion, checkoutAttemptId: attemptId });
