@@ -37,3 +37,28 @@ test("the legacy status pill uses statusPillClass", () => {
   assert.ok(pill, "the pill carries statusPillClass(status)");
   assert.match(pill.props.className, /rounded-garmin-pill/);
 });
+
+// Final review (M9 follow-up): a new product starts with no compare-at (it used to prefill 899.99, a fake sale)
+// and price 0; saving it without touching compare-at sends originalPrice: null, so no compareAt is stored.
+test("a new PostgreSQL product starts with empty compare-at and price 0, and saves no compareAt", async () => {
+  const posts = [];
+  const fixture = componentFixture(FILE, {
+    backend: "postgres", items: [],
+    modules: { "@/components/admin/products/StatusMenu": statusMenu },
+    fetcher: async (url, options = {}) => { if (options.method === "POST") posts.push({ url, body: JSON.parse(options.body) }); return { ok: true, status: 200, json: async () => ({ items: [] }) }; },
+  });
+  const add = nodes(fixture.render()).find(node => node.type === "button" && typeof node.props?.onClick === "function" && /Add New/.test(JSON.stringify(node.props.children ?? "")));
+  assert.ok(add, "the Add New button");
+  add.props.onClick();
+  let tree = fixture.render();
+  assert.equal(nodes(tree).find(node => node.props?.id === "product-compare-at").props.value, "", "no invented compare-at");
+  assert.equal(nodes(tree).find(node => node.props?.id === "product-price").props.value, 0);
+  // The editor needs a photo before it saves.
+  fixture.state.forEach((value, index) => { if (value && typeof value === "object" && "originalPrice" in value && "images" in value) fixture.state[index] = { ...value, name: "New fixture", price: 1000, image: "/images/products/1228429.jpg" }; });
+  tree = fixture.render();
+  await nodes(tree).find(node => node.type === "form").props.onSubmit({ preventDefault() {} });
+  const save = posts.find(post => post.url === "/api/admin/products");
+  assert.ok(save, "the product was saved");
+  assert.equal(save.body.originalPrice, null, "no compareAt is stored");
+  assert.equal(save.body.price, 1000);
+});

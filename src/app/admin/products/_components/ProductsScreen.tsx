@@ -145,8 +145,10 @@ type EditorTab = "general" | "media" | "variants" | "specs" | "box" | "crossSell
 const blankForm = () => ({
   name: "",
   sku: `GRM-${Math.floor(100000 + Math.random() * 900000)}`,
-  price: 799.99,
-  originalPrice: 899.99 as number | undefined,
+  // Final review (M9 follow-up): a new product starts with no price and no compare-at, so saving without
+  // touching compare-at stores none (a prefilled 899.99 made every new product a fake sale).
+  price: 0,
+  originalPrice: undefined as number | undefined,
   priceSuffix: "",
   description: "",
   image: "",
