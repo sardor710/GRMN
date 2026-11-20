@@ -3,20 +3,16 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { AlertTriangle, Plus, RefreshCw, ChevronRight } from "lucide-react";
+import { formatCount, formatRecordAmount } from "@/lib/money";
 import type { CMSProduct } from "@/lib/cms/types";
 
 interface LowStockAlertsProps {
   products: CMSProduct[];
-  currencySymbol: string;
   onRestockProduct: (productId: string, addedStock: number) => Promise<void>;
 }
 
-export function LowStockAlerts({
-  products,
-  currencySymbol,
-  onRestockProduct,
-}: LowStockAlertsProps) {
+/** Legacy JSON dashboard: the four products with the least stock and a +25 restock. */
+export function LowStockAlerts({ products, onRestockProduct }: LowStockAlertsProps) {
   const [restockingId, setRestockingId] = useState<string | null>(null);
 
   const lowStockItems = [...products]
@@ -33,87 +29,46 @@ export function LowStockAlerts({
   };
 
   return (
-    <div className="border border-neutral-200 bg-white p-6 rounded-none font-sans">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-neutral-100 pb-3 mb-4">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
-          <h3 className="g-heading uppercase tracking-wide text-[18px] text-black font-normal">
-            Low Stock Alerts
-          </h3>
-        </div>
-        <Link
-          href="/admin/products"
-          className="font-heading uppercase tracking-wider text-[11px] font-bold text-[#007cc3] hover:underline flex items-center gap-1"
-        >
-          <span>Catalog</span>
-          <ChevronRight className="h-3 w-3" />
-        </Link>
+    <section aria-label="Low stock" className="border border-garmin-control p-4">
+      <div className="mb-4 flex items-end justify-between gap-3 border-b border-garmin-rule pb-3.5">
+        <h2 className="font-sans text-sm font-medium tracking-[0.64px] text-black">Low stock</h2>
+        <Link href="/admin/products" className="text-sm tracking-[0.64px] text-black underline hover:no-underline">Products</Link>
       </div>
 
-      {/* List */}
-      <div className="space-y-3">
-        {lowStockItems.map((prod) => {
-          const isCritical = prod.stock <= 10;
-          const isRestocking = restockingId === prod.id;
-
-          return (
-            <div
-              key={prod.id}
-              className="flex items-center justify-between gap-3 bg-neutral-50 p-3 border border-neutral-200 rounded-none hover:border-black transition-colors"
-            >
-              {/* Image & Title */}
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="relative h-10 w-10 shrink-0 bg-white border border-neutral-200 rounded-none overflow-hidden">
-                  <Image
-                    src={prod.image || "/images/products/1228429.jpg"}
-                    alt={prod.name}
-                    fill
-                    sizes="40px"
-                    className="object-contain p-1"
-                  />
+      {lowStockItems.length === 0 ? (
+        <p className="text-sm text-muted-foreground">No products yet.</p>
+      ) : (
+        <ul className="divide-y divide-garmin-rule text-sm">
+          {lowStockItems.map((prod) => {
+            const isRestocking = restockingId === prod.id;
+            return (
+              <li key={prod.id} className="flex items-center justify-between gap-3 py-2.5">
+                <div className="flex min-w-0 items-center gap-3">
+                  <div className="relative h-10 w-10 shrink-0 overflow-hidden border border-garmin-control bg-white">
+                    <Image src={prod.image || "/images/products/1228429.jpg"} alt="" fill sizes="40px" className="object-contain p-1" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="truncate">{prod.name}</p>
+                    <p className="tabular-nums text-muted-foreground">{formatRecordAmount(prod.price, prod.currency)}</p>
+                  </div>
                 </div>
-                <div className="min-w-0 max-w-[140px] sm:max-w-[180px]">
-                  <p className="font-medium text-[13px] text-black truncate">
-                    {prod.name}
-                  </p>
-                  <p className="text-[11px] font-mono text-neutral-500">
-                    {currencySymbol}{prod.price}
-                  </p>
+                <div className="flex shrink-0 items-center gap-3">
+                  <span className={`font-bold tabular-nums ${prod.stock <= 10 ? "text-garmin-error" : "text-black"}`}>{formatCount(prod.stock)} left</span>
+                  <button
+                    type="button"
+                    disabled={isRestocking}
+                    onClick={() => handleQuickRestock(prod.id, 25)}
+                    aria-label={`Restock ${prod.name} by 25 units`}
+                    className="g-btn g-btn--secondary g-btn--sm"
+                  >
+                    {isRestocking ? "Saving…" : "+25"}
+                  </button>
                 </div>
-              </div>
-
-              {/* Stock count & restock buttons */}
-              <div className="flex items-center gap-2">
-                <span
-                  className={`font-mono text-[10px] font-bold px-2 py-0.5 rounded-none border ${
-                    isCritical
-                      ? "text-rose-700 bg-rose-50 border-rose-200"
-                      : "text-amber-700 bg-amber-50 border-amber-200"
-                  }`}
-                >
-                  {prod.stock} left
-                </span>
-
-                <button
-                  type="button"
-                  disabled={isRestocking}
-                  onClick={() => handleQuickRestock(prod.id, 25)}
-                  className="flex items-center gap-1 px-2 py-1 bg-white hover:bg-black hover:text-white text-black text-[11px] font-mono font-medium rounded-none border border-neutral-300 hover:border-black transition-colors disabled:opacity-50"
-                  title="Quick Restock +25 Units"
-                >
-                  {isRestocking ? (
-                    <RefreshCw className="h-3 w-3 animate-spin text-[#007cc3]" />
-                  ) : (
-                    <Plus className="h-3 w-3" />
-                  )}
-                  <span>+25</span>
-                </button>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
   );
 }

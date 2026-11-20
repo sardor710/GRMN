@@ -1,0 +1,36 @@
+{
+ "target": "https://www.garmin.com/en-US/c/wearables-smartwatches/",
+ "clone": "http://localhost:3021/en/c/wearables-smartwatches",
+ "sel": "g-checkbox label",
+ "cloneSel": "label:has(input.g-checkbox)",
+ "widths": {
+  "1440": {
+   "mismatchPct": 10.15,
+   "size": {
+    "target": [
+     282,
+     17
+    ],
+    "clone": [
+     240,
+     21
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "0-17",
+     "pct": 10.1
+    }
+   ],
+   "file": "docs/design-references/qa/5a2-forms-checkbox-1440-diff.png",
+   "text": {
+    "matched": 0,
+    "of": 1,
+    "issues": [],
+    "missing": [
+     "Boating"
+    ]
+   }
+  }
+ }
+}

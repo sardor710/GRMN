@@ -1,0 +1,188 @@
+{
+ "target": "https://www.garmin.com/en-US/p/1462801/",
+ "clone": "http://localhost:3021/en/p/1462801",
+ "sel": "div.app__product__info",
+ "cloneSel": "main div:has(> h1)",
+ "widths": {
+  "390": {
+   "mismatchPct": 39.03,
+   "size": {
+    "target": [
+     358,
+     536
+    ],
+    "clone": [
+     358,
+     600
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "400-440",
+     "pct": 80.6
+    },
+    {
+     "y": "440-480",
+     "pct": 72.4
+    },
+    {
+     "y": "480-520",
+     "pct": 68
+    },
+    {
+     "y": "360-400",
+     "pct": 60.6
+    },
+    {
+     "y": "280-320",
+     "pct": 42.2
+    },
+    {
+     "y": "240-280",
+     "pct": 34.5
+    }
+   ],
+   "file": "docs/design-references/qa/5a3-before-buybox-390-diff.png",
+   "text": {
+    "matched": 5,
+    "of": 19,
+    "issues": [
+     {
+      "t": "Forerunner® 970",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "pos": "0,0 → 0,36"
+     },
+     {
+      "t": "Model/Color",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "0,251 → 0,323",
+      "size": "78×17 → 358×21"
+     },
+     {
+      "t": "Add To Cart",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "0,379 → 0,451"
+     },
+     {
+      "t": "Customize",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "0,439 → 0,511"
+     },
+     {
+      "t": "Available to ship in 1–3 business days.",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "0,500 → 0,579"
+     }
+    ],
+    "missing": [
+     "part number:",
+     "010-02969-01",
+     "Sale",
+     "$749.99 USD",
+     "$100.00 USD",
+     "Save",
+     "$649.99 USD",
+     "Starting at /mo or 0% APR with .",
+     "$59",
+     "Affirm",
+     "See if you qualify",
+     "HSA/FSA eligible for qualified customers",
+     "Learn more",
+     "- Titanium with Whitestone Case and Whitestone/Translucent A"
+    ]
+   }
+  },
+  "1440": {
+   "mismatchPct": 18.78,
+   "size": {
+    "target": [
+     681,
+     523
+    ],
+    "clone": [
+     561,
+     550
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "280-320",
+     "pct": 35.1
+    },
+    {
+     "y": "480-520",
+     "pct": 30
+    },
+    {
+     "y": "360-400",
+     "pct": 26.4
+    },
+    {
+     "y": "200-240",
+     "pct": 24
+    },
+    {
+     "y": "320-360",
+     "pct": 21.6
+    },
+    {
+     "y": "440-480",
+     "pct": 20.9
+    }
+   ],
+   "file": "docs/design-references/qa/5a3-before-buybox-1440-diff.png",
+   "text": {
+    "matched": 5,
+    "of": 21,
+    "issues": [
+     {
+      "t": "Forerunner® 970",
+      "ff": "Superscripts-Oswald → GarminSuperscriptOswald",
+      "pos": "0,30 → 0,36",
+      "size": "566×50 → 561×50"
+     },
+     {
+      "t": "Model/Color",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "0,278 → 0,333",
+      "size": "78×17 → 561×21"
+     },
+     {
+      "t": "Add To Cart",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "0,426 → 0,461"
+     },
+     {
+      "t": "Customize",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "174,426 → 174,461"
+     },
+     {
+      "t": "Available to ship in 1–3 business days.",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "0,487 → 0,529",
+      "size": "566×21 → 561×21"
+     }
+    ],
+    "missing": [
+     "Sports & Fitness",
+     "Running",
+     "part number:",
+     "010-02969-01",
+     "Sale",
+     "$749.99 USD",
+     "$100.00 USD",
+     "Save",
+     "$649.99 USD",
+     "Starting at /mo or 0% APR with .",
+     "$59",
+     "Affirm",
+     "See if you qualify",
+     "HSA/FSA eligible for qualified customers",
+     "Learn more",
+     "- Titanium with Whitestone Case and Whitestone/Translucent A"
+    ]
+   }
+  }
+ }
+}

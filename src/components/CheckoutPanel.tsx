@@ -29,7 +29,8 @@ const useClient = () => useMemo(() => browserClient(), []);
 /** On page load: resends a checkout whose response was lost (same key), returning its order if one exists (review I1). */
 export function resumeCheckout(): Promise<PlacedOrder | null> { return resumePendingCheckout(browserClient(), session); }
 const message = (error: unknown, fallback: string) => error instanceof Error && error.message ? error.message : fallback;
-const input = "mt-1 w-full border border-neutral-300 px-3 py-2 text-[14px]";
+// Forms.spec.md inputs (Task 5a.2 .g-input): 1px #D9D9D9, black border on focus.
+const input = "g-input mb-0";
 
 type Field = "recipientName" | "phone" | "countryCode" | "city" | "line1" | "email" | "coupon";
 /** Field labels are `Checkout.fields.<name>` messages. */
@@ -97,37 +98,37 @@ export function CheckoutPanel({ cart, disabled, onPlaced, onCartStale }: { cart:
   }
 
   return (
-    <aside className="h-fit border border-neutral-200 p-6">
-      <h2 className="g-heading text-[20px] text-black">{t("title")}</h2>
-      <dl className="mt-4 space-y-3 text-[15px]">
-        <div className="flex justify-between"><dt className="text-neutral-600">{t("subtotal")}</dt><dd className="text-black">{kzt(cart.subtotal)}</dd></div>
+    <aside className="h-fit border border-garmin-control p-6">
+      <h2 className="g-heading g-h4 m-0 text-black">{t("title")}</h2>
+      <dl className="mt-4 space-y-3 text-[16px] leading-[24px]">
+        <div className="flex justify-between"><dt className="font-medium text-black">{t("subtotal")}</dt><dd className="text-black">{kzt(cart.subtotal)}</dd></div>
       </dl>
       <form className="mt-4 space-y-3" onSubmit={event => { event.preventDefault(); void review(); }}>
         {FIELDS.map(field => (
-          <label key={field.name} className="block text-[13px] text-neutral-700">
+          <label key={field.name} className="g-label text-black">
             {t(`fields.${field.name}`)}
             <input name={field.name} value={form[field.name]} placeholder={field.placeholder} autoComplete={field.autoComplete} required={!field.optional} disabled={busy || disabled}
               onChange={event => { const value = event.target.value; setForm(previous => ({ ...previous, [field.name]: value })); setQuote(null); }} className={input} />
           </label>
         ))}
-        <button type="submit" disabled={busy || disabled || missing} className="g-btn mt-2 w-full disabled:cursor-not-allowed disabled:opacity-50">{t("review")}</button>
+        <button type="submit" disabled={busy || disabled || missing} className="g-btn g-btn--lg g-btn--black mt-2 w-full">{t("review")}</button>
       </form>
-      {disabled && <p className="mt-3 text-[12px] text-neutral-500">{t("resolveNotices")}</p>}
-      {error && <p role="alert" className="mt-3 border border-red-200 bg-red-50 p-3 text-[13px] text-red-800">{error}</p>}
+      {disabled && <p className="mt-3 text-[14px] leading-[21px] text-black">{t("resolveNotices")}</p>}
+      {error && <p role="alert" className="mt-3 border border-garmin-error p-3 text-[14px] leading-[21px] text-garmin-error">{error}</p>}
       {current && (
-        <div className="mt-5 border-t border-neutral-200 pt-4">
-          <dl className="space-y-2 text-[14px]">
-            <div className="flex justify-between"><dt className="text-neutral-600">{t("subtotal")}</dt><dd>{kzt(current.subtotal)}</dd></div>
-            {current.discount.amountMinor !== "0" && <div className="flex justify-between"><dt className="text-neutral-600">{t("discount")}{current.coupon ? ` (${current.coupon.code})` : ""}</dt><dd>−{kzt(current.discount)}</dd></div>}
-            <div className="flex justify-between"><dt className="text-neutral-600">{t("shipping")}</dt><dd>{kzt(current.shipping)}</dd></div>
-            <div className="flex justify-between"><dt className="text-neutral-600">{t("tax")}</dt><dd>{kzt(current.tax)}</dd></div>
-            <div className="flex justify-between border-t border-neutral-200 pt-2 text-[17px] font-medium"><dt>{t("total")}</dt><dd>{kzt(current.total)}</dd></div>
+        <div className="mt-5 border-t border-garmin-control pt-4">
+          <dl className="space-y-2 text-[16px] leading-[24px]">
+            <div className="flex justify-between"><dt className="font-medium text-black">{t("subtotal")}</dt><dd>{kzt(current.subtotal)}</dd></div>
+            {current.discount.amountMinor !== "0" && <div className="flex justify-between"><dt className="font-medium text-black">{t("discount")}{current.coupon ? ` (${current.coupon.code})` : ""}</dt><dd>−{kzt(current.discount)}</dd></div>}
+            <div className="flex justify-between"><dt className="font-medium text-black">{t("shipping")}</dt><dd>{kzt(current.shipping)}</dd></div>
+            <div className="flex justify-between"><dt className="font-medium text-black">{t("tax")}</dt><dd>{kzt(current.tax)}</dd></div>
+            <div className="flex justify-between border-t border-garmin-control pt-2 font-bold"><dt>{t("total")}</dt><dd>{kzt(current.total)}</dd></div>
           </dl>
-          {!demo && <p className="mt-3 text-[12px] text-neutral-500">{t("paymentNotice", { time: new Date(current.expiresAt).toLocaleTimeString(INTL_LOCALE[locale]) })}</p>}
-          <button type="button" disabled={busy || disabled} onClick={() => { void place(); }} className="g-btn g-btn--solid mt-4 w-full disabled:cursor-not-allowed disabled:opacity-50">
+          {!demo && <p className="mt-3 text-[14px] leading-[21px] text-black">{t("paymentNotice", { time: new Date(current.expiresAt).toLocaleTimeString(INTL_LOCALE[locale]) })}</p>}
+          <button type="button" disabled={busy || disabled} onClick={() => { void place(); }} className="g-btn g-btn--lg g-btn--primary mt-4 w-full">
             {retry ? t("retry") : demo ? t("payDemo") : t("place")}
           </button>
-          {demo && <p className="mt-2 text-[12px] text-neutral-500">{t("demoNote")}</p>}
+          {demo && <p className="mt-2 text-[14px] leading-[21px] text-black">{t("demoNote")}</p>}
         </div>
       )}
     </aside>
@@ -167,29 +168,29 @@ export function OrderReceived({ order }: { order: PlacedOrder }) {
   return (
     <div className="mx-auto max-w-[640px] px-4 py-24 text-center">
       {demo && <DemoBadge label={t("demoBadge")} className="mb-4" />}
-      <h1 className="g-heading text-[30px] text-black">{t("received", { number: order.orderNumber })}</h1>
-      <p className="mt-3 text-neutral-600">{t("statusLine", { status: status ? (status.status === "confirmed" && status.paymentStatus === "paid" ? t("paid") : STATUS_KEYS.has(status.status) ? t(`status.${status.status}`) : status.status) : t("status.pending_payment") })}{status ? ` · ${t("totalLine", { total: kzt(status.total) })}` : ""}</p>
+      <h1 className="g-heading g-h2 m-0 text-black">{t("received", { number: order.orderNumber })}</h1>
+      <p className="mt-4 text-[16px] leading-[24px] text-black">{t("statusLine", { status: status ? (status.status === "confirmed" && status.paymentStatus === "paid" ? t("paid") : STATUS_KEYS.has(status.status) ? t(`status.${status.status}`) : status.status) : t("status.pending_payment") })}{status ? ` · ${t("totalLine", { total: kzt(status.total) })}` : ""}</p>
       {status?.paymentMethod === "manual" && status.status === "pending_payment" && (
-        <div className="mx-auto mt-6 max-w-[520px] border border-neutral-200 p-4 text-left">
-          <h2 className="text-[15px] font-medium text-black">{t("howToPay")}</h2>
-          <p className="mt-1 text-[14px] text-neutral-700">{t("payLine", { total: kzt(status.total), number: order.orderNumber })}</p>
+        <div className="mx-auto mt-6 max-w-[520px] border border-garmin-control p-4 text-left">
+          <h2 className="text-[16px] font-bold leading-[24px] text-black">{t("howToPay")}</h2>
+          <p className="mt-1 text-[14px] leading-[21px] text-black">{t("payLine", { total: kzt(status.total), number: order.orderNumber })}</p>
           {status.paymentInstructions
-            ? <p className="mt-2 whitespace-pre-line text-[14px] text-neutral-700">{status.paymentInstructions}</p>
-            : <p className="mt-2 text-[14px] text-neutral-700">{t("contactLater")}</p>}
-          {status.payBy && <p className="mt-2 text-[13px] text-neutral-500">{t("heldUntil", { time: new Date(status.payBy).toLocaleString(INTL_LOCALE[locale]) })}</p>}
-          <p className="mt-2 text-[13px] text-neutral-500">{t("notPaidUntilConfirmed")}</p>
+            ? <p className="mt-2 whitespace-pre-line text-[14px] leading-[21px] text-black">{status.paymentInstructions}</p>
+            : <p className="mt-2 text-[14px] leading-[21px] text-black">{t("contactLater")}</p>}
+          {status.payBy && <p className="mt-2 text-[14px] leading-[21px] text-black">{t("heldUntil", { time: new Date(status.payBy).toLocaleString(INTL_LOCALE[locale]) })}</p>}
+          <p className="mt-2 text-[14px] leading-[21px] text-black">{t("notPaidUntilConfirmed")}</p>
         </div>
       )}
       {unpaidDemo && (
-        <div role="alert" className="mx-auto mt-6 max-w-[520px] border border-red-200 bg-red-50 p-4 text-left">
-          <h2 className="text-[15px] font-medium text-red-900">{t("paymentNotCompleted")}</h2>
-          <p className="mt-1 text-[14px] text-red-800">{t("paymentNotCompletedBody")}</p>
-          {retryError && <p className="mt-2 text-[13px] text-red-800">{retryError}</p>}
-          <button type="button" disabled={retrying} onClick={() => { void tryAgain(); }} className="g-btn g-btn--solid mt-3 disabled:cursor-not-allowed disabled:opacity-50">{t("tryAgain")}</button>
+        <div role="alert" className="mx-auto mt-6 max-w-[520px] border border-garmin-error p-4 text-left">
+          <h2 className="text-[16px] font-bold leading-[24px] text-garmin-error">{t("paymentNotCompleted")}</h2>
+          <p className="mt-1 text-[14px] leading-[21px] text-black">{t("paymentNotCompletedBody")}</p>
+          {retryError && <p className="mt-2 text-[14px] leading-[21px] text-garmin-error">{retryError}</p>}
+          <button type="button" disabled={retrying} onClick={() => { void tryAgain(); }} className="g-btn g-btn--black mt-3">{t("tryAgain")}</button>
         </div>
       )}
-      {demo && !unpaidDemo && <p className="mt-2 text-[14px] text-neutral-500">{t("demoReceipt")}</p>}
-      <Link href="/c/wearables-smartwatches" className="g-btn g-btn--solid mt-8">{t("continueShopping")}</Link>
+      {demo && !unpaidDemo && <p className="mt-2 text-[14px] leading-[21px] text-black">{t("demoReceipt")}</p>}
+      <Link href="/c/wearables-smartwatches" className="g-btn g-btn--black mt-8">{t("continueShopping")}</Link>
     </div>
   );
 }

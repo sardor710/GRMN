@@ -1,0 +1,351 @@
+{
+ "url": "https://www.garmin.com/en-US/c/wearables-smartwatches/",
+ "vw": 390,
+ "tree": {
+  "tag": "div",
+  "cls": "sticky-custom-card-container",
+  "r": [
+   16,
+   839,
+   358,
+   500
+  ],
+  "css": {
+   "display": "flex",
+   "position": "relative",
+   "top": "0px",
+   "right": "0px",
+   "bottom": "0px",
+   "left": "0px",
+   "box-sizing": "border-box",
+   "margin-top": "16px",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "font-size": "16px",
+   "line-height": "24px",
+   "color": "rgb(0, 0, 0)",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "a",
+    "cls": "tile-banner-card",
+    "r": [
+     16,
+     839,
+     358,
+     500
+    ],
+    "a": {
+     "href": "https://www.garmin.com/en-US/c/promotions/holiday-sale-guide-americas/"
+    },
+    "css": {
+     "display": "block",
+     "box-sizing": "border-box",
+     "min-height": "500px",
+     "cursor": "pointer",
+     "transition-property": "color",
+     "transition-duration": "0.2s"
+    },
+    "c": [
+     {
+      "tag": "g-tile",
+      "cls": "heading__vertical--top heading__horizontal--center copy__vertical--top",
+      "r": [
+       16,
+       839,
+       358,
+       500
+      ],
+      "css": {
+       "display": "flex",
+       "position": "relative",
+       "top": "0px",
+       "right": "0px",
+       "bottom": "0px",
+       "left": "0px",
+       "box-sizing": "border-box"
+      },
+      "c": [
+       {
+        "tag": "figure",
+        "cls": "g__tile__background",
+        "r": [
+         16,
+         839,
+         358,
+         500
+        ],
+        "css": {
+         "position": "absolute",
+         "top": "0px",
+         "right": "0px",
+         "bottom": "0px",
+         "left": "0px",
+         "box-sizing": "border-box",
+         "margin": "0px"
+        },
+        "c": [
+         {
+          "tag": "picture",
+          "r": [
+           16,
+           1324,
+           358,
+           19
+          ],
+          "css": {
+           "box-sizing": "border-box"
+          },
+          "c": [
+           {
+            "tag": "source",
+            "r": [
+             16,
+             1324,
+             0,
+             19
+            ],
+            "css": {
+             "box-sizing": "border-box"
+            },
+            "rep": [
+             {},
+             {}
+            ]
+           },
+           {
+            "tag": "img",
+            "cls": "g__tile__background__image",
+            "r": [
+             16,
+             839,
+             358,
+             500
+            ],
+            "a": {
+             "src": "https://res.garmin.com/subcategory/93099/93099-AD-HOLIDAY-SALE.jpg",
+             "alt": "Holiday gift boxes",
+             "natural": [
+              1200,
+              1200
+             ],
+             "sources": [
+              {
+               "srcset": "",
+               "media": "(max-width: 640px)"
+              },
+              {
+               "srcset": "",
+               "media": "(max-width: 990px)"
+              },
+              {
+               "srcset": "https://res.garmin.com/subcategory/93099/93099-AD-HOLIDAY-SALE.jpg",
+               "media": "(min-width: 990px)"
+              }
+             ]
+            },
+            "css": {
+             "box-sizing": "border-box",
+             "width": "358px",
+             "height": "500px",
+             "object-fit": "cover"
+            }
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "tag": "div",
+        "cls": "g__tile__content",
+        "r": [
+         16,
+         839,
+         358,
+         500
+        ],
+        "css": {
+         "display": "flex",
+         "z-index": "1",
+         "box-sizing": "border-box",
+         "flex-direction": "column",
+         "justify-content": "flex-start"
+        },
+        "c": [
+         {
+          "tag": "div",
+          "cls": "g__tile__content-text",
+          "r": [
+           16,
+           839,
+           358,
+           179
+          ],
+          "css": {
+           "box-sizing": "border-box"
+          },
+          "c": [
+           {
+            "tag": "g-heading",
+            "cls": "g__heading g__heading--Center g__heading--dark",
+            "r": [
+             16,
+             855,
+             358,
+             25
+            ],
+            "css": {
+             "box-sizing": "border-box",
+             "margin-bottom": "8px",
+             "color": "rgb(255, 255, 255)"
+            },
+            "c": [
+             {
+              "tag": "h3",
+              "r": [
+               32,
+               855,
+               326,
+               25
+              ],
+              "t": "HOLIDAY SALE",
+              "css": {
+               "box-sizing": "border-box",
+               "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+               "font-size": "20px",
+               "line-height": "25px",
+               "letter-spacing": "0.8px",
+               "margin": "16px"
+              }
+             }
+            ]
+           },
+           {
+            "tag": "g-copy",
+            "cls": "g__copy g__copy--Center g__copy--dark",
+            "r": [
+             32,
+             896,
+             326,
+             98
+            ],
+            "a": {
+             "type": "primary"
+            },
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box",
+             "margin-right": "16px",
+             "margin-bottom": "24px",
+             "margin-left": "16px",
+             "color": "rgb(255, 255, 255)"
+            },
+            "c": [
+             {
+              "tag": "span",
+              "r": [
+               32,
+               896,
+               326,
+               98
+              ],
+              "css": {
+               "box-sizing": "border-box"
+              },
+              "c": [
+               {
+                "tag": "p",
+                "r": [
+                 32,
+                 896,
+                 326,
+                 98
+                ],
+                "t": "Save big on great holiday gifts",
+                "css": {
+                 "box-sizing": "border-box",
+                 "margin-top": "0px",
+                 "margin-bottom": "0px"
+                },
+                "c": [
+                 {
+                  "tag": "br",
+                  "r": [
+                   302,
+                   898,
+                   0,
+                   19
+                  ],
+                  "css": {
+                   "box-sizing": "border-box"
+                  },
+                  "rep": [
+                   {}
+                  ]
+                 },
+                 {
+                  "tag": "g-button",
+                  "cls": "g__button__host g__button__host--medium hydrated",
+                  "r": [
+                   135,
+                   944,
+                   119,
+                   50
+                  ],
+                  "css": {
+                   "display": "inline-block",
+                   "box-sizing": "border-box"
+                  },
+                  "c": [
+                   {
+                    "tag": "button",
+                    "cls": "g__button g__button--contained g__button--contained--medium",
+                    "r": [
+                     151,
+                     944,
+                     87,
+                     34
+                    ],
+                    "t": "SHOP",
+                    "css": {
+                     "margin-right": "16px",
+                     "margin-bottom": "16px",
+                     "margin-left": "16px",
+                     "font-size": "14px",
+                     "font-weight": "500",
+                     "line-height": "16.1px",
+                     "text-transform": "uppercase",
+                     "vertical-align": "middle",
+                     "background-color": "rgba(0, 0, 0, 0)",
+                     "transition-property": "background, border, color",
+                     "transition-duration": "0.2s, 0.2s, 0.2s",
+                     "transition-timing-function": "ease, ease, ease",
+                     "transition-delay": "0s, 0s, 0s",
+                     "padding": "8px 24px",
+                     "border-width": "1px",
+                     "border-style": "solid",
+                     "overflow": "auto"
+                    }
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "svgs": [],
+ "animations": []
+}

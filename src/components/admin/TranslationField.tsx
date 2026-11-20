@@ -16,7 +16,7 @@ interface TranslationFieldProps {
   compact?: boolean;
 }
 
-const labelClass = "block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600";
+const labelClass = "block text-xs font-semibold text-neutral-600";
 
 /** One translatable input in a RU/KK tab: English as placeholder, same length limit as the base field. */
 export function TranslationField({
@@ -36,7 +36,7 @@ export function TranslationField({
     placeholder: english,
     maxLength: fieldLimit(field),
     "aria-label": label,
-    className: `mt-1 w-full border border-neutral-300 bg-white px-3 ${compact ? "text-[12px]" : "text-[13px]"} text-black placeholder:text-neutral-400 focus:border-black focus:outline-none rounded-none ${
+    className: `mt-1 w-full border border-border bg-white px-3 ${compact ? "text-[12px]" : "text-[13px]"} text-black placeholder:text-neutral-400 focus:border-black focus:outline-none rounded-none ${
       mono ? "font-mono" : ""
     }`,
   };
@@ -54,7 +54,7 @@ export function TranslationField({
         />
       )}
       {!compact && english && (
-        <p className="mt-1 line-clamp-2 text-[11px] text-neutral-400">
+        <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
           <span className="font-semibold">EN:</span> {english}
         </p>
       )}

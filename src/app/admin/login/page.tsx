@@ -106,22 +106,22 @@ export default function AdminLoginPage() {
   };
   const enrollmentProof = step==="enroll" && !!totpURI;
   return <div className="fixed inset-0 z-50 flex min-h-screen items-center justify-center overflow-y-auto bg-neutral-100 p-4 text-black">
-    <div className="my-auto w-full max-w-lg border border-neutral-300 bg-white p-8 shadow-xl">
+    <div className="my-auto w-full max-w-lg border border-border bg-white p-8 shadow-garmin-raised">
       <GarminLogo className="mx-auto h-6 w-auto text-black" />
       <h1 className="mt-6 text-center text-2xl">{step==="restart" ? "Restart staff sign-in" : step==="password" ? "Administrator sign in" : step==="enroll" ? "Set up staff MFA" : "Verify staff MFA"}</h1>
       <p className="mt-3 text-sm text-neutral-600">Use your configured staff account. Access requires a password and an authenticator or backup code.</p>
-      {error && <p role="alert" className="mt-4 border border-rose-300 bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
+      {error && <p role="alert" className="mt-4 border border-garmin-error bg-white p-3 text-sm text-garmin-error">{error}</p>}
       {step!=="restart" && <form onSubmit={submit} className="mt-6 space-y-4">
         {step==="password" && <label className="block text-sm">Email address<input type="email" autoComplete="username" required maxLength={254} value={email} onChange={e=>setEmail(e.target.value)} className="mt-1 block w-full border border-neutral-400 p-2" /></label>}
         {(step==="password" || (step==="enroll" && !totpURI)) && <label className="block text-sm">{step==="enroll" ? "Confirm your staff password" : "Password"}<input type="password" autoComplete="current-password" required minLength={16} maxLength={128} value={password} onChange={e=>setPassword(e.target.value)} className="mt-1 block w-full border border-neutral-400 p-2" /></label>}
         {enrollmentProof && <div className="space-y-3 text-sm">
           <p>Add this setup URI to your authenticator on a private device. Keep the recovery codes somewhere safe; they are shown only during enrollment.</p>
           <label className="block">Authenticator setup URI<textarea readOnly value={totpURI} className="mt-1 block h-20 w-full break-all border border-neutral-400 p-2 font-mono text-xs" /></label>
-          <p className="whitespace-pre-wrap break-all border border-neutral-300 bg-neutral-50 p-3 font-mono text-xs">{backupCodes.join("\n")}</p>
+          <p className="whitespace-pre-wrap break-all border border-border bg-neutral-50 p-3 font-mono text-xs">{backupCodes.join("\n")}</p>
           <label className="flex gap-2"><input type="checkbox" checked={savedCodes} onChange={e=>setSavedCodes(e.target.checked)} required />I saved my recovery codes privately.</label>
         </div>}
         {(step==="verify" || enrollmentProof) && <>
-          <label className="block text-sm">{backup ? "Unused backup code" : "Authenticator code"}<input autoComplete="one-time-code" inputMode={backup ? "text" : "numeric"} required minLength={6} maxLength={backup ? 64 : 6} pattern={backup ? undefined : "[0-9]{6}"} value={code} onChange={e=>setCode(e.target.value)} className="mt-1 block w-full border border-neutral-400 p-2 font-mono" /></label>
+          <label className="block text-sm">{backup ? "Unused backup code" : "Authenticator code"}<input autoComplete="one-time-code" inputMode={backup ? "text" : "numeric"} required minLength={6} maxLength={backup ? 64 : 6} pattern={backup ? undefined : "[0-9]{6}"} value={code} onChange={e=>setCode(e.target.value)} className="mt-1 block w-full border border-neutral-400 p-2 tabular-nums" /></label>
           {step==="verify" && <button type="button" onClick={()=>{setBackup(!backup);setCode("");}} className="text-sm underline">{backup ? "Use authenticator" : "Use an unused backup code"}</button>}
         </>}
         <button type="submit" disabled={loading || (enrollmentProof && !savedCodes)} className="w-full bg-black p-3 text-sm uppercase text-white disabled:opacity-50">{loading ? "Please wait…" : step==="password" ? "Continue" : step==="enroll" && !totpURI ? "Create authenticator setup" : "Verify and continue"}</button>

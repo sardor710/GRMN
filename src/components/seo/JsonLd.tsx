@@ -36,8 +36,9 @@ export function ProductJsonLd({ product, url, locale, description }: ProductJson
     offers: {
       "@type": "Offer",
       url: url,
-      priceCurrency: product.currency??"USD",
-      price: product.price,
+      // Task 5a.2: tenge only, never a USD fallback. A record without a currency is tenge; an unconverted legacy
+      // amount (currency "USD": no KZT-per-USD rate) omits the price instead of claiming USD.
+      ...(product.currency === "USD" || !Number.isFinite(product.price) ? {} : { priceCurrency: "KZT", price: product.price }),
       itemCondition: "https://schema.org/NewCondition",
       availability: product.stockManaged===false?undefined:product.stock > 0 ? "https://schema.org/InStock" : "https://schema.org/OutOfStock",
       seller: {

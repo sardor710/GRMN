@@ -57,7 +57,7 @@ export function ProductPreviewModal({ open, onClose, product, initialLocale = "e
       onClose={onClose}
       wide
       title="Preview — product page"
-      subtitle="Unsaved form state, rendered like the storefront product top"
+      subtitle="Unsaved changes, shown as on the product page."
       footer={
         <button type="button" onClick={onClose} className={secondaryButtonClass}>
           Back to editor
@@ -76,7 +76,7 @@ function LocalizedPreview({ product, initialLocale }: { product: PreviewProduct;
   const localized = useMemo(() => localizeProduct(product, locale), [product, locale]);
   return (
     <div className="space-y-6">
-      <div role="radiogroup" aria-label="Preview language" className="inline-flex border border-neutral-300">
+      <div role="radiogroup" aria-label="Preview language" className="inline-flex border border-border">
         {PREVIEW_LOCALES.map((l) => (
           <button
             key={l.id}
@@ -84,7 +84,7 @@ function LocalizedPreview({ product, initialLocale }: { product: PreviewProduct;
             role="radio"
             aria-checked={locale === l.id}
             onClick={() => setLocale(l.id)}
-            className={`px-3 py-1.5 text-[11px] font-heading uppercase tracking-wider font-semibold ${
+            className={`px-3 py-1.5 text-xs font-semibold ${
               locale === l.id ? "bg-black text-white" : "bg-white text-neutral-600 hover:text-black"
             }`}
           >
@@ -163,7 +163,7 @@ function PreviewBody({ product }: { product: PreviewProduct }) {
               // eslint-disable-next-line @next/next/no-img-element -- preview of unsaved upload/import paths
               <img src={current.src} alt={current.alt || product.name} className="max-h-full max-w-full object-contain" />
             ) : (
-              <span className="text-[13px] text-neutral-400">No photo</span>
+              <span className="text-[13px] text-muted-foreground">No photo</span>
             )}
           </div>
           {gallery.length > 1 && (
@@ -198,16 +198,16 @@ function PreviewBody({ product }: { product: PreviewProduct }) {
         )}
         <h1 className="g-heading text-[32px] leading-tight text-black">{product.name || "Untitled product"}</h1>
         {variant && <p className="mt-2 text-[16px] text-neutral-700">{variant.title}</p>}
-        <p className="mt-3 text-[12px] font-medium uppercase tracking-[0.06em] text-neutral-500">
-          {product.family} · Part number: <span className="font-mono">{sku || "—"}</span>
+        <p className="mt-3 text-xs font-medium text-muted-foreground">
+          {product.family} · Part number: <span className="tabular-nums">{sku || "—"}</span>
         </p>
 
-        <p className="mt-4 text-[28px] font-medium text-black">
+        <p className="mt-4 text-xl font-bold leading-6 tabular-nums text-black">
           {formatKzt(price)}
           {compareAt !== undefined && compareAt > price && (
-            <span className="ml-3 text-[18px] font-normal text-neutral-500 line-through">{formatKzt(compareAt)}</span>
+            <span className="ml-3 text-sm font-normal text-muted-foreground line-through">{formatKzt(compareAt)}</span>
           )}
-          {product.priceSuffix && <span className="ml-2 text-[14px] font-normal text-neutral-500">{product.priceSuffix}</span>}
+          {product.priceSuffix && <span className="ml-2 text-sm font-normal text-muted-foreground">{product.priceSuffix}</span>}
         </p>
 
         {product.options.map((option) => {
@@ -216,7 +216,7 @@ function PreviewBody({ product }: { product: PreviewProduct }) {
           const selectedLabel = option.values.find((v) => v.id === selectedId)?.label;
           return (
             <div key={option.id} className="mt-6">
-              <p className="text-[14px] font-medium text-black">
+              <p className="text-sm font-medium text-black">
                 {option.name}
                 {selectedLabel && <span className="font-normal text-neutral-600">: {selectedLabel}</span>}
               </p>
@@ -225,7 +225,7 @@ function PreviewBody({ product }: { product: PreviewProduct }) {
                   value={selectedId || ""}
                   onChange={(e) => choose(option.id, e.target.value)}
                   aria-label={option.name}
-                  className="mt-2 h-10 min-w-[220px] border border-neutral-300 bg-white px-3 text-[14px] focus:border-black focus:outline-none"
+                  className="mt-2 h-10 min-w-[220px] border border-border bg-white px-3 text-sm focus:border-black focus:outline-none"
                 >
                   {option.values.map((v) => (
                     <option key={v.id} value={v.id}>
@@ -249,15 +249,15 @@ function PreviewBody({ product }: { product: PreviewProduct }) {
                           aria-label={`${v.label}${isAvailable ? "" : " (unavailable)"}`}
                           title={v.label}
                           onClick={() => choose(option.id, v.id)}
-                          className={`relative h-10 w-10 overflow-hidden rounded-full border-2 p-0.5 ${
+                          className={`relative h-10 w-10 overflow-hidden rounded-garmin-pill border-2 p-0.5 ${
                             isSelected ? "border-black" : "border-transparent hover:border-neutral-400"
                           } ${isAvailable ? "" : "opacity-40"}`}
                         >
                           {v.swatchImage ? (
                             // eslint-disable-next-line @next/next/no-img-element -- swatch preview
-                            <img src={v.swatchImage} alt="" className="h-full w-full rounded-full object-cover" />
+                            <img src={v.swatchImage} alt="" className="h-full w-full rounded-garmin-pill object-cover" />
                           ) : (
-                            <svg viewBox="0 0 1 1" className="h-full w-full rounded-full" aria-hidden="true">
+                            <svg viewBox="0 0 1 1" className="h-full w-full rounded-garmin-pill" aria-hidden="true">
                               <rect width="1" height="1" fill={v.swatchColor || "#d4d4d4"} />
                             </svg>
                           )}
@@ -271,11 +271,11 @@ function PreviewBody({ product }: { product: PreviewProduct }) {
                         role="radio"
                         aria-checked={isSelected}
                         onClick={() => choose(option.id, v.id)}
-                        className={`border px-4 py-2 text-[13px] uppercase tracking-[0.04em] transition-colors ${
+                        className={`border px-4 py-2 text-[13px] transition-colors ${
                           isSelected
                             ? "border-black bg-black text-white"
-                            : "border-neutral-300 bg-white text-black hover:border-black"
-                        } ${isAvailable ? "" : "text-neutral-400 line-through"}`}
+                            : "border-border bg-white text-black hover:border-black"
+                        } ${isAvailable ? "" : "text-muted-foreground line-through"}`}
                       >
                         {v.label}
                       </button>
@@ -288,10 +288,10 @@ function PreviewBody({ product }: { product: PreviewProduct }) {
         })}
 
         {hasVariants && !variant && (
-          <p className="mt-4 text-[13px] text-rose-700">This combination is not available.</p>
+          <p className="mt-4 text-[13px] text-garmin-error">This combination is not available.</p>
         )}
 
-        <p className="mt-6 text-[14px] text-neutral-700">
+        <p className="mt-6 text-sm text-neutral-700">
           {stock > 0 ? "Available to ship in 1–3 business days." : "Currently out of stock."}
         </p>
         <div className="mt-4 flex items-center gap-3">
@@ -300,7 +300,7 @@ function PreviewBody({ product }: { product: PreviewProduct }) {
           </button>
         </div>
         {product.description && (
-          <p className="mt-6 line-clamp-4 text-[14px] leading-relaxed text-neutral-700">{product.description}</p>
+          <p className="mt-6 line-clamp-4 text-sm leading-relaxed text-neutral-700">{product.description}</p>
         )}
       </div>
     </div>

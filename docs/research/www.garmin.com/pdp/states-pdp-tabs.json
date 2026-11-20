@@ -1,0 +1,61 @@
+[
+ {
+  "sel": "#js__tabs__nav__link__overview",
+  "label": "OVERVIEW",
+  "transition": "color 0.2s",
+  "focus-visible": {
+   "#js__tabs__nav__link__overview": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  },
+  "active": {
+   "#js__tabs__nav__link__overview": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   }
+  }
+ },
+ {
+  "sel": "#js__tabs__nav__link__specs",
+  "label": "SPECS",
+  "transition": "color 0.2s",
+  "hover": {
+   "#js__tabs__nav__link__specs": {
+    "border-bottom-width": "0px → 4px",
+    "border-bottom-style": "none → solid",
+    "@rect": "365,676,73,77 → 365,676,73,81"
+   }
+  },
+  "focus-visible": {
+   "#js__tabs__nav__link__specs": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  },
+  "active": {
+   "#js__tabs__nav__link__specs": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   }
+  },
+  "jsHover": {
+   "#js__tabs__nav__specs": {
+    "@rect": "349,676,105,77 → 349,676,105,81"
+   }
+  }
+ }
+]

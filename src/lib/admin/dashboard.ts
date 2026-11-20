@@ -1,7 +1,7 @@
 // Task 4.2: pure helpers for the PostgreSQL admin dashboard (src/app/admin/_components/ReportsScreen.tsx).
 // Money stays in minor units held in strings and is summed with BigInt. Real money is the "live"
 // environment only; demo and sandbox are kept apart and never added to it.
-import { minorToMajor } from "../public-catalog.ts";
+import { formatKzt, groupMinor } from "../money.ts";
 
 export type ReportEnvironment = "sandbox" | "live" | "demo";
 export interface CurrencyTotal { currency: string; environment: ReportEnvironment; capturedMinor: string; refundedMinor: string; netMinor: string; ordersPaid: number }
@@ -33,15 +33,16 @@ export function splitTotals(totals: CurrencyTotal[]): SplitTotals {
 }
 
 /**
- * "123456789012345678" KZT minor units to "1,234,567,890,123,456.78 KZT"; negative nets keep their sign. BigInt-safe.
- * A malformed amount is shown as it came ("1.5 KZT") rather than throwing during render.
+ * Minor units to the admin money format. KZT goes through the shared `formatKzt` (Task 5b.1 fix 1: one KZT
+ * format across the admin), e.g. "123456789012345678" → "KZT 1,234,567,890,123,456.78"; negative nets keep
+ * their sign ("-KZT 15.50"). BigInt-safe. Another currency keeps its code in front of the grouped amount.
+ * A malformed amount is shown as it came ("KZT 1.5") rather than throwing during render.
  */
 export function formatMinor(minor: string, currency: string, locale = "en-US"): string {
-  if (typeof minor !== "string" || !MINOR.test(minor)) return `${String(minor)} ${currency}`;
+  if (typeof minor !== "string" || !MINOR.test(minor)) return `${currency} ${String(minor)}`;
+  if (currency === "KZT") return formatKzt({ minor }, locale);
   const negative = minor.startsWith("-");
-  const [whole, cents] = minorToMajor(negative ? minor.slice(1) : minor).split(".");
-  const parts = new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).formatToParts(BigInt(whole));
-  return (negative ? "-" : "") + parts.map(part => part.type === "fraction" ? cents : part.value).join("") + " " + currency;
+  return (negative ? "-" : "") + currency + " " + groupMinor(negative ? minor.slice(1) : minor, locale);
 }
 
 /**

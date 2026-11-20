@@ -24,7 +24,7 @@ export function PromoPods() {
               <div className="flex flex-1 flex-col p-5">
                 <h3 className="g-heading text-[22px] leading-tight text-black">{pod.title}</h3>
                 <div className="mt-auto flex justify-end pt-6">
-                  <a href={pod.href} className="g-btn g-btn--outline-dark">
+                  <a href={pod.href} className="g-btn g-btn--secondary">
                     {pod.cta}
                   </a>
                 </div>
@@ -50,7 +50,7 @@ export function PromoPods() {
                   {pod.title}
                 </h3>
                 <div className="mt-4">
-                  <a href={pod.href} className="g-btn g-btn--solid">
+                  <a href={pod.href} className="g-btn g-btn--black">
                     {pod.cta}
                   </a>
                 </div>

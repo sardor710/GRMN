@@ -12443,7 +12443,8 @@
           "source": "url"
         }
       ],
-      "defaultImageId": "img-legacy"
+      "defaultImageId": "img-legacy",
+      "currency": "USD"
     },
     {
       "id": "1462801",
@@ -12524,7 +12525,8 @@
         "Forerunner® 970 specs",
         "buy Forerunner® 970",
         "Garmin Forerunner"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "1510465",
@@ -12604,7 +12606,8 @@
         "Venu® X1 specs",
         "buy Venu® X1",
         "Garmin Venu"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "1463821",
@@ -12684,7 +12687,8 @@
         "Forerunner® 570 specs",
         "buy Forerunner® 570",
         "Garmin Forerunner"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "1941179",
@@ -12764,7 +12768,8 @@
         "Forerunner® 70/170 specs",
         "buy Forerunner® 70/170",
         "Garmin Forerunner"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "1316397",
@@ -12845,7 +12850,8 @@
         "Instinct® 3 specs",
         "buy Instinct® 3",
         "Garmin Instinct"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "1555457",
@@ -12925,7 +12931,8 @@
         "vívoactive® 6 specs",
         "buy vívoactive® 6",
         "Garmin vívoactive"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "1800201",
@@ -13006,7 +13013,8 @@
         "Instinct® Crossover specs",
         "buy Instinct® Crossover",
         "Garmin Instinct"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "1828641",
@@ -13088,7 +13096,8 @@
         "tactix® 8 specs",
         "buy tactix® 8",
         "Garmin tactix"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "851039",
@@ -13168,7 +13177,8 @@
         "Enduro™ 3 specs",
         "buy Enduro™ 3",
         "Garmin Enduro"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "1196650",
@@ -13248,7 +13258,8 @@
         "Lily® 2 specs",
         "buy Lily® 2",
         "Garmin Lily"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "1815501",
@@ -13326,7 +13337,8 @@
         "Bounce™ 2 specs",
         "buy Bounce™ 2",
         "Garmin Bounce"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "1908217",
@@ -13404,7 +13416,8 @@
         "Approach® J1 specs",
         "buy Approach® J1",
         "Garmin Approach"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "1765781",
@@ -13485,7 +13498,8 @@
         "MARQ® (Gen 2) specs",
         "buy MARQ® (Gen 2)",
         "Garmin MARQ"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "785411",
@@ -13565,7 +13579,8 @@
         "vívomove® specs",
         "buy vívomove®",
         "Garmin vívomove"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "847706",
@@ -13644,7 +13659,8 @@
         "Approach® S70 specs",
         "buy Approach® S70",
         "Garmin Approach"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "marq-captain",
@@ -13713,7 +13729,8 @@
         "MARQ® Captain (Gen 2) specs",
         "buy MARQ® Captain (Gen 2)",
         "Garmin MARQ"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "marq-adventurer-damascus",
@@ -13782,7 +13799,8 @@
         "MARQ® Adventurer (Gen 2) Damascus Steel Edition specs",
         "buy MARQ® Adventurer (Gen 2) Damascus Steel Edition",
         "Garmin MARQ"
-      ]
+      ],
+      "currency": "USD"
     },
     {
       "id": "marq-carbon-golfer",
@@ -13849,7 +13867,8 @@
         "MARQ® Golfer (Gen 2) Carbon Edition specs",
         "buy MARQ® Golfer (Gen 2) Carbon Edition",
         "Garmin MARQ"
-      ]
+      ],
+      "currency": "USD"
     }
   ],
   "discounts": [

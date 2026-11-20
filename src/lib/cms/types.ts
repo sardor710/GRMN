@@ -26,6 +26,8 @@ export interface Client {
   country: string;
   status: ClientStatus;
   totalSpent?: number;
+  /** Set only on records known to be tenge (Task 5b.1 fix 1); unmarked legacy money is shown without a currency. */
+  currency?: "KZT" | "USD";
   ordersCount?: number;
   avatar?: string;
   notes?: string;
@@ -211,6 +213,8 @@ export interface Discount {
   type: DiscountType;
   value: number;
   minSpend?: number;
+  /** Currency of `value`/`minSpend` when known; unmarked legacy discounts show plain numbers. */
+  currency?: "KZT" | "USD";
   usageLimit?: number;
   perCustomerLimit?: number;
   usageCount: number;
@@ -348,6 +352,8 @@ export interface Order {
   clientName: string;
   clientEmail: string;
   total: number;
+  /** Currency of `total` and item prices when known; unmarked legacy orders show plain numbers. */
+  currency?: "KZT" | "USD";
   itemsCount: number;
   items: OrderItem[];
   paymentStatus: PaymentStatus;

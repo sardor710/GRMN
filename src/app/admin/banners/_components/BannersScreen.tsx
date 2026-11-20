@@ -4,8 +4,6 @@ import { AutoTranslateButton } from "@/components/admin/AutoTranslateButton";
 import { useState } from "react";
 import Image from "next/image";
 import {
-  Image as ImageIcon,
-  Plus,
   ExternalLink,
   Trash2,
   Edit,
@@ -50,9 +48,9 @@ export default function AdminBannersPage() {
   const handleOpenAdd = () => {
     setEditingBanner(null);
     setFormData({
-      title: "New Promotional Campaign",
-      subtitle: "Discover high-performance smartwatches designed for your passion.",
-      ctaLabel: "Explore Collection",
+      title: "New banner",
+      subtitle: "",
+      ctaLabel: "Shop",
       ctaUrl: "/minisite/marq",
       image: "/marq/images/kv-bg.jpg",
       position: "hero",
@@ -119,25 +117,21 @@ export default function AdminBannersPage() {
     <div className="space-y-6">
       <AdminPageControls page={collection} />
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-200 pb-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <ImageIcon className="h-6 w-6 text-[#007cc3]" />
-            <h1 className="g-heading text-2xl uppercase tracking-tight text-neutral-900">
-              Hero Rotators & Marketing Banners
-            </h1>
+            <h1 className="g-heading g-h2 text-black">Banners</h1>
           </div>
-          <p className="text-sm text-neutral-500 mt-1">
-            Manage homepage visual hero sliders, promo pods, and top header announcement messages.
+          <p className="text-sm text-muted-foreground mt-1">
+            Homepage hero slides, promo tiles and the announcement bar.
           </p>
         </div>
 
         <button
           type="button"
           onClick={handleOpenAdd}
-          className="inline-flex items-center gap-2 bg-black px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none"
+          className="g-btn g-btn--black gap-2"
         >
-          <Plus className="h-3.5 w-3.5" />
           <span>Add New Banner</span>
         </button>
       </div>
@@ -145,43 +139,43 @@ export default function AdminBannersPage() {
       {/* Grid of Banners */}
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {loading ? (
-          <p className="text-sm text-neutral-400">Loading banners...</p>
+          <p className="text-sm text-muted-foreground">Loading banners...</p>
         ) : (
           banners.map((b) => (
             <div
               key={b.id}
-              className="border border-neutral-200 bg-white rounded-none shadow-sm overflow-hidden flex flex-col justify-between hover:border-neutral-300 transition-colors"
+              className="border border-border bg-white rounded-none overflow-hidden flex flex-col justify-between hover:border-neutral-300 transition-colors"
             >
               {/* Media Preview Box */}
-              <div className="relative h-48 w-full bg-neutral-100 overflow-hidden border-b border-neutral-200">
+              <div className="relative h-48 w-full bg-neutral-100 overflow-hidden border-b border-border">
                 <Image
                   src={b.image || "/marq/images/kv-bg.jpg"}
                   alt={b.title}
                   fill
                   className="object-cover"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-black/40" />
 
                 {/* Badges */}
                 <div className="absolute top-3 left-3 flex gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 bg-neutral-900/90 text-white rounded-none shadow-xs">
+                  <span className="text-xs font-semibold px-2 py-0.5 bg-neutral-900/90 text-white rounded-none">
                     {b.position.replace("_", " ")}
                   </span>
                   <span
-                    className={`text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-none shadow-xs text-white ${
-                      b.active ? "bg-emerald-600" : "bg-neutral-500"
+                    className={`text-xs font-semibold px-2 py-0.5 rounded-none text-white ${
+                      b.active ? "bg-garmin-badge-lime" : "bg-neutral-500"
                     }`}
                   >
                     {b.active ? "Active" : "Disabled"}
                   </span>
                 </div>
 
-                <div className="absolute top-3 right-3 text-xs font-semibold bg-white/95 text-neutral-900 px-2.5 py-0.5 rounded-none shadow-xs">
+                <div className="absolute top-3 right-3 text-xs font-semibold bg-white/95 text-black px-2.5 py-0.5 rounded-none">
                   ORDER #{b.order}
                 </div>
 
                 <div className="absolute bottom-3 left-3 right-3">
-                  <h3 className="g-heading text-lg uppercase tracking-tight text-white drop-shadow-sm line-clamp-1">
+                  <h3 className="g-heading text-lg text-white line-clamp-1">
                     {b.title}
                   </h3>
                 </div>
@@ -198,7 +192,7 @@ export default function AdminBannersPage() {
                 <div className="mt-4 pt-3 border-t border-neutral-100 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     {b.ctaLabel && (
-                      <span className="text-xs font-semibold uppercase tracking-wider text-[#007cc3] bg-[#007cc3]/10 px-2.5 py-1 rounded-none border border-[#007cc3]/20">
+                      <span className="text-xs font-semibold text-garmin-blue bg-garmin-blue/10 px-2.5 py-1 rounded-none border border-garmin-blue/20">
                         {b.ctaLabel}
                       </span>
                     )}
@@ -207,7 +201,7 @@ export default function AdminBannersPage() {
                         href={b.ctaUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-neutral-400 hover:text-black transition-colors"
+                        className="text-muted-foreground hover:text-black transition-colors"
                         title="Open Link"
                       >
                         <ExternalLink className="h-4 w-4" />
@@ -219,7 +213,7 @@ export default function AdminBannersPage() {
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(b)}
-                      className="p-2 text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors rounded-none"
+                      className="p-2 text-muted-foreground hover:text-black hover:bg-neutral-100 transition-colors rounded-none"
                       title="Edit Banner"
                     >
                       <Edit className="h-4 w-4" />
@@ -227,7 +221,7 @@ export default function AdminBannersPage() {
                     <button
                       type="button"
                       onClick={() => handleDelete(b.id)}
-                      className="p-2 text-neutral-500 hover:text-rose-600 hover:bg-rose-50 transition-colors rounded-none"
+                      className="p-2 text-muted-foreground hover:text-garmin-error hover:bg-white transition-colors rounded-none"
                       title="Delete Banner"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -245,10 +239,9 @@ export default function AdminBannersPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingBanner ? "Edit Promotional Banner" : "Create New Banner"}
-        subtitle="Manage hero graphics, title copy, call-to-action button, and placement"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          {collection.error&&<div role="alert" className="border border-red-200 bg-red-50 p-3 text-sm text-red-800">{collection.error}<button type="button" className="ml-3 underline" onClick={()=>{setIsModalOpen(false);collection.reload();}}>Reload records</button></div>}
+          {collection.error&&<div role="alert" className="border border-garmin-error bg-white p-3 text-sm text-garmin-error">{collection.error}<button type="button" className="ml-3 underline" onClick={()=>{setIsModalOpen(false);collection.reload();}}>Reload records</button></div>}
           {translatable && <LocaleTabs
             value={contentLocale}
             onChange={setContentLocale}
@@ -290,24 +283,24 @@ export default function AdminBannersPage() {
                   setFormData({ ...formData, translations: setOverlayValue(formData.translations, contentLocale, ["ctaLabel"], v) })
                 }
               />
-              <section className="space-y-2 border border-dashed border-neutral-300 bg-neutral-50 p-3">
+              <section className="space-y-2 border border-dashed border-border bg-neutral-50 p-3">
                 <SharedAcrossLanguages />
                 <dl className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
                   <div>
-                    <dt className="font-semibold uppercase tracking-wider text-neutral-500">Image</dt>
-                    <dd className="mt-1 truncate font-mono text-neutral-800">{formData.image}</dd>
+                    <dt className="font-semibold text-muted-foreground">Image</dt>
+                    <dd className="mt-1 truncate tabular-nums text-black">{formData.image}</dd>
                   </div>
                   <div>
-                    <dt className="font-semibold uppercase tracking-wider text-neutral-500">Target URL</dt>
-                    <dd className="mt-1 truncate font-mono text-neutral-800">{formData.ctaUrl}</dd>
+                    <dt className="font-semibold text-muted-foreground">Target URL</dt>
+                    <dd className="mt-1 truncate tabular-nums text-black">{formData.ctaUrl}</dd>
                   </div>
                   <div>
-                    <dt className="font-semibold uppercase tracking-wider text-neutral-500">Placement</dt>
-                    <dd className="mt-1 uppercase text-neutral-800">{formData.position}</dd>
+                    <dt className="font-semibold text-muted-foreground">Placement</dt>
+                    <dd className="mt-1 text-black">{formData.position}</dd>
                   </div>
                   <div>
-                    <dt className="font-semibold uppercase tracking-wider text-neutral-500">Active / order</dt>
-                    <dd className="mt-1 text-neutral-800">
+                    <dt className="font-semibold text-muted-foreground">Active / order</dt>
+                    <dd className="mt-1 text-black">
                       {formData.active ? "Yes" : "No"} · {formData.order}
                     </dd>
                   </div>
@@ -317,7 +310,7 @@ export default function AdminBannersPage() {
           ) : (
           <>
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
+            <label className="block text-xs font-semibold text-neutral-700 mb-1">
               Headline Title *
             </label>
             <input
@@ -326,12 +319,12 @@ export default function AdminBannersPage() {
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="e.g. MARQ® (Gen 2) Carbon Collection"
-              className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
+              className="h-10 w-full border border-border bg-white px-3 text-sm text-black focus:border-black focus:outline-none rounded-none"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
+            <label className="block text-xs font-semibold text-neutral-700 mb-1">
               Subtitle / Supporting Text
             </label>
             <textarea
@@ -339,12 +332,12 @@ export default function AdminBannersPage() {
               value={formData.subtitle}
               onChange={(e) => setFormData({ ...formData, subtitle: e.target.value })}
               placeholder="e.g. Machined from a solid block of 130 layers of fused carbon fiber."
-              className="w-full border border-neutral-300 bg-white p-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
+              className="w-full border border-border bg-white p-3 text-sm text-black focus:border-black focus:outline-none rounded-none"
             />
           </div>
 
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
+            <label className="block text-xs font-semibold text-neutral-700 mb-1">
               Background Image Path *
             </label>
             <input
@@ -353,25 +346,25 @@ export default function AdminBannersPage() {
               value={formData.image}
               onChange={(e) => setFormData({ ...formData, image: e.target.value })}
               placeholder="/marq/images/kv-bg.jpg or /images/hero/..."
-              className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-mono text-neutral-900 focus:border-black focus:outline-none rounded-none"
+              className="h-10 w-full border border-border bg-white px-3 text-sm tabular-nums text-black focus:border-black focus:outline-none rounded-none"
             />
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Button Label
               </label>
               <input
                 type="text"
                 value={formData.ctaLabel}
                 onChange={(e) => setFormData({ ...formData, ctaLabel: e.target.value })}
-                placeholder="e.g. Explore MARQ"
-                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-semibold uppercase text-neutral-900 focus:border-black focus:outline-none rounded-none"
+                placeholder="e.g. Shop"
+                className="h-10 w-full border border-border bg-white px-3 text-sm font-semibold text-black focus:border-black focus:outline-none rounded-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Target URL / Route
               </label>
               <input
@@ -379,20 +372,20 @@ export default function AdminBannersPage() {
                 value={formData.ctaUrl}
                 onChange={(e) => setFormData({ ...formData, ctaUrl: e.target.value })}
                 placeholder="/minisite/marq or /p/1228429"
-                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
+                className="h-10 w-full border border-border bg-white px-3 text-sm text-black focus:border-black focus:outline-none rounded-none"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Placement Position
               </label>
               <select
                 value={formData.position}
                 onChange={(e) => setFormData({ ...formData, position: e.target.value as BannerPosition })}
-                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-semibold uppercase text-neutral-900 focus:border-black focus:outline-none rounded-none"
+                className="h-10 w-full border border-border bg-white px-3 text-sm font-semibold text-black focus:border-black focus:outline-none rounded-none"
               >
                 <option value="hero">Hero Rotator Slide</option>
                 <option value="promo_pod">Promo Feature Pod</option>
@@ -401,19 +394,19 @@ export default function AdminBannersPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Display Order
               </label>
               <input
                 type="number"
                 value={formData.order}
                 onChange={(e) => setFormData({ ...formData, order: Number(e.target.value) })}
-                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-semibold text-neutral-900 focus:border-black focus:outline-none rounded-none"
+                className="h-10 w-full border border-border bg-white px-3 text-sm font-semibold text-black focus:border-black focus:outline-none rounded-none"
               />
             </div>
 
             <div className="flex items-center pt-5">
-              <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold uppercase tracking-wider text-neutral-800">
+              <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-black">
                 <input
                   type="checkbox"
                   checked={formData.active}
@@ -428,22 +421,22 @@ export default function AdminBannersPage() {
           )}
 
           {saveError && (
-            <p role="alert" className="border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+            <p role="alert" className="border border-garmin-error bg-white px-3 py-2 text-xs text-garmin-error">
               {saveError}
             </p>
           )}
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-700 hover:bg-neutral-50 rounded-none transition-colors"
+              className="g-btn g-btn--secondary"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="bg-black px-6 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none"
+              className="g-btn g-btn--black"
             >
               {editingBanner ? "Save Changes" : "Create Banner"}
             </button>

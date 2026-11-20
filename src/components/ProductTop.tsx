@@ -17,7 +17,9 @@ import { withVariantParam } from "@/lib/catalog/variant-selection";
 import { isPurchasable, selectValue } from "@/lib/cms/product-variants";
 import { commerceVariantModel } from "@/lib/cms/commerce-variant-model";
 import type { ProductOption, ProductVariant } from "@/lib/cms/types";
-import { formatMoney } from "@/i18n/format";
+import { Price } from "@/components/ui/price";
+import { badgeClass } from "@/components/ui/badge";
+import { isKztSale, toMinor, type KztAmount } from "@/lib/money";
 import { useAppLocale } from "@/i18n/useAppLocale";
 
 export function ProductTop({ product:initial }: { product: ProductDetail }) {
@@ -60,6 +62,19 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
     if (match) setCmsVariantId(match.id);
   }, [vm]);
 
+  // Task 5a.2: every price is tenge in the page locale through <Price> (never USD). Backend amounts are exact
+  // minor-unit strings, so the sale test compares minor units (isKztSale), never JS numbers.
+  // Computed before the memo below so the React Compiler sees no later use of its dependencies.
+  const salePrice = cmsVariant?.price ?? product.price;
+  const priceAmount: KztAmount | null = variant
+    ? { minor: variant.price.selling.amountMinor }
+    : salePrice !== undefined && salePrice !== "" && toMinor({ major: salePrice }) !== null ? { major: salePrice } : null;
+  const compareAtAmount: KztAmount | null = variant?.price.compareAt
+    ? { minor: variant.price.compareAt.amountMinor }
+    : cmsVariant?.originalPrice !== undefined ? { major: cmsVariant.originalPrice } : null;
+  const onSale = isKztSale(compareAtAmount, priceAmount);
+  // A legacy price with no KZT-per-USD rate (src/lib/legacy-prices.ts) is shown without a currency sign.
+  const unconverted = product.currency === "USD";
   const gallery = useMemo(() => {
     if (!vm || !cmsVariant) return product.gallery;
     const byId = new Map(vm.images.map((img) => [img.id, img]));
@@ -90,15 +105,7 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   };
 
   const price = cmsVariant?.price ?? product.price;
-  const compareAt = cmsVariant?.originalPrice;
   const partNumber = cmsVariant?.sku || product.partNumber;
-  // garmin.com imports are converted to tenge (sourcePrice keeps the USD original); legacy products stay USD (plan L9).
-  const isKzt = Boolean(cmsVariant?.sourcePrice?.rateKztPerUsd);
-  const money = (n: number) =>
-    isKzt
-      ? `${new Intl.NumberFormat(INTL_LOCALE[locale], { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)} KZT`
-      : t("price", { price: formatMoney(n, locale) });
-  const onSale = typeof price === "number" && compareAt !== undefined && compareAt > price;
 
   // Server cart (Task 13A): the selected variant's real availability decides; the server prices it.
   // In the browser-only cart a JSON CMS variant must be active and in stock.
@@ -118,6 +125,7 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
         image: gallery[0]?.src,
         ...(variant ? { variantId: variant.id } : {}),
         ...(cmsVariant ? { sku: cmsVariant.sku, variantLabel: cmsVariant.title } : {}),
+        ...(unconverted ? { unconverted: true } : {}),
       });
     } catch (error) { setNotice(error instanceof Error ? error.message : t("addFailed")); return; }
     setAdded(true);
@@ -133,11 +141,24 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   };
 
   return (
-    <div className="mx-auto max-w-[1440px] px-4 pb-8 pt-4 lg:px-0">
-      {/* garmin.com layout (measured at 1440px): gallery column ≈ 700px, buy box 561px starting 32px after it */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,701px)_minmax(0,561px)]">
+    <div className="mx-auto max-w-[1440px] px-4 pb-8 pt-[15px] lg:px-0 lg:pt-[18px]">
+      {/* Below 1024 garmin.com puts the breadcrumb above the gallery (15px under the header, 16px before the photos);
+          from 1024 it heads the buy box. One of the two navs is display:none at any width. */}
+      <nav aria-label={t("breadcrumb")} className="mb-4 flex flex-wrap items-center text-[14px] leading-[14px] text-garmin-text-muted lg:hidden">
+            {product.breadcrumb.map((b, i) => (
+              <span key={b.label} className="flex items-center">
+                {i > 0 && <span aria-hidden className="mx-2">/</span>}
+                <Link href={b.href} className="underline">
+                  {b.label}
+                </Link>
+              </span>
+            ))}
+      </nav>
+      {/* garmin.com layout (ProductBuyBox.spec.md, 1440): gallery column, then the buy box at x 743, 566px wide
+          (max-width 720, margin 0 16 16, padding-right 115.2). Below 1024 the buy box follows the gallery. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[727px_minmax(0,1fr)]">
         {/* Gallery: 80px thumbnails in a column (1.6px #ccc frame, black when shown) beside a square photo */}
-        <div className="flex flex-col-reverse gap-2 lg:flex-row lg:justify-end lg:gap-[5px]">
+        <div className="flex flex-col-reverse gap-2 lg:flex-row lg:justify-end lg:gap-[5px] lg:pr-[46px]">
           <div className="flex items-center gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
             <button
               aria-label={t("previousImage")}
@@ -184,55 +205,46 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
           </div>
         </div>
 
-        {/* Buy box */}
-        <div>
-          <nav className="mb-4 flex flex-wrap items-center gap-2 text-[13px] text-black">
+        {/* Buy box (ProductBuyBox.spec.md) */}
+        <div data-buy-box className="text-black lg:mx-4 lg:mb-4 lg:max-w-[720px] lg:pr-[115.2px]">
+          <nav aria-label={t("breadcrumb")} className="mb-4 hidden flex-wrap items-center text-[14px] leading-[14px] text-garmin-text-muted lg:flex">
             {product.breadcrumb.map((b, i) => (
-              <span key={b.label} className="flex items-center gap-2">
-                {i > 0 && <span aria-hidden>/</span>}
-                <Link href={b.href} className="underline hover:no-underline">
+              <span key={b.label} className="flex items-center">
+                {i > 0 && <span aria-hidden className="mx-2">/</span>}
+                <Link href={b.href} className="underline">
                   {b.label}
                 </Link>
               </span>
             ))}
           </nav>
-          <h1 className="g-heading text-[32px] normal-case leading-[40px] tracking-[0.8px] text-black lg:text-[40px] lg:leading-[50px]">
+          <h1 className="g-heading g-h1 mb-1 text-black">
             {product.title}
           </h1>
-          <p className="mt-1 text-[14px] leading-[21px] text-black">{t("partNumber", { partNumber })}</p>
+          <p className="text-[14px] leading-[21px] text-black">{t("partNumber", { partNumber })}</p>
 
           {product.badge && product.badge !== "NONE" ? (
-            <div className="mt-3">
-              <GarminBadge badge={product.badge} variant="pill" />
+            <div className="mt-2 mb-4 flex">
+              <GarminBadge badge={product.badge} variant="pill" className="mr-[12.8px]" />
             </div>
           ) : onSale ? (
-            <span className="mt-3 inline-block rounded-full bg-[#6dcff6] px-4 py-[7px] text-[14px] leading-[21px] text-black">
-              {t("sale")}
-            </span>
+            <div className="mt-2 mb-4 flex">
+              <span className={badgeClass({ className: "mr-[12.8px]" })}>{t("sale")}</span>
+            </div>
           ) : null}
 
-          <div className="mt-4">
-            {onSale && typeof price === "number" && (
-              <p className="text-[14px] leading-[21px] text-black">
-                <span className="line-through">{money(compareAt as number)}</span>{" "}
-                {t("save", { amount: money((compareAt as number) - price) })}
-              </p>
-            )}
-            <p className="text-[20px] font-bold leading-[24px] text-black">
-              {product.priceLabel ?? (typeof price === "number" ? money(price) : price)}
-            </p>
-          </div>
-          {product.currency !== "KZT" && !isKzt && (
-            <>
-              <p className="mt-1 text-[14px] text-black">
-                {t.rich("financing", { brand: (chunks) => <span className="font-semibold">{chunks}</span> })}{" "}
-                <a href="#" className="underline">{t("qualify")}</a>
-              </p>
-              <p className="text-[14px] text-black">
-                {t("hsa")} <a href="#" className="underline">{t("learnMore")}</a>
-              </p>
-            </>
+          {priceAmount ? (
+            <Price
+              size="pdp"
+              locale={locale}
+              amount={priceAmount}
+              compareAt={onSale ? compareAtAmount : null}
+              unconverted={unconverted}
+              saveLabel={(amount) => t("save", { amount })}
+            />
+          ) : (
+            <p className="mt-4 mb-1 text-[20px] font-bold leading-[24px] text-black">{price}</p>
           )}
+          {/* garmin.com shows US financing and HSA/FSA lines here; they do not apply in Kazakhstan (Task 5a.3). */}
           {product.commerce && commerceModel && commerceSelections && (
             <VariantPicker
               options={commerceModel.options}
@@ -261,12 +273,12 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
           />
 
           {/* Model / Color */}
-          <div className="mt-4">
-            <p className="text-[14px] font-bold leading-[21px] text-black">
+          <div className="my-4">
+            <p className="mb-2 text-[14px] font-bold leading-[21px] text-black">
               {t("modelColor")}
               {product.colors[colorIdx] && <span className="font-normal"> - {product.colors[colorIdx].label}</span>}
             </p>
-            <div className="mt-2 flex flex-wrap gap-[10.8px]">
+            <div className="flex max-w-[570px] flex-wrap gap-[10.8px]">
               {product.colors.map((c, i) => (
                 <button
                   key={c.label}
@@ -276,38 +288,40 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
                     setColorIdx(i);
                     setMainIdx(0);
                   }}
-                  className={`relative h-[83px] w-[83px] border-[1.6px] bg-white ${
-                    i === colorIdx ? "border-black" : "border-[#ccc] hover:border-black"
+                  className={`relative h-16 w-16 border-2 bg-white transition-[border-color] duration-500 lg:h-[84px] lg:w-[84px] ${
+                    i === colorIdx ? "border-black" : "border-garmin-option hover:border-black"
                   }`}
                 >
-                  <Image src={c.src} alt="" fill sizes="80px" className="object-contain" />
+                  <span className="relative block h-full w-full">
+                    <Image src={c.src} alt="" fill sizes="80px" className="object-contain" />
+                  </span>
                 </button>
               ))}
             </div>
           </div>
           </>}
 
-          {/* garmin.com CTAs: 52px, 16px/500 uppercase, candy blue #6dcff6 and a white outlined button */}
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+          {/* garmin.com CTAs (Buttons.spec.md): large candy-blue buy button and large secondary buttons, 8px apart */}
+          <div className="mt-4 mb-2 flex max-w-[570px] flex-wrap items-center gap-2">
             <button
               disabled={!sellable} onClick={handleAdd}
-              className="h-[52px] border-[0.8px] border-[#6dcff6] bg-[#6dcff6] px-8 text-[16px] font-medium uppercase leading-[18.4px] text-black transition-colors hover:border-[#3fbef0] hover:bg-[#3fbef0] disabled:cursor-not-allowed disabled:border-neutral-200 disabled:bg-neutral-200 disabled:text-neutral-500"
+              className="g-btn g-btn--lg g-btn--primary w-full md:w-auto"
             >
               {addLabel}
             </button>
-            <button className="h-[52px] border-[0.8px] border-black bg-white px-8 text-[16px] font-medium uppercase leading-[18.4px] text-black transition-colors hover:bg-black hover:text-white">
+            <button className="g-btn g-btn--lg g-btn--secondary w-full md:w-auto">
               {t("customize")}
             </button>
             {mode === "server" && (
               <button
                 type="button" onClick={handleWishlist} disabled={wish === "saving"}
-                className="h-[52px] border-[0.8px] border-black bg-white px-8 text-[16px] font-medium uppercase leading-[18.4px] text-black transition-colors hover:bg-black hover:text-white disabled:opacity-50"
+                className="g-btn g-btn--lg g-btn--secondary w-full md:w-auto"
               >
                 {wish === "saved" ? t("savedToWishlist") : t("saveToWishlist")}
               </button>
             )}
           </div>
-          <p className="mt-4 text-[14px] leading-[21px] text-black">
+          <p className="mt-4 mb-4 text-[14px] leading-[21px] text-black">
             {/* PostgreSQL catalog: report real stock only — no delivery promise the server has not made */}
             {product.commerce
               ? variant?.availability === "available"
@@ -319,7 +333,7 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
                 ? t("outOfStockNote")
                 : t("shipsIn")}
           </p>
-          {notice && <p role="status" className="mt-3 text-[13px] text-neutral-700">{notice}</p>}
+          {notice && <p role="status" className="mb-4 text-[14px] leading-[21px] text-black">{notice}</p>}
         </div>
       </div>
     </div>
@@ -338,21 +352,21 @@ function Selector({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="mt-4">
-      <p className="text-[14px] font-bold leading-[21px] text-black">
+    <div className="my-4">
+      <p className="mb-2 text-[14px] font-bold leading-[21px] text-black">
         {label}
         {value && <span className="font-normal"> - {value}</span>}
       </p>
-      <div className="mt-2 flex flex-wrap gap-[10.8px]">
+      <div className="flex flex-wrap gap-3">
         {options.map((o) => (
           <button
             key={o}
             onClick={() => onChange(o)}
             aria-pressed={o === value}
-            className={`h-[38px] min-w-[82px] border-[1.6px] px-[17.5px] text-[14px] leading-[21px] transition-colors ${
+            className={`h-[39px] border-2 px-[17.5px] py-[7px] text-[14px] leading-[21px] transition-colors ${
               o === value
                 ? "border-black bg-black text-white"
-                : "border-[#ccc] bg-white text-black hover:border-black"
+                : "border-garmin-option bg-white text-black hover:border-black"
             }`}
           >
             {o}

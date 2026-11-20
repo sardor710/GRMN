@@ -170,9 +170,9 @@ export function GarminImportDialog({ open, onClose, formHasData, onApply }: Garm
               disabled={busy}
               className={`mt-1 ${inputClass}`}
             />
-            <p className="mt-1 text-[11px] text-neutral-500">Garmin USD prices × rate → KZT. The rate is remembered.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Garmin USD prices × rate → KZT. The rate is remembered.</p>
           </div>
-          <label className="flex items-center gap-2 pb-6 text-[13px] text-neutral-800">
+          <label className="flex items-center gap-2 pb-6 text-[13px] text-black">
             <input
               type="checkbox"
               checked={downloadImages}
@@ -190,35 +190,35 @@ export function GarminImportDialog({ open, onClose, formHasData, onApply }: Garm
       </form>
 
       {busy && (
-        <div className="mt-4 border border-sky-200 bg-sky-50 p-3 text-[12px] text-sky-900" role="status" aria-live="polite">
+        <div className="mt-4 border border-garmin-control bg-muted p-3 text-xs text-black" role="status" aria-live="polite">
           <div className="flex items-center justify-between">
             <span>{progressHint(elapsed, downloadImages)}</span>
             <span className="tabular-nums">{elapsed}s</span>
           </div>
-          <progress className="mt-2 h-1 w-full accent-[#007cc3]" aria-label="Import in progress" />
+          <progress className="mt-2 h-1 w-full accent-garmin-blue" aria-label="Import in progress" />
         </div>
       )}
 
       {error && (
-        <p role="alert" className="mt-4 flex items-start gap-2 border border-rose-200 bg-rose-50 p-3 text-[12px] text-rose-800">
+        <p role="alert" className="mt-4 flex items-start gap-2 border border-garmin-error bg-white p-3 text-xs text-garmin-error">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           {error}
         </p>
       )}
 
       {draft && (
-        <div className="mt-4 space-y-3 border border-neutral-200 p-4">
+        <div className="mt-4 space-y-3 border border-border p-4">
           <div className="flex items-start gap-3">
             {draft.image && (
               // eslint-disable-next-line @next/next/no-img-element -- imported photo preview
-              <img src={draft.image} alt="" className="h-20 w-20 shrink-0 border border-neutral-200 object-contain p-1" />
+              <img src={draft.image} alt="" className="h-20 w-20 shrink-0 border border-border object-contain p-1" />
             )}
             <div className="min-w-0">
-              <p className="flex items-center gap-1.5 text-[11px] font-heading uppercase tracking-wider text-emerald-700">
+              <p className="flex items-center gap-1.5 text-xs text-black">
                 <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Draft ready
               </p>
               <p className="g-heading text-[18px] leading-tight text-black">{draft.name}</p>
-              <p className="text-[12px] text-neutral-500">
+              <p className="text-xs text-muted-foreground">
                 {[draft.family, draft.category, draft.subCategory].filter(Boolean).join(" · ")}
               </p>
               <p className="mt-1 text-[13px] text-black">
@@ -226,15 +226,15 @@ export function GarminImportDialog({ open, onClose, formHasData, onApply }: Garm
               </p>
             </div>
           </div>
-          <dl className="grid grid-cols-2 gap-2 text-[12px] sm:grid-cols-4">
+          <dl className="grid grid-cols-2 gap-2 text-xs sm:grid-cols-4">
             {[
               ["Variants", draft.variants?.length ?? 0],
               ["Photos", draft.images?.length ?? 0],
               ["Spec groups", draft.specGroups?.length ?? 0],
               ["In the box", draft.inTheBox?.length ?? 0],
             ].map(([label, value]) => (
-              <div key={label} className="border border-neutral-200 bg-neutral-50 px-2 py-1.5">
-                <dt className="text-[10px] font-heading uppercase tracking-wider text-neutral-500">{label}</dt>
+              <div key={label} className="border border-border bg-neutral-50 px-2 py-1.5">
+                <dt className="text-xs text-muted-foreground">{label}</dt>
                 <dd className="text-[16px] font-medium text-black">{value}</dd>
               </div>
             ))}
@@ -242,7 +242,7 @@ export function GarminImportDialog({ open, onClose, formHasData, onApply }: Garm
           {(draft.options?.length ?? 0) > 0 && (
             <div>
               <p className={labelClass}>Options</p>
-              <ul className="mt-1 space-y-0.5 text-[12px] text-neutral-700">
+              <ul className="mt-1 space-y-0.5 text-xs text-neutral-700">
                 {draft.options?.map((o) => (
                   <li key={o.id}>
                     <strong className="text-black">{o.name}</strong> ({o.values.length}):{" "}
@@ -253,7 +253,7 @@ export function GarminImportDialog({ open, onClose, formHasData, onApply }: Garm
             </div>
           )}
           {result.warnings.length > 0 && (
-            <details className="border border-amber-200 bg-amber-50 p-2 text-[12px] text-amber-900">
+            <details className="border border-garmin-badge-gold bg-garmin-badge-gold/20 p-2 text-xs text-black">
               <summary className="cursor-pointer font-semibold">
                 {result.warnings.length} warning{result.warnings.length === 1 ? "" : "s"}
               </summary>

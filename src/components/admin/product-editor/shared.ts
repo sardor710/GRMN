@@ -1,3 +1,4 @@
+import { formatKzt as formatSharedKzt } from "@/lib/money";
 import type { CMSProduct, ProductImage, ProductOption, ProductVariant } from "@/lib/cms/types";
 
 /** Draft returned by POST /api/admin/import/garmin (CMSProduct-shaped, not saved). */
@@ -18,11 +19,11 @@ export const newId = (prefix: string): string =>
       : Math.random().toString(36).slice(2, 10)
   }`;
 
-const kztFormatter = new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 });
 const usdFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
+/** Editor prices (tenge, major units) through the shared money formatter: "KZT 1,350,000.00". */
 export const formatKzt = (value: number | undefined): string =>
-  value === undefined || Number.isNaN(value) ? "—" : `${kztFormatter.format(Math.round(value))} ₸`;
+  value === undefined || Number.isNaN(value) ? "—" : formatSharedKzt({ major: value }, "en");
 
 export const formatUsd = (value: number | undefined): string =>
   value === undefined || Number.isNaN(value) ? "—" : usdFormatter.format(value);
@@ -43,14 +44,14 @@ export function galleryFor(
 }
 
 export const labelClass =
-  "block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600";
+  "block text-sm font-bold text-black";
 export const inputClass =
-  "h-9 w-full border border-neutral-300 bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none";
+  "h-10 w-full border border-garmin-control bg-white px-3 text-sm text-black focus:border-black focus:outline-none";
 export const smallInputClass =
-  "h-7 w-full border border-neutral-300 bg-white px-2 text-[12px] text-black focus:border-black focus:outline-none rounded-none";
+  "h-8 w-full border border-garmin-control bg-white px-2 text-[13px] text-black focus:border-black focus:outline-none";
 export const primaryButtonClass =
-  "inline-flex items-center gap-1.5 bg-black text-white hover:bg-neutral-800 border border-black px-4 py-2 text-[12px] font-medium tracking-[0.06em] uppercase transition-colors rounded-none disabled:opacity-50 disabled:cursor-not-allowed";
+  "g-btn g-btn--black";
 export const secondaryButtonClass =
-  "inline-flex items-center gap-1.5 bg-white text-black hover:border-black border border-neutral-300 px-3 py-1.5 text-[11px] font-heading uppercase tracking-wider font-semibold transition-colors rounded-none disabled:opacity-50 disabled:cursor-not-allowed";
+  "g-btn g-btn--secondary g-btn--sm";
 export const linkButtonClass =
-  "inline-flex items-center gap-1 text-[11px] font-heading uppercase tracking-wider font-bold text-[#007cc3] hover:underline disabled:opacity-50";
+  "g-btn g-btn--text-link gap-1 py-0 text-xs disabled:opacity-50";

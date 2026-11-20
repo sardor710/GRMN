@@ -1,0 +1,34 @@
+{
+ "target": "https://www.garmin.com/en-US/p/1462801/",
+ "clone": "http://localhost:3021/en/p/1462801",
+ "sel": "div.app__tabs__content__link",
+ "cloneSel": "section > div > button",
+ "widths": {
+  "390": {
+   "mismatchPct": 2.21,
+   "size": {
+    "target": [
+     390,
+     51
+    ],
+    "clone": [
+     390,
+     50
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "0-40",
+     "pct": 2.8
+    }
+   ],
+   "file": "docs/design-references/qa/5a3-after-tabs-390-390-diff.png",
+   "text": {
+    "matched": 0,
+    "of": 0,
+    "issues": [],
+    "missing": []
+   }
+  }
+ }
+}

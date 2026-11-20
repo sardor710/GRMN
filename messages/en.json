@@ -12,11 +12,11 @@
     "blogFallbackTitle": "Garmin Blog & Fitness Guides",
     "blogShortTitle": "Garmin Blog",
     "blogPostTitle": "{title} | Garmin Blog",
-    "blogPostDescription": "Explore training tips, GPS navigation guides, and smartwatch features on the official Garmin Blog.",
+    "blogPostDescription": "Training tips, GPS navigation guides and smartwatch features from the Garmin Blog.",
     "productFallbackTitle": "Garmin Smartwatches & GPS Devices",
     "productFallbackName": "Garmin Product",
-    "productTitle": "{name} | Official Garmin Smartwatch",
-    "productDescription": "Discover {name} with advanced GPS tracking, health metrics, and long battery life.",
+    "productTitle": "{name} | Garmin",
+    "productDescription": "{name}: specs, price and availability.",
     "catalogueTitle": "{title} | Garmin",
     "garminPayTitle": "Garmin Pay™ | A Contactless Payment Solution",
     "garminPayDescription": "No wallet? No phone? No problem. Make contactless payments on the go with your compatible Garmin smartwatch or bike computer."
@@ -88,7 +88,7 @@
       "otherItems": "+ {count} other item(s)",
       "placed": "Placed {date}",
       "destination": "Destination: {title} ({city})",
-      "inspect": "Inspect Route Map →"
+      "inspect": "Route Map"
     },
     "orders": {
       "title": "Order History & Fulfillment Tracker ({count})",
@@ -99,7 +99,7 @@
       "total": "Order Total",
       "carrier": "Carrier: <b>{carrier}</b>",
       "tracking": "Tracking #{number}",
-      "view": "View Order Popup & Route Map →"
+      "view": "Order Details and Route Map"
     },
     "devices": {
       "title": "Registered Devices",
@@ -136,13 +136,13 @@
     },
     "notify": {
       "nameEmailRequired": "Name and email are required fields.",
-      "profileSaved": "Personal details successfully updated.",
+      "profileSaved": "Personal details updated.",
       "resetSent": "Password reset instructions sent to {email}",
       "resetDispatched": "Password reset link dispatched to {email}",
       "maxAddresses": "Maximum limit of {max} shipping addresses reached. Please remove one before adding.",
       "titleRequired": "Address Title (e.g. Home, Office, 2nd Home) is required.",
       "addressRequired": "Street, City, and Country are required.",
-      "addressUpdated": "Shipping address updated successfully.",
+      "addressUpdated": "Shipping address updated.",
       "addressSaved": "New shipping address saved.",
       "addressError": "Error saving address.",
       "confirmRemove": "Remove shipping address \"{title}\"?",
@@ -156,7 +156,7 @@
   "BlogArticle": {
     "byline": "By {author}",
     "defaultReadTime": "4 min read",
-    "backToAll": "← Back to all articles",
+    "backToAll": "Back to all articles",
     "related": "Related Articles"
   },
   "BlogExplorer": {
@@ -183,12 +183,10 @@
   },
   "Cart": {
     "heading": "Shopping Cart",
-    "thankYou": "Thank you for your order!",
+    "thankYou": "Thank you for your order.",
     "demoNotice": "This is a demo checkout — no payment was processed. Your cart has been cleared.",
     "continueShoppingButton": "Continue Shopping",
-    "emptyHeading": "Your cart is empty",
-    "emptyBody": "Looks like you haven't added anything yet.",
-    "shopSmartwatches": "Shop Smartwatches",
+    "emptyHeading": "Your Cart is Empty",
     "item": "Item",
     "quantity": "Quantity",
     "price": "Price",
@@ -196,16 +194,15 @@
     "remove": "Remove",
     "decrease": "Decrease",
     "increase": "Increase",
-    "continueShopping": "← Continue shopping",
+    "continueShopping": "Continue Shopping",
     "clear": "Clear cart",
     "summary": "Order Summary",
     "subtotal": "Subtotal",
     "shipping": "Shipping",
-    "free": "FREE",
+    "free": "Free",
     "tax": "Estimated tax",
     "total": "Total",
     "checkout": "Checkout",
-    "freeShippingNote": "Free standard shipping on orders over $25.",
     "loading": "Loading your cart…",
     "loadFailed": "Your cart could not be loaded: {error}",
     "priceChanged": "The price of an item in your cart has changed since you added it.",
@@ -215,7 +212,8 @@
     "lineUnavailable": "This item is no longer available",
     "outOfStock": "Out of stock",
     "wasEach": "Was <old>{price}</old> each",
-    "checkoutUnavailable": "Online checkout is not available yet. Your cart is saved in this browser."
+    "checkoutUnavailable": "Online checkout is not available yet. Your cart is saved in this browser.",
+    "startShopping": "Start Shopping"
   },
   "CatalogueGrid": {
     "compare": "Compare",
@@ -226,10 +224,10 @@
     "sortBy": "Sort By",
     "empty": "No products match your filters.",
     "sort": {
-      "featured": "Newest Products",
+      "featured": "Newest",
       "priceAsc": "Price: Low to High",
       "priceDesc": "Price: High to Low",
-      "name": "Name: A to Z"
+      "name": "A to Z"
     },
     "groups": {
       "battery": "Battery Life in Smartwatch Mode",
@@ -263,17 +261,18 @@
       "medium": "Medium (44 to 49 mm)",
       "large": "Large (≥ 50 mm)"
     },
-    "nextProducts": "Next products"
+    "nextProducts": "Next Products",
+    "filterAndSort": "Filter and Sort"
   },
   "CataloguePage": {
     "smartwatches": {
       "title": "Smartwatches",
-      "heading": "ALL SMARTWATCHES"
+      "heading": "All Smartwatches"
     },
     "running": {
       "title": "GPS Running Watches",
-      "heading": "ALL RUNNING SMARTWATCHES",
-      "heroLabel": "SPORTS & FITNESS",
+      "heading": "All Running Smartwatches",
+      "heroLabel": "Sports & Fitness",
       "heroBlurb": "Running Smartwatches"
     }
   },
@@ -293,13 +292,13 @@
     "heading": "Compare Smartwatches",
     "intro": "Add up to {max} watches to compare specs side by side.",
     "addWatch": "Add a watch",
-    "selectModel": "Select a model…",
+    "selectModel": "Select a model",
     "empty": "Add a watch above to start comparing.",
-    "remove": "✕ Remove",
+    "remove": "Remove",
     "removeLabel": "Remove {name}",
     "shop": "Shop",
     "yes": "Yes",
-    "back": "← Back to all smartwatches",
+    "back": "Back to All Smartwatches",
     "rows": {
       "price": "Price",
       "family": "Product family",
@@ -315,14 +314,14 @@
   },
   "Footer": {
     "navLabel": "Global Footer Navigation",
-    "region": "United States",
+    "region": "Kazakhstan",
     "social": "Garmin on {network}",
     "copyright": "© Garmin Ltd. or its subsidiaries. All rights reserved.",
     "columns": {
-      "customerService": "CUSTOMER SERVICE",
-      "company": "COMPANY",
-      "platforms": "PLATFORMS",
-      "forBusiness": "FOR BUSINESS"
+      "customerService": "Customer Service",
+      "company": "Company",
+      "platforms": "Platforms",
+      "forBusiness": "For Business"
     },
     "links": {
       "supportCenter": "Support Center",
@@ -381,7 +380,7 @@
     "searchHeading": "Search Garmin",
     "searchPlaceholder": "Search products",
     "closeSearch": "Close search",
-    "noResults": "No featured products found.",
+    "noResults": "No products found.",
     "takeover": "HOLIDAY SALE",
     "nav": {
       "smartwatches": "Smartwatches",
@@ -571,7 +570,7 @@
     "placeholder": "john@example.com",
     "signUp": "Sign up",
     "privacyLink": "Learn about email privacy.",
-    "subscribedHeading": "You're subscribed!",
+    "subscribedHeading": "You are subscribed.",
     "subscribedBody": "Thanks for signing up{hasEmail, select, yes {, {email}} other {}}. Look out for Garmin news{count, plural, =0 {} one { on # topic} other { on # topics}} in your inbox.",
     "updatePreferences": "Update Preferences",
     "interestsLegend": "What are you interested in?",
@@ -655,13 +654,11 @@
   },
   "ProductAccessories": {
     "quickFitHeading": "QuickFit® Watch Band Compatibility",
-    "quickFitBody": "The fēnix® 8 series supports QuickFit bands: <b>20 mm</b> for 43 mm models, <b>22 mm</b> for 47 mm models, and <b>26 mm</b> for 51 mm models. Swap in seconds with no tools required.",
-    "toolFree": "Tool-Free Swap",
+    "quickFitBody": "The fēnix® 8 series supports QuickFit bands: <b>20 mm</b> for 43 mm models, <b>22 mm</b> for 47 mm models and <b>26 mm</b> for 51 mm models.",
     "empty": "No accessories found in this category.",
     "partNumber": "Part Number {partNumber}",
-    "currency": "USD",
-    "added": "Added to Cart ✓",
-    "addToCart": "Add to Cart",
+    "added": "Added to Cart",
+    "addToCart": "Add To Cart",
     "categories": {
       "all": "All",
       "bands": "Bands & Straps",
@@ -672,7 +669,6 @@
     }
   },
   "ProductCard": {
-    "price": "{price} USD",
     "andUp": "and up"
   },
   "ProductTabs": {
@@ -684,32 +680,27 @@
       "maps": "Maps",
       "compatible": "Compatible Devices"
     },
-    "specifications": "Specifications",
     "mapsText": "Preloaded TopoActive maps plus support for downloadable outdoor, cycling and ski maps.",
-    "compatibleText": "Compatible with the Garmin Connect™ app and Connect IQ™ store on iPhone® and Android™ devices."
+    "compatibleText": "Compatible with the Garmin Connect™ app and Connect IQ™ store on iPhone® and Android™ devices.",
+    "label": "Product information"
   },
   "ProductTop": {
-    "price": "{price} USD",
     "previousImage": "Previous",
     "nextImage": "Next",
     "partNumber": "Part Number: {partNumber}",
-    "financing": "Starting at $69/mo or 0% APR with <brand>affirm</brand>.",
-    "qualify": "See if you qualify",
-    "hsa": "HSA/FSA eligible for qualified customers.",
-    "learnMore": "Learn more",
     "caseSize": "Case Size",
     "version": "Version",
     "modelColor": "Model/Color",
     "outOfStockNote": "Currently out of stock.",
     "shipsIn": "Available to ship in 1–3 business days.",
     "outOfStock": "Out of Stock",
-    "added": "Added ✓",
-    "addToCart": "Add to Cart",
+    "added": "Added",
+    "addToCart": "Add To Cart",
     "customize": "Customize",
     "purchasingUnavailable": "Purchasing unavailable",
     "addFailed": "This item could not be added",
     "saveToWishlist": "Save to Wishlist",
-    "savedToWishlist": "Saved to Wishlist ✓",
+    "savedToWishlist": "Saved to Wishlist",
     "wishlistSignIn": "Sign in to save items to your wishlist.",
     "wishlistFailed": "This item could not be saved",
     "variant": "Variant",
@@ -717,7 +708,8 @@
     "availabilityOutOfStock": "Out of stock",
     "availabilityUnknown": "Availability unavailable",
     "sale": "Sale",
-    "save": "Save {amount}"
+    "save": "Save {amount}",
+    "breadcrumb": "Breadcrumb"
   },
   "RelatedProducts": {
     "heading": "You May Also Like"
@@ -805,7 +797,7 @@
       "title": "Shipping Addresses ({count}/{max})",
       "add": "Add Address",
       "maxReached": "Max {max} addresses reached",
-      "empty": "No saved addresses yet. Add one to speed up checkout.",
+      "empty": "No saved addresses.",
       "primary": "Primary",
       "edit": "Edit address",
       "editLabel": "Edit {label}",

@@ -75,7 +75,7 @@ export default async function GarminPayPage({ params }: PageProps<"/[lang]/garmi
             No wallet? No phone? No problem. With Garmin Pay, all you need is your compatible
             smartwatch or bike computer to make purchases on the go.<sup>1</sup>
           </p>
-          <a href="#compatible" className="g-btn g-btn--outline-dark mt-6">Shop</a>
+          <a href="#compatible" className="g-btn g-btn--secondary mt-6">Shop</a>
         </section>
 
         {/* Icon strip — 4 columns */}
@@ -119,7 +119,7 @@ export default async function GarminPayPage({ params }: PageProps<"/[lang]/garmi
         {/* Compatible devices */}
         <section id="compatible" className="mx-auto max-w-[1280px] px-4 pb-16">
           <h2 className="g-heading text-center text-[26px] text-black">Shop the Latest Compatible Devices</h2>
-          <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {compatible.map((p) => (
               <ProductCard key={p!.id} product={p!} />
             ))}

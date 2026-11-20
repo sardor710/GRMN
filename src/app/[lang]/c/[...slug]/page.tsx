@@ -70,10 +70,10 @@ export default async function CataloguePage({ params, searchParams }: PageProps<
         ) : null}
 
         <div className="py-10">
-          <SectionHeading>{t(def.headingKey)}</SectionHeading>
+          <SectionHeading size="h1">{t(def.headingKey)}</SectionHeading>
         </div>
         <CatalogueGrid products={items} />
-        {page.nextCursor&&<Link className="mx-auto block w-fit p-6 underline" href={"?"+next}>{tGrid("nextProducts")}</Link>}
+        {page.nextCursor&&<Link className="g-btn g-btn--sm g-btn--secondary mx-auto mt-8 flex w-fit" href={"?"+next}>{tGrid("nextProducts")}</Link>}
         <div className="h-16" />
       </main>
       <SiteFooter />

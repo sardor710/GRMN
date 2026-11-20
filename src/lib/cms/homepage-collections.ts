@@ -1,4 +1,5 @@
 import type { HomepageConfig, ProductCarouselItem } from "./types";
+import { formatKzt } from "../money.ts";
 
 /** A published collection as the public read returns it (Task 18A `readCollection`). */
 export interface PublicCollection {
@@ -10,8 +11,8 @@ export interface PublicCollection {
 
 const str = (value: unknown) => (typeof value === "string" ? value : "");
 const num = (value: unknown) => (typeof value === "number" && Number.isFinite(value) ? value : undefined);
-const kzt = (value: number) =>
-  `${new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value)} KZT`;
+/** Task 5a.2: the shared tenge format. The homepage config is not per-language, so the label uses the default (en). */
+const kzt = (value: number) => formatKzt({ major: value }, "en");
 
 /**
  * Fill carousels that reference a merchandising collection (`collectionKey`) with the collection's

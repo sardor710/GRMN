@@ -1,0 +1,171 @@
+{
+ "url": "https://buy.garmin.com/en-US/cart/",
+ "vw": 390,
+ "tree": {
+  "tag": "div",
+  "cls": "cart",
+  "r": [
+   0,
+   99,
+   390,
+   170
+  ],
+  "css": {
+   "box-sizing": "border-box",
+   "padding": "16px",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "font-size": "16px",
+   "line-height": "24px",
+   "color": "rgb(0, 0, 0)",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "g-global-styles",
+    "cls": "hydrated",
+    "r": [
+     16,
+     115,
+     0,
+     0
+    ],
+    "css": {
+     "box-sizing": "border-box"
+    }
+   },
+   {
+    "tag": "div",
+    "cls": "cart__container",
+    "r": [
+     16,
+     131,
+     358,
+     122
+    ],
+    "css": {
+     "box-sizing": "border-box",
+     "max-width": "1200px"
+    },
+    "c": [
+     {
+      "tag": "div",
+      "r": [
+       16,
+       131,
+       358,
+       122
+      ],
+      "css": {
+       "box-sizing": "border-box"
+      },
+      "c": [
+       {
+        "tag": "g-heading",
+        "cls": "g__heading g__heading--center g__heading--light",
+        "r": [
+         16,
+         131,
+         358,
+         40
+        ],
+        "css": {
+         "box-sizing": "border-box",
+         "text-align": "center"
+        },
+        "c": [
+         {
+          "tag": "h1",
+          "r": [
+           16,
+           131,
+           358,
+           40
+          ],
+          "t": "Your Cart is Empty",
+          "css": {
+           "box-sizing": "border-box",
+           "margin-top": "16px",
+           "margin-bottom": "16px",
+           "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+           "line-height": "40px",
+           "letter-spacing": "0.8px"
+          }
+         }
+        ]
+       },
+       {
+        "tag": "div",
+        "cls": "button-con",
+        "r": [
+         16,
+         187,
+         358,
+         66
+        ],
+        "css": {
+         "box-sizing": "border-box",
+         "text-align": "center"
+        },
+        "c": [
+         {
+          "tag": "g-button",
+          "cls": "shop-now-button g__button__host g__button__host--medium",
+          "r": [
+           113,
+           203,
+           165,
+           34
+          ],
+          "css": {
+           "display": "inline-block",
+           "box-sizing": "border-box",
+           "margin-top": "16px",
+           "margin-bottom": "16px"
+          },
+          "c": [
+           {
+            "tag": "a",
+            "cls": "g__button g__button--contained g__button--contained--medium",
+            "r": [
+             113,
+             203,
+             165,
+             34
+            ],
+            "t": "Start Shopping",
+            "a": {
+             "href": "https://www.garmin.com/en-US"
+            },
+            "css": {
+             "display": "inline-block",
+             "box-sizing": "border-box",
+             "font-size": "14px",
+             "font-weight": "500",
+             "line-height": "16.1px",
+             "text-transform": "uppercase",
+             "vertical-align": "middle",
+             "cursor": "pointer",
+             "transition-property": "background, color",
+             "transition-duration": "0.2s, 0.2s",
+             "transition-timing-function": "ease, ease",
+             "transition-delay": "0s, 0s",
+             "padding": "8px 24px",
+             "border-width": "1px",
+             "border-style": "solid",
+             "overflow": "auto"
+            }
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "svgs": [],
+ "animations": []
+}

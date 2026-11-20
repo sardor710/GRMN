@@ -35,8 +35,8 @@ function mount(cart, calls = [], overrides = {}) {
 
 test("server mode shows KZT totals, the old price, the unavailable line, and a blocked checkout panel", () => {
   const calls = [], { tree } = mount(CART, calls), text = nodeText(tree);
-  assert.match(text, /3[\s ,.]?000[.,]00 KZT/);
-  assert.match(text, /1[\s ,.]?200[.,]00 KZT/, "the previously seen price is shown");
+  assert.match(text, /KZT\s?3,000\.00/);
+  assert.match(text, /KZT\s?1,200\.00/, "the previously seen price is shown");
   assert.match(text, /price.*changed/i);
   assert.match(text, /no longer available/i);
   assert.doesNotMatch(text, /\$|Estimated tax|Thank you for your order/);
@@ -64,7 +64,7 @@ test("a clean server cart enables checkout; a placed order shows the receipt and
 
 test("server mode with an empty cart shows the empty state", () => {
   const text = nodeText(mount({ ...CART, id: null, version: 0, lines: [], notices: [], subtotal: kzt("0") }).tree);
-  assert.match(text, /Your cart is empty/);
+  assert.match(text, /Your Cart is Empty/);
 });
 
 test("the legacy browser cart offers no fake checkout and never clears itself on checkout", () => {

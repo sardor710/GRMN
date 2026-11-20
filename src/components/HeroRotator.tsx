@@ -58,7 +58,7 @@ export function HeroRotator() {
               </p>
               <a
                 href={slide.href}
-                className="g-btn g-btn--outline-light mt-5"
+                className="g-btn g-btn--on-image mt-5"
               >
                 {slide.cta}
               </a>

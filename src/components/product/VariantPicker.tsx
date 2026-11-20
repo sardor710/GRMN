@@ -12,8 +12,9 @@ interface VariantPickerProps {
 }
 
 /**
- * garmin.com option pickers (measured on /p/1613801, 2026-11-19): a bold "Name - Selected" label, 38px text
- * buttons with a 1.6px #ccc border (black and filled when chosen) and 83px photo swatches. A value that does
+ * garmin.com option pickers (ProductBuyBox.spec.md): a 14/21 "Name - Selected" label (name 700, value 400), 39px
+ * text buttons with a 2px #CCC border and no min-width (black and filled when chosen), 12px apart, and 84px photo
+ * swatches (64px below 1024) with an 80px image, 10.8px apart. A value that does
  * not fit the other choices stays clickable — picking it switches to the variant that has it — and only its
  * photo is faded, as on garmin.com.
  */
@@ -24,8 +25,8 @@ export function VariantPicker({ options, variants, selections, onSelect }: Varia
         const available = availableValueIds(variants, selections, option.id);
         const selected = option.values.find((v) => v.id === selections[option.id]);
         return (
-          <div key={option.id} className="mt-4" role="group" aria-label={option.name}>
-            <p className="text-[14px] font-bold leading-[21px] text-black">
+          <div key={option.id} className="my-4" role="group" aria-label={option.name}>
+            <p className="mb-2 text-[14px] font-bold leading-[21px] text-black">
               {option.name}
               {selected && <span className="font-normal"> - {selected.label}</span>}
             </p>
@@ -34,7 +35,7 @@ export function VariantPicker({ options, variants, selections, onSelect }: Varia
               <select
                 value={selections[option.id] || ""}
                 onChange={(e) => onSelect(option.id, e.target.value)}
-                className="mt-2 w-full max-w-[360px] border-[1.6px] border-[#ccc] bg-white px-3 py-2 text-[14px] text-black focus:border-black focus:outline-none"
+                className="g-select max-w-[360px]"
               >
                 {option.values.map((value) => (
                   <option key={value.id} value={value.id}>
@@ -43,7 +44,7 @@ export function VariantPicker({ options, variants, selections, onSelect }: Varia
                 ))}
               </select>
             ) : (
-              <ul className="mt-2 flex flex-wrap gap-[10.8px]">
+              <ul className={cn("flex flex-wrap", option.display === "swatch" ? "max-w-[570px] gap-[10.8px]" : "gap-3")}>
                 {option.values.map((value) => {
                   const isSelected = value.id === selections[option.id];
                   const fits = available.has(value.id);
@@ -57,8 +58,8 @@ export function VariantPicker({ options, variants, selections, onSelect }: Varia
                           aria-pressed={isSelected}
                           onClick={() => onSelect(option.id, value.id)}
                           className={cn(
-                            "grid h-[83px] w-[83px] place-items-center border-[1.6px] bg-white",
-                            isSelected ? "border-black" : "border-[#ccc] hover:border-black",
+                            "grid h-16 w-16 place-items-center border-2 bg-white transition-[border-color] duration-500 lg:h-[84px] lg:w-[84px]",
+                            isSelected ? "border-black" : "border-garmin-option hover:border-black",
                           )}
                         >
                           {value.swatchImage ? (
@@ -66,12 +67,12 @@ export function VariantPicker({ options, variants, selections, onSelect }: Varia
                             <img
                               src={value.swatchImage}
                               alt=""
-                              className={cn("h-20 w-20 object-contain", !fits && !isSelected && "opacity-30")}
+                              className={cn("h-[60px] w-[60px] object-contain lg:h-20 lg:w-20", !fits && !isSelected && "opacity-30")}
                             />
                           ) : (
                             <span
                               className={cn(
-                                "h-12 w-12 rounded-full border border-[#ccc] bg-[var(--swatch)]",
+                                "h-12 w-12 rounded-full border border-garmin-option bg-[var(--swatch)]",
                                 !fits && !isSelected && "opacity-30",
                               )}
                               style={{ ["--swatch" as string]: value.swatchColor || "#e5e5e5" }}
@@ -88,8 +89,8 @@ export function VariantPicker({ options, variants, selections, onSelect }: Varia
                         aria-pressed={isSelected}
                         onClick={() => onSelect(option.id, value.id)}
                         className={cn(
-                          "h-[38px] min-w-[82px] border-[1.6px] px-[17.5px] text-[14px] leading-[21px] transition-colors",
-                          isSelected ? "border-black bg-black text-white" : "border-[#ccc] bg-white text-black hover:border-black",
+                          "h-[39px] border-2 px-[17.5px] py-[7px] text-[14px] leading-[21px] transition-colors",
+                          isSelected ? "border-black bg-black text-white" : "border-garmin-option bg-white text-black hover:border-black",
                         )}
                       >
                         {value.label}

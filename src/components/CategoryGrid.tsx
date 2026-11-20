@@ -28,7 +28,7 @@ export function CategoryGrid() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-transparent" />
               <div className="absolute inset-x-0 bottom-0 p-5">
                 <h3 className="g-heading text-[24px] leading-none text-white">{t(tile.titleKey)}</h3>
-                <span className="g-btn g-btn--solid mt-3">{t("CategoryGrid.shop")}</span>
+                <span className="g-btn g-btn--black mt-3">{t("CategoryGrid.shop")}</span>
               </div>
             </a>
           ))}

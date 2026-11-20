@@ -1,0 +1,16 @@
+[
+ {
+  "sel": "#product-grid>g-drop-down>label>span:nth-of-type(2)>select",
+  "label": "Featured Products A to Z Z to A Price: Low to High",
+  "transition": "all",
+  "active": {
+   "#product-grid>g-drop-down>label>span:nth-of-type(2)>select": {
+    "border-top-color": "rgb(217, 217, 217) → rgb(0, 0, 0)",
+    "border-right-color": "rgb(217, 217, 217) → rgb(0, 0, 0)",
+    "border-bottom-color": "rgb(217, 217, 217) → rgb(0, 0, 0)",
+    "border-left-color": "rgb(217, 217, 217) → rgb(0, 0, 0)",
+    "outline-width": "0px → 3px"
+   }
+  }
+ }
+]

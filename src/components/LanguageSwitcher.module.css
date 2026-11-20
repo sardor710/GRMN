@@ -21,10 +21,17 @@
   margin-right: 6px;
 }
 
+/* Same type and colour as the garmin.com utility "Help" link (14/21 500 #000, 3.2px inset bar on hover). */
 .header .link {
   display: flex;
   align-items: center;
   height: 64px;
+  color: #000;
+}
+
+.header .link:focus-visible {
+  outline: auto 1px #101010;
+  outline-offset: 1px;
 }
 
 .header .link:hover,

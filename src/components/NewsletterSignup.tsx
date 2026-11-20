@@ -39,7 +39,7 @@ export function NewsletterSignup() {
         <p className="mt-3 text-neutral-600">
           {t("subscribedBody", { hasEmail: email ? "yes" : "no", email, count: selected.size })}
         </p>
-        <button onClick={() => setSubmitted(false)} className="g-btn g-btn--outline-dark mt-8">
+        <button onClick={() => setSubmitted(false)} className="g-btn g-btn--secondary mt-8">
           {t("updatePreferences")}
         </button>
       </div>
@@ -107,7 +107,7 @@ export function NewsletterSignup() {
           </span>
         </label>
 
-        <button type="submit" className="g-btn g-btn--solid mt-8 w-full sm:w-auto">
+        <button type="submit" className="g-btn g-btn--black mt-8 w-full sm:w-auto">
           {t("subscribe")}
         </button>
       </form>

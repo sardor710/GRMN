@@ -1,16 +1,13 @@
 "use client";
 
+import { formatRecordAmount } from "@/lib/money";
 import { useState, useEffect } from "react";
 import {
-  Percent,
-  Plus,
   Search,
   Copy,
   Check,
   Trash2,
   Edit,
-  Layers,
-  Calendar,
 } from "lucide-react";
 import type {
   Discount,
@@ -62,6 +59,9 @@ export default function AdminDiscountsPage() {
     isStackable: false,
     status: "active" as DiscountStatus,
   });
+
+  // Task 5b.1 fix 1: tenge only when known; unmarked legacy discounts are plain numbers.
+  const discountCurrency = (disc: Discount) => (productPage.backend === "postgres" ? "KZT" : disc.currency);
 
   const fetchData = async () => {
     try {
@@ -208,47 +208,43 @@ export default function AdminDiscountsPage() {
       p.family.toLowerCase().includes(productSearch.toLowerCase())
   );
 
-  if(actionError)return <div role="alert" className="border border-red-200 bg-red-50 p-4 text-red-800">{actionError}<button type="button" className="ml-3 underline" onClick={()=>{setActionError(null);fetchData();}}>Reload</button></div>;
+  if(actionError)return <div role="alert" className="border border-garmin-error bg-white p-4 text-garmin-error">{actionError}<button type="button" className="ml-3 underline" onClick={()=>{setActionError(null);fetchData();}}>Reload</button></div>;
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-200 pb-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <Percent className="h-6 w-6 text-[#007cc3]" />
-            <h1 className="g-heading text-2xl uppercase tracking-tight text-neutral-900">
-              Promotions & Discount Campaigns
-            </h1>
+            <h1 className="g-heading g-h2 text-black">Discounts</h1>
           </div>
-          <p className="text-sm text-neutral-500 mt-1">
-            Configure price reductions, voucher percentages, scheduled campaign periods, and product targeting.
+          <p className="text-sm text-muted-foreground mt-1">
+            Discount codes, their dates and the products they apply to.
           </p>
         </div>
 
         <button
           type="button"
           onClick={handleOpenAdd}
-          className="inline-flex items-center gap-2 bg-black px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none"
+          className="g-btn g-btn--black gap-2"
         >
-          <Plus className="h-3.5 w-3.5" />
           <span>Create Promotion</span>
         </button>
       </div>
 
       {/* Discounts Table */}
-      <div className="border border-neutral-200 bg-white rounded-none shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-neutral-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+      <div className="border border-border bg-white rounded-none overflow-hidden">
+        <div className="p-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="relative w-full sm:w-80">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search coupon codes or description..."
-              className="h-10 w-full border border-neutral-300 bg-white pl-9 pr-3 text-sm text-neutral-900 placeholder-neutral-400 focus:border-black focus:outline-none rounded-none"
+              className="h-10 w-full border border-border bg-white pl-9 pr-3 text-sm text-black placeholder-neutral-400 focus:border-black focus:outline-none rounded-none"
             />
           </div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500">
+          <span className="text-xs font-semibold text-muted-foreground">
             {filteredDiscounts.length} Active Rules
           </span>
         </div>
@@ -256,7 +252,7 @@ export default function AdminDiscountsPage() {
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-neutral-200 bg-neutral-50 text-neutral-600 text-xs font-semibold uppercase tracking-wider">
+              <tr className="border-b border-border bg-muted text-black text-xs font-bold uppercase tracking-[-0.2px]">
                 <th className="py-3.5 px-4 font-semibold">Coupon Code</th>
                 <th className="py-3.5 px-4 font-semibold">Rule Value</th>
                 <th className="py-3.5 px-4 font-semibold">Target Scope</th>
@@ -266,16 +262,16 @@ export default function AdminDiscountsPage() {
                 <th className="py-3.5 px-4 font-semibold text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-200 text-neutral-800">
+            <tbody className="divide-y divide-border text-black">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-neutral-400">
+                  <td colSpan={7} className="py-12 text-center text-muted-foreground">
                     Loading promotional vouchers...
                   </td>
                 </tr>
               ) : filteredDiscounts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-neutral-400">
+                  <td colSpan={7} className="py-12 text-center text-muted-foreground">
                     No promotional rules found.
                   </td>
                 </tr>
@@ -284,17 +280,17 @@ export default function AdminDiscountsPage() {
                   <tr key={disc.id} className="hover:bg-neutral-50/80 transition-colors">
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2">
-                        <span className="font-mono tracking-widest text-xs font-semibold text-neutral-900 bg-neutral-100 border border-neutral-200 px-2.5 py-1 rounded-none">
+                        <span className="tabular-nums text-xs font-semibold text-black bg-neutral-100 border border-border px-2.5 py-1 rounded-none">
                           {disc.code}
                         </span>
                         <button
                           type="button"
                           onClick={() => handleCopy(disc.id, disc.code)}
-                          className="text-neutral-400 hover:text-black p-1 transition-colors"
+                          className="text-muted-foreground hover:text-black p-1 transition-colors"
                           title="Copy Code"
                         >
                           {copiedId === disc.id ? (
-                            <Check className="h-3.5 w-3.5 text-emerald-600" />
+                            <Check className="h-3.5 w-3.5 text-black" />
                           ) : (
                             <Copy className="h-3.5 w-3.5" />
                           )}
@@ -302,34 +298,34 @@ export default function AdminDiscountsPage() {
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
-                      <p className="font-semibold text-neutral-900 text-sm">
-                        {disc.type === "percentage" ? `${disc.value}% OFF` : `$${disc.value} OFF`}
+                      <p className="font-semibold text-black text-sm">
+                        {disc.type === "percentage" ? `${disc.value}% off` : `${formatRecordAmount(disc.value, discountCurrency(disc))} off`}
                       </p>
-                      <p className="text-xs text-neutral-500 line-clamp-1">{disc.description}</p>
+                      <p className="text-xs text-muted-foreground line-clamp-1">{disc.description}</p>
                       {disc.minSpend ? (
-                        <p className="text-[11px] text-neutral-400 mt-0.5">Min spend: ${disc.minSpend}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Minimum order: {formatRecordAmount(disc.minSpend, discountCurrency(disc))}</p>
                       ) : null}
                     </td>
                     <td className="py-3.5 px-4">
                       {disc.applyType === "all" ? (
-                        <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 bg-neutral-100 text-neutral-700 border border-neutral-200 rounded-none">
+                        <span className="text-xs font-semibold capitalize px-2 py-0.5 bg-neutral-100 text-neutral-700 border border-border rounded-none">
                           Sitewide
                         </span>
                       ) : disc.applyType === "categories" ? (
                         <div className="space-y-1">
-                          <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 bg-neutral-100 text-neutral-800 border border-neutral-200 rounded-none">
+                          <span className="text-xs font-semibold capitalize px-2 py-0.5 bg-neutral-100 text-black border border-border rounded-none">
                             {disc.targetCategories?.length || 0} Categories
                           </span>
-                          <p className="text-xs text-neutral-500 line-clamp-1">
+                          <p className="text-xs text-muted-foreground line-clamp-1">
                             {disc.targetCategories?.join(", ")}
                           </p>
                         </div>
                       ) : (
                         <div className="space-y-1">
-                          <span className="text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 bg-sky-50 text-sky-700 border border-sky-200 rounded-none">
+                          <span className="text-xs font-semibold capitalize px-2 py-0.5 bg-muted text-garmin-blue border border-garmin-control rounded-none">
                             {disc.targetSkus?.length || 0} Specific Models
                           </span>
-                          <p className="text-xs font-mono text-neutral-500 line-clamp-1">
+                          <p className="text-xs tabular-nums text-muted-foreground line-clamp-1">
                             {disc.targetSkus?.join(", ")}
                           </p>
                         </div>
@@ -338,19 +334,19 @@ export default function AdminDiscountsPage() {
                     <td className="py-3.5 px-4 text-xs text-neutral-600">
                       <div className="space-y-0.5">
                         <p>
-                          Start: <span className="font-medium text-neutral-900">{disc.startDate ? new Date(disc.startDate).toLocaleDateString() : "Immediate"}</span>
+                          Start: <span className="font-medium text-black">{disc.startDate ? new Date(disc.startDate).toLocaleDateString() : "Immediate"}</span>
                         </p>
                         <p>
-                          End: <span className="font-medium text-neutral-900">{disc.expiresAt ? new Date(disc.expiresAt).toLocaleDateString() : "Open"}</span>
+                          End: <span className="font-medium text-black">{disc.expiresAt ? new Date(disc.expiresAt).toLocaleDateString() : "Open"}</span>
                         </p>
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <div className="w-20 bg-neutral-100 border border-neutral-200 h-2 rounded-none overflow-hidden">
+                          <div className="w-20 bg-neutral-100 border border-border h-2 rounded-none overflow-hidden">
                             <div
-                              className="bg-[#007cc3] h-full"
+                              className="bg-garmin-blue h-full"
                               style={{
                                 width: `${Math.min(
                                   100,
@@ -359,23 +355,23 @@ export default function AdminDiscountsPage() {
                               }}
                             />
                           </div>
-                          <span className="text-xs font-semibold text-neutral-900">
+                          <span className="text-xs font-semibold text-black">
                             {disc.usageCount} / {disc.usageLimit || "∞"}
                           </span>
                         </div>
-                        <p className="text-[11px] text-neutral-400">
+                        <p className="text-xs text-muted-foreground">
                           Limit {disc.perCustomerLimit || 1} / customer
                         </p>
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
                       <span
-                        className={`text-[11px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-none ${
+                        className={`text-xs font-semibold px-2 py-0.5 rounded-none ${
                           disc.status === "active"
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            ? "bg-garmin-badge-lime/25 text-black border border-garmin-badge-lime"
                             : disc.status === "expired"
-                            ? "bg-neutral-100 text-neutral-600 border border-neutral-200"
-                            : "bg-rose-50 text-rose-700 border border-rose-200"
+                            ? "bg-neutral-100 text-neutral-600 border border-border"
+                            : "bg-white text-garmin-error border border-garmin-error"
                         }`}
                       >
                         {disc.status}
@@ -386,7 +382,7 @@ export default function AdminDiscountsPage() {
                         <button
                           type="button"
                           onClick={() => handleOpenEdit(disc)}
-                          className="p-2 text-neutral-500 hover:text-black hover:bg-neutral-100 transition-colors rounded-none"
+                          className="p-2 text-muted-foreground hover:text-black hover:bg-neutral-100 transition-colors rounded-none"
                           title="Edit Promotion"
                         >
                           <Edit className="h-4 w-4" />
@@ -394,7 +390,7 @@ export default function AdminDiscountsPage() {
                         <button
                           type="button"
                           onClick={() => handleDelete(disc.id)}
-                          className="p-2 text-neutral-500 hover:text-rose-600 hover:bg-rose-50 transition-colors rounded-none"
+                          className="p-2 text-muted-foreground hover:text-garmin-error hover:bg-white transition-colors rounded-none"
                           title="Delete Promotion"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -415,14 +411,13 @@ export default function AdminDiscountsPage() {
         onClose={() => setIsModalOpen(false)}
         maxWidth="3xl"
         title={editingDiscount ? "Edit Promotion Campaign" : "Create Promotion Voucher"}
-        subtitle="Configure discount rates, schedule validity, targeted product models, and redemptions"
       >
         <AdminPageControls page={productPage} />
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Row 1: Code & Type */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Coupon Code *
               </label>
               <input
@@ -431,20 +426,20 @@ export default function AdminDiscountsPage() {
                 value={formData.code}
                 onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
                 placeholder="e.g. VIPMARQ20"
-                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-mono tracking-wider font-semibold text-neutral-900 focus:border-black focus:outline-none uppercase rounded-none"
+                className="h-10 w-full border border-border bg-white px-3 text-sm tabular-nums font-semibold text-black focus:border-black focus:outline-none rounded-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Discount Rule
               </label>
               <select
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value as DiscountType })}
-                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-semibold uppercase text-neutral-900 focus:border-black focus:outline-none rounded-none"
+                className="h-10 w-full border border-border bg-white px-3 text-sm font-semibold text-black focus:border-black focus:outline-none rounded-none"
               >
                 <option value="percentage">Percentage Discount (% Off)</option>
-                <option value="fixed">Fixed Dollar Reduction ($ Off)</option>
+                <option value="fixed">Fixed amount off</option>
               </select>
             </div>
           </div>
@@ -452,7 +447,7 @@ export default function AdminDiscountsPage() {
           {/* Row 2: Value, Min Spend, Total Limit, Per-Customer Limit */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 {formData.type === "percentage" ? "Percentage (% Off)" : "Amount ($ Off)"} *
               </label>
               <input
@@ -460,81 +455,79 @@ export default function AdminDiscountsPage() {
                 required
                 value={formData.value}
                 onChange={(e) => setFormData({ ...formData, value: Number(e.target.value) })}
-                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-semibold text-neutral-900 focus:border-black focus:outline-none rounded-none"
+                className="h-10 w-full border border-border bg-white px-3 text-sm font-semibold text-black focus:border-black focus:outline-none rounded-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
-                Min Spend ($)
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
+                Minimum order
               </label>
               <input
                 type="number"
                 value={formData.minSpend}
                 onChange={(e) => setFormData({ ...formData, minSpend: Number(e.target.value) })}
                 placeholder="0 = No Min"
-                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
+                className="h-10 w-full border border-border bg-white px-3 text-sm text-black focus:border-black focus:outline-none rounded-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Total Limit
               </label>
               <input
                 type="number"
                 value={formData.usageLimit}
                 onChange={(e) => setFormData({ ...formData, usageLimit: Number(e.target.value) })}
-                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
+                className="h-10 w-full border border-border bg-white px-3 text-sm text-black focus:border-black focus:outline-none rounded-none"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Per-Client Limit
               </label>
               <input
                 type="number"
                 value={formData.perCustomerLimit}
                 onChange={(e) => setFormData({ ...formData, perCustomerLimit: Number(e.target.value) })}
-                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
+                className="h-10 w-full border border-border bg-white px-3 text-sm text-black focus:border-black focus:outline-none rounded-none"
               />
             </div>
           </div>
 
           {/* Row 3: Validity Period */}
-          <div className="border border-neutral-200 bg-neutral-50/50 p-4 space-y-3 rounded-none">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-900 flex items-center gap-1.5">
-              <Calendar className="h-4 w-4 text-[#007cc3]" />
+          <div className="border border-border bg-neutral-50/50 p-4 space-y-3 rounded-none">
+            <h4 className="font-sans text-xs font-semibold text-black flex items-center gap-1.5">
               <span>Schedule Validity Period</span>
             </h4>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1">
+                <label className="block text-xs font-semibold text-neutral-600 mb-1">
                   Start Date
                 </label>
                 <input
                   type="date"
                   value={formData.startDate}
                   onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
+                  className="h-10 w-full border border-border bg-white px-3 text-sm text-black focus:border-black focus:outline-none rounded-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-600 mb-1">
+                <label className="block text-xs font-semibold text-neutral-600 mb-1">
                   End / Expiry Date
                 </label>
                 <input
                   type="date"
                   value={formData.expiresAt}
                   onChange={(e) => setFormData({ ...formData, expiresAt: e.target.value })}
-                  className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
+                  className="h-10 w-full border border-border bg-white px-3 text-sm text-black focus:border-black focus:outline-none rounded-none"
                 />
               </div>
             </div>
           </div>
 
           {/* Row 4: Target Scope */}
-          <div className="border border-neutral-200 bg-neutral-50/50 p-4 space-y-3 rounded-none">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-900 flex items-center gap-1.5">
-              <Layers className="h-4 w-4 text-[#007cc3]" />
+          <div className="border border-border bg-neutral-50/50 p-4 space-y-3 rounded-none">
+            <h4 className="font-sans text-xs font-semibold text-black flex items-center gap-1.5">
               <span>Target Scope & Product Filter</span>
             </h4>
 
@@ -548,14 +541,14 @@ export default function AdminDiscountsPage() {
                   key={opt.id}
                   type="button"
                   onClick={() => setFormData({ ...formData, applyType: opt.id as DiscountApplyType })}
-                  className={`p-3 text-left border rounded-none transition-all ${
+                  className={`p-3 text-left border rounded-none transition-colors ${
                     formData.applyType === opt.id
                       ? "bg-white border-black text-black ring-1 ring-black"
-                      : "bg-white border-neutral-200 text-neutral-600 hover:border-neutral-300"
+                      : "bg-white border-border text-neutral-600 hover:border-neutral-300"
                   }`}
                 >
-                  <p className="text-xs font-semibold uppercase tracking-wider">{opt.label}</p>
-                  <p className="text-[11px] text-neutral-500 mt-0.5">{opt.desc}</p>
+                  <p className="text-xs font-semibold">{opt.label}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">{opt.desc}</p>
                 </button>
               ))}
             </div>
@@ -572,8 +565,8 @@ export default function AdminDiscountsPage() {
                         key={cat}
                         className={`flex items-center gap-2 p-2.5 text-xs border rounded-none cursor-pointer transition-colors ${
                           isSelected
-                            ? "bg-neutral-100 border-neutral-400 text-neutral-900 font-semibold"
-                            : "bg-white border-neutral-200 text-neutral-600 hover:border-neutral-300"
+                            ? "bg-neutral-100 border-neutral-400 text-black font-semibold"
+                            : "bg-white border-border text-neutral-600 hover:border-neutral-300"
                         }`}
                       >
                         <input
@@ -595,18 +588,18 @@ export default function AdminDiscountsPage() {
               <div className="pt-2 space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-neutral-600">
-                    Selected: <span className="text-emerald-700 font-semibold">{formData.targetSkus.length} models</span>
+                    Selected: <span className="text-black font-semibold">{formData.targetSkus.length} models</span>
                   </p>
                   <input
                     type="text"
                     aria-label="Search product pages" value={productSearch}
                     onChange={(e) => setProductSearch(e.target.value)}
                     placeholder="Filter models to include..."
-                    className="h-8 w-52 border border-neutral-300 bg-white px-2.5 text-xs text-neutral-900 focus:border-black focus:outline-none rounded-none"
+                    className="h-8 w-52 border border-border bg-white px-2.5 text-xs text-black focus:border-black focus:outline-none rounded-none"
                   />
                 </div>
 
-                <div className="max-h-48 overflow-y-auto space-y-1 border border-neutral-200 bg-white p-2 rounded-none">
+                <div className="max-h-48 overflow-y-auto space-y-1 border border-border bg-white p-2 rounded-none">
                   {filteredModalProducts.map((p) => {
                     const isSelected = formData.targetSkus.includes(p.sku);
                     return (
@@ -614,7 +607,7 @@ export default function AdminDiscountsPage() {
                         key={p.id}
                         className={`flex items-center justify-between p-2 text-xs cursor-pointer transition-colors border rounded-none ${
                           isSelected
-                            ? "bg-neutral-50 border-neutral-400 text-neutral-900 font-medium"
+                            ? "bg-neutral-50 border-neutral-400 text-black font-medium"
                             : "border-transparent hover:bg-neutral-50 text-neutral-700"
                         }`}
                       >
@@ -625,10 +618,10 @@ export default function AdminDiscountsPage() {
                             onChange={() => toggleSku(p.sku)}
                             className="h-4 w-4 accent-black rounded-none"
                           />
-                          <span className="font-mono text-neutral-500 text-[11px]">{p.sku}</span>
+                          <span className="tabular-nums text-muted-foreground text-xs">{p.sku}</span>
                           <span className="truncate">{p.name}</span>
                         </div>
-                        <span className="font-semibold text-neutral-900 ml-2">${p.price.toFixed(2)}</span>
+                        <span className="ml-2 whitespace-nowrap font-bold tabular-nums text-black">{formatRecordAmount(p.price, productPage.backend === "postgres" ? "KZT" : p.currency)}</span>
                       </label>
                     );
                   })}
@@ -639,7 +632,7 @@ export default function AdminDiscountsPage() {
 
           {/* Description & Rules */}
           <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
+            <label className="block text-xs font-semibold text-neutral-700 mb-1">
               Promotion Description
             </label>
             <input
@@ -647,20 +640,20 @@ export default function AdminDiscountsPage() {
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="e.g. 20% off all luxury MARQ & fēnix watches during Summer promotion"
-              className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm text-neutral-900 focus:border-black focus:outline-none rounded-none"
+              className="h-10 w-full border border-border bg-white px-3 text-sm text-black focus:border-black focus:outline-none rounded-none"
             />
           </div>
 
           {/* Status & Stackable */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
+              <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Status
               </label>
               <select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as DiscountStatus })}
-                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-semibold uppercase text-neutral-900 focus:border-black focus:outline-none rounded-none"
+                className="h-10 w-full border border-border bg-white px-3 text-sm font-semibold text-black focus:border-black focus:outline-none rounded-none"
               >
                 <option value="active">Active</option>
                 <option value="disabled">Disabled</option>
@@ -681,17 +674,17 @@ export default function AdminDiscountsPage() {
           </div>
 
           {/* Submit Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200">
+          <div className="flex justify-end gap-3 pt-4 border-t border-border">
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-700 hover:bg-neutral-50 rounded-none transition-colors"
+              className="g-btn g-btn--secondary"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="bg-black px-6 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none"
+              className="g-btn g-btn--black"
             >
               {editingDiscount ? "Save Promotion" : "Deploy Promotion"}
             </button>

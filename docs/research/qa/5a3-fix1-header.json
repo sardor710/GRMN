@@ -1,0 +1,193 @@
+{
+ "target": "https://www.garmin.com/en-US/c/wearables-smartwatches/",
+ "clone": "http://localhost:3021/en/c/wearables-smartwatches",
+ "sel": "body>header",
+ "cloneSel": "header",
+ "widths": {
+  "390": {
+   "mismatchPct": 0.08,
+   "size": {
+    "target": [
+     390,
+     99
+    ],
+    "clone": [
+     390,
+     99
+    ]
+   },
+   "hotBands": [],
+   "file": "docs/design-references/qa/5a3-fix1-header-390-diff.png",
+   "text": {
+    "matched": 8,
+    "of": 204,
+    "issues": [
+     {
+      "t": "Smartwatches",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "18px → 14px",
+      "lh": "32px → normal"
+     },
+     {
+      "t": "HOLIDAY SALE",
+      "ff": "Superscripts-Oswald → GarminSuperscriptRoboto",
+      "fs": "20px → 12.8px",
+      "lh": "25px → 19.2px",
+      "ls": "0.8px → 0.32px",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "0,0 → 150,74",
+      "size": "0×0 → 89×15"
+     },
+     {
+      "t": "Sports & Fitness",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "18px → 14px",
+      "lh": "32px → normal"
+     },
+     {
+      "t": "Outdoor Recreation",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "18px → 14px",
+      "lh": "32px → normal"
+     },
+     {
+      "t": "Auto & Home",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "18px → 14px",
+      "lh": "32px → normal"
+     },
+     {
+      "t": "Marine",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "18px → 14px",
+      "lh": "32px → normal"
+     },
+     {
+      "t": "Aviation",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "18px → 14px",
+      "lh": "32px → normal"
+     },
+     {
+      "t": "Sale",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "18px → 14px",
+      "lh": "32px → normal"
+     }
+    ],
+    "missing": [
+     "Skip navigation links",
+     "Products",
+     "All Smartwatches",
+     "Health & Fitness Tracking",
+     "Design Your Own Watch",
+     "Watches for Women",
+     "Fashion & Hybrid Smartwatches",
+     "MARQ Luxury Watch Collection",
+     "Running",
+     "Multisport & Triathlete",
+     "Adventure",
+     "Swimming",
+     "Diving",
+     "Golf",
+     "Kids Smartwatches",
+     "Maps",
+     "Outdoor Maps",
+     "Golf Course Locator",
+     "Accessories & Plans",
+     "Accessories"
+    ]
+   }
+  },
+  "1440": {
+   "mismatchPct": 2.19,
+   "size": {
+    "target": [
+     1440,
+     100
+    ],
+    "clone": [
+     1440,
+     100
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "0-40",
+     "pct": 5.3
+    }
+   ],
+   "file": "docs/design-references/qa/5a3-fix1-header-1440-diff.png",
+   "text": {
+    "matched": 9,
+    "of": 204,
+    "issues": [
+     {
+      "t": "Smartwatches",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "HOLIDAY SALE",
+      "ff": "Superscripts-Oswald → GarminSuperscriptRoboto",
+      "fs": "20px → 12.8px",
+      "lh": "25px → 19.2px",
+      "ls": "0.8px → 0.32px",
+      "c": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+      "pos": "977,303 → 675,74",
+      "size": "216×55 → 89×15"
+     },
+     {
+      "t": "Sports & Fitness",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Outdoor Recreation",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Auto & Home",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Marine",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Aviation",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Sale",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Help",
+      "ff": "Superscripts-Roboto → GarminSuperscriptRoboto"
+     }
+    ],
+    "missing": [
+     "Skip navigation links",
+     "Products",
+     "All Smartwatches",
+     "Health & Fitness Tracking",
+     "Design Your Own Watch",
+     "Watches for Women",
+     "Fashion & Hybrid Smartwatches",
+     "MARQ Luxury Watch Collection",
+     "Running",
+     "Multisport & Triathlete",
+     "Adventure",
+     "Swimming",
+     "Diving",
+     "Golf",
+     "Kids Smartwatches",
+     "Maps",
+     "Outdoor Maps",
+     "Golf Course Locator",
+     "Accessories & Plans",
+     "Accessories"
+    ]
+   }
+  }
+ }
+}

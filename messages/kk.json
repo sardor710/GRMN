@@ -12,11 +12,11 @@
     "blogFallbackTitle": "Garmin блогы және фитнес нұсқаулықтары",
     "blogShortTitle": "Garmin блогы",
     "blogPostTitle": "{title} | Garmin блогы",
-    "blogPostDescription": "Garmin ресми блогында жаттығу кеңестері, GPS навигация нұсқаулықтары және смарт-сағат мүмкіндіктері.",
+    "blogPostDescription": "Garmin блогындағы жаттығу кеңестері, GPS навигация нұсқаулықтары және смарт-сағат мүмкіндіктері.",
     "productFallbackTitle": "Garmin смарт-сағаттары мен GPS құрылғылары",
     "productFallbackName": "Garmin өнімі",
-    "productTitle": "{name} | Garmin ресми смарт-сағаты",
-    "productDescription": "{name}: озық GPS-бақылау, денсаулық көрсеткіштері және ұзақ батарея жұмысы.",
+    "productTitle": "{name} | Garmin",
+    "productDescription": "{name}: сипаттамалары, бағасы және қолжетімділігі.",
     "catalogueTitle": "{title} | Garmin",
     "garminPayTitle": "Garmin Pay™ | Контактсыз төлем",
     "garminPayDescription": "Әмиян жоқ па? Телефон жоқ па? Мәселе емес. Үйлесімді Garmin смарт-сағатымен немесе велокомпьютерімен жолда контактсыз төлеңіз."
@@ -88,7 +88,7 @@
       "otherItems": "+ тағы {count, plural, one {# тауар} other {# тауар}}",
       "placed": "Рәсімделді: {date}",
       "destination": "Мекенжай: {title} ({city})",
-      "inspect": "Жеткізу бағыты →"
+      "inspect": "Жеткізу бағыты"
     },
     "orders": {
       "title": "Тапсырыстар тарихы және бақылау ({count})",
@@ -99,7 +99,7 @@
       "total": "Тапсырыс сомасы",
       "carrier": "Тасымалдаушы: <b>{carrier}</b>",
       "tracking": "Трек-нөмір {number}",
-      "view": "Тапсырыс мәліметтері және бағыт →"
+      "view": "Тапсырыс мәліметтері және бағыт"
     },
     "devices": {
       "title": "Тіркелген құрылғылар",
@@ -156,7 +156,7 @@
   "BlogArticle": {
     "byline": "Авторы: {author}",
     "defaultReadTime": "4 мин оқу",
-    "backToAll": "← Барлық мақалалар",
+    "backToAll": "Барлық мақалалар",
     "related": "Ұқсас мақалалар"
   },
   "BlogExplorer": {
@@ -183,12 +183,10 @@
   },
   "Cart": {
     "heading": "Себет",
-    "thankYou": "Тапсырысыңызға рахмет!",
+    "thankYou": "Тапсырысыңызға рахмет.",
     "demoNotice": "Бұл тапсырысты рәсімдеудің демо-нұсқасы — төлем жүргізілген жоқ. Себет тазартылды.",
     "continueShoppingButton": "Сатып алуды жалғастыру",
     "emptyHeading": "Себетіңіз бос",
-    "emptyBody": "Сіз әлі ештеңе қоспаған сияқтысыз.",
-    "shopSmartwatches": "Смарт-сағаттарды қарау",
     "item": "Тауар",
     "quantity": "Саны",
     "price": "Бағасы",
@@ -196,16 +194,15 @@
     "remove": "Жою",
     "decrease": "Азайту",
     "increase": "Көбейту",
-    "continueShopping": "← Сатып алуды жалғастыру",
+    "continueShopping": "Сатып алуды жалғастыру",
     "clear": "Себетті тазалау",
     "summary": "Тапсырыс қорытындысы",
     "subtotal": "Аралық сома",
     "shipping": "Жеткізу",
-    "free": "ТЕГІН",
+    "free": "Тегін",
     "tax": "Болжамды салық",
     "total": "Барлығы",
     "checkout": "Тапсырысты рәсімдеу",
-    "freeShippingNote": "25 $-дан асатын тапсырыстарға стандартты жеткізу тегін.",
     "loading": "Себет жүктелуде…",
     "loadFailed": "Себетті жүктеу мүмкін болмады: {error}",
     "priceChanged": "Себеттегі тауардың бағасы қосылғаннан бері өзгерді.",
@@ -215,7 +212,8 @@
     "lineUnavailable": "Бұл тауар енді қолжетімсіз",
     "outOfStock": "Қоймада жоқ",
     "wasEach": "Бұрын бір данасы <old>{price}</old>",
-    "checkoutUnavailable": "Онлайн тапсырыс беру әзірге қолжетімсіз. Себетіңіз осы браузерде сақталған."
+    "checkoutUnavailable": "Онлайн тапсырыс беру әзірге қолжетімсіз. Себетіңіз осы браузерде сақталған.",
+    "startShopping": "Сатып алуды бастау"
   },
   "CatalogueGrid": {
     "compare": "Салыстыру",
@@ -229,7 +227,7 @@
       "featured": "Алдымен жаңалары",
       "priceAsc": "Баға: өсу бойынша",
       "priceDesc": "Баға: кему бойынша",
-      "name": "Атауы: А-дан Я-ға дейін"
+      "name": "А-дан Я-ға дейін"
     },
     "groups": {
       "battery": "Смарт-сағат режиміндегі батарея жұмысы",
@@ -263,17 +261,18 @@
       "medium": "Орташа (44–49 мм)",
       "large": "Үлкен (≥ 50 мм)"
     },
-    "nextProducts": "Келесі тауарлар"
+    "nextProducts": "Келесі тауарлар",
+    "filterAndSort": "Сүзу және сұрыптау"
   },
   "CataloguePage": {
     "smartwatches": {
       "title": "Смарт-сағаттар",
-      "heading": "БАРЛЫҚ СМАРТ-САҒАТТАР"
+      "heading": "Барлық смарт-сағаттар"
     },
     "running": {
       "title": "Жүгіруге арналған GPS сағаттар",
-      "heading": "ЖҮГІРУГЕ АРНАЛҒАН БАРЛЫҚ СМАРТ-САҒАТТАР",
-      "heroLabel": "СПОРТ ЖӘНЕ ФИТНЕС",
+      "heading": "Жүгіруге арналған барлық смарт-сағаттар",
+      "heroLabel": "Спорт және фитнес",
       "heroBlurb": "Жүгіруге арналған смарт-сағаттар"
     }
   },
@@ -293,13 +292,13 @@
     "heading": "Смарт-сағаттарды салыстыру",
     "intro": "Сипаттамаларды салыстыру үшін {max} үлгіге дейін қосыңыз.",
     "addWatch": "Сағат қосу",
-    "selectModel": "Үлгіні таңдаңыз…",
+    "selectModel": "Үлгіні таңдаңыз",
     "empty": "Салыстыруды бастау үшін жоғарыда сағат қосыңыз.",
-    "remove": "✕ Алып тастау",
+    "remove": "Алып тастау",
     "removeLabel": "{name} алып тастау",
     "shop": "Сатып алу",
     "yes": "Иә",
-    "back": "← Барлық смарт-сағаттарға",
+    "back": "Барлық смарт-сағаттарға",
     "rows": {
       "price": "Бағасы",
       "family": "Өнім желісі",
@@ -315,14 +314,14 @@
   },
   "Footer": {
     "navLabel": "Сайттың төменгі навигациясы",
-    "region": "АҚШ",
+    "region": "Қазақстан",
     "social": "{network} желісіндегі Garmin",
     "copyright": "© Garmin Ltd. немесе оның еншілес компаниялары. Барлық құқықтар қорғалған.",
     "columns": {
-      "customerService": "КЛИЕНТТЕРГЕ ҚЫЗМЕТ",
-      "company": "КОМПАНИЯ",
-      "platforms": "ПЛАТФОРМАЛАР",
-      "forBusiness": "БИЗНЕСКЕ"
+      "customerService": "Клиенттерге қызмет",
+      "company": "Компания",
+      "platforms": "Платформалар",
+      "forBusiness": "Бизнеске"
     },
     "links": {
       "supportCenter": "Қолдау орталығы",
@@ -381,7 +380,7 @@
     "searchHeading": "Garmin бойынша іздеу",
     "searchPlaceholder": "Тауарларды іздеу",
     "closeSearch": "Іздеуді жабу",
-    "noResults": "Ұсынылған тауарлар табылмады.",
+    "noResults": "Тауарлар табылмады.",
     "takeover": "МЕРЕКЕЛІК ЖЕҢІЛДІКТЕР",
     "nav": {
       "smartwatches": "Смарт-сағаттар",
@@ -571,7 +570,7 @@
     "placeholder": "aidar@example.com",
     "signUp": "Жазылу",
     "privacyLink": "Электрондық пошта құпиялылығы туралы біліңіз.",
-    "subscribedHeading": "Сіз жазылдыңыз!",
+    "subscribedHeading": "Сіз жазылдыңыз.",
     "subscribedBody": "Жазылғаныңызға рахмет{hasEmail, select, yes {, {email}} other {}}. Garmin жаңалықтарын{count, plural, =0 {} one { # тақырып бойынша} other { # тақырып бойынша}} поштаңыздан күтіңіз.",
     "updatePreferences": "Баптауларды өзгерту",
     "interestsLegend": "Сізді не қызықтырады?",
@@ -655,12 +654,10 @@
   },
   "ProductAccessories": {
     "quickFitHeading": "QuickFit® бауларының үйлесімділігі",
-    "quickFitBody": "fēnix® 8 сериясы QuickFit бауларын қолдайды: 43 мм үлгілерге <b>20 мм</b>, 47 мм үлгілерге <b>22 мм</b> және 51 мм үлгілерге <b>26 мм</b>. Құралсыз бірнеше секундта ауыстырылады.",
-    "toolFree": "Құралсыз ауыстыру",
+    "quickFitBody": "fēnix® 8 сериясы QuickFit бауларын қолдайды: 43 мм үлгілерге <b>20 мм</b>, 47 мм үлгілерге <b>22 мм</b> және 51 мм үлгілерге <b>26 мм</b>.",
     "empty": "Бұл санатта аксессуарлар жоқ.",
     "partNumber": "Артикул {partNumber}",
-    "currency": "USD",
-    "added": "Себетке қосылды ✓",
+    "added": "Себетке қосылды",
     "addToCart": "Себетке салу",
     "categories": {
       "all": "Барлығы",
@@ -672,7 +669,6 @@
     }
   },
   "ProductCard": {
-    "price": "{price} USD",
     "andUp": "бастап"
   },
   "ProductTabs": {
@@ -684,32 +680,27 @@
       "maps": "Карталар",
       "compatible": "Үйлесімді құрылғылар"
     },
-    "specifications": "Техникалық сипаттамалар",
     "mapsText": "Алдын ала орнатылған TopoActive карталары және жүктелетін туристік, велосипед және тау шаңғысы карталарына қолдау.",
-    "compatibleText": "iPhone® және Android™ құрылғыларындағы Garmin Connect™ қосымшасымен және Connect IQ™ дүкенімен үйлесімді."
+    "compatibleText": "iPhone® және Android™ құрылғыларындағы Garmin Connect™ қосымшасымен және Connect IQ™ дүкенімен үйлесімді.",
+    "label": "Тауар туралы ақпарат"
   },
   "ProductTop": {
-    "price": "{price} USD",
     "previousImage": "Алдыңғы сурет",
     "nextImage": "Келесі сурет",
     "partNumber": "Артикул: {partNumber}",
-    "financing": "Айына 69 $-дан бастап немесе <brand>affirm</brand> арқылы жылдық 0%.",
-    "qualify": "Сізге сай келетінін тексеріңіз",
-    "hsa": "Сәйкес клиенттер HSA/FSA қаражатымен төлей алады.",
-    "learnMore": "Толығырақ",
     "caseSize": "Корпус өлшемі",
     "version": "Нұсқа",
     "modelColor": "Үлгі/түс",
     "outOfStockNote": "Қазір қоймада жоқ.",
     "shipsIn": "1–3 жұмыс күні ішінде жөнелтіледі.",
     "outOfStock": "Қоймада жоқ",
-    "added": "Қосылды ✓",
+    "added": "Қосылды",
     "addToCart": "Себетке салу",
     "customize": "Баптау",
     "purchasingUnavailable": "Сатып алу қолжетімсіз",
     "addFailed": "Тауарды қосу мүмкін болмады",
     "saveToWishlist": "Таңдаулыларға қосу",
-    "savedToWishlist": "Таңдаулыларда ✓",
+    "savedToWishlist": "Таңдаулыларда",
     "wishlistSignIn": "Тауарларды таңдаулыларға сақтау үшін жүйеге кіріңіз.",
     "wishlistFailed": "Тауарды сақтау мүмкін болмады",
     "variant": "Нұсқа",
@@ -717,7 +708,8 @@
     "availabilityOutOfStock": "Қоймада жоқ",
     "availabilityUnknown": "Қолжетімділігі белгісіз",
     "sale": "Жеңілдік",
-    "save": "Үнемдеу {amount}"
+    "save": "Үнемдеу {amount}",
+    "breadcrumb": "Навигация жолы"
   },
   "RelatedProducts": {
     "heading": "Сізге мыналар да ұнауы мүмкін"
@@ -805,7 +797,7 @@
       "title": "Жеткізу мекенжайлары ({count}/{max})",
       "add": "Мекенжай қосу",
       "maxReached": "Шекке жетті: {max} мекенжай",
-      "empty": "Сақталған мекенжайлар әлі жоқ. Тапсырысты жылдам рәсімдеу үшін мекенжай қосыңыз.",
+      "empty": "Сақталған мекенжайлар жоқ.",
       "primary": "Негізгі",
       "edit": "Мекенжайды өзгерту",
       "editLabel": "«{label}» өзгерту",

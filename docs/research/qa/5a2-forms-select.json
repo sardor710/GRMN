@@ -1,0 +1,53 @@
+{
+ "target": "https://www.garmin.com/en-US/c/wearables-smartwatches/",
+ "clone": "http://localhost:3021/en/c/wearables-smartwatches",
+ "sel": "div.product-grid__options select",
+ "cloneSel": "select#sort",
+ "widths": {
+  "1440": {
+   "mismatchPct": 9.96,
+   "size": {
+    "target": [
+     270,
+     48
+    ],
+    "clone": [
+     270,
+     48
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "40-48",
+     "pct": 12.4
+    },
+    {
+     "y": "0-40",
+     "pct": 9.5
+    }
+   ],
+   "file": "docs/design-references/qa/5a2-forms-select-1440-diff.png",
+   "text": {
+    "matched": 2,
+    "of": 5,
+    "issues": [
+     {
+      "t": "Price: Low to High",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "-1154,-573 → -1134,-676"
+     },
+     {
+      "t": "Price: High to Low",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "-1154,-573 → -1134,-676"
+     }
+    ],
+    "missing": [
+     "Featured Products",
+     "A to Z",
+     "Z to A"
+    ]
+   }
+  }
+ }
+}

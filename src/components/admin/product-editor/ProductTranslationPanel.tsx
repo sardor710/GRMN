@@ -43,8 +43,8 @@ interface ProductTranslationPanelProps {
   onChange: (next: ProductTranslations) => void;
 }
 
-const sectionClass = "space-y-3 border border-neutral-200 p-4";
-const sectionTitle = "text-[12px] font-heading uppercase tracking-wider font-semibold text-black";
+const sectionClass = "space-y-3 border border-border p-4";
+const sectionTitle = "text-xs font-semibold text-black";
 
 export function ProductTranslationPanel({ locale, product, translations, onChange }: ProductTranslationPanelProps) {
   const get = (path: OverlayPath) => getOverlayString(translations, locale, path);
@@ -55,37 +55,37 @@ export function ProductTranslationPanel({ locale, product, translations, onChang
   return (
     <div className="space-y-5">
       {/* Shared, read-only */}
-      <section className="space-y-2 border border-dashed border-neutral-300 bg-neutral-50 p-4">
+      <section className="space-y-2 border border-dashed border-border bg-neutral-50 p-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h3 className={sectionTitle}>Shared fields</h3>
           <SharedAcrossLanguages />
         </div>
-        <dl className="grid grid-cols-2 gap-3 text-[12px] sm:grid-cols-4">
+        <dl className="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
           <div>
             <dt className={labelClass}>SKU</dt>
-            <dd className="mt-1 font-mono text-neutral-800">{product.sku || "—"}</dd>
+            <dd className="mt-1 tabular-nums text-black">{product.sku || "—"}</dd>
           </div>
           <div>
             <dt className={labelClass}>Price</dt>
-            <dd className="mt-1 text-neutral-800">{formatKzt(hasVariants ? defaultVariant?.price : product.price)}</dd>
+            <dd className="mt-1 text-black">{formatKzt(hasVariants ? defaultVariant?.price : product.price)}</dd>
           </div>
           <div>
             <dt className={labelClass}>Stock</dt>
-            <dd className="mt-1 text-neutral-800">{hasVariants ? defaultVariant?.stock ?? 0 : product.stock}</dd>
+            <dd className="mt-1 text-black">{hasVariants ? defaultVariant?.stock ?? 0 : product.stock}</dd>
           </div>
           <div>
             <dt className={labelClass}>Status</dt>
-            <dd className="mt-1 uppercase text-neutral-800">{product.status}</dd>
+            <dd className="mt-1 text-black">{product.status}</dd>
           </div>
         </dl>
         {product.images.length > 0 && (
           <div className="flex flex-wrap gap-2 pt-1" aria-label="Product photos (shared)">
             {product.images.slice(0, 12).map((img) => (
               // eslint-disable-next-line @next/next/no-img-element -- admin thumbnail of uploaded/imported paths
-              <img key={img.id} src={img.src} alt="" className="h-12 w-12 border border-neutral-200 bg-white object-contain p-0.5" />
+              <img key={img.id} src={img.src} alt="" className="h-12 w-12 border border-border bg-white object-contain p-0.5" />
             ))}
             {product.images.length > 12 && (
-              <span className="self-center text-[11px] text-neutral-500">+{product.images.length - 12} more</span>
+              <span className="self-center text-xs text-muted-foreground">+{product.images.length - 12} more</span>
             )}
           </div>
         )}
@@ -192,7 +192,7 @@ export function ProductTranslationPanel({ locale, product, translations, onChang
             {product.images.map((img) => (
               <div key={img.id} className="flex items-center gap-2">
                 {/* eslint-disable-next-line @next/next/no-img-element -- admin thumbnail */}
-                <img src={img.src} alt="" className="h-8 w-8 shrink-0 border border-neutral-200 object-contain" />
+                <img src={img.src} alt="" className="h-8 w-8 shrink-0 border border-border object-contain" />
                 <div className="flex-1">
                   <TranslationField
                     compact

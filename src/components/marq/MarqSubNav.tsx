@@ -23,7 +23,7 @@ export function MarqSubNav() {
           </Link>
           <a
             href="#collection"
-            className="g-btn g-btn--outline-light text-[12px]"
+            className="g-btn g-btn--on-image text-[12px]"
           >
             Buy Now
           </a>

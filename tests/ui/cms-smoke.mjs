@@ -59,7 +59,7 @@ async function productsListScenario({cms,headers,send,evaluate,navigate,text}){
     // Clicking the product name lands on the edit overlay and opens the editor.
     assert.equal(await evaluate(`(()=>{const name=document.querySelector(${JSON.stringify(row("C"))}).querySelector('p.font-medium');const r=name.getBoundingClientRect();return document.elementFromPoint(r.left+r.width/2,r.top+r.height/2)?.getAttribute('aria-label');})()`),"Edit UI LIST C");
     await pressAt(`document.querySelector(${JSON.stringify(row("C"))}).querySelector('p.font-medium')`);
-    await until(async()=>await evaluate("!!document.querySelector('form')")&&/edit model: ui list c/i.test(await text()),"Clicking the name did not open the editor");
+    await until(async()=>await evaluate("!!document.querySelector('form')")&&/edit ui list c/i.test(await text()),"Clicking the name did not open the editor");
     await evaluate("window.confirm=()=>true;window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}));true");await until(()=>evaluate("!document.querySelector('form')"),"Editor did not close");
     // Inline status menu: draft -> published, persisted across a reload.
     await tap(`${row("C")} button[aria-label^="Status of"]`);
@@ -239,7 +239,7 @@ async function variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,
     options:[SIZE_OPTION(47,51)],variants:[sizeVariant("UI-VS",47,true,{content:own(47)}),sizeVariant("UI-VS",51,false,{price:"320.00",content:own(51)})]}));
   // The page's default is the catalog offer (available first, then cheapest): 47 mm here, as it is cheaper.
   const route=`/en/p/${saved.id}`,q=JSON.stringify;
-  const tab=label=>evaluate(`(()=>{const b=[...document.querySelectorAll('section .sticky button')].find(b=>b.textContent.trim()===${q(label)});if(!b)return false;b.click();return true;})()`);
+  const tab=label=>evaluate(`(()=>{const b=[...document.querySelectorAll('section [data-product-tabs] button')].find(b=>b.textContent.trim()===${q(label)});if(!b)return false;b.click();return true;})()`);
   const size=mm=>`[...document.querySelectorAll('[role=group][aria-label="Size"] button')].find(b=>b.textContent.trim()==='${mm} mm')`;
   const pressed=mm=>evaluate(`${size(mm)}?.getAttribute('aria-pressed')==='true'`);
   const shows=async(...needles)=>{const body=await text();return needles.every(n=>body.includes(n));};
@@ -307,7 +307,7 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     // Storefront: add to cart, review, Pay (demo).
     await signOut();await customerCookie();
     await navigate("/p/ui-demo-fixture");await until(async()=>(await text()).includes("UI DEMO FIXTURE"),"Demo fixture product did not render");
-    await until(async()=>{try{await click("Add to Cart");return true;}catch{return false;}},"Add to Cart was not clickable");
+    await until(async()=>{try{await click("Add To Cart");return true;}catch{return false;}},"Add To Cart was not clickable");
     await until(async()=>(await pool.query("SELECT 1 FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=$1 AND c.status='active' AND ci.variant_id=$2",[customerId,variant])).rowCount===1,"The demo fixture did not reach the account cart");
     await navigate("/cart");await until(async()=>(await text()).includes("UI DEMO FIXTURE")&&/review order/i.test(await text()),"Cart with the demo fixture missing");
     for(const [name,value] of [["recipientName","UI Demo Buyer"],["phone","+77000000077"],["city","Almaty"],["line1","UI demo street 3"]])await until(()=>setInput(name,value),"Could not fill "+name);
@@ -408,7 +408,7 @@ async function dashboardScenario({pool,runtime,secret,origin,send,evaluate,navig
     // 1. One demo order through the real checkout.
     await signOut();await setCookie(customerCookie);
     await navigate("/p/ui-dash-fixture");await until(async()=>(await text()).includes("UI DASH FIXTURE"),"Dashboard fixture product did not render");
-    await until(async()=>{try{await click("Add to Cart");return true;}catch{return false;}},"Add to Cart was not clickable");
+    await until(async()=>{try{await click("Add To Cart");return true;}catch{return false;}},"Add To Cart was not clickable");
     await until(async()=>(await pool.query("SELECT 1 FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=$1 AND c.status='active' AND ci.variant_id=$2",[customerId,variant])).rowCount===1,"The dashboard fixture did not reach the account cart");
     await navigate("/cart");await until(async()=>(await text()).includes("UI DASH FIXTURE")&&/review order/i.test(await text()),"Cart with the dashboard fixture missing");
     for(const [name,value] of [["recipientName","UI Dashboard Buyer"],["phone","+77000000088"],["city","Almaty"],["line1","UI dashboard street 4"]])await until(()=>setInput(name,value),"Could not fill "+name);
@@ -483,6 +483,50 @@ async function dashboardScenario({pool,runtime,secret,origin,send,evaluate,navig
     if(previous)await pool.query("UPDATE store_settings SET active_tax_configuration_id=$1,active_shipping_policy_id=$2,payment_mode=$3,version=version+1 WHERE id=1",[previous.tax,previous.policy,previous.payment_mode]);
   }
 }
+// Task 5b.1 evidence (opt-in, CMS_SMOKE_ONLY=admin-shots): the admin screens at 1440 and 390 after the
+// dashboard block has placed one demo order. Files go to CMS_SMOKE_SHOTS_DIR (default: the receipt folder)
+// with the CMS_SMOKE_SHOTS_PREFIX prefix ("before-" / "after-"). Checks nothing; it only takes pictures.
+async function adminShotsScenario({cms,headers,send,evaluate,navigate,text,click}){
+  const dir=path.resolve(process.env.CMS_SMOKE_SHOTS_DIR??receipt),prefix=process.env.CMS_SMOKE_SHOTS_PREFIX??"";
+  const product=await cms.save("products",headers,variantProduct("UI-SHOT","UI SHOT VARIANTS",{options:[SIZE_OPTION(47,51)],variants:[sizeVariant("UI-SHOT",47,true),sizeVariant("UI-SHOT",51,false)]}));
+  const ui=variantEditor({cms,headers,evaluate,navigate,text,click,receipt},{id:product.id,sku:"UI-SHOT",name:"UI SHOT VARIANTS"});
+  const pressAt=async element=>{const {x,y}=await evaluate(`(()=>{const el=${element};if(!el)throw Error('Missing element');el.scrollIntoView({block:'center'});const r=el.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};})()`);
+    for(const type of ["mouseMoved","mousePressed","mouseReleased"])await send("Input.dispatchMouseEvent",{type,x,y,button:"left",clickCount:1});};
+  const shoot=async name=>{await evaluate("window.scrollTo(0,0);true");await delay(400);const height=await evaluate("Math.min(4000,Math.max(document.documentElement.scrollHeight,document.body.scrollHeight))");
+    const width=await evaluate("window.innerWidth");const image=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:true,clip:{x:0,y:0,width,height,scale:1}});
+    fs.mkdirSync(dir,{recursive:true});await writeFile(path.join(dir,`${prefix}${name}`),Buffer.from(image.data,"base64"));};
+  const step=async(name,action)=>{try{await action();}catch(error){console.log(`admin-shots: ${name} incomplete (${error.message}); shot taken as is`);await shoot(name).catch(()=>{});}};
+  const widths=(process.env.CMS_SMOKE_SHOTS_WIDTHS??"1440,390").split(",").map(Number);
+  for(const [width,height,mobile] of [[1440,900,false],[390,844,true]].filter(([w])=>widths.includes(w))){
+    await send("Emulation.setDeviceMetricsOverride",{width,height,deviceScaleFactor:1,mobile});
+    try{
+      await navigate("/admin");await until(async()=>/\d/.test(await evaluate(`document.querySelector('[data-tile="demo-revenue"] [data-tile-value]')?.innerText??""`)),"Dashboard did not load");
+      await shoot(`dashboard-${width}.png`);
+      await step(`products-selected-${width}.png`,async()=>{await navigate("/admin/products");await until(()=>evaluate("document.querySelectorAll('tbody tr[data-product-id] [role=checkbox]').length>=2"),"Products list did not load");
+      await pressAt("document.querySelectorAll('tbody tr[data-product-id] [role=checkbox]')[0]");await pressAt("document.querySelectorAll('tbody tr[data-product-id] [role=checkbox]')[1]");
+      await until(async()=>/2 products selected/.test(await text()),"Selecting 2 rows did not show the bulk bar");
+      await evaluate("window.scrollTo(0,0);true");await shoot(`products-selected-${width}.png`);});
+      await step(`product-variants-${width}.png`,async()=>{await ui.open();await ui.openContent(51).catch(()=>{});await shoot(`product-variants-${width}.png`);await ui.close();});
+      // The queue has rendered its first response (the page is hydrated and the unfiltered list arrived), so the
+      // filter change below is handled by React; then the queue must show only demo orders.
+      // Dev-only: in some runs the orders page served right after /admin/products compiled never hydrated (no
+      // client request at all for 90 s; see the 5b.1 fix report). That is detected (no React props on the filter
+      // after 30 s), logged, and the page is reloaded once; it is not a retry of the filter.
+      await navigate("/admin/orders");
+      const hydrated=()=>evaluate("(()=>{const s=document.querySelector('select[aria-label=\"Payment mode filter\"]');return !!s&&Object.keys(s).some(k=>k.startsWith('__reactProps'));})()");
+      if(!await until(hydrated,"not hydrated",30000).catch(()=>false)){console.log(`admin-shots: /admin/orders did not hydrate in 30 s at ${width} px; reloading once`);await send("Page.reload",{ignoreCache:true});await until(()=>evaluate("document.readyState==='complete'"),"Reload timed out");await until(hydrated,`The orders page did not hydrate at ${width} px, even after one reload`,30000).catch(async error=>{await writeFile(path.join(receipt,`admin-shots-orders-${width}.txt`),await text());throw error;});}
+      await until(()=>evaluate("document.querySelectorAll('section[aria-label=\"Order queue\"] li button').length>0"),"The order queue did not load").catch(async error=>{await writeFile(path.join(receipt,`admin-shots-orders-${width}.txt`),await text());throw error;});
+      await evaluate(`(()=>{const select=document.querySelector('select[aria-label="Payment mode filter"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,'demo');select.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
+      const queue="[...document.querySelectorAll('section[aria-label=\"Order queue\"] li button')]";
+      await until(()=>evaluate(`${queue}.length>0&&${queue}.every(b=>!!b.querySelector('[data-demo-badge]'))`),"The Demo filter did not list only demo orders").catch(async error=>{await writeFile(path.join(receipt,`admin-shots-orders-${width}.txt`),await text());throw error;});
+      await evaluate("document.querySelector('section[aria-label=\"Order queue\"] li button').click();true");
+      await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Order detail\"] [data-demo-badge]')"),"Order detail did not open");
+      await shoot(`orders-demo-${width}.png`);
+      await navigate("/admin/settings");await until(async()=>/demo checkout/i.test(await text()),"Settings did not load");
+      await shoot(`settings-payments-${width}.png`);
+    }finally{await send("Emulation.clearDeviceMetricsOverride");}
+  }
+}
 try{
   temporary=await startTemporaryPostgres();database=createDatabase(parseServerEnv({DATABASE_URL:temporary.url}));const migration=createDatabase(parseServerEnv({DATABASE_URL:temporary.url,DATABASE_POOL_MAX:"1",DATABASE_CONNECT_TIMEOUT_MS:"10000",DATABASE_STATEMENT_TIMEOUT_MS:"60000"}));try{await migrate(migration.db,{migrationsFolder:"drizzle"});}finally{await migration.close();}
   const appPort=await port(),origin=`http://localhost:${appPort}`,secret=randomBytes(32).toString("hex");
@@ -550,13 +594,13 @@ try{
     await until(async()=>(await text()).includes("UI BANNER"),"Banner did not appear");await evaluate("window.confirm=()=>true;document.querySelector('[title=\"Delete Banner\"]').click();true");await until(async()=>{const body=(await text()).toLowerCase();return !body.includes("loading banners")&&(!body.includes("ui banner")||body.includes("archived"));},"Archived banner is indistinguishable from an editable inactive draft",10000);
     await navigate("/admin/clients");await until(()=>evaluate("!![...document.querySelectorAll('button')].find(b=>b.textContent.includes('Add New Client')&&!b.disabled)"),"Client editor did not load");await click("Add New Client");await until(()=>evaluate("!!document.querySelector('form')"),"Client modal missing");await fill("Full Name","UI CUSTOMER");await fill("Phone Number","+77000000001");await fill("Email","");await fill("Country","KZ");await evaluate("document.querySelector('form').requestSubmit();true");await until(()=>evaluate("!document.querySelector('form')"),"Customer UI save failed");assert.equal((await cms.list("clients",headers,{search:"UI CUSTOMER"})).items[0].country,"KZ");
     // Discounts run on PostgreSQL since fef76ab: the screen loads instead of reporting it is unavailable.
-    await navigate("/admin/discounts");await until(async()=>/promotions & discount campaigns/i.test(await text()),"Discounts screen did not load");assert.equal(await evaluate("!!document.querySelector('[role=alert]')"),false,"discounts screen shows no error");
+    await navigate("/admin/discounts");await until(()=>evaluate("document.querySelector('main h1')?.textContent.trim()==='Discounts'"),"Discounts screen did not load");assert.equal(await evaluate("!!document.querySelector('[role=alert]')"),false,"discounts screen shows no error");
     }else{saved=await cms.save("products",headers,{name:"UI UPDATED PRODUCT",sku:"UI-CREATED",price:"123",status:"published",image:"/images/products/1228429.jpg"});}
     // Storefront links carry the locale prefix (/en/p/..., /kz/p/...) since the i18n change.
     const productLinks=()=>evaluate("[...document.querySelectorAll('a[href]')].filter(a=>/^(?:\\/[a-z]{2})?\\/p\\//.test(a.getAttribute('href'))).length");
     await navigate("/c/wearables-smartwatches");await until(async()=>(await text()).toLowerCase().includes("ui fixture"),"Catalog did not load normalized products").catch(async error=>{await writeFile(path.join(receipt,"catalog-body.txt"),await text());await writeFile(path.join(receipt,"catalog-response.html"),await(await fetch(origin+"/c/wearables-smartwatches")).text());throw error;});assert.equal(await productLinks(),24);
     await navigate("/c/wearables-smartwatches?search=UI%20UPDATED%20PRODUCT");await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Catalog search missed newly added product");assert.equal(await productLinks(),1);
-    await navigate("/compare?selected="+saved.id+"&search=UI%20UPDATED%20PRODUCT");await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Compare did not read normalized product");assert.match(await text(),/\b123(?:[.,]00)? KZT/);assert.ok(!(await text()).includes("Forbidden seed"));
+    await navigate("/compare?selected="+saved.id+"&search=UI%20UPDATED%20PRODUCT");await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Compare did not read normalized product");assert.match(await text(),/KZT\s?123(?:[.,]00)?\b|\b123(?:[.,]00)?\s?₸/);assert.ok(!(await text()).includes("Forbidden seed"));
     await navigate("/p/"+saved.id);await until(()=>evaluate("!!document.querySelector('script[type=\"application/ld+json\"]')"),"Product metadata missing");const structured=await evaluate("JSON.parse(document.querySelector('script[type=\"application/ld+json\"]').textContent)");assert.match(String(structured.offers[0].price),/^123(?:\.00)?$/);assert.equal(structured.offers[0].priceCurrency,"KZT");
     const missing=await fetch(origin+"/p/absent-fixture");assert.equal(missing.status,404);const sitemap=await(await fetch(origin+"/sitemap.xml")).text();assert.ok(sitemap.includes(saved.id));
     const unicode=await cms.save("blogs",headers,{title:"Қазақша UI мақала",slug:"қазақша-ui-мақала",content:"UNICODE PUBLIC BODY",status:"published",category:"Fixture"});await navigate("/blog/"+encodeURIComponent(unicode.slug));await until(async()=>(await text()).includes("UNICODE PUBLIC BODY"),"Unicode URL failed");
@@ -577,13 +621,13 @@ try{
     const customerSession=await(await runtime.auth.$context).internalAdapter.createSession(customerId);
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:encodeURIComponent(customerSession.token+"."+createHmac("sha256",secret).update(customerSession.token).digest("base64")),url:origin,httpOnly:true,sameSite:"Lax"});
     await navigate("/account");await until(async()=>(await low()).includes("ui account owner"),"Account page did not load the session profile");
-    assert.ok(!(await low()).includes("alex rivera"));assert.ok((await low()).includes("no saved addresses yet"));
+    assert.ok(!(await low()).includes("alex rivera"));assert.ok((await low()).includes("no saved addresses"));
     await click("Add Address");await until(()=>evaluate("!!document.querySelector('form[name=address]')"),"Address form missing");
     await fill("Address Title","UI Home");await fill("Street Address","UI street 10");await fill("City","Almaty");
     await evaluate("document.querySelector('form[name=address]').requestSubmit();true");await until(()=>evaluate("!document.querySelector('form[name=address]')"),"Address save failed");
     const savedAddress=(await database.pool.query("SELECT label,line1,is_primary,phone FROM customer_addresses WHERE user_id=$1",[customerId])).rows;assert.equal(savedAddress.length,1);assert.equal(savedAddress[0].label,"UI Home");assert.equal(savedAddress[0].is_primary,true);assert.equal(savedAddress[0].phone,"+77000000077");
     await navigate("/account");await until(async()=>(await low()).includes("ui street 10"),"Saved address did not persist across reload");
-    await click("Orders");await until(async()=>(await low()).includes(legacyNumber.toLowerCase()),"Owned order missing from history");assert.ok((await low()).includes("43.21 kzt"));
+    await click("Orders");await until(async()=>(await low()).includes(legacyNumber.toLowerCase()),"Owned order missing from history");assert.match(await low(),/kzt\s?43\.21\b/);
     await click(legacyNumber);await until(async()=>(await low()).includes("ui legacy typed address"),"Order detail did not load");assert.match(await low(),/subtotal\s+—/);
     assert.ok(!(await low()).includes("send reset link"));
     console.log("PASS Task10C account page: signed-out phone sign-in, session profile, address create + reload persistence, owned legacy order with missing money shown as —");
@@ -607,11 +651,11 @@ try{
     await navigate("/c/wearables-smartwatches");
     await until(()=>evaluate("localStorage.getItem('garmin-clone-cart')===null"),"The stored local cart was not imported");
     await navigate("/p/ui-cart-fixture");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Cart fixture product did not render");
-    await until(async()=>{try{await click("Add to Cart");return true;}catch{return false;}},"Add to Cart was not clickable");
+    await until(async()=>{try{await click("Add To Cart");return true;}catch{return false;}},"Add To Cart was not clickable");
     await until(async()=>(await database.pool.query("SELECT ci.quantity FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.status='active' AND c.user_id IS NULL AND ci.variant_id=$1",[cartVariant])).rows[0]?.quantity===3,"Guest server cart did not hold the imported and added quantity");
     const guestCookie=(await send("Network.getCookies",{urls:[origin+"/api/cart"]})).cookies.find(c=>c.name==="grmn-cart");assert.ok(guestCookie?.httpOnly,"guest cart capability must be HttpOnly");
     await navigate("/cart");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Cart page did not show the server cart");
-    assert.match(await text(),/7[\s ,.]?500[.,]00 KZT/);assert.ok(!(await text()).includes("Forged name"));
+    assert.match(await text(),/KZT\s?7[\s ,.]?500[.,]00/);assert.ok(!(await text()).includes("Forged name"));
     await navigate("/cart");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Server cart did not persist across reload");
     assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Review order')?.disabled"),true,"the server checkout panel is offered and waits for the delivery contact (Task 14A)");
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:encodeURIComponent(customerSession.token+"."+createHmac("sha256",secret).update(customerSession.token).digest("base64")),url:origin,httpOnly:true,sameSite:"Lax"});
@@ -653,12 +697,12 @@ try{
     for(const [name,value] of [["recipientName","UI Checkout Buyer"],["phone","+77000000077"],["city","Almaty"],["line1","UI checkout street 1"]])await until(()=>setInput(name,value),"Could not fill "+name);
     await until(async()=>{try{await click("Review order");return true;}catch{return false;}},"Review order stayed disabled");
     await until(async()=>/total payable/i.test(await text()),"The server quote did not render");
-    assert.match(await text(),/8[\s ,.]?415[.,]00 KZT/,"7 500 KZT goods + 12% tax + 15 KZT shipping, all computed on the server");
+    assert.match(await text(),/KZT\s?8[\s ,.]?415[.,]00/,"7 500 KZT goods + 12% tax + 15 KZT shipping, all computed on the server");
     await click("Place order");
     await until(async()=>/order grm-\d+ received/i.test(await text()),"The order receipt did not render").catch(async error=>{await writeFile(path.join(receipt,"checkout-body.txt"),await text());throw error;});
     // O07: the receipt says awaiting payment, shows the KZT total and the staff-edited instructions.
     await until(async()=>(await text()).includes(instructions),"The receipt did not show the payment instructions").catch(async error=>{await writeFile(path.join(receipt,"receipt-body.txt"),await text());throw error;});
-    assert.match(await text(),/awaiting payment/i);assert.match(await text(),/how to pay/i);assert.match(await text(),/8[\s ,.]?415[.,]00 KZT/);
+    assert.match(await text(),/awaiting payment/i);assert.match(await text(),/how to pay/i);assert.match(await text(),/KZT\s?8[\s ,.]?415[.,]00/);
     assert.match(await text(),/not paid/i);assert.ok(!/thank you for your order/i.test(await text()));
     const placedOrders=(await database.pool.query("SELECT id,order_number,order_status,payment_status,payment_mode,total_minor::text AS total FROM orders WHERE user_id=$1 AND checkout_attempt_id IS NOT NULL",[customerId])).rows;
     assert.equal(placedOrders.length,1,"exactly one order");assert.deepEqual({...placedOrders[0],id:undefined,order_number:undefined},{id:undefined,order_number:undefined,order_status:"pending_payment",payment_status:"unpaid",payment_mode:"live",total:"841500"});
@@ -705,7 +749,7 @@ try{
       customerCookie:()=>send("Network.setCookie",{name:"grmn-auth.session_token",value:customerCookie,url:origin,httpOnly:true,sameSite:"Lax"})});
     console.log("PASS Task3.3 demo checkout: Pay (demo) with one demo note, a setting change between review and pay refetches the method both ways, DEMO receipt and account label, admin Demo filter with badge, dispatched and delivered");
   };
-  const onlyVariantContent=process.env.CMS_SMOKE_ONLY==="variant-content",onlyVariantSwitch=process.env.CMS_SMOKE_ONLY==="variant-switch",onlyDashboard=process.env.CMS_SMOKE_ONLY==="dashboard";
+  const onlyAdminShots=process.env.CMS_SMOKE_ONLY==="admin-shots",onlyVariantContent=process.env.CMS_SMOKE_ONLY==="variant-content",onlyVariantSwitch=process.env.CMS_SMOKE_ONLY==="variant-switch",onlyDashboard=process.env.CMS_SMOKE_ONLY==="dashboard"||onlyAdminShots;
   if(!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard)await fullSuite();
 
   if(!onlyVariantSwitch&&!onlyDashboard){
@@ -731,6 +775,7 @@ try{
   // Task 4.2: the PostgreSQL dashboard (an independent block; CMS_SMOKE_ONLY=dashboard runs only this).
   if(!onlyVariantContent&&!onlyVariantSwitch){await dashboardScenario({pool:database.pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue:cookie,receipt,alone:onlyDashboard});
   console.log("PASS Task4.2 dashboard: one demo order via checkout; Demo revenue > 0 and Revenue only real money, the order in Recent orders linking to its detail, its product under Best-sellers > Demo only, empty range says so; screenshot saved");}
+  if(onlyAdminShots){await adminShotsScenario({cms,headers,send,evaluate,navigate,text,click});console.log("Admin screenshots saved (CMS_SMOKE_ONLY=admin-shots).");}
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");
   console.log(onlyDashboard
