@@ -205,7 +205,8 @@ async function editedForm(resource,item){
   const posted=[],fetcher=async(_url,options)=>{if(options?.body)posted.push(JSON.parse(options.body));return{ok:true,status:200,json:async()=>({success:true})};};
   const productEditor=resource==="products"?{modules:{"@/components/admin/product-editor":{formatKzt:value=>String(value),newId:prefix=>`${prefix}-fixture`}}}:{};
   const fixture=componentFixture(`src/app/admin/${resource}/_components/${resource==="products"?"Products":"Clients"}Screen.tsx`,{items:[item],fetcher,...productEditor});
-  nodes(fixture.render()).find(node=>node.props?.title===`Edit ${resource==="products"?"Product":"Client"}`).props.onClick();
+  // Products open the editor through the row's click-to-edit control (Task 1.3 removed the row's Edit button).
+  nodes(fixture.render()).find(node=>resource==="products"?node.props?.["aria-label"]===`Edit ${item.name}`:node.props?.title==="Edit Client").props.onClick();
   await nodes(fixture.render()).find(node=>node.type==="form").props.onSubmit({preventDefault(){}});
   return resource==="products"?posted[0]:fixture.writes[0].body;
 }

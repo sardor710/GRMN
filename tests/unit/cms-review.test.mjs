@@ -11,6 +11,8 @@ const productEditor={"@/components/admin/product-editor":{formatKzt:value=>Strin
 test("legacy destructive confirmations say permanently delete, while candidate actions say archive",async()=>{
   for(const resource of ["products","blogs","banners"]){
     let message;const fixture=componentFixture(screen(resource),{backend:"legacy",items:[{id:"test",name:"Fixture",title:"Fixture",sku:"SKU",price:1,category:"",position:"hero",active:true,activities:[],compatibleAccessories:[],stock:1}],modules:resource==="products"?productEditor:{},confirm:value=>{message=value;return false;}});
+    // Products have no per-row delete any more (Task 1.3): legacy deletes from the open editor, reached through the row's click-to-edit control.
+    if(resource==="products")nodes(fixture.render()).find(node=>node.props?.["aria-label"]==="Edit Fixture").props.onClick();
     const action=nodes(fixture.render()).find(node=>node.props?.title?.startsWith("Delete"));assert.ok(action);await action.props.onClick();assert.match(message,/permanently delete/i);assert.doesNotMatch(message,/archive/i);
   }
 });
@@ -60,7 +62,8 @@ test("successful product saves refresh the independent target picker",async()=>{
   // One product editor for both stores (the PostgreSQL-only screen was removed, owner 2026-11-19).
   const item={id:"p1",version:1,name:"Watch",sku:"W-1",price:1000,category:"Smartwatches & Wearables",image:"/images/products/1228429.jpg",images:[],options:[],variants:[],stock:0,status:"published"};
   const reloaded=[];const fixture=componentFixture(screen("products"),{items:[item],modules:productEditor,fetcher:async()=>({ok:true,status:200,json:async()=>({success:true})}),collectionFactory:(_resource,input,page)=>({...page,items:input?.family===undefined?page.items:[item],reload:()=>reloaded.push(input?.family===undefined?"picker":"main")})});
-  nodes(fixture.render()).find(node=>node.props?.title==="Edit Product").props.onClick();
+  // The row opens the editor through its click-to-edit control (Task 1.3 removed the row's Edit button).
+  nodes(fixture.render()).find(node=>node.props?.["aria-label"]==="Edit Watch").props.onClick();
   await nodes(fixture.render()).find(node=>node.type==="form").props.onSubmit({preventDefault(){}});
   assert.deepEqual(reloaded,["main","picker"]);
 });

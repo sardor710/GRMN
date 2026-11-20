@@ -33,6 +33,7 @@ import type {
 import { AdminModal } from "@/components/admin/AdminModal";
 import { AdminPageControls } from "@/components/admin/AdminPageControls";
 import { useAdminCollection } from "@/hooks/useAdminCollection";
+import { archiveAdminRecord } from "@/lib/admin-collection";
 import { GarminBadge } from "@/components/GarminBadge";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -43,7 +44,7 @@ import {
   type BulkProductAction,
   type BulkResult,
 } from "@/components/admin/products/BulkActionBar";
-import { StatusMenu, statusPillClass } from "@/components/admin/products/StatusMenu";
+import { StatusMenu } from "@/components/admin/products/StatusMenu";
 import { SEOEditor } from "@/components/admin/SEOEditor";
 import {
   GarminImportDialog,
@@ -379,6 +380,18 @@ export default function AdminProductsPage() {
   const postgresStore = collection.backend === "postgres";
 
   const clearSelection = () => setSelected(new Map());
+
+  // Legacy JSON store: no bulk endpoint, so the open editor offers a permanent delete instead.
+  const handleLegacyDelete = async (product: CMSProduct) => {
+    if (!confirm("Permanently delete this product from the catalog? This cannot be undone.")) return;
+    try {
+      await archiveAdminRecord(fetch, "products", product);
+      setIsModalOpen(false);
+      fetchProducts();
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : "Delete failed");
+    }
+  };
 
   const toggleRow = (p: ListedProduct, checked: boolean) => {
     setSelected((prev) => {
@@ -842,7 +855,13 @@ export default function AdminProductsPage() {
                         </div>
                       ) : (
                         <span
-                          className={`font-heading uppercase tracking-wider text-[10px] font-bold px-2 py-0.5 rounded-none border ${statusPillClass(p.status)}`}
+                          className={`font-heading uppercase tracking-wider text-[10px] font-bold px-2 py-0.5 rounded-none border ${
+                            p.status === "published"
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                              : p.status === "draft"
+                                ? "bg-amber-50 text-amber-800 border-amber-200"
+                                : "bg-neutral-100 text-neutral-600 border-neutral-200"
+                          }`}
                         >
                           {p.status}
                         </span>
@@ -1603,7 +1622,17 @@ export default function AdminProductsPage() {
             </p>
           )}
           <div className="flex justify-between items-center pt-4 border-t border-neutral-200">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              {editingProduct && !postgresStore && (
+                <button
+                  type="button"
+                  onClick={() => void handleLegacyDelete(editingProduct)}
+                  title="Delete Product"
+                  className="px-1 py-2 text-[12px] font-heading uppercase tracking-wider font-semibold text-rose-700 hover:underline underline-offset-2 rounded-none"
+                >
+                  Delete product…
+                </button>
+              )}
               <span className="text-[12px] text-neutral-500">
                 Active:{" "}
                 <span className="text-black uppercase font-heading font-semibold">
