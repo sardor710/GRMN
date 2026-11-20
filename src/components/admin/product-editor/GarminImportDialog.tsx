@@ -200,7 +200,7 @@ export function GarminImportDialog({ open, onClose, formHasData, onApply }: Garm
       )}
 
       {error && (
-        <p role="alert" className="mt-4 flex items-start gap-2 border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+        <p role="alert" className="mt-4 flex items-start gap-2 border border-garmin-error bg-white p-3 text-xs text-garmin-error">
           <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
           {error}
         </p>
@@ -214,7 +214,7 @@ export function GarminImportDialog({ open, onClose, formHasData, onApply }: Garm
               <img src={draft.image} alt="" className="h-20 w-20 shrink-0 border border-border object-contain p-1" />
             )}
             <div className="min-w-0">
-              <p className="flex items-center gap-1.5 text-xs text-emerald-700">
+              <p className="flex items-center gap-1.5 text-xs text-black">
                 <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Draft ready
               </p>
               <p className="g-heading text-[18px] leading-tight text-black">{draft.name}</p>
@@ -253,7 +253,7 @@ export function GarminImportDialog({ open, onClose, formHasData, onApply }: Garm
             </div>
           )}
           {result.warnings.length > 0 && (
-            <details className="border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">
+            <details className="border border-garmin-badge-gold bg-garmin-badge-gold/20 p-2 text-xs text-black">
               <summary className="cursor-pointer font-semibold">
                 {result.warnings.length} warning{result.warnings.length === 1 ? "" : "s"}
               </summary>

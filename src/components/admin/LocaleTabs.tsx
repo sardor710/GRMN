@@ -15,8 +15,8 @@ const TABS: { id: ContentLocale; code: string; label: string }[] = [
 ];
 
 const DOT_CLASS: Record<TranslationStatus, string> = {
-  complete: "bg-emerald-500",
-  partial: "bg-amber-400",
+  complete: "bg-garmin-badge-lime",
+  partial: "bg-garmin-badge-gold",
   empty: "bg-neutral-300",
 };
 
@@ -59,7 +59,7 @@ export function LocaleTabs({ value, onChange, status, className = "" }: LocaleTa
               <span>{tab.code}</span>
               {state && (
                 <>
-                  <span aria-hidden="true" className={`h-2 w-2 rounded-full ${DOT_CLASS[state]}`} />
+                  <span aria-hidden="true" className={`h-2 w-2 rounded-garmin-pill ${DOT_CLASS[state]}`} />
                   <span className="sr-only">({STATUS_TEXT[state]})</span>
                 </>
               )}

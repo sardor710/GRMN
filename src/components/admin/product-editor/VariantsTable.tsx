@@ -175,7 +175,7 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
         <div>
           <span className={labelClass}>Variants ({variants.length})</span>
           {stale && (
-            <p className="mt-0.5 flex items-center gap-1 text-xs text-amber-700">
+            <p className="mt-0.5 flex items-center gap-1 text-xs text-black">
               <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
               Options changed — click “Generate variants” to update the list.
             </p>
@@ -192,9 +192,9 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
           role={notice.tone === "error" ? "alert" : "status"}
           className={`border px-3 py-2 text-xs rounded-none ${
             notice.tone === "error"
-              ? "border-rose-200 bg-rose-50 text-rose-800"
+              ? "border-garmin-error bg-white text-garmin-error"
               : notice.tone === "warning"
-                ? "border-amber-200 bg-amber-50 text-amber-800"
+                ? "border-garmin-badge-gold bg-garmin-badge-gold/20 text-black"
                 : "border-garmin-control bg-muted text-black"
           }`}
         >
@@ -357,9 +357,9 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                             onChange={(e) => patch(v.id, { sku: e.target.value })}
                             aria-label={`SKU for ${v.title}`}
                             aria-invalid={Boolean(skuError)}
-                            className={`${smallInputClass} font-mono ${skuError ? "border-rose-500 bg-rose-50" : ""}`}
+                            className={`${smallInputClass} font-mono ${skuError ? "border-garmin-error bg-white" : ""}`}
                           />
-                          {skuError && <p className="mt-0.5 text-xs text-rose-700">{skuError}</p>}
+                          {skuError && <p className="mt-0.5 text-xs text-garmin-error">{skuError}</p>}
                         </td>
                         <td className="w-32 px-2 py-1.5">
                           <input
@@ -486,7 +486,7 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                                             className="absolute -right-1 -top-1 bg-white p-0.5"
                                           >
                                             <Star
-                                              className={`h-3 w-3 ${pos === 0 ? "fill-amber-400 text-amber-500" : "text-neutral-400"}`}
+                                              className={`h-3 w-3 ${pos === 0 ? "fill-garmin-badge-gold text-black" : "text-neutral-400"}`}
                                             />
                                           </button>
                                         )}

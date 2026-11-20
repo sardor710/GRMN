@@ -110,7 +110,7 @@ export default function AdminLoginPage() {
       <GarminLogo className="mx-auto h-6 w-auto text-black" />
       <h1 className="mt-6 text-center text-2xl">{step==="restart" ? "Restart staff sign-in" : step==="password" ? "Administrator sign in" : step==="enroll" ? "Set up staff MFA" : "Verify staff MFA"}</h1>
       <p className="mt-3 text-sm text-neutral-600">Use your configured staff account. Access requires a password and an authenticator or backup code.</p>
-      {error && <p role="alert" className="mt-4 border border-rose-300 bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
+      {error && <p role="alert" className="mt-4 border border-garmin-error bg-white p-3 text-sm text-garmin-error">{error}</p>}
       {step!=="restart" && <form onSubmit={submit} className="mt-6 space-y-4">
         {step==="password" && <label className="block text-sm">Email address<input type="email" autoComplete="username" required maxLength={254} value={email} onChange={e=>setEmail(e.target.value)} className="mt-1 block w-full border border-neutral-400 p-2" /></label>}
         {(step==="password" || (step==="enroll" && !totpURI)) && <label className="block text-sm">{step==="enroll" ? "Confirm your staff password" : "Password"}<input type="password" autoComplete="current-password" required minLength={16} maxLength={128} value={password} onChange={e=>setPassword(e.target.value)} className="mt-1 block w-full border border-neutral-400 p-2" /></label>}

@@ -92,7 +92,7 @@ export default function AdminSettingsPage() {
           {saving ? (
             <span>Saving...</span>
           ) : savedSuccess ? (
-            <span className="flex items-center gap-1.5 text-emerald-300">
+            <span className="flex items-center gap-1.5 text-black">
               <CheckCircle2 className="h-4 w-4" /> Saved!
             </span>
           ) : (
@@ -105,8 +105,8 @@ export default function AdminSettingsPage() {
       </div>
 
       {savedSuccess && (
-        <div className="border border-emerald-200 bg-emerald-50 p-4 text-xs font-semibold text-emerald-800 flex items-center gap-2.5 rounded-none">
-          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+        <div className="border border-garmin-badge-lime bg-garmin-badge-lime/25 p-4 text-xs font-semibold text-black flex items-center gap-2.5 rounded-none">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-black" />
           <span>Store settings have been updated and persisted to configuration.</span>
         </div>
       )}
@@ -343,7 +343,7 @@ export default function AdminSettingsPage() {
           )}
         </div>
         {saveError && (
-          <p role="alert" className="border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+          <p role="alert" className="border border-garmin-error bg-white px-3 py-2 text-xs text-garmin-error">
             {saveError}
           </p>
         )}

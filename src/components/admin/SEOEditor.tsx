@@ -96,7 +96,7 @@ export function SEOEditor({
 
   // Derived Preview Fallbacks
   const displayTitle = (seoTitle || `${nameOrTitle} | Official Garmin Store`).trim();
-  const displayDesc = (seoDescription || defaultDescription || "Explore premium multisport GPS smartwatches with advanced training and battery life.").trim();
+  const displayDesc = (seoDescription || defaultDescription || "No description yet.").trim();
   const displayImage = ogImage || image || "/images/hero-bg.jpg";
   const displayUrl = `https://www.garmin.com${urlPath.startsWith("/") ? "" : "/"}${urlPath}`;
 
@@ -165,12 +165,12 @@ export function SEOEditor({
   // Score colors
   const scoreColor =
     report.score >= 85
-      ? "text-emerald-700 bg-emerald-50 border-emerald-300"
+      ? "text-black bg-garmin-badge-lime/25 border-garmin-badge-lime"
       : report.score >= 70
       ? "text-garmin-blue bg-garmin-blue/10 border-garmin-blue/30"
       : report.score >= 50
-      ? "text-amber-700 bg-amber-50 border-amber-300"
-      : "text-rose-700 bg-rose-50 border-rose-300";
+      ? "text-black bg-garmin-badge-gold/20 border-garmin-badge-gold"
+      : "text-garmin-error bg-white border-garmin-error";
 
   return (
     <div className="space-y-6 font-sans">
@@ -183,13 +183,13 @@ export function SEOEditor({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="g-heading g-h4 text-black">SEO Health &amp; Audit Score</h3>
+              <h3 className="g-heading g-h4 text-black">SEO check</h3>
               <span className={`px-2 py-0.5 text-xs font-bold capitalize rounded-none border ${scoreColor}`}>
                 {report.status.replace("_", " ")}
               </span>
             </div>
             <p className="text-xs text-muted-foreground mt-1 max-w-xl">
-              Real-time audit for Google SERP snippet formatting, keyword density, structured data readiness, and social share metadata.
+              Checks the title and description length, keywords and share image for this page.
             </p>
           </div>
         </div>
@@ -213,7 +213,7 @@ export function SEOEditor({
               <label className="text-xs font-semibold text-neutral-700">
                 SEO Meta Title
               </label>
-              <span className={`text-xs tabular-nums ${displayTitle.length >= 45 && displayTitle.length <= 65 ? "text-emerald-700" : "text-amber-700"}`}>
+              <span className={`text-xs tabular-nums ${displayTitle.length >= 45 && displayTitle.length <= 65 ? "text-black" : "text-black"}`}>
                 {displayTitle.length} / 65 chars
               </span>
             </div>
@@ -244,7 +244,7 @@ export function SEOEditor({
               <label className="text-xs font-semibold text-neutral-700">
                 SEO Meta Description
               </label>
-              <span className={`text-xs tabular-nums ${displayDesc.length >= 120 && displayDesc.length <= 160 ? "text-emerald-700" : "text-amber-700"}`}>
+              <span className={`text-xs tabular-nums ${displayDesc.length >= 120 && displayDesc.length <= 160 ? "text-black" : "text-black"}`}>
                 {displayDesc.length} / 160 chars
               </span>
             </div>
@@ -261,11 +261,11 @@ export function SEOEditor({
                   ogImage,
                 })
               }
-              placeholder={defaultDescription || "Experience cutting-edge Garmin performance with long battery life, rugged titanium casing, and built-in navigation."}
+              placeholder={defaultDescription || "One or two sentences about this page, 120–160 characters."}
               className="w-full bg-white border border-border focus:border-black rounded-none px-3 py-2 text-sm text-black focus:outline-none transition-colors"
             />
             <p className="text-xs text-muted-foreground">
-              Ideal length: 120–160 characters. Clearly state specs, features, and an actionable reason to click.
+              Shown under the title in search results. 120–160 characters.
             </p>
           </div>
 
@@ -311,7 +311,7 @@ export function SEOEditor({
                     <button
                       type="button"
                       onClick={() => handleRemoveKeyword(kw)}
-                      className="text-muted-foreground hover:text-rose-600"
+                      className="text-muted-foreground hover:text-garmin-error"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -348,8 +348,8 @@ export function SEOEditor({
             </div>
 
             {noIndex && (
-              <div className="p-2.5 rounded-none bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 shrink-0 text-rose-600" />
+              <div className="p-2.5 rounded-none bg-white border border-garmin-error text-xs text-garmin-error flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 shrink-0 text-garmin-error" />
                 <span>Page will output <code>&lt;meta name=&quot;robots&quot; content=&quot;noindex, nofollow&quot; /&gt;</code> and be excluded from Google rankings.</span>
               </div>
             )}
@@ -467,7 +467,7 @@ export function SEOEditor({
               {/* Product Rich Snippet badges simulator */}
               {type === "product" && (
                 <div className="mt-2.5 pt-2 border-t border-neutral-100 flex items-center gap-3 text-xs text-[#5f6368]">
-                  <span className="font-semibold text-emerald-700">★ 4.9 (128 reviews)</span>
+                  <span className="font-semibold text-black">★ 4.9 (128 reviews)</span>
                   <span>• In Stock</span>
                   <span>• Fast Shipping</span>
                 </div>
@@ -539,11 +539,11 @@ export function SEOEditor({
                   className="flex items-start gap-2 text-xs p-2.5 rounded-none bg-neutral-50 border border-border"
                 >
                   {check.status === "pass" ? (
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="h-4 w-4 text-black shrink-0 mt-0.5" />
                   ) : check.status === "warning" ? (
-                    <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                    <AlertTriangle className="h-4 w-4 text-black shrink-0 mt-0.5" />
                   ) : (
-                    <XCircle className="h-4 w-4 text-rose-600 shrink-0 mt-0.5" />
+                    <XCircle className="h-4 w-4 text-garmin-error shrink-0 mt-0.5" />
                   )}
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
@@ -551,10 +551,10 @@ export function SEOEditor({
                       <span
                         className={`text-xs capitalize font-bold px-1.5 py-0.5 rounded-none border ${
                           check.status === "pass"
-                            ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                            ? "text-black bg-garmin-badge-lime/25 border-garmin-badge-lime"
                             : check.status === "warning"
-                            ? "text-amber-700 bg-amber-50 border-amber-200"
-                            : "text-rose-700 bg-rose-50 border-rose-200"
+                            ? "text-black bg-garmin-badge-gold/20 border-garmin-badge-gold"
+                            : "text-garmin-error bg-white border-garmin-error"
                         }`}
                       >
                         {check.status}

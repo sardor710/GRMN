@@ -258,7 +258,7 @@ export default function AdminBlogsPage() {
                       <span
                         className={`text-xs font-semibold px-2 py-0.5 rounded-none ${
                           b.status === "published"
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            ? "bg-garmin-badge-lime/25 text-black border border-garmin-badge-lime"
                             : "bg-neutral-100 text-neutral-600 border border-border"
                         }`}
                       >
@@ -287,7 +287,7 @@ export default function AdminBlogsPage() {
                         <button
                           type="button"
                           onClick={() => handleDelete(b.id)}
-                          className="p-2 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 transition-colors rounded-none"
+                          className="p-2 text-muted-foreground hover:text-garmin-error hover:bg-white transition-colors rounded-none"
                           title="Delete Article"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -310,7 +310,7 @@ export default function AdminBlogsPage() {
         title={editingBlog ? "Edit Article" : "Write Editorial Story"}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          {collection.error&&<div role="alert" className="border border-red-200 bg-red-50 p-3 text-sm text-red-800">{collection.error}<button type="button" className="ml-3 underline" onClick={()=>{setIsModalOpen(false);collection.reload();}}>Reload records</button></div>}
+          {collection.error&&<div role="alert" className="border border-garmin-error bg-white p-3 text-sm text-garmin-error">{collection.error}<button type="button" className="ml-3 underline" onClick={()=>{setIsModalOpen(false);collection.reload();}}>Reload records</button></div>}
           {translatable && <LocaleTabs
             value={contentLocale}
             onChange={setContentLocale}
@@ -441,7 +441,7 @@ export default function AdminBlogsPage() {
           {/* Search & Social SEO Suite */}
           <div className="pt-4 border-t border-border space-y-3">
             <h4 className="font-sans text-sm font-bold text-black">
-              Search &amp; Social SEO Optimization
+              Search and sharing
             </h4>
             <SEOEditor
               type="blog"
@@ -468,7 +468,7 @@ export default function AdminBlogsPage() {
           )}
 
           {saveError && (
-            <p role="alert" className="border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+            <p role="alert" className="border border-garmin-error bg-white px-3 py-2 text-xs text-garmin-error">
               {saveError}
             </p>
           )}

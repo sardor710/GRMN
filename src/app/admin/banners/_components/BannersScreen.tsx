@@ -163,7 +163,7 @@ export default function AdminBannersPage() {
                   </span>
                   <span
                     className={`text-xs font-semibold px-2 py-0.5 rounded-none text-white ${
-                      b.active ? "bg-emerald-600" : "bg-neutral-500"
+                      b.active ? "bg-garmin-badge-lime" : "bg-neutral-500"
                     }`}
                   >
                     {b.active ? "Active" : "Disabled"}
@@ -221,7 +221,7 @@ export default function AdminBannersPage() {
                     <button
                       type="button"
                       onClick={() => handleDelete(b.id)}
-                      className="p-2 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 transition-colors rounded-none"
+                      className="p-2 text-muted-foreground hover:text-garmin-error hover:bg-white transition-colors rounded-none"
                       title="Delete Banner"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -241,7 +241,7 @@ export default function AdminBannersPage() {
         title={editingBanner ? "Edit Promotional Banner" : "Create New Banner"}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          {collection.error&&<div role="alert" className="border border-red-200 bg-red-50 p-3 text-sm text-red-800">{collection.error}<button type="button" className="ml-3 underline" onClick={()=>{setIsModalOpen(false);collection.reload();}}>Reload records</button></div>}
+          {collection.error&&<div role="alert" className="border border-garmin-error bg-white p-3 text-sm text-garmin-error">{collection.error}<button type="button" className="ml-3 underline" onClick={()=>{setIsModalOpen(false);collection.reload();}}>Reload records</button></div>}
           {translatable && <LocaleTabs
             value={contentLocale}
             onChange={setContentLocale}
@@ -421,7 +421,7 @@ export default function AdminBannersPage() {
           )}
 
           {saveError && (
-            <p role="alert" className="border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+            <p role="alert" className="border border-garmin-error bg-white px-3 py-2 text-xs text-garmin-error">
               {saveError}
             </p>
           )}

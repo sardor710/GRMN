@@ -74,7 +74,7 @@ export function BulkActionBar({ count, onAction, onClear, busy }: BulkActionBarP
           type="button"
           disabled={busy}
           onClick={confirmDelete}
-          className={`${buttonClass} text-rose-700 hover:border-rose-700`}
+          className={`${buttonClass} text-garmin-error hover:border-garmin-error`}
         >
           Delete…
         </button>
@@ -97,7 +97,7 @@ export function BulkResultMessage({ outcome, onDismiss }: { outcome: BulkOutcome
     <div
       role="status"
       className={`border px-4 py-3 text-[13px] rounded-none ${
-        outcome.unchanged > 0 || outcome.error ? "border-amber-200 bg-amber-50 text-amber-900" : "border-emerald-200 bg-emerald-50 text-emerald-900"
+        outcome.unchanged > 0 || outcome.error ? "border-garmin-badge-gold bg-garmin-badge-gold/20 text-black" : "border-garmin-badge-lime bg-garmin-badge-lime/25 text-black"
       }`}
     >
       <div className="flex items-start justify-between gap-3">

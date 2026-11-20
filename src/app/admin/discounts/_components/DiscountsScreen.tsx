@@ -208,7 +208,7 @@ export default function AdminDiscountsPage() {
       p.family.toLowerCase().includes(productSearch.toLowerCase())
   );
 
-  if(actionError)return <div role="alert" className="border border-red-200 bg-red-50 p-4 text-red-800">{actionError}<button type="button" className="ml-3 underline" onClick={()=>{setActionError(null);fetchData();}}>Reload</button></div>;
+  if(actionError)return <div role="alert" className="border border-garmin-error bg-white p-4 text-garmin-error">{actionError}<button type="button" className="ml-3 underline" onClick={()=>{setActionError(null);fetchData();}}>Reload</button></div>;
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -290,7 +290,7 @@ export default function AdminDiscountsPage() {
                           title="Copy Code"
                         >
                           {copiedId === disc.id ? (
-                            <Check className="h-3.5 w-3.5 text-emerald-600" />
+                            <Check className="h-3.5 w-3.5 text-black" />
                           ) : (
                             <Copy className="h-3.5 w-3.5" />
                           )}
@@ -322,7 +322,7 @@ export default function AdminDiscountsPage() {
                         </div>
                       ) : (
                         <div className="space-y-1">
-                          <span className="text-xs font-semibold capitalize px-2 py-0.5 bg-sky-50 text-sky-700 border border-sky-200 rounded-none">
+                          <span className="text-xs font-semibold capitalize px-2 py-0.5 bg-muted text-garmin-blue border border-garmin-control rounded-none">
                             {disc.targetSkus?.length || 0} Specific Models
                           </span>
                           <p className="text-xs tabular-nums text-muted-foreground line-clamp-1">
@@ -368,10 +368,10 @@ export default function AdminDiscountsPage() {
                       <span
                         className={`text-xs font-semibold px-2 py-0.5 rounded-none ${
                           disc.status === "active"
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            ? "bg-garmin-badge-lime/25 text-black border border-garmin-badge-lime"
                             : disc.status === "expired"
                             ? "bg-neutral-100 text-neutral-600 border border-border"
-                            : "bg-rose-50 text-rose-700 border border-rose-200"
+                            : "bg-white text-garmin-error border border-garmin-error"
                         }`}
                       >
                         {disc.status}
@@ -390,7 +390,7 @@ export default function AdminDiscountsPage() {
                         <button
                           type="button"
                           onClick={() => handleDelete(disc.id)}
-                          className="p-2 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 transition-colors rounded-none"
+                          className="p-2 text-muted-foreground hover:text-garmin-error hover:bg-white transition-colors rounded-none"
                           title="Delete Promotion"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -588,7 +588,7 @@ export default function AdminDiscountsPage() {
               <div className="pt-2 space-y-2">
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-neutral-600">
-                    Selected: <span className="text-emerald-700 font-semibold">{formData.targetSkus.length} models</span>
+                    Selected: <span className="text-black font-semibold">{formData.targetSkus.length} models</span>
                   </p>
                   <input
                     type="text"

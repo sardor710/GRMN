@@ -9,7 +9,7 @@ import type { ProductSpecItem, SpecGroup } from "@/lib/cms/types";
 const addButtonClass =
   "flex items-center gap-1 text-xs uppercase font-bold text-garmin-blue hover:underline";
 const rowClass = "flex items-center gap-2 bg-neutral-50 p-2 border border-border rounded-none";
-const removeButtonClass = "text-muted-foreground hover:text-rose-600 p-1";
+const removeButtonClass = "text-muted-foreground hover:text-garmin-error p-1";
 
 interface SpecsListEditorProps {
   specs: ProductSpecItem[];
@@ -214,7 +214,7 @@ export function OverviewHtmlEditor({ id, label, value, onChange }: OverviewHtmlE
           {label}
         </label>
         {value && (
-          <button type="button" onClick={() => onChange("")} className="text-xs font-medium text-rose-600 hover:underline">
+          <button type="button" onClick={() => onChange("")} className="text-xs font-medium text-garmin-error hover:underline">
             Clear overview
           </button>
         )}

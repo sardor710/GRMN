@@ -249,15 +249,15 @@ function PreviewBody({ product }: { product: PreviewProduct }) {
                           aria-label={`${v.label}${isAvailable ? "" : " (unavailable)"}`}
                           title={v.label}
                           onClick={() => choose(option.id, v.id)}
-                          className={`relative h-10 w-10 overflow-hidden rounded-full border-2 p-0.5 ${
+                          className={`relative h-10 w-10 overflow-hidden rounded-garmin-pill border-2 p-0.5 ${
                             isSelected ? "border-black" : "border-transparent hover:border-neutral-400"
                           } ${isAvailable ? "" : "opacity-40"}`}
                         >
                           {v.swatchImage ? (
                             // eslint-disable-next-line @next/next/no-img-element -- swatch preview
-                            <img src={v.swatchImage} alt="" className="h-full w-full rounded-full object-cover" />
+                            <img src={v.swatchImage} alt="" className="h-full w-full rounded-garmin-pill object-cover" />
                           ) : (
-                            <svg viewBox="0 0 1 1" className="h-full w-full rounded-full" aria-hidden="true">
+                            <svg viewBox="0 0 1 1" className="h-full w-full rounded-garmin-pill" aria-hidden="true">
                               <rect width="1" height="1" fill={v.swatchColor || "#d4d4d4"} />
                             </svg>
                           )}
@@ -288,7 +288,7 @@ function PreviewBody({ product }: { product: PreviewProduct }) {
         })}
 
         {hasVariants && !variant && (
-          <p className="mt-4 text-[13px] text-rose-700">This combination is not available.</p>
+          <p className="mt-4 text-[13px] text-garmin-error">This combination is not available.</p>
         )}
 
         <p className="mt-6 text-sm text-neutral-700">

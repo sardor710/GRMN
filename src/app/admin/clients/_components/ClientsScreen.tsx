@@ -188,7 +188,7 @@ export default function AdminClientsPage() {
                           <p className="font-semibold text-black flex items-center gap-1.5">
                             {client.name}
                             {client.status === "vip" && (
-                              <Star className="h-3.5 w-3.5 text-amber-500 fill-amber-500" />
+                              <Star className="h-3.5 w-3.5 text-black fill-garmin-badge-gold" />
                             )}
                           </p>
                           <p className="text-xs tabular-nums text-muted-foreground">ID: {client.id}</p>
@@ -222,12 +222,12 @@ export default function AdminClientsPage() {
                       <span
                         className={`text-xs font-semibold px-2 py-0.5 rounded-none ${
                           client.status === "vip"
-                            ? "bg-amber-50 text-amber-700 border border-amber-200"
+                            ? "bg-garmin-badge-gold/20 text-black border border-garmin-badge-gold"
                             : client.status === "active"
-                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            ? "bg-garmin-badge-lime/25 text-black border border-garmin-badge-lime"
                             : client.status === "pending"
-                            ? "bg-sky-50 text-sky-700 border border-sky-200"
-                            : "bg-rose-50 text-rose-700 border border-rose-200"
+                            ? "bg-muted text-garmin-blue border border-garmin-control"
+                            : "bg-white text-garmin-error border border-garmin-error"
                         }`}
                       >
                         {client.status}
@@ -246,7 +246,7 @@ export default function AdminClientsPage() {
                         <button
                           type="button"
                           disabled={collection.backend!=="postgres"} onClick={() => handleDelete(client.id)}
-                          className="p-2 text-muted-foreground hover:text-rose-600 hover:bg-rose-50 transition-colors rounded-none"
+                          className="p-2 text-muted-foreground hover:text-garmin-error hover:bg-white transition-colors rounded-none"
                           title="Delete Client"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -268,7 +268,7 @@ export default function AdminClientsPage() {
         title={editingClient ? "Edit Client Profile" : "Create Customer Profile"}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          {collection.error&&<div role="alert" className="border border-red-200 bg-red-50 p-3 text-sm text-red-800">{collection.error}<button type="button" className="ml-3 underline" onClick={()=>{setIsModalOpen(false);collection.reload();}}>Reload records</button></div>}
+          {collection.error&&<div role="alert" className="border border-garmin-error bg-white p-3 text-sm text-garmin-error">{collection.error}<button type="button" className="ml-3 underline" onClick={()=>{setIsModalOpen(false);collection.reload();}}>Reload records</button></div>}
           <div>
             <label className="block text-xs font-semibold text-neutral-700 mb-1">
               Full Name *

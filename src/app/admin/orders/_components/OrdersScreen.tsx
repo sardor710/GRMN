@@ -457,7 +457,7 @@ Status
                 >
                   <span className="flex items-center gap-1.5 truncate">
                     <span
-                      className={`h-2 w-2 rounded-full shrink-0 ${
+                      className={`h-2 w-2 rounded-garmin-pill shrink-0 ${
                         isOn ? "bg-black" : "bg-neutral-300"
                       }`}
                     />
@@ -586,8 +586,8 @@ Status
                               <span
                                 className={`text-xs font-semibold px-1.5 py-0.2 rounded-none border ${
                                   ord.paymentStatus === "paid"
-                                    ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                                    : "bg-amber-50 text-amber-800 border-amber-200"
+                                    ? "bg-garmin-badge-lime/25 text-black border-garmin-badge-lime"
+                                    : "bg-garmin-badge-gold/20 text-black border-garmin-badge-gold"
                                 }`}
                               >
                                 {ord.paymentStatus}
@@ -703,10 +703,10 @@ Status
                           <span
                             className={`capitalize text-xs font-bold px-2 py-0.5 rounded-none border ${
                               ord.paymentStatus === "paid"
-                                ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                ? "bg-garmin-badge-lime/25 text-black border-garmin-badge-lime"
                                 : ord.paymentStatus === "refunded"
-                                ? "bg-rose-50 text-rose-800 border-rose-200"
-                                : "bg-amber-50 text-amber-800 border-amber-200"
+                                ? "bg-white text-garmin-error border-garmin-error"
+                                : "bg-garmin-badge-gold/20 text-black border-garmin-badge-gold"
                             }`}
                           >
                             {ord.paymentStatus}
@@ -722,16 +722,16 @@ Status
                             }
                             className={`border px-2.5 py-1 text-xs font-semibold rounded-none focus:outline-none focus:border-black cursor-pointer ${
                               ord.fulfillmentStatus === "delivered"
-                                ? "bg-emerald-50 border-emerald-300 text-emerald-800"
+                                ? "bg-garmin-badge-lime/25 border-garmin-badge-lime text-black"
                                 : ord.fulfillmentStatus === "shipped"
-                                ? "bg-sky-50 border-sky-300 text-sky-800"
+                                ? "bg-muted border-garmin-control text-garmin-blue"
                                 : ord.fulfillmentStatus === "processing"
-                                ? "bg-amber-50 border-amber-300 text-amber-800"
+                                ? "bg-garmin-badge-gold/20 border-garmin-badge-gold text-black"
                                 : ord.fulfillmentStatus === "new"
                                 ? "bg-neutral-100 border-border text-black"
                                 : ord.fulfillmentStatus === "returned"
-                                ? "bg-purple-50 border-purple-300 text-purple-800"
-                                : "bg-rose-50 border-rose-300 text-rose-800"
+                                ? "bg-muted border-garmin-control text-garmin-blue"
+                                : "bg-white border-garmin-error text-garmin-error"
                             }`}
                           >
                             <option value="new">New</option>
@@ -803,10 +803,10 @@ Status
                   <span
                     className={`capitalize text-xs font-bold px-2 py-0.5 rounded-none border ${
                       selectedOrder.paymentStatus === "paid"
-                        ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                        ? "bg-garmin-badge-lime/25 text-black border-garmin-badge-lime"
                         : selectedOrder.paymentStatus === "refunded"
-                        ? "bg-rose-50 text-rose-800 border-rose-200"
-                        : "bg-amber-50 text-amber-800 border-amber-200"
+                        ? "bg-white text-garmin-error border-garmin-error"
+                        : "bg-garmin-badge-gold/20 text-black border-garmin-badge-gold"
                     }`}
                   >
                     {selectedOrder.paymentStatus}
@@ -882,7 +882,7 @@ Fulfillment
                         {milestones.map((m, idx) => (
                           <div key={idx} className="flex flex-col items-center text-center px-1">
                             <div
-                              className={`flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-bold ${
+                              className={`flex h-7 w-7 items-center justify-center rounded-garmin-pill border-2 text-xs font-bold ${
                                 m.completed
                                   ? "border-garmin-blue bg-garmin-blue text-white"
                                   : m.current
@@ -907,7 +907,7 @@ Fulfillment
                       </div>
                     </div>
                   ) : (
-                    <p className="text-xs text-rose-700 font-semibold italic">Order was canceled.</p>
+                    <p className="text-xs text-garmin-error font-semibold italic">Order was canceled.</p>
                   )}
                 </div>
               );

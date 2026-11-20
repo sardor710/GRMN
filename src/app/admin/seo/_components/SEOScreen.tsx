@@ -120,17 +120,17 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
 
   const scoreBadgeColor =
     auditReport.overallScore >= 85
-      ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+      ? "text-black bg-garmin-badge-lime/25 border-garmin-badge-lime"
       : auditReport.overallScore >= 70
-      ? "text-garmin-blue bg-sky-50 border-sky-200"
-      : "text-amber-700 bg-amber-50 border-amber-200";
+      ? "text-garmin-blue bg-muted border-garmin-control"
+      : "text-black bg-garmin-badge-gold/20 border-garmin-badge-gold";
 
   return (
     <div className="space-y-6">
       <p className="text-sm">Audit and bulk changes cover the two result pages shown below.</p>
       <p className="text-sm font-semibold">Products</p><AdminPageControls page={productPage} />
       <p className="text-sm font-semibold">Articles</p><AdminPageControls page={blogPage} />
-      {actionError && <p role="alert" className="border border-rose-300 bg-rose-50 p-3 text-sm text-rose-800">{actionError}</p>}
+      {actionError && <p role="alert" className="border border-garmin-error bg-white p-3 text-sm text-garmin-error">{actionError}</p>}
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
         <div>
@@ -159,8 +159,8 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
 
       {/* Toast Notification */}
       {successToast && (
-        <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2 rounded-none">
-          <Check className="h-4 w-4 text-emerald-600" />
+        <div className="p-3.5 bg-garmin-badge-lime/25 border border-garmin-badge-lime text-black text-xs font-semibold flex items-center gap-2 rounded-none">
+          <Check className="h-4 w-4 text-black" />
           <span>{successToast}</span>
         </div>
       )}
@@ -178,7 +178,7 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
               Current-page SEO score
             </span>
             <span className="text-xs font-semibold text-black mt-0.5 block">
-              {auditReport.overallScore >= 80 ? "High Search Visibility" : "Optimization Needed"}
+              {auditReport.overallScore >= 80 ? "Score 80 or higher" : "Below 80: see the list below"}
             </span>
           </div>
         </div>
@@ -189,7 +189,7 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
             Pages in these results
           </span>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="g-heading text-2xl font-normal text-black">{auditReport.stats.totalPages}</span>
+            <span className="text-2xl font-bold leading-[30px] tabular-nums text-black">{auditReport.stats.totalPages}</span>
             <span className="text-xs text-muted-foreground">active URLs</span>
           </div>
         </div>
@@ -226,7 +226,7 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
             Missing Keywords
           </span>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="g-heading text-2xl font-normal text-black">
+            <span className="text-2xl font-bold leading-[30px] tabular-nums text-black">
               {auditReport.stats.missingKeywords}
             </span>
             <span className="text-xs text-muted-foreground">unassigned</span>
@@ -342,8 +342,8 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
                 onClick={() => setTypeFilter("needs_work")}
                 className={`px-3 py-1.5 rounded-none text-xs font-semibold transition-colors ${
                   typeFilter === "needs_work"
-                    ? "bg-amber-100 text-amber-900 border border-amber-300"
-                    : "bg-white border border-border text-amber-700 hover:text-amber-900"
+                    ? "bg-garmin-badge-gold/20 text-black border border-garmin-badge-gold"
+                    : "bg-white border border-border text-black hover:text-black"
                 }`}
               >
                 Needs Work ({auditReport.stats.needsWork + auditReport.stats.critical})
@@ -382,12 +382,12 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
                   filteredPages.map((page) => {
                     const pillColor =
                       page.score >= 85
-                        ? "text-emerald-700 bg-emerald-50 border-emerald-200"
+                        ? "text-black bg-garmin-badge-lime/25 border-garmin-badge-lime"
                         : page.score >= 70
-                        ? "text-garmin-blue bg-sky-50 border-sky-200"
+                        ? "text-garmin-blue bg-muted border-garmin-control"
                         : page.score >= 50
-                        ? "text-amber-700 bg-amber-50 border-amber-200"
-                        : "text-rose-700 bg-rose-50 border-rose-200";
+                        ? "text-black bg-garmin-badge-gold/20 border-garmin-badge-gold"
+                        : "text-garmin-error bg-white border-garmin-error";
 
                     return (
                       <tr key={`${page.type}-${page.id}`} className="hover:bg-neutral-50/80 transition-colors">
@@ -428,7 +428,7 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
                               {page.score}/100
                             </span>
                             {page.issuesCount > 0 && (
-                              <span className="text-xs text-amber-700">
+                              <span className="text-xs text-black">
                                 {page.issuesCount} tips
                               </span>
                             )}
@@ -439,7 +439,7 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
                         <td className="py-3.5 px-4 max-w-[260px]">
                           <p className="text-xs text-neutral-600 line-clamp-2 leading-relaxed">
                             {page.seoDescription || (
-                              <span className="text-amber-600 italic">Missing description</span>
+                              <span className="text-black italic">Missing description</span>
                             )}
                           </p>
                         </td>
@@ -479,7 +479,7 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
         <div className="space-y-4 p-6 border border-border bg-white rounded-none">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="g-heading text-lg text-black">Dynamic XML Sitemap</h3>
+              <h3 className="g-heading g-h4 text-black">XML sitemap</h3>
               <p className="text-sm text-muted-foreground mt-1">
                 Automatically generated by Next.js at <code className="bg-neutral-100 px-1 py-0.5 text-xs text-black">/sitemap.xml</code> with dynamic priority weighting and change frequencies.
               </p>
@@ -499,18 +499,18 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
             <div className="text-garmin-blue">&lt;urlset xmlns=&quot;http://www.sitemaps.org/schemas/sitemap/0.9&quot;&gt;</div>
             <div className="pl-4 space-y-2">
               <div>
-                <span className="text-amber-700">&lt;url&gt;</span><br />
+                <span className="text-black">&lt;url&gt;</span><br />
                 &nbsp;&nbsp;&lt;loc&gt;https://www.garmin.com/&lt;/loc&gt;<br />
                 &nbsp;&nbsp;&lt;changefreq&gt;daily&lt;/changefreq&gt;<br />
                 &nbsp;&nbsp;&lt;priority&gt;1.0&lt;/priority&gt;<br />
-                <span className="text-amber-700">&lt;/url&gt;</span>
+                <span className="text-black">&lt;/url&gt;</span>
               </div>
               <div>
-                <span className="text-amber-700">&lt;url&gt;</span><br />
+                <span className="text-black">&lt;url&gt;</span><br />
                 &nbsp;&nbsp;&lt;loc&gt;https://www.garmin.com/p/1228429&lt;/loc&gt;<br />
                 &nbsp;&nbsp;&lt;changefreq&gt;daily&lt;/changefreq&gt;<br />
                 &nbsp;&nbsp;&lt;priority&gt;0.95&lt;/priority&gt;<br />
-                <span className="text-amber-700">&lt;/url&gt;</span>
+                <span className="text-black">&lt;/url&gt;</span>
               </div>
             </div>
             <div className="text-garmin-blue">&lt;/urlset&gt;</div>
@@ -523,7 +523,7 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
         <div className="space-y-4 p-6 border border-border bg-white rounded-none">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h3 className="g-heading text-lg text-black">Robots.txt Crawler Directives</h3>
+              <h3 className="g-heading g-h4 text-black">robots.txt</h3>
               <p className="text-sm text-muted-foreground mt-1">
                 Active directives at <code className="bg-neutral-100 px-1 py-0.5 text-xs text-black">/robots.txt</code> safeguarding admin routes and private customer data.
               </p>
@@ -562,7 +562,7 @@ Sitemap: https://www.garmin.com/sitemap.xml`}
       {activeTab === "schema" && (
         <div className="space-y-4 p-6 border border-border bg-white rounded-none">
           <div>
-            <h3 className="g-heading text-lg text-black">Google Rich Results Structured Schemas</h3>
+            <h3 className="g-heading g-h4 text-black">Structured data</h3>
             <p className="text-sm text-muted-foreground mt-1">
               Live JSON-LD schema objects automatically embedded in every product and blog article page for Google star ratings, pricing, and stock status.
             </p>
@@ -718,7 +718,7 @@ Sitemap: https://www.garmin.com/sitemap.xml`}
             )}
 
             {seoSaveError && (
-              <p role="alert" className="border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+              <p role="alert" className="border border-garmin-error bg-white px-3 py-2 text-xs text-garmin-error">
                 {seoSaveError}
               </p>
             )}

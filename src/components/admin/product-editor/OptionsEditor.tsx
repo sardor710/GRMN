@@ -142,7 +142,7 @@ export function OptionsEditor({ options, images, onChange }: OptionsEditorProps)
                 type="button"
                 onClick={() => onChange(options.filter((o) => o.id !== option.id))}
                 aria-label={`Remove option ${option.name || oIdx + 1}`}
-                className="p-1.5 text-muted-foreground hover:text-rose-600"
+                className="p-1.5 text-muted-foreground hover:text-garmin-error"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -157,7 +157,7 @@ export function OptionsEditor({ options, images, onChange }: OptionsEditorProps)
                 {option.display === "swatch" && (
                   <span
                     aria-hidden="true"
-                    className="h-6 w-6 shrink-0 overflow-hidden rounded-full border border-border bg-white"
+                    className="h-6 w-6 shrink-0 overflow-hidden rounded-garmin-pill border border-border bg-white"
                   >
                     {value.swatchImage ? (
                       // eslint-disable-next-line @next/next/no-img-element -- tiny swatch preview
@@ -228,7 +228,7 @@ export function OptionsEditor({ options, images, onChange }: OptionsEditorProps)
                     type="button"
                     onClick={() => updateOption(option.id, { values: option.values.filter((v) => v.id !== value.id) })}
                     aria-label={`Remove value ${value.label}`}
-                    className="p-1 text-muted-foreground hover:text-rose-600"
+                    className="p-1 text-muted-foreground hover:text-garmin-error"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>

@@ -939,11 +939,11 @@ export default function AdminProductsPage() {
                     placeholder="e.g. 010-02648-11"
                     aria-invalid={productSkuConflict}
                     className={`mt-1 h-9 w-full border bg-white px-3 text-[13px] tabular-nums font-medium text-black focus:border-black focus:outline-none rounded-none ${
-                      productSkuConflict ? "border-rose-500 bg-rose-50" : "border-neutral-300"
+                      productSkuConflict ? "border-garmin-error bg-white" : "border-neutral-300"
                     }`}
                   />
                   {productSkuConflict && (
-                    <p className="mt-1 text-xs text-rose-700">This SKU is already used by another product.</p>
+                    <p className="mt-1 text-xs text-garmin-error">This SKU is already used by another product.</p>
                   )}
                 </div>
               </div>
@@ -1017,7 +1017,7 @@ export default function AdminProductsPage() {
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, badge: "NONE" })}
-                      className="text-xs font-medium text-rose-600 hover:underline"
+                      className="text-xs font-medium text-garmin-error hover:underline"
                     >
                       Clear Badge
                     </button>
@@ -1253,7 +1253,7 @@ export default function AdminProductsPage() {
                   required
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Comprehensive description of materials, artisan crafts, AMOLED screen, and athlete coaching metrics..."
+                  placeholder="One plain sentence starting with the product type, e.g. GPS running smartwatch with an AMOLED display."
                   className="mt-1 w-full border border-border bg-white p-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
                 />
               </div>
@@ -1366,7 +1366,7 @@ export default function AdminProductsPage() {
                     Select Compatible Cross-Selling Accessories
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Selected: <span className="text-emerald-700 font-bold">{formData.compatibleAccessories.length} items linked</span>
+                    Selected: <span className="text-black font-bold">{formData.compatibleAccessories.length} items linked</span>
                   </p>
                 </div>
                 <input
@@ -1452,7 +1452,7 @@ export default function AdminProductsPage() {
 
           {/* Submit Actions */}
           {saveError && (
-            <p role="alert" className="flex items-start gap-2 border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
+            <p role="alert" className="flex items-start gap-2 border border-garmin-error bg-white px-3 py-2 text-xs text-garmin-error">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               <span>{saveError}</span>
             </p>
@@ -1464,7 +1464,7 @@ export default function AdminProductsPage() {
                   type="button"
                   onClick={() => void handleLegacyDelete(editingProduct)}
                   title="Delete Product"
-                  className="px-1 py-2 text-xs uppercase font-semibold text-rose-700 hover:underline underline-offset-2 rounded-none"
+                  className="px-1 py-2 text-xs uppercase font-semibold text-garmin-error hover:underline underline-offset-2 rounded-none"
                 >
                   Delete product…
                 </button>

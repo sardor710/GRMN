@@ -60,7 +60,7 @@ export default function StoreSettingsScreen() {
       <input className="mt-1 w-full h-10 border border-garmin-control bg-white px-3 text-sm text-black focus:border-black focus:outline-none" value={form[key]} placeholder={placeholder} onChange={event => setForm(current => ({ ...current, [key]: event.target.value }))} /></label>
   );
 
-  if (!settings) return <div>{message ? <p role="alert" className="text-sm text-red-800">{message.text}</p> : <p className="text-sm text-muted-foreground">Loading settings…</p>}</div>;
+  if (!settings) return <div>{message ? <p role="alert" className="text-sm text-garmin-error">{message.text}</p> : <p className="text-sm text-muted-foreground">Loading settings…</p>}</div>;
   return (
     <div className="max-w-3xl space-y-6">
       <div><h1 className="g-heading g-h2 text-black">Settings</h1><p className="text-sm text-muted-foreground">Version {settings.version} · base currency {settings.baseCurrency} · payment mode {settings.paymentMode}</p></div>

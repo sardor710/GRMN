@@ -6,7 +6,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Layers,
-  Sparkles,
   ExternalLink,
   Plus,
   Trash2,
@@ -333,7 +332,7 @@ export default function AdminHomepagePage() {
     return (
       <div className="flex h-96 items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-border border-t-garmin-blue" />
+          <div className="h-8 w-8 animate-spin rounded-garmin-pill border-2 border-border border-t-garmin-blue" />
           <p className="text-sm font-medium text-muted-foreground">Loading Homepage CMS Configuration...</p>
         </div>
       </div>
@@ -342,13 +341,13 @@ export default function AdminHomepagePage() {
 
   if (!config) {
     return (
-      <div className="border border-red-200 bg-red-50 p-6 text-red-700">
+      <div className="border border-garmin-error bg-white p-6 text-garmin-error">
         {notification?.type==="error"&&<p role="alert">{notification.message}</p>}
         <p className="font-semibold">{version===0?"No homepage has been published.":"Unable to load homepage configuration."}</p>
-        {version===0&&<button className="mt-3 rounded border p-3" disabled={saving} onClick={handleReset}>Create from default template</button>}
+        {version===0&&<button className="mt-3  border p-3" disabled={saving} onClick={handleReset}>Create from default template</button>}
         <button
           onClick={loadConfig}
-          className="mt-3 rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
+          className="mt-3  bg-garmin-badge-red px-4 py-2 text-sm font-medium text-white hover:bg-garmin-badge-red"
         >
           Reload configuration
         </button>
@@ -363,15 +362,15 @@ export default function AdminHomepagePage() {
         <div
           className={`flex items-center justify-between p-4 text-sm font-medium transition-colors ${
             notification.type === "success"
-              ? "border border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border border-red-200 bg-red-50 text-red-800"
+              ? "border border-garmin-badge-lime bg-garmin-badge-lime/25 text-black"
+              : "border border-garmin-error bg-white text-garmin-error"
           }`}
         >
           <div className="flex items-center gap-2">
             {notification.type === "success" ? (
-              <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+              <CheckCircle2 className="h-5 w-5 text-black" />
             ) : (
-              <AlertCircle className="h-5 w-5 text-red-600" />
+              <AlertCircle className="h-5 w-5 text-garmin-error" />
             )}
             <span>{notification.message}</span>
           {notification.type==="error"&&<button type="button" className="underline" onClick={loadConfig}>Reload configuration</button>}
@@ -444,22 +443,22 @@ export default function AdminHomepagePage() {
               </button>
             </div>
             <div className="mt-2.5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div className="rounded border border-white/80 bg-white/80 p-2.5">
+              <div className=" border border-white/80 bg-white/80 p-2.5">
                 <span className="text-xs font-semibold text-muted-foreground block">Hero Banners</span>
                 <span className="text-xs font-bold text-black tabular-nums">1920 × 800 px</span>
                 <span className="text-xs text-muted-foreground block mt-0.5">Ratio: 2.4:1 / 16:9 (Max 2MB)</span>
               </div>
-              <div className="rounded border border-white/80 bg-white/80 p-2.5">
+              <div className=" border border-white/80 bg-white/80 p-2.5">
                 <span className="text-xs font-semibold text-muted-foreground block">Product Carousel</span>
                 <span className="text-xs font-bold text-black tabular-nums">800 × 800 px</span>
                 <span className="text-xs text-muted-foreground block mt-0.5">Ratio: 1:1 Square (Max 1MB)</span>
               </div>
-              <div className="rounded border border-white/80 bg-white/80 p-2.5">
+              <div className=" border border-white/80 bg-white/80 p-2.5">
                 <span className="text-xs font-semibold text-muted-foreground block">Promo Card Carousel</span>
                 <span className="text-xs font-bold text-black tabular-nums">1200 × 600 px</span>
                 <span className="text-xs text-muted-foreground block mt-0.5">Ratio: 2:1 Landscape (Max 1.5MB)</span>
               </div>
-              <div className="rounded border border-white/80 bg-white/80 p-2.5">
+              <div className=" border border-white/80 bg-white/80 p-2.5">
                 <span className="text-xs font-semibold text-muted-foreground block">Containing Pods</span>
                 <span className="text-xs font-bold text-black tabular-nums">600 × 400 px</span>
                 <span className="text-xs text-muted-foreground block mt-0.5">Ratio: 3:2 Landscape (Max 1MB)</span>
@@ -569,7 +568,7 @@ export default function AdminHomepagePage() {
                 }`}
               >
                 {/* Thumbnail Preview */}
-                <div className="relative h-20 w-36 shrink-0 overflow-hidden rounded bg-neutral-100 border border-border">
+                <div className="relative h-20 w-36 shrink-0 overflow-hidden  bg-neutral-100 border border-border">
                   <Image
                     src={banner.image || "/homepage/featured/holiday.jpg"}
                     alt={banner.title || "Banner"}
@@ -577,7 +576,7 @@ export default function AdminHomepagePage() {
                     className="object-cover"
                     unoptimized
                   />
-                  <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 py-0.5 text-xs tabular-nums text-white">
+                  <span className="absolute bottom-1 right-1  bg-black/70 px-1 py-0.5 text-xs tabular-nums text-white">
                     1920x800
                   </span>
                 </div>
@@ -585,16 +584,16 @@ export default function AdminHomepagePage() {
                 {/* Banner Info */}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="rounded bg-neutral-100 px-1.5 py-0.5 text-xs tabular-nums text-neutral-600 font-bold">
+                    <span className=" bg-neutral-100 px-1.5 py-0.5 text-xs tabular-nums text-neutral-600 font-bold">
                       #{index + 1}
                     </span>
                     <h3 className="font-sans truncate text-sm font-bold text-black">
                       {banner.title || "(Untitled Banner)"}
                     </h3>
                     <span
-                      className={`rounded px-1.5 py-0.5 text-xs font-bold ${
+                      className={` px-1.5 py-0.5 text-xs font-bold ${
                         banner.active
-                          ? "bg-emerald-100 text-emerald-800"
+                          ? "bg-garmin-badge-lime/25 text-black"
                           : "bg-neutral-200 text-neutral-600"
                       }`}
                     >
@@ -612,7 +611,7 @@ export default function AdminHomepagePage() {
                   <button
                     onClick={() => handleMoveBanner(index, "up")}
                     disabled={index === 0}
-                    className="rounded p-1 text-muted-foreground hover:bg-neutral-100 hover:text-black disabled:opacity-20"
+                    className=" p-1 text-muted-foreground hover:bg-neutral-100 hover:text-black disabled:opacity-20"
                     title="Move slide up"
                   >
                     <ArrowUp className="h-4 w-4" />
@@ -620,21 +619,21 @@ export default function AdminHomepagePage() {
                   <button
                     onClick={() => handleMoveBanner(index, "down")}
                     disabled={index === config.heroBanners.length - 1}
-                    className="rounded p-1 text-muted-foreground hover:bg-neutral-100 hover:text-black disabled:opacity-20"
+                    className=" p-1 text-muted-foreground hover:bg-neutral-100 hover:text-black disabled:opacity-20"
                     title="Move slide down"
                   >
                     <ArrowDown className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleOpenEditBanner(index)}
-                    className="rounded p-1.5 text-neutral-600 hover:bg-neutral-100 hover:text-garmin-blue"
+                    className=" p-1.5 text-neutral-600 hover:bg-neutral-100 hover:text-garmin-blue"
                     title="Edit banner"
                   >
                     <Edit2 className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDeleteBanner(index)}
-                    className="rounded p-1.5 text-muted-foreground hover:bg-neutral-100 hover:text-red-600"
+                    className=" p-1.5 text-muted-foreground hover:bg-neutral-100 hover:text-garmin-error"
                     title="Delete banner"
                   >
                     <Trash2 className="h-4 w-4" />
@@ -668,7 +667,7 @@ export default function AdminHomepagePage() {
               </button>
               <button
                 onClick={() => handleOpenAddCarousel("promo")}
-                className="inline-flex items-center gap-1.5 border border-purple-600 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 hover:bg-purple-100"
+                className="inline-flex items-center gap-1.5 border border-garmin-control bg-muted px-3 py-1.5 text-xs font-semibold text-garmin-blue hover:bg-muted"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Add Type 2 (Promo Carousel)
@@ -689,10 +688,10 @@ export default function AdminHomepagePage() {
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-100 pb-3">
                     <div className="flex items-start gap-2.5">
                       <span
-                        className={`rounded px-2 py-0.5 text-xs font-bold mt-0.5 ${
+                        className={` px-2 py-0.5 text-xs font-bold mt-0.5 ${
                           isProductType
                             ? "bg-garmin-blue/10 text-garmin-blue border border-garmin-blue/20"
-                            : "bg-purple-100 text-purple-800 border border-purple-200"
+                            : "bg-muted text-garmin-blue border border-garmin-control"
                         }`}
                       >
                         {isProductType ? "Type 1: Product Carousel" : "Type 2: Promo Photo & Button"}
@@ -722,14 +721,14 @@ export default function AdminHomepagePage() {
                       </button>
                       <button
                         onClick={() => handleOpenEditCarousel(cIndex)}
-                        className="rounded p-1 text-muted-foreground hover:bg-neutral-100 hover:text-black"
+                        className=" p-1 text-muted-foreground hover:bg-neutral-100 hover:text-black"
                         title="Edit Carousel Settings"
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteCarousel(cIndex)}
-                        className="rounded p-1 text-muted-foreground hover:bg-neutral-100 hover:text-red-600"
+                        className=" p-1 text-muted-foreground hover:bg-neutral-100 hover:text-garmin-error"
                         title="Delete Carousel"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -750,7 +749,7 @@ export default function AdminHomepagePage() {
                         >
                           {/* Image preview */}
                           <div
-                            className={`relative w-full overflow-hidden rounded bg-neutral-200 mb-2.5 ${
+                            className={`relative w-full overflow-hidden  bg-neutral-200 mb-2.5 ${
                               isProductType ? "aspect-square" : "aspect-2/1"
                             }`}
                           >
@@ -764,16 +763,16 @@ export default function AdminHomepagePage() {
                             {/* Badges / Tags */}
                             {isProductType && prodItem.badge && (
                               <span
-                                className={`absolute top-2 left-2 rounded px-1.5 py-0.5 text-xs font-bold ${
+                                className={`absolute top-2 left-2  px-1.5 py-0.5 text-xs font-bold ${
                                   prodItem.badge === "NEW"
                                     ? "bg-garmin-blue text-white"
-                                    : "bg-emerald-600 text-white"
+                                    : "bg-garmin-badge-lime text-black"
                                 }`}
                               >
                                 {prodItem.badge}
                               </span>
                             )}
-                            <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
+                            <span className="absolute bottom-1 right-1  bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
                               {isProductType ? "800x800" : "1200x600"}
                             </span>
                           </div>
@@ -801,7 +800,7 @@ export default function AdminHomepagePage() {
                               </div>
                             ) : (
                               <div className="mt-2 flex items-center gap-1.5">
-                                <span className="rounded bg-neutral-200 px-2 py-0.5 text-xs font-bold text-neutral-700">
+                                <span className=" bg-neutral-200 px-2 py-0.5 text-xs font-bold text-neutral-700">
                                   CTA: {promoItem.ctaText || "SHOP"}
                                 </span>
                               </div>
@@ -814,14 +813,14 @@ export default function AdminHomepagePage() {
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => handleOpenEditCarouselItem(cIndex, iIndex)}
-                                className="rounded p-1 text-muted-foreground hover:text-black"
+                                className=" p-1 text-muted-foreground hover:text-black"
                                 title="Edit item"
                               >
                                 <Edit2 className="h-3.5 w-3.5" />
                               </button>
                               <button
                                 onClick={() => handleDeleteCarouselItem(cIndex, iIndex)}
-                                className="rounded p-1 text-muted-foreground hover:text-red-600"
+                                className=" p-1 text-muted-foreground hover:text-garmin-error"
                                 title="Delete item"
                               >
                                 <Trash2 className="h-3.5 w-3.5" />
@@ -868,9 +867,9 @@ export default function AdminHomepagePage() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {config.promoTiles.map((tile, index) => (
                 <div key={tile.id || index} className="border border-border bg-white p-3.5 shadow-2xs">
-                  <div className="relative aspect-3/2 w-full overflow-hidden rounded bg-neutral-100 mb-2.5">
+                  <div className="relative aspect-3/2 w-full overflow-hidden  bg-neutral-100 mb-2.5">
                     <Image src={tile.image} alt={tile.title} fill className="object-cover" unoptimized />
-                    <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
+                    <span className="absolute bottom-1 right-1  bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
                       600x400
                     </span>
                   </div>
@@ -906,9 +905,9 @@ export default function AdminHomepagePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {config.storyTiles.map((tile, index) => (
                 <div key={tile.id || index} className="border border-border bg-white p-3.5 shadow-2xs">
-                  <div className="relative aspect-3/2 w-full overflow-hidden rounded bg-neutral-100 mb-2.5">
+                  <div className="relative aspect-3/2 w-full overflow-hidden  bg-neutral-100 mb-2.5">
                     <Image src={tile.image} alt={tile.title} fill className="object-cover" unoptimized />
-                    <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
+                    <span className="absolute bottom-1 right-1  bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
                       600x400
                     </span>
                   </div>
@@ -944,9 +943,9 @@ export default function AdminHomepagePage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {config.categoryTiles.map((tile, index) => (
                 <div key={tile.id || index} className="border border-border bg-white p-2.5 shadow-2xs">
-                  <div className="relative aspect-3/2 w-full overflow-hidden rounded bg-neutral-100 mb-2">
+                  <div className="relative aspect-3/2 w-full overflow-hidden  bg-neutral-100 mb-2">
                     <Image src={tile.image} alt={tile.title} fill className="object-cover" unoptimized />
-                    <span className="absolute bottom-1 right-1 rounded bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
+                    <span className="absolute bottom-1 right-1  bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
                       600x400
                     </span>
                   </div>
@@ -987,7 +986,7 @@ export default function AdminHomepagePage() {
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="rounded bg-sky-100 px-2 py-0.5 text-xs font-bold text-garmin-blue">
+                    <span className=" bg-muted px-2 py-0.5 text-xs font-bold text-garmin-blue">
                       {key}
                     </span>
                     <span className="text-xs tabular-nums text-muted-foreground font-semibold">
@@ -1020,16 +1019,12 @@ export default function AdminHomepagePage() {
             ))}
           </div>
 
-          <div className="border border-amber-200 bg-amber-50/60 p-4 text-xs text-amber-900">
-            <h4 className="font-sans flex items-center gap-1.5 font-bold">
-              <Sparkles className="h-4 w-4 text-amber-700" />
-              Optimization Best Practices for Garmin Media
-            </h4>
-            <ul className="mt-2 list-disc pl-5 space-y-1 text-amber-800">
-              <li>Always convert exported graphics to modern <strong>WebP</strong> format for fast loading times and reduced mobile bandwidth.</li>
-              <li>For Type 1 Product Carousels, use clean cutout PNGs or photos with transparent/neutral background centered in the 800 × 800 px frame.</li>
-              <li>Keep hero rotator key focal points in the center 60% of the 1920 × 800 px frame to prevent mobile responsive cropping.</li>
-              <li>Ensure compression quality is set between 80% to 85% to maintain crisp typography while staying below file size limits.</li>
+          <div className="border border-garmin-control bg-muted p-4 text-sm text-black">
+            <h4 className="font-sans font-bold">Image guidelines</h4>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>Use WebP.</li>
+              <li>Product cards: 800 × 800 px, product centred on a plain background.</li>
+              <li>Hero slides: 1920 × 800 px, subject in the centre 60% so it is not cropped on phones.</li>
             </ul>
           </div>
         </div>
@@ -1059,7 +1054,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingBanner.data, title: e.target.value },
                   })
                 }
-                className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="e.g. HOLIDAY GIFT GUIDE"
               />
             </div>
@@ -1077,7 +1072,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingBanner.data, subtitle: e.target.value },
                   })
                 }
-                className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="e.g. Where 'best gift ever' begins"
               />
             </div>
@@ -1100,7 +1095,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingBanner.data, image: e.target.value },
                   })
                 }
-                className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="/homepage/featured/holiday.jpg"
               />
               <p className="mt-1 text-xs text-muted-foreground">
@@ -1121,7 +1116,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingBanner.data, href: e.target.value },
                   })
                 }
-                className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="https://www.garmin.com/en-US/p/..."
               />
             </div>
@@ -1137,7 +1132,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingBanner.data, active: e.target.checked },
                   })
                 }
-                className="h-4 w-4 rounded border-border text-garmin-blue focus:ring-garmin-blue"
+                className="h-4 w-4  border-border text-garmin-blue focus:ring-garmin-blue"
               />
               <label htmlFor="bannerActive" className="text-xs font-medium text-neutral-700">
                 Display this slide on storefront
@@ -1148,14 +1143,14 @@ export default function AdminHomepagePage() {
               <button
                 type="button"
                 onClick={() => setBannerModalOpen(false)}
-                className="rounded border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                className=" border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveBannerModal}
-                className="rounded bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1]"
+                className=" bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1]"
               >
                 Save Slide
               </button>
@@ -1185,7 +1180,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarousel.data, type: e.target.value as CarouselType },
                   })
                 }
-                className="mt-1 w-full rounded border border-border bg-white px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full  border border-border bg-white px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
               >
                 <option value="product">Type 1: Product Carousel (Product, Price, NEW/SALE Tag)</option>
                 <option value="promo">Type 2: Promo Carousel (Photo, Hyperlink Button, Title)</option>
@@ -1210,7 +1205,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarousel.data, title: e.target.value },
                   })
                 }
-                className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="e.g. Featured Smartwatches"
               />
             </div>
@@ -1228,7 +1223,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarousel.data, subtitle: e.target.value },
                   })
                 }
-                className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="e.g. Top picks for training and health"
               />
             </div>
@@ -1248,7 +1243,7 @@ export default function AdminHomepagePage() {
                   });
                 }}
                 pattern="[a-z0-9][a-z0-9_\-]{0,63}"
-                className="mt-1 w-full rounded border border-border px-3 py-2 text-sm tabular-nums focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full  border border-border px-3 py-2 text-sm tabular-nums focus:border-garmin-blue focus:outline-hidden"
                 placeholder="e.g. homepage-featured"
               />
               <p className="mt-1 text-xs text-muted-foreground">
@@ -1267,7 +1262,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarousel.data, active: e.target.checked },
                   })
                 }
-                className="h-4 w-4 rounded border-border text-garmin-blue focus:ring-garmin-blue"
+                className="h-4 w-4  border-border text-garmin-blue focus:ring-garmin-blue"
               />
               <label htmlFor="carouselActive" className="text-xs font-medium text-neutral-700">
                 Section is active on storefront
@@ -1278,14 +1273,14 @@ export default function AdminHomepagePage() {
               <button
                 type="button"
                 onClick={() => setCarouselModalOpen(false)}
-                className="rounded border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                className=" border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveCarouselModal}
-                className="rounded bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1]"
+                className=" bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1]"
               >
                 Save Section
               </button>
@@ -1324,7 +1319,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarouselItem.data, title: e.target.value },
                   })
                 }
-                className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder={editingCarouselItem.type === "product" ? "e.g. FĒNIX® 9" : "e.g. HOLIDAY GIFT GUIDE"}
               />
             </div>
@@ -1342,7 +1337,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarouselItem.data, description: e.target.value },
                   })
                 }
-                className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="Brief summary or marketing callout..."
               />
             </div>
@@ -1365,7 +1360,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarouselItem.data, image: e.target.value },
                   })
                 }
-                className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="/homepage/featured/fenix9.jpg"
               />
               <p className="mt-1 text-xs text-muted-foreground">
@@ -1391,7 +1386,7 @@ export default function AdminHomepagePage() {
                         data: { ...editingCarouselItem.data, price: e.target.value },
                       })
                     }
-                    className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden tabular-nums"
+                    className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden tabular-nums"
                     placeholder="KZT 349,995.00"
                   />
                 </div>
@@ -1408,7 +1403,7 @@ export default function AdminHomepagePage() {
                         data: { ...editingCarouselItem.data, badge: e.target.value || undefined },
                       })
                     }
-                    className="mt-1 w-full rounded border border-border bg-white px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                    className="mt-1 w-full  border border-border bg-white px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                   >
                     <option value="">No Badge</option>
                     <option value="NEW">NEW (Blue badge)</option>
@@ -1434,7 +1429,7 @@ export default function AdminHomepagePage() {
                       data: { ...editingCarouselItem.data, ctaText: e.target.value },
                     })
                   }
-                  className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                  className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                   placeholder="e.g. SHOP NOW, LEARN MORE, WATCH VIDEO"
                 />
               </div>
@@ -1453,7 +1448,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarouselItem.data, href: e.target.value },
                   })
                 }
-                className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="https://www.garmin.com/en-US/p/..."
               />
             </div>
@@ -1462,14 +1457,14 @@ export default function AdminHomepagePage() {
               <button
                 type="button"
                 onClick={() => setCarouselItemModalOpen(false)}
-                className="rounded border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                className=" border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveCarouselItemModal}
-                className="rounded bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1]"
+                className=" bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1]"
               >
                 Save Card
               </button>
@@ -1500,7 +1495,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingTile.data, title: e.target.value },
                   })
                 }
-                className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
               />
             </div>
 
@@ -1522,7 +1517,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingTile.data, image: e.target.value },
                   })
                 }
-                className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
               />
               <p className="mt-1 text-xs text-muted-foreground">
                 Recommended 600 × 400 px landscape image (3:2 ratio).
@@ -1542,7 +1537,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingTile.data, href: e.target.value },
                   })
                 }
-                className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
               />
             </div>
 
@@ -1559,7 +1554,7 @@ export default function AdminHomepagePage() {
                     data: { ...editingTile.data, cta: e.target.value },
                   })
                 }
-                className="mt-1 w-full rounded border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                className="mt-1 w-full  border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                 placeholder="SHOP or LEARN MORE"
               />
             </div>
@@ -1568,14 +1563,14 @@ export default function AdminHomepagePage() {
               <button
                 type="button"
                 onClick={() => setTileModalOpen(false)}
-                className="rounded border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
+                className=" border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={handleSaveTileModal}
-                className="rounded bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1]"
+                className=" bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1]"
               >
                 Save Tile
               </button>

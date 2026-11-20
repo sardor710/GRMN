@@ -132,7 +132,7 @@ export function ProductImagesEditor({ images, defaultImageId, onChange }: Produc
       <div className="flex items-center justify-between">
         <span className={labelClass}>Product Photos ({images.length})</span>
         <span className="text-xs text-muted-foreground">
-          Drag to reorder · <Star className="inline h-3 w-3 fill-amber-400 text-amber-500" /> marks the default photo
+          Drag to reorder · <Star className="inline h-3 w-3 fill-garmin-badge-gold text-black" /> marks the default photo
         </span>
       </div>
 
@@ -151,7 +151,7 @@ export function ProductImagesEditor({ images, defaultImageId, onChange }: Produc
           void handleFiles(e.dataTransfer.files);
         }}
         className={`flex flex-col items-center justify-center gap-2 border border-dashed px-4 py-6 text-center transition-colors rounded-none ${
-          isDragOver ? "border-garmin-blue bg-sky-50" : "border-border bg-neutral-50"
+          isDragOver ? "border-garmin-blue bg-muted" : "border-border bg-neutral-50"
         }`}
       >
         <UploadCloud className="h-7 w-7 text-muted-foreground" aria-hidden="true" />
@@ -183,7 +183,7 @@ export function ProductImagesEditor({ images, defaultImageId, onChange }: Produc
             <li
               key={p.key}
               className={`flex items-center gap-2 border px-2.5 py-1.5 text-xs rounded-none ${
-                p.error ? "border-rose-200 bg-rose-50 text-rose-800" : "border-border bg-white text-neutral-700"
+                p.error ? "border-garmin-error bg-white text-garmin-error" : "border-border bg-white text-neutral-700"
               }`}
             >
               {!p.error && <Loader2 className="h-3.5 w-3.5 animate-spin text-garmin-blue" aria-hidden="true" />}
@@ -281,7 +281,7 @@ export function ProductImagesEditor({ images, defaultImageId, onChange }: Produc
                     title={isDefault ? "Default photo" : "Make default photo"}
                     className="absolute right-1 top-1 bg-white/90 p-1 hover:bg-white"
                   >
-                    <Star className={`h-4 w-4 ${isDefault ? "fill-amber-400 text-amber-500" : "text-neutral-400"}`} />
+                    <Star className={`h-4 w-4 ${isDefault ? "fill-garmin-badge-gold text-black" : "text-neutral-400"}`} />
                   </button>
                 </div>
                 <div className="space-y-1 border-t border-neutral-100 p-1.5">
@@ -318,7 +318,7 @@ export function ProductImagesEditor({ images, defaultImageId, onChange }: Produc
                       type="button"
                       onClick={() => remove(img.id)}
                       aria-label={`Remove photo ${idx + 1}`}
-                      className="p-1 text-muted-foreground hover:text-rose-600"
+                      className="p-1 text-muted-foreground hover:text-garmin-error"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
