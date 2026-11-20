@@ -214,6 +214,51 @@ export function parseInTheBox(html) {
   return plain(String(html || '').replace(/<br\s*\/?>/gi, '\n')).split('\n').map((s) => s.trim()).filter(Boolean);
 }
 
+// ---------- per-sku tabs (Task 2.5) ----------
+
+const hasTabs = (s) => Boolean(s?.tabs?.specsTab?.content || s?.tabs?.overviewTab?.content || s?.tabs?.inTheBoxTab?.content);
+
+/** Specs, overview (converted + sanitized like every stored overview) and in-the-box of one sku's tabs. */
+function tabsOfSku(s) {
+  return {
+    specGroups: parseSpecsTable(s?.tabs?.specsTab?.content),
+    overviewHtml: sanitizeOverviewHtml(overviewFromGarmin(s?.tabs?.overviewTab?.content)),
+    inTheBox: parseInTheBox(s?.tabs?.inTheBoxTab?.content),
+  };
+}
+
+/**
+ * Specs, overview and in-the-box of a garmin.com product page: of `sku` when given, else of the page's
+ * default sku. garmin.com ignores `?sku=` and keeps its own default, so a variant's page must be read by sku.
+ * @returns {{ specGroups: object[], overviewHtml: string, inTheBox: string[] } | null} null when the page
+ *   doesn't carry that sku's tabs.
+ */
+export function parseGarminTabs(html, { sku } = {}) {
+  const boot = extractBootstrap(html);
+  const skus = Object.values(boot.skus || {});
+  const s = sku
+    ? boot.skus?.[sku] || skus.find((x) => x?.partNumber === sku)
+    : boot.skus?.[boot.sku] || skus[0];
+  return s && hasTabs(s) ? tabsOfSku(s) : null;
+}
+
+const norm = (s) => String(s ?? '').replace(/\s+/g, ' ').trim();
+const groupsKey = (groups) => JSON.stringify((groups || []).map((g) => [norm(g.title), (g.items || []).map((i) => [norm(i.label), norm(i.value)])]));
+const listKey = (list) => JSON.stringify((list || []).map(norm));
+
+/**
+ * The blocks of a variant's tabs that differ from the product-level ones (whitespace-normalized, same order).
+ * A block the variant's page leaves empty is inherited, never stored as an own empty block.
+ * @returns {object | undefined} a VariantContent with only the differing blocks, or undefined when none differ.
+ */
+export function variantContentOverrides(base, own) {
+  const out = {};
+  if (own.specGroups?.length && groupsKey(own.specGroups) !== groupsKey(base.specGroups)) out.specGroups = own.specGroups;
+  if (norm(own.overviewHtml) && norm(own.overviewHtml) !== norm(base.overviewHtml)) out.overviewHtml = own.overviewHtml;
+  if (own.inTheBox?.length && listKey(own.inTheBox) !== listKey(base.inTheBox)) out.inTheBox = own.inTheBox;
+  return Object.keys(out).length ? out : undefined;
+}
+
 /** "fēnix® 9 Pro – 51 mm" → "fēnix 9" */
 export function familyFromName(name) {
   let s = String(name || '').replace(/[®™℠]/g, '').split(/\s+[–-]\s+/)[0].trim();
@@ -268,7 +313,9 @@ function stableId(prefix, s) {
 
 /**
  * Parse a garmin.com product page.
- * @returns {{ product: object, remoteImages: {id:string,url:string,alt:string}[], warnings: string[] }}
+ * Non-default variants get `content` with only the tab blocks that differ from the product-level ones.
+ * @returns {{ product: object, remoteImages: {id:string,url:string,alt:string}[], warnings: string[],
+ *   variantSkusWithoutTabs: string[] }} the last lists skus whose tabs the page doesn't embed.
  */
 export function parseGarminProduct(html, { sourceUrl, rateKztPerUsd, now = new Date().toISOString() }) {
   const rate = Number(rateKztPerUsd);
@@ -364,7 +411,21 @@ export function parseGarminProduct(html, { sourceUrl, rateKztPerUsd, now = new D
 
   const remoteImages = [...remote.values()];
   const defVariant = variants.find((v) => v.isDefault) || variants[0];
-  const specGroups = parseSpecsTable(def.tabs?.specsTab?.content);
+  const base = tabsOfSku(def);
+  const { specGroups } = base;
+
+  // Task 2.5: each variant's own tabs. garmin.com embeds every sku's tabs in the page (the same data its
+  // ?sku= page serves, checked 2026-11-20); skus without them are read from their page by the import route.
+  const variantSkusWithoutTabs = [];
+  skus.forEach((s, i) => {
+    if (s === def) return;
+    if (!hasTabs(s)) {
+      variantSkusWithoutTabs.push(s.partNumber);
+      return;
+    }
+    const content = variantContentOverrides(base, tabsOfSku(s));
+    if (content) variants[i].content = content;
+  });
   const crumbs = Array.isArray(boot.breadCrumbs) ? boot.breadCrumbs : [];
 
   const product = syncLegacyFields({
@@ -384,14 +445,14 @@ export function parseGarminProduct(html, { sourceUrl, rateKztPerUsd, now = new D
     variants: ensureSingleDefault(variants),
     images: remoteImages.map((r) => ({ id: r.id, src: r.url, alt: r.alt, source: 'import' })),
     defaultImageId: defVariant.imageIds[0],
-    overviewHtml: sanitizeOverviewHtml(overviewFromGarmin(def.tabs?.overviewTab?.content)),
+    overviewHtml: base.overviewHtml,
     specGroups,
-    inTheBox: parseInTheBox(def.tabs?.inTheBoxTab?.content),
+    inTheBox: base.inTheBox,
     compatibleAccessories: [],
     seoTitle: def.seo?.title,
     seoDescription: def.seo?.ogDescription,
     source: { provider: 'garmin', url: String(sourceUrl), productId: String(boot.productId || ''), partNumber: def.partNumber, importedAt: now },
   });
   if (!specGroups.length) warnings.push('No specs table found on the page.');
-  return { product, remoteImages, warnings };
+  return { product, remoteImages, warnings, variantSkusWithoutTabs };
 }

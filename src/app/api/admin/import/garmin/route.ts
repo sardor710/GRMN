@@ -3,6 +3,7 @@ import { requireCatalogWriter } from "@/lib/cms/admin-guard";
 import { saveSettings } from "@/lib/cms/store";
 import { downloadRemoteImage, type DownloadResult } from "@/lib/media/storage";
 import { parseGarminProduct, validateGarminUrl, type GarminDraft } from "@/lib/import/garmin-parse";
+import { fillVariantContentFromPages, VARIANT_PAGE_TIMEOUT_MS } from "@/lib/import/garmin-variant-content";
 
 export const runtime = "nodejs";
 export const maxDuration = 120;
@@ -28,13 +29,13 @@ class ImportError extends Error {
 }
 
 /** Fetch a Garmin page, following redirects manually so every hop is re-validated. */
-async function fetchGarminPage(start: URL): Promise<{ html: string; finalUrl: URL }> {
+async function fetchGarminPage(start: URL, signal?: AbortSignal): Promise<{ html: string; finalUrl: URL }> {
   let url = start;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
     const res = await fetch(url, {
       redirect: "manual",
       headers: { "User-Agent": UA, Accept: "text/html" },
-      signal: AbortSignal.timeout(PAGE_TIMEOUT_MS),
+      signal: signal ?? AbortSignal.timeout(PAGE_TIMEOUT_MS),
     });
     if (res.status >= 300 && res.status < 400) {
       const next = validateGarminUrl(new URL(res.headers.get("location") || "", url).href);
@@ -87,7 +88,9 @@ async function localizeImages(draft: GarminDraft, remoteImages: { id: string; ur
       keep.add(id);
     }
   }
-  const overviewUrls = [...new Set([...(draft.overviewHtml || "").matchAll(/src="(https:\/\/res\.garmin\.com\/[^"]+)"/g)].map((m) => m[1]))]
+  // Product overview photos first, then those only a variant's own overview uses (Task 2.5).
+  const overviews = [draft.overviewHtml || "", ...variants.map((v) => v.content?.overviewHtml || "")];
+  const overviewUrls = [...new Set(overviews.flatMap((html) => [...html.matchAll(/src="(https:\/\/res\.garmin\.com\/[^"]+)"/g)].map((m) => m[1])))]
     .filter((u) => !/\.svg(\?|$)/i.test(u))
     .slice(0, Math.max(0, MAX_IMAGES_PER_IMPORT - keep.size));
 
@@ -111,14 +114,20 @@ async function localizeImages(draft: GarminDraft, remoteImages: { id: string; ur
   draft.images = (draft.images || [])
     .filter((img) => localById.has(img.id))
     .map((img) => ({ ...img, src: localById.get(img.id) as string }));
-  draft.variants = variants.map((v) => ({ ...v, imageIds: v.imageIds.filter((id) => localById.has(id)) }));
+  const localizeOverview = (html: string) =>
+    html.replace(/src="(https:\/\/res\.garmin\.com\/[^"]+)"/g, (m, url: string) => {
+      const hit = cache.get(url);
+      return hit && "src" in hit ? `src="${hit.src}"` : m;
+    });
+  draft.variants = variants.map((v) => ({
+    ...v,
+    imageIds: v.imageIds.filter((id) => localById.has(id)),
+    ...(v.content?.overviewHtml === undefined ? {} : { content: { ...v.content, overviewHtml: localizeOverview(v.content.overviewHtml) } }),
+  }));
   const def = draft.variants.find((v) => v.isDefault);
   draft.defaultImageId = def?.imageIds[0] || draft.images[0]?.id;
   draft.image = draft.images.find((i) => i.id === draft.defaultImageId)?.src || draft.image;
-  draft.overviewHtml = (draft.overviewHtml || "").replace(/src="(https:\/\/res\.garmin\.com\/[^"]+)"/g, (m, url: string) => {
-    const hit = cache.get(url);
-    return hit && "src" in hit ? `src="${hit.src}"` : m;
-  });
+  draft.overviewHtml = localizeOverview(draft.overviewHtml || "");
 
   const dropped = remoteImages.length - keep.size;
   if (dropped > 0) warnings.push(`${dropped} extra gallery photos were skipped (up to ${MAX_IMAGES_PER_VARIANT} per variant).`);
@@ -149,7 +158,15 @@ export async function POST(request: Request) {
   importInFlight = true;
   try {
     const { html, finalUrl } = await fetchGarminPage(checked.url);
-    const { product, remoteImages, warnings } = parseGarminProduct(html, { sourceUrl: finalUrl.href, rateKztPerUsd: rate });
+    const { product, remoteImages, warnings, variantSkusWithoutTabs } = parseGarminProduct(html, { sourceUrl: finalUrl.href, rateKztPerUsd: rate });
+    // Task 2.5: variants whose tabs the page doesn't embed are read from their own page (garmin.com hosts
+    // only: the URL is re-validated and every redirect hop is checked by fetchGarminPage). Before localizing,
+    // so their overview photos are downloaded with the product's.
+    warnings.push(
+      ...(await fillVariantContentFromPages(product, variantSkusWithoutTabs, finalUrl, async (url) =>
+        (await fetchGarminPage(url, AbortSignal.timeout(VARIANT_PAGE_TIMEOUT_MS))).html,
+      )),
+    );
     if (body.downloadImages !== false) warnings.push(...(await localizeImages(product, remoteImages)));
     // Remember the rate for the next import (legacy JSON store only; PostgreSQL uses the USD rate editor).
     if (process.env.CMS_BACKEND !== "postgres") saveSettings({ importRateKztPerUsd: rate });
