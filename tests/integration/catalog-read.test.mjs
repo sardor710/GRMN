@@ -50,6 +50,7 @@ test("catalog keyset sorting scopes cursors and retains sub-millisecond timestam
 });
 // Task C-d: garmin.com's "Z to A". Names descend across pages, the cursor is bound to this order, ties on a
 // name keep a stable id order, and an unknown sort key is still refused.
+// Like name_asc, it orders by the base (English) products.name under the database's PostgreSQL collation.
 test("name_desc lists names Z to A across cursor pages; its cursor is bound to the order; unknown sorts are refused",async()=>{
   const api=await reader();for(const suffix of ["Bravo","Delta","Alpha","Charlie","Charlie"])await product({name:"ZtoAFixture "+suffix});
   const first=await api.listProducts(query({search:"ZtoAFixture",sort:"name_desc"}),{limit:3});
@@ -59,6 +60,12 @@ test("name_desc lists names Z to A across cursor pages; its cursor is bound to t
   const all=[...first.items,...second.items].map(item=>item.publicKey);assert.equal(new Set(all).size,5,"no product repeats or goes missing across the page boundary");
   const asc=[];let cursor;do{const page=await api.listProducts(query({search:"ZtoAFixture",sort:"name_asc"}),{limit:2,cursor});asc.push(...page.items.map(item=>item.publicKey));cursor=page.nextCursor??undefined;}while(cursor);
   assert.deepEqual(all,[...asc].reverse(),"Z to A is exactly A to Z reversed, ties included");
+  // Limit 2 puts the two "Charlie" rows on either side of a page boundary: the (name,id) cursor neither repeats nor skips one.
+  const pairs=[];cursor=undefined;do{const page=await api.listProducts(query({search:"ZtoAFixture",sort:"name_desc"}),{limit:2,cursor});pairs.push(page.items.map(item=>item.publicKey));cursor=page.nextCursor??undefined;}while(cursor);
+  assert.equal(pairs.length,3);
+  const byKey=new Map([...first.items,...second.items].map(item=>[item.publicKey,item.name]));
+  assert.deepEqual(pairs.map(keys=>keys.map(key=>byKey.get(key))),[["ZtoAFixture Delta","ZtoAFixture Charlie"],["ZtoAFixture Charlie","ZtoAFixture Bravo"],["ZtoAFixture Alpha"]]);
+  assert.deepEqual(pairs.flat(),all,"limit 2 gives the same order as limit 3");
   await assert.rejects(api.listProducts(query({search:"ZtoAFixture",sort:"name_asc"}),{limit:3,cursor:first.nextCursor}),error=>error.status===400);
   for(const sort of ["name-desc","z_a","NAME_DESC"])await assert.rejects(api.listProducts(query({search:"ZtoAFixture",sort}),{}),error=>error.status===400);
 });
