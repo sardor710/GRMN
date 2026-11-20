@@ -7,7 +7,10 @@ export const COMPARE_MAX_ITEMS = 5;
 export const COMPARE_ITEM_PARAM = "item";
 /** The old compare link parameter (`/compare?selected=<id>&selected=<id>`), read but never written. */
 export const COMPARE_LEGACY_PARAM = "selected";
-/** Separates the product id from the variant SKU inside one `item` value. */
+/**
+ * Separates the product id from the variant SKU inside one `item` value. The value is split at the FIRST `~`, so
+ * product ids must not contain `~` (catalogue public keys never do); a SKU may.
+ */
 export const COMPARE_SKU_SEPARATOR = "~";
 /** Longest product id or SKU accepted from a URL; longer values are dropped. */
 export const COMPARE_VALUE_MAX_LENGTH = 200;
@@ -118,7 +121,9 @@ export interface CompareGroup { key: string; title: string; rows: CompareRow[] }
  * The comparison table: the union of groups in first-seen order across columns (matched by normalised title),
  * and inside each group the union of rows in first-seen order (matched by normalised label). A column without a
  * spec, or with a blank value, gets `null`. A column with only flat `specs` contributes them under a group titled
- * `fallbackTitle` (the page passes its translated "Specs"). A label repeated inside one column keeps its first value.
+ * `fallbackTitle` (the page passes its translated "Specs"). A label repeated inside one group is a separate row,
+ * matched across columns by occurrence (the second "Weight" lines up with the other column's second "Weight").
+ * Rows blank in every column, and groups left empty, are dropped.
  */
 export function buildCompareRows(columns: readonly CompareColumnContent[], fallbackTitle: string): CompareGroup[] {
   const groups: CompareGroup[] = [];
@@ -128,6 +133,8 @@ export function buildCompareRows(columns: readonly CompareColumnContent[], fallb
   columns.forEach((column, index) => {
     const grouped = column?.specGroups?.length ? column.specGroups : null;
     const source: readonly SpecGroup[] = grouped ?? (column?.specs?.length ? [{ title: fallbackTitle, items: [...column.specs] }] : []);
+    // How often this column has used each row key so far: a repeated label is its own row (`weight#2`).
+    const occurrences = new Map<string, number>();
     for (const group of source) {
       const groupKey = normalizeSpecLabel(group.title);
       let target = groupByKey.get(groupKey);
@@ -137,19 +144,24 @@ export function buildCompareRows(columns: readonly CompareColumnContent[], fallb
         groups.push(target);
       }
       for (const item of group.items ?? []) {
-        const rowKey = `${groupKey}::${normalizeSpecLabel(item.label)}`;
+        const baseKey = `${groupKey}::${normalizeSpecLabel(item.label)}`;
+        const occurrence = (occurrences.get(baseKey) ?? 0) + 1;
+        occurrences.set(baseKey, occurrence);
+        const rowKey = occurrence === 1 ? baseKey : `${baseKey}#${occurrence}`;
         let row = rowByKey.get(rowKey);
         if (!row) {
           row = { key: rowKey, label: item.label, values: Array.from({ length: width }, () => null) };
           rowByKey.set(rowKey, row);
           target.rows.push(row);
         }
-        const value = typeof item.value === "string" && item.value.trim() ? item.value : null;
-        if (row.values[index] === null) row.values[index] = value;
+        row.values[index] = typeof item.value === "string" && item.value.trim() ? item.value : null;
       }
     }
   });
-  return groups;
+  // A row blank in every column (and a group left without rows) shows nothing but dashes: drop it.
+  return groups
+    .map((group) => ({ ...group, rows: group.rows.filter((row) => row.values.some((value) => value !== null)) }))
+    .filter((group) => group.rows.length > 0);
 }
 
 const sameText = (value: string) => value.replace(/\s+/g, " ").trim();

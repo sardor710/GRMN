@@ -97,6 +97,10 @@ test("item=id~51sku returns the 51 mm variant's own specs and price; the other p
   assert.equal(other.productId,plainId);assert.equal(other.sku,"CMP-P-0");
   assert.deepEqual(other.price,{minor:"15000000"});
   assert.deepEqual(other.variants,[]);
+  // A variant stored without a name reads as "", never the string "null" (it is used as image alt text on the PDP).
+  const plainDetail=await getProductDetail(plainId,"en");
+  assert.equal(plainDetail.commerce.variants.length,1);
+  assert.equal(plainDetail.commerce.variants[0].name,"");
   assert.deepEqual(other.content.specGroups,[]);
   assert.deepEqual(other.content.specs.map(s=>s.label),["Battery life (smartwatch mode)","Screen"]);
   // The table: the plain product's flat specs sit under the fallback group, and the battery label matches

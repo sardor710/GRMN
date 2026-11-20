@@ -108,15 +108,35 @@ test("buildCompareRows puts flat specs under the fallback group; blank values co
   // Nothing at all: no groups. A column with neither block just gets nulls.
   assert.deepEqual(buildCompareRows([], "Specs"), []);
   assert.deepEqual(buildCompareRows([{ specs: [] }, flat], "Specs")[0].rows[0].values, [null, "50 g"]);
-  // A repeated label inside one column keeps its first value.
-  assert.deepEqual(buildCompareRows([col([g("G", [["A", "1"], ["a", "2"]])])], "Specs")[0].rows, [{ key: "g::a", label: "A", values: ["1"] }]);
+});
+
+test("buildCompareRows drops rows blank in every column, and groups left empty", () => {
+  const a = col([g("General", [["Lens", " "], ["Weight", "99 g"]]), g("Empty", [["Note", ""]])]);
+  const b = col([g("General", [["Lens", ""]]), g("Empty", [["Note", "  "]])]);
+  const groups = buildCompareRows([a, b], "Specs");
+  assert.deepEqual(groups.map((x) => x.title), ["General"]);
+  assert.deepEqual(groups[0].rows.map((r) => [r.label, r.values]), [["Weight", ["99 g", null]]]);
+  // With "Show only differences" on, every remaining row has at least one value: no all-dash rows.
+  assert.ok(groups.every((x) => x.rows.every((r) => r.values.some((v) => v !== null))));
+  assert.deepEqual(buildCompareRows([{ specs: [{ label: "X", value: "" }] }], "Specs"), []);
+});
+
+test("buildCompareRows keeps a label repeated inside one group as separate rows, lined up by occurrence", () => {
+  const a = col([g("Battery", [["Weight", "99 g"], ["Battery life", "29 d"], ["WEIGHT", "73 g"]])]);
+  const b = col([g("battery", [["Weight", "78 g"], ["Weight:", "56 g"]])]);
+  const c = col([g("Battery", [["Weight", "60 g"]])]);
+  const [group] = buildCompareRows([a, b, c], "Specs");
+  assert.deepEqual(group.rows.map((r) => [r.key, r.label, r.values]), [
+    ["battery::weight", "Weight", ["99 g", "78 g", "60 g"]],
+    ["battery::battery life", "Battery life", ["29 d", null, null]],
+    ["battery::weight#2", "WEIGHT", ["73 g", "56 g", null]],
+  ]);
 });
 
 test("isDifferentRow follows Garmin: equal everywhere hides, a blank column or any difference shows", () => {
   const row = (values) => ({ key: "k", label: "L", values });
   assert.equal(isDifferentRow(row(["10 ATM", "10 ATM", "10 ATM"])), false, "all equal");
   assert.equal(isDifferentRow(row(["10 ATM", null])), true, "one blank");
-  assert.equal(isDifferentRow(row([null, null])), true, "all blank");
   assert.equal(isDifferentRow(row(["10 ATM", "5 ATM"])), true, "differing");
   assert.equal(isDifferentRow(row([" 10  ATM ", "10 ATM"])), false, "whitespace-only difference is equal");
   assert.equal(isDifferentRow(row(["10 atm", "10 ATM"])), true, "case is a real difference in values");
@@ -157,9 +177,9 @@ test("compareItemFromDetail (PostgreSQL) picks the SKU's variant: price, image, 
   assert.equal(small.image, "/47.jpg");
   assert.equal(small.compareAt, undefined);
   assert.equal(compareItemFromDetail(detail, "nope").sku, "W-47", "unknown SKU: the default variant");
-  // One variant without options is not a size choice; a missing name ("null" from the catalog read) is never a label.
+  // One variant without options is not a size choice; a variant without a name is labelled by its SKU.
   const single = postgresDetail();
-  single.commerce.variants = [{ ...single.commerce.variants[1], options: {}, name: "null" }];
+  single.commerce.variants = [{ ...single.commerce.variants[1], options: {}, name: "" }];
   assert.deepEqual(compareItemFromDetail(single, undefined).variants, []);
   assert.equal(compareItemFromDetail(single, undefined).sku, "W-51");
   single.commerce.variants.push({ ...single.commerce.variants[0], id: "v2", sku: "W-2", name: "Second" });
@@ -211,9 +231,22 @@ test("collectCompareItems drops unknown or failing products, caps at 5, and neve
     [{ productId: "P1", sku: "W-51" }, { productId: "missing" }, { productId: "boom" }, { productId: "L1" }, { productId: "P1" }, { productId: "P1", sku: "ignored-6th" }],
     "ru", read, (e) => errors.push(e));
   assert.deepEqual(items.map((i) => `${i.productId}:${i.sku}`), ["P1:W-51", "L1:L-46", "P1:W-47"]);
-  assert.equal(reads.length, 5);
+  // P1 is asked for twice within the first five: it is read once.
+  assert.deepEqual(reads.map(([id]) => id), ["P1", "missing", "boom", "L1"]);
   assert.ok(reads.every(([, locale]) => locale === "ru"));
   assert.equal(errors.length, 1);
   assert.deepEqual(await collectCompareItems(undefined, "en", read), []);
   assert.deepEqual(await collectCompareItems([{ productId: "" }, { productId: 5 }], "en", read), []);
+});
+
+test("collectCompareItems reads each product once, however many sizes of it are compared", async () => {
+  const calls = new Map();
+  const read = async (id) => { calls.set(id, (calls.get(id) ?? 0) + 1); return id === "P1" ? postgresDetail() : legacyDetail(); };
+  const items = await collectCompareItems([{ productId: "P1", sku: "W-47" }, { productId: "P1", sku: "W-51" }, { productId: "L1", sku: "L-42" }, { productId: "P1" }, { productId: "L1" }], "en", read);
+  assert.deepEqual(items.map((i) => i.sku), ["W-47", "W-51", "L-42", "W-47", "L-46"]);
+  assert.deepEqual(Object.fromEntries(calls), { P1: 1, L1: 1 });
+  // A failing product is read once too, and every column of it is dropped (onError per column).
+  let boom = 0; const errors = [];
+  const failing = await collectCompareItems([{ productId: "B", sku: "1" }, { productId: "B", sku: "2" }], "en", async () => { boom++; throw new Error("down"); }, (e) => errors.push(e));
+  assert.deepEqual(failing, []); assert.equal(boom, 1); assert.equal(errors.length, 2);
 });

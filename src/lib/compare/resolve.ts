@@ -54,9 +54,7 @@ function fromCommerce(detail: ProductDetail, commerce: NonNullable<ProductDetail
   const label = (options: Readonly<Record<string, string>>, name: string, sku: string) => {
     const keys = [...order.filter((key) => key in options), ...Object.keys(options).filter((key) => !order.includes(key))];
     const values = keys.map((key) => options[key]?.trim()).filter((value): value is string => Boolean(value));
-    // The catalog read stringifies a missing variant name to "null" (src/server/catalog/service.ts): never show that.
-    const named = name.trim();
-    return values.length ? values.join(LABEL_SEPARATOR) : named && named !== "null" ? named : sku;
+    return values.length ? values.join(LABEL_SEPARATOR) : name.trim() || sku;
   };
   // Every PostgreSQL product has at least one variant; a single variant without options is not a size choice.
   const choosable = commerce.variants.length > 1 || commerce.variants.some((v) => Object.keys(v.options).length > 0);
@@ -111,8 +109,9 @@ export function compareItemFromDetail(detail: ProductDetail, requestedSku: strin
 }
 
 /**
- * The compare columns for the requested refs, in order: at most five, each read with `read` (in parallel).
- * Unknown, unpublished or failing products are dropped (`onError` is told about failures); never throws.
+ * The compare columns for the requested refs, in order: at most five, read with `read` in parallel and once per
+ * product (several sizes of one product share one read). Unknown, unpublished or failing products are dropped
+ * (`onError` is told about each dropped column); never throws.
  */
 export async function collectCompareItems(
   items: readonly CompareItemRef[] | null | undefined,
@@ -125,9 +124,19 @@ export async function collectCompareItems(
     .filter((ref): ref is CompareItemRef => ref !== null && typeof ref === "object" && valid(ref.productId))
     .slice(0, COMPARE_MAX_ITEMS)
     .map((ref) => ({ productId: ref.productId.trim(), ...(valid(ref.sku) ? { sku: ref.sku.trim() } : {}) }));
+  const reads = new Map<string, Promise<ProductDetail | undefined>>();
+  const readOnce = (productId: string) => {
+    let pending = reads.get(productId);
+    if (!pending) {
+      // Wrapped so a synchronous throw from `read` also becomes a rejection handled per column below.
+      pending = Promise.resolve().then(() => read(productId, locale));
+      reads.set(productId, pending);
+    }
+    return pending;
+  };
   const columns = await Promise.all(refs.map(async (ref) => {
     try {
-      const detail = await read(ref.productId, locale);
+      const detail = await readOnce(ref.productId);
       return detail ? compareItemFromDetail(detail, ref.sku) : null;
     } catch (error) {
       onError?.(error, ref);
