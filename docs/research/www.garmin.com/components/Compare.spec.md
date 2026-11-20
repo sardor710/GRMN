@@ -86,3 +86,51 @@ Vue app. Breakpoints used: min 768, min 1024 (main switch), min 1200, min 1440.
   column (60px image, name, size label) on the same grid, and mirrors the table scroller's scrollLeft under 1024px.
 - Not copied: USD formatting (tenge via `Price`), "and up" (each
   column shows the chosen size's exact price, so there is no price range to qualify).
+
+## Catalogue compare mode (`/c/wearables-smartwatches/?compare=1`, task C-c)
+Measured 2026-11-21: `inspect.mjs section … '.compare-banner'` and `'.product-card__compare-card'` at 1440 and 390
+(`docs/research/www.garmin.com/compare/section-compare-banner-*.json`, `section-compare-product-card-*.json`, shots
+`docs/design-references/garmin.com/compare-banner-*.png`, `compare-product-card-*.png`). `states` on
+`.product-card__compare-button` returned no controls (Vue renders them after the probe), so the states below come from
+a CDP probe that clicked three "+" buttons and read computed styles.
+
+- **State**: Garmin keeps the selection in the URL: `?compare=1&compareProduct=<id>&compareProduct=<id>…` (no storage).
+  The Compare link is `/compare/?compareProduct=…`. Cards with several versions need "Select a Version" first.
+- **Toggle** (rail, `.compare-toggle-button`): large light button 176 × 54, white, 1px black, 16px 500 uppercase,
+  padding 16 32. When active, a 20 × 20 close icon follows the label (`margin-left:16px`).
+- **Banner 1440** (`.compare-banner--active-and-sticky`): full width, between the hero and the rail/grid row,
+  `position:sticky; top:0` (it stays at the top while the grid scrolls), `z-index:2`. Background #F2F2F2, 1px #D9D9D9
+  top and bottom rules, padding 16, `justify-content:flex-end`, 87px tall. Contents, right-aligned:
+  - search input 238 × 53, white, 1px #D9D9D9, padding 14 14 14 40 (icon at left), 16px / 23.2px, placeholder
+    "Search for Products" (label visually hidden; awesomplete combobox, listbox white with the raised shadow, 3.2px
+    below the input).
+  - five slots 52.8 × 52.8, 8px apart, 8px after the input. Empty: transparent, 1px #D9D9D9. Filled: white, 1px black
+    frame, image contained, × (16px, black, top-right, hit area ~47 × 46).
+  - COMPARE 140 × 52, 8px after the slots, `g-button` large: candy blue #6DCFF6 with products; with none, #D9D9D9 and
+    `cursor:not-allowed`.
+  - The rail sticks under the banner (`top:96px`).
+- **Banner 390**: `position:fixed` to the bottom of the viewport, full width, 247px tall, raised shadow, column: slots
+  75 × 75 (8px apart, `padding-top:5.6px`), the search full width 12px below, COMPARE full width 52px tall 16px below.
+  Garmin caps mobile at two products (the third "+" does nothing).
+- **Card in compare mode** (`.product-card__compare-card`): background #F2F2F2, same shadow, a top action row
+  (`padding:16px`, flex end, 88px tall): "Select a Version" dropdown 265 × 56 (only multi-version products) and the
+  56 × 56 button: black, white "+" 40px / 56px, `aria-label="Add to comparison"`. Selected card: transparent (white)
+  background, `outline:2px solid #000`; the button turns transparent with a black "×" 40px,
+  `aria-label="Remove from comparison"`. The button sits inside the card link on Garmin.
+
+### Our implementation (CompareBar.tsx, ProductCard.tsx, CatalogueGrid.tsx)
+- Selection in localStorage (`garmin-compare-v1`, in-memory fallback), max 5 at every width; `compare=1` in the URL.
+  A catalogue link may carry `item=<id>~<sku>`: it is added to the selection and removed from the address.
+- 1440: same banner box, position and metrics (measured: input 733/238×53, slots 979…1276 at 53px, Compare 1284/140×52,
+  87px tall). Garmin's empty left side holds our status line ("Select at least 2 products" / "3 of 5 products
+  selected" / the limit note) and "Clear all". The banner sticks inside the catalogue block, so it never reaches the
+  footer; the rail sticks at `top:87px`.
+- 390: `position:sticky; bottom:0` inside the catalogue block instead of fixed (it cannot cover the footer or the
+  "Next Products" link; it appears once the catalogue scrolls into view). Five slots of (100% − 32px) / 5 = 65px
+  (Garmin: two of 75px). Order as Garmin (slots, search, Compare), then status and "Clear all".
+- Card: same grey card, 16px action row and 56px black "+"; selected = white + 2px black outline, ✓ instead of ×. The
+  control is a real button with `aria-pressed`, visible text "Add to comparison" / "Added" plus the product name for
+  screen readers, `aria-disabled` + `aria-describedby` (the bar's limit note) at five. It is a sibling of the product
+  link, never inside it. No version dropdown: a card adds the product's default variant; sizes are chosen on the
+  compare page or the product page.
+- Compare is a link to `/[lang]/compare?item=…` (compareHref) from two products; below that a disabled button.
