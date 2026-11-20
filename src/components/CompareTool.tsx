@@ -43,8 +43,8 @@ export function CompareTool({products,selectedProducts}:{products:Product[];sele
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-10">
       <div className="text-center">
-        <h1 className="g-heading text-[34px] text-black">{t("heading")}</h1>
-        <p className="mt-2 text-[15px] text-neutral-600">
+        <h1 className="g-heading g-h1 m-0 text-black">{t("heading")}</h1>
+        <p className="mt-4 text-[16px] leading-[24px] text-black">
           {t("intro", { max: MAX })}
         </p>
       </div>
@@ -52,12 +52,12 @@ export function CompareTool({products,selectedProducts}:{products:Product[];sele
       {/* Add picker */}
       {chosen.length < MAX && (
         <div className="mt-6 flex items-center justify-center gap-3">
-          <label htmlFor="add-watch" className="text-[14px] text-neutral-600">{t("addWatch")}</label>
+          <label htmlFor="add-watch" className="text-[14.4px] font-bold leading-[21.6px] text-black">{t("addWatch")}</label>
           <select
             id="add-watch"
             value=""
             onChange={(e) => add(e.target.value)}
-            className="h-10 border border-neutral-300 bg-white px-3 text-[14px] outline-none"
+            className="g-select w-[270px]"
           >
             <option value="" disabled>{t("selectModel")}</option>
             {available.map((p) => (
@@ -68,19 +68,19 @@ export function CompareTool({products,selectedProducts}:{products:Product[];sele
       )}
 
       {chosen.length === 0 ? (
-        <p className="py-20 text-center text-neutral-500">{t("empty")}</p>
+        <p className="py-20 text-center text-[16px] leading-[24px] text-black">{t("empty")}</p>
       ) : (
         <div className="mt-10 overflow-x-auto">
           <table className="w-full min-w-[720px] border-collapse">
             <thead>
               <tr>
-                <th className="w-[160px] border-b border-neutral-200 p-4" />
+                <th className="w-[160px] border-b border-garmin-control p-4" />
                 {chosen.map((p) => (
-                  <th key={p.id} className="border-b border-neutral-200 p-4 align-top">
+                  <th key={p.id} className="border-b border-garmin-control p-4 align-top">
                     <div className="flex flex-col items-center text-center">
                       <button
                         onClick={() => remove(p.id)}
-                        className="self-end text-[12px] text-neutral-400 hover:text-black"
+                        className="self-end text-[14px] text-black underline"
                         aria-label={t("removeLabel", { name: p.name })}
                       >
                         {t("remove")}
@@ -88,7 +88,7 @@ export function CompareTool({products,selectedProducts}:{products:Product[];sele
                       <div className="relative h-32 w-32">
                         <Image src={p.image} alt={p.name} fill sizes="128px" className="object-contain" />
                       </div>
-                      <Link href={`/p/${p.id}`} className="g-heading mt-2 text-[18px] text-black hover:text-[#007cc3]">
+                      <Link href={`/p/${p.id}`} className="g-heading g-h4 mt-2 text-black hover:underline">
                         {p.name}
                       </Link>
                       <Link href={`/p/${p.id}`} className="g-btn g-btn--secondary mt-3 text-[12px]">
@@ -100,13 +100,13 @@ export function CompareTool({products,selectedProducts}:{products:Product[];sele
               </tr>
             </thead>
             <tbody>
-              {rows.map((row, ri) => (
-                <tr key={row.key} className={ri % 2 ? "bg-neutral-50" : ""}>
-                  <th className="p-4 text-left align-top text-[13px] font-medium uppercase tracking-[0.04em] text-neutral-500">
+              {rows.map((row) => (
+                <tr key={row.key} className="border-y border-garmin-control">
+                  <th className="bg-muted px-4 py-2 text-left align-top text-[12px] font-bold uppercase leading-[18px] tracking-[-0.2px] text-black">
                     {t(`rows.${row.key}`)}
                   </th>
                   {chosen.map((p) => (
-                    <td key={p.id} className="p-4 align-top text-[14px] text-neutral-800">
+                    <td key={p.id} className="p-4 align-top text-[14px] leading-[21px] text-black">
                       {row.get(p, tk, money)}
                     </td>
                   ))}
@@ -118,7 +118,7 @@ export function CompareTool({products,selectedProducts}:{products:Product[];sele
       )}
 
       <div className="mt-10 text-center">
-        <Link href="/c/wearables-smartwatches" className="text-[14px] text-[#007cc3] underline">
+        <Link href="/c/wearables-smartwatches" className="text-[14px] text-garmin-blue underline hover:text-garmin-blue-hover">
           {t("back")}
         </Link>
       </div>

@@ -6,21 +6,33 @@ import { useTranslations } from "next-intl";
 import type { Product } from "@/types";
 import { activityFilters, levelFilters, caseSizeFilters } from "@/lib/catalog-constants";
 import { ProductCard } from "@/components/ProductCard";
-import { ChevronRightIcon } from "@/components/icons";
 import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
 type SortKey = "featured" | "price-asc" | "price-desc" | "name";
 
-/** Message keys in the `CatalogueGrid` namespace. */
+/**
+ * Message keys in the `CatalogueGrid` namespace, in garmin.com's order (SideFilterMenu.spec.md). Garmin also offers
+ * "Z to A"; the catalogue API has no descending name sort, so it is not offered here.
+ */
 const sortLabels: Record<SortKey, string> = {
   featured: "sort.featured",
+  name: "sort.name",
   "price-asc": "sort.priceAsc",
   "price-desc": "sort.priceDesc",
-  name: "sort.name",
 };
 
 const collapsedGroups = ["groups.battery", "groups.hardware", "groups.connectivity", "groups.series", "groups.otherDevices"];
 
+/** garmin.com filter caret (12x8): points down when collapsed, up when expanded. */
+function Caret({ open }: { open: boolean }) {
+  return (
+    <svg viewBox="0 0 18.2 11.2" aria-hidden="true" className={`h-2 w-3 shrink-0 fill-black ${open ? "rotate-180" : ""}`}>
+      <path d="M9.1 11.2L0 2.2 2.2 0l6.9 7L16 0l2.2 2.2-9.1 9z" />
+    </svg>
+  );
+}
+
+/** One filter group (SideFilterMenu.spec.md): 53px header row, 14/21 700 title, options on a 38px pitch, 1px #D9D9D9 rule. */
 function FilterAccordion({
   title,
   children,
@@ -32,17 +44,17 @@ function FilterAccordion({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border-b border-neutral-200 py-4">
+    <div className="border-b border-garmin-control">
       <button
+        type="button"
+        aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between text-left"
+        className="flex w-full cursor-pointer items-center justify-between py-4 text-left text-[14px] font-bold leading-[21px] text-black"
       >
-        <span className="text-[15px] font-medium text-black">{title}</span>
-        <ChevronRightIcon
-          className={`h-4 w-4 text-neutral-500 transition-transform ${open ? "rotate-90" : ""}`}
-        />
+        {title}
+        <Caret open={open} />
       </button>
-      {open && children && <div className="mt-3 space-y-2.5">{children}</div>}
+      {open && children && <div>{children}</div>}
     </div>
   );
 }
@@ -57,7 +69,7 @@ function Check({
   onChange: () => void;
 }) {
   return (
-    <label className="g-checkbox-label cursor-pointer">
+    <label className="g-checkbox-label mb-4 h-[21.8px] cursor-pointer pt-[0.8px] pr-2 has-[:checked]:font-bold">
       <input
         type="checkbox"
         checked={checked}
@@ -85,21 +97,62 @@ export function CatalogueGrid({ products }: { products: Product[] }) {
   const filtered=products;
   const clearAll=()=>{const next=new URLSearchParams(params.toString());["activities","levels","caseSizes","cursor"].forEach(name=>next.delete(name));router.push(pathname+"?"+next.toString());};
   const activeCount = activities.size + levels.size + sizes.size;
+  // Below 1024px garmin.com folds the filters and the sort into one "Filter and Sort" bar.
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const sortOptions = (Object.keys(sortLabels) as SortKey[]).map((k) => (
+    <option key={k} value={k}>
+      {t(sortLabels[k])}
+    </option>
+  ));
 
   return (
-    <div className="mx-auto flex max-w-[1400px] flex-col gap-8 px-4 lg:flex-row">
-      {/* Sidebar */}
-      <aside className="w-full shrink-0 lg:w-[240px]">
-        <a href={localize("/compare")} className="g-btn g-btn--black w-full">{t("compare")}</a>
-        {activeCount > 0 && (
-          <button
-            onClick={clearAll}
-            className="mt-3 text-[13px] text-[#007cc3] underline"
-          >
-            {t("clearAll", { count: activeCount })}
-          </button>
-        )}
-        <div className="mt-4">
+    <div className="flex flex-col lg:flex-row lg:items-start">
+      {/* Side filter rail (SideFilterMenu.spec.md): 315px, sticky full height, 1px #D9D9D9 right border */}
+      <aside
+        data-filter-rail
+        className="flex w-full shrink-0 flex-col border-b border-garmin-control text-[14px] leading-[21px] text-black lg:sticky lg:top-0 lg:h-screen lg:w-[315px] lg:border-r lg:border-b-0"
+      >
+        <div className="hidden border-b border-garmin-control lg:block">
+          <div className="mt-4 pb-4 pl-4">
+            <a href={localize("/compare")} className="g-btn g-btn--lg g-btn--black">{t("compare")}</a>
+          </div>
+        </div>
+        <button
+          type="button"
+          aria-expanded={mobileOpen}
+          aria-controls="catalogue-filters"
+          onClick={() => setMobileOpen((open) => !open)}
+          className="flex w-full items-center justify-between px-4 py-[14px] text-left text-[16px] font-bold uppercase leading-[24px] text-black lg:hidden"
+        >
+          {t("filterAndSort")}
+          <span className="mr-[3.5px]"><Caret open={mobileOpen} /></span>
+        </button>
+        <div
+          id="catalogue-filters"
+          className={`${mobileOpen ? "block" : "hidden"} min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 lg:block`}
+        >
+          <div className="pt-2 lg:hidden">
+            <label htmlFor="sort-mobile" className="block p-[.25em] text-[14px] font-bold">
+              {t("sortBy")}
+            </label>
+            <select
+              id="sort-mobile"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+              className="g-select"
+            >
+              {sortOptions}
+            </select>
+          </div>
+          {activeCount > 0 && (
+            <button
+              type="button"
+              onClick={clearAll}
+              className="g-btn g-btn--text-link py-2 text-[14px]"
+            >
+              {t("clearAll", { count: activeCount })}
+            </button>
+          )}
           <FilterAccordion title={t("activity")} defaultOpen>
             {activityFilters.map((a) => (
               <Check
@@ -135,33 +188,35 @@ export function CatalogueGrid({ products }: { products: Product[] }) {
           ))}
         </div>
       </aside>
+      <div className="mx-4 mt-4 lg:hidden">
+        <a href={localize("/compare")} className="g-btn g-btn--lg g-btn--black">{t("compare")}</a>
+      </div>
 
       {/* Grid */}
-      <div className="flex-1">
-        <div className="mb-6 flex items-center justify-end gap-3">
-          <label htmlFor="sort" className="text-[14px] text-neutral-700">
+      <div className="min-w-0 flex-1">
+        <div className="hidden h-[58px] items-center justify-end px-4 lg:flex">
+          <label htmlFor="sort" className="mr-[14.4px] text-[14.4px] font-bold leading-[21.6px] text-black">
             {t("sortBy")}
           </label>
           <select
             id="sort"
             value={sort}
             onChange={(e) => setSort(e.target.value as SortKey)}
-            className="g-select w-[270px]"
+            className="g-select my-[4.8px] w-[270px] leading-[18.4px]"
           >
-            {(Object.keys(sortLabels) as SortKey[]).map((k) => (
-              <option key={k} value={k}>
-                {t(sortLabels[k])}
-              </option>
-            ))}
+            {sortOptions}
           </select>
         </div>
 
         {filtered.length === 0 ? (
-          <p className="py-16 text-center text-neutral-500">{t("empty")}</p>
+          <p className="py-16 text-center text-[16px] leading-[24px] text-black">{t("empty")}</p>
         ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          /* ProductCard.spec.md grid: 1 column <480, 2 at calc(50% - .5rem), 3 at calc(33.33% - 1.35em) from 1200; 16px gutters */
+          <div className="flex flex-wrap justify-between gap-y-4 px-4 pt-4 min-[1200px]:justify-start min-[1200px]:gap-y-0 min-[1200px]:px-0 min-[1200px]:pt-0">
             {filtered.map((p) => (
-              <ProductCard key={p.id} product={p} />
+              <div key={p.id} className="w-full min-[480px]:w-[calc(50%-.5rem)] min-[1200px]:mt-4 min-[1200px]:ml-4 min-[1200px]:w-[calc(33.3333%-1.35em)]">
+                <ProductCard product={p} />
+              </div>
             ))}
           </div>
         )}

@@ -7,57 +7,55 @@ import { Price } from "@/components/ui/price";
 import { toMinor } from "@/lib/money";
 import { useAppLocale } from "@/i18n/useAppLocale";
 
-const swatchColors = ["#111", "#c9c4bd", "#e8792b", "#c9d94b", "#6b7280", "#b8a6d9"];
-
+/**
+ * garmin.com PLP card (ProductCard.spec.md): no border, `0 2px 3px 1px #E5E5E5` shadow, full-width 300px image
+ * (200px wide below 768), text padding 0 16 24, no hover lift (text colour only). Colour swatches are left out:
+ * our catalogue has no per-card variant colours, and Garmin shows only real ones.
+ */
 export function ProductCard({ product }: { product: Product }) {
   const t = useTranslations("ProductCard");
   const locale = useAppLocale();
   return (
     <Link
       href={`/p/${product.id}`}
-      className="group relative flex flex-col border border-neutral-200 bg-white p-6 transition-shadow hover:shadow-lg"
+      data-product-card
+      className="relative block h-full text-left text-garmin-card-text shadow-garmin-card transition-colors duration-200 hover:text-garmin-black-hover"
     >
-      {product.badge && product.badge !== "NONE" && (
-        <GarminBadge badge={product.badge} variant="ribbon" />
-      )}
+      <figure className="m-0 flex h-full flex-col items-center">
+        {product.badge && product.badge !== "NONE" && (
+          <GarminBadge badge={product.badge} variant="ribbon" />
+        )}
 
-      <div className="relative mx-auto aspect-square w-full max-w-[260px]">
-        {product.image&&<Image
-          src={product.image}
-          alt={product.name}
-          fill
-          sizes="(max-width: 768px) 100vw, 340px"
-          className="object-contain"
-        />}
-      </div>
+        <div className="relative h-[207px] w-[200px] shrink-0 md:h-[300px] md:w-full">
+          {product.image && <Image
+            src={product.image}
+            alt={product.name}
+            fill
+            sizes="(max-width: 768px) 200px, 360px"
+            className="object-contain mix-blend-multiply"
+          />}
+        </div>
 
-      {/* Color swatches */}
-      <div className="mt-3 flex gap-1.5">
-        {product.currency!=="KZT"&&swatchColors.slice(0, 3 + (product.id.charCodeAt(0) % 4)).map((c, i) => (
-          <span
-            key={i}
-            className="h-3.5 w-3.5 rounded-full border border-neutral-300"
-            style={{ backgroundColor: c }}
-          />
-        ))}
-      </div>
-
-      <h3 className="g-heading mt-3 text-[22px] leading-tight text-black">{product.name}</h3>
-      <p className="mt-2 text-[14px] leading-snug text-[#5b5b5b]">{product.description}</p>
-      {/* Task 5a.2: tenge in the page locale (Price.spec.md card rule: strike, then the bold sale price), never a USD label. */}
-      {toMinor({ major: product.price }) !== null ? (
-        <Price
-          size="card"
-          className="mt-3 text-black"
-          locale={locale}
-          amount={{ major: product.price }}
-          compareAt={product.compareAt !== undefined ? { major: product.compareAt } : null}
-          unconverted={product.currency === "USD"}
-          suffix={product.priceSuffix ? (product.priceSuffix === "and up" ? t("andUp") : product.priceSuffix) : undefined}
-        />
-      ) : (
-        <p className="mt-3 text-[16px] font-bold leading-[24px] text-black">{product.priceLabel ?? product.price}</p>
-      )}
+        <figcaption className="flex w-full flex-1 flex-col px-4 pb-6">
+          <h3 className="g-heading my-4 text-[20px] leading-[25px] tracking-[0.8px] md:text-[24px] md:leading-[30px]">{product.name}</h3>
+          <p className="mb-4 text-[14px] leading-[21px] md:text-[16px] md:leading-[24px]">{product.description}</p>
+          <div className="mt-auto flex items-end">
+            {/* Task 5a.2: tenge in the page locale (Price.spec.md card rule: strike, then the bold sale price), never a USD label. */}
+            {toMinor({ major: product.price }) !== null ? (
+              <Price
+                size="card"
+                locale={locale}
+                amount={{ major: product.price }}
+                compareAt={product.compareAt !== undefined ? { major: product.compareAt } : null}
+                unconverted={product.currency === "USD"}
+                suffix={product.priceSuffix ? (product.priceSuffix === "and up" ? t("andUp") : product.priceSuffix) : undefined}
+              />
+            ) : (
+              <p className="text-[16px] font-bold leading-[24px]">{product.priceLabel ?? product.price}</p>
+            )}
+          </div>
+        </figcaption>
+      </figure>
     </Link>
   );
 }
