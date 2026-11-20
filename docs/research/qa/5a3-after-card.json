@@ -1,0 +1,122 @@
+{
+ "target": "https://www.garmin.com/en-US/c/wearables-smartwatches/",
+ "clone": "http://localhost:3021/en/c/wearables-smartwatches",
+ "sel": "div.product-grid__products > div:nth-child(3) a.product-card",
+ "cloneSel": "main div.flex-wrap > div:nth-child(6) a",
+ "widths": {
+  "390": {
+   "mismatchPct": 20.01,
+   "size": {
+    "target": [
+     358,
+     423
+    ],
+    "clone": [
+     358,
+     391
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "40-80",
+     "pct": 27.7
+    },
+    {
+     "y": "120-160",
+     "pct": 25.9
+    },
+    {
+     "y": "80-120",
+     "pct": 25.2
+    },
+    {
+     "y": "0-40",
+     "pct": 24.7
+    },
+    {
+     "y": "320-360",
+     "pct": 24.2
+    },
+    {
+     "y": "280-320",
+     "pct": 23.8
+    }
+   ],
+   "file": "docs/design-references/qa/5a3-after-card-390-diff.png",
+   "text": {
+    "matched": 1,
+    "of": 5,
+    "issues": [
+     {
+      "t": "and up",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "114,375 → 136,343"
+     }
+    ],
+    "missing": [
+     "New",
+     "fēnix® 9",
+     "Premium multisport GPS smartwatches with AMOLED or solar cha",
+     "$999.99 USD"
+    ]
+   }
+  },
+  "1440": {
+   "mismatchPct": 25.1,
+   "size": {
+    "target": [
+     353,
+     555
+    ],
+    "clone": [
+     353,
+     528
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "200-240",
+     "pct": 39.7
+    },
+    {
+     "y": "40-80",
+     "pct": 39.3
+    },
+    {
+     "y": "120-160",
+     "pct": 38
+    },
+    {
+     "y": "160-200",
+     "pct": 36.7
+    },
+    {
+     "y": "80-120",
+     "pct": 33.7
+    },
+    {
+     "y": "400-440",
+     "pct": 30.7
+    }
+   ],
+   "file": "docs/design-references/qa/5a3-after-card-1440-diff.png",
+   "text": {
+    "matched": 1,
+    "of": 5,
+    "issues": [
+     {
+      "t": "and up",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "115,507 → 136,480"
+     }
+    ],
+    "missing": [
+     "New",
+     "fēnix® 9",
+     "Premium multisport GPS smartwatches with AMOLED or solar cha",
+     "$999.99 USD"
+    ]
+   }
+  }
+ }
+}

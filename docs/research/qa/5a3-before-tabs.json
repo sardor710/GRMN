@@ -1,0 +1,72 @@
+{
+ "target": "https://www.garmin.com/en-US/p/1462801/",
+ "clone": "http://localhost:3021/en/p/1462801",
+ "sel": "nav#js__app__tabs__nav",
+ "cloneSel": "div.sticky",
+ "widths": {
+  "1440": {
+   "mismatchPct": 6.08,
+   "size": {
+    "target": [
+     1440,
+     81
+    ],
+    "clone": [
+     1440,
+     77
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "0-40",
+     "pct": 7.6
+    },
+    {
+     "y": "40-77",
+     "pct": 4.4
+    }
+   ],
+   "file": "docs/design-references/qa/5a3-before-tabs-1440-diff.png",
+   "text": {
+    "matched": 6,
+    "of": 7,
+    "issues": [
+     {
+      "t": "Overview",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "234,0 → 317,0",
+      "size": "99×81 → 99×77"
+     },
+     {
+      "t": "Specs",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "365,0 → 448,0"
+     },
+     {
+      "t": "In the Box",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "470,0 → 553,0"
+     },
+     {
+      "t": "Maps",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "773,0 → 845,0"
+     },
+     {
+      "t": "Accessories",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "874,0 → 690,0"
+     },
+     {
+      "t": "Compatible Devices",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "1029,0 → 946,0"
+     }
+    ],
+    "missing": [
+     "Video Gallery"
+    ]
+   }
+  }
+ }
+}

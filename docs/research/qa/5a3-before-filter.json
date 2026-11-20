@@ -1,0 +1,269 @@
+{
+ "target": "https://www.garmin.com/en-US/c/wearables-smartwatches/",
+ "clone": "http://localhost:3021/en/c/wearables-smartwatches",
+ "sel": "div.product-filter",
+ "cloneSel": "aside",
+ "widths": {
+  "390": {
+   "mismatchPct": 63.4,
+   "size": {
+    "target": [
+     390,
+     53
+    ],
+    "clone": [
+     358,
+     868
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "0-40",
+     "pct": 81.5
+    },
+    {
+     "y": "40-53",
+     "pct": 7.7
+    }
+   ],
+   "file": "docs/design-references/qa/5a3-before-filter-390-diff.png",
+   "text": {
+    "matched": 0,
+    "of": 1,
+    "issues": [],
+    "missing": [
+     "FILTER AND SORT"
+    ]
+   }
+  },
+  "1440": {
+   "mismatchPct": 14.42,
+   "size": {
+    "target": [
+     315,
+     900
+    ],
+    "clone": [
+     240,
+     3496
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "0-40",
+     "pct": 68.7
+    },
+    {
+     "y": "40-80",
+     "pct": 44.1
+    },
+    {
+     "y": "720-760",
+     "pct": 22.1
+    },
+    {
+     "y": "600-640",
+     "pct": 16.2
+    },
+    {
+     "y": "360-400",
+     "pct": 14.3
+    },
+    {
+     "y": "160-200",
+     "pct": 12.1
+    }
+   ],
+   "file": "docs/design-references/qa/5a3-before-filter-1440-diff.png",
+   "text": {
+    "matched": 21,
+    "of": 73,
+    "issues": [
+     {
+      "t": "COMPARE",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "16px → 14px",
+      "lh": "18.4px → 16.1px",
+      "pos": "49,33 → 0,0",
+      "size": "74×18 → 240×34"
+     },
+     {
+      "t": "Activity",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "14px → 15px",
+      "fw": "700 → 500",
+      "lh": "21px → 22.5px",
+      "pos": "16,102 → 0,66"
+     },
+     {
+      "t": "Boating",
+      "ff": "Superscripts-Roboto → Roboto",
+      "lh": "14px → 21px",
+      "pos": "37,142 → 0,101",
+      "size": "48×17 → 240×21"
+     },
+     {
+      "t": "Cycling",
+      "ff": "Superscripts-Roboto → Roboto",
+      "lh": "14px → 21px",
+      "pos": "37,179 → 0,132",
+      "size": "45×17 → 240×21"
+     },
+     {
+      "t": "Diving",
+      "ff": "Superscripts-Roboto → Roboto",
+      "lh": "14px → 21px",
+      "pos": "37,217 → 0,163",
+      "size": "38×17 → 240×21"
+     },
+     {
+      "t": "Flying",
+      "ff": "Superscripts-Roboto → Roboto",
+      "lh": "14px → 21px",
+      "pos": "37,255 → 0,194",
+      "size": "37×17 → 240×21"
+     },
+     {
+      "t": "Golfing",
+      "ff": "Superscripts-Roboto → Roboto",
+      "lh": "14px → 21px",
+      "pos": "37,293 → 0,225",
+      "size": "44×17 → 240×21"
+     },
+     {
+      "t": "Hiking",
+      "ff": "Superscripts-Roboto → Roboto",
+      "lh": "14px → 21px",
+      "pos": "37,330 → 0,256",
+      "size": "39×17 → 240×21"
+     },
+     {
+      "t": "Running",
+      "ff": "Superscripts-Roboto → Roboto",
+      "lh": "14px → 21px",
+      "pos": "37,368 → 0,287",
+      "size": "51×17 → 240×21"
+     },
+     {
+      "t": "Strength",
+      "ff": "Superscripts-Roboto → Roboto",
+      "lh": "14px → 21px",
+      "pos": "37,406 → 0,318",
+      "size": "53×17 → 240×21"
+     },
+     {
+      "t": "Swimming",
+      "ff": "Superscripts-Roboto → Roboto",
+      "lh": "14px → 21px",
+      "pos": "37,444 → 0,349",
+      "size": "66×17 → 240×21"
+     },
+     {
+      "t": "Tactical training",
+      "ff": "Superscripts-Roboto → Roboto",
+      "lh": "14px → 21px",
+      "pos": "37,482 → 0,380",
+      "size": "99×17 → 240×21"
+     },
+     {
+      "t": "Triathlon",
+      "ff": "Superscripts-Roboto → Roboto",
+      "lh": "14px → 21px",
+      "pos": "37,519 → 0,411",
+      "size": "55×17 → 240×21"
+     },
+     {
+      "t": "Walking",
+      "ff": "Superscripts-Roboto → Roboto",
+      "lh": "14px → 21px",
+      "pos": "37,557 → 0,442",
+      "size": "49×17 → 240×21"
+     },
+     {
+      "t": "Level",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "14px → 15px",
+      "fw": "700 → 500",
+      "lh": "21px → 22.5px",
+      "pos": "16,609 → 0,496"
+     },
+     {
+      "t": "Case Size",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "14px → 15px",
+      "fw": "700 → 500",
+      "lh": "21px → 22.5px",
+      "pos": "16,663 → 0,551",
+      "size": "62×21 → 66×23"
+     },
+     {
+      "t": "Battery Life in Smartwatch Mode",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "14px → 15px",
+      "fw": "700 → 500",
+      "lh": "21px → 22.5px",
+      "pos": "16,717 → 0,607",
+      "size": "207×21 → 220×23"
+     },
+     {
+      "t": "Hardware",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "14px → 15px",
+      "fw": "700 → 500",
+      "lh": "21px → 22.5px",
+      "pos": "16,771 → 0,662",
+      "size": "61×21 → 65×23"
+     },
+     {
+      "t": "Connectivity",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "14px → 15px",
+      "fw": "700 → 500",
+      "lh": "21px → 22.5px",
+      "pos": "16,825 → 0,718",
+      "size": "79×21 → 83×23"
+     },
+     {
+      "t": "Series",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "14px → 15px",
+      "fw": "700 → 500",
+      "lh": "21px → 22.5px",
+      "pos": "16,879 → 0,773"
+     },
+     {
+      "t": "Other Devices",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "14px → 15px",
+      "fw": "700 → 500",
+      "lh": "21px → 22.5px",
+      "pos": "16,933 → 0,829",
+      "size": "88×21 → 93×23"
+     }
+    ],
+    "missing": [
+     "FILTER AND SORT",
+     "Sort By",
+     "Featured Products",
+     "A to Z",
+     "Z to A",
+     "Price: Low to High",
+     "Price: High to Low",
+     "Entry",
+     "Advanced",
+     "Premium",
+     "Youth",
+     "Small (35 to 43 mm)",
+     "Medium (44 to 49 mm)",
+     "Large (≥ 50 mm)",
+     "Up to 5-13 days",
+     "Up to 2-4 weeks",
+     "Up to 1+ month",
+     "Solar powered",
+     "Built-in GPS",
+     "AMOLED display"
+    ]
+   }
+  }
+ }
+}

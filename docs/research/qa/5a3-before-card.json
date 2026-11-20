@@ -1,0 +1,124 @@
+{
+ "target": "https://www.garmin.com/en-US/c/wearables-smartwatches/",
+ "clone": "http://localhost:3021/en/c/wearables-smartwatches",
+ "sel": "div.product-grid__products > div:nth-child(3) a.product-card",
+ "cloneSel": "main div.grid > a:nth-child(6)",
+ "widths": {
+  "390": {
+   "mismatchPct": 30.47,
+   "size": {
+    "target": [
+     358,
+     423
+    ],
+    "clone": [
+     358,
+     463
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "160-200",
+     "pct": 46.8
+    },
+    {
+     "y": "120-160",
+     "pct": 45.9
+    },
+    {
+     "y": "200-240",
+     "pct": 42.8
+    },
+    {
+     "y": "40-80",
+     "pct": 39.7
+    },
+    {
+     "y": "80-120",
+     "pct": 36.8
+    },
+    {
+     "y": "320-360",
+     "pct": 30.1
+    }
+   ],
+   "file": "docs/design-references/qa/5a3-before-card-390-diff.png",
+   "text": {
+    "matched": 1,
+    "of": 5,
+    "issues": [
+     {
+      "t": "and up",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(26, 26, 26) → rgb(0, 0, 0)",
+      "pos": "114,375 → 145,415"
+     }
+    ],
+    "missing": [
+     "New",
+     "fēnix® 9",
+     "Premium multisport GPS smartwatches with AMOLED or solar cha",
+     "$999.99 USD"
+    ]
+   }
+  },
+  "1440": {
+   "mismatchPct": 29.8,
+   "size": {
+    "target": [
+     353,
+     555
+    ],
+    "clone": [
+     349,
+     491
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "40-80",
+     "pct": 49.4
+    },
+    {
+     "y": "200-240",
+     "pct": 42.3
+    },
+    {
+     "y": "80-120",
+     "pct": 42
+    },
+    {
+     "y": "120-160",
+     "pct": 41.8
+    },
+    {
+     "y": "160-200",
+     "pct": 41.7
+    },
+    {
+     "y": "400-440",
+     "pct": 29.7
+    }
+   ],
+   "file": "docs/design-references/qa/5a3-before-card-1440-diff.png",
+   "text": {
+    "matched": 1,
+    "of": 5,
+    "issues": [
+     {
+      "t": "and up",
+      "ff": "Superscripts-Roboto → Roboto",
+      "c": "rgb(26, 26, 26) → rgb(0, 0, 0)",
+      "pos": "115,507 → 144,414"
+     }
+    ],
+    "missing": [
+     "New",
+     "fēnix® 9",
+     "Premium multisport GPS smartwatches with AMOLED or solar cha",
+     "$999.99 USD"
+    ]
+   }
+  }
+ }
+}
