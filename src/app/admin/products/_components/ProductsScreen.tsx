@@ -1,6 +1,6 @@
 "use client";
 
-import { formatCount } from "@/lib/money";
+import { formatCount, formatRecordAmount } from "@/lib/money";
 import { AutoTranslateButton } from "@/components/admin/AutoTranslateButton";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
@@ -753,7 +753,7 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="py-3.5 px-4">
                       <span className="whitespace-nowrap text-sm font-bold tabular-nums text-black">
-                        {formatKzt(p.price)}
+                        {formatRecordAmount(p.price, postgresStore ? "KZT" : p.currency)}
                       </span>
                       {p.priceSuffix && (
                         <span className="text-xs text-muted-foreground ml-1">
@@ -1412,7 +1412,7 @@ export default function AdminProductsPage() {
                         </div>
                       </div>
                       <span className="text-black text-[13px]">
-                        {formatKzt(prod.price)}
+                        {formatRecordAmount(prod.price, postgresStore ? "KZT" : prod.currency)}
                       </span>
                     </label>
                   );

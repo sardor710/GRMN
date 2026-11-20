@@ -6,7 +6,7 @@ import { useState, useEffect, useCallback, useMemo, type ReactNode } from "react
 import Link from "next/link";
 import { DashboardHeader } from "@/components/admin/DashboardHeader";
 import { LowStockAlerts } from "@/components/admin/LowStockAlerts";
-import { formatCount, formatKzt } from "@/lib/money";
+import { formatCount, formatRecordAmount } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import type { Order, Client, CMSProduct } from "@/lib/cms/types";
 
@@ -16,6 +16,8 @@ import type { Order, Client, CMSProduct } from "@/lib/cms/types";
 
 interface DashboardData {
   totalRevenue: number;
+  /** "KZT" only when every paid order is marked KZT; otherwise the total is a plain number. */
+  revenueCurrency?: "KZT";
   totalClients: number;
   totalProducts: number;
   publishedProducts: number;
@@ -34,7 +36,6 @@ const ORDER_FILTERS: { id: OrderFilter; label: string }[] = [
   { id: "processing", label: "Processing" },
   { id: "delivered", label: "Delivered" },
 ];
-const kzt = (value: number) => formatKzt({ major: value }, "en");
 
 function Tile({ title, value, foot }: { title: string; value: ReactNode; foot?: ReactNode }) {
   return (
@@ -93,12 +94,12 @@ export default function AdminDashboardPage() {
         readDashboardCollection<{ status: string }>(blogsRes, "blogs"),
       ]);
 
-      const totalRev = orders
-        .filter((o) => o.paymentStatus === "paid")
-        .reduce((sum, o) => sum + o.total, 0);
+      const paid = orders.filter((o) => o.paymentStatus === "paid");
+      const totalRev = paid.reduce((sum, o) => sum + o.total, 0);
 
       setData({
         totalRevenue: totalRev,
+        revenueCurrency: paid.length > 0 && paid.every((o) => o.currency === "KZT") ? "KZT" : undefined,
         totalClients: clients.length,
         totalProducts: products.length,
         publishedProducts: products.filter((p: { status: string }) => p.status === "published").length,
@@ -194,7 +195,7 @@ export default function AdminDashboardPage() {
       <DashboardHeader onRefresh={loadDashboard} isRefreshing={isRefreshing} />
 
       <section aria-label="Totals" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Tile title="Revenue" value={pending ? "…" : kzt(data.totalRevenue)} foot="Paid orders in the store file" />
+        <Tile title="Revenue" value={pending ? "…" : formatRecordAmount(data.totalRevenue, data.revenueCurrency)} foot="Paid orders in the store file" />
         <Tile title="Orders" value={pending ? "…" : formatCount(data.totalOrders)} foot={pending ? null : `${formatCount(data.pendingOrders)} processing`} />
         <Tile title="Clients" value={pending ? "…" : formatCount(data.totalClients)} />
         <Tile title="Products" value={pending ? "…" : formatCount(data.publishedProducts)} foot={pending ? null : `published of ${formatCount(data.totalProducts)}`} />
@@ -254,7 +255,7 @@ export default function AdminDashboardPage() {
                           <p>{ord.clientName}</p>
                           <p className="max-w-[180px] truncate text-muted-foreground">{ord.clientEmail}</p>
                         </td>
-                        <td className="whitespace-nowrap px-3 py-3 text-right font-bold tabular-nums">{kzt(ord.total)}</td>
+                        <td className="whitespace-nowrap px-3 py-3 text-right font-bold tabular-nums">{formatRecordAmount(ord.total, ord.currency)}</td>
                         <td className="px-3 py-3 capitalize">{ord.fulfillmentStatus}</td>
                         <td className="whitespace-nowrap px-3 py-3 tabular-nums text-muted-foreground">
                           {new Date(ord.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
@@ -287,7 +288,7 @@ export default function AdminDashboardPage() {
                       <p className="truncate">{c.name}</p>
                       <p className="text-muted-foreground">{c.country} · {formatCount(c.ordersCount ?? 0)} {c.ordersCount === 1 ? "order" : "orders"}</p>
                     </div>
-                    <span className="whitespace-nowrap font-bold tabular-nums">{c.totalSpent === undefined ? "—" : kzt(c.totalSpent)}</span>
+                    <span className="whitespace-nowrap font-bold tabular-nums">{formatRecordAmount(c.totalSpent, c.currency)}</span>
                   </li>
                 ))}
               </ul>

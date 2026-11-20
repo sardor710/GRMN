@@ -112,3 +112,13 @@ export function isKztSale(original: KztAmount | null | undefined, sale: KztAmoun
 export function formatCount(value: number): string {
   return Number.isFinite(value) ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value) : "—";
 }
+
+/**
+ * Task 5b.1 fix 1 (the 5a.2 rule for admin lists): an amount is shown as tenge only when its record is
+ * explicitly in KZT (PostgreSQL data, or a legacy record stamped `currency: "KZT"`). Unmarked legacy amounts,
+ * which are USD-scale seed data, and USD records are a plain number with no currency sign, never relabelled.
+ */
+export function formatRecordAmount(amount: number | string | null | undefined, currency: string | null | undefined): string {
+  if (amount === null || amount === undefined || amount === "") return "—";
+  return currency === "KZT" ? formatKzt({ major: amount }, "en") : formatUnconverted({ major: amount }, "en");
+}

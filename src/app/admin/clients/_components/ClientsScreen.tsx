@@ -1,6 +1,6 @@
 "use client";
 
-import { formatKzt } from "@/lib/money";
+import { formatRecordAmount } from "@/lib/money";
 import { useState } from "react";
 import {
   Search,
@@ -211,7 +211,7 @@ export default function AdminClientsPage() {
                       </span>
                     </td>
                     <td className="whitespace-nowrap py-3.5 px-4 text-sm font-bold tabular-nums text-black">
-                      {client.totalSpent === undefined ? "—" : formatKzt({ major: client.totalSpent }, "en")}
+                      {formatRecordAmount(client.totalSpent, collection.backend === "postgres" ? "KZT" : client.currency)}
                     </td>
                     <td className="py-3.5 px-4">
                       <span className="font-semibold text-xs bg-neutral-100 border border-border px-2 py-0.5 text-neutral-700 rounded-none">

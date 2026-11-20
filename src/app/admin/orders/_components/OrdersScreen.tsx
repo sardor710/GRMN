@@ -1,7 +1,6 @@
 "use client";
 
-import { formatCount } from "@/lib/money";
-import { formatKzt } from "@/lib/money";
+import { formatCount, formatRecordAmount } from "@/lib/money";
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import {
@@ -306,7 +305,7 @@ export default function AdminOrdersPage() {
               Revenue (filtered)
             </span>
             <p className="mt-1 text-2xl font-bold leading-[30px] tabular-nums text-black">
-              {formatKzt({ major: totalRevenue }, "en")}
+              {formatRecordAmount(totalRevenue, filteredOrders.length > 0 && filteredOrders.every(o => o.currency === "KZT") ? "KZT" : undefined)}
             </p>
           </div>
         </div>
@@ -568,7 +567,7 @@ Status
                               {ord.orderNumber}
                             </span>
                             <span className="whitespace-nowrap text-sm font-bold tabular-nums text-black">
-                              {formatKzt({ major: ord.total }, "en")}
+                              {formatRecordAmount(ord.total, ord.currency)}
                             </span>
                           </div>
 
@@ -696,7 +695,7 @@ Status
 
                         {/* Total Amount */}
                         <td className="whitespace-nowrap py-3.5 px-4 text-right text-sm font-bold tabular-nums text-black">
-                          {formatKzt({ major: ord.total }, "en")}
+                          {formatRecordAmount(ord.total, ord.currency)}
                         </td>
 
                         {/* Payment Status */}
@@ -843,7 +842,7 @@ Status
                   Order Total
                 </span>
                 <span className="text-xl font-bold tabular-nums text-black">
-                  {formatKzt({ major: selectedOrder.total }, "en")}
+                  {formatRecordAmount(selectedOrder.total, selectedOrder.currency)}
                 </span>
               </div>
             </div>
@@ -1060,12 +1059,12 @@ Map
                             SKU ID: {item.productId}
                           </p>
                           <p className="text-xs text-neutral-600 mt-0.5">
-                            {formatKzt({ major: item.price }, "en")} × {item.quantity}
+                            {formatRecordAmount(item.price, selectedOrder.currency)} × {item.quantity}
                           </p>
                         </div>
                       </div>
                       <span className="whitespace-nowrap text-base font-bold tabular-nums text-black">
-                        {formatKzt({ major: item.price * item.quantity }, "en")}
+                        {formatRecordAmount(item.price * item.quantity, selectedOrder.currency)}
                       </span>
                     </div>
                   ))

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatKzt } from "@/lib/money";
+import { formatRecordAmount } from "@/lib/money";
 import { useState, useEffect } from "react";
 import {
   Search,
@@ -59,6 +59,9 @@ export default function AdminDiscountsPage() {
     isStackable: false,
     status: "active" as DiscountStatus,
   });
+
+  // Task 5b.1 fix 1: tenge only when known; unmarked legacy discounts are plain numbers.
+  const discountCurrency = (disc: Discount) => (productPage.backend === "postgres" ? "KZT" : disc.currency);
 
   const fetchData = async () => {
     try {
@@ -296,11 +299,11 @@ export default function AdminDiscountsPage() {
                     </td>
                     <td className="py-3.5 px-4">
                       <p className="font-semibold text-black text-sm">
-                        {disc.type === "percentage" ? `${disc.value}% off` : `${formatKzt({ major: disc.value }, "en")} off`}
+                        {disc.type === "percentage" ? `${disc.value}% off` : `${formatRecordAmount(disc.value, discountCurrency(disc))} off`}
                       </p>
                       <p className="text-xs text-muted-foreground line-clamp-1">{disc.description}</p>
                       {disc.minSpend ? (
-                        <p className="text-xs text-muted-foreground mt-0.5">Minimum order: {formatKzt({ major: disc.minSpend }, "en")}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">Minimum order: {formatRecordAmount(disc.minSpend, discountCurrency(disc))}</p>
                       ) : null}
                     </td>
                     <td className="py-3.5 px-4">
@@ -436,7 +439,7 @@ export default function AdminDiscountsPage() {
                 className="h-10 w-full border border-border bg-white px-3 text-sm font-semibold text-black focus:border-black focus:outline-none rounded-none"
               >
                 <option value="percentage">Percentage Discount (% Off)</option>
-                <option value="fixed">Fixed Dollar Reduction ($ Off)</option>
+                <option value="fixed">Fixed amount off</option>
               </select>
             </div>
           </div>
@@ -457,7 +460,7 @@ export default function AdminDiscountsPage() {
             </div>
             <div>
               <label className="block text-xs font-semibold text-neutral-700 mb-1">
-                Min Spend ($)
+                Minimum order
               </label>
               <input
                 type="number"
@@ -618,7 +621,7 @@ export default function AdminDiscountsPage() {
                           <span className="tabular-nums text-muted-foreground text-xs">{p.sku}</span>
                           <span className="truncate">{p.name}</span>
                         </div>
-                        <span className="ml-2 whitespace-nowrap font-bold tabular-nums text-black">{formatKzt({ major: p.price }, "en")}</span>
+                        <span className="ml-2 whitespace-nowrap font-bold tabular-nums text-black">{formatRecordAmount(p.price, productPage.backend === "postgres" ? "KZT" : p.currency)}</span>
                       </label>
                     );
                   })}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { formatCount, formatKzt } from "@/lib/money";
+import { formatCount, formatRecordAmount } from "@/lib/money";
 import type { CMSProduct } from "@/lib/cms/types";
 
 interface LowStockAlertsProps {
@@ -49,7 +49,7 @@ export function LowStockAlerts({ products, onRestockProduct }: LowStockAlertsPro
                   </div>
                   <div className="min-w-0">
                     <p className="truncate">{prod.name}</p>
-                    <p className="tabular-nums text-muted-foreground">{formatKzt({ major: prod.price }, "en")}</p>
+                    <p className="tabular-nums text-muted-foreground">{formatRecordAmount(prod.price, prod.currency)}</p>
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-3">
