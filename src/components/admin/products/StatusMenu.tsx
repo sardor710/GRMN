@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { statusPillClass } from "./status-pill";
 
 export type ProductListStatus = "published" | "draft" | "archived";
 
@@ -20,14 +21,6 @@ const STATUS_LABELS: Record<ProductListStatus, string> = {
 };
 
 const STATUS_ORDER: ProductListStatus[] = ["published", "draft", "archived"];
-
-/** Garmin badge pills (Badges.spec.md): Published black, Draft gray #D9D9D9, Archived white with a gray rule. */
-export const statusPillClass = (status: string) =>
-  status === "published"
-    ? "bg-black text-white border-black"
-    : status === "draft"
-      ? "bg-garmin-badge-gray text-black border-garmin-badge-gray"
-      : "bg-white text-muted-foreground border-garmin-control";
 
 const isStatus = (value: unknown): value is ProductListStatus =>
   value === "published" || value === "draft" || value === "archived";

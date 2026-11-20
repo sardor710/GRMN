@@ -43,9 +43,11 @@ export default function StoreSettingsScreen() {
   }
   useEffect(() => { fetch("/api/admin/settings", { cache: "no-store" }).then(r => json<Settings>(r)).then(apply).catch(reason => setMessage({ kind: "error", text: (reason as Error).message })); }, []);
 
-  async function send(method: "PUT" | "POST", body: Record<string, unknown>, done: string) {
+  // Final review M10: the demo toggle updates only the settings record (and so its version); it never
+  // overwrites unsaved edits in the general and manual-payment forms, which apply() would reset.
+  async function send(method: "PUT" | "POST", body: Record<string, unknown>, done: string, recordOnly = false) {
     setBusy(true); setMessage(null);
-    try { apply(await json<Settings>(await fetch("/api/admin/settings", { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) }))); setMessage({ kind: "ok", text: done }); }
+    try { const next = await json<Settings>(await fetch("/api/admin/settings", { method, headers: { "content-type": "application/json" }, body: JSON.stringify(body) })); if (recordOnly) setSettings(next); else apply(next); setMessage({ kind: "ok", text: done }); }
     catch (reason) { setMessage({ kind: "error", text: (reason as Error).message }); } finally { setBusy(false); }
   }
   function save() {
@@ -76,7 +78,7 @@ export default function StoreSettingsScreen() {
         <h2 className="font-sans mb-3 border-b border-garmin-rule pb-2.5 text-sm font-medium tracking-[0.64px] text-black">Payments</h2>
         <label className="g-checkbox-label font-bold">
           <input className="g-checkbox" type="checkbox" name="demoCheckout" checked={settings.paymentMode === "demo"} disabled={busy}
-            onChange={event => void send("PUT", { expectedVersion: settings.version, paymentMode: event.target.checked ? "demo" : "live" }, event.target.checked ? "Demo checkout turned on" : "Demo checkout turned off")} />
+            onChange={event => void send("PUT", { expectedVersion: settings.version, paymentMode: event.target.checked ? "demo" : "live" }, event.target.checked ? "Demo checkout turned on" : "Demo checkout turned off", true)} />
           Demo checkout
         </label>
         <p className="text-sm text-muted-foreground">While demo checkout is on, customers can only place demo orders: no real money is taken and manual payment is not offered. Turn it off to take real orders with manual payment.</p>

@@ -448,7 +448,7 @@ export default function AdminDiscountsPage() {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
             <div>
               <label className="block text-xs font-semibold text-neutral-700 mb-1">
-                {formData.type === "percentage" ? "Percentage (% Off)" : "Amount ($ Off)"} *
+                {formData.type === "percentage" ? "Percentage off (%)" : "Amount off"} *
               </label>
               <input
                 type="number"
@@ -639,7 +639,7 @@ export default function AdminDiscountsPage() {
               type="text"
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="e.g. 20% off all luxury MARQ & fēnix watches during Summer promotion"
+              placeholder="e.g. 10% off watches"
               className="h-10 w-full border border-border bg-white px-3 text-sm text-black focus:border-black focus:outline-none rounded-none"
             />
           </div>
