@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ExternalLink } from "lucide-react";
@@ -56,7 +56,16 @@ const navPermissions: Record<string, string> = {
 
 export function AdminSidebar({ permissions }: { permissions: readonly string[] }) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  // The folded menu is open for the page it was opened on only, so any route change closes it.
+  const [openOn, setOpenOn] = useState<string | null>(null);
+  const open = openOn === pathname;
+  const setOpen = (next: boolean) => setOpenOn(next ? pathname : null);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent) => { if (event.key === "Escape") setOpenOn(null); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
   const sections = navSections
     .map(section => ({ ...section, items: section.items.filter(item => !navPermissions[item.href] || permissions.includes(navPermissions[item.href])) }))
     .filter(section => section.items.length > 0);
@@ -72,7 +81,7 @@ export function AdminSidebar({ permissions }: { permissions: readonly string[] }
           type="button"
           aria-expanded={open}
           aria-controls="admin-menu"
-          onClick={() => setOpen(value => !value)}
+          onClick={() => setOpen(!open)}
           className="flex items-center gap-2 py-3.5 text-base font-bold lg:hidden"
         >
           Menu

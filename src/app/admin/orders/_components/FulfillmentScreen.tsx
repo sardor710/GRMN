@@ -237,7 +237,7 @@ export default function FulfillmentScreen() {
               {!detail.legacy && detail.status !== "cancelled" && detail.status !== "closed" && (
                 <button type="button" disabled={busy} onClick={() => void cancelOrder()} className="g-btn g-btn--secondary g-btn--sm border-garmin-error text-garmin-error">Cancel order</button>
               )}
-              <table className="w-full text-sm">
+              <div className="overflow-x-auto"><table className="w-full min-w-[420px] text-sm">
                 <thead><tr className="bg-muted text-left text-xs font-bold uppercase tracking-[-0.2px] text-black [&>th]:px-2 [&>th]:py-2"><th>Item</th><th>Ordered</th><th>Shipped</th><th>Left</th><th>Ship now</th></tr></thead>
                 <tbody>
                   {detail.items.map(item => (
@@ -249,7 +249,7 @@ export default function FulfillmentScreen() {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></div>
               {detail.fulfillable.allowed && (
                 <div className="grid gap-2 sm:grid-cols-3">
                   <input aria-label="Carrier" placeholder="Carrier (staff only)" className="h-10 border border-garmin-control bg-white px-3 text-sm text-black focus:border-black focus:outline-none" value={carrier} onChange={event => setCarrier(event.target.value)} />

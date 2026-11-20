@@ -46,7 +46,6 @@ export function AdminHeader({ user }: AdminHeaderProps) {
         <button
           type="button"
           aria-expanded={showProfileMenu}
-          aria-haspopup="menu"
           onClick={() => setShowProfileMenu(!showProfileMenu)}
           className="flex h-16 items-center gap-2 text-left font-medium tracking-[0.64px] hover:shadow-[inset_0_-3.2px_0_#000] aria-expanded:shadow-[inset_0_-3.2px_0_#000]"
         >
@@ -55,14 +54,13 @@ export function AdminHeader({ user }: AdminHeaderProps) {
         </button>
 
         {showProfileMenu && (
-          <div role="menu" className="absolute right-0 z-50 w-60 border border-garmin-rule bg-white shadow-garmin-raised">
+          <div className="absolute right-0 z-50 w-60 border border-garmin-rule bg-white shadow-garmin-raised">
             <div className="border-b border-garmin-rule px-4 py-3">
               <p className="font-bold">{adminName}</p>
               {adminEmail && <p className="truncate text-muted-foreground">{adminEmail}</p>}
               <p className="capitalize text-muted-foreground">{adminRole}</p>
             </div>
             <Link
-              role="menuitem"
               href="/admin/admins"
               onClick={() => setShowProfileMenu(false)}
               className="block px-4 py-2 hover:underline"
@@ -70,7 +68,6 @@ export function AdminHeader({ user }: AdminHeaderProps) {
               Staff
             </Link>
             <button
-              role="menuitem"
               type="button"
               onClick={handleLogout}
               className="block w-full px-4 py-2 text-left hover:underline"
