@@ -147,7 +147,7 @@ export function createCMSService({pool,authorize}:Options) {
     // Archiving mirrors archive(): the projection would clear is_default on the only variant and hide the product from every admin read.
     if(data.status!=="archived")await projectProduct(client,old.id,{status:data.status,sku:old.sku,priceMinor:String(old.amount_minor??"0"),compareMinor:old.compare_at_minor==null?null:String(old.compare_at_minor),
       options:(Array.isArray(meta.options)?meta.options:[]) as ProductDocument["options"],variants:(Array.isArray(meta.variants)?meta.variants:[]) as ProductDocument["variants"],
-      images:(Array.isArray(meta.images)?meta.images:[]) as ProductDocument["images"],defaultImageId:typeof meta.defaultImageId==="string"?meta.defaultImageId:undefined});
+      images:(Array.isArray(meta.images)?meta.images:[]) as ProductDocument["images"],defaultImageId:typeof meta.defaultImageId==="string"?meta.defaultImageId:undefined},(Array.isArray(meta.variants)?meta.variants:[]).map(record));
     await audit(client,principal,"cms.saved",entityTypes.products,old.id,["status"],Number(old.version),Number(old.version)+1);
     return{id:data.id,version:Number(old.version)+1,status:data.status};
   }
@@ -290,7 +290,9 @@ export function createCMSService({pool,authorize}:Options) {
           const document:ProductDocument={status,sku:data.sku,priceMinor:data.price,compareMinor:compareAt,
             options:(Array.isArray(metadata.options)?metadata.options:[]) as ProductDocument["options"],variants:(Array.isArray(metadata.variants)?metadata.variants:[]) as ProductDocument["variants"],
             images:(Array.isArray(metadata.images)?metadata.images:[]) as ProductDocument["images"],defaultImageId:typeof metadata.defaultImageId==="string"?metadata.defaultImageId:undefined};
-          await projectProduct(client,id,document);
+          // F-c: the previous document names each editor variant's SKU at the last save, so a renamed SKU keeps its row.
+          const previous=record(old?.legacy_content).variants;
+          await projectProduct(client,id,document,Array.isArray(previous)?previous.map(record):[]);
           // Final review M8: stale variant translations (a removed variant, a block no longer owned) are pruned on
           // every save, not only when translations are sent; a locale that did not change is left untouched.
           const storedTranslations=record(old?.translations);
