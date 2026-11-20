@@ -21,8 +21,8 @@ test("server-paged catalog preserves products and sends filter changes to the UR
  const check=nodes(tree).find(n=>n.props?.label==="Running");assert.ok(check);check.props.onChange();assert.match(calls[0]??"",/activities=Running/);assert.ok(!calls[0].includes("cursor="));
 });
 test("compare starts from server-selected published data instead of fixed static IDs",()=>{
- const fixture=componentFixture("src/components/CompareTool.tsx",{modules:{"@/lib/public-products":{products:[{id:"1228429",name:"Forbidden seed",price:1,activities:[]}]},"next/navigation":{useRouter:()=>({push(){}}),useSearchParams:()=>new URLSearchParams(),usePathname:()=>"/compare"}}});
- const tree=fixture.render({products:[],selectedProducts:[]});assert.match(nodeText(tree),/start comparing/);assert.ok(!nodeText(tree).includes("Forbidden seed"));
+ const fixture=componentFixture("src/components/CompareTool.tsx",{modules:{"@/lib/public-products":{products:[{id:"1228429",name:"Forbidden seed",price:1,activities:[]}]},"next/navigation":{useRouter:()=>({push(){},replace(){}}),usePathname:()=>"/compare"}}});
+ const tree=fixture.render({items:[],groups:[],onlyDifferences:false,search:null,catalogueHref:"/c/wearables-smartwatches"});assert.match(nodeText(tree),/no products to compare yet/);assert.ok(!nodeText(tree).includes("Forbidden seed"));
 });
 
 // PostgreSQL variants use the garmin.com option pickers: pick a value by its label (Size → "Large").
