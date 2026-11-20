@@ -107,3 +107,8 @@ export function kztSaving(original: KztAmount, sale: KztAmount): KztAmount | nul
 export function isKztSale(original: KztAmount | null | undefined, sale: KztAmount | null | undefined): boolean {
   return Boolean(original && sale && kztSaving(original, sale));
 }
+
+/** A count (stock, orders, clients) with the same en grouping as admin money: 1,250. Not money: no currency, no decimals. */
+export function formatCount(value: number): string {
+  return Number.isFinite(value) ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 0 }).format(value) : "—";
+}

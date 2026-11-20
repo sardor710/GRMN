@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCount } from "@/lib/money";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { createPendingActions, createStockAdjuster } from "@/lib/admin/inventory-client";
@@ -33,7 +34,7 @@ const LOADING = { state: "loading" } as const;
 const localDate = (offsetDays = 0) => new Date(Date.now() + offsetDays * 86_400_000).toLocaleDateString("en-CA", { timeZone: ZONE });
 const formatDate = (value: string) => new Date(value).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: ZONE });
 const words = (value: string) => value.replace(/_/g, " ");
-const orders = (n: number) => `${n} ${n === 1 ? "order" : "orders"}`;
+const orders = (n: number) => `${formatCount(n)} ${n === 1 ? "order" : "orders"}`;
 async function json<T>(response: Response): Promise<T> {
   const body = await response.json().catch(() => null) as { error?: { message?: string } } | null;
   if (!response.ok) throw new Error(body?.error?.message ?? `Request failed (${response.status})`);
@@ -42,15 +43,15 @@ async function json<T>(response: Response): Promise<T> {
 
 function Card({ title, name, children, className }: { title: string; name?: string; children: ReactNode; className?: string }) {
   return (
-    <section aria-label={name ?? title} className={cn("border border-neutral-200 p-4", className)}>
-      <h2 className="mb-3 text-xs font-bold uppercase tracking-wider text-neutral-600">{title}</h2>
+    <section aria-label={name ?? title} className={cn("min-w-0 border border-garmin-control p-4", className)}>
+      <h2 className="mb-4 border-b border-garmin-rule pb-3.5 text-sm font-medium tracking-[0.64px] text-black">{title}</h2>
       {children}
     </section>
   );
 }
-const Muted = ({ children }: { children: ReactNode }) => <p data-empty className="text-sm text-neutral-500">{children}</p>;
+const Muted = ({ children }: { children: ReactNode }) => <p data-empty className="text-sm text-muted-foreground">{children}</p>;
 const Failure = ({ message }: { message: string }) => <p role="alert" className="border border-red-200 bg-red-50 p-2 text-sm font-normal text-red-800">{message}</p>;
-const Loading = () => <span className="text-sm font-normal text-neutral-500">Loading…</span>;
+const Loading = () => <span className="text-sm font-normal text-muted-foreground">Loading…</span>;
 /** Loading, error and ready states for one section; `empty` decides when the ready data has nothing to show. */
 function Section<T>({ value, empty, emptyText, children }: { value: Loadable<T>; empty: (data: T) => boolean; emptyText: string; children: (data: T) => ReactNode }) {
   if (value.state === "loading") return <Loading />;
@@ -60,10 +61,10 @@ function Section<T>({ value, empty, emptyText, children }: { value: Loadable<T>;
 
 function Tile({ name, title, demo, children, foot }: { name: string; title: string; demo?: boolean; children: ReactNode; foot?: ReactNode }) {
   return (
-    <div data-tile={name} className="border border-neutral-200 p-4">
-      <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-neutral-500">{title}{demo && <DemoBadge label="DEMO" className="text-[10px]" />}</p>
-      <div data-tile-value className="mt-1 text-2xl font-bold text-black">{children}</div>
-      {foot && <div className="mt-1 text-xs text-neutral-600">{foot}</div>}
+    <div data-tile={name} className="min-w-0 border border-garmin-control p-4">
+      <p className="flex items-center gap-2 text-sm font-medium tracking-[0.64px] text-black">{title}{demo && <DemoBadge label="DEMO" className="text-xs" />}</p>
+      <div data-tile-value className="mt-2 break-words text-2xl font-bold leading-[30px] tabular-nums text-black">{children}</div>
+      {foot && <div className="mt-1 text-sm text-muted-foreground tabular-nums">{foot}</div>}
     </div>
   );
 }
@@ -83,8 +84,8 @@ function CountTile({ name, title, counts, pick, quiet }: { name: string; title: 
   if (counts.state !== "ready") return <Tile name={name} title={title}>{counts.state === "loading" ? <Loading /> : <Failure message={counts.message} />}</Tile>;
   const { real, demo } = pick(counts.data);
   return (
-    <Tile name={name} title={title} foot={demo > 0 ? <span className="flex items-center gap-1">Plus {orders(demo)} <DemoBadge label="DEMO" className="px-1 text-[9px]" /></span> : quiet}>
-      {real}
+    <Tile name={name} title={title} foot={demo > 0 ? <span className="flex items-center gap-1">Plus {orders(demo)} <DemoBadge label="DEMO" className="px-1 text-xs" /></span> : quiet}>
+      {formatCount(real)}
     </Tile>
   );
 }
@@ -159,15 +160,15 @@ export function ReportsScreen() {
     <div className="space-y-6 p-6">
       <div>
         <h1 className="text-2xl font-bold text-black">Dashboard</h1>
-        <p className="text-sm text-neutral-500">Captured payments minus refunds, by day in {ZONE}. Demo revenue is shown apart and never added to revenue.</p>
+        <p className="text-sm text-muted-foreground">Captured payments minus refunds, by day in {ZONE}. Demo revenue is shown apart and never added to revenue.</p>
       </div>
       <div role="group" aria-label="Date range" className="flex flex-wrap items-end gap-2 text-sm">
         {PRESETS.map(days => {
           const selected = from === localDate(-(days - 1)) && to === localDate();
-          return <button key={days} type="button" aria-pressed={selected} onClick={() => { setFrom(localDate(-(days - 1))); setTo(localDate()); }} className={cn("border px-2 py-1 text-xs font-bold uppercase", selected ? "border-black bg-black text-white" : "border-neutral-300 hover:border-neutral-500")}>Last {days} days</button>;
+          return <button key={days} type="button" aria-pressed={selected} onClick={() => { setFrom(localDate(-(days - 1))); setTo(localDate()); }} className={cn("border px-2 py-1 text-xs font-bold", selected ? "border-black bg-black text-white" : "border-border hover:border-neutral-500")}>Last {days} days</button>;
         })}
-        <label className="ml-2">From <input aria-label="From date" type="date" value={from} max={to} onChange={event => setFrom(event.target.value)} className="ml-1 border border-neutral-300 px-2 py-1" /></label>
-        <label>To <input aria-label="To date" type="date" value={to} min={from} onChange={event => setTo(event.target.value)} className="ml-1 border border-neutral-300 px-2 py-1" /></label>
+        <label className="ml-2">From <input aria-label="From date" type="date" value={from} max={to} onChange={event => setFrom(event.target.value)} className="ml-1 border border-border px-2 py-1" /></label>
+        <label>To <input aria-label="To date" type="date" value={to} min={from} onChange={event => setTo(event.target.value)} className="ml-1 border border-border px-2 py-1" /></label>
       </div>
       {error && <p role="alert" className="border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
 
@@ -193,13 +194,13 @@ export function ReportsScreen() {
               <div className="space-y-4 text-sm">
                 {([["Order", data.orderStatus, ORDER_STATUS_LABELS], ["Fulfillment", data.fulfillmentStatus, FULFILLMENT_STATUS_LABELS]] as const).map(([heading, record, labels]) => (
                   <div key={heading}>
-                    <h3 className="mb-1 text-[11px] font-bold uppercase tracking-wider text-neutral-500">{heading}</h3>
+                    <h3 className="mb-1 text-xs font-bold text-muted-foreground">{heading}</h3>
                     <ul className="divide-y divide-neutral-100">{statusRows(record, labels).map(row => (
-                      <li key={row.status} className="flex justify-between py-1"><span>{row.label}</span><span className="font-mono tabular-nums">{row.count}</span></li>
+                      <li key={row.status} className="flex justify-between py-1"><span>{row.label}</span><span className="tabular-nums">{formatCount(row.count)}</span></li>
                     ))}</ul>
                   </div>
                 ))}
-                <p className="text-xs text-neutral-500">Includes {orders(data.demo)} marked demo.</p>
+                <p className="text-xs text-muted-foreground">Includes {orders(data.demo)} marked demo.</p>
               </div>
             )}
           </Section>
@@ -211,10 +212,10 @@ export function ReportsScreen() {
           <Section value={recent} empty={items => items.length === 0} emptyText="No orders in this date range yet.">
             {items => (
               <table className="w-full text-sm">
-                <thead><tr className="text-left text-xs uppercase text-neutral-500 [&>th]:pr-3 [&>th:last-child]:pr-0"><th className="py-1 font-bold">Order</th><th className="font-bold">Placed</th><th className="font-bold">Payment</th><th className="font-bold">Fulfillment</th><th className="text-right font-bold">Total</th></tr></thead>
+                <thead><tr className="text-left text-xs text-muted-foreground [&>th]:pr-3 [&>th:last-child]:pr-0"><th className="py-1 font-bold">Order</th><th className="font-bold">Placed</th><th className="font-bold">Payment</th><th className="font-bold">Fulfillment</th><th className="text-right font-bold">Total</th></tr></thead>
                 <tbody>{items.map(order => (
                   <tr key={order.id} data-order-row={order.id} className="border-t border-neutral-100 align-top [&>td]:pr-3 [&>td:last-child]:pr-0">
-                    <td className="py-1.5"><span className="flex flex-wrap items-center gap-x-2 gap-y-1"><Link href={`/admin/orders?order=${order.id}`} className="whitespace-nowrap font-mono font-semibold underline">{order.number}</Link>{order.demo && <DemoBadge label="DEMO" className="text-[10px]" />}</span></td>
+                    <td className="py-1.5"><span className="flex flex-wrap items-center gap-x-2 gap-y-1"><Link href={`/admin/orders?order=${order.id}`} className="whitespace-nowrap tabular-nums font-semibold underline">{order.number}</Link>{order.demo && <DemoBadge label="DEMO" className="text-[10px]" />}</span></td>
                     <td className="py-1.5 text-neutral-600">{formatDate(order.createdAt)}</td>
                     <td className="py-1.5 capitalize">{words(order.paymentStatus)}</td>
                     <td className="py-1.5 capitalize">{words(order.fulfillmentStatus)}</td>
@@ -229,7 +230,7 @@ export function ReportsScreen() {
           <div role="tablist" aria-label="Best-sellers" className="mb-3 flex text-xs">
             {(["real", "demo"] as const).map(tab => (
               <button key={tab} type="button" role="tab" id={`best-${tab}`} aria-selected={bestTab === tab} aria-controls="best-panel" onClick={() => setBestTab(tab)}
-                className={cn("border px-3 py-1 font-bold uppercase tracking-wider", bestTab === tab ? "border-black bg-black text-white" : "border-neutral-300 text-neutral-600 hover:border-neutral-500")}>
+                className={cn("border px-3 py-1 font-bold", bestTab === tab ? "border-black bg-black text-white" : "border-border text-neutral-600 hover:border-neutral-500")}>
                 {tab === "real" ? "Real" : "Demo"}
               </button>
             ))}
@@ -238,18 +239,18 @@ export function ReportsScreen() {
             <Section value={best} empty={data => data[bestTab].length === 0} emptyText={bestTab === "real" ? "No sales in this date range yet." : "No demo sales in this date range yet."}>
               {data => (
                 <table className="w-full text-sm">
-                  <thead><tr className="text-left text-xs uppercase text-neutral-500"><th className="py-1 font-bold">Product</th><th className="px-3 text-right font-bold">Units</th><th className="whitespace-nowrap text-right font-bold">Item revenue</th></tr></thead>
+                  <thead><tr className="text-left text-xs text-muted-foreground"><th className="py-1 font-bold">Product</th><th className="px-3 text-right font-bold">Units</th><th className="whitespace-nowrap text-right font-bold">Item revenue</th></tr></thead>
                   <tbody>{data[bestTab].map(item => (
                     <tr key={item.variantId + item.currency} className="border-t border-neutral-100">
-                      <td className="py-1.5"><span className="flex flex-wrap items-center gap-2">{item.name}{item.sku && <span className="font-mono text-xs text-neutral-500">{item.sku}</span>}{bestTab === "demo" && <DemoBadge label="DEMO" className="text-[10px]" />}</span></td>
-                      <td className="px-3 text-right font-mono tabular-nums">{item.units}</td>
+                      <td className="py-1.5"><span className="flex flex-wrap items-center gap-2">{item.name}{item.sku && <span className="tabular-nums text-xs text-muted-foreground">{item.sku}</span>}{bestTab === "demo" && <DemoBadge label="DEMO" className="text-[10px]" />}</span></td>
+                      <td className="px-3 text-right tabular-nums">{formatCount(item.units)}</td>
                       <td className="whitespace-nowrap text-right tabular-nums">{formatMinor(item.revenueMinor, item.currency)}</td>
                     </tr>
                   ))}</tbody>
                 </table>
               )}
             </Section>
-            <p className="mt-2 text-xs text-neutral-500">Item revenue is net of refunds, incl. tax, excl. shipping.</p>
+            <p className="mt-2 text-xs text-muted-foreground">Item revenue is net of refunds, incl. tax, excl. shipping.</p>
           </div>
         </Card>
       </div>
@@ -259,10 +260,10 @@ export function ReportsScreen() {
           <Section value={summary} empty={data => data.days.length === 0} emptyText="No payments in this date range yet.">
             {data => (
               <table className="w-full text-sm">
-                <thead><tr className="text-left text-xs uppercase text-neutral-500"><th className="py-1 font-bold">Date</th><th className="font-bold">Captured</th><th className="font-bold">Refunded</th><th className="font-bold">Net</th></tr></thead>
+                <thead><tr className="text-left text-xs text-muted-foreground"><th className="py-1 font-bold">Date</th><th className="font-bold">Captured</th><th className="font-bold">Refunded</th><th className="font-bold">Net</th></tr></thead>
                 <tbody>{data.days.map(day => (
                   <tr key={day.date + day.environment + day.currency} className="border-t border-neutral-100">
-                    <td className="py-1"><span className="flex items-center gap-2 font-mono">{day.date}{day.environment === "demo" ? <DemoBadge label="DEMO" className="text-[10px]" /> : day.environment === "sandbox" ? <span className="text-xs text-neutral-500">sandbox</span> : null}</span></td>
+                    <td className="py-1"><span className="flex items-center gap-2 tabular-nums">{day.date}{day.environment === "demo" ? <DemoBadge label="DEMO" className="text-[10px]" /> : day.environment === "sandbox" ? <span className="text-xs text-muted-foreground">sandbox</span> : null}</span></td>
                     <td className="tabular-nums">{formatMinor(day.capturedMinor, day.currency)}</td><td className="tabular-nums">{formatMinor(day.refundedMinor, day.currency)}</td><td className="tabular-nums">{formatMinor(day.netMinor, day.currency)}</td>
                   </tr>
                 ))}</tbody>
@@ -276,11 +277,11 @@ export function ReportsScreen() {
               {items => (
                 <ul className="space-y-1 text-sm">{items.map(item => (
                   <li key={item.variantId} className="flex items-center justify-between gap-2">
-                    <span>{item.name}{item.sku ? <span className="ml-1 font-mono text-xs text-neutral-500">{item.sku}</span> : null}</span>
-                    <span className="flex items-center gap-2"><span className="font-mono">{item.available}</span>
-                      <button type="button" disabled={busy !== null} onClick={() => void restock(item)} className="border border-black px-2 py-0.5 text-xs font-bold uppercase disabled:opacity-50">{pending.isPending(`restock:${item.variantId}`) ? "Retry restock" : "Restock +10"}</button>
-                      <input aria-label={`Stock correction for ${item.name}`} inputMode="numeric" placeholder="±qty" className="w-16 border border-neutral-300 px-1 text-xs" value={adjust[item.variantId] ?? ""} onChange={event => setAdjust(current => ({ ...current, [item.variantId]: event.target.value }))} />
-                      <button type="button" disabled={busy !== null || !(adjust[item.variantId] ?? "").trim()} onClick={() => correct(item)} className="border border-neutral-400 px-2 py-0.5 text-xs font-bold uppercase disabled:opacity-50">Apply</button></span>
+                    <span>{item.name}{item.sku ? <span className="ml-1 tabular-nums text-xs text-muted-foreground">{item.sku}</span> : null}</span>
+                    <span className="flex items-center gap-2"><span className="font-bold tabular-nums">{formatCount(item.available)}</span>
+                      <button type="button" disabled={busy !== null} onClick={() => void restock(item)} className="border border-black px-2 py-0.5 text-xs font-bold capitalize disabled:opacity-50">{pending.isPending(`restock:${item.variantId}`) ? "Retry restock" : "Restock +10"}</button>
+                      <input aria-label={`Stock correction for ${item.name}`} inputMode="numeric" placeholder="±qty" className="w-16 border border-border px-1 text-xs" value={adjust[item.variantId] ?? ""} onChange={event => setAdjust(current => ({ ...current, [item.variantId]: event.target.value }))} />
+                      <button type="button" disabled={busy !== null || !(adjust[item.variantId] ?? "").trim()} onClick={() => correct(item)} className="border border-neutral-400 px-2 py-0.5 text-xs font-bold capitalize disabled:opacity-50">Apply</button></span>
                   </li>
                 ))}</ul>
               )}
@@ -290,8 +291,8 @@ export function ReportsScreen() {
             {exportsList === null ? <Muted>Exports need the export permission.</Muted> : (
               <>
                 <div className="mb-3 flex gap-2">
-                  <button type="button" disabled={busy !== null} onClick={() => void requestExport("orders")} className="border border-black px-2 py-1 text-xs font-bold uppercase disabled:opacity-50">Export orders (period)</button>
-                  <button type="button" disabled={busy !== null} onClick={() => void requestExport("catalog")} className="border border-black px-2 py-1 text-xs font-bold uppercase disabled:opacity-50">Export catalog</button>
+                  <button type="button" disabled={busy !== null} onClick={() => void requestExport("orders")} className="border border-black px-2 py-1 text-xs font-bold disabled:opacity-50">Export orders (period)</button>
+                  <button type="button" disabled={busy !== null} onClick={() => void requestExport("catalog")} className="border border-black px-2 py-1 text-xs font-bold disabled:opacity-50">Export catalog</button>
                 </div>
                 <ul className="space-y-1 text-xs">{exportsList.map(job => (
                   <li key={job.id} className="flex justify-between gap-2">

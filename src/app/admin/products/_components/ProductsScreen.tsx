@@ -1,5 +1,6 @@
 "use client";
 
+import { formatCount } from "@/lib/money";
 import { AutoTranslateButton } from "@/components/admin/AutoTranslateButton";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
@@ -601,13 +602,13 @@ export default function AdminProductsPage() {
     <div className="space-y-6 font-sans">
       <AdminPageControls page={collection} />
       {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-200 pb-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
         <div>
-          <h1 className="g-heading uppercase tracking-wide text-2xl text-black font-normal flex items-center gap-2.5">
-            <Boxes className="h-6 w-6 text-[#007cc3]" />
+          <h1 className="g-heading text-2xl text-black font-normal flex items-center gap-2.5">
+            <Boxes className="h-6 w-6 text-garmin-blue" />
             <span>Product Catalog &amp; Inventory</span>
           </h1>
-          <p className="text-[14px] text-neutral-500 mt-1 font-sans">
+          <p className="text-sm text-muted-foreground mt-1 font-sans">
             Manage Garmin product models, technical specifications, retail packages, and cross-selling accessories.
           </p>
         </div>
@@ -615,7 +616,7 @@ export default function AdminProductsPage() {
         <button
           type="button"
           onClick={handleOpenAdd}
-          className="flex items-center gap-1.5 bg-black text-white hover:bg-neutral-800 border border-black px-4 py-2 text-[12px] font-medium tracking-[0.06em] uppercase transition-colors rounded-none"
+          className="g-btn g-btn--black gap-1.5"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>Add New Product</span>
@@ -623,9 +624,9 @@ export default function AdminProductsPage() {
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border border-neutral-200 bg-white p-4 rounded-none">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border border-border bg-white p-4 rounded-none">
         <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
             value={search}
@@ -634,7 +635,7 @@ export default function AdminProductsPage() {
               clearSelection();
             }}
             placeholder="Search by model, SKU, or family..."
-            className="h-9 w-full border border-neutral-300 bg-neutral-50 pl-9 pr-3 text-[13px] text-black placeholder-neutral-400 focus:border-black focus:bg-white focus:outline-none rounded-none"
+            className="h-9 w-full border border-border bg-neutral-50 pl-9 pr-3 text-[13px] text-black placeholder-neutral-400 focus:border-black focus:bg-white focus:outline-none rounded-none"
           />
         </div>
 
@@ -645,7 +646,7 @@ export default function AdminProductsPage() {
               setFamilyFilter(e.target.value);
               clearSelection();
             }}
-            className="h-9 border border-neutral-300 bg-white px-3 text-[13px] font-medium text-black focus:border-black focus:outline-none rounded-none"
+            className="h-9 border border-border bg-white px-3 text-[13px] font-medium text-black focus:border-black focus:outline-none rounded-none"
           >
             <option value="all">All Watch Families</option>
             {WATCH_FAMILIES.map((f) => (
@@ -661,7 +662,7 @@ export default function AdminProductsPage() {
               setStatusFilter(e.target.value);
               clearSelection();
             }}
-            className="h-9 border border-neutral-300 bg-white px-3 text-[13px] font-medium text-black focus:border-black focus:outline-none rounded-none"
+            className="h-9 border border-border bg-white px-3 text-[13px] font-medium text-black focus:border-black focus:outline-none rounded-none"
           >
             <option value="all">All Statuses</option>
             <option value="published">Published</option>
@@ -677,11 +678,11 @@ export default function AdminProductsPage() {
       {bulkOutcome && <BulkResultMessage outcome={bulkOutcome} onDismiss={() => setBulkOutcome(null)} />}
 
       {/* Products Table */}
-      <div className="border border-neutral-200 bg-white overflow-hidden rounded-none shadow-xs">
+      <div className="border border-border bg-white overflow-hidden rounded-none">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-[13px]">
             <thead>
-              <tr className="border-b border-neutral-200 bg-neutral-50 text-neutral-500 text-[11px] font-heading uppercase tracking-wider">
+              <tr className="border-b border-border bg-muted text-black text-xs uppercase tracking-[-0.2px]">
                 {postgresStore && (
                   <th className="w-10 py-3 pl-4 pr-0 font-semibold">
                     <Checkbox
@@ -703,16 +704,16 @@ export default function AdminProductsPage() {
                 <th className="py-3 px-4 font-semibold">Status</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-neutral-100 text-neutral-800">
+            <tbody className="divide-y divide-neutral-100 text-black">
               {loading ? (
                 <tr>
-                  <td colSpan={columnCount} className="py-8 text-center text-neutral-400">
+                  <td colSpan={columnCount} className="py-8 text-center text-muted-foreground">
                     Loading products...
                   </td>
                 </tr>
               ) : filteredProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={columnCount} className="py-8 text-center text-neutral-400">
+                  <td colSpan={columnCount} className="py-8 text-center text-muted-foreground">
                     No products matched your criteria.
                   </td>
                 </tr>
@@ -742,7 +743,7 @@ export default function AdminProductsPage() {
                         className="absolute inset-0 z-[1] cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-black"
                       />
                       <div className="flex items-center gap-3">
-                        <div className="h-11 w-11 relative shrink-0 bg-neutral-50 border border-neutral-200 p-1 flex items-center justify-center overflow-hidden rounded-none">
+                        <div className="h-11 w-11 relative shrink-0 bg-neutral-50 border border-border p-1 flex items-center justify-center overflow-hidden rounded-none">
                           <Image
                             src={p.image || "/images/products/1228429.jpg"}
                             alt={p.name}
@@ -753,32 +754,32 @@ export default function AdminProductsPage() {
                         </div>
                         <div>
                           <p className="font-medium text-black line-clamp-1 group-hover/edit:underline underline-offset-2">{p.name}</p>
-                          <p className="font-mono text-[11px] text-neutral-500">{p.sku}</p>
+                          <p className="tabular-nums text-xs text-muted-foreground">{p.sku}</p>
                         </div>
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
                       <p className="font-medium text-black text-[13px]">{p.category || "Smartwatches"}</p>
-                      <p className="text-[11px] text-neutral-500">{p.subCategory || "General"}</p>
+                      <p className="text-xs text-muted-foreground">{p.subCategory || "General"}</p>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="font-heading font-normal text-black text-[14px]">
+                      <span className="whitespace-nowrap text-sm font-bold tabular-nums text-black">
                         {formatKzt(p.price)}
                       </span>
                       {p.priceSuffix && (
-                        <span className="text-[11px] text-neutral-500 ml-1">
+                        <span className="text-xs text-muted-foreground ml-1">
                           {p.priceSuffix}
                         </span>
                       )}
                       {p.variants && p.variants.length > 0 && (
-                        <p className="text-[11px] text-neutral-500">{p.variants.length} variants</p>
+                        <p className="text-xs text-muted-foreground">{p.variants.length} variants</p>
                       )}
                     </td>
                     <td className="py-3.5 px-4">
                       {p.badge && p.badge !== "NONE" ? (
                         <GarminBadge badge={p.badge} variant="pill" />
                       ) : (
-                        <span className="text-neutral-300 text-[11px]">—</span>
+                        <span className="text-neutral-300 text-xs">—</span>
                       )}
                     </td>
                     <td className="py-3.5 px-4">
@@ -792,11 +793,11 @@ export default function AdminProductsPage() {
                               : "bg-rose-600"
                           }`}
                         />
-                        <span className="font-semibold text-black text-[12px]">{p.stock} units</span>
+                        <span className="font-bold tabular-nums text-black text-xs">{formatCount(p.stock)} units</span>
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
-                      <span className="font-mono text-[11px] bg-neutral-100 px-2 py-0.5 text-neutral-700 border border-neutral-200 rounded-none">
+                      <span className="tabular-nums text-xs bg-neutral-100 px-2 py-0.5 text-neutral-700 border border-border rounded-none">
                         {p.compatibleAccessories?.length || 0} linked
                       </span>
                     </td>
@@ -814,12 +815,12 @@ export default function AdminProductsPage() {
                         </div>
                       ) : (
                         <span
-                          className={`font-heading uppercase tracking-wider text-[10px] font-bold px-2 py-0.5 rounded-none border ${
+                          className={`capitalize text-xs font-bold px-2 py-0.5 rounded-none border ${
                             p.status === "published"
                               ? "bg-emerald-50 text-emerald-800 border-emerald-200"
                               : p.status === "draft"
                                 ? "bg-amber-50 text-amber-800 border-amber-200"
-                                : "bg-neutral-100 text-neutral-600 border-neutral-200"
+                                : "bg-neutral-100 text-neutral-600 border-border"
                           }`}
                         >
                           {p.status}
@@ -845,11 +846,11 @@ export default function AdminProductsPage() {
         <form onSubmit={handleSubmit} className="space-y-5 font-sans">
           {/* Editor toolbar */}
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[12px] text-neutral-500">
+            <p className="text-xs text-muted-foreground">
               {formData.source ? (
                 <>
                   Imported from{" "}
-                  <a href={formData.source.url} target="_blank" rel="noreferrer" className="text-[#007cc3] underline">
+                  <a href={formData.source.url} target="_blank" rel="noreferrer" className="text-garmin-blue underline">
                     garmin.com ({formData.source.partNumber})
                   </a>
                 </>
@@ -861,7 +862,7 @@ export default function AdminProductsPage() {
               <button
                 type="button"
                 onClick={() => setIsImportOpen(true)}
-                className="inline-flex items-center gap-1.5 border border-neutral-300 bg-white px-3 py-1.5 text-[11px] font-heading uppercase tracking-wider font-semibold text-black hover:border-black rounded-none"
+                className="g-btn g-btn--secondary g-btn--sm gap-1.5"
               >
                 <Download className="h-3.5 w-3.5" />
                 Import from garmin.com
@@ -869,7 +870,7 @@ export default function AdminProductsPage() {
               <button
                 type="button"
                 onClick={() => setIsPreviewOpen(true)}
-                className="inline-flex items-center gap-1.5 border border-neutral-300 bg-white px-3 py-1.5 text-[11px] font-heading uppercase tracking-wider font-semibold text-black hover:border-black rounded-none"
+                className="g-btn g-btn--secondary g-btn--sm gap-1.5"
               >
                 <Eye className="h-3.5 w-3.5" />
                 Preview
@@ -898,7 +899,7 @@ export default function AdminProductsPage() {
           ) : (
           <>
           {/* Navigation Tabs */}
-          <div className="flex items-center gap-1 overflow-x-auto border-b border-neutral-200 pb-2">
+          <div className="flex items-center gap-1 overflow-x-auto border-b border-border pb-2">
             {[
               { id: "general" as const, label: "1. Hierarchy & Pricing", icon: Tag },
               { id: "media" as const, label: "2. Photos & Description", icon: FileText },
@@ -919,10 +920,10 @@ export default function AdminProductsPage() {
                   key={tab.id}
                   type="button"
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap px-3 py-2 text-[11px] font-heading uppercase tracking-wider font-semibold transition-colors border-b-2 rounded-none ${
+                  className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap px-3 py-2 text-xs font-semibold transition-colors border-b-2 rounded-none ${
                     isActive
                       ? "border-black text-black bg-neutral-100"
-                      : "border-transparent text-neutral-500 hover:text-black"
+                      : "border-transparent text-muted-foreground hover:text-black"
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -937,7 +938,7 @@ export default function AdminProductsPage() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600">
+                  <label className="block text-xs font-semibold text-neutral-600">
                     Product Title *
                   </label>
                   <input
@@ -946,11 +947,11 @@ export default function AdminProductsPage() {
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     placeholder="e.g. MARQ® Captain (Gen 2)"
-                    className="mt-1 h-9 w-full border border-neutral-300 bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
+                    className="mt-1 h-9 w-full border border-border bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600">
+                  <label className="block text-xs font-semibold text-neutral-600">
                     SKU / Part Number *
                   </label>
                   <input
@@ -960,12 +961,12 @@ export default function AdminProductsPage() {
                     onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
                     placeholder="e.g. 010-02648-11"
                     aria-invalid={productSkuConflict}
-                    className={`mt-1 h-9 w-full border bg-white px-3 text-[13px] font-mono font-medium text-black focus:border-black focus:outline-none rounded-none ${
+                    className={`mt-1 h-9 w-full border bg-white px-3 text-[13px] tabular-nums font-medium text-black focus:border-black focus:outline-none rounded-none ${
                       productSkuConflict ? "border-rose-500 bg-rose-50" : "border-neutral-300"
                     }`}
                   />
                   {productSkuConflict && (
-                    <p className="mt-1 text-[11px] text-rose-700">This SKU is already used by another product.</p>
+                    <p className="mt-1 text-xs text-rose-700">This SKU is already used by another product.</p>
                   )}
                 </div>
               </div>
@@ -973,13 +974,13 @@ export default function AdminProductsPage() {
               {/* Category, Subcategory & Family */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
-                  <label className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600">
+                  <label className="block text-xs font-semibold text-neutral-600">
                     Product Category *
                   </label>
                   <select
                     value={formData.category}
                     onChange={(e) => handleCategoryChange(e.target.value)}
-                    className="mt-1 h-9 w-full border border-neutral-300 bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
+                    className="mt-1 h-9 w-full border border-border bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
                   >
                     {withCurrent(PRIMARY_CATEGORIES, formData.category).map((cat) => (
                       <option key={cat} value={cat}>
@@ -990,13 +991,13 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600">
+                  <label className="block text-xs font-semibold text-neutral-600">
                     Sub-Category *
                   </label>
                   <select
                     value={formData.subCategory}
                     onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
-                    className="mt-1 h-9 w-full border border-neutral-300 bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
+                    className="mt-1 h-9 w-full border border-border bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
                   >
                     {withCurrent(availableSubCategories, formData.subCategory).map((sub) => (
                       <option key={sub} value={sub}>
@@ -1007,13 +1008,13 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600">
+                  <label className="block text-xs font-semibold text-neutral-600">
                     Watch Family / Series *
                   </label>
                   <select
                     value={formData.family}
                     onChange={(e) => setFormData({ ...formData, family: e.target.value })}
-                    className="mt-1 h-9 w-full border border-neutral-300 bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
+                    className="mt-1 h-9 w-full border border-border bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
                   >
                     {withCurrent(WATCH_FAMILIES, formData.family).map((f) => (
                       <option key={f} value={f}>
@@ -1025,14 +1026,14 @@ export default function AdminProductsPage() {
               </div>
 
               {/* Badge Visual Section & Live Preview */}
-              <div className="border border-neutral-200 bg-neutral-50 p-4 space-y-3 rounded-none">
+              <div className="border border-border bg-neutral-50 p-4 space-y-3 rounded-none">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="g-heading uppercase tracking-wide text-[13px] text-black font-normal flex items-center gap-2">
-                      <Tag className="h-3.5 w-3.5 text-[#007cc3]" />
+                    <h4 className="g-heading text-[13px] text-black font-normal flex items-center gap-2">
+                      <Tag className="h-3.5 w-3.5 text-garmin-blue" />
                       <span>Product Ribbon Badge &amp; Marketing Tag</span>
                     </h4>
-                    <p className="text-[12px] text-neutral-500 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                       Select official Garmin flag ribbon badge displayed on catalog cards and product detail header
                     </p>
                   </div>
@@ -1040,7 +1041,7 @@ export default function AdminProductsPage() {
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, badge: "NONE" })}
-                      className="text-[11px] font-medium text-rose-600 hover:underline"
+                      className="text-xs font-medium text-rose-600 hover:underline"
                     >
                       Clear Badge
                     </button>
@@ -1056,20 +1057,20 @@ export default function AdminProductsPage() {
                         key={badgeOption}
                         type="button"
                         onClick={() => setFormData({ ...formData, badge: badgeOption })}
-                        className={`relative p-2 text-left border flex flex-col items-center justify-center min-h-[58px] transition-all rounded-none ${
+                        className={`relative p-2 text-left border flex flex-col items-center justify-center min-h-[58px] transition-colors rounded-none ${
                           isSelected
-                            ? "bg-white border-black ring-1 ring-black shadow-xs"
-                            : "bg-white border-neutral-200 hover:border-black"
+                            ? "bg-white border-black ring-1 ring-black"
+                            : "bg-white border-border hover:border-black"
                         }`}
                       >
                         {badgeOption === "NONE" ? (
-                          <span className="text-[11px] text-neutral-400 italic font-medium">No Badge</span>
+                          <span className="text-xs text-muted-foreground italic font-medium">No Badge</span>
                         ) : (
                           <div className="flex flex-col items-center gap-1.5 w-full">
-                            <GarminBadge badge={badgeOption} variant="pill" className="text-[10px] py-0.5 px-2 text-center" />
+                            <GarminBadge badge={badgeOption} variant="pill" className="text-xs py-0.5 px-2 text-center" />
                           </div>
                         )}
-                        <span className="text-[9px] font-mono text-neutral-400 mt-1 uppercase">
+                        <span className="text-xs tabular-nums text-muted-foreground mt-1">
                           {isSelected ? "● ACTIVE" : badgeOption === "NONE" ? "Standard" : "Ribbon"}
                         </span>
                       </button>
@@ -1080,7 +1081,7 @@ export default function AdminProductsPage() {
 
               {/* Price Options */}
               {hasVariants && (
-                <p className="border border-sky-200 bg-sky-50 px-3 py-2 text-[12px] text-sky-900">
+                <p className="border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900">
                   This product has {formData.variants.length} variants. Price, compare-at price and stock come from the
                   default variant ({defaultVariant?.title || "—"}: {formatKzt(defaultVariant?.price)}) — edit them in{" "}
                   <button type="button" onClick={() => setActiveTab("variants")} className="font-semibold underline">
@@ -1093,7 +1094,7 @@ export default function AdminProductsPage() {
                 <div>
                   <label
                     htmlFor="product-price"
-                    className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600"
+                    className="block text-xs font-semibold text-neutral-600"
                   >
                     Price (₸ KZT) *
                   </label>
@@ -1106,14 +1107,14 @@ export default function AdminProductsPage() {
                     disabled={hasVariants}
                     value={hasVariants ? (defaultVariant?.price ?? 0) : formData.price}
                     onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                    className="mt-1 h-9 w-full border border-neutral-300 bg-white px-3 text-[13px] font-heading text-black focus:border-black focus:outline-none rounded-none disabled:bg-neutral-100 disabled:text-neutral-500"
+                    className="mt-1 h-9 w-full border border-border bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none disabled:bg-neutral-100 disabled:text-neutral-500"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="product-compare-at"
-                    className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600"
+                    className="block text-xs font-semibold text-neutral-600"
                   >
                     Compare-at / Original Price (₸)
                   </label>
@@ -1130,12 +1131,12 @@ export default function AdminProductsPage() {
                         originalPrice: e.target.value === "" ? undefined : Number(e.target.value),
                       })
                     }
-                    className="mt-1 h-9 w-full border border-neutral-300 bg-white px-3 text-[13px] text-neutral-500 focus:border-black focus:outline-none rounded-none disabled:bg-neutral-100"
+                    className="mt-1 h-9 w-full border border-border bg-white px-3 text-[13px] text-muted-foreground focus:border-black focus:outline-none rounded-none disabled:bg-neutral-100"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600">
+                  <label className="block text-xs font-semibold text-neutral-600">
                     Price Suffix
                   </label>
                   <input
@@ -1143,7 +1144,7 @@ export default function AdminProductsPage() {
                     value={formData.priceSuffix}
                     onChange={(e) => setFormData({ ...formData, priceSuffix: e.target.value })}
                     placeholder='e.g. "and up"'
-                    className="mt-1 h-9 w-full border border-neutral-300 bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
+                    className="mt-1 h-9 w-full border border-border bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
                   />
                 </div>
               </div>
@@ -1153,7 +1154,7 @@ export default function AdminProductsPage() {
                 <div>
                   <label
                     htmlFor="product-stock"
-                    className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600"
+                    className="block text-xs font-semibold text-neutral-600"
                   >
                     Stock Inventory *
                   </label>
@@ -1166,14 +1167,14 @@ export default function AdminProductsPage() {
                     title={collection.backend === "postgres" ? "Stock is received and adjusted on the Inventory screen" : undefined}
                     value={hasVariants ? (defaultVariant?.stock ?? 0) : formData.stock}
                     onChange={(e) => setFormData({ ...formData, stock: Number(e.target.value) })}
-                    className="mt-1 h-9 w-full border border-neutral-300 bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none font-semibold rounded-none disabled:bg-neutral-100 disabled:text-neutral-500"
+                    className="mt-1 h-9 w-full border border-border bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none font-semibold rounded-none disabled:bg-neutral-100 disabled:text-neutral-500"
                   />
                 </div>
 
                 <div>
                   <label
                     htmlFor="product-size-bucket"
-                    className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600"
+                    className="block text-xs font-semibold text-neutral-600"
                   >
                     Size bucket (catalog filter)
                   </label>
@@ -1181,13 +1182,13 @@ export default function AdminProductsPage() {
                     id="product-size-bucket"
                     value={formData.caseSize}
                     onChange={(e) => setFormData({ ...formData, caseSize: e.target.value as CaseSize })}
-                    className="mt-1 h-9 w-full border border-neutral-300 bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
+                    className="mt-1 h-9 w-full border border-border bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
                   >
                     <option value="Small">Small</option>
                     <option value="Medium">Medium</option>
                     <option value="Large">Large</option>
                   </select>
-                  <p className="mt-1 text-[10px] text-neutral-500">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     {hasVariants && formData.options.some((o) => /size/i.test(o.name) || /size/i.test(o.key))
                       ? "Set automatically from the default variant’s mm size on save."
                       : "≤42 mm Small · 43–46 mm Medium · ≥47 mm Large"}
@@ -1195,13 +1196,13 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600">
+                  <label className="block text-xs font-semibold text-neutral-600">
                     User Level
                   </label>
                   <select
                     value={formData.level}
                     onChange={(e) => setFormData({ ...formData, level: e.target.value as "Entry" | "Advanced" | "Premium" | "Youth" })}
-                    className="mt-1 h-9 w-full border border-neutral-300 bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
+                    className="mt-1 h-9 w-full border border-border bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
                   >
                     <option value="Entry">Entry Level</option>
                     <option value="Advanced">Advanced Performance</option>
@@ -1211,13 +1212,13 @@ export default function AdminProductsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600">
+                  <label className="block text-xs font-semibold text-neutral-600">
                     Status
                   </label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value as ProductStatus })}
-                    className="mt-1 h-9 w-full border border-neutral-300 bg-white px-3 text-[13px] font-medium text-black focus:border-black focus:outline-none rounded-none"
+                    className="mt-1 h-9 w-full border border-border bg-white px-3 text-[13px] font-medium text-black focus:border-black focus:outline-none rounded-none"
                   >
                     <option value="published">Published</option>
                     <option value="draft">Draft</option>
@@ -1238,8 +1239,8 @@ export default function AdminProductsPage() {
               />
 
               {/* Quick Image Presets */}
-              <div className="border border-neutral-200 bg-neutral-50 p-3 rounded-none">
-                <p className="text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-500 mb-2">
+              <div className="border border-border bg-neutral-50 p-3 rounded-none">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">
                   Add a preset watch image:
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -1259,7 +1260,7 @@ export default function AdminProductsPage() {
                         const added: ProductImage = { id: newId("img"), src: preset.src, alt: preset.label, source: "url" };
                         handleImagesChange([...formData.images, added], formData.defaultImageId || added.id);
                       }}
-                      className="bg-white border border-neutral-300 px-3 py-1 text-[11px] text-neutral-700 hover:border-black hover:text-black transition-colors rounded-none disabled:opacity-40"
+                      className="bg-white border border-border px-3 py-1 text-xs text-neutral-700 hover:border-black hover:text-black transition-colors rounded-none disabled:opacity-40"
                     >
                       {preset.label}
                     </button>
@@ -1268,7 +1269,7 @@ export default function AdminProductsPage() {
               </div>
 
               <div>
-                <label className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600">
+                <label className="block text-xs font-semibold text-neutral-600">
                   Product Description *
                 </label>
                 <textarea
@@ -1277,7 +1278,7 @@ export default function AdminProductsPage() {
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   placeholder="Comprehensive description of materials, artisan crafts, AMOLED screen, and athlete coaching metrics..."
-                  className="mt-1 w-full border border-neutral-300 bg-white p-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
+                  className="mt-1 w-full border border-border bg-white p-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none"
                 />
               </div>
 
@@ -1290,7 +1291,7 @@ export default function AdminProductsPage() {
 
               {/* Activities Multi-Select */}
               <div>
-                <label className="block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600 mb-2">
+                <label className="block text-xs font-semibold text-neutral-600 mb-2">
                   Target Activities &amp; Sports
                 </label>
                 <div className="flex flex-wrap gap-1.5">
@@ -1301,10 +1302,10 @@ export default function AdminProductsPage() {
                         key={act}
                         type="button"
                         onClick={() => toggleActivity(act)}
-                        className={`px-3 py-1 text-[11px] font-heading uppercase tracking-wider font-semibold transition-colors rounded-none ${
+                        className={`px-3 py-1 text-xs font-semibold transition-colors rounded-none ${
                           isSelected
                             ? "bg-black text-white"
-                            : "bg-neutral-100 border border-neutral-200 text-neutral-600 hover:text-black"
+                            : "bg-neutral-100 border border-border text-neutral-600 hover:text-black"
                         }`}
                       >
                         {act}
@@ -1321,10 +1322,10 @@ export default function AdminProductsPage() {
             <div className="space-y-6">
               <section aria-labelledby="options-heading" className="space-y-2">
                 <div>
-                  <h4 id="options-heading" className="g-heading uppercase tracking-wide text-[13px] text-black font-normal">
+                  <h4 id="options-heading" className="g-heading text-[13px] text-black font-normal">
                     Options
                   </h4>
-                  <p className="text-[12px] text-neutral-500">
+                  <p className="text-xs text-muted-foreground">
                     Any option names and values — e.g. Size: 42 / Biggest, Groupset: Shimano / SLR. Then click “Generate
                     variants”; existing variants keep their SKU, price, stock and photos.
                   </p>
@@ -1335,7 +1336,7 @@ export default function AdminProductsPage() {
                   onChange={(options) => setFormData((prev) => ({ ...prev, options }))}
                 />
               </section>
-              <section aria-label="Variants" className="border-t border-neutral-200 pt-4">
+              <section aria-label="Variants" className="border-t border-border pt-4">
                 <VariantsTable
                   options={formData.options}
                   variants={formData.variants}
@@ -1383,12 +1384,12 @@ export default function AdminProductsPage() {
           {/* TAB 5: Cross-Selling & Compatible Accessories */}
           {activeTab === "crossSell" && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between border-b border-neutral-200 pb-2">
+              <div className="flex items-center justify-between border-b border-border pb-2">
                 <div>
                   <p className="text-[13px] text-black font-semibold">
                     Select Compatible Cross-Selling Accessories
                   </p>
-                  <p className="text-[12px] text-neutral-500">
+                  <p className="text-xs text-muted-foreground">
                     Selected: <span className="text-emerald-700 font-bold">{formData.compatibleAccessories.length} items linked</span>
                   </p>
                 </div>
@@ -1397,20 +1398,20 @@ export default function AdminProductsPage() {
                   value={accessorySearch}
                   onChange={(e) => setAccessorySearch(e.target.value)}
                   placeholder="Filter catalog to link..."
-                  className="h-8 w-52 border border-neutral-300 bg-white px-2.5 text-[12px] text-black focus:border-black focus:outline-none rounded-none"
+                  className="h-8 w-52 border border-border bg-white px-2.5 text-xs text-black focus:border-black focus:outline-none rounded-none"
                 />
               </div>
 
-              <div className="max-h-72 overflow-y-auto space-y-1.5 border border-neutral-200 bg-neutral-50 p-2 rounded-none">
+              <div className="max-h-72 overflow-y-auto space-y-1.5 border border-border bg-neutral-50 p-2 rounded-none">
                 {crossSellAvailableProducts.map((prod) => {
                   const isSelected = formData.compatibleAccessories.includes(prod.id);
                   return (
                     <label
                       key={prod.id}
-                      className={`flex items-center justify-between p-2.5 text-[12px] cursor-pointer transition-colors border rounded-none ${
+                      className={`flex items-center justify-between p-2.5 text-xs cursor-pointer transition-colors border rounded-none ${
                         isSelected
-                          ? "bg-white border-black text-black shadow-xs"
-                          : "bg-white border-neutral-200 text-neutral-700 hover:border-neutral-400"
+                          ? "bg-white border-black text-black"
+                          : "bg-white border-border text-neutral-700 hover:border-neutral-400"
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -1420,7 +1421,7 @@ export default function AdminProductsPage() {
                           onChange={() => toggleCrossSell(prod.id)}
                           className="h-4 w-4 accent-black rounded-none"
                         />
-                        <div className="h-9 w-9 relative bg-neutral-50 border border-neutral-200 p-0.5 shrink-0 overflow-hidden rounded-none">
+                        <div className="h-9 w-9 relative bg-neutral-50 border border-border p-0.5 shrink-0 overflow-hidden rounded-none">
                           <Image
                             src={prod.image || "/images/products/1228429.jpg"}
                             alt={prod.name}
@@ -1431,10 +1432,10 @@ export default function AdminProductsPage() {
                         </div>
                         <div>
                           <p className="font-medium text-black line-clamp-1">{prod.name}</p>
-                          <p className="font-mono text-[10px] text-neutral-500">{prod.sku} · {prod.family}</p>
+                          <p className="tabular-nums text-xs text-muted-foreground">{prod.sku} · {prod.family}</p>
                         </div>
                       </div>
-                      <span className="font-heading text-black text-[13px]">
+                      <span className="text-black text-[13px]">
                         {formatKzt(prod.price)}
                       </span>
                     </label>
@@ -1475,26 +1476,26 @@ export default function AdminProductsPage() {
 
           {/* Submit Actions */}
           {saveError && (
-            <p role="alert" className="flex items-start gap-2 border border-rose-200 bg-rose-50 px-3 py-2 text-[12px] text-rose-800">
+            <p role="alert" className="flex items-start gap-2 border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
               <span>{saveError}</span>
             </p>
           )}
-          <div className="flex justify-between items-center pt-4 border-t border-neutral-200">
+          <div className="flex justify-between items-center pt-4 border-t border-border">
             <div className="flex items-center gap-3">
               {editingProduct && !postgresStore && (
                 <button
                   type="button"
                   onClick={() => void handleLegacyDelete(editingProduct)}
                   title="Delete Product"
-                  className="px-1 py-2 text-[12px] font-heading uppercase tracking-wider font-semibold text-rose-700 hover:underline underline-offset-2 rounded-none"
+                  className="px-1 py-2 text-xs uppercase font-semibold text-rose-700 hover:underline underline-offset-2 rounded-none"
                 >
                   Delete product…
                 </button>
               )}
-              <span className="text-[12px] text-neutral-500">
+              <span className="text-xs text-muted-foreground">
                 Active:{" "}
-                <span className="text-black uppercase font-heading font-semibold">
+                <span className="text-black font-heading font-semibold">
                   {contentLocale === "en" ? activeTab : `${contentLocale} translation`}
                 </span>
               </span>
@@ -1503,14 +1504,14 @@ export default function AdminProductsPage() {
               <button
                 type="button"
                 onClick={requestCloseEditor}
-                className="px-4 py-2 text-[12px] font-heading uppercase tracking-wider font-semibold text-neutral-600 hover:text-black rounded-none"
+                className="px-4 py-2 text-xs uppercase font-semibold text-neutral-600 hover:text-black rounded-none"
               >
                 Cancel
               </button>
               <button
                 type="button"
                 onClick={() => setIsPreviewOpen(true)}
-                className="inline-flex items-center gap-1.5 border border-neutral-300 px-4 py-2 text-[12px] font-heading uppercase tracking-wider font-semibold text-black hover:border-black rounded-none"
+                className="g-btn g-btn--secondary gap-1.5"
               >
                 <Eye className="h-3.5 w-3.5" />
                 Preview
@@ -1518,7 +1519,7 @@ export default function AdminProductsPage() {
               <button
                 type="submit"
                 disabled={saving}
-                className="bg-black text-white hover:bg-neutral-800 border border-black px-5 py-2 text-[12px] font-medium tracking-[0.06em] uppercase rounded-none transition-colors disabled:opacity-50"
+                className="g-btn g-btn--black disabled:opacity-50"
               >
                 {saving ? "Saving…" : editingProduct ? "Save Changes" : "Publish to Catalog"}
               </button>

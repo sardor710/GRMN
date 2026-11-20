@@ -1,5 +1,6 @@
 "use client";
 
+import { formatKzt } from "@/lib/money";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AdminOrderDetailDTO, AdminOrderSummaryDTO, ShipmentDTO } from "@/contracts/commerce";
 import { DemoBadge } from "@/components/DemoBadge";
@@ -19,7 +20,8 @@ const REASONS: Record<string, string> = {
   FULFILLMENT_EXCEPTION: "Fulfillment exception: this order must not ship.",
   ORDER_NOT_SHIPPABLE: "This order cannot ship in its current state.",
 };
-const formatKzt = (amountMinor: string) => `${(Number(amountMinor) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KZT`;
+/** Minor-unit KZT through the shared money formatter ("KZT 8,415.00"): BigInt-exact, no float division. */
+const kzt = (amountMinor: string) => formatKzt({ minor: amountMinor }, "en");
 const formatDate = (value: string | null) => value ? new Date(value).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : "—";
 const newKey = () => `ui-${crypto.randomUUID()}`;
 const METHODS = [["bank_transfer", "Bank transfer"], ["kaspi", "Kaspi"], ["cash", "Cash"]] as const;
@@ -140,16 +142,16 @@ export default function FulfillmentScreen() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-black">Orders and fulfillment</h1>
-          <p className="text-sm text-neutral-500">Ship paid orders in parts; every action is recorded in the order timeline.</p>
+          <p className="text-sm text-muted-foreground">Ship paid orders in parts; every action is recorded in the order timeline.</p>
         </div>
         <div className="flex flex-wrap items-end gap-4">
           <label className="text-sm text-neutral-700">Payment{" "}
-            <select aria-label="Payment mode filter" className="ml-2 border border-neutral-300 px-2 py-1" value={mode} onChange={event => setMode(event.target.value)}>
+            <select aria-label="Payment mode filter" className="ml-2 border border-border px-2 py-1" value={mode} onChange={event => setMode(event.target.value)}>
               {MODES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
             </select>
           </label>
           <label className="text-sm text-neutral-700">Fulfillment status{" "}
-            <select aria-label="Fulfillment status filter" className="ml-2 border border-neutral-300 px-2 py-1" value={status} onChange={event => setStatus(event.target.value)}>
+            <select aria-label="Fulfillment status filter" className="ml-2 border border-border px-2 py-1" value={status} onChange={event => setStatus(event.target.value)}>
               {STATUSES.map(value => <option key={value} value={value}>{value || "All"}</option>)}
             </select>
           </label>
@@ -157,107 +159,107 @@ export default function FulfillmentScreen() {
       </div>
       {error && <p role="alert" className="border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <section aria-label="Order queue" className="border border-neutral-200">
-          {orders === null ? <p className="p-4 text-sm text-neutral-500">Loading orders…</p> : orders.length === 0 ? <p className="p-4 text-sm text-neutral-500">No orders.</p> : (
-            <ul className="divide-y divide-neutral-200">
+        <section aria-label="Order queue" className="border border-border">
+          {orders === null ? <p className="p-4 text-sm text-muted-foreground">Loading orders…</p> : orders.length === 0 ? <p className="p-4 text-sm text-muted-foreground">No orders.</p> : (
+            <ul className="divide-y divide-border">
               {orders.map(order => (
                 <li key={order.id}>
                   <button type="button" onClick={() => setSelected(order.id)} className={`flex w-full flex-wrap items-center justify-between gap-2 p-3 text-left text-sm hover:bg-neutral-50 ${selected === order.id ? "bg-neutral-100" : ""}`}>
-                    <span className="flex items-center gap-2"><span className="font-mono font-semibold">{order.orderNumber}</span>{order.paymentMode === "demo" && <DemoBadge label="DEMO" className="text-[10px]" />}</span>
+                    <span className="flex items-center gap-2"><span className="tabular-nums font-semibold">{order.orderNumber}</span>{order.paymentMode === "demo" && <DemoBadge label="DEMO" className="text-[10px]" />}</span>
                     <span className="text-neutral-600">{order.contactName}</span>
-                    <span className="text-xs uppercase tracking-wider text-neutral-500">{order.paymentStatus} · {order.fulfillmentStatus}{order.dataQuality !== "complete" ? " · legacy" : ""}</span>
-                    <span>{formatKzt(order.total.amountMinor)}</span>
+                    <span className="text-xs text-muted-foreground">{order.paymentStatus} · {order.fulfillmentStatus}{order.dataQuality !== "complete" ? " · legacy" : ""}</span>
+                    <span className="whitespace-nowrap font-bold tabular-nums">{kzt(order.total.amountMinor)}</span>
                   </button>
                 </li>
               ))}
             </ul>
           )}
         </section>
-        <section aria-label="Order detail" className="border border-neutral-200 p-4">
+        <section aria-label="Order detail" className="border border-border p-4">
           {detailError && <p role="alert" className="mb-3 border border-red-200 bg-red-50 p-3 text-sm text-red-800">{detailError}</p>}
-          {!detail ? (detailError ? null : <p className="text-sm text-neutral-500">Select an order.</p>) : (
+          {!detail ? (detailError ? null : <p className="text-sm text-muted-foreground">Select an order.</p>) : (
             <div className="space-y-5">
               <div className="flex flex-wrap items-center gap-2">
-                <h2 className="font-mono text-lg font-bold">{detail.orderNumber}</h2>
-                <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.status}</span>
-                <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.paymentStatus}</span>
-                <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.fulfillmentStatus}</span>
-                {detail.paymentMode === "demo" ? <DemoBadge label="DEMO" className="text-[10px]" /> : <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.paymentMode}</span>}
+                <h2 className="tabular-nums text-lg font-bold">{detail.orderNumber}</h2>
+                <span className="border px-2 py-0.5 text-xs font-bold capitalize">{detail.status}</span>
+                <span className="border px-2 py-0.5 text-xs font-bold capitalize">{detail.paymentStatus}</span>
+                <span className="border px-2 py-0.5 text-xs font-bold capitalize">{detail.fulfillmentStatus}</span>
+                {detail.paymentMode === "demo" ? <DemoBadge label="DEMO" className="text-[10px]" /> : <span className="border px-2 py-0.5 text-xs font-bold capitalize">{detail.paymentMode}</span>}
               </div>
               {!detail.fulfillable.allowed && detail.fulfillable.reason && <p className="border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900">{REASONS[detail.fulfillable.reason]}</p>}
-              <div aria-label="Payment" className="border border-neutral-200 p-3">
-                <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-600">Payment</h3>
+              <div aria-label="Payment" className="border border-border p-3">
+                <h3 className="mb-2 text-xs font-bold text-neutral-600">Payment</h3>
                 <p className="text-sm">
                   {detail.payment.method === "manual" ? "Manual payment" : detail.payment.method === "demo" ? "Demo (no money is taken)" : detail.payment.method ?? "—"}
-                  {" · "}{formatKzt(detail.total.amountMinor)}
+                  {" · "}{kzt(detail.total.amountMinor)}
                 </p>
                 {detail.payment.confirmation && (
                   <p className="mt-1 text-sm text-neutral-700">
                     Confirmed {formatDate(detail.payment.confirmation.confirmedAt)}: {METHOD_LABEL[detail.payment.confirmation.method] ?? detail.payment.confirmation.method}, reference{" "}
-                    <span className="font-mono">{detail.payment.confirmation.reference}</span>, {formatKzt(detail.payment.confirmation.amountMinor)}
+                    <span className="font-mono">{detail.payment.confirmation.reference}</span>, {kzt(detail.payment.confirmation.amountMinor)}
                     {detail.payment.confirmation.note ? ` — ${detail.payment.confirmation.note}` : ""}
                   </p>
                 )}
                 {detail.payment.confirmable && (
                   <form className="mt-2 grid gap-2 sm:grid-cols-2" onSubmit={event => { event.preventDefault(); void confirmPayment(); }}>
                     <label className="text-xs text-neutral-700">Method
-                      <select name="paymentMethod" className="mt-1 w-full border border-neutral-300 px-2 py-1 text-sm" value={payMethod} onChange={event => setPayMethod(event.target.value)}>
+                      <select name="paymentMethod" className="mt-1 w-full border border-border px-2 py-1 text-sm" value={payMethod} onChange={event => setPayMethod(event.target.value)}>
                         {METHODS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                       </select>
                     </label>
                     <label className="text-xs text-neutral-700">Reference
-                      <input name="paymentReference" required maxLength={120} placeholder="Bank or Kaspi reference, receipt number" className="mt-1 w-full border border-neutral-300 px-2 py-1 text-sm" value={payReference} onChange={event => setPayReference(event.target.value)} />
+                      <input name="paymentReference" required maxLength={120} placeholder="Bank or Kaspi reference, receipt number" className="mt-1 w-full border border-border px-2 py-1 text-sm" value={payReference} onChange={event => setPayReference(event.target.value)} />
                     </label>
                     <label className="text-xs text-neutral-700">Amount received (KZT) · expected {majorKzt(detail.total.amountMinor)}
-                      <input name="paymentAmount" required inputMode="decimal" placeholder="Type the amount that arrived" className="mt-1 w-full border border-neutral-300 px-2 py-1 text-sm" value={payAmount} onChange={event => setPayAmount(event.target.value)} />
+                      <input name="paymentAmount" required inputMode="decimal" placeholder="Type the amount that arrived" className="mt-1 w-full border border-border px-2 py-1 text-sm" value={payAmount} onChange={event => setPayAmount(event.target.value)} />
                     </label>
                     <label className="text-xs text-neutral-700">Note (optional)
-                      <input name="paymentNote" maxLength={1000} className="mt-1 w-full border border-neutral-300 px-2 py-1 text-sm" value={payNote} onChange={event => setPayNote(event.target.value)} />
+                      <input name="paymentNote" maxLength={1000} className="mt-1 w-full border border-border px-2 py-1 text-sm" value={payNote} onChange={event => setPayNote(event.target.value)} />
                     </label>
-                    <button type="submit" disabled={busy} className="bg-black px-3 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50 sm:col-span-2">Confirm payment</button>
+                    <button type="submit" disabled={busy} className="g-btn g-btn--black disabled:opacity-50 sm:col-span-2">Confirm payment</button>
                   </form>
                 )}
               </div>
               {!detail.legacy && detail.status !== "cancelled" && detail.status !== "closed" && (
-                <button type="button" disabled={busy} onClick={() => void cancelOrder()} className="border border-red-700 px-3 py-1 text-xs font-bold uppercase tracking-wider text-red-800 disabled:opacity-50">Cancel order</button>
+                <button type="button" disabled={busy} onClick={() => void cancelOrder()} className="border border-red-700 px-3 py-1 text-xs font-bold text-red-800 disabled:opacity-50">Cancel order</button>
               )}
               <table className="w-full text-sm">
-                <thead><tr className="text-left text-xs uppercase text-neutral-500"><th>Item</th><th>Ordered</th><th>Shipped</th><th>Left</th><th>Ship now</th></tr></thead>
+                <thead><tr className="text-left text-xs text-muted-foreground"><th>Item</th><th>Ordered</th><th>Shipped</th><th>Left</th><th>Ship now</th></tr></thead>
                 <tbody>
                   {detail.items.map(item => (
                     <tr key={item.id} className="border-t border-neutral-100">
-                      <td className="py-1.5">{item.name}{item.sku ? <span className="ml-1 font-mono text-xs text-neutral-500">{item.sku}</span> : null}</td>
+                      <td className="py-1.5">{item.name}{item.sku ? <span className="ml-1 tabular-nums text-xs text-muted-foreground">{item.sku}</span> : null}</td>
                       <td>{item.quantity}</td><td>{item.shipped}</td><td>{item.remaining}</td>
                       <td><input aria-label={`Ship quantity for ${item.name}`} type="number" min={0} max={item.remaining} disabled={!detail.fulfillable.allowed || item.remaining === 0}
-                        className="w-16 border border-neutral-300 px-1" value={quantities[item.id] ?? ""} onChange={event => setQuantities(current => ({ ...current, [item.id]: event.target.value }))} /></td>
+                        className="w-16 border border-border px-1" value={quantities[item.id] ?? ""} onChange={event => setQuantities(current => ({ ...current, [item.id]: event.target.value }))} /></td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               {detail.fulfillable.allowed && (
                 <div className="grid gap-2 sm:grid-cols-3">
-                  <input aria-label="Carrier" placeholder="Carrier (staff only)" className="border border-neutral-300 px-2 py-1 text-sm" value={carrier} onChange={event => setCarrier(event.target.value)} />
-                  <input aria-label="Tracking reference" placeholder="Tracking reference" className="border border-neutral-300 px-2 py-1 text-sm" value={tracking} onChange={event => setTracking(event.target.value)} />
-                  <input aria-label="Internal note" placeholder="Internal note (staff only)" className="border border-neutral-300 px-2 py-1 text-sm" value={note} onChange={event => setNote(event.target.value)} />
-                  <button type="button" disabled={busy} onClick={() => void createShipment()} className="bg-black px-3 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50 sm:col-span-3">Create shipment</button>
+                  <input aria-label="Carrier" placeholder="Carrier (staff only)" className="border border-border px-2 py-1 text-sm" value={carrier} onChange={event => setCarrier(event.target.value)} />
+                  <input aria-label="Tracking reference" placeholder="Tracking reference" className="border border-border px-2 py-1 text-sm" value={tracking} onChange={event => setTracking(event.target.value)} />
+                  <input aria-label="Internal note" placeholder="Internal note (staff only)" className="border border-border px-2 py-1 text-sm" value={note} onChange={event => setNote(event.target.value)} />
+                  <button type="button" disabled={busy} onClick={() => void createShipment()} className="g-btn g-btn--black disabled:opacity-50 sm:col-span-3">Create shipment</button>
                 </div>
               )}
               <div>
-                <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-600">Shipments</h3>
-                {detail.shipments.length === 0 ? <p className="text-sm text-neutral-500">No shipments yet.</p> : (
+                <h3 className="mb-2 text-xs font-bold text-neutral-600">Shipments</h3>
+                {detail.shipments.length === 0 ? <p className="text-sm text-muted-foreground">No shipments yet.</p> : (
                   <ul className="space-y-2">
                     {detail.shipments.map(shipment => (
-                      <li key={shipment.id} className="border border-neutral-200 p-2 text-sm">
+                      <li key={shipment.id} className="border border-border p-2 text-sm">
                         <div className="flex flex-wrap items-center justify-between gap-2">
-                          <span className="font-bold uppercase">{shipment.status}</span>
+                          <span className="font-bold">{shipment.status}</span>
                           <span className="text-neutral-600">{shipment.items.map(line => `${line.quantity}× ${detail.items.find(item => item.id === line.orderItemId)?.name ?? "item"}`).join(", ")}</span>
                           <span className="flex gap-1">
-                            {shipment.status === "ready" && <button type="button" disabled={busy || !detail.fulfillable.allowed} onClick={() => void act(shipment, "dispatch")} className="border border-black px-2 py-0.5 text-xs font-bold uppercase disabled:opacity-50">Dispatch</button>}
-                            {shipment.status === "ready" && <button type="button" disabled={busy} onClick={() => void act(shipment, "cancel")} className="border border-neutral-400 px-2 py-0.5 text-xs font-bold uppercase disabled:opacity-50">Cancel shipment</button>}
-                            {shipment.status === "dispatched" && <button type="button" disabled={busy} onClick={() => void act(shipment, "deliver")} className="border border-black px-2 py-0.5 text-xs font-bold uppercase disabled:opacity-50">Mark delivered</button>}
+                            {shipment.status === "ready" && <button type="button" disabled={busy || !detail.fulfillable.allowed} onClick={() => void act(shipment, "dispatch")} className="border border-black px-2 py-0.5 text-xs font-bold capitalize disabled:opacity-50">Dispatch</button>}
+                            {shipment.status === "ready" && <button type="button" disabled={busy} onClick={() => void act(shipment, "cancel")} className="border border-neutral-400 px-2 py-0.5 text-xs font-bold capitalize disabled:opacity-50">Cancel shipment</button>}
+                            {shipment.status === "dispatched" && <button type="button" disabled={busy} onClick={() => void act(shipment, "deliver")} className="border border-black px-2 py-0.5 text-xs font-bold capitalize disabled:opacity-50">Mark delivered</button>}
                           </span>
                         </div>
-                        <p className="mt-1 text-xs text-neutral-500">Dispatched {formatDate(shipment.dispatchedAt)} · Delivered {formatDate(shipment.deliveredAt)}{shipment.carrier ? ` · ${shipment.carrier}` : ""}{shipment.trackingReference ? ` · ${shipment.trackingReference}` : ""}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">Dispatched {formatDate(shipment.dispatchedAt)} · Delivered {formatDate(shipment.deliveredAt)}{shipment.carrier ? ` · ${shipment.carrier}` : ""}{shipment.trackingReference ? ` · ${shipment.trackingReference}` : ""}</p>
                         {shipment.internalNotes && <p className="mt-1 text-xs text-amber-800">Note: {shipment.internalNotes}</p>}
                       </li>
                     ))}
@@ -267,23 +269,23 @@ export default function FulfillmentScreen() {
               {(detail.refunds.length > 0 || detail.returns.length > 0) && (
                 <div className="grid gap-3 sm:grid-cols-2">
                   <div>
-                    <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-600">Refunds</h3>
+                    <h3 className="mb-2 text-xs font-bold text-neutral-600">Refunds</h3>
                     <ul className="space-y-1 text-xs">
                       {detail.refunds.map(refund => (
                         <li key={refund.id} className="space-y-1">
                           <div className="flex justify-between gap-2">
-                            <span className="uppercase">{refund.status}{refund.manual ? " · manual" : ""}</span><span>{formatKzt(refund.amountMinor)}</span>
+                            <span className="uppercase">{refund.status}{refund.manual ? " · manual" : ""}</span><span className="whitespace-nowrap tabular-nums">{kzt(refund.amountMinor)}</span>
                           </div>
                           {refund.payoutReference && <p className="text-neutral-500">Paid out: <span className="font-mono">{refund.payoutReference}</span></p>}
                           {refund.manual && ["reserved", "pending", "unknown"].includes(refund.status) && (
                             <div className="flex flex-wrap gap-1">
-                              <select aria-label="Payout method" className="border border-neutral-300 px-1" value={payout[refund.id]?.method ?? "kaspi"}
+                              <select aria-label="Payout method" className="border border-border px-1" value={payout[refund.id]?.method ?? "kaspi"}
                                 onChange={event => { const method = event.target.value; setPayout(current => ({ ...current, [refund.id]: { reference: current[refund.id]?.reference ?? "", method } })); }}>
                                 {METHODS.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                               </select>
-                              <input aria-label="Payout reference" placeholder="Payout reference" maxLength={120} className="min-w-0 flex-1 border border-neutral-300 px-1" value={payout[refund.id]?.reference ?? ""}
+                              <input aria-label="Payout reference" placeholder="Payout reference" maxLength={120} className="min-w-0 flex-1 border border-border px-1" value={payout[refund.id]?.reference ?? ""}
                                 onChange={event => { const reference = event.target.value; setPayout(current => ({ ...current, [refund.id]: { method: current[refund.id]?.method ?? "kaspi", reference } })); }} />
-                              <button type="button" disabled={busy} onClick={() => void completeRefund(refund.id)} className="border border-black px-2 font-bold uppercase disabled:opacity-50">Record payout</button>
+                              <button type="button" disabled={busy} onClick={() => void completeRefund(refund.id)} className="border border-black px-2 font-bold disabled:opacity-50">Record payout</button>
                             </div>
                           )}
                         </li>
@@ -291,7 +293,7 @@ export default function FulfillmentScreen() {
                     </ul>
                   </div>
                   <div>
-                    <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-600">Returns</h3>
+                    <h3 className="mb-2 text-xs font-bold text-neutral-600">Returns</h3>
                     <ul className="space-y-1 text-xs">
                       {detail.returns.map(entry => <li key={entry.id} className="flex justify-between gap-2"><span className="uppercase">{entry.status}</span><span>{entry.items.reduce((sum, item) => sum + item.quantity, 0)} units · {entry.reason}</span></li>)}
                     </ul>
@@ -299,12 +301,12 @@ export default function FulfillmentScreen() {
                 </div>
               )}
               <div>
-                <h3 className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-600">Timeline</h3>
+                <h3 className="mb-2 text-xs font-bold text-neutral-600">Timeline</h3>
                 <ol className="space-y-1 text-xs">
                   {detail.timeline.map(event => (
                     <li key={event.id} className="flex flex-wrap justify-between gap-2">
                       <span>{event.type}{event.visibility === "customer" ? " (customer)" : ""}{event.internalNote ? ` — ${event.internalNote}` : ""}</span>
-                      <span className="font-mono text-neutral-500">{formatDate(event.occurredAt)}</span>
+                      <span className="tabular-nums text-muted-foreground">{formatDate(event.occurredAt)}</span>
                     </li>
                   ))}
                 </ol>

@@ -1,5 +1,6 @@
 "use client";
 
+import { formatKzt } from "@/lib/money";
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import {
@@ -252,22 +253,22 @@ export default function AdminOrdersPage() {
     <div className="space-y-6 font-sans">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-black text-white px-5 py-3 rounded-none border border-neutral-800 shadow-2xl animate-fade-in">
-          <Check className="h-4 w-4 text-[#007cc3]" />
-          <span className="text-xs font-semibold uppercase tracking-wider">{toastMessage}</span>
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-black text-white px-5 py-3 rounded-none border border-neutral-800 shadow-garmin-raised animate-fade-in">
+          <Check className="h-4 w-4 text-garmin-blue" />
+          <span className="text-xs font-semibold">{toastMessage}</span>
         </div>
       )}
 
       {/* Page Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-neutral-200 pb-5">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
         <div>
           <div className="flex items-center gap-2.5">
-            <ShoppingBag className="h-6 w-6 text-[#007cc3]" />
-            <h1 className="g-heading uppercase tracking-wide text-2xl text-black font-normal">
+            <ShoppingBag className="h-6 w-6 text-garmin-blue" />
+            <h1 className="g-heading text-2xl text-black font-normal">
               Customer Orders &amp; Fulfillment
             </h1>
           </div>
-          <p className="text-sm text-neutral-500 mt-1 font-sans">
+          <p className="text-sm text-muted-foreground mt-1 font-sans">
             Manage transactions via Kanban board or structured list, drag cards to update stages, inspect itemized lines, and view customer address maps.
           </p>
         </div>
@@ -275,11 +276,11 @@ export default function AdminOrdersPage() {
         {/* View Switcher & Export Actions */}
         <div className="flex items-center gap-3 flex-wrap">
           {/* View Mode Toggle: Board vs List */}
-          <div className="inline-flex border border-neutral-300 bg-white p-0.5 rounded-none shadow-xs">
+          <div className="inline-flex border border-border bg-white p-0.5 rounded-none">
             <button
               type="button"
               onClick={() => setViewMode("board")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-heading uppercase tracking-wider font-semibold transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${
                 viewMode === "board"
                   ? "bg-black text-white"
                   : "text-neutral-600 hover:text-black hover:bg-neutral-100"
@@ -292,7 +293,7 @@ export default function AdminOrdersPage() {
             <button
               type="button"
               onClick={() => setViewMode("list")}
-              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-heading uppercase tracking-wider font-semibold transition-colors ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors ${
                 viewMode === "list"
                   ? "bg-black text-white"
                   : "text-neutral-600 hover:text-black hover:bg-neutral-100"
@@ -304,29 +305,29 @@ export default function AdminOrdersPage() {
             </button>
           </div>
 
-          <p className="max-w-xs text-xs text-neutral-500">Exports are unavailable until the authorized export workflow is activated.</p>
+          <p className="max-w-xs text-xs text-muted-foreground">Exports are unavailable until the authorized export workflow is activated.</p>
         </div>
       </div>
 
       {/* Summary KPI Ribbon */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="bg-white border border-neutral-200 p-5 rounded-none flex items-center justify-between shadow-xs">
+        <div className="bg-white border border-border p-5 rounded-none flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-heading uppercase tracking-wider text-neutral-500 font-semibold">
+            <span className="text-xs text-muted-foreground font-semibold">
               Filtered Revenue
             </span>
-            <p className="g-heading text-2xl font-normal text-black mt-1">
-              ${totalRevenue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <p className="mt-1 text-2xl font-bold leading-[30px] tabular-nums text-black">
+              {formatKzt({ major: totalRevenue }, "en")}
             </p>
           </div>
-          <div className="h-10 w-10 rounded-none bg-neutral-100 border border-neutral-200 flex items-center justify-center text-black">
+          <div className="h-10 w-10 rounded-none bg-neutral-100 border border-border flex items-center justify-center text-black">
             <DollarSign className="h-5 w-5" />
           </div>
         </div>
 
-        <div className="bg-white border border-neutral-200 p-5 rounded-none flex items-center justify-between shadow-xs">
+        <div className="bg-white border border-border p-5 rounded-none flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-heading uppercase tracking-wider text-neutral-500 font-semibold">
+            <span className="text-xs text-muted-foreground font-semibold">
               Processing in Queue
             </span>
             <p className="g-heading text-2xl font-normal text-amber-600 mt-1">
@@ -338,9 +339,9 @@ export default function AdminOrdersPage() {
           </div>
         </div>
 
-        <div className="bg-white border border-neutral-200 p-5 rounded-none flex items-center justify-between shadow-xs">
+        <div className="bg-white border border-border p-5 rounded-none flex items-center justify-between">
           <div>
-            <span className="text-[11px] font-heading uppercase tracking-wider text-neutral-500 font-semibold">
+            <span className="text-xs text-muted-foreground font-semibold">
               Delivered Completed
             </span>
             <p className="g-heading text-2xl font-normal text-emerald-600 mt-1">
@@ -354,25 +355,25 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Filter Engine Suite */}
-      <div className="border border-neutral-200 bg-white p-4 rounded-none shadow-sm space-y-4">
+      <div className="border border-border bg-white p-4 rounded-none space-y-4">
         {/* Row 1: Search + Date Presets */}
         <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
           {/* Search Box */}
           <div className="relative w-full lg:w-96">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-400" />
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search by order #, client, email, address, or tracking..."
-              className="h-10 w-full border border-neutral-300 bg-white pl-9 pr-3 text-xs text-black placeholder-neutral-400 focus:border-black focus:outline-none rounded-none"
+              className="h-10 w-full border border-border bg-white pl-9 pr-3 text-xs text-black placeholder-neutral-400 focus:border-black focus:outline-none rounded-none"
             />
           </div>
 
           {/* Time Filter Presets */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mr-1 flex items-center gap-1">
-              <Calendar className="h-3.5 w-3.5 text-neutral-400" /> Time:
+            <span className="text-xs font-semibold text-muted-foreground mr-1 flex items-center gap-1">
+              <Calendar className="h-3.5 w-3.5 text-muted-foreground" /> Time:
             </span>
             {[
               { id: "all", label: "All Time" },
@@ -385,10 +386,10 @@ export default function AdminOrdersPage() {
                 key={preset.id}
                 type="button"
                 onClick={() => setDateRange(preset.id as DateRangePreset)}
-                className={`px-3 py-1.5 text-xs font-heading uppercase tracking-wider font-semibold rounded-none transition-colors ${
+                className={`px-3 py-1.5 text-xs font-semibold rounded-none transition-colors ${
                   dateRange === preset.id
                     ? "bg-black text-white"
-                    : "bg-white border border-neutral-200 text-neutral-600 hover:text-black hover:border-neutral-300"
+                    : "bg-white border border-border text-neutral-600 hover:text-black hover:border-neutral-300"
                 }`}
               >
                 {preset.label}
@@ -400,23 +401,23 @@ export default function AdminOrdersPage() {
         {/* Custom Date Range Picker (shown when 'custom' is selected) */}
         {dateRange === "custom" && (
           <div className="flex items-center gap-3 pt-2 border-t border-neutral-100 flex-wrap text-xs">
-            <span className="text-neutral-500 font-semibold uppercase tracking-wider">Date Window:</span>
+            <span className="text-muted-foreground font-semibold">Date Window:</span>
             <div className="flex items-center gap-1.5">
-              <span className="text-neutral-400 font-medium">From</span>
+              <span className="text-muted-foreground font-medium">From</span>
               <input
                 type="date"
                 value={customStart}
                 onChange={(e) => setCustomStart(e.target.value)}
-                className="h-8 border border-neutral-300 bg-white px-2 text-xs text-black focus:border-black focus:outline-none rounded-none"
+                className="h-8 border border-border bg-white px-2 text-xs text-black focus:border-black focus:outline-none rounded-none"
               />
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-neutral-400 font-medium">To</span>
+              <span className="text-muted-foreground font-medium">To</span>
               <input
                 type="date"
                 value={customEnd}
                 onChange={(e) => setCustomEnd(e.target.value)}
-                className="h-8 border border-neutral-300 bg-white px-2 text-xs text-black focus:border-black focus:outline-none rounded-none"
+                className="h-8 border border-border bg-white px-2 text-xs text-black focus:border-black focus:outline-none rounded-none"
               />
             </div>
             {(customStart || customEnd) && (
@@ -426,7 +427,7 @@ export default function AdminOrdersPage() {
                   setCustomStart("");
                   setCustomEnd("");
                 }}
-                className="text-xs text-neutral-500 hover:text-black underline ml-2"
+                className="text-xs text-muted-foreground hover:text-black underline ml-2"
               >
                 Reset Dates
               </button>
@@ -437,14 +438,14 @@ export default function AdminOrdersPage() {
         {/* Row 2: Multi-Select Toggle Status Buttons */}
         <div className="pt-2 border-t border-neutral-100">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-neutral-700 flex items-center gap-1.5">
-              <Layers className="h-3.5 w-3.5 text-[#007cc3]" /> Filter by Status (Toggle Multiple On/Off):
+            <span className="text-xs font-semibold text-neutral-700 flex items-center gap-1.5">
+              <Layers className="h-3.5 w-3.5 text-garmin-blue" /> Filter by Status (Toggle Multiple On/Off):
             </span>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={selectAllStatuses}
-                className="text-[11px] font-semibold uppercase tracking-wider text-[#007cc3] hover:underline"
+                className="text-xs font-semibold uppercase text-garmin-blue hover:underline"
               >
                 Select All
               </button>
@@ -452,7 +453,7 @@ export default function AdminOrdersPage() {
               <button
                 type="button"
                 onClick={clearAllStatuses}
-                className="text-[11px] font-semibold uppercase tracking-wider text-neutral-500 hover:text-black"
+                className="text-xs font-semibold uppercase text-muted-foreground hover:text-black"
               >
                 Clear All
               </button>
@@ -468,10 +469,10 @@ export default function AdminOrdersPage() {
                   key={col.id}
                   type="button"
                   onClick={() => toggleStatusFilter(col.id)}
-                  className={`flex items-center justify-between p-2.5 text-xs font-semibold rounded-none border transition-all ${
+                  className={`flex items-center justify-between p-2.5 text-xs font-semibold rounded-none border transition-colors ${
                     isOn
-                      ? "bg-black text-white border-black shadow-xs ring-1 ring-black"
-                      : "bg-neutral-50 text-neutral-500 border-neutral-200 hover:border-neutral-300 hover:text-black"
+                      ? "bg-black text-white border-black ring-1 ring-black"
+                      : "bg-neutral-50 text-muted-foreground border-border hover:border-neutral-300 hover:text-black"
                   }`}
                   title={`Toggle ${col.label} status filter`}
                 >
@@ -481,10 +482,10 @@ export default function AdminOrdersPage() {
                         isOn ? "bg-[#007cc3]" : "bg-neutral-300"
                       }`}
                     />
-                    <span className="uppercase tracking-wider text-[11px]">{col.label}</span>
+                    <span className="text-xs">{col.label}</span>
                   </span>
                   <span
-                    className={`text-[10px] font-mono px-1.5 py-0.5 rounded-none ${
+                    className={`text-xs tabular-nums px-1.5 py-0.5 rounded-none ${
                       isOn ? "bg-neutral-800 text-white" : "bg-neutral-200 text-neutral-700"
                     }`}
                   >
@@ -498,17 +499,17 @@ export default function AdminOrdersPage() {
       </div>
 
       {/* Active Filter Count Status Bar */}
-      <div className="flex items-center justify-between text-xs text-neutral-500 px-1">
+      <div className="flex items-center justify-between text-xs text-muted-foreground px-1">
         <span>
           Showing <strong className="text-black">{filteredOrders.length}</strong> of {orders.length} orders
           {selectedStatuses.length < 6 && (
-            <span className="ml-1 text-neutral-400">
+            <span className="ml-1 text-muted-foreground">
               ({selectedStatuses.length} of 6 statuses active)
             </span>
           )}
         </span>
         {viewMode === "board" && (
-          <span className="text-[11px] text-neutral-400 italic">
+          <span className="text-xs text-muted-foreground italic">
             Tip: Drag and drop any card into another column to update order status instantly.
           </span>
         )}
@@ -533,20 +534,20 @@ export default function AdminOrdersPage() {
                 onDragOver={(e) => handleDragOver(e, col.id)}
                 onDragLeave={(e) => handleDragLeave(e, col.id)}
                 onDrop={(e) => handleDrop(e, col.id)}
-                className={`bg-white border rounded-none flex flex-col transition-all min-h-[500px] ${
+                className={`bg-white border rounded-none flex flex-col transition-colors min-h-[500px] ${
                   isDragTarget
                     ? "border-black bg-neutral-100/90 ring-2 ring-black"
                     : "border-neutral-200"
                 }`}
               >
                 {/* Column Header */}
-                <div className="p-3 border-b border-neutral-200 bg-neutral-50/80 flex items-center justify-between">
+                <div className="p-3 border-b border-border bg-neutral-50/80 flex items-center justify-between">
                   <div className="flex items-center gap-2 truncate">
-                    <span className="g-heading uppercase text-xs tracking-wider text-black font-semibold truncate">
+                    <span className="g-heading text-xs text-black font-semibold truncate">
                       {col.label}
                     </span>
                   </div>
-                  <span className="text-[11px] font-mono font-bold bg-white border border-neutral-200 px-2 py-0.5 text-neutral-800 rounded-none shadow-2xs">
+                  <span className="text-xs tabular-nums font-bold bg-white border border-border px-2 py-0.5 text-black rounded-none shadow-2xs">
                     {colOrders.length}
                   </span>
                 </div>
@@ -554,13 +555,13 @@ export default function AdminOrdersPage() {
                 {/* Drop Zone / Orders Card Stack */}
                 <div className="p-2 space-y-2.5 flex-1 overflow-y-auto max-h-[750px]">
                   {loading ? (
-                    <div className="p-6 text-center text-xs text-neutral-400">Loading...</div>
+                    <div className="p-6 text-center text-xs text-muted-foreground">Loading...</div>
                   ) : colOrders.length === 0 ? (
                     <div
                       className={`p-6 text-center text-xs border border-dashed rounded-none transition-colors ${
                         isDragTarget
                           ? "border-black bg-white text-black font-semibold"
-                          : "border-neutral-200 text-neutral-400"
+                          : "border-border text-muted-foreground"
                       }`}
                     >
                       {isDragTarget ? "Drop order here" : "No orders"}
@@ -577,34 +578,34 @@ export default function AdminOrdersPage() {
                           onDragStart={(e) => handleDragStart(e, ord.id)}
                           onDragEnd={handleDragEnd}
                           onClick={() => setSelectedOrder(ord)}
-                          className={`border rounded-none p-3 cursor-grab active:cursor-grabbing hover:border-black transition-all bg-white shadow-2xs hover:shadow-md ${
+                          className={`border rounded-none p-3 cursor-grab active:cursor-grabbing hover:border-black transition-colors bg-white shadow-2xs ${
                             isCompleted ? "opacity-75 bg-neutral-50/50" : ""
                           } ${isBeingDragged ? "opacity-40 border-dashed border-black" : "border-neutral-200"}`}
                         >
                           {/* Card Header: Order Number + Total */}
                           <div className="flex items-center justify-between gap-1 mb-1.5">
-                            <span className="font-mono text-xs font-bold text-black tracking-tight">
+                            <span className="tabular-nums text-xs font-bold text-black">
                               {ord.orderNumber}
                             </span>
-                            <span className="g-heading text-sm font-normal text-black">
-                              ${ord.total.toFixed(2)}
+                            <span className="whitespace-nowrap text-sm font-bold tabular-nums text-black">
+                              {formatKzt({ major: ord.total }, "en")}
                             </span>
                           </div>
 
                           {/* Client Info */}
-                          <p className="text-xs font-semibold text-neutral-900 truncate">
+                          <p className="text-xs font-semibold text-black truncate">
                             {ord.clientName}
                           </p>
-                          <p className="text-[11px] text-neutral-400 truncate mb-2">
+                          <p className="text-xs text-muted-foreground truncate mb-2">
                             {ord.clientEmail}
                           </p>
 
                           {/* Items Summary Preview */}
                           <div className="border-t border-neutral-100 pt-2 space-y-1">
-                            <div className="flex items-center justify-between text-[11px] text-neutral-500">
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
                               <span>{ord.itemsCount || ord.items?.length || 1} item(s)</span>
                               <span
-                                className={`text-[10px] font-semibold uppercase tracking-wider px-1.5 py-0.2 rounded-none border ${
+                                className={`text-xs font-semibold px-1.5 py-0.2 rounded-none border ${
                                   ord.paymentStatus === "paid"
                                     ? "bg-emerald-50 text-emerald-800 border-emerald-200"
                                     : "bg-amber-50 text-amber-800 border-amber-200"
@@ -616,21 +617,21 @@ export default function AdminOrdersPage() {
 
                             {/* First Item Name Preview */}
                             {ord.items && ord.items[0] && (
-                              <p className="text-[11px] text-neutral-600 truncate italic">
+                              <p className="text-xs text-neutral-600 truncate italic">
                                 {ord.items[0].name}
                               </p>
                             )}
                           </div>
 
                           {/* Footer: Date & Destination preview */}
-                          <div className="mt-2.5 pt-2 border-t border-neutral-100 flex items-center justify-between text-[10px] text-neutral-400 font-mono">
+                          <div className="mt-2.5 pt-2 border-t border-neutral-100 flex items-center justify-between text-xs text-muted-foreground tabular-nums">
                             <span>
                               {new Date(ord.createdAt).toLocaleDateString([], {
                                 month: "short",
                                 day: "numeric",
                               })}
                             </span>
-                            <span className="flex items-center gap-0.5 text-neutral-500 hover:text-black">
+                            <span className="flex items-center gap-0.5 text-muted-foreground hover:text-black">
                               <Eye className="h-3 w-3" /> Details
                             </span>
                           </div>
@@ -649,11 +650,11 @@ export default function AdminOrdersPage() {
       {/* 2. LIST VIEW (TABLE WITH DROPDOWN AND MUTED COMPLETED)   */}
       {/* ======================================================== */}
       {viewMode === "list" && (
-        <div className="border border-neutral-200 bg-white overflow-hidden rounded-none shadow-xs">
+        <div className="border border-border bg-white overflow-hidden rounded-none">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
-                <tr className="border-b border-neutral-200 bg-neutral-50 text-neutral-500 text-[11px] font-heading uppercase tracking-wider">
+                <tr className="border-b border-border bg-muted text-black text-xs uppercase tracking-[-0.2px]">
                   <th className="py-3 px-4 font-semibold">Order Number</th>
                   <th className="py-3 px-4 font-semibold">Customer</th>
                   <th className="py-3 px-4 font-semibold">Total Amount</th>
@@ -664,16 +665,16 @@ export default function AdminOrdersPage() {
                   <th className="py-3 px-4 font-semibold text-right">Inspect</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-neutral-100 text-neutral-800">
+              <tbody className="divide-y divide-neutral-100 text-black">
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-neutral-400">
+                    <td colSpan={8} className="py-12 text-center text-muted-foreground">
                       Loading customer orders...
                     </td>
                   </tr>
                 ) : filteredOrders.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="py-12 text-center text-neutral-400">
+                    <td colSpan={8} className="py-12 text-center text-muted-foreground">
                       No orders matched the selected filter criteria.
                     </td>
                   </tr>
@@ -696,11 +697,11 @@ export default function AdminOrdersPage() {
                         }}
                       >
                         {/* Order Number */}
-                        <td className="py-3.5 px-4 font-mono font-bold text-black text-xs">
+                        <td className="py-3.5 px-4 tabular-nums font-bold text-black text-xs">
                           <span className="flex items-center gap-1.5">
                             {ord.orderNumber}
                             {completed && (
-                              <span className="text-[10px] font-mono uppercase bg-neutral-200 text-neutral-600 px-1 py-0.2 rounded-none font-normal">
+                              <span className="text-xs tabular-nums bg-neutral-200 text-neutral-600 px-1 py-0.2 rounded-none font-normal">
                                 closed
                               </span>
                             )}
@@ -710,18 +711,18 @@ export default function AdminOrdersPage() {
                         {/* Customer */}
                         <td className="py-3.5 px-4">
                           <p className="font-semibold text-black">{ord.clientName}</p>
-                          <p className="text-[11px] text-neutral-400">{ord.clientEmail}</p>
+                          <p className="text-xs text-muted-foreground">{ord.clientEmail}</p>
                         </td>
 
                         {/* Total Amount */}
-                        <td className="py-3.5 px-4 g-heading font-normal text-black text-sm">
-                          ${ord.total.toFixed(2)}
+                        <td className="whitespace-nowrap py-3.5 px-4 text-right text-sm font-bold tabular-nums text-black">
+                          {formatKzt({ major: ord.total }, "en")}
                         </td>
 
                         {/* Payment Status */}
                         <td className="py-3.5 px-4">
                           <span
-                            className={`font-heading uppercase tracking-wider text-[10px] font-bold px-2 py-0.5 rounded-none border ${
+                            className={`capitalize text-xs font-bold px-2 py-0.5 rounded-none border ${
                               ord.paymentStatus === "paid"
                                 ? "bg-emerald-50 text-emerald-800 border-emerald-200"
                                 : ord.paymentStatus === "refunded"
@@ -740,7 +741,7 @@ export default function AdminOrdersPage() {
                             onChange={(e) =>
                               handleUpdateStatus(ord.id, e.target.value as FulfillmentStatus)
                             }
-                            className={`border px-2.5 py-1 text-xs font-heading uppercase font-semibold rounded-none focus:outline-none focus:border-black cursor-pointer ${
+                            className={`border px-2.5 py-1 text-xs font-semibold rounded-none focus:outline-none focus:border-black cursor-pointer ${
                               ord.fulfillmentStatus === "delivered"
                                 ? "bg-emerald-50 border-emerald-300 text-emerald-800"
                                 : ord.fulfillmentStatus === "shipped"
@@ -748,7 +749,7 @@ export default function AdminOrdersPage() {
                                 : ord.fulfillmentStatus === "processing"
                                 ? "bg-amber-50 border-amber-300 text-amber-800"
                                 : ord.fulfillmentStatus === "new"
-                                ? "bg-neutral-100 border-neutral-300 text-neutral-800"
+                                ? "bg-neutral-100 border-border text-black"
                                 : ord.fulfillmentStatus === "returned"
                                 ? "bg-purple-50 border-purple-300 text-purple-800"
                                 : "bg-rose-50 border-rose-300 text-rose-800"
@@ -769,7 +770,7 @@ export default function AdminOrdersPage() {
                         </td>
 
                         {/* Date Placed */}
-                        <td className="py-3.5 px-4 text-xs text-neutral-500 font-mono whitespace-nowrap">
+                        <td className="py-3.5 px-4 text-xs text-muted-foreground tabular-nums whitespace-nowrap">
                           {new Date(ord.createdAt).toLocaleDateString([], {
                             month: "short",
                             day: "numeric",
@@ -782,7 +783,7 @@ export default function AdminOrdersPage() {
                           <button
                             type="button"
                             onClick={() => setSelectedOrder(ord)}
-                            className="p-1.5 text-neutral-400 hover:text-black hover:bg-neutral-100 rounded-none transition-colors"
+                            className="p-1.5 text-muted-foreground hover:text-black hover:bg-neutral-100 rounded-none transition-colors"
                             title="Inspect Order Details"
                           >
                             <Eye className="h-4 w-4" />
@@ -814,14 +815,14 @@ export default function AdminOrdersPage() {
         >
           <div className="space-y-6 font-sans">
             {/* Top Status Summary Bar inside Modal */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-neutral-50 border border-neutral-200 rounded-none">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-neutral-50 border border-border rounded-none">
               <div className="flex items-center gap-3 flex-wrap">
                 <div>
-                  <span className="text-[10px] font-heading uppercase tracking-wider text-neutral-400 block font-semibold">
+                  <span className="text-xs text-muted-foreground block font-semibold">
                     Payment Status
                   </span>
                   <span
-                    className={`font-heading uppercase tracking-wider text-[11px] font-bold px-2 py-0.5 rounded-none border ${
+                    className={`capitalize text-xs font-bold px-2 py-0.5 rounded-none border ${
                       selectedOrder.paymentStatus === "paid"
                         ? "bg-emerald-50 text-emerald-800 border-emerald-200"
                         : selectedOrder.paymentStatus === "refunded"
@@ -836,7 +837,7 @@ export default function AdminOrdersPage() {
                 <div className="h-6 w-px bg-neutral-200 hidden sm:block" />
 
                 <div>
-                  <span className="text-[10px] font-heading uppercase tracking-wider text-neutral-400 block font-semibold">
+                  <span className="text-xs text-muted-foreground block font-semibold">
                     Current Fulfillment
                   </span>
                   <select
@@ -844,7 +845,7 @@ export default function AdminOrdersPage() {
                     onChange={(e) =>
                       handleUpdateStatus(selectedOrder.id, e.target.value as FulfillmentStatus)
                     }
-                    className="border border-neutral-300 bg-white px-2.5 py-1 text-xs font-heading uppercase font-semibold text-black focus:outline-none focus:border-black rounded-none cursor-pointer mt-0.5"
+                    className="border border-border bg-white px-2.5 py-1 text-xs font-semibold text-black focus:outline-none focus:border-black rounded-none cursor-pointer mt-0.5"
                   >
                     <option value="new">New</option>
                     <option value="processing">Processing</option>
@@ -858,11 +859,11 @@ export default function AdminOrdersPage() {
 
               {/* Order Grand Total */}
               <div className="sm:text-right">
-                <span className="text-[10px] font-heading uppercase tracking-wider text-neutral-400 block font-semibold">
+                <span className="text-xs text-muted-foreground block font-semibold">
                   Order Total
                 </span>
-                <span className="g-heading text-2xl font-normal text-black">
-                  ${selectedOrder.total.toFixed(2)}
+                <span className="text-xl font-bold tabular-nums text-black">
+                  {formatKzt({ major: selectedOrder.total }, "en")}
                 </span>
               </div>
             </div>
@@ -879,12 +880,12 @@ export default function AdminOrdersPage() {
                 selectedOrder.fulfillmentStatus === "cancelled";
 
               return (
-                <div className="border border-neutral-200 bg-neutral-50/80 p-4 rounded-none">
-                  <div className="flex items-center justify-between border-b border-neutral-200 pb-2 mb-4">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-neutral-900 flex items-center gap-1.5">
-                      <Truck className="h-4 w-4 text-[#007cc3]" /> Fulfillment Process Route Map
+                <div className="border border-border bg-neutral-50/80 p-4 rounded-none">
+                  <div className="flex items-center justify-between border-b border-border pb-2 mb-4">
+                    <span className="text-xs font-semibold text-black flex items-center gap-1.5">
+                      <Truck className="h-4 w-4 text-garmin-blue" /> Fulfillment Process Route Map
                     </span>
-                    <span className="text-[11px] text-neutral-500 font-mono">
+                    <span className="text-xs text-muted-foreground tabular-nums">
                       Carrier: <strong className="text-black">{selectedOrder.carrier || "Garmin Express Priority"}</strong>
                       {selectedOrder.trackingNumber && ` · ${selectedOrder.trackingNumber}`}
                     </span>
@@ -894,7 +895,7 @@ export default function AdminOrdersPage() {
                     <div className="relative mb-2">
                       <div className="absolute top-3.5 left-4 right-4 h-1 bg-neutral-200 -z-0">
                         <div
-                          className="h-full bg-[#007cc3] transition-all duration-300"
+                          className="h-full bg-garmin-blue transition-colors duration-300"
                           style={{ width: `${progressPct}%` }}
                         />
                       </div>
@@ -902,24 +903,24 @@ export default function AdminOrdersPage() {
                         {milestones.map((m, idx) => (
                           <div key={idx} className="flex flex-col items-center text-center px-1">
                             <div
-                              className={`flex h-7 w-7 items-center justify-center rounded-full border-2 text-[10px] font-bold ${
+                              className={`flex h-7 w-7 items-center justify-center rounded-full border-2 text-xs font-bold ${
                                 m.completed
-                                  ? "border-[#007cc3] bg-[#007cc3] text-white"
+                                  ? "border-garmin-blue bg-garmin-blue text-white"
                                   : m.current
-                                  ? "border-[#007cc3] bg-white text-[#007cc3] ring-2 ring-[#007cc3]/30"
-                                  : "border-neutral-300 bg-white text-neutral-400"
+                                  ? "border-garmin-blue bg-white text-garmin-blue ring-2 ring-garmin-blue/30"
+                                  : "border-border bg-white text-muted-foreground"
                               }`}
                             >
                               {m.completed ? <Check className="h-3.5 w-3.5 stroke-[3]" /> : idx + 1}
                             </div>
                             <span
-                              className={`mt-1.5 text-[10px] font-bold uppercase tracking-wider ${
+                              className={`mt-1.5 text-xs font-bold ${
                                 m.completed || m.current ? "text-black" : "text-neutral-400"
                               }`}
                             >
                               {m.label}
                             </span>
-                            <span className="text-[10px] text-neutral-500 font-mono mt-0.5">
+                            <span className="text-xs text-muted-foreground tabular-nums mt-0.5">
                               {formatOrderDate(m.date)}
                             </span>
                           </div>
@@ -936,21 +937,21 @@ export default function AdminOrdersPage() {
             {/* Customer & Shipping Information Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Customer Contact Box */}
-              <div className="border border-neutral-200 bg-white p-4 rounded-none space-y-2.5">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-900 border-b border-neutral-100 pb-2 flex items-center gap-1.5">
-                  <User className="h-4 w-4 text-[#007cc3]" /> Customer Profile
+              <div className="border border-border bg-white p-4 rounded-none space-y-2.5">
+                <h4 className="text-xs font-semibold text-black border-b border-neutral-100 pb-2 flex items-center gap-1.5">
+                  <User className="h-4 w-4 text-garmin-blue" /> Customer Profile
                 </h4>
                 <div className="space-y-1.5 text-xs">
                   <p className="text-black font-semibold text-sm">{selectedOrder.clientName}</p>
                   <p className="text-neutral-600 flex items-center gap-2">
-                    <Mail className="h-3.5 w-3.5 text-neutral-400" />
-                    <a href={`mailto:${selectedOrder.clientEmail}`} className="hover:underline text-[#007cc3]">
+                    <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                    <a href={`mailto:${selectedOrder.clientEmail}`} className="hover:underline text-garmin-blue">
                       {selectedOrder.clientEmail}
                     </a>
                   </p>
                   {selectedOrder.clientPhone && (
                     <p className="text-neutral-600 flex items-center gap-2">
-                      <Phone className="h-3.5 w-3.5 text-neutral-400" />
+                      <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                       <span>{selectedOrder.clientPhone}</span>
                     </p>
                   )}
@@ -958,22 +959,22 @@ export default function AdminOrdersPage() {
               </div>
 
               {/* Shipping Logistics Box */}
-              <div className="border border-neutral-200 bg-white p-4 rounded-none space-y-2.5">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-neutral-900 border-b border-neutral-100 pb-2 flex items-center gap-1.5">
-                  <Truck className="h-4 w-4 text-[#007cc3]" /> Logistics &amp; Shipping Destination
+              <div className="border border-border bg-white p-4 rounded-none space-y-2.5">
+                <h4 className="text-xs font-semibold text-black border-b border-neutral-100 pb-2 flex items-center gap-1.5">
+                  <Truck className="h-4 w-4 text-garmin-blue" /> Logistics &amp; Shipping Destination
                 </h4>
                 <div className="space-y-1.5 text-xs">
-                  <p className="text-neutral-800 flex items-start gap-1.5">
-                    <MapPin className="h-3.5 w-3.5 text-neutral-400 shrink-0 mt-0.5" />
+                  <p className="text-black flex items-start gap-1.5">
+                    <MapPin className="h-3.5 w-3.5 text-muted-foreground shrink-0 mt-0.5" />
                     <span>{selectedOrder.shippingAddress}</span>
                   </p>
                   {selectedOrder.trackingNumber ? (
-                    <p className="text-neutral-600 flex items-center gap-1.5 font-mono">
-                      <span className="text-neutral-400 font-sans text-[11px]">Tracking:</span>
+                    <p className="text-neutral-600 flex items-center gap-1.5 tabular-nums">
+                      <span className="text-muted-foreground font-sans text-xs">Tracking:</span>
                       <span className="font-semibold text-black">{selectedOrder.trackingNumber}</span>
                     </p>
                   ) : (
-                    <p className="text-[11px] text-neutral-400 italic">No tracking number assigned yet.</p>
+                    <p className="text-xs text-muted-foreground italic">No tracking number assigned yet.</p>
                   )}
                 </div>
               </div>
@@ -983,9 +984,9 @@ export default function AdminOrdersPage() {
             {(selectedOrder.comments || selectedOrder.notes) && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {selectedOrder.comments && (
-                  <div className="border border-neutral-200 bg-neutral-50/60 p-3.5 rounded-none">
-                    <h5 className="text-[11px] font-semibold uppercase tracking-wider text-neutral-700 mb-1 flex items-center gap-1.5">
-                      <MessageSquare className="h-3.5 w-3.5 text-[#007cc3]" /> Customer Comments
+                  <div className="border border-border bg-neutral-50/60 p-3.5 rounded-none">
+                    <h5 className="text-xs font-semibold text-neutral-700 mb-1 flex items-center gap-1.5">
+                      <MessageSquare className="h-3.5 w-3.5 text-garmin-blue" /> Customer Comments
                     </h5>
                     <p className="text-xs text-neutral-700 leading-relaxed italic">
                       &ldquo;{selectedOrder.comments}&rdquo;
@@ -993,9 +994,9 @@ export default function AdminOrdersPage() {
                   </div>
                 )}
                 {selectedOrder.notes && (
-                  <div className="border border-neutral-200 bg-neutral-50/60 p-3.5 rounded-none">
-                    <h5 className="text-[11px] font-semibold uppercase tracking-wider text-neutral-700 mb-1 flex items-center gap-1.5">
-                      <Tag className="h-3.5 w-3.5 text-neutral-500" /> Internal Staff Notes
+                  <div className="border border-border bg-neutral-50/60 p-3.5 rounded-none">
+                    <h5 className="text-xs font-semibold text-neutral-700 mb-1 flex items-center gap-1.5">
+                      <Tag className="h-3.5 w-3.5 text-muted-foreground" /> Internal Staff Notes
                     </h5>
                     <p className="text-xs text-neutral-700 leading-relaxed">
                       {selectedOrder.notes}
@@ -1006,16 +1007,16 @@ export default function AdminOrdersPage() {
             )}
 
             {/* Address Map Embed Section */}
-            <div className="border border-neutral-200 bg-white rounded-none overflow-hidden">
-              <div className="p-3 bg-neutral-50 border-b border-neutral-200 flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-neutral-900 flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4 text-[#007cc3]" /> Destination Location Map
+            <div className="border border-border bg-white rounded-none overflow-hidden">
+              <div className="p-3 bg-neutral-50 border-b border-border flex items-center justify-between">
+                <span className="text-xs font-semibold text-black flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4 text-garmin-blue" /> Destination Location Map
                 </span>
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedOrder.shippingAddress)}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="text-xs text-[#007cc3] hover:underline flex items-center gap-1 font-semibold uppercase tracking-wider text-[11px]"
+                  className="text-xs text-garmin-blue hover:underline flex items-center gap-1 font-semibold uppercase"
                 >
                   <span>Open in Google Maps</span>
                   <ExternalLink className="h-3 w-3" />
@@ -1041,10 +1042,10 @@ export default function AdminOrdersPage() {
                   loading="lazy"
                 />
               </div>
-              <div className="px-3 py-1.5 bg-neutral-50 border-t border-neutral-200 text-[11px] text-neutral-500 font-mono flex items-center justify-between">
+              <div className="px-3 py-1.5 bg-neutral-50 border-t border-border text-xs text-muted-foreground tabular-nums flex items-center justify-between">
                 <span className="truncate">{selectedOrder.shippingAddress}</span>
                 {selectedOrder.coordinates && (
-                  <span className="shrink-0 text-neutral-400">
+                  <span className="shrink-0 text-muted-foreground">
                     GPS: {selectedOrder.coordinates.lat.toFixed(4)}, {selectedOrder.coordinates.lng.toFixed(4)}
                   </span>
                 )}
@@ -1053,18 +1054,18 @@ export default function AdminOrdersPage() {
 
             {/* Purchased Product Line Items */}
             <div>
-              <p className="font-heading uppercase tracking-wider text-xs font-semibold text-neutral-700 mb-2">
+              <p className="text-xs font-semibold text-neutral-700 mb-2">
                 Purchased Line Items ({selectedOrder.items?.length || 0})
               </p>
-              <div className="space-y-2 max-h-60 overflow-y-auto border border-neutral-200 bg-neutral-50/50 p-2 rounded-none">
+              <div className="space-y-2 max-h-60 overflow-y-auto border border-border bg-neutral-50/50 p-2 rounded-none">
                 {selectedOrder.items && selectedOrder.items.length > 0 ? (
                   selectedOrder.items.map((item, idx) => (
                     <div
                       key={idx}
-                      className="flex items-center justify-between border border-neutral-200 bg-white p-3 rounded-none shadow-2xs"
+                      className="flex items-center justify-between border border-border bg-white p-3 rounded-none shadow-2xs"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="h-12 w-12 relative bg-neutral-50 border border-neutral-200 p-0.5 shrink-0 overflow-hidden rounded-none">
+                        <div className="h-12 w-12 relative bg-neutral-50 border border-border p-0.5 shrink-0 overflow-hidden rounded-none">
                           <Image
                             src={item.image || "/images/products/1228429.jpg"}
                             alt={item.name}
@@ -1075,37 +1076,37 @@ export default function AdminOrdersPage() {
                         </div>
                         <div>
                           <p className="font-semibold text-black text-xs">{item.name}</p>
-                          <p className="text-[11px] text-neutral-400 font-mono">
+                          <p className="text-xs text-muted-foreground tabular-nums">
                             SKU ID: {item.productId}
                           </p>
-                          <p className="text-[11px] text-neutral-600 mt-0.5">
-                            Unit Price: ${item.price.toFixed(2)} Г— {item.quantity} unit(s)
+                          <p className="text-xs text-neutral-600 mt-0.5">
+                            {formatKzt({ major: item.price }, "en")} × {item.quantity}
                           </p>
                         </div>
                       </div>
-                      <span className="g-heading font-normal text-black text-base">
-                        ${(item.price * item.quantity).toFixed(2)}
+                      <span className="whitespace-nowrap text-base font-bold tabular-nums text-black">
+                        {formatKzt({ major: item.price * item.quantity }, "en")}
                       </span>
                     </div>
                   ))
                 ) : (
-                  <p className="p-4 text-center text-xs text-neutral-400">No line items recorded.</p>
+                  <p className="p-4 text-center text-xs text-muted-foreground">No line items recorded.</p>
                 )}
               </div>
             </div>
 
             {/* Modal Bottom Actions */}
-            <div className="flex items-center justify-between pt-4 border-t border-neutral-200">
-              <div className="text-xs text-neutral-500">
+            <div className="flex items-center justify-between pt-4 border-t border-border">
+              <div className="text-xs text-muted-foreground">
                 <span>Order Reference: </span>
-                <span className="font-mono font-bold text-black">{selectedOrder.id}</span>
+                <span className="tabular-nums font-bold text-black">{selectedOrder.id}</span>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setSelectedOrder(null)}
-                  className="bg-black text-white hover:bg-neutral-800 border border-black px-6 py-2 text-xs font-semibold tracking-wider uppercase rounded-none transition-colors"
+                  className="g-btn g-btn--black"
                 >
                   Close Window
                 </button>
