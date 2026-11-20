@@ -56,50 +56,50 @@ export default function StoreSettingsScreen() {
       freeShippingThresholdMinor: threshold, usdDisplayEnabled: form.usd, maintenanceMode: form.maintenance }, "Settings saved");
   }
   const field = (label: string, key: "storeName" | "contactEmail" | "supportPhone" | "seoTitle" | "seoDescription" | "threshold", placeholder = "") => (
-    <label className="block text-sm"><span className="text-xs font-bold uppercase tracking-wider text-neutral-600">{label}</span>
-      <input className="mt-1 w-full border border-neutral-300 px-2 py-1" value={form[key]} placeholder={placeholder} onChange={event => setForm(current => ({ ...current, [key]: event.target.value }))} /></label>
+    <label className="block text-sm"><span className="block font-bold">{label}</span>
+      <input className="mt-1 w-full h-10 border border-garmin-control bg-white px-3 text-sm text-black focus:border-black focus:outline-none" value={form[key]} placeholder={placeholder} onChange={event => setForm(current => ({ ...current, [key]: event.target.value }))} /></label>
   );
 
-  if (!settings) return <div className="p-6">{message ? <p role="alert" className="text-sm text-red-800">{message.text}</p> : <p className="text-sm text-neutral-500">Loading settings…</p>}</div>;
+  if (!settings) return <div>{message ? <p role="alert" className="text-sm text-red-800">{message.text}</p> : <p className="text-sm text-muted-foreground">Loading settings…</p>}</div>;
   return (
-    <div className="max-w-3xl space-y-6 p-6">
-      <div><h1 className="text-2xl font-bold text-black">Store settings</h1><p className="text-sm text-neutral-500">Version {settings.version} · base currency {settings.baseCurrency} · payment mode {settings.paymentMode}</p></div>
-      {message && <p role={message.kind === "error" ? "alert" : "status"} className={`border p-3 text-sm ${message.kind === "error" ? "border-red-200 bg-red-50 text-red-800" : "border-emerald-200 bg-emerald-50 text-emerald-900"}`}>{message.text}</p>}
-      <section className="grid gap-3 border border-neutral-200 p-4 sm:grid-cols-2">
+    <div className="max-w-3xl space-y-6">
+      <div><h1 className="g-heading g-h2 text-black">Settings</h1><p className="text-sm text-muted-foreground">Version {settings.version} · base currency {settings.baseCurrency} · payment mode {settings.paymentMode}</p></div>
+      {message && <p role={message.kind === "error" ? "alert" : "status"} className={`border p-3 text-sm ${message.kind === "error" ? "border-garmin-error text-garmin-error" : "border-black text-black"}`}>{message.text}</p>}
+      <section className="grid gap-4 border border-garmin-control p-4 sm:grid-cols-2">
         {field("Store name", "storeName")}{field("Contact e-mail", "contactEmail")}{field("Support phone", "supportPhone", "+77001234567")}{field("Free shipping from (KZT)", "threshold", "50000.00")}
         {field("SEO title", "seoTitle")}{field("SEO description", "seoDescription")}
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.usd} onChange={event => setForm(current => ({ ...current, usd: event.target.checked }))} /> Show USD equivalents</label>
-        <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.maintenance} onChange={event => setForm(current => ({ ...current, maintenance: event.target.checked }))} /> Maintenance mode</label>
-        <button type="button" disabled={busy} onClick={save} className="bg-black px-3 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50 sm:col-span-2">Save settings</button>
+        <label className="g-checkbox-label"><input className="g-checkbox" type="checkbox" checked={form.usd} onChange={event => setForm(current => ({ ...current, usd: event.target.checked }))} /> Show USD equivalents</label>
+        <label className="g-checkbox-label"><input className="g-checkbox" type="checkbox" checked={form.maintenance} onChange={event => setForm(current => ({ ...current, maintenance: event.target.checked }))} /> Maintenance mode</label>
+        <button type="button" disabled={busy} onClick={save} className="g-btn g-btn--black justify-self-start sm:col-span-2">Save settings</button>
       </section>
-      <section className="space-y-2 border border-neutral-200 p-4">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-600">Payments</h2>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="demoCheckout" checked={settings.paymentMode === "demo"} disabled={busy}
+      <section className="space-y-3 border border-garmin-control p-4">
+        <h2 className="font-sans mb-3 border-b border-garmin-rule pb-2.5 text-sm font-medium tracking-[0.64px] text-black">Payments</h2>
+        <label className="g-checkbox-label font-bold">
+          <input className="g-checkbox" type="checkbox" name="demoCheckout" checked={settings.paymentMode === "demo"} disabled={busy}
             onChange={event => void send("PUT", { expectedVersion: settings.version, paymentMode: event.target.checked ? "demo" : "live" }, event.target.checked ? "Demo checkout turned on" : "Demo checkout turned off")} />
           Demo checkout
         </label>
-        <p className="text-xs text-neutral-500">While demo checkout is on, customers can only place demo orders: no real money is taken and manual payment is not offered. Turn it off to take real orders with manual payment.</p>
-        {settings.demoCheckout.forcedOff && <p role="status" className="border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">The server sets DEMO_CHECKOUT_DISABLED=1, so demo checkout is off whatever this setting says.</p>}
-        <p className="text-sm">Checkout now offers: <span className="font-bold">{settings.demoCheckout.enabled ? "demo orders only" : "manual payment only"}</span></p>
+        <p className="text-sm text-muted-foreground">While demo checkout is on, customers can only place demo orders: no real money is taken and manual payment is not offered. Turn it off to take real orders with manual payment.</p>
+        {settings.demoCheckout.forcedOff && <p role="status" className="border border-garmin-control bg-muted p-2.5 text-sm text-black">The server sets DEMO_CHECKOUT_DISABLED=1, so demo checkout is off whatever this setting says.</p>}
+        <p className="text-sm">Checkout now offers: <span className="block font-bold">{settings.demoCheckout.enabled ? "demo orders only" : "manual payment only"}</span></p>
       </section>
-      <section className="space-y-2 border border-neutral-200 p-4">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-600">Manual payment</h2>
-        <p className="text-xs text-neutral-500">Shown on the receipt while an order awaits payment. Staff confirm each payment on the order page. Unpaid orders expire, and their stock is released, when the hold ends.</p>
-        <label className="block text-sm"><span className="text-xs font-bold uppercase tracking-wider text-neutral-600">Payment instructions</span>
-          <textarea name="manualPaymentInstructions" rows={5} maxLength={2000} className="mt-1 w-full border border-neutral-300 px-2 py-1" placeholder="Kaspi: +7 … · Bank transfer: IBAN …, put your order number in the reference"
+      <section className="space-y-3 border border-garmin-control p-4">
+        <h2 className="font-sans mb-3 border-b border-garmin-rule pb-2.5 text-sm font-medium tracking-[0.64px] text-black">Manual payment</h2>
+        <p className="text-sm text-muted-foreground">Shown on the receipt while an order awaits payment. Staff confirm each payment on the order page. Unpaid orders expire, and their stock is released, when the hold ends.</p>
+        <label className="block text-sm"><span className="block font-bold">Payment instructions</span>
+          <textarea name="manualPaymentInstructions" rows={5} maxLength={2000} className="mt-1 w-full border border-garmin-control px-3 py-2 text-sm font-normal focus:border-black focus:outline-none" placeholder="Kaspi: +7 … · Bank transfer: IBAN …, put your order number in the reference"
             value={manual.instructions} onChange={event => setManual(current => ({ ...current, instructions: event.target.value }))} /></label>
-        <label className="block text-sm"><span className="text-xs font-bold uppercase tracking-wider text-neutral-600">Hold unpaid orders for (hours)</span>
-          <input name="manualPaymentHoldHours" type="number" min={1} max={168} className="mt-1 w-32 border border-neutral-300 px-2 py-1" value={manual.holdHours} onChange={event => setManual(current => ({ ...current, holdHours: event.target.value }))} /></label>
-        <button type="button" disabled={busy} onClick={saveManual} className="border border-black px-3 py-1 text-xs font-bold uppercase disabled:opacity-50">Save payment instructions</button>
+        <label className="block text-sm"><span className="block font-bold">Hold unpaid orders for (hours)</span>
+          <input name="manualPaymentHoldHours" type="number" min={1} max={168} className="mt-1 w-32 h-10 border border-garmin-control bg-white px-3 text-sm text-black focus:border-black focus:outline-none tabular-nums" value={manual.holdHours} onChange={event => setManual(current => ({ ...current, holdHours: event.target.value }))} /></label>
+        <button type="button" disabled={busy} onClick={saveManual} className="g-btn g-btn--secondary">Save payment instructions</button>
       </section>
-      <section className="space-y-2 border border-neutral-200 p-4">
-        <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-600">USD display rate</h2>
+      <section className="space-y-3 border border-garmin-control p-4">
+        <h2 className="font-sans mb-3 border-b border-garmin-rule pb-2.5 text-sm font-medium tracking-[0.64px] text-black">USD display rate</h2>
         <p className="text-sm">{settings.exchangeRate ? `Current: ${settings.exchangeRate.kztPerUsd} KZT per 1 USD (version ${settings.exchangeRate.version}, ${new Date(settings.exchangeRate.createdAt).toLocaleString("en-GB")})` : "No rate set: USD equivalents are hidden."}</p>
-        <p className="text-xs text-neutral-500">Display only. Payable amounts stay in KZT, and past quotes, orders and refunds keep the rate they were shown with.</p>
+        <p className="text-sm text-muted-foreground">Display only. Payable amounts stay in KZT, and past quotes, orders and refunds keep the rate they were shown with.</p>
         <div className="flex gap-2">
-          <input aria-label="KZT per USD" className="border border-neutral-300 px-2 py-1 text-sm" value={rate} placeholder="498.25" onChange={event => setRate(event.target.value)} />
-          <button type="button" disabled={busy || !rate.trim()} onClick={() => void send("POST", { action: "set_exchange_rate", expectedVersion: settings.version, kztPerUsd: rate.trim() }, "Rate saved")} className="border border-black px-3 py-1 text-xs font-bold uppercase disabled:opacity-50">Save rate</button>
+          <input aria-label="KZT per USD" className="h-10 border border-garmin-control bg-white px-3 text-sm text-black focus:border-black focus:outline-none w-40 tabular-nums" value={rate} placeholder="498.25" onChange={event => setRate(event.target.value)} />
+          <button type="button" disabled={busy || !rate.trim()} onClick={() => void send("POST", { action: "set_exchange_rate", expectedVersion: settings.version, kztPerUsd: rate.trim() }, "Rate saved")} className="g-btn g-btn--secondary">Save rate</button>
         </div>
       </section>
     </div>

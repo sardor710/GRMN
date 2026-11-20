@@ -21,13 +21,13 @@ const STATUS_LABELS: Record<ProductListStatus, string> = {
 
 const STATUS_ORDER: ProductListStatus[] = ["published", "draft", "archived"];
 
-/** Same pill colours as the read-only status badge in the product list. */
+/** Garmin badge pills (Badges.spec.md): Published black, Draft gray #D9D9D9, Archived white with a gray rule. */
 export const statusPillClass = (status: string) =>
   status === "published"
-    ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+    ? "bg-black text-white border-black"
     : status === "draft"
-      ? "bg-amber-50 text-amber-800 border-amber-200"
-      : "bg-neutral-100 text-neutral-600 border-neutral-200";
+      ? "bg-garmin-badge-gray text-black border-garmin-badge-gray"
+      : "bg-white text-muted-foreground border-garmin-control";
 
 const isStatus = (value: unknown): value is ProductListStatus =>
   value === "published" || value === "draft" || value === "archived";
@@ -89,14 +89,14 @@ export function StatusMenu({ id, version, status, name, onSaved, onError }: Stat
         aria-label={`Status of ${name ?? id}: ${STATUS_LABELS[shown]}. Change status`}
         disabled={pending !== null}
         className={cn(
-          "inline-flex items-center gap-1 font-heading uppercase tracking-wider text-[10px] font-bold px-2 py-0.5 rounded-none border outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-1 disabled:opacity-60",
+          "inline-flex items-center gap-1 rounded-garmin-pill border px-3 py-1 text-sm leading-[21px] capitalize outline-none focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-[#101010] disabled:opacity-60",
           statusPillClass(shown),
         )}
       >
         {STATUS_LABELS[shown]}
         <ChevronDown className="h-3 w-3" aria-hidden="true" />
       </DropdownMenuTrigger>
-      <DropdownMenuContent className="min-w-36 rounded-none border border-neutral-200 p-1 shadow-md ring-0">
+      <DropdownMenuContent className="min-w-36 rounded-none border border-garmin-rule p-1 shadow-garmin-raised ring-0">
         <DropdownMenuRadioGroup
           value={shown}
           onValueChange={(value: unknown) => {
@@ -104,7 +104,7 @@ export function StatusMenu({ id, version, status, name, onSaved, onError }: Stat
           }}
         >
           {STATUS_ORDER.map((value) => (
-            <DropdownMenuRadioItem key={value} value={value} className="rounded-none text-[13px]">
+            <DropdownMenuRadioItem key={value} value={value} className="rounded-none text-sm">
               {STATUS_LABELS[value]}
             </DropdownMenuRadioItem>
           ))}

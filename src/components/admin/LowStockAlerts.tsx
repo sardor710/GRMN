@@ -31,7 +31,7 @@ export function LowStockAlerts({ products, onRestockProduct }: LowStockAlertsPro
   return (
     <section aria-label="Low stock" className="border border-garmin-control p-4">
       <div className="mb-4 flex items-end justify-between gap-3 border-b border-garmin-rule pb-3.5">
-        <h2 className="text-sm font-medium tracking-[0.64px] text-black">Low stock</h2>
+        <h2 className="font-sans text-sm font-medium tracking-[0.64px] text-black">Low stock</h2>
         <Link href="/admin/products" className="text-sm tracking-[0.64px] text-black underline hover:no-underline">Products</Link>
       </div>
 

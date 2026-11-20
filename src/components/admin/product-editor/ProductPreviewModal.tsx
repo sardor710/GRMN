@@ -57,7 +57,7 @@ export function ProductPreviewModal({ open, onClose, product, initialLocale = "e
       onClose={onClose}
       wide
       title="Preview — product page"
-      subtitle="Unsaved form state, rendered like the storefront product top"
+      subtitle="Unsaved changes, shown as on the product page."
       footer={
         <button type="button" onClick={onClose} className={secondaryButtonClass}>
           Back to editor
@@ -199,7 +199,7 @@ function PreviewBody({ product }: { product: PreviewProduct }) {
         <h1 className="g-heading text-[32px] leading-tight text-black">{product.name || "Untitled product"}</h1>
         {variant && <p className="mt-2 text-[16px] text-neutral-700">{variant.title}</p>}
         <p className="mt-3 text-xs font-medium text-muted-foreground">
-          {product.family} · Part number: <span className="font-mono">{sku || "—"}</span>
+          {product.family} · Part number: <span className="tabular-nums">{sku || "—"}</span>
         </p>
 
         <p className="mt-4 text-xl font-bold leading-6 tabular-nums text-black">

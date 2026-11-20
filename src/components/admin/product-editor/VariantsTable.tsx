@@ -175,7 +175,7 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
         <div>
           <span className={labelClass}>Variants ({variants.length})</span>
           {stale && (
-            <p className="mt-0.5 flex items-center gap-1 text-[12px] text-amber-700">
+            <p className="mt-0.5 flex items-center gap-1 text-xs text-amber-700">
               <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
               Options changed — click “Generate variants” to update the list.
             </p>
@@ -190,12 +190,12 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
       {notice && (
         <p
           role={notice.tone === "error" ? "alert" : "status"}
-          className={`border px-3 py-2 text-[12px] rounded-none ${
+          className={`border px-3 py-2 text-xs rounded-none ${
             notice.tone === "error"
               ? "border-rose-200 bg-rose-50 text-rose-800"
               : notice.tone === "warning"
                 ? "border-amber-200 bg-amber-50 text-amber-800"
-                : "border-sky-200 bg-sky-50 text-sky-900"
+                : "border-garmin-control bg-muted text-black"
           }`}
         >
           {notice.text}
@@ -205,7 +205,7 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
       {variants.length > 0 && (
         <>
           {/* Filters + bulk edit */}
-          <div className="flex flex-wrap items-end gap-2 border border-neutral-200 bg-neutral-50 p-2">
+          <div className="flex flex-wrap items-end gap-2 border border-border bg-neutral-50 p-2">
             {filterable.map((o) => (
               <select
                 key={o.id}
@@ -222,7 +222,7 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                 ))}
               </select>
             ))}
-            <span className="mx-1 hidden h-7 border-l border-neutral-300 sm:block" aria-hidden="true" />
+            <span className="mx-1 hidden h-7 border-l border-border sm:block" aria-hidden="true" />
             <input
               type="number"
               inputMode="numeric"
@@ -269,10 +269,10 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
             </button>
           </div>
 
-          <div className="max-h-[460px] overflow-auto border border-neutral-200">
-            <table className="w-full min-w-[860px] text-left text-[12px]">
+          <div className="max-h-[460px] overflow-auto border border-border">
+            <table className="w-full min-w-[860px] text-left text-xs">
               <thead className="sticky top-0 z-10 bg-neutral-50">
-                <tr className="border-b border-neutral-200 text-[10px] font-heading uppercase tracking-wider text-neutral-500">
+                <tr className="border-b border-border text-xs text-muted-foreground">
                   <th className="px-2 py-2 font-semibold" scope="col">
                     Default
                   </th>
@@ -323,7 +323,7 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                   const owned = ownedBlockLabels(v.content);
                   return (
                     <Fragment key={v.id}>
-                      <tr className={`align-top ${v.status === "archived" ? "bg-neutral-50 text-neutral-400" : ""}`}>
+                      <tr className={`align-top ${v.status === "archived" ? "bg-neutral-50 text-muted-foreground" : ""}`}>
                         <td className="px-2 py-1.5">
                           <input
                             type="radio"
@@ -337,7 +337,7 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                         <td className="max-w-[240px] px-2 py-1.5">
                           <div className="flex flex-wrap gap-1">
                             {chips.map((c, i) => (
-                              <span key={i} className="border border-neutral-200 bg-white px-1.5 py-0.5 text-[10px] text-neutral-700">
+                              <span key={i} className="border border-border bg-white px-1.5 py-0.5 text-xs text-neutral-700">
                                 {c}
                               </span>
                             ))}
@@ -347,7 +347,7 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                             value={v.title}
                             onChange={(e) => patch(v.id, { title: e.target.value })}
                             aria-label="Variant title"
-                            className="mt-1 h-6 w-full border border-transparent bg-transparent px-1 text-[11px] text-neutral-600 hover:border-neutral-200 focus:border-black focus:bg-white focus:outline-none"
+                            className="mt-1 h-6 w-full border border-transparent bg-transparent px-1 text-xs text-neutral-600 hover:border-neutral-200 focus:border-black focus:bg-white focus:outline-none"
                           />
                         </td>
                         <td className="w-44 px-2 py-1.5">
@@ -359,7 +359,7 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                             aria-invalid={Boolean(skuError)}
                             className={`${smallInputClass} font-mono ${skuError ? "border-rose-500 bg-rose-50" : ""}`}
                           />
-                          {skuError && <p className="mt-0.5 text-[10px] text-rose-700">{skuError}</p>}
+                          {skuError && <p className="mt-0.5 text-xs text-rose-700">{skuError}</p>}
                         </td>
                         <td className="w-32 px-2 py-1.5">
                           <input
@@ -371,7 +371,7 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                             className={smallInputClass}
                           />
                           {v.sourcePrice && (
-                            <p className="mt-0.5 text-[10px] text-neutral-400" title={`Garmin price at ${v.sourcePrice.rateKztPerUsd} ₸/USD`}>
+                            <p className="mt-0.5 text-xs text-muted-foreground" title={`Garmin price at ${v.sourcePrice.rateKztPerUsd} ₸/USD`}>
                               Garmin {formatUsd(v.sourcePrice.sale ?? v.sourcePrice.list)}
                               {v.sourcePrice.sale !== undefined && ` (list ${formatUsd(v.sourcePrice.list)})`}
                             </p>
@@ -419,8 +419,8 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                               onClick={() => setOpenContentFor(contentOpen ? null : v.id)}
                               aria-expanded={contentOpen}
                               aria-label={`Content for ${v.title}`}
-                              className={`flex min-h-7 items-center border px-1.5 py-0.5 text-left text-[11px] ${
-                                contentOpen ? "border-black bg-neutral-100" : "border-neutral-300 bg-white hover:border-black"
+                              className={`flex min-h-7 items-center border px-1.5 py-0.5 text-left text-xs ${
+                                contentOpen ? "border-black bg-neutral-100" : "border-border bg-white hover:border-black"
                               }`}
                             >
                               {owned.length ? `Own: ${owned.join(", ")}` : "Same as product"}
@@ -432,15 +432,15 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                             type="button"
                             onClick={() => setOpenImagesFor(imagesOpen ? null : v.id)}
                             aria-expanded={imagesOpen}
-                            className={`flex h-7 items-center gap-1.5 border px-1.5 text-[11px] ${
-                              imagesOpen ? "border-black bg-neutral-100" : "border-neutral-300 bg-white hover:border-black"
+                            className={`flex h-7 items-center gap-1.5 border px-1.5 text-xs ${
+                              imagesOpen ? "border-black bg-neutral-100" : "border-border bg-white hover:border-black"
                             }`}
                           >
                             {thumb ? (
                               // eslint-disable-next-line @next/next/no-img-element -- admin thumbnail
                               <img src={thumb.src} alt="" className="h-5 w-5 object-contain" />
                             ) : (
-                              <Images className="h-3.5 w-3.5 text-neutral-400" aria-hidden="true" />
+                              <Images className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
                             )}
                             {v.imageIds.length}
                           </button>
@@ -450,10 +450,10 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                         <tr className="bg-neutral-50">
                           <td colSpan={columnCount} className="px-3 py-2">
                             {images.length === 0 ? (
-                              <p className="text-[12px] text-neutral-500">Add product photos first, then pick them for this variant.</p>
+                              <p className="text-xs text-muted-foreground">Add product photos first, then pick them for this variant.</p>
                             ) : (
                               <>
-                                <p className="mb-1.5 text-[11px] text-neutral-500">
+                                <p className="mb-1.5 text-xs text-muted-foreground">
                                   Click photos to use them for <strong>{v.title}</strong>. The starred photo is this variant’s main
                                   photo. With no photos picked the product gallery is shown.
                                 </p>
@@ -472,7 +472,7 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                                           aria-pressed={picked}
                                           aria-label={`${picked ? "Remove" : "Use"} photo ${img.alt || img.id}`}
                                           className={`block h-14 w-14 border bg-white ${
-                                            picked ? "border-black ring-1 ring-black" : "border-neutral-200 opacity-60 hover:opacity-100"
+                                            picked ? "border-black ring-1 ring-black" : "border-border opacity-60 hover:opacity-100"
                                           }`}
                                         >
                                           {/* eslint-disable-next-line @next/next/no-img-element -- admin thumbnail */}
@@ -483,7 +483,7 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
                                             type="button"
                                             onClick={() => makeMainImage(v, img.id)}
                                             aria-label="Make main photo for this variant"
-                                            className="absolute -right-1 -top-1 bg-white p-0.5 shadow-xs"
+                                            className="absolute -right-1 -top-1 bg-white p-0.5"
                                           >
                                             <Star
                                               className={`h-3 w-3 ${pos === 0 ? "fill-amber-400 text-amber-500" : "text-neutral-400"}`}
@@ -508,14 +508,14 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
           {contentVariant && productContent && (
             <section
               aria-labelledby="variant-content-heading"
-              className="space-y-3 border border-neutral-200 bg-neutral-50 p-3"
+              className="space-y-3 border border-border bg-neutral-50 p-3"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                  <h4 id="variant-content-heading" className="g-heading uppercase tracking-wide text-[13px] text-black font-normal">
+                  <h4 id="variant-content-heading" className="font-sans text-sm font-bold text-black">
                     Content for {contentVariant.title}
                   </h4>
-                  <p className="text-[12px] text-neutral-500">
+                  <p className="text-xs text-muted-foreground">
                     Own replaces the product&apos;s block for this variant only. Same as product follows the product tabs.
                   </p>
                 </div>
@@ -534,12 +534,12 @@ export function VariantsTable({ options, variants, images, base, conflicts, onCh
               />
             </section>
           )}
-          <p className="text-[11px] text-neutral-500">
+          <p className="text-xs text-muted-foreground">
             Default variant price {formatKzt(variants.find((v) => v.isDefault)?.price)} is mirrored to the product price and
             stock on save. Archived variants are hidden from shoppers.
           </p>
           {productContent && !contentColumn && variants.length === 1 && (
-            <p className="text-[11px] text-neutral-500">
+            <p className="text-xs text-muted-foreground">
               With one variant, Specs, Overview and In the box come from the product tabs. Per-variant content needs two or
               more variants.
             </p>

@@ -492,7 +492,7 @@ async function adminShotsScenario({cms,headers,send,evaluate,navigate,text,click
   const ui=variantEditor({cms,headers,evaluate,navigate,text,click,receipt},{id:product.id,sku:"UI-SHOT",name:"UI SHOT VARIANTS"});
   const pressAt=async element=>{const {x,y}=await evaluate(`(()=>{const el=${element};if(!el)throw Error('Missing element');el.scrollIntoView({block:'center'});const r=el.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};})()`);
     for(const type of ["mouseMoved","mousePressed","mouseReleased"])await send("Input.dispatchMouseEvent",{type,x,y,button:"left",clickCount:1});};
-  const shoot=async name=>{await delay(400);const height=await evaluate("Math.min(4000,Math.max(document.documentElement.scrollHeight,document.body.scrollHeight))");
+  const shoot=async name=>{await evaluate("window.scrollTo(0,0);true");await delay(400);const height=await evaluate("Math.min(4000,Math.max(document.documentElement.scrollHeight,document.body.scrollHeight))");
     const width=await evaluate("window.innerWidth");const image=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:true,clip:{x:0,y:0,width,height,scale:1}});
     fs.mkdirSync(dir,{recursive:true});await writeFile(path.join(dir,`${prefix}${name}`),Buffer.from(image.data,"base64"));};
   const step=async(name,action)=>{try{await action();}catch(error){console.log(`admin-shots: ${name} incomplete (${error.message}); shot taken as is`);await shoot(name).catch(()=>{});}};
@@ -514,7 +514,7 @@ async function adminShotsScenario({cms,headers,send,evaluate,navigate,text,click
       await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Order detail\"] [data-demo-badge]')"),"Order detail did not open");
       await shoot(`orders-demo-${width}.png`);
       await navigate("/admin/settings");await until(async()=>/demo checkout/i.test(await text()),"Settings did not load");
-      await evaluate("[...document.querySelectorAll('h2,h3,legend')].find(e=>/payment/i.test(e.textContent))?.scrollIntoView();true");await shoot(`settings-payments-${width}.png`);
+      await shoot(`settings-payments-${width}.png`);
     }finally{await send("Emulation.clearDeviceMetricsOverride");}
   }
 }
@@ -585,7 +585,7 @@ try{
     await until(async()=>(await text()).includes("UI BANNER"),"Banner did not appear");await evaluate("window.confirm=()=>true;document.querySelector('[title=\"Delete Banner\"]').click();true");await until(async()=>{const body=(await text()).toLowerCase();return !body.includes("loading banners")&&(!body.includes("ui banner")||body.includes("archived"));},"Archived banner is indistinguishable from an editable inactive draft",10000);
     await navigate("/admin/clients");await until(()=>evaluate("!![...document.querySelectorAll('button')].find(b=>b.textContent.includes('Add New Client')&&!b.disabled)"),"Client editor did not load");await click("Add New Client");await until(()=>evaluate("!!document.querySelector('form')"),"Client modal missing");await fill("Full Name","UI CUSTOMER");await fill("Phone Number","+77000000001");await fill("Email","");await fill("Country","KZ");await evaluate("document.querySelector('form').requestSubmit();true");await until(()=>evaluate("!document.querySelector('form')"),"Customer UI save failed");assert.equal((await cms.list("clients",headers,{search:"UI CUSTOMER"})).items[0].country,"KZ");
     // Discounts run on PostgreSQL since fef76ab: the screen loads instead of reporting it is unavailable.
-    await navigate("/admin/discounts");await until(async()=>/promotions & discount campaigns/i.test(await text()),"Discounts screen did not load");assert.equal(await evaluate("!!document.querySelector('[role=alert]')"),false,"discounts screen shows no error");
+    await navigate("/admin/discounts");await until(()=>evaluate("document.querySelector('main h1')?.textContent.trim()==='Discounts'"),"Discounts screen did not load");assert.equal(await evaluate("!!document.querySelector('[role=alert]')"),false,"discounts screen shows no error");
     }else{saved=await cms.save("products",headers,{name:"UI UPDATED PRODUCT",sku:"UI-CREATED",price:"123",status:"published",image:"/images/products/1228429.jpg"});}
     // Storefront links carry the locale prefix (/en/p/..., /kz/p/...) since the i18n change.
     const productLinks=()=>evaluate("[...document.querySelectorAll('a[href]')].filter(a=>/^(?:\\/[a-z]{2})?\\/p\\//.test(a.getAttribute('href'))).length");

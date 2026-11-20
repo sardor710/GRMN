@@ -3,8 +3,6 @@
 import { formatKzt } from "@/lib/money";
 import { useState } from "react";
 import {
-  Users,
-  Plus,
   Search,
   Mail,
   Phone,
@@ -100,13 +98,10 @@ export default function AdminClientsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <Users className="h-6 w-6 text-garmin-blue" />
-            <h1 className="g-heading text-2xl text-black">
-              Clients & Customer Accounts
-            </h1>
+            <h1 className="g-heading g-h2 text-black">Clients</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Manage customer directories, VIP status tiers, purchase records, and personal preferences.
+            Customer accounts, their status and order totals.
           </p>
         </div>
 
@@ -116,7 +111,6 @@ export default function AdminClientsPage() {
             disabled={collection.backend!=="postgres"} onClick={handleOpenAdd}
             className="g-btn g-btn--black gap-2"
           >
-            <Plus className="h-3.5 w-3.5" />
             <span>Add New Client</span>
           </button>
         </div>
@@ -272,7 +266,6 @@ export default function AdminClientsPage() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editingClient ? "Edit Client Profile" : "Create Customer Profile"}
-        subtitle="Manage customer contact info, status tier, and purchase notes"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           {collection.error&&<div role="alert" className="border border-red-200 bg-red-50 p-3 text-sm text-red-800">{collection.error}<button type="button" className="ml-3 underline" onClick={()=>{setIsModalOpen(false);collection.reload();}}>Reload records</button></div>}
@@ -366,7 +359,7 @@ export default function AdminClientsPage() {
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="border border-border bg-white px-4 py-2 text-xs font-semibold uppercase text-neutral-700 hover:bg-neutral-50 rounded-none transition-colors"
+              className="g-btn g-btn--secondary"
             >
               Cancel
             </button>

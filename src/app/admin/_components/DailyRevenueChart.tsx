@@ -44,28 +44,28 @@ export function DailyRevenueChart({ points, currency }: { points: DailyPoint[]; 
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <div role="group" aria-label="Chart series" className="flex text-xs">
+        <div role="group" aria-label="Chart series" className="flex gap-2">
           {(Object.keys(SERIES) as Series[]).map(key => (
             <button key={key} type="button" aria-pressed={series === key} onClick={() => { setSeries(key); setActive(null); }}
-              className={cn("flex items-center gap-1.5 border px-2 py-1 font-bold uppercase tracking-wider", series === key ? "border-black bg-black text-white" : "border-neutral-300 text-neutral-600 hover:border-neutral-500")}>
+              className={cn("g-btn g-btn--sm gap-1.5", series === key ? "g-btn--black" : "g-btn--secondary")}>
               <span aria-hidden className={cn("inline-block size-2.5", SERIES[key].swatch)} />{SERIES[key].label}
             </button>
           ))}
         </div>
-        <p aria-live="polite" className="text-xs text-neutral-600">
+        <p aria-live="polite" className="text-sm tabular-nums text-muted-foreground">
           {current
             ? <><span className="font-bold text-black">{formatMinor(minor(current), currency)}</span> · {shortDate(current.date)}</>
             : <>Total <span className="font-bold text-black">{formatMinor(total, currency)}</span> · {points.length} days</>}
         </p>
       </div>
       {!hasData ? (
-        <p className="py-10 text-center text-sm text-neutral-500">{series === "real" ? "No revenue in this date range yet." : "No demo revenue in this date range yet."}</p>
+        <p className="py-10 text-center text-sm text-muted-foreground">{series === "real" ? "No revenue in this date range yet." : "No demo revenue in this date range yet."}</p>
       ) : (
         <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`${SERIES[series].label} per day, ${currency}. Total ${formatMinor(total, currency)}.`} onMouseLeave={() => setActive(null)}>
           {ticks.map(tick => (
             <g key={tick}>
               <line x1={LEFT} x2={W - RIGHT} y1={y(tick)} y2={y(tick)} strokeWidth={1} className={tick === 0 ? "stroke-[#c3c2b7]" : "stroke-[#e1e0d9]"} />
-              <text x={LEFT - 6} y={y(tick)} dy="0.32em" textAnchor="end" className="fill-neutral-500 text-[10px] tabular-nums">{axisLabel(tick)}</text>
+              <text x={LEFT - 6} y={y(tick)} dy="0.32em" textAnchor="end" className="fill-neutral-500 text-xs tabular-nums">{axisLabel(tick)}</text>
             </g>
           ))}
           {points.map((point, index) => {
@@ -79,7 +79,7 @@ export function DailyRevenueChart({ points, currency }: { points: DailyPoint[]; 
             );
           })}
           {labelled.map(index => (
-            <text key={index} x={LEFT + index * slot + slot / 2} y={H - 8} textAnchor={index === 0 ? "start" : index === points.length - 1 ? "end" : "middle"} className="fill-neutral-500 text-[10px]">{shortDate(points[index].date)}</text>
+            <text key={index} x={LEFT + index * slot + slot / 2} y={H - 8} textAnchor={index === 0 ? "start" : index === points.length - 1 ? "end" : "middle"} className="fill-neutral-500 text-xs">{shortDate(points[index].date)}</text>
           ))}
         </svg>
       )}

@@ -1,28 +1,21 @@
 "use client";
 
+import { formatCount } from "@/lib/money";
 import { formatKzt } from "@/lib/money";
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import {
-  ShoppingBag,
   Search,
   Eye,
   Check,
-  DollarSign,
-  PackageCheck,
-  Clock,
   LayoutGrid,
   List,
   Calendar,
   MapPin,
   ExternalLink,
-  MessageSquare,
-  Truck,
   Tag,
   Phone,
   Mail,
-  User,
-  Layers,
 } from "lucide-react";
 import type { Order, FulfillmentStatus } from "@/lib/cms/types";
 import { AdminModal } from "@/components/admin/AdminModal";
@@ -253,8 +246,7 @@ export default function AdminOrdersPage() {
     <div className="space-y-6 font-sans">
       {/* Toast Notification */}
       {toastMessage && (
-        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-black text-white px-5 py-3 rounded-none border border-neutral-800 shadow-garmin-raised animate-fade-in">
-          <Check className="h-4 w-4 text-garmin-blue" />
+        <div role="status" className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 bg-black px-5 py-3 text-sm text-white">
           <span className="text-xs font-semibold">{toastMessage}</span>
         </div>
       )}
@@ -263,13 +255,10 @@ export default function AdminOrdersPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
         <div>
           <div className="flex items-center gap-2.5">
-            <ShoppingBag className="h-6 w-6 text-garmin-blue" />
-            <h1 className="g-heading text-2xl text-black font-normal">
-              Customer Orders &amp; Fulfillment
-            </h1>
+            <h1 className="g-heading g-h2 text-black">Orders</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-1 font-sans">
-            Manage transactions via Kanban board or structured list, drag cards to update stages, inspect itemized lines, and view customer address maps.
+            Drag a card to another column to change its fulfillment stage.
           </p>
         </div>
 
@@ -305,7 +294,7 @@ export default function AdminOrdersPage() {
             </button>
           </div>
 
-          <p className="max-w-xs text-xs text-muted-foreground">Exports are unavailable until the authorized export workflow is activated.</p>
+          <p className="max-w-xs text-xs text-muted-foreground">Exports are unavailable.</p>
         </div>
       </div>
 
@@ -314,42 +303,33 @@ export default function AdminOrdersPage() {
         <div className="bg-white border border-border p-5 rounded-none flex items-center justify-between">
           <div>
             <span className="text-xs text-muted-foreground font-semibold">
-              Filtered Revenue
+              Revenue (filtered)
             </span>
             <p className="mt-1 text-2xl font-bold leading-[30px] tabular-nums text-black">
               {formatKzt({ major: totalRevenue }, "en")}
             </p>
           </div>
-          <div className="h-10 w-10 rounded-none bg-neutral-100 border border-border flex items-center justify-center text-black">
-            <DollarSign className="h-5 w-5" />
+        </div>
+
+        <div className="bg-white border border-border p-5 rounded-none flex items-center justify-between">
+          <div>
+            <span className="text-xs text-muted-foreground font-semibold">
+              Processing
+            </span>
+            <p className="mt-1 text-2xl font-bold leading-[30px] tabular-nums text-black">
+              {formatCount(processingCount)}
+            </p>
           </div>
         </div>
 
         <div className="bg-white border border-border p-5 rounded-none flex items-center justify-between">
           <div>
             <span className="text-xs text-muted-foreground font-semibold">
-              Processing in Queue
+              Delivered
             </span>
-            <p className="g-heading text-2xl font-normal text-amber-600 mt-1">
-              {processingCount} Orders
+            <p className="mt-1 text-2xl font-bold leading-[30px] tabular-nums text-black">
+              {formatCount(completedCount)}
             </p>
-          </div>
-          <div className="h-10 w-10 rounded-none bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
-            <Clock className="h-5 w-5" />
-          </div>
-        </div>
-
-        <div className="bg-white border border-border p-5 rounded-none flex items-center justify-between">
-          <div>
-            <span className="text-xs text-muted-foreground font-semibold">
-              Delivered Completed
-            </span>
-            <p className="g-heading text-2xl font-normal text-emerald-600 mt-1">
-              {completedCount} Orders
-            </p>
-          </div>
-          <div className="h-10 w-10 rounded-none bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
-            <PackageCheck className="h-5 w-5" />
           </div>
         </div>
       </div>
@@ -439,7 +419,7 @@ export default function AdminOrdersPage() {
         <div className="pt-2 border-t border-neutral-100">
           <div className="flex items-center justify-between mb-2">
             <span className="text-xs font-semibold text-neutral-700 flex items-center gap-1.5">
-              <Layers className="h-3.5 w-3.5 text-garmin-blue" /> Filter by Status (Toggle Multiple On/Off):
+Status
             </span>
             <div className="flex items-center gap-2">
               <button
@@ -479,7 +459,7 @@ export default function AdminOrdersPage() {
                   <span className="flex items-center gap-1.5 truncate">
                     <span
                       className={`h-2 w-2 rounded-full shrink-0 ${
-                        isOn ? "bg-[#007cc3]" : "bg-neutral-300"
+                        isOn ? "bg-black" : "bg-neutral-300"
                       }`}
                     />
                     <span className="text-xs">{col.label}</span>
@@ -543,7 +523,7 @@ export default function AdminOrdersPage() {
                 {/* Column Header */}
                 <div className="p-3 border-b border-border bg-neutral-50/80 flex items-center justify-between">
                   <div className="flex items-center gap-2 truncate">
-                    <span className="g-heading text-xs text-black font-semibold truncate">
+                    <span className="font-sans text-xs font-bold text-black truncate">
                       {col.label}
                     </span>
                   </div>
@@ -655,14 +635,14 @@ export default function AdminOrdersPage() {
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-border bg-muted text-black text-xs uppercase tracking-[-0.2px]">
-                  <th className="py-3 px-4 font-semibold">Order Number</th>
+                  <th className="py-3 px-4 font-semibold">Order</th>
                   <th className="py-3 px-4 font-semibold">Customer</th>
-                  <th className="py-3 px-4 font-semibold">Total Amount</th>
+                  <th className="py-3 px-4 text-right font-semibold">Total</th>
                   <th className="py-3 px-4 font-semibold">Payment</th>
-                  <th className="py-3 px-4 font-semibold">Fulfillment Status (Dropdown)</th>
-                  <th className="py-3 px-4 font-semibold">Delivery Destination</th>
-                  <th className="py-3 px-4 font-semibold">Date Placed</th>
-                  <th className="py-3 px-4 font-semibold text-right">Inspect</th>
+                  <th className="py-3 px-4 font-semibold">Fulfillment</th>
+                  <th className="py-3 px-4 font-semibold">Delivery</th>
+                  <th className="py-3 px-4 font-semibold">Placed</th>
+                  <th className="py-3 px-4 font-semibold text-right">Details</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-100 text-black">
@@ -883,7 +863,7 @@ export default function AdminOrdersPage() {
                 <div className="border border-border bg-neutral-50/80 p-4 rounded-none">
                   <div className="flex items-center justify-between border-b border-border pb-2 mb-4">
                     <span className="text-xs font-semibold text-black flex items-center gap-1.5">
-                      <Truck className="h-4 w-4 text-garmin-blue" /> Fulfillment Process Route Map
+Fulfillment
                     </span>
                     <span className="text-xs text-muted-foreground tabular-nums">
                       Carrier: <strong className="text-black">{selectedOrder.carrier || "Garmin Express Priority"}</strong>
@@ -938,8 +918,8 @@ export default function AdminOrdersPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Customer Contact Box */}
               <div className="border border-border bg-white p-4 rounded-none space-y-2.5">
-                <h4 className="text-xs font-semibold text-black border-b border-neutral-100 pb-2 flex items-center gap-1.5">
-                  <User className="h-4 w-4 text-garmin-blue" /> Customer Profile
+                <h4 className="font-sans text-xs font-semibold text-black border-b border-neutral-100 pb-2 flex items-center gap-1.5">
+Customer
                 </h4>
                 <div className="space-y-1.5 text-xs">
                   <p className="text-black font-semibold text-sm">{selectedOrder.clientName}</p>
@@ -960,8 +940,8 @@ export default function AdminOrdersPage() {
 
               {/* Shipping Logistics Box */}
               <div className="border border-border bg-white p-4 rounded-none space-y-2.5">
-                <h4 className="text-xs font-semibold text-black border-b border-neutral-100 pb-2 flex items-center gap-1.5">
-                  <Truck className="h-4 w-4 text-garmin-blue" /> Logistics &amp; Shipping Destination
+                <h4 className="font-sans text-xs font-semibold text-black border-b border-neutral-100 pb-2 flex items-center gap-1.5">
+Shipping address
                 </h4>
                 <div className="space-y-1.5 text-xs">
                   <p className="text-black flex items-start gap-1.5">
@@ -985,8 +965,8 @@ export default function AdminOrdersPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {selectedOrder.comments && (
                   <div className="border border-border bg-neutral-50/60 p-3.5 rounded-none">
-                    <h5 className="text-xs font-semibold text-neutral-700 mb-1 flex items-center gap-1.5">
-                      <MessageSquare className="h-3.5 w-3.5 text-garmin-blue" /> Customer Comments
+                    <h5 className="font-sans text-xs font-semibold text-neutral-700 mb-1 flex items-center gap-1.5">
+Customer note
                     </h5>
                     <p className="text-xs text-neutral-700 leading-relaxed italic">
                       &ldquo;{selectedOrder.comments}&rdquo;
@@ -995,7 +975,7 @@ export default function AdminOrdersPage() {
                 )}
                 {selectedOrder.notes && (
                   <div className="border border-border bg-neutral-50/60 p-3.5 rounded-none">
-                    <h5 className="text-xs font-semibold text-neutral-700 mb-1 flex items-center gap-1.5">
+                    <h5 className="font-sans text-xs font-semibold text-neutral-700 mb-1 flex items-center gap-1.5">
                       <Tag className="h-3.5 w-3.5 text-muted-foreground" /> Internal Staff Notes
                     </h5>
                     <p className="text-xs text-neutral-700 leading-relaxed">
@@ -1010,7 +990,7 @@ export default function AdminOrdersPage() {
             <div className="border border-border bg-white rounded-none overflow-hidden">
               <div className="p-3 bg-neutral-50 border-b border-border flex items-center justify-between">
                 <span className="text-xs font-semibold text-black flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4 text-garmin-blue" /> Destination Location Map
+Map
                 </span>
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(selectedOrder.shippingAddress)}`}

@@ -41,28 +41,28 @@ export function EditorDialog({ open, onClose, title, subtitle, children, footer,
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden border border-neutral-300 bg-white font-sans shadow-2xl rounded-none ${
+        className={`relative z-10 flex max-h-[92vh] w-full flex-col overflow-hidden border border-border bg-white font-sans shadow-garmin-raised rounded-none ${
           wide ? "max-w-6xl" : "max-w-2xl"
         }`}
       >
-        <div className="flex items-center justify-between border-b border-neutral-200 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-border px-6 py-4">
           <div>
-            <h3 id={titleId} className="g-heading uppercase tracking-wider text-[18px] text-black font-normal">
+            <h3 id={titleId} className="g-heading g-h4 text-black">
               {title}
             </h3>
-            {subtitle && <p className="mt-0.5 text-[12px] text-neutral-500">{subtitle}</p>}
+            {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
           </div>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="p-1.5 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-black rounded-none"
+            className="p-1.5 text-muted-foreground transition-colors hover:bg-neutral-100 hover:text-black rounded-none"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto p-6 text-black">{children}</div>
-        {footer && <div className="flex items-center justify-end gap-3 border-t border-neutral-200 px-6 py-3">{footer}</div>}
+        {footer && <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-3">{footer}</div>}
       </div>
     </div>
   );

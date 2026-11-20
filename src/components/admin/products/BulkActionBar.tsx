@@ -53,7 +53,7 @@ export function BulkActionBar({ count, onAction, onClear, busy }: BulkActionBarP
   };
 
   const buttonClass =
-    "border border-neutral-300 bg-white px-3 py-1.5 text-[11px] font-heading uppercase tracking-wider font-semibold text-black hover:border-black rounded-none disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-1";
+    "g-btn g-btn--secondary g-btn--sm disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-1";
 
   return (
     <div
@@ -82,7 +82,7 @@ export function BulkActionBar({ count, onAction, onClear, busy }: BulkActionBarP
           type="button"
           disabled={busy}
           onClick={onClear}
-          className="px-2 py-1.5 text-[12px] text-neutral-600 underline-offset-2 hover:text-black hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
+          className="px-2 py-1.5 text-xs text-neutral-600 underline-offset-2 hover:text-black hover:underline disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
         >
           Clear selection
         </button>
@@ -107,7 +107,7 @@ export function BulkResultMessage({ outcome, onDismiss }: { outcome: BulkOutcome
         <button
           type="button"
           onClick={onDismiss}
-          className="text-[12px] underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
+          className="text-xs underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-black"
         >
           Dismiss
         </button>

@@ -37,10 +37,10 @@ interface LocaleTabsProps {
 export function LocaleTabs({ value, onChange, status, className = "" }: LocaleTabsProps) {
   return (
     <div className={`flex flex-wrap items-center gap-3 ${className}`}>
-      <span className="text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-500">
+      <span className="text-xs font-semibold text-muted-foreground">
         Content language
       </span>
-      <div role="tablist" aria-label="Content language" className="inline-flex border border-neutral-300">
+      <div role="tablist" aria-label="Content language" className="inline-flex border border-border">
         {TABS.map((tab) => {
           const selected = value === tab.id;
           const state = tab.id === "en" ? undefined : status[tab.id];
@@ -52,7 +52,7 @@ export function LocaleTabs({ value, onChange, status, className = "" }: LocaleTa
               aria-selected={selected}
               title={state ? `${tab.label}: ${STATUS_TEXT[state]}` : `${tab.label} (base content)`}
               onClick={() => onChange(tab.id)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-heading uppercase tracking-wider font-semibold transition-colors rounded-none ${
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold transition-colors rounded-none ${
                 selected ? "bg-black text-white" : "bg-white text-neutral-600 hover:text-black"
               }`}
             >
@@ -68,7 +68,7 @@ export function LocaleTabs({ value, onChange, status, className = "" }: LocaleTa
         })}
       </div>
       {value !== "en" && (
-        <span className="text-[11px] text-neutral-500">
+        <span className="text-xs text-muted-foreground">
           Empty fields fall back to English on the storefront.
         </span>
       )}
@@ -79,7 +79,7 @@ export function LocaleTabs({ value, onChange, status, className = "" }: LocaleTa
 /** Note shown next to read-only fields in a RU/KK tab. */
 export function SharedAcrossLanguages({ className = "" }: { className?: string }) {
   return (
-    <p className={`inline-flex items-center gap-1 text-[11px] text-neutral-500 ${className}`}>
+    <p className={`inline-flex items-center gap-1 text-xs text-muted-foreground ${className}`}>
       <Lock className="h-3 w-3" aria-hidden="true" />
       Shared across languages — edit in the EN tab
     </p>

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Languages } from "lucide-react";
 
 type Kind = "product" | "blog" | "banner" | "homepage";
 
@@ -45,11 +44,10 @@ export function AutoTranslateButton({ kind, record, onTranslated }: {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <button type="button" onClick={run} disabled={busy}
-        className="inline-flex items-center gap-1.5 border border-neutral-300 bg-white px-3 py-1.5 text-[11px] font-heading font-semibold uppercase tracking-wider text-black hover:border-black disabled:opacity-50 rounded-none">
-        <Languages className="h-3.5 w-3.5" />
+        className="g-btn g-btn--secondary g-btn--sm gap-1.5 disabled:opacity-50">
         {busy ? "Translating…" : "Auto-translate RU & KZ"}
       </button>
-      {message && <span role="status" className="text-[12px] text-neutral-600">{message}</span>}
+      {message && <span role="status" className="text-xs text-neutral-600">{message}</span>}
     </div>
   );
 }

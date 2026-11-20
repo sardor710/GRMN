@@ -14,9 +14,9 @@ interface HomepageTranslationPanelProps {
   onChange: (next: HomepageTranslations) => void;
 }
 
-const sectionClass = "space-y-3 rounded-lg border border-neutral-200 bg-white p-4";
-const sectionTitle = "text-sm font-bold uppercase tracking-wide text-neutral-900";
-const blockClass = "space-y-2 border-l-2 border-neutral-200 pl-3";
+const sectionClass = "space-y-3 border border-border bg-white p-4";
+const sectionTitle = "text-sm font-bold text-black";
+const blockClass = "space-y-2 border-l-2 border-border pl-3";
 
 const TILE_GROUPS: { key: TileGroup; label: string }[] = [
   { key: "promoTiles", label: "Promo tiles" },
@@ -42,9 +42,9 @@ export function HomepageTranslationPanel({ locale, config, onChange }: HomepageT
 
   return (
     <div className="space-y-5">
-      <div className="rounded-lg border border-dashed border-neutral-300 bg-neutral-50 p-3">
+      <div className="border border-dashed border-border bg-neutral-50 p-3">
         <SharedAcrossLanguages />
-        <p className="mt-1 text-xs text-neutral-500">
+        <p className="mt-1 text-xs text-muted-foreground">
           Images, links, prices, order and visibility are shared. Save with &ldquo;Save All Changes&rdquo;.
         </p>
       </div>
@@ -80,7 +80,7 @@ export function HomepageTranslationPanel({ locale, config, onChange }: HomepageT
         <h2 className={sectionTitle}>Carousels ({config.carousels.length})</h2>
         {config.carousels.map((c) => (
           <details key={c.id} className="space-y-3 border border-neutral-100 p-3" open={config.carousels.length <= 2}>
-            <summary className="cursor-pointer text-xs font-bold uppercase tracking-wider text-neutral-700">
+            <summary className="cursor-pointer text-xs font-bold text-neutral-700">
               {c.title} · {c.items.length} cards
             </summary>
             <div className={blockClass}>

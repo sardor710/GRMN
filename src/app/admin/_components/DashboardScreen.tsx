@@ -50,7 +50,7 @@ function Card({ title, action, children }: { title: string; action?: ReactNode; 
   return (
     <section aria-label={title} className="border border-garmin-control p-4">
       <div className="mb-4 flex items-end justify-between gap-3 border-b border-garmin-rule pb-3.5">
-        <h2 className="text-sm font-medium tracking-[0.64px] text-black">{title}</h2>
+        <h2 className="font-sans text-sm font-medium tracking-[0.64px] text-black">{title}</h2>
         {action}
       </div>
       {children}
@@ -175,7 +175,7 @@ export default function AdminDashboardPage() {
 
   if (unavailable) return (
     <div role="alert" className="space-y-4 border border-garmin-control bg-white p-6">
-      <h1 className="g-heading text-[32px] leading-10 text-black">Dashboard unavailable</h1>
+      <h1 className="g-heading g-h2 text-black">Dashboard unavailable</h1>
       <p className="text-sm text-muted-foreground">{unavailable}</p>
       <button type="button" onClick={loadDashboard} disabled={isRefreshing} className="g-btn g-btn--secondary">Retry dashboard</button>
     </div>

@@ -43,14 +43,14 @@ async function json<T>(response: Response): Promise<T> {
 
 function Card({ title, name, children, className }: { title: string; name?: string; children: ReactNode; className?: string }) {
   return (
-    <section aria-label={name ?? title} className={cn("min-w-0 border border-garmin-control p-4", className)}>
-      <h2 className="mb-4 border-b border-garmin-rule pb-3.5 text-sm font-medium tracking-[0.64px] text-black">{title}</h2>
+    <section aria-label={name ?? title} className={cn("min-w-0 overflow-x-auto border border-garmin-control p-4", className)}>
+      <h2 className="font-sans mb-4 border-b border-garmin-rule pb-3.5 text-sm font-medium tracking-[0.64px] text-black">{title}</h2>
       {children}
     </section>
   );
 }
 const Muted = ({ children }: { children: ReactNode }) => <p data-empty className="text-sm text-muted-foreground">{children}</p>;
-const Failure = ({ message }: { message: string }) => <p role="alert" className="border border-red-200 bg-red-50 p-2 text-sm font-normal text-red-800">{message}</p>;
+const Failure = ({ message }: { message: string }) => <p role="alert" className="border border-garmin-error p-2 text-sm font-normal text-garmin-error">{message}</p>;
 const Loading = () => <span className="text-sm font-normal text-muted-foreground">Loading…</span>;
 /** Loading, error and ready states for one section; `empty` decides when the ready data has nothing to show. */
 function Section<T>({ value, empty, emptyText, children }: { value: Loadable<T>; empty: (data: T) => boolean; emptyText: string; children: (data: T) => ReactNode }) {
@@ -157,20 +157,20 @@ export function ReportsScreen() {
   }
 
   return (
-    <div className="space-y-6 p-6">
+    <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-black">Dashboard</h1>
+        <h1 className="g-heading g-h2 text-black">Dashboard</h1>
         <p className="text-sm text-muted-foreground">Captured payments minus refunds, by day in {ZONE}. Demo revenue is shown apart and never added to revenue.</p>
       </div>
       <div role="group" aria-label="Date range" className="flex flex-wrap items-end gap-2 text-sm">
         {PRESETS.map(days => {
           const selected = from === localDate(-(days - 1)) && to === localDate();
-          return <button key={days} type="button" aria-pressed={selected} onClick={() => { setFrom(localDate(-(days - 1))); setTo(localDate()); }} className={cn("border px-2 py-1 text-xs font-bold", selected ? "border-black bg-black text-white" : "border-border hover:border-neutral-500")}>Last {days} days</button>;
+          return <button key={days} type="button" aria-pressed={selected} onClick={() => { setFrom(localDate(-(days - 1))); setTo(localDate()); }} className={cn("g-btn g-btn--sm", selected ? "g-btn--black" : "g-btn--secondary")}>Last {days} days</button>;
         })}
-        <label className="ml-2">From <input aria-label="From date" type="date" value={from} max={to} onChange={event => setFrom(event.target.value)} className="ml-1 border border-border px-2 py-1" /></label>
-        <label>To <input aria-label="To date" type="date" value={to} min={from} onChange={event => setTo(event.target.value)} className="ml-1 border border-border px-2 py-1" /></label>
+        <label className="ml-2 flex items-center gap-2 font-bold">From <input aria-label="From date" type="date" value={from} max={to} onChange={event => setFrom(event.target.value)} className="h-10 border border-garmin-control bg-white px-3 text-sm text-black focus:border-black focus:outline-none font-normal tabular-nums" /></label>
+        <label className="flex items-center gap-2 font-bold">To <input aria-label="To date" type="date" value={to} min={from} onChange={event => setTo(event.target.value)} className="h-10 border border-garmin-control bg-white px-3 text-sm text-black focus:border-black focus:outline-none font-normal tabular-nums" /></label>
       </div>
-      {error && <p role="alert" className="border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+      {error && <p role="alert" className="border border-garmin-error p-3 text-sm text-garmin-error">{error}</p>}
 
       <section aria-label="Totals" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MoneyTile name="revenue" title="Revenue" lines={split.real} value={summary} />
@@ -179,7 +179,7 @@ export function ReportsScreen() {
         <CountTile name="awaiting-shipment" title="Awaiting shipment" counts={counts} pick={data => data.awaitingShipment} quiet="Paid, not yet shipped" />
       </section>
       {split.sandbox.length > 0 && (
-        <p className="text-xs text-neutral-600">Sandbox payments (test provider, not counted): {split.sandbox.map(line => formatMinor(line.netMinor, line.currency)).join(" · ")}</p>
+        <p className="text-sm text-muted-foreground tabular-nums">Sandbox payments (test provider, not counted): {split.sandbox.map(line => formatMinor(line.netMinor, line.currency)).join(" · ")}</p>
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -194,8 +194,8 @@ export function ReportsScreen() {
               <div className="space-y-4 text-sm">
                 {([["Order", data.orderStatus, ORDER_STATUS_LABELS], ["Fulfillment", data.fulfillmentStatus, FULFILLMENT_STATUS_LABELS]] as const).map(([heading, record, labels]) => (
                   <div key={heading}>
-                    <h3 className="mb-1 text-xs font-bold text-muted-foreground">{heading}</h3>
-                    <ul className="divide-y divide-neutral-100">{statusRows(record, labels).map(row => (
+                    <h3 className="font-sans mb-1 text-xs font-bold uppercase tracking-[-0.2px] text-black">{heading}</h3>
+                    <ul className="divide-y divide-garmin-rule">{statusRows(record, labels).map(row => (
                       <li key={row.status} className="flex justify-between py-1"><span>{row.label}</span><span className="tabular-nums">{formatCount(row.count)}</span></li>
                     ))}</ul>
                   </div>
@@ -211,12 +211,12 @@ export function ReportsScreen() {
         <Card title="Recent orders" className="lg:col-span-3">
           <Section value={recent} empty={items => items.length === 0} emptyText="No orders in this date range yet.">
             {items => (
-              <table className="w-full text-sm">
-                <thead><tr className="text-left text-xs text-muted-foreground [&>th]:pr-3 [&>th:last-child]:pr-0"><th className="py-1 font-bold">Order</th><th className="font-bold">Placed</th><th className="font-bold">Payment</th><th className="font-bold">Fulfillment</th><th className="text-right font-bold">Total</th></tr></thead>
+              <table className="w-full min-w-[520px] text-sm">
+                <thead><tr className="bg-muted text-left text-xs font-bold uppercase tracking-[-0.2px] text-black [&>th]:px-2 [&>th]:py-2"><th className="py-1 font-bold">Order</th><th className="font-bold">Placed</th><th className="font-bold">Payment</th><th className="font-bold">Fulfillment</th><th className="text-right font-bold">Total</th></tr></thead>
                 <tbody>{items.map(order => (
-                  <tr key={order.id} data-order-row={order.id} className="border-t border-neutral-100 align-top [&>td]:pr-3 [&>td:last-child]:pr-0">
-                    <td className="py-1.5"><span className="flex flex-wrap items-center gap-x-2 gap-y-1"><Link href={`/admin/orders?order=${order.id}`} className="whitespace-nowrap tabular-nums font-semibold underline">{order.number}</Link>{order.demo && <DemoBadge label="DEMO" className="text-[10px]" />}</span></td>
-                    <td className="py-1.5 text-neutral-600">{formatDate(order.createdAt)}</td>
+                  <tr key={order.id} data-order-row={order.id} className="border-t border-garmin-rule align-top [&>td]:px-2">
+                    <td className="py-1.5"><span className="flex flex-wrap items-center gap-x-2 gap-y-1"><Link href={`/admin/orders?order=${order.id}`} className="whitespace-nowrap font-bold tabular-nums underline hover:no-underline">{order.number}</Link>{order.demo && <DemoBadge label="DEMO" className="text-[10px]" />}</span></td>
+                    <td className="py-1.5 tabular-nums text-muted-foreground">{formatDate(order.createdAt)}</td>
                     <td className="py-1.5 capitalize">{words(order.paymentStatus)}</td>
                     <td className="py-1.5 capitalize">{words(order.fulfillmentStatus)}</td>
                     <td className="whitespace-nowrap py-1.5 text-right tabular-nums">{formatMinor(order.totalMinor, order.currency)}</td>
@@ -227,10 +227,10 @@ export function ReportsScreen() {
           </Section>
         </Card>
         <Card title="Best-sellers" className="lg:col-span-2">
-          <div role="tablist" aria-label="Best-sellers" className="mb-3 flex text-xs">
+          <div role="tablist" aria-label="Best-sellers" className="mb-3 flex gap-2">
             {(["real", "demo"] as const).map(tab => (
               <button key={tab} type="button" role="tab" id={`best-${tab}`} aria-selected={bestTab === tab} aria-controls="best-panel" onClick={() => setBestTab(tab)}
-                className={cn("border px-3 py-1 font-bold", bestTab === tab ? "border-black bg-black text-white" : "border-border text-neutral-600 hover:border-neutral-500")}>
+                className={cn("g-btn g-btn--sm", bestTab === tab ? "g-btn--black" : "g-btn--secondary")}>
                 {tab === "real" ? "Real" : "Demo"}
               </button>
             ))}
@@ -239,9 +239,9 @@ export function ReportsScreen() {
             <Section value={best} empty={data => data[bestTab].length === 0} emptyText={bestTab === "real" ? "No sales in this date range yet." : "No demo sales in this date range yet."}>
               {data => (
                 <table className="w-full text-sm">
-                  <thead><tr className="text-left text-xs text-muted-foreground"><th className="py-1 font-bold">Product</th><th className="px-3 text-right font-bold">Units</th><th className="whitespace-nowrap text-right font-bold">Item revenue</th></tr></thead>
+                  <thead><tr className="bg-muted text-left text-xs font-bold uppercase tracking-[-0.2px] text-black [&>th]:px-2 [&>th]:py-2"><th className="py-1 font-bold">Product</th><th className="px-3 text-right font-bold">Units</th><th className="whitespace-nowrap text-right font-bold">Item revenue</th></tr></thead>
                   <tbody>{data[bestTab].map(item => (
-                    <tr key={item.variantId + item.currency} className="border-t border-neutral-100">
+                    <tr key={item.variantId + item.currency} className="border-t border-garmin-rule [&>td]:px-2">
                       <td className="py-1.5"><span className="flex flex-wrap items-center gap-2">{item.name}{item.sku && <span className="tabular-nums text-xs text-muted-foreground">{item.sku}</span>}{bestTab === "demo" && <DemoBadge label="DEMO" className="text-[10px]" />}</span></td>
                       <td className="px-3 text-right tabular-nums">{formatCount(item.units)}</td>
                       <td className="whitespace-nowrap text-right tabular-nums">{formatMinor(item.revenueMinor, item.currency)}</td>
@@ -250,7 +250,7 @@ export function ReportsScreen() {
                 </table>
               )}
             </Section>
-            <p className="mt-2 text-xs text-muted-foreground">Item revenue is net of refunds, incl. tax, excl. shipping.</p>
+            <p className="mt-2 text-sm text-muted-foreground">Item revenue is net of refunds, incl. tax, excl. shipping.</p>
           </div>
         </Card>
       </div>
@@ -259,10 +259,10 @@ export function ReportsScreen() {
         <Card title="By day" name="Revenue by day">
           <Section value={summary} empty={data => data.days.length === 0} emptyText="No payments in this date range yet.">
             {data => (
-              <table className="w-full text-sm">
-                <thead><tr className="text-left text-xs text-muted-foreground"><th className="py-1 font-bold">Date</th><th className="font-bold">Captured</th><th className="font-bold">Refunded</th><th className="font-bold">Net</th></tr></thead>
+              <table className="w-full min-w-[400px] text-sm">
+                <thead><tr className="bg-muted text-left text-xs font-bold uppercase tracking-[-0.2px] text-black [&>th]:px-2 [&>th]:py-2"><th className="py-1 font-bold">Date</th><th className="font-bold">Captured</th><th className="font-bold">Refunded</th><th className="font-bold">Net</th></tr></thead>
                 <tbody>{data.days.map(day => (
-                  <tr key={day.date + day.environment + day.currency} className="border-t border-neutral-100">
+                  <tr key={day.date + day.environment + day.currency} className="border-t border-garmin-rule [&>td]:px-2">
                     <td className="py-1"><span className="flex items-center gap-2 tabular-nums">{day.date}{day.environment === "demo" ? <DemoBadge label="DEMO" className="text-[10px]" /> : day.environment === "sandbox" ? <span className="text-xs text-muted-foreground">sandbox</span> : null}</span></td>
                     <td className="tabular-nums">{formatMinor(day.capturedMinor, day.currency)}</td><td className="tabular-nums">{formatMinor(day.refundedMinor, day.currency)}</td><td className="tabular-nums">{formatMinor(day.netMinor, day.currency)}</td>
                   </tr>
@@ -275,13 +275,13 @@ export function ReportsScreen() {
           <Card title="Low stock">
             <Section value={stock} empty={items => items.length === 0} emptyText="No stock records yet.">
               {items => (
-                <ul className="space-y-1 text-sm">{items.map(item => (
-                  <li key={item.variantId} className="flex items-center justify-between gap-2">
+                <ul className="divide-y divide-garmin-rule text-sm">{items.map(item => (
+                  <li key={item.variantId} className="flex flex-wrap items-center justify-between gap-2 py-2">
                     <span>{item.name}{item.sku ? <span className="ml-1 tabular-nums text-xs text-muted-foreground">{item.sku}</span> : null}</span>
                     <span className="flex items-center gap-2"><span className="font-bold tabular-nums">{formatCount(item.available)}</span>
-                      <button type="button" disabled={busy !== null} onClick={() => void restock(item)} className="border border-black px-2 py-0.5 text-xs font-bold capitalize disabled:opacity-50">{pending.isPending(`restock:${item.variantId}`) ? "Retry restock" : "Restock +10"}</button>
-                      <input aria-label={`Stock correction for ${item.name}`} inputMode="numeric" placeholder="±qty" className="w-16 border border-border px-1 text-xs" value={adjust[item.variantId] ?? ""} onChange={event => setAdjust(current => ({ ...current, [item.variantId]: event.target.value }))} />
-                      <button type="button" disabled={busy !== null || !(adjust[item.variantId] ?? "").trim()} onClick={() => correct(item)} className="border border-neutral-400 px-2 py-0.5 text-xs font-bold capitalize disabled:opacity-50">Apply</button></span>
+                      <button type="button" disabled={busy !== null} onClick={() => void restock(item)} className="g-btn g-btn--secondary g-btn--sm">{pending.isPending(`restock:${item.variantId}`) ? "Retry restock" : "Restock +10"}</button>
+                      <input aria-label={`Stock correction for ${item.name}`} inputMode="numeric" placeholder="±qty" className="h-[26px] w-16 border border-garmin-control px-1.5 text-xs tabular-nums focus:border-black focus:outline-none" value={adjust[item.variantId] ?? ""} onChange={event => setAdjust(current => ({ ...current, [item.variantId]: event.target.value }))} />
+                      <button type="button" disabled={busy !== null || !(adjust[item.variantId] ?? "").trim()} onClick={() => correct(item)} className="g-btn g-btn--secondary g-btn--sm">Apply</button></span>
                   </li>
                 ))}</ul>
               )}
@@ -291,13 +291,13 @@ export function ReportsScreen() {
             {exportsList === null ? <Muted>Exports need the export permission.</Muted> : (
               <>
                 <div className="mb-3 flex gap-2">
-                  <button type="button" disabled={busy !== null} onClick={() => void requestExport("orders")} className="border border-black px-2 py-1 text-xs font-bold disabled:opacity-50">Export orders (period)</button>
-                  <button type="button" disabled={busy !== null} onClick={() => void requestExport("catalog")} className="border border-black px-2 py-1 text-xs font-bold disabled:opacity-50">Export catalog</button>
+                  <button type="button" disabled={busy !== null} onClick={() => void requestExport("orders")} className="g-btn g-btn--secondary g-btn--sm">Export orders (period)</button>
+                  <button type="button" disabled={busy !== null} onClick={() => void requestExport("catalog")} className="g-btn g-btn--secondary g-btn--sm">Export catalog</button>
                 </div>
-                <ul className="space-y-1 text-xs">{exportsList.map(job => (
+                <ul className="space-y-1 text-sm">{exportsList.map(job => (
                   <li key={job.id} className="flex justify-between gap-2">
                     <span>{job.kind} · {job.status}</span>
-                    {job.status === "completed" && new Date(job.expiresAt) > new Date() ? <a className="underline" href={`/api/admin/exports?id=${job.id}`}>Download CSV</a> : <span className="text-neutral-500">expires {new Date(job.expiresAt).toLocaleString("en-GB")}</span>}
+                    {job.status === "completed" && new Date(job.expiresAt) > new Date() ? <a className="underline" href={`/api/admin/exports?id=${job.id}`}>Download CSV</a> : <span className="text-muted-foreground">expires {new Date(job.expiresAt).toLocaleString("en-GB")}</span>}
                   </li>
                 ))}</ul>
               </>

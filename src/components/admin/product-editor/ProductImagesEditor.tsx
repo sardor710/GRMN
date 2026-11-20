@@ -131,7 +131,7 @@ export function ProductImagesEditor({ images, defaultImageId, onChange }: Produc
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <span className={labelClass}>Product Photos ({images.length})</span>
-        <span className="text-[11px] text-neutral-500">
+        <span className="text-xs text-muted-foreground">
           Drag to reorder · <Star className="inline h-3 w-3 fill-amber-400 text-amber-500" /> marks the default photo
         </span>
       </div>
@@ -151,17 +151,17 @@ export function ProductImagesEditor({ images, defaultImageId, onChange }: Produc
           void handleFiles(e.dataTransfer.files);
         }}
         className={`flex flex-col items-center justify-center gap-2 border border-dashed px-4 py-6 text-center transition-colors rounded-none ${
-          isDragOver ? "border-[#007cc3] bg-sky-50" : "border-neutral-300 bg-neutral-50"
+          isDragOver ? "border-garmin-blue bg-sky-50" : "border-border bg-neutral-50"
         }`}
       >
-        <UploadCloud className="h-7 w-7 text-neutral-400" aria-hidden="true" />
+        <UploadCloud className="h-7 w-7 text-muted-foreground" aria-hidden="true" />
         <p className="text-[13px] text-neutral-700">
           Drop photos here or{" "}
-          <button type="button" onClick={() => fileInputRef.current?.click()} className="font-semibold text-[#007cc3] underline">
+          <button type="button" onClick={() => fileInputRef.current?.click()} className="font-semibold text-garmin-blue underline">
             choose files from your computer
           </button>
         </p>
-        <p className="text-[11px] text-neutral-500">JPEG, PNG, WebP or AVIF · up to 10 MB each · several at once</p>
+        <p className="text-xs text-muted-foreground">JPEG, PNG, WebP or AVIF · up to 10 MB each · several at once</p>
         <input
           ref={fileInputRef}
           type="file"
@@ -182,17 +182,17 @@ export function ProductImagesEditor({ images, defaultImageId, onChange }: Produc
           {pending.map((p) => (
             <li
               key={p.key}
-              className={`flex items-center gap-2 border px-2.5 py-1.5 text-[12px] rounded-none ${
-                p.error ? "border-rose-200 bg-rose-50 text-rose-800" : "border-neutral-200 bg-white text-neutral-700"
+              className={`flex items-center gap-2 border px-2.5 py-1.5 text-xs rounded-none ${
+                p.error ? "border-rose-200 bg-rose-50 text-rose-800" : "border-border bg-white text-neutral-700"
               }`}
             >
-              {!p.error && <Loader2 className="h-3.5 w-3.5 animate-spin text-[#007cc3]" aria-hidden="true" />}
-              <span className="truncate font-mono">{p.name}</span>
+              {!p.error && <Loader2 className="h-3.5 w-3.5 animate-spin text-garmin-blue" aria-hidden="true" />}
+              <span className="truncate tabular-nums">{p.name}</span>
               {p.error ? (
                 <span className="ml-auto shrink-0">{p.error}</span>
               ) : (
                 <span className="ml-auto flex shrink-0 items-center gap-2">
-                  <progress value={p.progress} max={100} aria-label={`Uploading ${p.name}`} className="h-1.5 w-24 accent-[#007cc3]" />
+                  <progress value={p.progress} max={100} aria-label={`Uploading ${p.name}`} className="h-1.5 w-24 accent-garmin-blue" />
                   <span className="w-8 text-right tabular-nums">{p.progress}%</span>
                 </span>
               )}
@@ -214,7 +214,7 @@ export function ProductImagesEditor({ images, defaultImageId, onChange }: Produc
       {/* Add by URL */}
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <Link2 className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" aria-hidden="true" />
+          <Link2 className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <input
             type="text"
             value={urlDraft}
@@ -227,7 +227,7 @@ export function ProductImagesEditor({ images, defaultImageId, onChange }: Produc
             }}
             placeholder="…or paste an image URL / path (e.g. /images/products/1228429.jpg)"
             aria-label="Image URL"
-            className={`${inputClass} pl-8 font-mono`}
+            className={`${inputClass} pl-8 tabular-nums`}
           />
         </div>
         <button type="button" onClick={addByUrl} className={secondaryButtonClass} disabled={!urlDraft.trim()}>
@@ -238,7 +238,7 @@ export function ProductImagesEditor({ images, defaultImageId, onChange }: Produc
 
       {/* Gallery */}
       {images.length === 0 ? (
-        <p className="border border-neutral-200 bg-white p-4 text-center text-[12px] text-neutral-500">
+        <p className="border border-border bg-white p-4 text-center text-xs text-muted-foreground">
           No photos yet. The first photo you add becomes the default.
         </p>
       ) : (
@@ -272,7 +272,7 @@ export function ProductImagesEditor({ images, defaultImageId, onChange }: Produc
                 <div className="relative aspect-square cursor-grab bg-neutral-50 active:cursor-grabbing">
                   {/* eslint-disable-next-line @next/next/no-img-element -- admin preview of arbitrary upload/remote paths */}
                   <img src={img.src} alt={img.alt} loading="lazy" className="h-full w-full object-contain p-1.5" />
-                  <span className="absolute left-1 top-1 bg-white/90 px-1 font-mono text-[10px] text-neutral-500">{idx + 1}</span>
+                  <span className="absolute left-1 top-1 bg-white/90 px-1 tabular-nums text-xs text-muted-foreground">{idx + 1}</span>
                   <button
                     type="button"
                     onClick={() => commit(images, img.id)}
@@ -291,7 +291,7 @@ export function ProductImagesEditor({ images, defaultImageId, onChange }: Produc
                     onChange={(e) => setAlt(img.id, e.target.value)}
                     placeholder="Alt text"
                     aria-label={`Alt text for photo ${idx + 1}`}
-                    className="h-7 w-full border border-neutral-200 px-1.5 text-[11px] focus:border-black focus:outline-none rounded-none"
+                    className="h-7 w-full border border-border px-1.5 text-xs focus:border-black focus:outline-none rounded-none"
                   />
                   <div className="flex items-center justify-between">
                     <div className="flex">
@@ -300,7 +300,7 @@ export function ProductImagesEditor({ images, defaultImageId, onChange }: Produc
                         onClick={() => move(idx, idx - 1)}
                         disabled={idx === 0}
                         aria-label="Move photo left"
-                        className="p-1 text-neutral-500 hover:text-black disabled:opacity-30"
+                        className="p-1 text-muted-foreground hover:text-black disabled:opacity-30"
                       >
                         <ArrowLeft className="h-3.5 w-3.5" />
                       </button>
@@ -309,7 +309,7 @@ export function ProductImagesEditor({ images, defaultImageId, onChange }: Produc
                         onClick={() => move(idx, idx + 1)}
                         disabled={idx === images.length - 1}
                         aria-label="Move photo right"
-                        className="p-1 text-neutral-500 hover:text-black disabled:opacity-30"
+                        className="p-1 text-muted-foreground hover:text-black disabled:opacity-30"
                       >
                         <ArrowRight className="h-3.5 w-3.5" />
                       </button>
@@ -318,7 +318,7 @@ export function ProductImagesEditor({ images, defaultImageId, onChange }: Produc
                       type="button"
                       onClick={() => remove(img.id)}
                       aria-label={`Remove photo ${idx + 1}`}
-                      className="p-1 text-neutral-400 hover:text-rose-600"
+                      className="p-1 text-muted-foreground hover:text-rose-600"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>

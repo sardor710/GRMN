@@ -75,14 +75,14 @@ export function OptionsEditor({ options, images, onChange }: OptionsEditorProps)
   return (
     <div className="space-y-3">
       {options.length === 0 && (
-        <p className="border border-neutral-200 bg-white p-3 text-[12px] text-neutral-500">
+        <p className="border border-border bg-white p-3 text-xs text-muted-foreground">
           This is a simple product (one SKU). Add an option such as <strong>Size</strong> or <strong>Color</strong> if it is
           sold in several variants.
         </p>
       )}
 
       {options.map((option, oIdx) => (
-        <div key={option.id} className="border border-neutral-200 bg-white p-3 space-y-3 rounded-none">
+        <div key={option.id} className="border border-border bg-white p-3 space-y-3 rounded-none">
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_200px_auto] sm:items-end">
             <div>
               <label className={labelClass} htmlFor={`${option.id}-name`}>
@@ -125,7 +125,7 @@ export function OptionsEditor({ options, images, onChange }: OptionsEditorProps)
                 onClick={() => onChange(moveItem(options, oIdx, oIdx - 1))}
                 disabled={oIdx === 0}
                 aria-label={`Move option ${option.name || oIdx + 1} up`}
-                className="p-1.5 text-neutral-500 hover:text-black disabled:opacity-30"
+                className="p-1.5 text-muted-foreground hover:text-black disabled:opacity-30"
               >
                 <ArrowUp className="h-4 w-4" />
               </button>
@@ -134,7 +134,7 @@ export function OptionsEditor({ options, images, onChange }: OptionsEditorProps)
                 onClick={() => onChange(moveItem(options, oIdx, oIdx + 1))}
                 disabled={oIdx === options.length - 1}
                 aria-label={`Move option ${option.name || oIdx + 1} down`}
-                className="p-1.5 text-neutral-500 hover:text-black disabled:opacity-30"
+                className="p-1.5 text-muted-foreground hover:text-black disabled:opacity-30"
               >
                 <ArrowDown className="h-4 w-4" />
               </button>
@@ -142,7 +142,7 @@ export function OptionsEditor({ options, images, onChange }: OptionsEditorProps)
                 type="button"
                 onClick={() => onChange(options.filter((o) => o.id !== option.id))}
                 aria-label={`Remove option ${option.name || oIdx + 1}`}
-                className="p-1.5 text-neutral-400 hover:text-rose-600"
+                className="p-1.5 text-muted-foreground hover:text-rose-600"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -153,11 +153,11 @@ export function OptionsEditor({ options, images, onChange }: OptionsEditorProps)
           <div className="space-y-1.5">
             <span className={labelClass}>Values ({option.values.length})</span>
             {option.values.map((value, vIdx) => (
-              <div key={value.id} className="flex flex-wrap items-center gap-1.5 bg-neutral-50 border border-neutral-200 p-1.5">
+              <div key={value.id} className="flex flex-wrap items-center gap-1.5 bg-neutral-50 border border-border p-1.5">
                 {option.display === "swatch" && (
                   <span
                     aria-hidden="true"
-                    className="h-6 w-6 shrink-0 overflow-hidden rounded-full border border-neutral-300 bg-white"
+                    className="h-6 w-6 shrink-0 overflow-hidden rounded-full border border-border bg-white"
                   >
                     {value.swatchImage ? (
                       // eslint-disable-next-line @next/next/no-img-element -- tiny swatch preview
@@ -184,7 +184,7 @@ export function OptionsEditor({ options, images, onChange }: OptionsEditorProps)
                       onChange={(e) => updateValue(option.id, value.id, { swatchColor: e.target.value })}
                       aria-label={`Swatch color for ${value.label}`}
                       title="Swatch color"
-                      className="h-7 w-9 cursor-pointer border border-neutral-300 bg-white p-0.5"
+                      className="h-7 w-9 cursor-pointer border border-border bg-white p-0.5"
                     />
                     <select
                       value={value.swatchImage || ""}
@@ -211,7 +211,7 @@ export function OptionsEditor({ options, images, onChange }: OptionsEditorProps)
                     onClick={() => updateOption(option.id, { values: moveItem(option.values, vIdx, vIdx - 1) })}
                     disabled={vIdx === 0}
                     aria-label={`Move ${value.label} earlier`}
-                    className="p-1 text-neutral-500 hover:text-black disabled:opacity-30"
+                    className="p-1 text-muted-foreground hover:text-black disabled:opacity-30"
                   >
                     <ArrowLeft className="h-3.5 w-3.5" />
                   </button>
@@ -220,7 +220,7 @@ export function OptionsEditor({ options, images, onChange }: OptionsEditorProps)
                     onClick={() => updateOption(option.id, { values: moveItem(option.values, vIdx, vIdx + 1) })}
                     disabled={vIdx === option.values.length - 1}
                     aria-label={`Move ${value.label} later`}
-                    className="p-1 text-neutral-500 hover:text-black disabled:opacity-30"
+                    className="p-1 text-muted-foreground hover:text-black disabled:opacity-30"
                   >
                     <ArrowRight className="h-3.5 w-3.5" />
                   </button>
@@ -228,7 +228,7 @@ export function OptionsEditor({ options, images, onChange }: OptionsEditorProps)
                     type="button"
                     onClick={() => updateOption(option.id, { values: option.values.filter((v) => v.id !== value.id) })}
                     aria-label={`Remove value ${value.label}`}
-                    className="p-1 text-neutral-400 hover:text-rose-600"
+                    className="p-1 text-muted-foreground hover:text-rose-600"
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>

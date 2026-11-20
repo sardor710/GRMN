@@ -12,7 +12,7 @@ export function DashboardHeader({ onRefresh, isRefreshing = false }: DashboardHe
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
       <div>
-        <h1 className="g-heading text-[32px] leading-10 text-black">Dashboard</h1>
+        <h1 className="g-heading g-h2 text-black">Dashboard</h1>
         <p className="mt-1 text-sm text-muted-foreground">Totals from the JSON store. Exports are unavailable.</p>
       </div>
       <div className="flex flex-wrap items-center gap-2">

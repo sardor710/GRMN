@@ -73,10 +73,10 @@ export function VariantContentEditor({ variant, product, onChange }: VariantCont
         const own = ownsBlock(content, block.id);
         const groupLabel = `${block.label} for ${variant.title}`;
         return (
-          <section key={block.id} data-block={block.id} className="border border-neutral-200 bg-white p-3 space-y-3">
+          <section key={block.id} data-block={block.id} className="border border-border bg-white p-3 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <h5 className="text-[11px] font-heading uppercase tracking-wider font-semibold text-black">{block.label}</h5>
-              <div role="group" aria-label={groupLabel} className="inline-flex border border-neutral-300">
+              <h5 className="font-sans text-xs font-semibold text-black">{block.label}</h5>
+              <div role="group" aria-label={groupLabel} className="inline-flex border border-border">
                 {[
                   { value: false, label: "Same as product" },
                   { value: true, label: "Own" },
@@ -88,7 +88,7 @@ export function VariantContentEditor({ variant, product, onChange }: VariantCont
                       type="button"
                       aria-pressed={checked}
                       onClick={() => setOwn(block.id, choice.value)}
-                      className={`px-2.5 py-1 text-[11px] font-heading uppercase tracking-wider font-semibold transition-colors ${
+                      className={`px-2.5 py-1 text-xs font-semibold transition-colors ${
                         checked ? "bg-black text-white" : "bg-white text-neutral-600 hover:text-black"
                       }`}
                     >
@@ -99,7 +99,7 @@ export function VariantContentEditor({ variant, product, onChange }: VariantCont
               </div>
             </div>
 
-            {!own && <p className="text-[12px] text-neutral-500">{inheritedSummary(block.id)}</p>}
+            {!own && <p className="text-xs text-muted-foreground">{inheritedSummary(block.id)}</p>}
 
             {own && block.id === "specs" && (
               <SpecsBlockEditor

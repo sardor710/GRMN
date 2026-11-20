@@ -3,15 +3,11 @@
 import { formatKzt } from "@/lib/money";
 import { useState, useEffect } from "react";
 import {
-  Percent,
-  Plus,
   Search,
   Copy,
   Check,
   Trash2,
   Edit,
-  Layers,
-  Calendar,
 } from "lucide-react";
 import type {
   Discount,
@@ -216,13 +212,10 @@ export default function AdminDiscountsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
         <div>
           <div className="flex items-center gap-2">
-            <Percent className="h-6 w-6 text-garmin-blue" />
-            <h1 className="g-heading text-2xl text-black">
-              Promotions & Discount Campaigns
-            </h1>
+            <h1 className="g-heading g-h2 text-black">Discounts</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-1">
-            Configure price reductions, voucher percentages, scheduled campaign periods, and product targeting.
+            Discount codes, their dates and the products they apply to.
           </p>
         </div>
 
@@ -231,7 +224,6 @@ export default function AdminDiscountsPage() {
           onClick={handleOpenAdd}
           className="g-btn g-btn--black gap-2"
         >
-          <Plus className="h-3.5 w-3.5" />
           <span>Create Promotion</span>
         </button>
       </div>
@@ -416,7 +408,6 @@ export default function AdminDiscountsPage() {
         onClose={() => setIsModalOpen(false)}
         maxWidth="3xl"
         title={editingDiscount ? "Edit Promotion Campaign" : "Create Promotion Voucher"}
-        subtitle="Configure discount rates, schedule validity, targeted product models, and redemptions"
       >
         <AdminPageControls page={productPage} />
         <form onSubmit={handleSubmit} className="space-y-5">
@@ -502,8 +493,7 @@ export default function AdminDiscountsPage() {
 
           {/* Row 3: Validity Period */}
           <div className="border border-border bg-neutral-50/50 p-4 space-y-3 rounded-none">
-            <h4 className="text-xs font-semibold text-black flex items-center gap-1.5">
-              <Calendar className="h-4 w-4 text-garmin-blue" />
+            <h4 className="font-sans text-xs font-semibold text-black flex items-center gap-1.5">
               <span>Schedule Validity Period</span>
             </h4>
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -534,8 +524,7 @@ export default function AdminDiscountsPage() {
 
           {/* Row 4: Target Scope */}
           <div className="border border-border bg-neutral-50/50 p-4 space-y-3 rounded-none">
-            <h4 className="text-xs font-semibold text-black flex items-center gap-1.5">
-              <Layers className="h-4 w-4 text-garmin-blue" />
+            <h4 className="font-sans text-xs font-semibold text-black flex items-center gap-1.5">
               <span>Target Scope & Product Filter</span>
             </h4>
 
@@ -686,7 +675,7 @@ export default function AdminDiscountsPage() {
             <button
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="border border-border bg-white px-4 py-2 text-xs font-semibold uppercase text-neutral-700 hover:bg-neutral-50 rounded-none transition-colors"
+              className="g-btn g-btn--secondary"
             >
               Cancel
             </button>

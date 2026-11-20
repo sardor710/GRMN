@@ -44,14 +44,14 @@ export function galleryFor(
 }
 
 export const labelClass =
-  "block text-xs font-semibold text-neutral-600";
+  "block text-sm font-bold text-black";
 export const inputClass =
-  "h-9 w-full border border-border bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none";
+  "h-10 w-full border border-garmin-control bg-white px-3 text-sm text-black focus:border-black focus:outline-none";
 export const smallInputClass =
-  "h-7 w-full border border-border bg-white px-2 text-xs text-black focus:border-black focus:outline-none rounded-none";
+  "h-8 w-full border border-garmin-control bg-white px-2 text-[13px] text-black focus:border-black focus:outline-none";
 export const primaryButtonClass =
-  "g-btn g-btn--black gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed";
+  "g-btn g-btn--black";
 export const secondaryButtonClass =
-  "g-btn g-btn--secondary g-btn--sm gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed";
+  "g-btn g-btn--secondary g-btn--sm";
 export const linkButtonClass =
-  "inline-flex items-center gap-1 text-xs uppercase font-bold text-garmin-blue hover:underline disabled:opacity-50";
+  "g-btn g-btn--text-link gap-1 py-0 text-xs disabled:opacity-50";

@@ -5,18 +5,14 @@ import { AutoTranslateButton } from "@/components/admin/AutoTranslateButton";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import {
-  Plus,
   Search,
   Tag,
-  Boxes,
   FileText,
   Sliders,
   Box,
   Share2,
   Globe,
   Layers,
-  Eye,
-  Download,
   AlertTriangle,
 } from "lucide-react";
 import type {
@@ -604,13 +600,7 @@ export default function AdminProductsPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
         <div>
-          <h1 className="g-heading text-2xl text-black font-normal flex items-center gap-2.5">
-            <Boxes className="h-6 w-6 text-garmin-blue" />
-            <span>Product Catalog &amp; Inventory</span>
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1 font-sans">
-            Manage Garmin product models, technical specifications, retail packages, and cross-selling accessories.
-          </p>
+          <h1 className="g-heading g-h2 text-black">Products</h1>
         </div>
 
         <button
@@ -618,7 +608,6 @@ export default function AdminProductsPage() {
           onClick={handleOpenAdd}
           className="g-btn g-btn--black gap-1.5"
         >
-          <Plus className="h-3.5 w-3.5" />
           <span>Add New Product</span>
         </button>
       </div>
@@ -634,7 +623,7 @@ export default function AdminProductsPage() {
               setSearch(e.target.value);
               clearSelection();
             }}
-            placeholder="Search by model, SKU, or family..."
+            placeholder="Search by model, SKU, or family"
             className="h-9 w-full border border-border bg-neutral-50 pl-9 pr-3 text-[13px] text-black placeholder-neutral-400 focus:border-black focus:bg-white focus:outline-none rounded-none"
           />
         </div>
@@ -648,7 +637,7 @@ export default function AdminProductsPage() {
             }}
             className="h-9 border border-border bg-white px-3 text-[13px] font-medium text-black focus:border-black focus:outline-none rounded-none"
           >
-            <option value="all">All Watch Families</option>
+            <option value="all">All families</option>
             {WATCH_FAMILIES.map((f) => (
               <option key={f} value={f}>
                 {f} Series
@@ -664,7 +653,7 @@ export default function AdminProductsPage() {
             }}
             className="h-9 border border-border bg-white px-3 text-[13px] font-medium text-black focus:border-black focus:outline-none rounded-none"
           >
-            <option value="all">All Statuses</option>
+            <option value="all">All statuses</option>
             <option value="published">Published</option>
             <option value="draft">Draft</option>
             <option value="archived">Archived</option>
@@ -680,7 +669,7 @@ export default function AdminProductsPage() {
       {/* Products Table */}
       <div className="border border-border bg-white overflow-hidden rounded-none">
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-[13px]">
+          <table className="w-full min-w-[960px] text-left text-[13px]">
             <thead>
               <tr className="border-b border-border bg-muted text-black text-xs uppercase tracking-[-0.2px]">
                 {postgresStore && (
@@ -691,7 +680,7 @@ export default function AdminProductsPage() {
                       indeterminate={someOnPageSelected && !allOnPageSelected}
                       disabled={loading || pageRows.length === 0}
                       onCheckedChange={toggleAllOnPage}
-                      className="rounded-none border-neutral-400 data-checked:border-black data-checked:bg-black data-indeterminate:border-black data-indeterminate:bg-black"
+                      className="border-2 border-garmin-checkbox data-checked:border-black data-checked:bg-black data-indeterminate:border-black data-indeterminate:bg-black"
                     />
                   </th>
                 )}
@@ -730,7 +719,7 @@ export default function AdminProductsPage() {
                           aria-label={`Select ${p.name}`}
                           checked={selected.has(p.id)}
                           onCheckedChange={(checked) => toggleRow(p, checked)}
-                          className="relative z-10 rounded-none border-neutral-400 data-checked:border-black data-checked:bg-black"
+                          className="relative z-10 border-2 border-garmin-checkbox data-checked:border-black data-checked:bg-black"
                         />
                       </td>
                     )}
@@ -784,16 +773,7 @@ export default function AdminProductsPage() {
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-1.5">
-                        <span
-                          className={`h-2 w-2 rounded-full ${
-                            p.stock > 20
-                              ? "bg-emerald-600"
-                              : p.stock > 5
-                              ? "bg-amber-600"
-                              : "bg-rose-600"
-                          }`}
-                        />
-                        <span className="font-bold tabular-nums text-black text-xs">{formatCount(p.stock)} units</span>
+                        <span className={`text-xs font-bold tabular-nums ${p.stock <= 5 ? "text-garmin-error" : "text-black"}`}>{formatCount(p.stock)} units</span>
                       </div>
                     </td>
                     <td className="py-3.5 px-4">
@@ -815,12 +795,12 @@ export default function AdminProductsPage() {
                         </div>
                       ) : (
                         <span
-                          className={`capitalize text-xs font-bold px-2 py-0.5 rounded-none border ${
+                          className={`inline-flex items-center gap-1 rounded-garmin-pill border px-3 py-1 text-sm leading-[21px] capitalize ${
                             p.status === "published"
-                              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                              ? "bg-black text-white border-black"
                               : p.status === "draft"
-                                ? "bg-amber-50 text-amber-800 border-amber-200"
-                                : "bg-neutral-100 text-neutral-600 border-border"
+                                ? "bg-garmin-badge-gray text-black border-garmin-badge-gray"
+                                : "bg-white text-muted-foreground border-garmin-control"
                           }`}
                         >
                           {p.status}
@@ -835,13 +815,12 @@ export default function AdminProductsPage() {
         </div>
       </div>
 
-      {/* 5-Tab Enterprise Product Builder Modal */}
+      {/* Product editor (5 tabs) */}
       <AdminModal
         isOpen={isModalOpen}
         onClose={requestCloseEditor}
         maxWidth="4xl"
-        title={editingProduct ? `Edit Model: ${editingProduct.name}` : "Create Product Catalog Entry"}
-        subtitle="Manage product taxonomy, pricing, technical specifications, and cross-selling accessories"
+        title={editingProduct ? `Edit ${editingProduct.name}` : "New product"}
       >
         <form onSubmit={handleSubmit} className="space-y-5 font-sans">
           {/* Editor toolbar */}
@@ -864,7 +843,6 @@ export default function AdminProductsPage() {
                 onClick={() => setIsImportOpen(true)}
                 className="g-btn g-btn--secondary g-btn--sm gap-1.5"
               >
-                <Download className="h-3.5 w-3.5" />
                 Import from garmin.com
               </button>
               <button
@@ -872,7 +850,6 @@ export default function AdminProductsPage() {
                 onClick={() => setIsPreviewOpen(true)}
                 className="g-btn g-btn--secondary g-btn--sm gap-1.5"
               >
-                <Eye className="h-3.5 w-3.5" />
                 Preview
               </button>
             </div>
@@ -1029,8 +1006,7 @@ export default function AdminProductsPage() {
               <div className="border border-border bg-neutral-50 p-4 space-y-3 rounded-none">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h4 className="g-heading text-[13px] text-black font-normal flex items-center gap-2">
-                      <Tag className="h-3.5 w-3.5 text-garmin-blue" />
+                    <h4 className="font-sans text-sm font-bold text-black flex items-center gap-2">
                       <span>Product Ribbon Badge &amp; Marketing Tag</span>
                     </h4>
                     <p className="text-xs text-muted-foreground mt-0.5">
@@ -1081,7 +1057,7 @@ export default function AdminProductsPage() {
 
               {/* Price Options */}
               {hasVariants && (
-                <p className="border border-sky-200 bg-sky-50 px-3 py-2 text-xs text-sky-900">
+                <p className="border border-garmin-control bg-muted px-3 py-2 text-xs text-black">
                   This product has {formData.variants.length} variants. Price, compare-at price and stock come from the
                   default variant ({defaultVariant?.title || "—"}: {formatKzt(defaultVariant?.price)}) — edit them in{" "}
                   <button type="button" onClick={() => setActiveTab("variants")} className="font-semibold underline">
@@ -1322,7 +1298,7 @@ export default function AdminProductsPage() {
             <div className="space-y-6">
               <section aria-labelledby="options-heading" className="space-y-2">
                 <div>
-                  <h4 id="options-heading" className="g-heading text-[13px] text-black font-normal">
+                  <h4 id="options-heading" className="font-sans text-sm font-bold text-black">
                     Options
                   </h4>
                   <p className="text-xs text-muted-foreground">
@@ -1495,7 +1471,7 @@ export default function AdminProductsPage() {
               )}
               <span className="text-xs text-muted-foreground">
                 Active:{" "}
-                <span className="text-black font-heading font-semibold">
+                <span className="font-bold text-black">
                   {contentLocale === "en" ? activeTab : `${contentLocale} translation`}
                 </span>
               </span>
@@ -1513,7 +1489,6 @@ export default function AdminProductsPage() {
                 onClick={() => setIsPreviewOpen(true)}
                 className="g-btn g-btn--secondary gap-1.5"
               >
-                <Eye className="h-3.5 w-3.5" />
                 Preview
               </button>
               <button
