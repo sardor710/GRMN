@@ -162,7 +162,8 @@ export function CompareBar({ items, onChange, products, search, compareMode, ann
           {Array.from({ length: COMPARE_MAX_ITEMS }, (_, slot) => {
             const item = items[slot];
             const box = "relative aspect-square w-[calc((100%-2rem)/5)] max-w-[75px] lg:size-[53px] lg:max-w-none";
-            if (!item) return <li key={`empty-${slot}`} aria-hidden="true" className={`${box} border border-garmin-control`} />;
+            // Under 1024px garmin.com shows only the filled slots (final review polish); the empty frames are desktop-only.
+            if (!item) return <li key={`empty-${slot}`} aria-hidden="true" className={`${box} border border-garmin-control max-lg:hidden`} />;
             const { name, image } = display(item);
             return (
               <li key={`${item.productId}~${item.sku ?? ""}`} title={name} className={`${box} border border-black bg-white`}>

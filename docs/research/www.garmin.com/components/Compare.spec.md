@@ -59,6 +59,11 @@ Vue app. Breakpoints used: min 768, min 1024 (main switch), min 1200, min 1440.
   uppercase 32px / 40px, tracking 0.8px, margin 24px 0, padding 8px (390: 24px / 30px). Chevron
   (`viewBox 0 0 18.2 11.2`, 14 × 10) right after the title (`margin-left:4.8px`), rotated 180° when open; at 390 it sits
   at the far right (title `flex-grow:1`). Focus-visible UA ring. All groups open by default.
+  Measured geometry (the chevron is outside the padded h2): 1440 svg 12.8px after the text; 390 icon span has
+  `padding:0 8px`, so the svg ends 8px from the row's right edge. Ours matches both (svg `ml-[12.8px]`, 390
+  `ml-[20.8px]`, 8px button padding on the right; h2 56px / 46px tall).
+- Label band at 390: the th keeps the UA `text-align:center`, so the label is centred in the 358px band (ours: the
+  pinned label span is the visible band's inner width and centred under 1024px).
 - Group order and names are Garmin's own (e.g. "What You'll Love", "General", "Sensors", …).
 
 ## Spec row
@@ -126,8 +131,9 @@ a CDP probe that clicked three "+" buttons and read computed styles.
   selected" / the limit note) and "Clear all". The banner sticks inside the catalogue block, so it never reaches the
   footer; the rail sticks at `top:87px`.
 - 390: `position:sticky; bottom:0` inside the catalogue block instead of fixed (it cannot cover the footer or the
-  "Next Products" link; it appears once the catalogue scrolls into view). Five slots of (100% − 32px) / 5 = 65px
-  (Garmin: two of 75px). Order as Garmin (slots, search, Compare), then status and "Clear all".
+  "Next Products" link; it appears once the catalogue scrolls into view). Slots of (100% − 32px) / 5 = 65px,
+  only the filled ones shown under 1024px, like Garmin (Garmin: up to two of 75px). The "Search for Products" label
+  is visually hidden on both sides (Garmin's 700-weight label is a 1 × 1 clip), so its weight is not visible. Order as Garmin (slots, search, Compare), then status and "Clear all".
 - Card: same grey card, 16px action row and 56px black "+"; selected = white + 2px black outline, ✓ instead of ×. The
   control is a real button with `aria-pressed`, visible text "Add to comparison" / "Added" plus the product name for
   screen readers, `aria-disabled` + `aria-describedby` (the bar's limit note) at five. It is a sibling of the product

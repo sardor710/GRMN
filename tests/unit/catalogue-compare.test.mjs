@@ -182,6 +182,8 @@ test("bar: five slots, remove per slot, clear all, and Compare linking to the co
     const slots = nodes(tree).filter((n) => n.type === "li");
     assert.equal(slots.length, 5);
     assert.deepEqual(slots.map((n) => n.props["aria-hidden"] === "true"), [false, false, false, true, true]);
+    // Under 1024px only the filled slots show, like garmin.com.
+    assert.deepEqual(slots.map((n) => /max-lg:hidden/.test(n.props.className)), [false, false, false, true, true]);
     assert.equal(slots[0].props.title, "fēnix 8");
     assert.match(nodeText(tree), /3 of 5 products selected/);
     buttons(tree).find((n) => n.props["aria-label"] === "Remove Venu 4").props.onClick();

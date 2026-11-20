@@ -290,7 +290,7 @@ export function CompareTool({ items, groups, search, catalogueHref, renderedFor 
             className="flex w-full items-center p-2 text-left uppercase lg:w-auto"
           >
             <span className="g-heading min-w-0 flex-1">{group.title}</span>
-            <svg aria-hidden="true" viewBox="0 0 18.2 11.2" className={`ml-[4.8px] h-[9.59px] w-[14.39px] shrink-0 fill-current max-lg:mx-2 ${open ? "rotate-180" : ""}`}>
+            <svg aria-hidden="true" viewBox="0 0 18.2 11.2" className={`ml-[12.8px] h-[9.59px] w-[14.39px] shrink-0 fill-current max-lg:ml-[20.8px] ${open ? "rotate-180" : ""}`}>
               <path d="M9.1 11.2L0 2.2 2.2 0l6.9 7L16 0l2.2 2.2-9.1 9z" />
             </svg>
           </button>
@@ -309,7 +309,9 @@ export function CompareTool({ items, groups, search, catalogueHref, renderedFor 
             {group.rows.map((row) => (
               <div key={row.key} role="row" className={grid}>
                 <div role="rowheader" className="col-span-full border-t border-garmin-control bg-muted px-4 py-[5.6px] text-left text-[12px] leading-[18px] font-bold uppercase">
-                  <span className="max-lg:sticky max-lg:left-4 max-lg:inline-block max-lg:max-w-[calc(100vw-64px)]">{row.label}</span>
+                  {/* Under 1024px garmin.com centres the label in the visible band (its th keeps the UA centre); the span is
+                      the visible band's inner width (scroller 100vw-32px minus the 16px paddings) and pinned to it. */}
+                  <span className="max-lg:sticky max-lg:left-4 max-lg:inline-block max-lg:w-[calc(100vw-64px)] max-lg:text-center">{row.label}</span>
                 </div>
                 {Array.from({ length: SLOTS }, (_, slot) =>
                   slot < items.length ? (
