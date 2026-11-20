@@ -114,7 +114,10 @@ function variantEditor({cms,headers,evaluate,navigate,text,click,receipt},{id,sk
     async close(){await evaluate("window.confirm=()=>true;window.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}));true");await until(()=>evaluate("!document.querySelector('form')"),"Editor did not close");},
     async open(){
       await navigate("/admin/products");
-      await until(()=>evaluate("document.querySelectorAll('tbody tr[data-product-id]').length>0"),"Products list did not load");
+      // Final review 19: in dev, compiling /admin/products for the first time can make webpack hot-reload the page
+      // that was open before (the orders screen), which cancels this navigation; navigate again if that happened.
+      await until(async()=>{if(await evaluate("location.pathname")!=="/admin/products"){await navigate("/admin/products");return false;}return evaluate("document.querySelectorAll('tbody tr[data-product-id]').length>0");},"Products list did not load")
+        .catch(async error=>{await writeFile(path.join(receipt,`variant-editor-list-${sku}.txt`),`${await evaluate("location.href")}\n${await text()}`);throw error;});
       // Typed again on each try: a value set before hydration finishes is dropped.
       await until(()=>evaluate(`(()=>{const input=document.querySelector('input[placeholder*="Search by model"]');if(!input)return false;if(input.value!==${q(sku)}){Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${q(sku)});input.dispatchEvent(new Event('input',{bubbles:true}));}return document.querySelectorAll('tbody tr[data-product-id]').length===1&&document.body.innerText.includes(${q(name)});})()`),`Search did not find ${sku}`).catch(async error=>{await writeFile(path.join(receipt,`variant-content-list-${sku}.txt`),await text());throw error;});
       await evaluate("document.querySelector('tbody tr button[aria-label^=\"Edit \"]').click();true");
@@ -279,6 +282,28 @@ async function variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,
     assert.ok(!(await shows("Overview for the 47 mm model")));
     await until(()=>pressed(51),"51 mm is not selected after the reload");
     await until(()=>tab("Specs"),"Specs tab missing after reload");await until(()=>shows("Case 51 mm only"),"51 mm specs not shown after reload");
+
+    // Final review I2: prices are formatted on the server and again in the browser, so the strings must be
+    // identical. Every console error is recorded; there must be no hydration warning on either page.
+    for(const [name,page] of [["en-variant",`${route}?variant=UI-VS-51`],["ru",`/ru/p/${saved.id}`]]){
+      const messages=[];
+      const listener=event=>{const m=JSON.parse(String(event.data));
+        if(m.method==="Runtime.consoleAPICalled"&&["error","warning","assert"].includes(m.params.type))messages.push(`console.${m.params.type}: `+m.params.args.map(a=>a.value??a.description??"").join(" "));
+        else if(m.method==="Runtime.exceptionThrown")messages.push("exception: "+(m.params.exceptionDetails.exception?.description??m.params.exceptionDetails.text));
+        else if(m.method==="Log.entryAdded"&&["error","warning"].includes(m.params.entry.level))messages.push(`log.${m.params.entry.level}: ${m.params.entry.text} ${m.params.entry.url??""}`);};
+      ws.addEventListener("message",listener);
+      try{
+        await send("Runtime.enable");await send("Log.enable");
+        await navigate(page);
+        // Hydrated: React has attached its fiber to the tabs; then give late recoverable errors a moment.
+        await until(()=>evaluate("(()=>{const el=document.querySelector('[data-product-tabs]');return !!el&&Object.keys(el).some(k=>k.startsWith('__reactFiber'));})()"),`${page} did not hydrate`,60000);
+        await until(async()=>(await text()).includes(name==="ru"?"₸":"KZT"),`${page} shows no KZT price`);
+        await delay(2000);
+      }finally{ws.removeEventListener("message",listener);await send("Log.disable").catch(()=>{});await send("Runtime.disable").catch(()=>{});}
+      await writeFile(path.join(receipt,`hydration-console-${name}.txt`),messages.join("\n")||"(no console errors or warnings)");
+      const hydration=messages.filter(m=>/hydrat|did not match|server rendered (html|text)|text content does not match/i.test(m));
+      assert.deepEqual(hydration,[],`${page} logged hydration warnings:\n${hydration.join("\n")}`);
+    }
   }finally{await send("Emulation.clearDeviceMetricsOverride");}
 }
 let temporary,database,app,chrome,ws,profile,logFile;
@@ -542,7 +567,7 @@ try{
   for(let i=0;i<25;i++)await cms.save("products",headers,{name:`UI fixture ${i}`,sku:`UI-FIXTURE-${i}`,price:"123.45",status:"published",family:"Test",image:"/images/products/1228429.jpg",activities:[],level:"Entry",caseSize:"Medium"});
   await cms.saveHomepage(headers,{version:0,config:{heroBanners:[{id:"ui-hero",key:"ui",title:"UI HOMEPAGE FIXTURE",subtitle:"Disposable data",href:"/c/wearables-smartwatches",image:"/homepage/featured/holiday.jpg",active:true,order:0}],carousels:[],promoTiles:[],storyTiles:[],categoryTiles:[]}});
   fs.mkdirSync(receipt,{recursive:true});logFile=fs.openSync(path.join(receipt,"ui-next.log"),"w");
-  app=spawn(process.execPath,["node_modules/next/dist/bin/next","dev",...(process.env.CMS_TEST_BUNDLER==="webpack"?["--webpack"]:[]),"--hostname","localhost","--port",String(appPort)],{windowsHide:true,detached:process.platform!=="win32",stdio:["ignore",logFile,logFile],env:{...process.env,CMS_BACKEND:"postgres",AUTH_ENABLED:"1",AUTH_SECRET:secret,AUTH_BASE_URL:origin,DATABASE_URL:temporary.url,NODE_ENV:"development",NEXT_TELEMETRY_DISABLED:"1"}});
+  app=spawn(process.execPath,["node_modules/next/dist/bin/next","dev",...(process.env.CMS_TEST_BUNDLER==="webpack"?["--webpack"]:[]),"--hostname","localhost","--port",String(appPort)],{windowsHide:true,detached:process.platform!=="win32",stdio:["ignore",logFile,logFile],env:{...process.env,CMS_BACKEND:"postgres",AUTH_ENABLED:"1",AUTH_SECRET:secret,AUTH_BASE_URL:origin,DATABASE_URL:temporary.url,DATABASE_CONNECT_TIMEOUT_MS:process.env.DATABASE_CONNECT_TIMEOUT_MS??"10000",NODE_ENV:"development",NEXT_TELEMETRY_DISABLED:"1"}});
   await until(async()=>{const response=await fetch(origin+"/api/admin/products");return response.status===401;},"Next did not start",120000);
   const chromePath=process.env.CMS_TEST_CHROME??"C:/Program Files/Google/Chrome/Application/chrome.exe";assert.ok(fs.existsSync(chromePath),"Set CMS_TEST_CHROME to a Chrome executable");
   profile=await mkdtemp(path.join(root,"cms-ui-chrome-"));
@@ -586,7 +611,9 @@ try{
     await navigate("/");await until(async()=>(await text()).includes("UI HOMEPAGE FIXTURE"),"Persisted homepage did not render");
     const screenshot=await send("Page.captureScreenshot",{format:"png"});await saveShot("ui-homepage.png",screenshot.data);
     await navigate(`/p/${saved.id}`);await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Saved product did not render");assert.ok((await text()).includes("KZT"));
-    await navigate("/admin/homepage");await until(async()=>(await text()).includes("Save All Changes"),"Homepage editor did not load");await click("Save All Changes");await until(async()=>(await cms.homepage(headers)).version===2,"Homepage UI save failed");
+    // Final review 19: .g-btn is uppercase (garmin.com), so innerText reads "SAVE ALL CHANGES"; match the button's
+    // textContent (what click() matches) instead of the rendered case.
+    await navigate("/admin/homepage");await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Save All Changes'&&!b.disabled)"),"Homepage editor did not load").catch(async error=>{await writeFile(path.join(receipt,"admin-homepage-body.txt"),await text());throw error;});await click("Save All Changes");await until(async()=>(await cms.homepage(headers)).version===2,"Homepage UI save failed");
     await navigate("/admin/blogs");await until(async()=>(await text()).toLowerCase().includes("write new article"),"Blog editor did not load");await click("Write New Article");await until(()=>evaluate("!!document.querySelector('form')"),"Blog modal missing");
     await fill("Article Title","UI ARTICLE");await fill("Summary / Excerpt","UI excerpt");await fill("Cover Image","/images/blog/train-for-triathlon.jpg");await fill("Full Article Body","UI persisted article body");await evaluate("document.querySelector('form').requestSubmit();true");await until(()=>evaluate("!document.querySelector('form')"),"Blog UI save failed");
     const blog=(await cms.list("blogs",headers,{search:"UI ARTICLE"})).items[0];assert.ok(blog);await navigate("/blog/"+blog.slug);await until(async()=>(await text()).includes("UI persisted article body"),"Blog public content did not render");
@@ -769,7 +796,7 @@ try{
   // Task 2.4: the storefront variant switch (independent block: its own published product).
   if(!onlyVariantContent&&!onlyDashboard){
     await variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,text,receipt});
-    console.log("PASS Task2.4 variant switch: 47 -> 51 mm swaps Specs, In the box and Overview with no document navigation, ?variant= kept, reload and server render show 51 mm, canonical unchanged, unknown SKU falls back");
+    console.log("PASS Task2.4 variant switch: 47 -> 51 mm swaps Specs, In the box and Overview with no document navigation, ?variant= kept, reload and server render show 51 mm, canonical unchanged, unknown SKU falls back; no hydration warnings on /en/p/<id>?variant=<sku> and /ru/p/<id> (console recorded)");
   }
 
   // Task 4.2: the PostgreSQL dashboard (an independent block; CMS_SMOKE_ONLY=dashboard runs only this).

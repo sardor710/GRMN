@@ -14,6 +14,7 @@ import { useAppLocale } from "@/i18n/useAppLocale";
  */
 export function ProductCard({ product }: { product: Product }) {
   const t = useTranslations("ProductCard");
+  const badgeText = useTranslations("ProductBadge");
   const locale = useAppLocale();
   return (
     <Link
@@ -23,7 +24,7 @@ export function ProductCard({ product }: { product: Product }) {
     >
       <figure className="m-0 flex h-full flex-col items-center">
         {product.badge && product.badge !== "NONE" && (
-          <GarminBadge badge={product.badge} variant="ribbon" />
+          <GarminBadge badge={product.badge} variant="ribbon" labels={{ new: badgeText("new"), sale: badgeText("sale") }} />
         )}
 
         <div className="relative h-[207px] w-[200px] shrink-0 md:h-[300px] md:w-full">

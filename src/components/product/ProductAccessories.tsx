@@ -23,6 +23,7 @@ const CATEGORIES = ["All", "Bands & Straps", "Heart Rate & Sensors", "Cables & P
 
 export function ProductAccessories({ accessories = [] }: { accessories?: AccessoryItem[] }) {
   const t = useTranslations("ProductAccessories");
+  const badgeText = useTranslations("ProductBadge");
   const locale = useAppLocale();
   const categoryLabel = (category: string) => (CATEGORY_KEYS[category] ? t(`categories.${CATEGORY_KEYS[category]}`) : category);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
@@ -94,7 +95,7 @@ export function ProductAccessories({ accessories = [] }: { accessories?: Accesso
                     sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
                     className="object-contain mix-blend-multiply"
                   />
-                  {acc.badge && <GarminBadge badge={acc.badge} variant="ribbon" className="left-0 top-0" />}
+                  {acc.badge && <GarminBadge badge={acc.badge} variant="ribbon" className="left-0 top-0" labels={{ new: badgeText("new"), sale: badgeText("sale") }} />}
                 </div>
 
                 <div className="mt-4">

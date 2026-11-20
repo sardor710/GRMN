@@ -41,6 +41,7 @@ import {
   type BulkResult,
 } from "@/components/admin/products/BulkActionBar";
 import { StatusMenu } from "@/components/admin/products/StatusMenu";
+import { statusPillClass } from "@/components/admin/products/status-pill";
 import { SEOEditor } from "@/components/admin/SEOEditor";
 import {
   GarminImportDialog,
@@ -144,8 +145,10 @@ type EditorTab = "general" | "media" | "variants" | "specs" | "box" | "crossSell
 const blankForm = () => ({
   name: "",
   sku: `GRM-${Math.floor(100000 + Math.random() * 900000)}`,
-  price: 799.99,
-  originalPrice: 899.99 as number | undefined,
+  // Final review (M9 follow-up): a new product starts with no price and no compare-at, so saving without
+  // touching compare-at stores none (a prefilled 899.99 made every new product a fake sale).
+  price: 0,
+  originalPrice: undefined as number | undefined,
   priceSuffix: "",
   description: "",
   image: "",
@@ -278,7 +281,8 @@ export default function AdminProductsPage() {
       name: prod.name,
       sku: prod.sku,
       price: prod.price,
-      originalPrice: prod.originalPrice ?? (prod.variants?.length ? undefined : prod.price * 1.15),
+      // Final review M9: never invent a compare-at price (it used to prefill price * 1.15, a fake sale).
+      originalPrice: prod.originalPrice,
       priceSuffix: prod.priceSuffix || "",
       description: prod.description || "",
       image: prod.image,
@@ -543,6 +547,8 @@ export default function AdminProductsPage() {
       ...(postgres && editingProduct ? { version: (editingProduct as CMSProduct & { version?: number }).version } : {}),
       ...rest,
       ...(postgres ? {} : { stock }),
+      // PostgreSQL: an empty compare-at is sent as null, so a cleared (or never set) one stores no compareAt.
+      ...(postgres ? { originalPrice: rest.originalPrice ?? null } : {}),
       image: defaultImageSrc(formData.images, formData.defaultImageId) || formData.image,
       // empty arrays are sent on purpose so removing all options turns the product back into a simple one
       options: formData.options,
@@ -794,15 +800,7 @@ export default function AdminProductsPage() {
                           />
                         </div>
                       ) : (
-                        <span
-                          className={`inline-flex items-center gap-1 rounded-garmin-pill border px-3 py-1 text-sm leading-[21px] capitalize ${
-                            p.status === "published"
-                              ? "bg-black text-white border-black"
-                              : p.status === "draft"
-                                ? "bg-garmin-badge-gray text-black border-garmin-badge-gray"
-                                : "bg-white text-muted-foreground border-garmin-control"
-                          }`}
-                        >
+                        <span className={`inline-flex items-center gap-1 rounded-garmin-pill border px-3 py-1 text-sm leading-[21px] capitalize ${statusPillClass(p.status)}`}>
                           {p.status}
                         </span>
                       )}

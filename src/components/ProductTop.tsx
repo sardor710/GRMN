@@ -24,6 +24,7 @@ import { useAppLocale } from "@/i18n/useAppLocale";
 
 export function ProductTop({ product:initial }: { product: ProductDetail }) {
   const t = useTranslations("ProductTop");
+  const badgeText = useTranslations("ProductBadge");
   const locale = useAppLocale();
   // Task 2.4: shared with ProductTabs; the server picked the initial variant from `?variant=<sku>`.
   const { selectedVariantId: variantId, setSelectedVariantId: setVariantId } = useProductVariant();
@@ -224,7 +225,7 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
 
           {product.badge && product.badge !== "NONE" ? (
             <div className="mt-2 mb-4 flex">
-              <GarminBadge badge={product.badge} variant="pill" className="mr-[12.8px]" />
+              <GarminBadge badge={product.badge} variant="pill" className="mr-[12.8px]" labels={{ new: badgeText("new"), sale: badgeText("sale") }} />
             </div>
           ) : onSale ? (
             <div className="mt-2 mb-4 flex">

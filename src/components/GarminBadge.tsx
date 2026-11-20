@@ -1,4 +1,5 @@
-import { badgeClass, productBadgeLabel, productBadgeTone } from "@/components/ui/badge";
+import { badgeClass, productBadgeLabel, productBadgeTone, type ProductBadgeLabels } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 
 export type BadgeType =
   | "NEW"
@@ -22,18 +23,21 @@ export function GarminBadge({
   badge,
   variant = "ribbon",
   className = "",
+  labels,
 }: {
   badge: string;
   variant?: "ribbon" | "pill" | "starburst";
   className?: string;
+  /** Localized New / Sale (storefront); without it the English wording is used (admin). */
+  labels?: ProductBadgeLabels;
 }) {
   if (!badge || badge === "NONE") return null;
   return (
     <span
       data-badge={badge.trim().toUpperCase()}
-      className={badgeClass({ tone: productBadgeTone(badge), className: variant === "ribbon" ? `absolute left-4 top-4 z-10 ${className}` : className })}
+      className={badgeClass({ tone: productBadgeTone(badge), className: variant === "ribbon" ? cn("absolute left-4 top-4 z-10", className) : className })}
     >
-      {productBadgeLabel(badge)}
+      {productBadgeLabel(badge, labels)}
     </span>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { ProductDetail } from "@/types";
@@ -14,9 +14,6 @@ import { ownsEmptyOverview, variantTabContent } from "@/lib/catalog/variant-sele
 const TABS = ["overview", "specs", "inTheBox", "maps", "accessories", "compatible"] as const;
 type Tab = (typeof TABS)[number];
 
-/** Flex order classes (literal, so Tailwind generates them): below 1024 the open content sits right after its row. */
-const ROW_ORDER = ["order-0", "order-2", "order-4", "order-6", "order-8", "order-10"];
-const CONTENT_ORDER = ["order-1", "order-3", "order-5", "order-7", "order-9", "order-11"];
 
 /** Tab label type (ProductTabs.spec.md): 14/21, 600, uppercase, .28px tracking. */
 const tabType = "text-[14px] font-semibold uppercase leading-[21px] tracking-[0.28px] text-black";
@@ -41,8 +38,9 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
   const emptyOverview = ownsEmptyOverview(product);
   const isRichOverview = tab === "overview" && !emptyOverview && ((product.id === "1228429" && !product.overviewHtml) || fullBleedHtml);
 
-  const content = (
-    <div id="product-tab-panel" className={`${CONTENT_ORDER[TABS.indexOf(tab)]} ${collapsed ? "max-lg:hidden" : ""} ${isRichOverview ? "w-full" : "mx-auto w-full max-w-[1280px] px-4 py-12"}`}>
+  const panelClass = isRichOverview ? "w-full" : "mx-auto w-full max-w-[1280px] px-4 py-12";
+  const body = (
+    <>
       {tab === "overview" && !emptyOverview && (
         product.id === "1228429" && !product.overviewHtml ? (
           <ProductOverview product={product} />
@@ -85,7 +83,7 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
           <Placeholder text={t("compatibleText")} />
         </div>
       )}
-    </div>
+    </>
   );
 
   return (
@@ -109,26 +107,33 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
           ))}
         </ul>
       </nav>
+      {/* The desktop panel (≥1024) follows the tab bar. */}
+      <div id="product-tab-panel" className={`hidden lg:block ${panelClass}`}>{body}</div>
 
-      {/* Below 1024 every tab is an accordion row (50px, #DCDCDC rule, chevron) and the open content shows under its
-          row; the content is rendered once and placed with flex order. */}
-      <div className="flex flex-col border-b border-[#DCDCDC] lg:block lg:border-b-0">
-        {TABS.map((id, index) => (
-          <button
-            key={id}
-            type="button"
-            aria-expanded={tab === id && !collapsed}
-            aria-controls="product-tab-panel"
-            onClick={() => (tab === id && !collapsed ? setCollapsed(true) : openTab(id))}
-            className={`${tabType} ${ROW_ORDER[index]} flex h-[50px] w-full items-center justify-between border-t border-[#DCDCDC] px-7 py-[14px] text-left lg:hidden`}
-          >
-            {t(`tabs.${id}`)}
-            <svg viewBox="0 0 18.2 11.2" aria-hidden="true" className={`h-[9px] w-[14px] shrink-0 fill-black ${tab === id && !collapsed ? "rotate-180" : ""}`}>
-              <path d="M9.1 11.2L0 2.2 2.2 0l6.9 7L16 0l2.2 2.2-9.1 9z" />
-            </svg>
-          </button>
-        ))}
-        {content}
+      {/* Below 1024 every tab is an accordion row (50px, #DCDCDC rule, chevron). Final review M14 (WCAG 2.4.3): the
+          open panel is rendered directly after its row in DOM order, so focus and reading order follow the layout. */}
+      <div className="border-b border-[#DCDCDC] lg:hidden">
+        {TABS.map((id) => {
+          const open = tab === id && !collapsed;
+          return (
+            <Fragment key={id}>
+              <button
+                id={`product-tab-row-${id}`}
+                type="button"
+                aria-expanded={open}
+                aria-controls={open ? "product-tab-panel-mobile" : undefined}
+                onClick={() => (open ? setCollapsed(true) : openTab(id))}
+                className={`${tabType} flex h-[50px] w-full items-center justify-between border-t border-[#DCDCDC] px-7 py-[14px] text-left`}
+              >
+                {t(`tabs.${id}`)}
+                <svg viewBox="0 0 18.2 11.2" aria-hidden="true" className={`h-[9px] w-[14px] shrink-0 fill-black ${open ? "rotate-180" : ""}`}>
+                  <path d="M9.1 11.2L0 2.2 2.2 0l6.9 7L16 0l2.2 2.2-9.1 9z" />
+                </svg>
+              </button>
+              {open && <div id="product-tab-panel-mobile" role="region" aria-labelledby={`product-tab-row-${id}`} className={panelClass}>{body}</div>}
+            </Fragment>
+          );
+        })}
       </div>
     </section>
   );

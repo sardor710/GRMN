@@ -134,3 +134,25 @@ test("variant translations survive every product save, are sanitized, and only c
   await cms.save("products",admin,{...watch("VC-D",{inTheBox:["Watch 51 mm"]}),id:saved.id,version:third.version,translations:{ru:{name:"Часы 3",variants:first.variants}}});
   assert.deepEqual((await stored()).find(r=>r.locale==="ru").content.variants["var-1"].content,{inTheBox:["Часы 51 мм","Кабель"]});
 });
+
+// Final review M8: stale variant translations are pruned on every product save, not only on a save that
+// sends translations (the list's status change and older forms do not send them).
+test("a product save without translations still prunes stale variant translations; an unchanged locale is not rewritten",async()=>{
+  const cms=await cmsService();
+  const variantTr={"var-1":{content:{inTheBox:["Часы 51 мм","Кабель"],overviewHtml:"<p>Обзор 51</p>"}}};
+  const saved=await cms.save("products",admin,{...watch("VC-P",{inTheBox:["Watch 51 mm"],overviewHtml:"<p>51</p>"}),translations:{ru:{name:"Часы",variants:variantTr}}});
+  const ru=async()=>(await q("SELECT t.content,t.updated_at FROM product_translations t JOIN products p ON p.id=t.product_id WHERE p.public_key=$1 AND t.locale='ru'",[saved.id])).rows[0];
+  const before=await ru();
+  assert.deepEqual(Object.keys(before.content.variants["var-1"].content).sort(),["inTheBox","overviewHtml"]);
+  // A save that changes nothing about translations leaves the row as it was.
+  const second=await cms.save("products",admin,{...watch("VC-P",{inTheBox:["Watch 51 mm"],overviewHtml:"<p>51</p>"}),id:saved.id,version:saved.version,description:"Changed"});
+  assert.deepEqual((await ru()).updated_at,before.updated_at,"an unchanged locale is not rewritten");
+  // var-1 stops owning its overview, with no translations in the request: that block's translation goes.
+  const third=await cms.save("products",admin,{...watch("VC-P",{inTheBox:["Watch 51 mm"]}),id:saved.id,version:second.version});
+  assert.deepEqual((await ru()).content.variants["var-1"].content,{inTheBox:["Часы 51 мм","Кабель"]});
+  // var-1 owns nothing any more: its translation goes, and the locale keeps its product fields.
+  await cms.save("products",admin,{...watch("VC-P",null),id:saved.id,version:third.version});
+  const last=(await ru()).content;
+  assert.equal(last.variants,undefined);
+  assert.equal(last.name,"Часы");
+});

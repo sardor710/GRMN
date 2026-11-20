@@ -39,10 +39,20 @@ export function Badge({ tone = "candy-blue", size = "md", className, children, .
   );
 }
 
-/** Garmin badge wording: `NEW` → `New`, `SALE` → `Sale`; other stored labels become sentence case ("LIMITED EDITION" → "Limited edition"). */
-export function productBadgeLabel(badge: string): string {
+/** The localized words for the two Garmin product badges (`ProductBadge.new` / `ProductBadge.sale` messages). */
+export interface ProductBadgeLabels { new: string; sale: string }
+
+/**
+ * Garmin badge wording: `NEW` → `New`, `SALE` → `Sale`; other stored labels become sentence case ("LIMITED EDITION" →
+ * "Limited edition"). Final review M17: on the storefront a stored NEW / SALE uses the page's messages (`labels`),
+ * like the computed sale badge; other stored labels are the owner's own text and are kept.
+ */
+export function productBadgeLabel(badge: string, labels?: ProductBadgeLabels): string {
   const text = badge.trim();
   if (!text) return "";
+  const key = text.toUpperCase();
+  if (labels && key === "NEW") return labels.new;
+  if (labels && key === "SALE") return labels.sale;
   const lower = text.toLowerCase();
   return lower.charAt(0).toUpperCase() + lower.slice(1);
 }

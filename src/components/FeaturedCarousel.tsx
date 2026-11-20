@@ -9,6 +9,7 @@ import { ChevronRightIcon } from "@/components/icons";
 
 export function FeaturedCarousel() {
   const t = useTranslations("HomeFeatured");
+  const badgeText = useTranslations("ProductBadge");
   const scroller = useRef<HTMLDivElement>(null);
 
   const scrollNext = () => {
@@ -39,6 +40,7 @@ export function FeaturedCarousel() {
             >
               <StarburstBadge
                 label={card.badge ?? ""}
+                labels={{ new: badgeText("new"), sale: badgeText("sale") }}
                 className="absolute -left-3 -top-3 h-16 w-16"
               />
               <div className="relative mx-auto aspect-square w-full max-w-[240px]">

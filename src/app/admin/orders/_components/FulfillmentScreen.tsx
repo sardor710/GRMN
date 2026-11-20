@@ -3,6 +3,7 @@
 import { createRequestGate } from "@/lib/admin/dashboard";
 import { formatKzt } from "@/lib/money";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import type { AdminOrderDetailDTO, AdminOrderSummaryDTO, ShipmentDTO } from "@/contracts/commerce";
 import { DemoBadge } from "@/components/DemoBadge";
 
@@ -46,8 +47,11 @@ export default function FulfillmentScreen() {
   const [mode, setMode] = useState<string>("");
   const [orders, setOrders] = useState<AdminOrderSummaryDTO[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
-  const [detail, setDetail] = useState<AdminOrderDetailDTO | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadedDetail, setDetail] = useState<AdminOrderDetailDTO | null>(null);
+  // Final review I3: the queue's own error, cleared by every queue load, lives apart from the error of a
+  // staff action (confirm payment, shipments, cancel), which stays visible until the next user action.
+  const [listError, setListError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [quantities, setQuantities] = useState<Record<string, string>>({});
@@ -58,6 +62,10 @@ export default function FulfillmentScreen() {
   const [payReference, setPayReference] = useState("");
   const [payAmount, setPayAmount] = useState("");
   const detailId = useRef<string | null>(null);
+  // Final review I4: only the selected order's detail is ever shown or acted on, never a late one.
+  const detail = loadedDetail && loadedDetail.id === selected ? loadedDetail : null;
+  const searchParams = useSearchParams();
+  const linkedOrder = searchParams?.get("order") ?? null;
   const [payNote, setPayNote] = useState("");
   const [payout, setPayout] = useState<Record<string, { method: string; reference: string }>>({});
 
@@ -65,53 +73,68 @@ export default function FulfillmentScreen() {
   // late response from an older filter is dropped, so a slow unfiltered list never replaces the Demo list.
   // A failed request ends the loading state with an error instead of leaving "Loading orders…" forever.
   const [queueGate] = useState(createRequestGate);
+  const [detailGate] = useState(createRequestGate);
   const loadOrders = useCallback(async () => {
     const ticket = queueGate.begin();
-    setError(null);
+    setListError(null);
     const query = new URLSearchParams();
     if (status) query.set("fulfillmentStatus", status);
     if (mode) query.set("paymentMode", mode);
     try {
       const response = await fetch("/api/admin/orders" + (query.size ? `?${query}` : ""), { cache: "no-store", signal: ticket.signal });
-      if (!response.ok) { const message = await readError(response); if (ticket.isCurrent()) { setError(message); setOrders([]); } return; }
+      if (!response.ok) { const message = await readError(response); if (ticket.isCurrent()) { setListError(message); setOrders([]); } return; }
       const items = (await response.json() as { items: AdminOrderSummaryDTO[] }).items;
       if (ticket.isCurrent()) setOrders(items);
     } catch (reason) {
       if (!ticket.isCurrent()) return;
-      setError(`The orders could not be loaded: ${reason instanceof Error ? reason.message : String(reason)}`);
+      setListError(`The orders could not be loaded: ${reason instanceof Error ? reason.message : String(reason)}`);
       setOrders([]);
     }
   }, [status, mode, queueGate]);
   // Fix round 1: the detail's own error (e.g. a linked order that does not exist) lives apart from the
   // list error, so loadOrders clearing its error never hides why the detail did not open.
+  // Final review I4: one detail request at a time (the queue's request gate). Clicking A then B aborts A, and a
+  // response for anything but the selected order is dropped, so B's actions can never act on A. A rejected
+  // fetch shows an error instead of an unhandled rejection.
   const loadDetail = useCallback(async (id: string) => {
-    const response = await fetch(`/api/admin/orders?id=${id}`, { cache: "no-store" });
-    if (!response.ok) { setDetail(null); setDetailError(await readError(response)); return; }
-    setDetailError(null);
-    const next = await response.json() as AdminOrderDetailDTO;
-    setDetail(next);
-    setQuantities({});
-    // Review I1: never prefilled. Staff type the amount that actually arrived; the server refuses
-    // anything but the order total, so a short payment cannot be confirmed by just entering a reference.
-    setPayAmount(previous => previous && next.id === detailId.current ? previous : "");
-    detailId.current = next.id;
-  }, []);
+    const ticket = detailGate.begin();
+    const current = () => ticket.isCurrent();
+    try {
+      const response = await fetch(`/api/admin/orders?id=${id}`, { cache: "no-store", signal: ticket.signal });
+      if (!response.ok) { const message = await readError(response); if (current()) { setDetail(null); setDetailError(message); } return; }
+      const next = await response.json() as AdminOrderDetailDTO;
+      if (!current() || next.id !== id) return;
+      setDetailError(null);
+      setDetail(next);
+      setQuantities({});
+      // Review I1: never prefilled. Staff type the amount that actually arrived; the server refuses
+      // anything but the order total, so a short payment cannot be confirmed by just entering a reference.
+      setPayAmount(previous => previous && next.id === detailId.current ? previous : "");
+      detailId.current = next.id;
+    } catch (reason) {
+      if (!current()) return;
+      setDetail(null);
+      setDetailError(`The order could not be loaded: ${reason instanceof Error ? reason.message : String(reason)}`);
+    }
+  }, [detailGate]);
 
   // Task 4.2: /admin/orders?order=<id> (the dashboard's recent orders link) opens that order's detail.
+  // Final review M12: it follows the search params, so a later client navigation to ?order= opens that order too.
   useEffect(() => {
-    const linked = new URLSearchParams(window.location.search).get("order");
-    if (linked && /^[0-9a-f-]{36}$/i.test(linked)) setSelected(linked);
-  }, []);
+    if (linkedOrder && /^[0-9a-f-]{36}$/i.test(linkedOrder)) { setSelected(linkedOrder); setActionError(null); }
+  }, [linkedOrder]);
   useEffect(() => { void loadOrders(); }, [loadOrders]);
-  useEffect(() => () => queueGate.abort(), [queueGate]);
-  useEffect(() => { if (selected) void loadDetail(selected); else { setDetail(null); setDetailError(null); } }, [selected, loadDetail]);
+  useEffect(() => () => { queueGate.abort(); detailGate.abort(); }, [queueGate, detailGate]);
+  useEffect(() => { if (selected) void loadDetail(selected); else { detailGate.abort(); setDetail(null); setDetailError(null); } }, [selected, loadDetail, detailGate]);
+  /** A new user action starts with no earlier action error. */
+  const selectOrder = (id: string) => { setActionError(null); setSelected(id); };
 
   // The manual payment actions are keyed by their reference instead of an idempotency key.
   async function post(body: Record<string, unknown>, keyed = true) {
-    setBusy(true); setError(null);
+    setBusy(true); setActionError(null);
     try {
       const response = await fetch("/api/admin/orders", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(keyed ? { ...body, idempotencyKey: newKey() } : body) });
-      if (!response.ok) { setError(await readError(response)); return false; }
+      if (!response.ok) { setActionError(await readError(response)); return false; }
       return true;
     } finally {
       setBusy(false);
@@ -121,8 +144,9 @@ export default function FulfillmentScreen() {
   }
   async function createShipment() {
     if (!detail) return;
+    setActionError(null);
     const lines = Object.entries(quantities).map(([orderItemId, value]) => ({ orderItemId, quantity: Number(value) })).filter(line => Number.isInteger(line.quantity) && line.quantity > 0);
-    if (!lines.length) { setError("Enter a quantity to ship."); return; }
+    if (!lines.length) { setActionError("Enter a quantity to ship."); return; }
     const ok = await post({ action: "create_shipment", orderId: detail.id, expectedOrderVersion: detail.version, lines,
       ...(carrier.trim() ? { carrier: carrier.trim() } : {}), ...(tracking.trim() ? { trackingReference: tracking.trim() } : {}), ...(note.trim() ? { internalNote: note.trim() } : {}) });
     if (ok) { setCarrier(""); setTracking(""); setNote(""); }
@@ -139,14 +163,16 @@ export default function FulfillmentScreen() {
   async function confirmPayment() {
     if (!detail) return;
     const amountMinor = minorKzt(payAmount);
-    if (!payReference.trim()) { setError("Enter the payment reference."); return; }
-    if (!amountMinor) { setError("Enter the amount received in KZT."); return; }
+    setActionError(null);
+    if (!payReference.trim()) { setActionError("Enter the payment reference."); return; }
+    if (!amountMinor) { setActionError("Enter the amount received in KZT."); return; }
     const ok = await post({ action: "confirm_payment", orderId: detail.id, method: payMethod, reference: payReference.trim(), amountMinor, ...(payNote.trim() ? { note: payNote.trim() } : {}) }, false);
     if (ok) { setPayReference(""); setPayNote(""); setPayAmount(""); }
   }
   async function completeRefund(refundId: string) {
     const entry = payout[refundId] ?? { method: "kaspi", reference: "" };
-    if (!entry.reference.trim()) { setError("Enter the payout reference."); return; }
+    setActionError(null);
+    if (!entry.reference.trim()) { setActionError("Enter the payout reference."); return; }
     const ok = await post({ action: "complete_manual_refund", refundId, method: entry.method, reference: entry.reference.trim() }, false);
     if (ok) setPayout(current => { const next = { ...current }; delete next[refundId]; return next; });
   }
@@ -171,14 +197,15 @@ export default function FulfillmentScreen() {
           </label>
         </div>
       </div>
-      {error && <p role="alert" className="border border-garmin-error p-3 text-sm text-garmin-error">{error}</p>}
+      {listError && <p role="alert" className="border border-garmin-error p-3 text-sm text-garmin-error">{listError}</p>}
+      {actionError && <p role="alert" data-action-error className="border border-garmin-error p-3 text-sm text-garmin-error">{actionError}</p>}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <section aria-label="Order queue" className="min-w-0 border border-garmin-control">
           {orders === null ? <p className="p-4 text-sm text-muted-foreground">Loading orders…</p> : orders.length === 0 ? <p className="p-4 text-sm text-muted-foreground">No orders.</p> : (
             <ul className="divide-y divide-garmin-rule">
               {orders.map(order => (
                 <li key={order.id}>
-                  <button type="button" onClick={() => setSelected(order.id)} className={`flex w-full flex-wrap items-center justify-between gap-2 p-3 text-left text-sm hover:bg-muted ${selected === order.id ? "bg-muted shadow-[inset_3.2px_0_0_#000]" : ""}`}>
+                  <button type="button" onClick={() => selectOrder(order.id)} className={`flex w-full flex-wrap items-center justify-between gap-2 p-3 text-left text-sm hover:bg-muted ${selected === order.id ? "bg-muted shadow-[inset_3.2px_0_0_#000]" : ""}`}>
                     <span className="flex items-center gap-2"><span className="font-bold tabular-nums">{order.orderNumber}</span>{order.paymentMode === "demo" && <DemoBadge label="DEMO" className="text-[10px]" />}</span>
                     <span>{order.contactName}</span>
                     <span className="text-xs text-muted-foreground">{order.paymentStatus} · {order.fulfillmentStatus}{order.dataQuality !== "complete" ? " · legacy" : ""}</span>

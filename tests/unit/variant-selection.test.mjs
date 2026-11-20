@@ -145,7 +145,8 @@ test("ProductTabs Overview: an owned empty overview renders nothing; no overview
     "@/components/product/ProductVariantContext": { useProductVariant: () => ({ selectedVariantId: selected, setSelectedVariantId() {} }) },
     "@/lib/catalog/variant-selection": { variantTabContent, ownsEmptyOverview },
   } }).render({ product: { id: "k", features: [{ title: "Feature", body: "Body" }], accessories: [], ...base } });
-  const html = (tree) => nodes(tree).filter((n) => n.props?.dangerouslySetInnerHTML).map((n) => n.props.dangerouslySetInnerHTML.__html);
+  // The open panel is rendered twice (desktop panel and the mobile one after its accordion row): read it once.
+  const html = (tree) => [...new Set(nodes(tree).filter((n) => n.props?.dangerouslySetInnerHTML).map((n) => n.props.dangerouslySetInnerHTML.__html))];
   const fallback = (tree) => nodes(tree).some((n) => typeof n.type === "function" && /Overview$/.test(n.type.name));
   // 47 mm owns an overview; 51 mm owns an empty one (the product has one): nothing, not the features.
   assert.deepEqual(html(render(product, "v47")), ["<p>47</p>"]);
@@ -160,4 +161,31 @@ test("ProductTabs Overview: an owned empty overview renders nothing; no overview
   const ownedEmpty = render(ownedNoProduct, "v51");
   assert.deepEqual(html(ownedEmpty), []);
   assert.equal(fallback(ownedEmpty), false);
+});
+
+// Final review M14 (WCAG 2.4.3): below 1024 the open panel follows its own accordion row in DOM order; the desktop
+// panel is a separate element after the tab bar. Collapsing the row removes the mobile panel.
+test("ProductTabs: the mobile panel sits right after the open accordion row", async () => {
+  const { componentFixture, nodes, nodeText } = await import("../helpers/component-fixture.mjs");
+  const fixture = componentFixture("src/components/ProductTabs.tsx", { modules: {
+    "@/components/product/ProductVariantContext": { useProductVariant: () => ({ selectedVariantId: "v47", setSelectedVariantId() {} }) },
+    "@/lib/catalog/variant-selection": { variantTabContent, ownsEmptyOverview },
+  } });
+  const props = { product: { id: "k", features: [], accessories: [], ...product } };
+  const order = tree => nodes(tree).filter(n => n.props?.id?.startsWith?.("product-tab-")).map(n => n.props.id);
+  let tree = fixture.render(props);
+  assert.deepEqual(order(tree), ["product-tab-panel", "product-tab-row-overview", "product-tab-panel-mobile", "product-tab-row-specs", "product-tab-row-inTheBox", "product-tab-row-maps", "product-tab-row-accessories", "product-tab-row-compatible"]);
+  const row = (t, id) => nodes(t).find(n => n.props?.id === "product-tab-row-" + id);
+  assert.equal(row(tree, "overview").props["aria-controls"], "product-tab-panel-mobile");
+  assert.equal(nodes(tree).find(n => n.props?.id === "product-tab-panel-mobile").props["aria-labelledby"], "product-tab-row-overview");
+  assert.match(nodes(tree).find(n => n.props?.id === "product-tab-panel").props.className, /hidden lg:block/);
+  row(tree, "specs").props.onClick();
+  tree = fixture.render(props);
+  assert.deepEqual(order(tree).slice(1, 5), ["product-tab-row-overview", "product-tab-row-specs", "product-tab-panel-mobile", "product-tab-row-inTheBox"]);
+  assert.equal(row(tree, "overview").props["aria-controls"], undefined);
+  row(tree, "specs").props.onClick();
+  tree = fixture.render(props);
+  assert.ok(!order(tree).includes("product-tab-panel-mobile"), "tapping the open row collapses it");
+  assert.equal(row(tree, "specs").props["aria-expanded"], false);
+  assert.ok(nodeText(nodes(tree).find(n => n.props?.id === "product-tab-panel")) !== undefined, "the desktop panel stays");
 });

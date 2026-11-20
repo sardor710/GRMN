@@ -91,3 +91,13 @@ test("on load a pending checkout is resumed and its receipt is shown", async () 
     assert.deepEqual(calls, [["refresh"]]);
   } finally { resumed = null; }
 });
+
+// Final review M16: converted tenge and unconverted legacy amounts are never summed into one subtotal.
+test("the legacy cart hides the subtotal when lines mix converted and unconverted amounts", () => {
+  const converted = { id: "a", name: "Converted", price: 450000, image: null, qty: 1 };
+  const unconverted = { id: "b", name: "Unconverted", price: 749.99, image: null, qty: 1, unconverted: true };
+  const subtotalShown = items => nodeText(mount(null, [], { mode: "local", server: null, items, subtotal: items.reduce((sum, item) => sum + item.price, 0) }).tree).includes("Subtotal");
+  assert.equal(subtotalShown([converted, unconverted]), false, "mixed lines: no subtotal");
+  assert.equal(subtotalShown([converted]), true);
+  assert.equal(subtotalShown([unconverted]), true, "all unconverted: a plain-number subtotal");
+});
