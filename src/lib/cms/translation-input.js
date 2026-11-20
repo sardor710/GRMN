@@ -123,6 +123,11 @@ function normalizeOverlay(input, spec, path, html) {
     if (cleaned.length) out[key] = cleaned;
   }
 
+  for (const [key, nested] of Object.entries(spec.objects ?? {})) {
+    const item = normalizeOverlay(input[key], nested, `${path}.${key}`, html);
+    if (!isEmptyObject(item)) out[key] = item;
+  }
+
   for (const [key, nested] of Object.entries(spec.keyed ?? {})) {
     const byId = input[key];
     if (!isPlainObject(byId)) continue;
@@ -224,6 +229,10 @@ export function findBaseLimitViolation(record, allowed) {
         if (err) return err;
       }
     }
+    for (const [key, nested] of Object.entries(s.objects ?? {})) {
+      const err = walk(node[key], nested, `${path}${key}.`);
+      if (err) return err;
+    }
     for (const [key, nested] of [...Object.entries(s.lists ?? {}), ...Object.entries(s.keyed ?? {})]) {
       if (!Array.isArray(node[key])) continue;
       for (const [i, item] of node[key].entries()) {
@@ -275,6 +284,12 @@ function countProgress(base, overlay, spec) {
       total += r.total;
       done += r.done;
     });
+  }
+  for (const [key, nested] of Object.entries(spec.objects ?? {})) {
+    if (!isPlainObject(base?.[key])) continue;
+    const r = countProgress(base[key], ov[key], nested);
+    total += r.total;
+    done += r.done;
   }
   for (const [key, nested] of Object.entries(spec.keyed ?? {})) {
     if (!Array.isArray(base?.[key])) continue;

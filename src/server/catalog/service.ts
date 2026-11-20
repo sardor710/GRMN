@@ -8,6 +8,8 @@ import { AuthFailure } from "../auth/config.ts";
 import type { ConcurrencyLimit } from "./limit.ts";
 import { PRODUCT_SPEC, isRecordTranslated, localizeRecord, resolveSeoText } from "../../i18n/translate-record.ts";
 import type { Locale } from "../../i18n/config.ts";
+import { effectiveVariantContent, localizeVariantOverride, parseVariantContent, type ProductContentDTO, type VariantContent } from "../../lib/catalog/variant-content.ts";
+import { PRODUCT_HTML_FIELDS } from "../../lib/cms/product-input.ts";
 
 const fail = (): never => { throw new AuthFailure("INVALID_INPUT", 400, "Invalid catalog query or cursor"); };
 const text = z.string().trim().min(1).max(200);
@@ -20,6 +22,8 @@ type Row = Record<string,unknown>;
 const obj = (v:unknown):Row => v && typeof v === "object" && !Array.isArray(v) ? v as Row : {};
 const array = (v:unknown):unknown[] => Array.isArray(v)?v:[];
 const strings = (v:unknown) => array(v).filter((x):x is string=>typeof x==="string");
+/** The product detail before per-variant content is attached (Task 2.1). */
+type BaseDetail = Omit<ProductDetailDTO,"variants"> & { variants: VariantDTO[] };
 const key = (v:string) => v.toLowerCase().replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-|-$/g,"");
 export function publicImage(url:unknown):string|null {
   if(typeof url!=="string"||url.length>2048||/[\u0000-\u0020\\]/.test(url))return null;
@@ -134,7 +138,7 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
   async function localizedCards(items:ProductCardDTO[],locale:Locale):Promise<ProductCardDTO[]>{
     if(locale==="en")return items;const map=await translationsFor(items.map(i=>i.id));return items.map(i=>localizedCard(i,map.get(i.id),locale));
   }
-  async function englishDetail(publicKey:string,market:string,displayCurrency:DisplayCurrency):Promise<ProductDetailDTO|null>{
+  async function englishDetail(publicKey:string,market:string,displayCurrency:DisplayCurrency):Promise<BaseDetail|null>{
       parse(text,publicKey);const q=queryInput({market,displayCurrency,locale:"en"}),result=await select(q,{limit:1},[publicKey]),row=result.rows[0];if(!row)return null;
       const relations=(await pool.query(`SELECT p.public_key,r.relation_type FROM product_relations r JOIN products p ON p.id=r.target_product_id WHERE r.source_product_id=$1 AND p.status='published' AND EXISTS(SELECT 1 FROM product_variants v JOIN prices pr ON pr.variant_id=v.id AND pr.is_active AND pr.currency='KZT' AND pr.market=$2 WHERE v.product_id=p.id AND v.status='active') ORDER BY r.position,p.id LIMIT 100`,[row.id,market])).rows;
       const variants:VariantDTO[]=array(row.variants).map(value=>{const v=obj(value);return{id:String(v.id),sku:String(v.sku),name:String(v.name),options:Object.fromEntries(Object.entries(obj(v.options)).filter((pair):pair is [string,string]=>typeof pair[1]==="string")),price:price(v,result.fx),availability:v.availability as Availability,gallery:array(v.gallery).map(media).filter((x):x is MediaDTO=>x!==null)};});
@@ -162,16 +166,30 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
     async getProductByPublicKey(publicKey:string,market:string,displayCurrency:DisplayCurrency,locale:Locale="en"):Promise<ProductDetailDTO|null>{
       const found=await englishDetail(publicKey,market,displayCurrency);if(!found)return null;
       // The editor's overview and grouped specs live in the product document (legacy_content).
-      const editorial=obj((await pool.query("SELECT jsonb_build_object('overviewHtml',legacy_content->'overviewHtml','specGroups',legacy_content->'specGroups') AS doc FROM products WHERE id=$1",[found.id])).rows[0]?.doc);
+      // Task 2.1: also the editor variants' ids and SKUs (translated overrides are keyed by editor id).
+      const editorial=obj((await pool.query("SELECT jsonb_build_object('overviewHtml',legacy_content->'overviewHtml','specGroups',legacy_content->'specGroups','variants',(SELECT jsonb_agg(jsonb_build_object('id',e->'id','sku',e->'sku')) FROM jsonb_array_elements(CASE WHEN jsonb_typeof(legacy_content->'variants')='array' THEN legacy_content->'variants' ELSE '[]'::jsonb END) e)) AS doc FROM products WHERE id=$1",[found.id])).rows[0]?.doc);
+      const overrideRows=(await pool.query("SELECT id::text AS id,content_overrides FROM product_variants WHERE product_id=$1 AND id=ANY($2::uuid[])",[found.id,found.variants.map(v=>v.id)])).rows;
+      const overrides=new Map<string,VariantContent>(overrideRows.map(r=>[String(r.id),parseVariantContent(r.content_overrides)]));
+      const editorIds=new Map<string,string>(array(editorial.variants).flatMap(e=>{const v=obj(e);return typeof v.id==="string"&&typeof v.sku==="string"?[[v.sku.trim().toLowerCase(),v.id] as [string,string]]:[];}));
       const specGroups=array(editorial.specGroups).flatMap(g=>{const group=obj(g);return typeof group.title==="string"?[{title:group.title,items:array(group.items).flatMap(i=>{const item=obj(i);return typeof item.label==="string"&&typeof item.value==="string"?[{label:item.label,value:item.value}]:[];})}]:[];});
       const optionNames=Object.fromEntries((await pool.query("SELECT key,name FROM product_options WHERE product_id=$1 ORDER BY position,key",[found.id])).rows.map(r=>[String(r.key),String(r.name)]));
-      const detail:ProductDetailDTO={...found,...(Object.keys(optionNames).length?{optionNames}:{}),...(typeof editorial.overviewHtml==="string"&&editorial.overviewHtml?{overviewHtml:editorial.overviewHtml}:{}),...(specGroups.length?{specGroups}:{})};
+      const detail:BaseDetail={...found,...(Object.keys(optionNames).length?{optionNames}:{}),...(typeof editorial.overviewHtml==="string"&&editorial.overviewHtml?{overviewHtml:editorial.overviewHtml}:{}),...(specGroups.length?{specGroups}:{})};
       const translations=(await translationsFor([detail.id])).get(detail.id);
       const translatedLocales:Locale[]=["en",...(["ru","kk"] as const).filter(l=>translations&&isRecordTranslated({translations},l,["name","description"]))];
-      if(locale==="en"||!translations)return{...detail,translatedLocales};
+      // Task 2.1: each variant's effective content (own blocks replace the product's, absent keys inherit).
+      const withVariants=(product:ProductContentDTO,localize?:(english:VariantContent,variant:VariantDTO)=>VariantContent)=>detail.variants.map(v=>{const english=overrides.get(v.id)??{};return{...v,content:effectiveVariantContent(product,{content:localize?localize(english,v):english}),ownsOverview:english.overviewHtml!==undefined};});
+      if(locale==="en"||!translations)return{...detail,translatedLocales,variants:withVariants({specs:detail.specs,specGroups:detail.specGroups,overviewHtml:detail.overviewHtml,inTheBox:detail.inTheBox})};
       const local=localizeRecord({name:detail.name,description:detail.description,specs:detail.specs,features:detail.features.map(f=>({title:f.title,body:f.body})),inTheBox:detail.inTheBox,overviewHtml:detail.overviewHtml,specGroups:detail.specGroups,translations},locale,PRODUCT_SPEC);
       const seoTitle=resolveSeoText({seoTitle:detail.seo?.title,name:detail.name,translations} as {translations?:unknown},locale,["seoTitle","name"]);
-      return{...detail,translatedLocales,name:local.name,description:local.description,specs:local.specs,inTheBox:local.inTheBox,
+      // RU/KK: a translated override (product_translations.content.variants[<editor id>].content) wins per
+      // row; an owned block without one keeps the English override, never the product's translation.
+      const localOverlay=obj(obj(translations)[locale]),variantOverlays=obj(localOverlay.variants);
+      const variants=withVariants({specs:local.specs,specGroups:local.specGroups,overviewHtml:local.overviewHtml,inTheBox:local.inTheBox},(english,v)=>{
+        const editorId=editorIds.get(v.sku.trim().toLowerCase()),translated=editorId===undefined?undefined:obj(variantOverlays[editorId]).content;
+        const own=localizeVariantOverride(english,translated,locale);
+        return own.overviewHtml!==undefined&&own.overviewHtml!==english.overviewHtml?{...own,overviewHtml:PRODUCT_HTML_FIELDS.overviewHtml(own.overviewHtml)}:own;
+      });
+      return{...detail,variants,translatedLocales,name:local.name,description:local.description,specs:local.specs,inTheBox:local.inTheBox,
         ...(local.overviewHtml?{overviewHtml:local.overviewHtml}:{}),...(local.specGroups?{specGroups:local.specGroups}:{}),
         features:detail.features.map((f,i)=>({...f,title:local.features[i]?.title??f.title,body:local.features[i]?.body??f.body})),
         ...(detail.seo?{seo:{...detail.seo,title:seoTitle??local.name,description:resolveSeoText({seoDescription:detail.seo.description,description:detail.description,translations} as {translations?:unknown},locale,["seoDescription","description"])??local.description}}:{})};

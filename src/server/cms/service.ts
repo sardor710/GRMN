@@ -57,6 +57,32 @@ function mergedTranslations(stored:unknown,incoming:unknown,spec:FieldSpec,html?
   if(!merged.ok)return fail("INVALID_INPUT",400,`Invalid translations: ${merged.error}`);
   return merged.translations;
 }
+/**
+ * Task 2.2: variant translations (translations.<locale>.variants[<editor variant id>].content) follow the
+ * saved document. A locale that was sent without a `variants` key keeps its stored ones (an older form
+ * must not wipe them; `variants: {}` clears them). Only blocks the variant owns are kept, for variants
+ * that still exist; absent blocks are never invented.
+ */
+function variantTranslations(translations:Record<string,unknown>,stored:unknown,incoming:unknown,variants:unknown):Record<string,unknown>{
+  const owned=new Map<string,Record<string,unknown>>();
+  if(Array.isArray(variants))for(const v of variants){const item=record(v);if(typeof item.id==="string"&&item.content!==null&&typeof item.content==="object"&&!Array.isArray(item.content))owned.set(item.id,record(item.content));}
+  const out:Record<string,unknown>={};
+  for(const locale of LOCALES){
+    const overlay=translations[locale];if(overlay===undefined)continue;
+    const sent=record(incoming)[locale]!==undefined,hasKey=sent&&Object.hasOwn(record(record(incoming)[locale]),"variants");
+    const source=sent&&!hasKey?record(record(stored)[locale]).variants:record(overlay).variants;
+    const {variants:_dropped,...rest}=record(overlay);void _dropped;
+    const kept:Record<string,unknown>={};
+    for(const [id,entry] of Object.entries(record(source))){
+      const own=owned.get(id);if(!own)continue;
+      const content=record(record(entry).content),blocks=Object.fromEntries(Object.entries(content).filter(([key])=>Object.hasOwn(own,key)));
+      if(Object.keys(blocks).length)kept[id]={content:blocks};
+    }
+    const next=Object.keys(kept).length?{...rest,variants:kept}:rest;
+    if(Object.keys(next).length)out[locale]=next;
+  }
+  return out;
+}
 const translationsColumn=(table:string,key:string,ref:string)=>`(SELECT jsonb_object_agg(t.locale,t.content) FROM ${table} t WHERE t.${key}=${ref}) AS translations`;
 const translationsOf=(row:Record<string,unknown>)=>row.translations&&typeof row.translations==="object"?row.translations as Record<string,unknown>:undefined;
 const entityTypes={products:"product",blogs:"blog",banners:"banner",clients:"customer",homepage:"homepage"} as const;
@@ -237,12 +263,14 @@ export function createCMSService({pool,authorize}:Options) {
           // Overview HTML, image URLs and swatch colours are sanitized like the legacy admin route.
           const clean=sanitizeProductInput(unsafe as Record<string,unknown>,undefined);
           if(!clean.ok)return fail("INVALID_INPUT",400,clean.error);
+          // Task 2.1: a variant's own overview HTML is sanitized like the product overview.
           // Variant prices may arrive as exact text (the admin route keeps money lexemes); the editor
           // document stores them as numbers in KZT major units, like the legacy store.
-          const base={...(clean.product as typeof unsafe),...(Array.isArray(unsafe.variants)?{variants:(clean.product as typeof unsafe).variants!.map(v=>({...v,price:Number(toMinor(v.price,`Price of ${v.sku}`))/100,
+          const base={...(clean.product as typeof unsafe),...(Array.isArray(unsafe.variants)?{variants:(clean.product as typeof unsafe).variants!.map(v=>({...v,...(v.content?.overviewHtml===undefined?{}:{content:{...v.content,overviewHtml:PRODUCT_HTML_FIELDS.overviewHtml(v.content.overviewHtml)}}),price:Number(toMinor(v.price,`Price of ${v.sku}`))/100,
             ...(v.originalPrice===undefined||v.originalPrice===""?{}:{originalPrice:Number(toMinor(v.originalPrice,`Compare-at price of ${v.sku}`))/100})}))}:{})} as typeof unsafe;
-          const translations=mergedTranslations(old?.translations,sentTranslations,PRODUCT_SPEC,PRODUCT_HTML_FIELDS);
+          const merged=mergedTranslations(old?.translations,sentTranslations,PRODUCT_SPEC,PRODUCT_HTML_FIELDS);
           const metadata={...record(old?.legacy_content),...base,price:Number(data.price)/100,originalPrice:compareAt===null?undefined:Number(compareAt)/100};
+          const translations=variantTranslations(merged,old?.translations,sentTranslations,metadata.variants);
           const fields=[data.name,data.description??old?.description??"",data.family??old?.family??null,data.badge??old?.badge??null,data.priceSuffix??old?.price_suffix??null,status,data.isFeatured??old?.is_featured??false,json(data.specs??old?.specs??[]),json(data.features??old?.features??[]),json(data.inTheBox??old?.in_the_box??[]),json(metadata),data.seoTitle??old?.seo_title??null,data.seoDescription??old?.seo_description??null,json(data.focusKeywords??old?.focus_keywords??[]),data.canonicalUrl??old?.canonical_url??null,data.noIndex??old?.no_index??false,data.ogImage??old?.og_image_source??null];
           if(old)await client.query("UPDATE products SET name=$2,description=$3,family=$4,badge=$5,price_suffix=$6,status=$7,is_featured=$8,specs=$9,features=$10,in_the_box=$11,legacy_content=$12,seo_title=$13,seo_description=$14,focus_keywords=$15,canonical_url=$16,no_index=$17,og_image_source=$18,version=version+1,updated_at=clock_timestamp() WHERE id=$1",[id,...fields]);
           else await client.query("INSERT INTO products(id,name,description,family,badge,price_suffix,status,is_featured,specs,features,in_the_box,legacy_content,seo_title,seo_description,focus_keywords,canonical_url,no_index,og_image_source,public_key) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)",[id,...fields,publicKey]);
