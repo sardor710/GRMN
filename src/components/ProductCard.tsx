@@ -7,6 +7,7 @@ import { GarminBadge } from "@/components/GarminBadge";
 import { Price } from "@/components/ui/price";
 import { toMinor } from "@/lib/money";
 import { useAppLocale } from "@/i18n/useAppLocale";
+import { CARD_COLOR_MAX } from "@/lib/catalog/card-colors";
 
 /** Catalogue compare mode (task C-c): the card's "Add to comparison" control. */
 export interface ProductCardCompare {
@@ -17,6 +18,37 @@ export interface ProductCardCompare {
   onToggle: () => void;
   /** Id of the visible note that explains `blocked`. */
   describedBy?: string;
+}
+
+/**
+ * garmin.com `g-color-swatches` (ProductCard.spec.md): 16px top margin, a row of 16x16 round dots 8px apart, each
+ * with an inner shadow over the swatch photo. Only real colours reach here (src/lib/catalog/card-colors.ts), at most
+ * nine, no "+N". The dots are decoration for sighted shoppers (a title on hover); the colour names are read once.
+ */
+function ColorDots({ colors, label }: { colors: NonNullable<Product["colors"]>; label: string }) {
+  return (
+    <div data-card-colors className="mt-4 flex items-center">
+      <span className="sr-only">{label}</span>
+      {colors.slice(0, CARD_COLOR_MAX).map((color) => (
+        <span
+          key={color.label}
+          title={color.label}
+          aria-hidden="true"
+          data-card-color={color.label}
+          className="relative mr-2 block size-4 shrink-0 rounded-full after:absolute after:inset-0 after:rounded-full after:shadow-garmin-swatch after:content-['']"
+        >
+          {color.image ? (
+            // eslint-disable-next-line @next/next/no-img-element -- 16px swatch photo (garmin.com or /uploads), like VariantPicker
+            <img src={color.image} alt="" width={16} height={16} loading="lazy" className="block size-4 rounded-full object-cover" />
+          ) : (
+            <svg viewBox="0 0 16 16" className="block size-4">
+              <circle cx="8" cy="8" r="8" fill={color.hex} />
+            </svg>
+          )}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 /** The ✓ of the selected state (the g-checkbox check path). */
@@ -30,9 +62,8 @@ function CheckMark() {
 
 /**
  * garmin.com PLP card (ProductCard.spec.md): no border, `0 2px 3px 1px #E5E5E5` shadow, full-width 300px image
- * (200px wide below 768), text padding 0 16 24, no hover lift (text colour only). Colour swatches are left out:
- * our catalogue has no per-card variant colours, and Garmin shows only real ones (task C-d adds them between the
- * image and the name when the data has them).
+ * (200px wide below 768), text padding 0 16 24, no hover lift (text colour only). Colour dots (task C-d) sit between
+ * the image and the name only when the product's data has real swatches; otherwise the name keeps its 16px top margin.
  *
  * With `compare` (catalogue compare mode, Compare.spec.md): the card turns #F2F2F2 with a 16px action row on top
  * holding the 56px black "+" control; a chosen card is white with a 2px black outline and shows ✓ "Added". The
@@ -60,6 +91,9 @@ export function ProductCard({ product, compare }: { product: Product; compare?: 
       </div>
 
       <figcaption className="flex w-full flex-1 flex-col px-4 pb-6">
+        {product.colors && product.colors.length > 1 && (
+          <ColorDots colors={product.colors} label={t("colors", { list: product.colors.slice(0, CARD_COLOR_MAX).map((c) => c.label).join(", ") })} />
+        )}
         <h3 className="g-heading my-4 text-[20px] leading-[25px] tracking-[0.8px] md:text-[24px] md:leading-[30px]">{product.name}</h3>
         <p className="mb-4 text-[14px] leading-[21px] md:text-[16px] md:leading-[24px]">{product.description}</p>
         <div className="mt-auto flex items-end">

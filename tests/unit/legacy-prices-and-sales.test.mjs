@@ -7,6 +7,7 @@ import fs from "node:fs";
 import ts from "typescript";
 import { isLegacyUsdProduct, withStorefrontPrices, legacyAmountsInKzt } from "../../src/lib/legacy-prices.ts";
 import * as legacyPrices from "../../src/lib/legacy-prices.ts";
+import * as cardColors from "../../src/lib/catalog/card-colors.ts";
 import { usdMajorToKztMajor, formatUnconverted, formatKzt } from "../../src/lib/money.ts";
 import { catalogCardView } from "../../src/lib/public-catalog.ts";
 import { componentFixture, nodeText, nodes } from "../helpers/component-fixture.mjs";
@@ -65,7 +66,7 @@ test("without a rate a legacy price stays a bare number with no currency sign, n
 function productsApi(provider) {
   const exports = {};
   const code = ts.transpileModule(fs.readFileSync("src/lib/products.ts", "utf8"), { compilerOptions: { module: ts.ModuleKind.CommonJS } }).outputText;
-  new Function("require", "exports", "console", code)(name => name.includes("cms/source") ? { cmsBackend: () => "legacy", ...provider } : name.includes("legacy-prices") ? legacyPrices : name.includes("product-variants") ? { usesCmsDetail: () => false } : {}, exports, { error() {} });
+  new Function("require", "exports", "console", code)(name => name.includes("cms/source") ? { cmsBackend: () => "legacy", ...provider } : name.includes("legacy-prices") ? legacyPrices : name.includes("card-colors") ? cardColors : name.includes("product-variants") ? { usesCmsDetail: () => false } : {}, exports, { error() {} });
   return exports;
 }
 test("legacy reads (cards, product, detail) carry tenge when the rate is set and bare numbers when it is not", async () => {

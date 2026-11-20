@@ -58,6 +58,8 @@
 
   /* Garmin elevation (TOKENS.md §4): no hover lift anywhere. */
   --shadow-garmin-card: 0 2px 3px 1px #e5e5e5;
+  /* g-color-swatch::after: the inner shadow over a card's 16px colour dot (ProductCard.spec.md). */
+  --shadow-garmin-swatch: inset 0 3.37px 3.37px 0 rgba(0, 0, 0, 0.25);
   --shadow-garmin-promo: 0 0 6px 0 #d8d8d8;
   --shadow-garmin-raised: 0 1px 1px rgba(77, 77, 77, 0.08), 0 1px 3px 1px rgba(77, 77, 77, 0.16);
   /* garmin.com compare tiles (Compare.spec.md): the raised tile on hover. */

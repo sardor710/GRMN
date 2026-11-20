@@ -77,6 +77,8 @@ export interface Product {
   activities: string[];
   level: "Entry" | "Advanced" | "Premium" | "Youth" | "Unknown";
   caseSize: "Small" | "Medium" | "Large" | "Unknown";
+  /** Task C-d: colour dots (src/lib/catalog/card-colors.ts); absent when the data has no real swatches. */
+  colors?: import("../lib/catalog/card-colors").CardColor[];
 }
 
 export interface WatchFamily {

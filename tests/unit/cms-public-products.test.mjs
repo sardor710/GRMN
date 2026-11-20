@@ -3,9 +3,10 @@ import {test} from "node:test";
 import fs from "node:fs";
 import ts from "typescript";
 import * as legacyPrices from "../../src/lib/legacy-prices.ts";
+import * as cardColors from "../../src/lib/catalog/card-colors.ts";
 function products(provider,catalog){
   const exports={};const code=ts.transpileModule(fs.readFileSync("src/lib/products.ts","utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
-  new Function("require","exports","console",code)(name=>name.includes("cms/source")?{cmsBackend:()=>catalog?"postgres":"legacy",readLegacyKztPerUsd:async()=>undefined,...provider}:name.includes("legacy-prices")?legacyPrices:name.includes("catalog/runtime")?{getCatalogService:()=>catalog}:name.includes("public-catalog")?{catalogCardView:card=>({id:card.publicKey,name:card.name,price:"90071992547409.93",priceLabel:"90,071,992,547,409.93 KZT",currency:"KZT",purchasable:false,activities:[],family:"",level:"Unknown",caseSize:"Unknown",image:""})}:name.includes("product-variants")?{usesCmsDetail:()=>false}:name.includes("cms/store")?{getProducts:()=>[]}:name.includes("public-products")?{products:[{id:"1228429",name:"Forbidden static resurrection"}]}:{},exports,{error(){}});return exports;
+  new Function("require","exports","console",code)(name=>name.includes("cms/source")?{cmsBackend:()=>catalog?"postgres":"legacy",readLegacyKztPerUsd:async()=>undefined,...provider}:name.includes("legacy-prices")?legacyPrices:name.includes("card-colors")?cardColors:name.includes("catalog/runtime")?{getCatalogService:()=>catalog}:name.includes("public-catalog")?{catalogCardView:card=>({id:card.publicKey,name:card.name,price:"90071992547409.93",priceLabel:"90,071,992,547,409.93 KZT",currency:"KZT",purchasable:false,activities:[],family:"",level:"Unknown",caseSize:"Unknown",image:""})}:name.includes("product-variants")?{usesCmsDetail:()=>false}:name.includes("cms/store")?{getProducts:()=>[]}:name.includes("public-products")?{products:[{id:"1228429",name:"Forbidden static resurrection"}]}:{},exports,{error(){}});return exports;
 }
 test("public product lookup never resurrects an archived record from static catalog data",async()=>{
   const api=products({readProduct:async()=>undefined,readProductsPage:async()=>({items:[],nextCursor:null})});
@@ -36,4 +37,18 @@ test("PostgreSQL public consumers use normalized contracts and preserve exact de
 
 test("missing normalized offers cannot invoke transitional admin DTOs through metadata lookup",async()=>{
  const api=products({readProduct:async()=>{throw Error("Forbidden transitional fallback");}}, {getProductByPublicKey:async()=>null});assert.equal(await api.getProductDetail("missing"),undefined);assert.equal(await api.getCMSProduct("missing"),undefined);
+});
+// Task C-d: legacy JSON cards get colour dots from the record's colour option, only for colours an active variant is in.
+test("legacy cards carry colour dots from swatch data for active variants only, and none without swatches",async()=>{
+  const color={id:"opt-color",key:"color",name:"Color",display:"swatch",values:[{id:"c-black",key:"black",label:"Black",swatchColor:"#000000"},{id:"c-white",key:"white",label:"White",swatchImage:"/uploads/w.jpg"},{id:"c-red",key:"red",label:"Red"}]};
+  const variant=(id,c,status="active")=>({id,sku:id,title:id,selections:{"opt-color":c},price:1,stock:1,status,isDefault:id==="v1",imageIds:[]});
+  const record=extra=>({id:"dots",name:"Dots",price:10,status:"published",description:"",family:"",activities:[],level:"Entry",caseSize:"Medium",image:"/i.jpg",currency:"KZT",options:[color],...extra});
+  const list=async item=>(await products({readProduct:async()=>item,readProductsPage:async()=>({items:[item],nextCursor:null})}).getAllProducts())[0].colors;
+  // Red (no swatch) is only on an archived variant, so it neither shows nor blocks the row.
+  assert.deepEqual(await list(record({variants:[variant("v1","c-black"),variant("v2","c-white"),variant("v3","c-red","archived")]})),[{label:"Black",hex:"#000000"},{label:"White",image:"/uploads/w.jpg"}]);
+  // Red on sale without a swatch: no dots rather than a partial row.
+  assert.equal(await list(record({variants:[variant("v1","c-black"),variant("v2","c-white"),variant("v3","c-red")]})),undefined);
+  // No variants or no options: no dots.
+  assert.equal(await list(record({variants:[]})),undefined);
+  assert.equal(await list(record({options:undefined,variants:undefined})),undefined);
 });

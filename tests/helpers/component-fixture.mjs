@@ -12,6 +12,7 @@ import * as money from "../../src/lib/money.ts";
 import * as statusPill from "../../src/components/admin/products/status-pill.ts";
 import * as compareItems from "../../src/lib/compare/compare-items.ts";
 import * as compareSelection from "../../src/lib/compare/selection.ts";
+import * as cardColors from "../../src/lib/catalog/card-colors.ts";
 
 // Storefront components read their text through next-intl. Fixtures render with the real English
 // catalog so assertions keep reading the English interface (ru/kk are covered by the i18n tests).
@@ -32,6 +33,8 @@ const i18nModules = {
   "@/lib/compare/compare-items": compareItems,
   "@/lib/compare/selection": compareSelection,
   "@/lib/compare/use-compare-selection": { useCompareSelection: () => ({ items: [], update() {} }) },
+  // Task C-d: the card's colour dots use the real limit.
+  "@/lib/catalog/card-colors": cardColors,
 };
 
 // Task 5a.2: shared primitives (Price, Badge) are real, and render inline so fixtures read their text.

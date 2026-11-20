@@ -114,6 +114,30 @@ test("removing all options turns the product back into a simple one",async()=>{
   assert.deepEqual(detail.gallery.map(g=>g.url),["/uploads/products/test/img-0a.jpg"]);
 });
 
+// Task C-d: catalogue card colour dots come from the editor's colour option (swatch photo or hex), only for colours
+// an eligible variant is in, read with the page's rows (no query per card). No swatch data, no dots.
+test("catalog cards carry colour dots from swatch data only, for colours still on sale",async()=>{
+  const cms=await service(),api=await catalog(),dotsOf=async name=>(await api.listProducts({market:"default",locale:"en",displayCurrency:"KZT",search:name},{})).items.map(card=>card.colors);
+  const saved=await cms.save("products",admin,variantProduct("DOTS-A"));
+  let queries=0;const counting={query:(...args)=>{queries++;return database.pool.query(...args);}};
+  const counted=(await import("../../src/server/catalog/service.ts")).createCatalogService({pool:counting});
+  const page=await counted.listProducts({market:"default",locale:"en",displayCurrency:"KZT",search:"Variant watch DOTS-A"},{});
+  assert.deepEqual(page.items[0].colors,[{label:"Black",hex:"#000000"},{label:"White",hex:"#ffffff"}]);
+  assert.equal(queries,1,"the dots come with the listing query itself");
+  // Colour names without swatches (a plain buttons option): no dots, nothing derived from the names.
+  const plain={...color,display:"buttons",values:color.values.map(({swatchColor,...value})=>(void swatchColor,value))};
+  await cms.save("products",admin,variantProduct("DOTS-B",{options:[plain,size]}));
+  assert.deepEqual(await dotsOf("Variant watch DOTS-B"),[undefined]);
+  // Sizes only: no colour option, no dots.
+  const sizesOnly=variantProduct("DOTS-C");sizesOnly.options=[size];sizesOnly.variants=sizesOnly.variants.slice(0,2).map(v=>({...v,selections:{"opt-size":v.selections["opt-size"]}}));
+  await cms.save("products",admin,sizesOnly);
+  assert.deepEqual(await dotsOf("Variant watch DOTS-C"),[undefined]);
+  // Every White variant archived: one colour left on sale is no choice, so the dots go.
+  const doc=variantProduct("DOTS-A");doc.variants=doc.variants.map(v=>v.selections["opt-color"]==="val-white"?{...v,status:"archived"}:v);
+  await cms.save("products",admin,{...doc,id:saved.id,version:saved.version});
+  assert.deepEqual(await dotsOf("Variant watch DOTS-A"),[undefined]);
+});
+
 test("overview HTML is sanitized and the catalog returns overview and spec groups, translated",async()=>{
   const cms=await service();
   const saved=await cms.save("products",admin,variantProduct("VAR-D",{overviewHtml:'<div class="pc-hero"><h2>Built tough</h2><script>alert(1)</script><img src="/uploads/products/test/img-0a.jpg" onerror="x()"></div>',

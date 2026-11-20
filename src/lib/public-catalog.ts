@@ -25,5 +25,6 @@ export function catalogCardView(card: ProductCardDTO, currency: DisplayCurrency 
     currency: "KZT" as const, purchasable: false, availability: card.availability,
     family: card.family ?? "", activities: card.activities ?? [], level: card.level ?? "Unknown", caseSize: card.caseSize ?? "Unknown",
     priceSuffix: card.priceSuffix,
+    ...(card.colors?.length ? { colors: card.colors } : {}),
   };
 }
