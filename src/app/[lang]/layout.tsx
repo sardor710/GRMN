@@ -23,6 +23,7 @@ const CLIENT_NAMESPACES: readonly string[] = [
   "HomeFeatured",
   "HomeHero",
   "HomeSignup",
+  "Locations",
   "Newsletter",
   "OrderDetails",
   "ProductAccessories",

@@ -13,6 +13,7 @@ export type RouteKey =
   | "account"
   | "newsletter"
   | "garminPay"
+  | "selectLocation"
   | "minisite:fenix-8"
   | "minisite:marq"
   | "minisite:marq2"

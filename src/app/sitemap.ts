@@ -13,6 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/", indexedLocales: homepageLocales(await readHomepage()), changeFrequency: "daily", priority: 1.0 },
     { path: "/compare", indexedLocales: ROUTE_LOCALES.compare, changeFrequency: "weekly", priority: 0.8 },
     { path: "/garmin-pay", indexedLocales: ROUTE_LOCALES.garminPay, changeFrequency: "monthly", priority: 0.7 },
+    { path: "/select-a-location", indexedLocales: ROUTE_LOCALES.selectLocation, changeFrequency: "monthly", priority: 0.3 },
     { path: "/minisite/fenix-8", indexedLocales: ROUTE_LOCALES["minisite:fenix-8"], changeFrequency: "weekly", priority: 0.9 },
     { path: "/minisite/marq", indexedLocales: ROUTE_LOCALES["minisite:marq"], changeFrequency: "weekly", priority: 0.9 },
     { path: "/minisite/marq2", indexedLocales: ROUTE_LOCALES["minisite:marq2"], changeFrequency: "weekly", priority: 0.9 },

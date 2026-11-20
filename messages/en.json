@@ -315,7 +315,7 @@
   },
   "Footer": {
     "navLabel": "Global Footer Navigation",
-    "region": "United States",
+    "region": "Kazakhstan",
     "social": "Garmin on {network}",
     "copyright": "© Garmin Ltd. or its subsidiaries. All rights reserved.",
     "columns": {
@@ -969,5 +969,16 @@
     "contactLater": "We will contact you with payment details.",
     "heldUntil": "Your order is held until {time}. If we have not received payment by then, it is cancelled.",
     "notPaidUntilConfirmed": "The order is not paid until we confirm your payment."
+  },
+  "Locations": {
+    "metaTitle": "Select a Location | Garmin Kazakhstan",
+    "metaDescription": "Find the official Garmin website or distributor for your country.",
+    "title": "Select a Location",
+    "intro": "You are on the Garmin Kazakhstan website. Choose another country to visit its official Garmin website or distributor.",
+    "current": "You are here",
+    "dialogTitle": "Leaving Garmin Kazakhstan",
+    "dialogBody": "You are leaving the Garmin Kazakhstan website and going to the Garmin website for {country}. It will open in a new tab. Do you want to continue?",
+    "continue": "Open website",
+    "stay": "Stay here"
   }
 }

@@ -49,10 +49,10 @@ export function SiteFooter() {
 
         {/* Locale + socials */}
         <div className="mt-12 flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
-          <button className="flex items-center gap-2 text-[13px] font-medium text-white">
+          <a href={localize("/select-a-location")} className="flex items-center gap-2 text-[13px] font-medium text-white hover:underline">
             <GlobeIcon className="h-4 w-4" />
             {t("Footer.region")}
-          </button>
+          </a>
           <div className="flex items-center gap-5">
             {socials.map(({ label, Icon }) => (
               <a key={label} href="#" aria-label={label} className="text-white transition-opacity hover:opacity-70">
