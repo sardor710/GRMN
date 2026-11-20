@@ -160,7 +160,8 @@ const blankForm = () => ({
   level: "Premium" as Level,
   caseSize: "Medium" as CaseSize,
   stock: 50,
-  status: "published" as ProductStatus,
+  // A new product starts as a draft: publishing is a deliberate step (and needs a price above 0).
+  status: "draft" as ProductStatus,
   isFeatured: false,
   specs: DEFAULT_SPECS_TEMPLATE,
   inTheBox: [

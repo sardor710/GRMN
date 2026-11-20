@@ -137,9 +137,10 @@ export function createCMSService({pool,authorize}:Options) {
     const old=(await client.query(`${productSelect} WHERE p.public_key=$1 FOR UPDATE OF p`,[data.id])).rows[0];
     if(!old)return fail("NOT_FOUND",404,"Product was not found");
     if(data.version!==Number(old.version))return fail("VERSION_CONFLICT",409,"Product changed; reload before saving");
-    // The default variant's price is what counts: a published product needs a selling price above 0.
-    if(data.status==="published"&&(old.amount_minor==null||BigInt(old.amount_minor)<=BigInt(0)))return fail("INVALID_INPUT",400,PRICE_TO_PUBLISH);
+    // No default variant or no price row at all: only the editor can repair it (409), whatever the target status.
     if(old.sku==null||old.amount_minor==null)return fail("CONFLICT",409,"This product has no default variant or price; open it in the editor and save it first");
+    // The default variant's price is what counts: a published product needs a selling price above 0.
+    if(data.status==="published"&&BigInt(old.amount_minor)<=BigInt(0))return fail("INVALID_INPUT",400,PRICE_TO_PUBLISH);
     // The column and the editor document keep the same status, like save.
     await client.query("UPDATE products SET status=$2,legacy_content=jsonb_set(legacy_content,'{status}',to_jsonb($2::text)),version=version+1,updated_at=clock_timestamp() WHERE id=$1",[old.id,data.status]);
     const meta=record(old.legacy_content);

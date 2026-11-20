@@ -182,3 +182,16 @@ test("bulk publish reports a price-0 product as INVALID_INPUT per item and publi
   assert.equal((await cms.get("products",admin,free.id)).status,"draft");
   assert.equal((await cms.get("products",admin,paid.id)).status,"published");
 });
+
+// Follow-up F-b (F-a review): a product with no price row cannot be published from the list; the editor
+// must save it first (409 CONFLICT). The 400 price message is only for an existing price of 0 or less.
+test("publishing a product with no price row through the status PATCH is a 409 CONFLICT, not the price message",async()=>{
+  const cms=await cmsService(),draft=await cms.save("products",admin,product({status:"draft"}));
+  const fixup=await database.pool.connect();
+  try{await fixup.query("SET session_replication_role=replica");await fixup.query("DELETE FROM prices WHERE variant_id IN (SELECT v.id FROM product_variants v JOIN products p ON p.id=v.product_id WHERE p.public_key=$1)",[draft.id]);}
+  finally{await fixup.query("RESET session_replication_role");fixup.release();}
+  await assert.rejects(cms.setProductStatus(admin,{id:draft.id,version:draft.version,status:"published"}),
+    error=>error.code==="CONFLICT"&&error.status===409&&/open it in the editor/.test(error.message));
+  // (the admin read cannot project a product with no price, so check the row itself)
+  assert.equal((await q("SELECT status FROM products WHERE public_key=$1",[draft.id])).rows[0].status,"draft");
+});
