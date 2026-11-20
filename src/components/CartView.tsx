@@ -219,12 +219,16 @@ export function CartView({ catalog = {} }: { catalog?: CartCatalog }) {
         {/* Summary */}
         <aside className="h-fit border border-garmin-control p-6">
           <h2 className="g-heading g-h4 m-0 text-black">{t("summary")}</h2>
-          <dl className="mt-4 space-y-3 text-[16px] leading-[24px]">
-            <div className="flex justify-between">
-              <dt className="font-medium text-black">{t("subtotal")}</dt>
-              <dd className="text-black">{money(subtotal, items.some((item) => item.unconverted))}</dd>
-            </div>
-          </dl>
+          {/* Final review M16: a sum of converted tenge and unconverted legacy amounts is no price at all, so
+              the subtotal is hidden when the lines mix them. */}
+          {!(items.some((item) => item.unconverted) && items.some((item) => !item.unconverted)) && (
+            <dl className="mt-4 space-y-3 text-[16px] leading-[24px]">
+              <div className="flex justify-between">
+                <dt className="font-medium text-black">{t("subtotal")}</dt>
+                <dd className="text-black">{money(subtotal, items.some((item) => item.unconverted))}</dd>
+              </div>
+            </dl>
+          )}
           {/* Task 14A: the browser-only cart cannot place orders (the fake "order placed" screen,
               its invented tax and its cart clearing are removed). Checkout needs the server cart. */}
           <button type="button" disabled className="g-btn g-btn--lg g-btn--black mt-6 w-full">

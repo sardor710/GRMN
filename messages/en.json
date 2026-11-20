@@ -668,6 +668,10 @@
       "navigation": "Satellite & Navigation"
     }
   },
+  "ProductBadge": {
+    "new": "New",
+    "sale": "Sale"
+  },
   "ProductCard": {
     "andUp": "and up"
   },
