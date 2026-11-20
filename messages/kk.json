@@ -310,6 +310,24 @@
     "sizeLabelColumn": "Өлшемі: {name}, {position}-баған",
     "noDifferences": "Бұл тауарлардың арасында айырмашылық жоқ."
   },
+  "CompareBar": {
+    "region": "Салыстыру",
+    "add": "Салыстыруға қосу",
+    "added": "Қосылды",
+    "removeFromComparison": "Салыстырудан алып тастау",
+    "viewComparison": "Салыстыруды көру",
+    "compare": "Салыстыру",
+    "remove": "Алып тастау",
+    "removeLabel": "Алып тастау: {name}",
+    "clearAll": "Барлығын тазарту",
+    "minimum": "Кемінде 2 тауар таңдаңыз",
+    "limit": "Ең көбі {max} тауарды салыстыруға болады.",
+    "status": "Салыстыруға таңдалды: {count} / {max}",
+    "searchLabel": "Тауарларды іздеу",
+    "searchButton": "Іздеу",
+    "searchEmpty": "«{query}» бойынша ештеңе табылмады.",
+    "searchAdd": "Салыстыруға қосу: {name}"
+  },
   "Footer": {
     "navLabel": "Сайттың төменгі навигациясы",
     "region": "Қазақстан",

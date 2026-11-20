@@ -8,6 +8,8 @@ import { COMPARE_MAX_ITEMS, COMPARE_VALUE_MAX_LENGTH, compareHref, type CompareI
 export const COMPARE_SELECTION_KEY = "garmin-compare-v1";
 /** Same-tab change event (the `storage` event only reaches other tabs). */
 export const COMPARE_SELECTION_EVENT = "garmin-compare-change";
+/** Id of the compare bar's visible "up to five" note; a catalogue card's disabled control points at it. */
+export const COMPARE_LIMIT_NOTE_ID = "compare-limit-note";
 
 /** One chosen product (and size), with what the compare bar shows for it. */
 export interface CompareSelectionItem extends CompareItemRef {

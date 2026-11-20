@@ -11,6 +11,8 @@ import { CatalogueGrid } from "@/components/CatalogueGrid";
 import { SectionHeading } from "@/components/SectionHeading";
 import { catalogues, getCatalogue, catalogueProducts } from "@/lib/products";
 import { readOr } from "@/server/public-input";
+import { readCatalogueCompareSearch } from "@/lib/compare/compare-items";
+import { searchCompareProducts } from "@/lib/compare/search";
 import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 
@@ -47,6 +49,9 @@ export default async function CataloguePage({ params, searchParams }: PageProps<
   const page = await readOr(catalogueProducts(def,{cursor:one("cursor"),search:one("search"),activities:many("activities"),levels:many("levels") as import("@/contracts/commerce").ProductQuery["levels"],caseSizes:many("caseSizes") as import("@/contracts/commerce").ProductQuery["caseSizes"],sort:sorts[(one("sort")??"featured") as keyof typeof sorts]??"name_asc"},locale), notFound);
   const next=new URLSearchParams();Object.entries(query).forEach(([key,value])=>[value??[]].flat().forEach(v=>next.append(key,v)));if(page.nextCursor)next.set("cursor",page.nextCursor);
   const items = page.items;
+  // Task C-c: the compare bar's product search, the same bounded search as the compare page's "+" tile.
+  const compareText = readCatalogueCompareSearch(query);
+  const compareSearch = compareText ? await searchCompareProducts(compareText, locale) : null;
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
@@ -72,7 +77,7 @@ export default async function CataloguePage({ params, searchParams }: PageProps<
         <div className="py-10">
           <SectionHeading size="h1">{t(def.headingKey)}</SectionHeading>
         </div>
-        <CatalogueGrid products={items} />
+        <CatalogueGrid products={items} compareSearch={compareSearch} />
         {page.nextCursor&&<Link className="g-btn g-btn--sm g-btn--secondary mx-auto mt-8 flex w-fit" href={"?"+next}>{tGrid("nextProducts")}</Link>}
         <div className="h-16" />
       </main>

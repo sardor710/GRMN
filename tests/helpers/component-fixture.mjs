@@ -10,6 +10,8 @@ import * as translateRecord from "../../src/i18n/translate-record.js";
 import * as seoCore from "../../src/i18n/seo-core.js";
 import * as money from "../../src/lib/money.ts";
 import * as statusPill from "../../src/components/admin/products/status-pill.ts";
+import * as compareItems from "../../src/lib/compare/compare-items.ts";
+import * as compareSelection from "../../src/lib/compare/selection.ts";
 
 // Storefront components read their text through next-intl. Fixtures render with the real English
 // catalog so assertions keep reading the English interface (ru/kk are covered by the i18n tests).
@@ -26,6 +28,10 @@ const i18nModules = {
   "@/lib/cms/translation-edit": translationEdit,
   "@/lib/money": money,
   "@/components/admin/products/status-pill": statusPill,
+  // Task C-c: the compare helpers are real; the selection hook starts empty (tests pass their own to add items).
+  "@/lib/compare/compare-items": compareItems,
+  "@/lib/compare/selection": compareSelection,
+  "@/lib/compare/use-compare-selection": { useCompareSelection: () => ({ items: [], update() {} }) },
 };
 
 // Task 5a.2: shared primitives (Price, Badge) are real, and render inline so fixtures read their text.

@@ -231,3 +231,15 @@ export function readCompareSearch(query: CompareQuery | null | undefined): strin
 export function renderedQuery(query: CompareQuery | null | undefined): string {
   return compareSearch(parseCompareItems(query), { search: readCompareSearch(query) });
 }
+
+/** Catalogue compare mode in the URL, like garmin.com: `compare=1` (task C-c). */
+export const CATALOGUE_COMPARE_PARAM = "compare";
+/** The catalogue compare bar's product search: `compareSearch=<text>` (kept apart from the catalogue's own `search`). */
+export const CATALOGUE_COMPARE_SEARCH_PARAM = "compareSearch";
+
+/** The compare bar search text of a catalogue URL: trimmed and cut to COMPARE_SEARCH_MAX_LENGTH; "" when absent. */
+export function readCatalogueCompareSearch(query: Readonly<Record<string, string | readonly string[] | undefined>> | null | undefined): string {
+  const raw = query?.[CATALOGUE_COMPARE_SEARCH_PARAM];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return typeof value === "string" ? value.trim().slice(0, COMPARE_SEARCH_MAX_LENGTH) : "";
+}

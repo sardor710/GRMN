@@ -18,6 +18,7 @@ const CLIENT_NAMESPACES: readonly string[] = [
   "Checkout",
   "CatalogueGrid",
   "Compare",
+  "CompareBar",
   "Footer",
   "Header",
   "HomeFeatured",

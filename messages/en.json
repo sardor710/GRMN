@@ -310,6 +310,24 @@
     "sizeLabelColumn": "Size for {name}, column {position}",
     "noDifferences": "No differences between these products."
   },
+  "CompareBar": {
+    "region": "Comparison",
+    "add": "Add to comparison",
+    "added": "Added",
+    "removeFromComparison": "Remove from comparison",
+    "viewComparison": "View comparison",
+    "compare": "Compare",
+    "remove": "Remove",
+    "removeLabel": "Remove {name}",
+    "clearAll": "Clear all",
+    "minimum": "Select at least 2 products",
+    "limit": "You can compare up to {max} products.",
+    "status": "{count} of {max} products selected",
+    "searchLabel": "Search for Products",
+    "searchButton": "Search",
+    "searchEmpty": "No products found for “{query}”.",
+    "searchAdd": "Add {name} to comparison"
+  },
   "Footer": {
     "navLabel": "Global Footer Navigation",
     "region": "Kazakhstan",

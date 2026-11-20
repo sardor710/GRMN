@@ -310,6 +310,24 @@
     "sizeLabelColumn": "Размер: {name}, столбец {position}",
     "noDifferences": "Между этими товарами нет различий."
   },
+  "CompareBar": {
+    "region": "Сравнение",
+    "add": "Добавить к сравнению",
+    "added": "Добавлено",
+    "removeFromComparison": "Убрать из сравнения",
+    "viewComparison": "Перейти к сравнению",
+    "compare": "Сравнить",
+    "remove": "Убрать",
+    "removeLabel": "Убрать {name}",
+    "clearAll": "Очистить всё",
+    "minimum": "Выберите не менее 2 товаров",
+    "limit": "Можно сравнить не более {max} товаров.",
+    "status": "Выбрано для сравнения: {count} из {max}",
+    "searchLabel": "Поиск товаров",
+    "searchButton": "Найти",
+    "searchEmpty": "По запросу «{query}» ничего не найдено.",
+    "searchAdd": "Добавить {name} к сравнению"
+  },
   "Footer": {
     "navLabel": "Навигация в подвале сайта",
     "region": "Казахстан",
