@@ -1,5 +1,6 @@
 "use client";
 
+import { createRequestGate } from "@/lib/admin/dashboard";
 import { formatKzt } from "@/lib/money";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AdminOrderDetailDTO, AdminOrderSummaryDTO, ShipmentDTO } from "@/contracts/commerce";
@@ -60,15 +61,27 @@ export default function FulfillmentScreen() {
   const [payNote, setPayNote] = useState("");
   const [payout, setPayout] = useState<Record<string, { method: string; reference: string }>>({});
 
+  // Fix round 1 (5b.1): one queue request at a time. A filter change aborts the previous request and a
+  // late response from an older filter is dropped, so a slow unfiltered list never replaces the Demo list.
+  // A failed request ends the loading state with an error instead of leaving "Loading orders…" forever.
+  const [queueGate] = useState(createRequestGate);
   const loadOrders = useCallback(async () => {
+    const ticket = queueGate.begin();
     setError(null);
     const query = new URLSearchParams();
     if (status) query.set("fulfillmentStatus", status);
     if (mode) query.set("paymentMode", mode);
-    const response = await fetch("/api/admin/orders" + (query.size ? `?${query}` : ""), { cache: "no-store" });
-    if (!response.ok) { setError(await readError(response)); setOrders([]); return; }
-    setOrders((await response.json() as { items: AdminOrderSummaryDTO[] }).items);
-  }, [status, mode]);
+    try {
+      const response = await fetch("/api/admin/orders" + (query.size ? `?${query}` : ""), { cache: "no-store", signal: ticket.signal });
+      if (!response.ok) { const message = await readError(response); if (ticket.isCurrent()) { setError(message); setOrders([]); } return; }
+      const items = (await response.json() as { items: AdminOrderSummaryDTO[] }).items;
+      if (ticket.isCurrent()) setOrders(items);
+    } catch (reason) {
+      if (!ticket.isCurrent()) return;
+      setError(`The orders could not be loaded: ${reason instanceof Error ? reason.message : String(reason)}`);
+      setOrders([]);
+    }
+  }, [status, mode, queueGate]);
   // Fix round 1: the detail's own error (e.g. a linked order that does not exist) lives apart from the
   // list error, so loadOrders clearing its error never hides why the detail did not open.
   const loadDetail = useCallback(async (id: string) => {
@@ -90,6 +103,7 @@ export default function FulfillmentScreen() {
     if (linked && /^[0-9a-f-]{36}$/i.test(linked)) setSelected(linked);
   }, []);
   useEffect(() => { void loadOrders(); }, [loadOrders]);
+  useEffect(() => () => queueGate.abort(), [queueGate]);
   useEffect(() => { if (selected) void loadDetail(selected); else { setDetail(null); setDetailError(null); } }, [selected, loadDetail]);
 
   // The manual payment actions are keyed by their reference instead of an idempotency key.

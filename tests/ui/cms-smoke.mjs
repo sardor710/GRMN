@@ -507,9 +507,12 @@ async function adminShotsScenario({cms,headers,send,evaluate,navigate,text,click
       await until(async()=>/2 products selected/.test(await text()),"Selecting 2 rows did not show the bulk bar");
       await evaluate("window.scrollTo(0,0);true");await shoot(`products-selected-${width}.png`);});
       await step(`product-variants-${width}.png`,async()=>{await ui.open();await ui.openContent(51).catch(()=>{});await shoot(`product-variants-${width}.png`);await ui.close();});
-      await navigate("/admin/orders");await until(()=>evaluate("!!document.querySelector('select[aria-label=\"Payment mode filter\"]')"),"Orders did not load");
-      // Set again on each try: a value set before hydration finishes is dropped.
-      await until(()=>evaluate(`(()=>{const select=document.querySelector('select[aria-label="Payment mode filter"]');if(select.value!=='demo'){Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,'demo');select.dispatchEvent(new Event('change',{bubbles:true}));}else select.dispatchEvent(new Event('change',{bubbles:true}));return document.querySelectorAll('section[aria-label="Order queue"] li button [data-demo-badge]').length>0;})()`),"The Demo filter listed nothing").catch(async error=>{await writeFile(path.join(receipt,`admin-shots-orders-${width}.txt`),await evaluate("document.querySelector('main')?.innerText??''"));throw error;});
+      // The queue has rendered its first response (the page is hydrated and the unfiltered list arrived), so the
+      // filter change below is handled by React; then the queue must show only demo orders.
+      await navigate("/admin/orders");await until(()=>evaluate("document.querySelectorAll('section[aria-label=\"Order queue\"] li button').length>0"),"The order queue did not load").catch(async error=>{await writeFile(path.join(receipt,`admin-shots-orders-${width}.txt`),await text());throw error;});
+      await evaluate(`(()=>{const select=document.querySelector('select[aria-label="Payment mode filter"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,'demo');select.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
+      const queue="[...document.querySelectorAll('section[aria-label=\"Order queue\"] li button')]";
+      await until(()=>evaluate(`${queue}.length>0&&${queue}.every(b=>!!b.querySelector('[data-demo-badge]'))`),"The Demo filter did not list only demo orders").catch(async error=>{await writeFile(path.join(receipt,`admin-shots-orders-${width}.txt`),await text());throw error;});
       await evaluate("document.querySelector('section[aria-label=\"Order queue\"] li button').click();true");
       await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Order detail\"] [data-demo-badge]')"),"Order detail did not open");
       await shoot(`orders-demo-${width}.png`);
