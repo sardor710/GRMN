@@ -69,7 +69,7 @@ function Check({
   onChange: () => void;
 }) {
   return (
-    <label className="g-checkbox-label mb-4 h-[21.8px] cursor-pointer pt-[0.8px] pr-2 has-[:checked]:font-bold">
+    <label className="g-checkbox-label mb-4 min-h-[21.8px] cursor-pointer pt-[0.8px] pr-2 has-[:checked]:font-bold">
       <input
         type="checkbox"
         checked={checked}

@@ -102,7 +102,7 @@ export function CompareTool({products,selectedProducts}:{products:Product[];sele
             <tbody>
               {rows.map((row) => (
                 <tr key={row.key} className="border-y border-garmin-control">
-                  <th className="bg-muted px-4 py-2 text-left align-top text-[12px] font-bold uppercase leading-[18px] tracking-[-0.2px] text-black">
+                  <th className="bg-[#F2F2F2] px-4 py-2 text-left align-top text-[12px] font-bold uppercase leading-[18px] tracking-[-0.2px] text-black">
                     {t(`rows.${row.key}`)}
                   </th>
                   {chosen.map((p) => (

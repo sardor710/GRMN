@@ -24,6 +24,9 @@ const tabType = "text-[14px] font-semibold uppercase leading-[21px] tracking-[0.
 export function ProductTabs({ product: base }: { product: ProductDetail }) {
   const t = useTranslations("ProductTabs");
   const [tab, setTab] = useState<Tab>("overview");
+  // Below 1024 garmin.com closes the open accordion row when it is tapped again; the desktop bar always shows a tab.
+  const [collapsed, setCollapsed] = useState(false);
+  const openTab = (id: Tab) => { setTab(id); setCollapsed(false); };
   // Task 2.4: Specs, Overview and In the box follow the selected variant (the open tab stays open on a switch).
   const { selectedVariantId } = useProductVariant();
   const product = useMemo<ProductDetail>(() => {
@@ -39,7 +42,7 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
   const isRichOverview = tab === "overview" && !emptyOverview && ((product.id === "1228429" && !product.overviewHtml) || fullBleedHtml);
 
   const content = (
-    <div className={`${CONTENT_ORDER[TABS.indexOf(tab)]} ${isRichOverview ? "w-full" : "mx-auto w-full max-w-[1280px] px-4 py-12"}`}>
+    <div id="product-tab-panel" className={`${CONTENT_ORDER[TABS.indexOf(tab)]} ${collapsed ? "max-lg:hidden" : ""} ${isRichOverview ? "w-full" : "mx-auto w-full max-w-[1280px] px-4 py-12"}`}>
       {tab === "overview" && !emptyOverview && (
         product.id === "1228429" && !product.overviewHtml ? (
           <ProductOverview product={product} />
@@ -95,7 +98,7 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
               <button
                 type="button"
                 aria-current={tab === id ? "true" : undefined}
-                onClick={() => setTab(id)}
+                onClick={() => openTab(id)}
                 className={`${tabType} whitespace-nowrap border-black px-[14px] py-7 transition-colors active:text-garmin-black-hover ${
                   tab === id ? "border-b-4" : "hover:border-b-4"
                 }`}
@@ -114,12 +117,13 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
           <button
             key={id}
             type="button"
-            aria-expanded={tab === id}
-            onClick={() => setTab(id)}
+            aria-expanded={tab === id && !collapsed}
+            aria-controls="product-tab-panel"
+            onClick={() => (tab === id && !collapsed ? setCollapsed(true) : openTab(id))}
             className={`${tabType} ${ROW_ORDER[index]} flex h-[50px] w-full items-center justify-between border-t border-[#DCDCDC] px-7 py-[14px] text-left lg:hidden`}
           >
             {t(`tabs.${id}`)}
-            <svg viewBox="0 0 18.2 11.2" aria-hidden="true" className={`h-[9px] w-[14px] shrink-0 fill-black ${tab === id ? "rotate-180" : ""}`}>
+            <svg viewBox="0 0 18.2 11.2" aria-hidden="true" className={`h-[9px] w-[14px] shrink-0 fill-black ${tab === id && !collapsed ? "rotate-180" : ""}`}>
               <path d="M9.1 11.2L0 2.2 2.2 0l6.9 7L16 0l2.2 2.2-9.1 9z" />
             </svg>
           </button>
@@ -173,7 +177,7 @@ function SpecTable({ title, rows }: { title?: string; rows: { label: string; val
       <tbody>
         {rows.map((s, i) => (
           <tr key={`${s.label}-${i}`}>
-            <th scope="row" className="w-1/2 border-y border-garmin-control bg-muted px-4 py-2 text-left font-bold uppercase tracking-[-0.2px] text-black">
+            <th scope="row" className="w-1/2 border-y border-garmin-control bg-[#F2F2F2] px-4 py-2 text-left font-bold uppercase tracking-[-0.2px] text-black">
               {s.label}
             </th>
             <td className="w-1/2 border-y border-garmin-control bg-white p-4 text-center font-light text-black">{s.value}</td>

@@ -224,7 +224,7 @@
     "sortBy": "Sort By",
     "empty": "No products match your filters.",
     "sort": {
-      "featured": "Featured Products",
+      "featured": "Newest",
       "priceAsc": "Price: Low to High",
       "priceDesc": "Price: High to Low",
       "name": "A to Z"
@@ -261,7 +261,7 @@
       "medium": "Medium (44 to 49 mm)",
       "large": "Large (≥ 50 mm)"
     },
-    "nextProducts": "Next products",
+    "nextProducts": "Next Products",
     "filterAndSort": "Filter and Sort"
   },
   "CataloguePage": {
