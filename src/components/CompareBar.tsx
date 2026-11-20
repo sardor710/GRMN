@@ -26,6 +26,7 @@ import {
 } from "@/lib/compare/selection";
 
 const SEARCH_INPUT_ID = "compare-bar-search";
+const STATUS_ID = "compare-bar-status";
 const SEARCH_RESULTS_ID = "compare-bar-results";
 
 export interface CompareBarHit { id: string; name: string; image: string }
@@ -41,6 +42,8 @@ export interface CompareBarProps {
   search: CompareBarSearch | null;
   /** Compare mode (`compare=1`): the bar shows even with nothing selected, like garmin.com. */
   compareMode: boolean;
+  /** The shopper changed the selection elsewhere (a card): the live status may speak. Off on page load. */
+  announce?: boolean;
 }
 
 /**
@@ -50,12 +53,18 @@ export interface CompareBarProps {
  * catalogue block only, so it never covers the footer or the "Next Products" link. Garmin's empty left side holds our
  * status line and "Clear all".
  */
-export function CompareBar({ items, onChange, products, search, compareMode }: CompareBarProps) {
+export function CompareBar({ items, onChange, products, search, compareMode, announce = false }: CompareBarProps) {
   const t = useTranslations("CompareBar");
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
   const [query, setQuery] = useState(search?.query ?? "");
+  // The live status stays empty until the shopper changes the selection, so loading the page announces nothing.
+  const [acted, setActed] = useState(false);
+  const userChange: CompareSelectionStore["update"] = (change) => {
+    setActed(true);
+    onChange(change);
+  };
 
   // A link can carry the selection (`item=<id>~<sku>`, like the compare page): add it, then drop it from the
   // address without a server round trip (Next.js syncs useSearchParams for `history.replaceState(null, …)`).
@@ -97,7 +106,7 @@ export function CompareBar({ items, onChange, products, search, compareMode }: C
   // Closing the hits only changes the address (no refetch); the hits stay hidden while it lacks the search.
   const closeHits = () => window.history.replaceState(null, "", withSearch(""));
   const addHit = (hit: CompareBarHit) => {
-    onChange((current) => addItem(current, { productId: hit.id, name: hit.name, image: hit.image }));
+    userChange((current) => addItem(current, { productId: hit.id, name: hit.name, image: hit.image }));
     setQuery("");
     closeHits();
   };
@@ -114,19 +123,42 @@ export function CompareBar({ items, onChange, products, search, compareMode }: C
       data-compare-bar
       className="sticky bottom-0 z-20 order-last border-t border-garmin-control bg-muted p-4 text-black shadow-garmin-raised lg:top-0 lg:bottom-auto lg:order-first lg:border-b lg:shadow-none"
     >
-      {/* Below 1024px garmin.com stacks slots, search (12px under) and Compare (16px under); our status line and
-          "Clear all" go last there, and first (Garmin's empty left side) from 1024px. */}
+      {/* DOM order = the mobile stack: our status line and "Clear all", then garmin.com's slots, search (12px under) and
+          Compare (16px under). From 1024px the row is status (Garmin's empty left side), search, slots, Compare. */}
       <div className="flex flex-col lg:flex-row lg:items-center">
-        <div className="order-4 mt-3 flex min-h-6 items-center justify-between gap-4 lg:order-none lg:mt-0 lg:mr-auto lg:justify-start">
-          <p id={full ? COMPARE_LIMIT_NOTE_ID : undefined} className="text-[14px] leading-[21px]">{status}</p>
+        <div className="flex min-h-6 items-center justify-between gap-4 lg:order-1 lg:mr-auto lg:justify-start">
+          <p id={full ? COMPARE_LIMIT_NOTE_ID : STATUS_ID} className="text-[14px] leading-[21px]">{status}</p>
           {items.length > 0 && (
-            <button type="button" onClick={() => onChange(() => [])} className="g-btn g-btn--text py-0 text-[14px] leading-[21px] underline hover:no-underline">
+            <button type="button" onClick={() => userChange(() => [])} className="g-btn g-btn--text py-0 text-[14px] leading-[21px] underline hover:no-underline">
               {t("clearAll")}
             </button>
           )}
         </div>
 
-        <form role="search" method="get" action={pathname} onSubmit={submitSearch} className="relative order-2 mt-3 lg:order-none lg:mt-0 lg:w-[238px]">
+        <ul className="mt-3 flex gap-2 pt-[5.6px] lg:order-3 lg:mt-0 lg:ml-2 lg:pt-0">
+          {Array.from({ length: COMPARE_MAX_ITEMS }, (_, slot) => {
+            const item = items[slot];
+            const box = "relative aspect-square w-[calc((100%-2rem)/5)] max-w-[75px] lg:size-[53px] lg:max-w-none";
+            if (!item) return <li key={`empty-${slot}`} aria-hidden="true" className={`${box} border border-garmin-control`} />;
+            const { name, image } = display(item);
+            return (
+              <li key={`${item.productId}~${item.sku ?? ""}`} title={name} className={`${box} border border-black bg-white`}>
+                {image && <Image src={image} alt="" fill sizes="75px" className="object-contain p-[3px]" />}
+                <span className="sr-only">{name}</span>
+                <button
+                  type="button"
+                  onClick={() => userChange((current) => removeItem(current, item))}
+                  aria-label={t("removeLabel", { name })}
+                  className="absolute top-0 right-0 flex h-6 w-6 items-start justify-end pr-[3px] text-[16px] leading-[18.4px] text-black focus-visible:outline focus-visible:outline-1 focus-visible:outline-ring"
+                >
+                  <span aria-hidden="true">×</span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+
+        <form role="search" method="get" action={pathname} onSubmit={submitSearch} className="relative mt-3 lg:order-2 lg:mt-0 lg:w-[238px]">
           {[...params.entries()]
             .filter(([name]) => name !== CATALOGUE_COMPARE_SEARCH_PARAM)
             .map(([name, value], index) => <input key={`${name}-${index}`} type="hidden" name={name} value={value} />)}
@@ -176,42 +208,26 @@ export function CompareBar({ items, onChange, products, search, compareMode }: C
           </div>
         </form>
 
-        <ul className="order-1 flex gap-2 pt-[5.6px] lg:order-none lg:ml-2 lg:pt-0">
-          {Array.from({ length: COMPARE_MAX_ITEMS }, (_, slot) => {
-            const item = items[slot];
-            const box = "relative aspect-square w-[calc((100%-2rem)/5)] max-w-[75px] lg:size-[53px] lg:max-w-none";
-            if (!item) return <li key={`empty-${slot}`} aria-hidden="true" className={`${box} border border-garmin-control`} />;
-            const { name, image } = display(item);
-            return (
-              <li key={`${item.productId}~${item.sku ?? ""}`} title={name} className={`${box} border border-black bg-white`}>
-                {image && <Image src={image} alt="" fill sizes="75px" className="object-contain p-[3px]" />}
-                <span className="sr-only">{name}</span>
-                <button
-                  type="button"
-                  onClick={() => onChange((current) => removeItem(current, item))}
-                  aria-label={t("removeLabel", { name })}
-                  className="absolute top-0 right-0 flex h-6 w-6 items-start justify-end pr-[3px] text-[16px] leading-[18.4px] text-black focus-visible:outline focus-visible:outline-1 focus-visible:outline-ring"
-                >
-                  <span aria-hidden="true">×</span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-
-        <div className="order-3 mt-4 lg:order-none lg:mt-0 lg:ml-2">
+        <div className="mt-4 lg:order-4 lg:mt-0 lg:ml-2">
           {canCompare ? (
             <Link href={selectionHref(items)} className="g-btn g-btn--lg g-btn--primary h-[52px] w-full lg:w-[140px]">
               {t("compare")}
             </Link>
           ) : (
-            <button type="button" disabled className="g-btn g-btn--lg h-[52px] w-full lg:w-[140px]">
+            // Focusable but inert below two products; the status line ("Select at least 2 products") says why.
+            <button
+              type="button"
+              aria-disabled="true"
+              aria-describedby={STATUS_ID}
+              onClick={(event) => event.preventDefault()}
+              className="g-btn g-btn--lg h-[52px] w-full lg:w-[140px]"
+            >
               {t("compare")}
             </button>
           )}
         </div>
       </div>
-      <p role="status" className="sr-only">{t("status", { count: items.length, max: COMPARE_MAX_ITEMS })}</p>
+      <p role="status" className="sr-only">{announce || acted ? t("status", { count: items.length, max: COMPARE_MAX_ITEMS }) : ""}</p>
     </section>
   );
 }

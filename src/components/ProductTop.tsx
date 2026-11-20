@@ -22,7 +22,7 @@ import { badgeClass } from "@/components/ui/badge";
 import { isKztSale, toMinor, type KztAmount } from "@/lib/money";
 import { useAppLocale } from "@/i18n/useAppLocale";
 import { COMPARE_MAX_ITEMS } from "@/lib/compare/compare-items";
-import { hasItem, isSelectionFull, selectionHref, toggleItem, type CompareSelectionItem } from "@/lib/compare/selection";
+import { findVariantEntry, isSelectionFull, selectionHref, toggleVariant, type CompareSelectionItem } from "@/lib/compare/selection";
 import { useCompareSelection } from "@/lib/compare/use-compare-selection";
 
 const COMPARE_LIMIT_ID = "pdp-compare-limit";
@@ -49,6 +49,8 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   const [added, setAdded] = useState(false);
   const { add, mode } = useCart();
   const { items: compareItems, update: updateCompare } = useCompareSelection();
+  // The live status speaks only after the shopper used the control, not when the stored selection loads.
+  const [compareActed, setCompareActed] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [wish, setWish] = useState<"idle" | "saving" | "saved">("idle");
 
@@ -88,7 +90,10 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   // Computed before the memo below, like the prices above, for the React Compiler.
   const compareSku = variant?.sku ?? cmsVariant?.sku;
   const compareRef = { productId: initial.id, ...(compareSku ? { sku: compareSku } : {}) };
-  const inComparison = hasItem(compareItems, compareRef);
+  // A catalogue card adds a product without a SKU; that entry counts as this product being compared (no duplicate).
+  const compareEntryFound = findVariantEntry(compareItems, compareRef);
+  const inComparison = compareEntryFound !== null;
+  const exactInComparison = compareEntryFound?.exact === true;
   const compareBlocked = !inComparison && isSelectionFull(compareItems);
   const gallery = useMemo(() => {
     if (!vm || !cmsVariant) return product.gallery;
@@ -149,7 +154,8 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   const toggleComparison = () => {
     if (compareBlocked) return;
     const entry: CompareSelectionItem = { ...compareRef, name: product.title, ...(gallery[0]?.src ? { image: gallery[0].src } : {}) };
-    updateCompare((items) => toggleItem(items, entry));
+    setCompareActed(true);
+    updateCompare((items) => toggleVariant(items, entry));
   };
   const handleWishlist = async () => {
     setWish("saving"); setNotice(null);
@@ -350,7 +356,7 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
               aria-describedby={compareBlocked ? COMPARE_LIMIT_ID : undefined}
               className="g-btn g-btn--text text-[14px] underline hover:no-underline focus:no-underline aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
             >
-              {inComparison ? tc("removeFromComparison") : tc("add")}
+              {exactInComparison ? tc("removeFromComparison") : inComparison ? tc("compareThisSize") : tc("add")}
             </button>
             {inComparison && (
               <Link href={selectionHref(compareItems)} className="g-btn g-btn--text text-[14px] underline hover:no-underline focus:no-underline">
@@ -358,7 +364,7 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
               </Link>
             )}
             {compareBlocked && <p id={COMPARE_LIMIT_ID} className="py-[10px]">{tc("limit", { max: COMPARE_MAX_ITEMS })}</p>}
-            <p role="status" className="sr-only">{compareItems.length ? tc("status", { count: compareItems.length, max: COMPARE_MAX_ITEMS }) : ""}</p>
+            <p role="status" className="sr-only">{compareActed ? tc("status", { count: compareItems.length, max: COMPARE_MAX_ITEMS }) : ""}</p>
           </div>
           <p className="mt-4 mb-4 text-[14px] leading-[21px] text-black">
             {/* PostgreSQL catalog: report real stock only — no delivery promise the server has not made */}

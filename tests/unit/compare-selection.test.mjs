@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import * as selection from "../../src/lib/compare/selection.ts";
 
-const { addItem, removeItem, toggleItem, toggleProduct, hasItem, hasProduct, isSelectionFull, parseSelection, serializeSelection, selectionHref, createCompareSelectionStore, COMPARE_SELECTION_KEY, COMPARE_SELECTION_EVENT } = selection;
+const { findVariantEntry, toggleVariant, addItem, removeItem, toggleItem, toggleProduct, hasItem, hasProduct, isSelectionFull, parseSelection, serializeSelection, selectionHref, createCompareSelectionStore, COMPARE_SELECTION_KEY, COMPARE_SELECTION_EVENT } = selection;
 
 const watch = { productId: "fenix-8", sku: "F8-47", name: "fēnix 8", image: "/f8.jpg" };
 const ids = (items) => items.map((item) => (item.sku ? `${item.productId}~${item.sku}` : item.productId));
@@ -114,4 +114,21 @@ test("on the server (no window) the store is empty and inert", () => {
   const unsubscribe = store.subscribe(() => assert.fail("no events on the server"));
   unsubscribe();
   assert.equal(selection.compareSelection.getSnapshot().length, 0);
+});
+
+test("product page toggle: exact size removes, a SKU-less card entry is replaced in place, otherwise adds", () => {
+  const card = [{ productId: "venu" }, { productId: "fenix-8", name: "fēnix 8" }];
+  assert.deepEqual(findVariantEntry(card, { productId: "fenix-8", sku: "F8-51" }), { item: card[1], exact: false });
+  assert.equal(findVariantEntry(card, { productId: "instinct", sku: "I-1" }), null);
+  const replaced = toggleVariant(card, { productId: "fenix-8", sku: "F8-51", name: "fēnix 8" });
+  assert.deepEqual(ids(replaced), ["venu", "fenix-8~F8-51"]);
+  assert.deepEqual(findVariantEntry(replaced, { productId: "fenix-8", sku: "f8-51" }).exact, true);
+  assert.deepEqual(ids(toggleVariant(replaced, { productId: "fenix-8", sku: "F8-51" })), ["venu"]);
+  // Another size of a product already compared by SKU is its own column.
+  assert.deepEqual(ids(toggleVariant(replaced, { productId: "fenix-8", sku: "F8-47" })), ["venu", "fenix-8~F8-51", "fenix-8~F8-47"]);
+  // A product without variants (no SKU) toggles exactly.
+  assert.deepEqual(ids(toggleVariant(card, { productId: "venu" })), ["fenix-8"]);
+  // Replacing works even when the list is full.
+  const full = [{ productId: "a" }, { productId: "b" }, { productId: "c" }, { productId: "d" }, { productId: "fenix-8" }];
+  assert.deepEqual(ids(toggleVariant(full, { productId: "fenix-8", sku: "F8-47" })).at(-1), "fenix-8~F8-47");
 });

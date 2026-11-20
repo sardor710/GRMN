@@ -156,7 +156,14 @@ test("bar: Compare is disabled below two products with the reason shown", () => 
   try {
     const tree = fixture.render(barProps([fenix]).props);
     const compare = buttons(tree).find((n) => nodeText(n) === "Compare");
-    assert.equal(compare.props.disabled, true);
+    // Focusable (not `disabled`), described by the visible status, and inert.
+    assert.equal(compare.props.disabled, undefined);
+    assert.equal(compare.props["aria-disabled"], "true");
+    const reason = nodes(tree).find((n) => n.props?.id === compare.props["aria-describedby"]);
+    assert.equal(nodeText(reason), "Select at least 2 products");
+    let prevented = 0;
+    compare.props.onClick({ preventDefault: () => prevented++ });
+    assert.equal(prevented, 1);
     assert.ok(!nodes(tree).some((n) => typeof n.props?.href === "string" && n.props.href.startsWith("/compare")));
     assert.match(nodeText(tree), /Select at least 2 products/);
   } finally { restore(); }
@@ -178,6 +185,33 @@ test("bar: five slots, remove per slot, clear all, and Compare linking to the co
     assert.deepEqual(state.items.map((item) => item.productId), ["fenix-8", "fr-970"]);
     buttons(tree).find((n) => nodeText(n) === "Clear all").props.onClick();
     assert.deepEqual(state.items, []);
+  } finally { restore(); }
+});
+
+test("bar: DOM order is the mobile stack (status, slots, search, Compare); only lg:order-* rearranges desktop", () => {
+  const { fixture, restore } = bar();
+  try {
+    const tree = fixture.render(barProps([fenix, venu]).props);
+    const row = tree.props.children.find((n) => n?.type === "div");
+    const kinds = row.props.children.filter(Boolean).map((n) => n.type === "div" && nodeText(n).includes("selected") ? "status" : n.type === "ul" ? "slots" : n.type === "form" ? "search" : nodeText(n).includes("Compare") ? "compare" : "?");
+    assert.deepEqual(kinds, ["status", "slots", "search", "compare"]);
+    for (const child of row.props.children.filter(Boolean)) assert.doesNotMatch(child.props.className, /(^|s)order-/, "no unprefixed order-* utilities");
+  } finally { restore(); }
+});
+
+test("bar: the live status is empty on page load and speaks after a change", () => {
+  const { fixture, restore } = bar();
+  try {
+    const { props } = barProps([fenix, venu, forerunner]);
+    const live = (tree) => nodeText(nodes(tree).find((n) => n.props?.role === "status"));
+    let tree = fixture.render(props);
+    assert.equal(live(tree), "", "the stored selection loading is not announced");
+    buttons(tree).find((n) => n.props["aria-label"] === "Remove Venu 4").props.onClick();
+    tree = fixture.render(props);
+    assert.equal(live(tree), "3 of 5 products selected");
+    // A card toggle (from the grid) also lets it speak.
+    const other = bar();
+    try { assert.match(live(other.fixture.render({ ...props, announce: true })), /products selected/); } finally { other.restore(); }
   } finally { restore(); }
 });
 
@@ -274,4 +308,33 @@ test("product page: with five other products chosen the control explains the lim
   assert.match(nodeText(note), /You can compare up to 5 products/);
   control.props.onClick();
   assert.equal(state.updates, 0);
+});
+
+test("product page: a card's SKU-less entry counts as compared; the button swaps it for the size on screen", () => {
+  const commerce = { selectedVariantId: "b", variants: [
+    { id: "a", sku: "F8-47", name: "47 mm", options: { size: "47 mm" }, availability: "available", price: { selling: { amountMinor: "1000" } }, gallery: [] },
+    { id: "b", sku: "F8-51", name: "51 mm", options: { size: "51 mm" }, availability: "available", price: { selling: { amountMinor: "2500" } }, gallery: [{ url: "/images/b.jpg", alt: "B" }] },
+  ] };
+  const { state, hook } = fakeSelection([{ productId: "venu" }, { productId: "fenix-8", name: "fēnix 8", image: "/card.jpg" }, { productId: "instinct" }]);
+  const fixture = componentFixture("src/components/ProductTop.tsx", { modules: {
+    "@/components/product/ProductVariantContext": { useProductVariant: () => ({ selectedVariantId: "b", setSelectedVariantId() {} }) },
+    "@/lib/catalog/variant-selection": variantSelection,
+    "@/lib/cart": { useCart: () => ({ add() {} }) },
+    "@/lib/public-catalog": { minorToMajor: (v) => String(BigInt(v) / 100n), catalogPriceLabel: (p) => p.selling.amountMinor + " KZT" },
+    "@/lib/cms/commerce-variant-model": commerceVariantModel,
+    "@/lib/cms/product-variants": productVariants,
+    "@/lib/compare/use-compare-selection": hook,
+  } });
+  const props = { product: { id: "fenix-8", title: "fēnix 8", price: "10.00", currency: "KZT", breadcrumb: [], gallery: [], caseSizes: [], versions: [], colors: [], commerce } };
+  let tree = fixture.render(props);
+  const control = () => buttons(tree).find((n) => /comparison|this size/.test(nodeText(n)));
+  assert.equal(nodeText(control()), "Compare this size");
+  assert.ok(nodes(tree).some((n) => nodeText(n) === "View comparison"), "already in the comparison");
+  assert.equal(nodeText(nodes(tree).find((n) => n.props?.role === "status")), "", "nothing announced before the shopper acts");
+  control().props.onClick();
+  // Replaced in place: still three entries, no second fēnix 8.
+  assert.deepEqual(state.items, [{ productId: "venu" }, { productId: "fenix-8", sku: "F8-51", name: "fēnix 8", image: "/images/b.jpg" }, { productId: "instinct" }]);
+  tree = fixture.render(props);
+  assert.equal(nodeText(control()), "Remove from comparison");
+  assert.equal(nodeText(nodes(tree).find((n) => n.props?.role === "status")), "3 of 5 products selected");
 });

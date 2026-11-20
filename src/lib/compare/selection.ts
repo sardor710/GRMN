@@ -100,6 +100,29 @@ export function toggleItem(items: readonly CompareSelectionItem[], item: Compare
   return hasItem(items, item) ? removeItem(items, item) : addItem(items, item);
 }
 
+/**
+ * What the product page treats as "this size is in the comparison": the exact product and SKU, or a catalogue card's
+ * entry for the same product without a SKU (it stands for the default size). Null when neither is chosen.
+ */
+export function findVariantEntry(items: readonly CompareSelectionItem[], ref: CompareItemRef): { item: CompareSelectionItem; exact: boolean } | null {
+  const exact = items.find((item) => sameItem(item, ref));
+  if (exact) return { item: exact, exact: true };
+  const bare = ref.sku ? items.find((item) => item.productId === ref.productId && !item.sku) : undefined;
+  return bare ? { item: bare, exact: false } : null;
+}
+
+/**
+ * The product page's control. The exact size chosen: remove it. A SKU-less card entry for the product: replace it, in
+ * place, with the size on screen (no second column for the same product). Neither: add it.
+ */
+export function toggleVariant(items: readonly CompareSelectionItem[], item: CompareSelectionItem): readonly CompareSelectionItem[] {
+  const found = findVariantEntry(items, item);
+  if (!found) return addItem(items, item);
+  if (found.exact) return removeItem(items, item);
+  const next = toItem(item);
+  return next ? items.map((entry) => (entry === found.item ? next : entry)) : items;
+}
+
 /** A catalogue card's control: a product in any size counts as added, and removing drops all its sizes. */
 export function toggleProduct(items: readonly CompareSelectionItem[], item: CompareSelectionItem): readonly CompareSelectionItem[] {
   return hasProduct(items, item.productId) ? removeProduct(items, item.productId) : addItem(items, item);

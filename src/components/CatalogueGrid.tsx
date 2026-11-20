@@ -112,6 +112,8 @@ export function CatalogueGrid({ products, compareSearch = null }: { products: Pr
   const compareMode = params.get(CATALOGUE_COMPARE_PARAM) === "1";
   const { items: compareItems, update: updateCompare } = useCompareSelection();
   const barShown = compareMode || compareItems.length > 0;
+  // Card toggles let the bar's live status speak (never on page load).
+  const [cardActed, setCardActed] = useState(false);
   const compareFull = isSelectionFull(compareItems);
   const toggleCompareMode = () => {
     const next = new URLSearchParams(params.toString());
@@ -143,7 +145,7 @@ export function CatalogueGrid({ products, compareSearch = null }: { products: Pr
 
   return (
     <div className="flex flex-col">
-    <CompareBar items={compareItems} onChange={updateCompare} products={products} search={compareSearch} compareMode={compareMode} />
+    <CompareBar items={compareItems} onChange={updateCompare} products={products} search={compareSearch} compareMode={compareMode} announce={cardActed} />
     <div className="flex flex-col lg:flex-row lg:items-start">
       {/* Side filter rail (SideFilterMenu.spec.md): 315px, sticky full height, 1px #D9D9D9 right border; it sticks
           under the 87px compare bar while that is shown (garmin.com moves it down the same way). */}
@@ -259,7 +261,7 @@ export function CatalogueGrid({ products, compareSearch = null }: { products: Pr
                       ? {
                           selected: hasProduct(compareItems, p.id),
                           blocked: compareFull && !hasProduct(compareItems, p.id),
-                          onToggle: () => updateCompare((items) => toggleProduct(items, { productId: p.id, name: p.name, image: p.image })),
+                          onToggle: () => { setCardActed(true); updateCompare((items) => toggleProduct(items, { productId: p.id, name: p.name, image: p.image })); },
                           describedBy: COMPARE_LIMIT_NOTE_ID,
                         }
                       : undefined
