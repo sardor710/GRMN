@@ -214,3 +214,25 @@ export function isDifferentRow(row: Pick<CompareRow, "values">): boolean {
   const first = sameText(values[0] ?? "");
   return values.some((value) => sameText(value ?? "") !== first);
 }
+
+/** Longest "+" tile search text read from the URL. */
+export const COMPARE_SEARCH_MAX_LENGTH = 100;
+
+/** The "+" tile search text of a URL: trimmed and cut to COMPARE_SEARCH_MAX_LENGTH; "" when absent. */
+export function readCompareSearch(query: CompareQuery | null | undefined): string {
+  let raw: unknown;
+  if (query instanceof URLSearchParams) raw = query.get(COMPARE_SEARCH_PARAM);
+  else if (typeof query === "string") raw = new URLSearchParams(query.startsWith("?") ? query.slice(1) : query).get(COMPARE_SEARCH_PARAM);
+  else if (query && typeof query === "object") raw = query[COMPARE_SEARCH_PARAM];
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  return typeof value === "string" ? value.trim().slice(0, COMPARE_SEARCH_MAX_LENGTH) : "";
+}
+
+/**
+ * What the server renders for a URL, as one comparable string: the parsed columns and the search text ("Show only
+ * differences" is client-side state and left out). The page passes it with its props; the tool compares it with
+ * the live address to notice a stale render.
+ */
+export function renderedQuery(query: CompareQuery | null | undefined): string {
+  return compareSearch(parseCompareItems(query), { search: readCompareSearch(query) });
+}

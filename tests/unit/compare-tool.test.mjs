@@ -6,11 +6,11 @@ import { test } from "node:test";
 import { componentFixture, nodes, nodeText } from "../helpers/component-fixture.mjs";
 import * as compareItems from "../../src/lib/compare/compare-items.ts";
 
-function setup() {
+function setup(live = "") {
   const calls = [];
-  const router = { push: (href, options) => calls.push({ method: "push", href, options }), replace: (href, options) => calls.push({ method: "replace", href, options }) };
+  const router = { push: (href, options) => calls.push({ method: "push", href, options }), replace: (href, options) => calls.push({ method: "replace", href, options }), refresh: () => calls.push({ method: "refresh" }) };
   const fixture = componentFixture("src/components/CompareTool.tsx", {
-    modules: { "next/navigation": { useRouter: () => router, usePathname: () => "/en/compare" }, "@/lib/compare/compare-items": compareItems },
+    modules: { "next/navigation": { useRouter: () => router, usePathname: () => "/en/compare", useSearchParams: () => new URLSearchParams(live) }, "@/lib/compare/compare-items": compareItems },
   });
   return { fixture, calls };
 }
@@ -27,7 +27,7 @@ const groups = compareItems.buildCompareRows([
   { specGroups: [{ title: "General", items: [{ label: "Lens", value: "Sapphire" }, { label: "Weight", value: "56 g" }] }, { title: "Sensors", items: [{ label: "GPS", value: "Yes" }] }] },
 ], "Specs");
 
-const props = (overrides = {}) => ({ items: [watch, band], groups, onlyDifferences: false, search: null, catalogueHref: "/c/wearables-smartwatches", ...overrides });
+const props = (overrides = {}) => ({ items: [watch, band], groups, onlyDifferences: false, search: null, catalogueHref: "/c/wearables-smartwatches", renderedFor: "", ...overrides });
 const byRole = (tree, role) => nodes(tree).filter((n) => n.props?.role === role);
 const rowLabels = (tree) => byRole(tree, "rowheader").map(nodeText).map((s) => s.trim());
 const groupButtons = (tree) => nodes(tree).filter((n) => n.type === "button" && n.props["aria-controls"]?.startsWith("compare-group-"));
@@ -172,4 +172,19 @@ test("the compare messages exist in en, ru and kk with Garmin's wording in Engli
     assert.deepEqual(Object.keys(messages).sort(), Object.keys(en).sort(), locale);
     for (const [key, value] of Object.entries(messages)) assert.ok(typeof value === "string" && value.trim() && value !== en[key], `${locale}.${key} translated`);
   }
+});
+
+test("a render that does not match the address is refetched once (Next.js keeps a stale page after some navigations)", () => {
+  const url = "item=fenix-8~F8-51&item=band";
+  const stale = setup(url);
+  stale.fixture.render(props({ renderedFor: compareItems.renderedQuery("item=fenix-8~F8-47&item=band") }));
+  stale.fixture.effects.forEach((effect) => effect());
+  assert.deepEqual(stale.calls, [{ method: "refresh" }]);
+  // In step (diff=1 is client-only state and does not count): no refetch.
+  const fresh = setup(`${url}&diff=1`);
+  fresh.fixture.render(props({ renderedFor: compareItems.renderedQuery(url) }));
+  fresh.fixture.effects.forEach((effect) => effect());
+  assert.deepEqual(fresh.calls, []);
+  assert.equal(compareItems.renderedQuery("selected=a&q=%20venu%20&diff=1"), "item=a&q=venu");
+  assert.equal(compareItems.readCompareSearch({ q: ["x".repeat(150)] }).length, compareItems.COMPARE_SEARCH_MAX_LENGTH);
 });

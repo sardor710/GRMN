@@ -7,6 +7,7 @@ import {legacyAdminPage} from "../../src/server/cms/legacy-page.ts";
 import * as commerceVariantModel from "../../src/lib/cms/commerce-variant-model.js";
 import * as productVariants from "../../src/lib/cms/product-variants.js";
 import * as variantSelection from "../../src/lib/catalog/variant-selection.ts";
+import * as compareItems from "../../src/lib/compare/compare-items.ts";
 
 test("client bundles contain no static catalog or article records",()=>{
  for(const file of ["CatalogueGrid","WearablesHero","CompareTool","BlogExplorer"])assert.doesNotMatch(readFileSync(`src/components/${file}.tsx`,"utf8"),/from ["']@\/lib\/(?:public-products|blog)["']/);
@@ -21,8 +22,8 @@ test("server-paged catalog preserves products and sends filter changes to the UR
  const check=nodes(tree).find(n=>n.props?.label==="Running");assert.ok(check);check.props.onChange();assert.match(calls[0]??"",/activities=Running/);assert.ok(!calls[0].includes("cursor="));
 });
 test("compare starts from server-selected published data instead of fixed static IDs",()=>{
- const fixture=componentFixture("src/components/CompareTool.tsx",{modules:{"@/lib/public-products":{products:[{id:"1228429",name:"Forbidden seed",price:1,activities:[]}]},"next/navigation":{useRouter:()=>({push(){},replace(){}}),usePathname:()=>"/compare"}}});
- const tree=fixture.render({items:[],groups:[],onlyDifferences:false,search:null,catalogueHref:"/c/wearables-smartwatches"});assert.match(nodeText(tree),/no products to compare yet/);assert.ok(!nodeText(tree).includes("Forbidden seed"));
+ const fixture=componentFixture("src/components/CompareTool.tsx",{modules:{"@/lib/public-products":{products:[{id:"1228429",name:"Forbidden seed",price:1,activities:[]}]},"@/lib/compare/compare-items":compareItems,"next/navigation":{useRouter:()=>({push(){},replace(){},refresh(){}}),usePathname:()=>"/compare",useSearchParams:()=>new URLSearchParams()}}});
+ const tree=fixture.render({items:[],groups:[],onlyDifferences:false,search:null,catalogueHref:"/c/wearables-smartwatches",renderedFor:""});assert.match(nodeText(tree),/no products to compare yet/);assert.ok(!nodeText(tree).includes("Forbidden seed"));
 });
 
 // PostgreSQL variants use the garmin.com option pickers: pick a value by its label (Size → "Large").

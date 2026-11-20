@@ -4,7 +4,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { CompareTool, type CompareColumn, type CompareSearch } from "@/components/CompareTool";
 import { catalogueProducts, catalogues } from "@/lib/products";
-import { COMPARE_MAX_ITEMS, COMPARE_SEARCH_PARAM, buildCompareRows, parseCompareItems, readOnlyDifferences } from "@/lib/compare/compare-items";
+import { COMPARE_MAX_ITEMS, buildCompareRows, parseCompareItems, readCompareSearch, readOnlyDifferences, renderedQuery } from "@/lib/compare/compare-items";
 import { getCompareItems, type CompareItem } from "@/lib/compare/server";
 import { VARIANT_PARAM } from "@/lib/catalog/variant-selection";
 import { cmsBackend } from "@/server/cms/source";
@@ -17,7 +17,6 @@ export const dynamic = "force-dynamic";
 
 /** The "+" tile lists at most this many search hits (one catalogue page is read, never the whole catalogue). */
 const SEARCH_RESULTS = 8;
-const SEARCH_MAX_LENGTH = 100;
 const CATALOGUE_HREF = `/c/${catalogues[0].slug}`;
 
 export async function generateMetadata({ params }: PageProps<"/[lang]/compare">): Promise<Metadata> {
@@ -65,8 +64,7 @@ export default async function ComparePage({ params, searchParams }: PageProps<"/
   const items = await getCompareItems(parseCompareItems(query), locale);
   const groups = buildCompareRows(items.map((item) => item.content), tc("specs"));
   const skuParam = cmsBackend() === "postgres" ? VARIANT_PARAM : "sku";
-  const rawSearch = query[COMPARE_SEARCH_PARAM];
-  const searchText = (Array.isArray(rawSearch) ? rawSearch[0] : rawSearch)?.trim().slice(0, SEARCH_MAX_LENGTH) ?? "";
+  const searchText = readCompareSearch(query);
   const search = searchText && items.length < COMPARE_MAX_ITEMS ? await searchProducts(searchText, locale) : null;
   return (
     <div className="flex min-h-screen flex-col bg-white">
@@ -78,6 +76,7 @@ export default async function ComparePage({ params, searchParams }: PageProps<"/
           onlyDifferences={readOnlyDifferences(query)}
           search={search}
           catalogueHref={CATALOGUE_HREF}
+          renderedFor={renderedQuery(query)}
         />
       </main>
       <SiteFooter />

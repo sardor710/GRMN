@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState, type FormEvent } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAppLocale } from "@/i18n/useAppLocale";
 import { Price } from "@/components/ui/price";
-import { COMPARE_MAX_ITEMS, compareSearch, isDifferentRow, type CompareGroup, type CompareItemRef } from "@/lib/compare/compare-items";
+import { COMPARE_MAX_ITEMS, COMPARE_SEARCH_MAX_LENGTH, compareSearch, isDifferentRow, renderedQuery, type CompareGroup, type CompareItemRef } from "@/lib/compare/compare-items";
 import type { CompareItem } from "@/lib/compare/resolve";
 
 /** One compare column as the page sends it: the compare read without its spec content, plus the Shop link. */
@@ -26,6 +26,8 @@ export interface CompareToolProps {
   search?: CompareSearch | null;
   /** "Return to shopping" and the empty state link (no locale prefix). */
   catalogueHref: string;
+  /** `renderedQuery(...)` of the URL the server rendered these props for. */
+  renderedFor: string;
 }
 
 /** garmin.com compare shows five slots at ≥1024px: products, the "+" tile, then grey placeholders. */
@@ -44,11 +46,18 @@ const sameRef = (a: CompareItemRef, b: CompareItemRef) => a.productId === b.prod
 const refValue = (ref: CompareItemRef) => (ref.sku ? `${ref.productId}~${ref.sku}` : ref.productId);
 
 /** The Garmin product comparison (docs/research/www.garmin.com/components/Compare.spec.md). The URL is the state. */
-export function CompareTool({ items, groups, onlyDifferences, search, catalogueHref }: CompareToolProps) {
+export function CompareTool({ items, groups, onlyDifferences, search, catalogueHref, renderedFor }: CompareToolProps) {
   const t = useTranslations("Compare");
   const locale = useAppLocale();
   const router = useRouter();
   const pathname = usePathname();
+  const params = useSearchParams();
+  const liveQuery = renderedQuery(params);
+  // Next.js 16.2 can keep the old page after the first client navigation away from a URL with repeated `item`
+  // parameters (it reuses the cached page segment). When the address and the rendered columns disagree, refetch.
+  useEffect(() => {
+    if (liveQuery !== renderedFor) router.refresh();
+  }, [liveQuery, renderedFor, router]);
   const [diff, setDiff] = useState(onlyDifferences);
   const [collapsed, setCollapsed] = useState<string[]>([]);
   const [adding, setAdding] = useState(Boolean(search));
@@ -182,7 +191,7 @@ export function CompareTool({ items, groups, onlyDifferences, search, catalogueH
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t("searchLabel")}
-            maxLength={100}
+            maxLength={COMPARE_SEARCH_MAX_LENGTH}
             className="g-input my-0 text-[14px]"
           />
           <button type="submit" className="g-btn g-btn--black g-btn--sm mt-2 w-full">{t("searchButton")}</button>
