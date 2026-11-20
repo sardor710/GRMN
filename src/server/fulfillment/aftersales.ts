@@ -8,7 +8,7 @@ import { AuthFailure } from "../auth/config.ts";
 import { releaseReservation } from "../inventory/reservations.ts";
 import { releaseCouponQuota } from "../pricing/coupons.ts";
 import type { PaymentProvider, PaymentProviders, RefundResult } from "../payments/provider.ts";
-import { demoRefundId } from "../payments/demo.ts";
+import { settleDemoRefund } from "../payments/demo-refund.ts";
 import { inTransaction, isLegacy, lockOrder, orderEvent, refreshOrder, requestHash, type OrderRow } from "./service.ts";
 
 // Task 16B. Cancellation, returns and refunds (manual; absorbs Task 17).
@@ -37,7 +37,7 @@ import { inTransaction, isLegacy, lockOrder, orderEvent, refreshOrder, requestHa
 //   `restock` decision puts accepted units back on hand, once per return line; quarantine and
 //   dispose never do. A return records goods; any refund for it is a separate refund action.
 // - Task 3.2: a refund of a demo capture is settled at once with a local demo reference and keeps
-//   its demo provenance; it is never submitted to a provider (settleDemoRefund).
+//   its demo provenance; it is never submitted to a provider (settleDemoCaptureRefund, via payments/demo-refund.ts).
 // - Every staff write is idempotent per staff user and key (an internal order event carries the
 //   request hash) and audited.
 
@@ -201,15 +201,13 @@ async function reserveRefund(client: PoolClient, input: { order: OrderRow; captu
  * with a local `demo-refund:<id>` reference. It keeps the capture's demo provenance (provider,
  * environment and merchant 'demo'), is never sent to any provider, and so never reaches the refund
  * worker (which only picks open refunds of real providers). The order's payment summary and the
- * customer's refund.succeeded event follow exactly as for a provider refund.
+ * customer's refund.succeeded event follow exactly as for a provider refund. The settling itself is the
+ * shared helper capture() uses too (payments/demo-refund.ts); a non-demo capture is left to the worker.
  */
-async function settleDemoRefund(client: PoolClient, capture: CaptureRow, orderId: string, refundId: string, amount: bigint, actor: string): Promise<void> {
+async function settleDemoCaptureRefund(client: PoolClient, capture: CaptureRow, orderId: string, refundId: string, amount: bigint, actor: string): Promise<void> {
   if (capture.provider !== "demo") return;
   if (capture.environment !== "demo" || capture.merchant_account !== "demo") fail("PAYMENT_PROVENANCE_INVALID", 409, "A demo capture must stay in the demo environment");
-  const settled = await client.query("UPDATE refunds SET status='succeeded',provider_refund_id=$2,version=version+1,updated_at=now() WHERE id=$1 AND status='reserved'", [refundId, demoRefundId(refundId)]);
-  if (settled.rowCount !== 1) fail("REFUND_NOT_SETTLED", 409, "The demo refund could not be settled");
-  await refreshPayment(client, orderId);
-  await orderEvent(client, { orderId, type: "refund.succeeded", actor, dedupeKey: `refund-succeeded:${refundId}`, visibility: "customer", payload: { refundId, amountMinor: amount.toString(), demo: true } });
+  await settleDemoRefund(client, { orderId, refundId, amountMinor: amount.toString(), source: "staff", actorUserId: actor, refreshPaymentSummary: refreshPayment });
 }
 
 async function orderState(client: PoolClient, orderId: string): Promise<CancelResultDTO["order"]> {
@@ -410,7 +408,7 @@ export function createAfterSalesService({ pool, authorize }: Options) {
             else if (total > balance) lines.splice(0, lines.length, { kind: "adjustment", orderItemId: null, quantity: null, net: balance, discount: ZERO, tax: ZERO });
             const reserved = await reserveRefund(client, { order, capture, lines, reason: "order_cancelled: " + command.reason, idempotencyKey: `cancel:${order.id}`, requestHash: hash });
             refundId = reserved.id;
-            await settleDemoRefund(client, capture, order.id, reserved.id, reserved.amount, principal.userId);
+            await settleDemoCaptureRefund(client, capture, order.id, reserved.id, reserved.amount, principal.userId);
           }
           await client.query("UPDATE orders SET order_status='cancelled',updated_at=now() WHERE id=$1", [order.id]);
           await refreshOrder(client, order.id);
@@ -470,7 +468,7 @@ export function createAfterSalesService({ pool, authorize }: Options) {
           await refreshOrder(client, order.id);
         }
         const eventId = await orderEvent(client, { orderId: order.id, type: "refund.reserved", actor: principal.userId, dedupeKey, visibility: "internal", payload: { requestHash: hash, refundId: refund.id, amountMinor: refund.amount.toString() } });
-        await settleDemoRefund(client, capture, order.id, refund.id, refund.amount, principal.userId);
+        await settleDemoCaptureRefund(client, capture, order.id, refund.id, refund.amount, principal.userId);
         await audit(client, principal.userId, "refund.reserved", "refund", refund.id, eventId, { orderId: order.id, amountMinor: refund.amount.toString(), lines: lines.map(line => ({ kind: line.kind, orderItemId: line.orderItemId, quantity: line.quantity })) });
         return { refund: await oneRefund(client, order.id, refund.id), replayed: false };
       });

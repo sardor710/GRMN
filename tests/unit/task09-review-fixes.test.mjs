@@ -70,5 +70,7 @@ test("public reads map invalid input/cursor to a not-found fallback and rethrow 
 test("public dynamic pages decode params and guard reads against invalid input",()=>{
   const product=fs.readFileSync("src/app/[lang]/p/[id]/page.tsx","utf8");
   assert.equal((product.match(/decodeRouteParam\(\(await params\)\.id\)/g)??[]).length,2,"both /p/[id] entry points decode the id");
-  for(const file of ["src/app/[lang]/p/[id]/page.tsx","src/app/[lang]/c/[...slug]/page.tsx","src/app/[lang]/compare/page.tsx","src/app/[lang]/blog/page.tsx"])assert.match(fs.readFileSync(file,"utf8"),/readOr\(/,file+" must guard public reads");
+  // The compare page and the catalogue compare bar share one guarded search (src/lib/compare/search.ts, Task C-c).
+  assert.match(fs.readFileSync("src/app/[lang]/compare/page.tsx","utf8"),/searchCompareProducts\(/);
+  for(const file of ["src/app/[lang]/p/[id]/page.tsx","src/app/[lang]/c/[...slug]/page.tsx","src/lib/compare/search.ts","src/app/[lang]/blog/page.tsx"])assert.match(fs.readFileSync(file,"utf8"),/readOr\(/,file+" must guard public reads");
 });

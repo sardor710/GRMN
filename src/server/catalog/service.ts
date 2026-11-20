@@ -10,12 +10,14 @@ import { PRODUCT_SPEC, isRecordTranslated, localizeRecord, resolveSeoText } from
 import type { Locale } from "../../i18n/config.ts";
 import { effectiveVariantContent, localizeVariantOverride, parseVariantContent, type ProductContentDTO, type VariantContent } from "../../lib/catalog/variant-content.ts";
 import { PRODUCT_HTML_FIELDS } from "../../lib/cms/product-input.ts";
+import { cardColors } from "../../lib/catalog/card-colors.ts";
+import { stableUuid } from "../cms/product-projection.ts";
 
 const fail = (): never => { throw new AuthFailure("INVALID_INPUT", 400, "Invalid catalog query or cursor"); };
 const text = z.string().trim().min(1).max(200);
 const level = z.enum(["Entry", "Advanced", "Premium", "Youth"]);
 const size = z.enum(["Small", "Medium", "Large"]);
-const schema = z.object({market:text,locale:z.enum(["en","ru","kk"]),displayCurrency:z.enum(["KZT","USD"]),search:z.string().trim().max(200).optional(),category:text.optional(),activities:z.array(text).max(30).optional(),activitiesAll:z.array(text).max(30).optional(),level:level.optional(),levels:z.array(level).max(4).optional(),caseSize:size.optional(),caseSizes:z.array(size).max(3).optional(),sort:z.enum(["name_asc","price_asc","price_desc","newest"]).default("name_asc")}).strict();
+const schema = z.object({market:text,locale:z.enum(["en","ru","kk"]),displayCurrency:z.enum(["KZT","USD"]),search:z.string().trim().max(200).optional(),category:text.optional(),activities:z.array(text).max(30).optional(),activitiesAll:z.array(text).max(30).optional(),level:level.optional(),levels:z.array(level).max(4).optional(),caseSize:size.optional(),caseSizes:z.array(size).max(3).optional(),sort:z.enum(["name_asc","name_desc","price_asc","price_desc","newest"]).default("name_asc")}).strict();
 const pages = z.object({limit:z.number().int().min(1).max(100).default(24),cursor:z.string().min(1).max(2048).optional()}).strict();
 function parse<T>(s:z.ZodType<T>,input:unknown):T { const result=s.safeParse(input);return result.success?result.data:fail(); }
 type Row = Record<string,unknown>;
@@ -78,11 +80,13 @@ const base = (byPrice: boolean, keys: ReadonlySet<KeyColumn>) => `WITH eligible 
 const pageColumns = `p.id,p.public_key,p.name,p.description,p.family,p.badge,p.price_suffix,p.specs,p.features,p.in_the_box,p.seo_title,p.seo_description,p.canonical_url,p.no_index,p.og_image_source,
  selected.created_key,selected.amount,${(Object.keys(keySQL) as KeyColumn[]).map(column => `${keySQL[column]} AS ${column}`).join(",")},
  offers.variants,chosen.offer,
+ CASE WHEN jsonb_typeof(p.legacy_content->'options')='array' THEN p.legacy_content->'options' END AS editor_options,
  CASE WHEN offers.variants @> '[{"availability":"available"}]' THEN 'available' WHEN offers.variants @> '[{"availability":"unavailable"}]' THEN 'unavailable' ELSE 'out_of_stock' END AS availability`;
 // Built only for the selected rows (`selected`): every eligible variant with options, stock state and gallery, and the chosen offer.
 const offersSQL = `JOIN products p ON p.id=selected.id
  JOIN LATERAL (SELECT jsonb_agg(jsonb_build_object('id',v.id,'sku',v.sku,'name',v.name,'amount',pr.amount_minor::text,'compare',pr.compare_at_minor::text,
  'options',COALESCE((SELECT jsonb_object_agg(po.key,ov.label) FROM variant_option_values vo JOIN product_options po ON po.id=vo.option_id JOIN option_values ov ON ov.id=vo.option_value_id WHERE vo.variant_id=v.id),'{}'),
+ 'optionValueIds',COALESCE((SELECT jsonb_agg(vo.option_value_id) FROM variant_option_values vo WHERE vo.variant_id=v.id),'[]'),
  'availability',${stateSQL},
  'gallery',CASE WHEN EXISTS(SELECT 1 FROM product_media pm WHERE pm.product_id=p.id AND (pm.variant_id=v.id OR pm.variant_id IS NULL)) THEN COALESCE((SELECT jsonb_agg(im.image) FROM (${imageSQL}) im),'[]') ELSE CASE WHEN p.legacy_content->>'image' IS NOT NULL THEN jsonb_build_array(jsonb_build_object('url',p.legacy_content->>'image','alt',p.name)) ELSE '[]' END END
  ) ORDER BY v.is_default DESC,v.id) AS variants ${variantsFrom}) offers ON offers.variants IS NOT NULL
@@ -102,8 +106,15 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
     if(fx){const [a,b=""]=fx.kztPerUsd.split("."),scale=BigInt(10)**BigInt(b.length),den=BigInt(a+b);if(den>BigInt(0))result.usdEquivalent={currency:"USD",amountMinor:((BigInt(amount)*scale+den/BigInt(2))/den).toString(),exchangeRate:fx};}
     return result;
   }
+  // Task C-d: the card's colour dots, from the editor's colour option (legacy_content, already on the selected row)
+  // and only the colours an eligible variant of this page's offers is in: no extra query per card. An editor value
+  // is matched exactly by the id the projection gave its option_values row (product-projection.ts stableUuid).
+  function colors(row:Row):NonNullable<ProductCardDTO["colors"]>{
+    const productId=String(row.id),chosen=new Set(array(row.variants).flatMap(v=>strings(obj(v).optionValueIds)));
+    return cardColors(row.editor_options,(option,value)=>option.id!==""&&value.id!==""&&chosen.has(stableUuid(stableUuid(productId,"option",option.id),"value",value.id)));
+  }
   function card(row:Row,fx:ExchangeRateSnapshotDTO|null):ProductCardDTO {
-    const offer=obj(row.offer);return {id:String(row.id),publicKey:String(row.public_key),name:String(row.name),description:String(row.description),noIndex:row.no_index===true,canonicalUrl:row.canonical_url==null?null:String(row.canonical_url),updatedAt:String(row.created_key),family:String(row.family??""),badge:row.badge==null?null:String(row.badge),priceSuffix:row.price_suffix==null?undefined:String(row.price_suffix),activities:strings(row.activity_keys),level:level.safeParse(row.level).success?row.level as ProductCardDTO["level"]:null,caseSize:size.safeParse(row.case_size).success?row.case_size as ProductCardDTO["caseSize"]:null,image:array(offer.gallery).map(media).find(Boolean)??null,price:price(offer,fx),availability:row.availability as Availability};
+    const offer=obj(row.offer),dots=colors(row);return {...(dots.length?{colors:dots}:{}),id:String(row.id),publicKey:String(row.public_key),name:String(row.name),description:String(row.description),noIndex:row.no_index===true,canonicalUrl:row.canonical_url==null?null:String(row.canonical_url),updatedAt:String(row.created_key),family:String(row.family??""),badge:row.badge==null?null:String(row.badge),priceSuffix:row.price_suffix==null?undefined:String(row.price_suffix),activities:strings(row.activity_keys),level:level.safeParse(row.level).success?row.level as ProductCardDTO["level"]:null,caseSize:size.safeParse(row.case_size).success?row.case_size as ProductCardDTO["caseSize"]:null,image:array(offer.gallery).map(media).find(Boolean)??null,price:price(offer,fx),availability:row.availability as Availability};
   }
   async function select(q:ReturnType<typeof queryInput>,page:PageInput={},keys?:string[]):Promise<{rows:Row[];nextCursor:string|null;fx:ExchangeRateSnapshotDTO|null}>{
     const pg=parse(pages,page),fx=await rate(q.displayCurrency),scope=createHash("sha256").update(JSON.stringify([q,fx?.id??null,keys??null])).digest("hex"),args:unknown[]=[q.market],where:string[]=[];
@@ -118,7 +129,7 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
     if(q.levels?.length)where.push(`level=ANY(${param(q.levels)}::text[])`);
     if(q.caseSize)where.push(`case_size=${param(q.caseSize)}`);
     if(q.caseSizes?.length)where.push(`case_size=ANY(${param(q.caseSizes)}::text[])`);
-    const field=q.sort==="name_asc"?"name":q.sort==="newest"?"created_key":"amount",desc=q.sort==="price_desc"||q.sort==="newest",cast=field==="amount"?"::bigint":"::text";
+    const field=q.sort==="name_asc"||q.sort==="name_desc"?"name":q.sort==="newest"?"created_key":"amount",desc=q.sort==="name_desc"||q.sort==="price_desc"||q.sort==="newest",cast=field==="amount"?"::bigint":"::text";
     if(pg.cursor){let c;try{if(!/^[A-Za-z0-9_-]+$/.test(pg.cursor))throw Error();c=JSON.parse(Buffer.from(pg.cursor,"base64url").toString("utf8"));if(c.v!==1||c.scope!==scope||!z.uuid().safeParse(c.id).success||typeof c.value!=="string"||c.value.length>1000||Object.keys(c).length!==4||(field==="amount"&&!/^(0|[1-9][0-9]*)$/.test(c.value)))throw Error();}catch{return fail();}where.push(`(${field},id) ${desc?"<":">"} (${param(c.value)}${cast},${param(c.id)}::uuid)`);}
     const order=`${field} ${desc?"DESC":"ASC"},id ${desc?"DESC":"ASC"}`;
     const rows=(await pool.query(`${base(field==="amount",keyColumns)}, selected AS (SELECT * FROM eligible${where.length?" WHERE "+where.join(" AND "):""} ORDER BY ${order} LIMIT ${param(pg.limit+1)}) SELECT ${pageColumns} FROM selected ${offersSQL} ORDER BY selected.${order.replace(",id",",selected.id")}`,args)).rows;
@@ -141,7 +152,7 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
   async function englishDetail(publicKey:string,market:string,displayCurrency:DisplayCurrency):Promise<BaseDetail|null>{
       parse(text,publicKey);const q=queryInput({market,displayCurrency,locale:"en"}),result=await select(q,{limit:1},[publicKey]),row=result.rows[0];if(!row)return null;
       const relations=(await pool.query(`SELECT p.public_key,r.relation_type FROM product_relations r JOIN products p ON p.id=r.target_product_id WHERE r.source_product_id=$1 AND p.status='published' AND EXISTS(SELECT 1 FROM product_variants v JOIN prices pr ON pr.variant_id=v.id AND pr.is_active AND pr.currency='KZT' AND pr.market=$2 WHERE v.product_id=p.id AND v.status='active') ORDER BY r.position,p.id LIMIT 100`,[row.id,market])).rows;
-      const variants:VariantDTO[]=array(row.variants).map(value=>{const v=obj(value);return{id:String(v.id),sku:String(v.sku),name:String(v.name),options:Object.fromEntries(Object.entries(obj(v.options)).filter((pair):pair is [string,string]=>typeof pair[1]==="string")),price:price(v,result.fx),availability:v.availability as Availability,gallery:array(v.gallery).map(media).filter((x):x is MediaDTO=>x!==null)};});
+      const variants:VariantDTO[]=array(row.variants).map(value=>{const v=obj(value);return{id:String(v.id),sku:String(v.sku),name:v.name==null?"":String(v.name),options:Object.fromEntries(Object.entries(obj(v.options)).filter((pair):pair is [string,string]=>typeof pair[1]==="string")),price:price(v,result.fx),availability:v.availability as Availability,gallery:array(v.gallery).map(media).filter((x):x is MediaDTO=>x!==null)};});
       return{...card(row,result.fx),selectedVariantId:String(obj(row.offer).id),variants,gallery:variants.find(v=>v.id===obj(row.offer).id)?.gallery??[],specs:array(row.specs).flatMap(v=>{const r=obj(v);return typeof r.label==="string"&&typeof r.value==="string"?[{label:r.label,value:r.value}]:[];}),features:array(row.features).flatMap(v=>{const r=obj(v);return typeof r.title==="string"&&typeof r.body==="string"?[{title:r.title,body:r.body,image:media({url:r.image,alt:r.title})}]:[];}),inTheBox:strings(row.in_the_box),compatibleProductKeys:relations.filter(r=>r.relation_type==="compatible_accessory").map(r=>r.public_key),relatedProductKeys:relations.filter(r=>r.relation_type==="related"||r.relation_type==="upsell").map(r=>r.public_key),seo:{title:String(row.seo_title??row.name),description:String(row.seo_description??row.description),canonicalUrl:row.canonical_url==null?null:String(row.canonical_url),noIndex:row.no_index===true,image:publicImage(row.og_image_source)}};
     }
   return {

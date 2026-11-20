@@ -62,3 +62,34 @@ test("a new PostgreSQL product starts with empty compare-at and price 0, and sav
   assert.equal(save.body.originalPrice, null, "no compareAt is stored");
   assert.equal(save.body.price, 1000);
 });
+
+// Follow-up F-a: a published product needs a price above 0; the form blocks the save and says so next to the price.
+test("the admin form blocks a published save at price 0 and shows the message next to the price", async () => {
+  const posts = [];
+  const fixture = componentFixture(FILE, {
+    backend: "postgres", items: [{ ...product, price: 0 }],
+    modules: { "@/components/admin/products/StatusMenu": statusMenu },
+    fetcher: async (url, options = {}) => { if (options.method === "POST") posts.push({ url, body: JSON.parse(options.body) }); return { ok: true, status: 200, json: async () => ({ items: [] }) }; },
+  });
+  nodes(fixture.render()).find(node => node.props?.["aria-label"] === "Edit Forerunner fixture").props.onClick();
+  const form = nodes(fixture.render()).find(node => node.type === "form");
+  await form.props.onSubmit({ preventDefault() {} });
+  assert.equal(posts.length, 0, "nothing is sent");
+  const message = nodes(fixture.render()).find(node => node.props?.id === "product-price-error");
+  assert.ok(message, "the message sits next to the price field");
+  assert.match(JSON.stringify(message.props.children), /Set a price above 0 before publishing\./);
+  const price = nodes(fixture.render()).find(node => node.props?.id === "product-price");
+  assert.equal(price.props["aria-invalid"], true);
+});
+
+test("a price-0 draft still saves", async () => {
+  const posts = [];
+  const fixture = componentFixture(FILE, {
+    backend: "postgres", items: [{ ...product, price: 0, status: "draft" }],
+    modules: { "@/components/admin/products/StatusMenu": statusMenu },
+    fetcher: async (url, options = {}) => { if (options.method === "POST") posts.push({ url, body: JSON.parse(options.body) }); return { ok: true, status: 200, json: async () => ({ items: [] }) }; },
+  });
+  nodes(fixture.render()).find(node => node.props?.["aria-label"] === "Edit Forerunner fixture").props.onClick();
+  await nodes(fixture.render()).find(node => node.type === "form").props.onSubmit({ preventDefault() {} });
+  assert.equal(posts.length, 1);
+});

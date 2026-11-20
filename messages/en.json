@@ -227,7 +227,8 @@
       "featured": "Newest",
       "priceAsc": "Price: Low to High",
       "priceDesc": "Price: High to Low",
-      "name": "A to Z"
+      "name": "A to Z",
+      "nameDesc": "Z to A"
     },
     "groups": {
       "battery": "Battery Life in Smartwatch Mode",
@@ -289,28 +290,43 @@
     }
   },
   "Compare": {
-    "heading": "Compare Smartwatches",
-    "intro": "Add up to {max} watches to compare specs side by side.",
-    "addWatch": "Add a watch",
-    "selectModel": "Select a model",
-    "empty": "Add a watch above to start comparing.",
+    "title": "Product Comparison",
+    "back": "Return to shopping",
+    "onlyDifferences": "Show only differences",
+    "shop": "Shop",
     "remove": "Remove",
     "removeLabel": "Remove {name}",
-    "shop": "Shop",
-    "yes": "Yes",
-    "back": "Back to All Smartwatches",
-    "rows": {
-      "price": "Price",
-      "family": "Product family",
-      "level": "Experience level",
-      "caseSize": "Case size",
-      "bestFor": "Best for",
-      "customizable": "Customizable",
-      "overview": "Overview"
-    },
-    "searchLabel": "Search watches",
+    "addProduct": "Add product",
+    "addLabel": "Add {name} to the comparison",
+    "searchLabel": "Search for Products",
     "searchButton": "Search",
-    "nextModels": "Next models"
+    "searchEmpty": "No products found for “{query}”.",
+    "sizeLabel": "Size for {name}",
+    "specColumn": "Specification",
+    "specs": "Specs",
+    "empty": "There are no products to compare yet. Add up to {max} products to compare their specs side by side.",
+    "emptyLink": "Shop smartwatches",
+    "expand": "Expand {title}",
+    "collapse": "Collapse {title}",
+    "sizeLabelColumn": "Size for {name}, column {position}",
+    "noDifferences": "No differences between these products."
+  },
+  "CompareBar": {
+    "region": "Comparison",
+    "add": "Add to comparison",
+    "added": "Added",
+    "removeFromComparison": "Remove from comparison",
+    "viewComparison": "View comparison",
+    "compareThisSize": "Compare this size",
+    "compare": "Compare",
+    "removeLabel": "Remove {name}",
+    "clearAll": "Clear all",
+    "minimum": "Select at least 2 products",
+    "limit": "You can compare up to {max} products.",
+    "status": "{count} of {max} products selected",
+    "searchLabel": "Search for Products",
+    "searchEmpty": "No products found for “{query}”.",
+    "searchAdd": "Add {name} to comparison"
   },
   "Footer": {
     "navLabel": "Global Footer Navigation",
@@ -673,7 +689,8 @@
     "sale": "Sale"
   },
   "ProductCard": {
-    "andUp": "and up"
+    "andUp": "and up",
+    "colors": "Colors: {list}"
   },
   "ProductTabs": {
     "tabs": {

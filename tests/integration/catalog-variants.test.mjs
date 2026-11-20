@@ -54,7 +54,7 @@ const uploadRoot=fs.mkdtempSync(`${process.env.TMPDIR||"/tmp"}/grmn-uploads-`);p
 const JPEG=Buffer.from([0xff,0xd8,0xff,0xe0,0,16,0x4a,0x46,0x49,0x46,0,1,1,0,0,1,0,1,0,0,0xff,0xd9]);
 function photo(src){const file=`${uploadRoot}/${src.replace(/^\/uploads\//,"")}`;fs.mkdirSync(file.slice(0,file.lastIndexOf("/")),{recursive:true});fs.writeFileSync(file,Buffer.concat([JPEG,Buffer.from(src)]));return src;}
 async function catalog(){return (await import("../../src/server/catalog/service.ts")).createCatalogService({pool:database.pool});}
-const color={id:"opt-color",key:"color",name:"Color",display:"swatch",values:[{id:"val-black",key:"black",label:"Black",swatchColor:"#000000"},{id:"val-white",key:"white",label:"White",swatchColor:"#ffffff"}]};
+const color={id:"opt-color",key:"color",name:"Color",display:"swatch",values:[{id:"val-black",key:"black",label:"Black",swatchColor:"#000000",swatchColorSource:"editor"},{id:"val-white",key:"white",label:"White",swatchColor:"#ffffff",swatchColorSource:"editor"}]};
 const size={id:"opt-size",key:"case-size",name:"Case size",display:"buttons",values:[{id:"val-47",key:"47mm",label:"47 mm"},{id:"val-51",key:"51mm",label:"51 mm"}]};
 const img=(id)=>({id,src:photo(`/uploads/products/test/${id}.jpg`),alt:`Photo ${id}`,source:"upload"});
 function variantProduct(prefix,extra={}){
@@ -83,7 +83,7 @@ test("options, variants, prices, selections and per-variant photos are projected
   assert.deepEqual(white51.gallery.map(g=>g.url),["/uploads/products/test/img-3a.jpg","/uploads/products/test/img-3b.jpg"]);
   // The editor document round-trips for the admin.
   const back=await cms.get("products",admin,saved.id);
-  assert.equal(back.variants.length,4); assert.equal(back.options[0].values[0].swatchColor,"#000000");
+  assert.equal(back.variants.length,4); assert.equal(back.options[0].values[0].swatchColor,"#000000"); assert.equal(back.options[0].values[0].swatchColorSource,"editor");
 });
 
 test("editing archives a removed variant, keeps variant ids, and updates prices and labels",async()=>{
@@ -112,6 +112,34 @@ test("removing all options turns the product back into a simple one",async()=>{
   const detail=await (await catalog()).getProductByPublicKey(simple.id,"default","KZT");
   assert.equal(detail.variants.length,1); assert.equal(detail.variants[0].price.selling.amountMinor,"9900000");
   assert.deepEqual(detail.gallery.map(g=>g.url),["/uploads/products/test/img-0a.jpg"]);
+});
+
+// Task C-d: catalogue card colour dots come from the editor's colour option (swatch photo or hex), only for colours
+// an eligible variant is in, read with the page's rows (no query per card). No swatch data, no dots.
+test("catalog cards carry colour dots from swatch data only, for colours still on sale",async()=>{
+  const cms=await service(),api=await catalog(),dotsOf=async name=>(await api.listProducts({market:"default",locale:"en",displayCurrency:"KZT",search:name},{})).items.map(card=>card.colors);
+  const saved=await cms.save("products",admin,variantProduct("DOTS-A"));
+  let queries=0;const counting={query:(...args)=>{queries++;return database.pool.query(...args);}};
+  const counted=(await import("../../src/server/catalog/service.ts")).createCatalogService({pool:counting});
+  const page=await counted.listProducts({market:"default",locale:"en",displayCurrency:"KZT",search:"Variant watch DOTS-A"},{});
+  assert.deepEqual(page.items[0].colors,[{label:"Black",hex:"#000000"},{label:"White",hex:"#ffffff"}]);
+  assert.equal(queries,1,"the dots come with the listing query itself");
+  // Colour names without swatches (a plain buttons option): no dots, nothing derived from the names.
+  const plain={...color,display:"buttons",values:color.values.map(({swatchColor,swatchColorSource,...value})=>(void swatchColor,void swatchColorSource,value))};
+  // A hex the importer guessed from the name is not real swatch data either.
+  const guessed={...color,values:color.values.map(value=>({...value,swatchColorSource:"name"}))};
+  await cms.save("products",admin,variantProduct("DOTS-D",{options:[guessed,size]}));
+  assert.deepEqual(await dotsOf("Variant watch DOTS-D"),[undefined]);
+  await cms.save("products",admin,variantProduct("DOTS-B",{options:[plain,size]}));
+  assert.deepEqual(await dotsOf("Variant watch DOTS-B"),[undefined]);
+  // Sizes only: no colour option, no dots.
+  const sizesOnly=variantProduct("DOTS-C");sizesOnly.options=[size];sizesOnly.variants=sizesOnly.variants.slice(0,2).map(v=>({...v,selections:{"opt-size":v.selections["opt-size"]}}));
+  await cms.save("products",admin,sizesOnly);
+  assert.deepEqual(await dotsOf("Variant watch DOTS-C"),[undefined]);
+  // Every White variant archived: one colour left on sale is no choice, so the dots go.
+  const doc=variantProduct("DOTS-A");doc.variants=doc.variants.map(v=>v.selections["opt-color"]==="val-white"?{...v,status:"archived"}:v);
+  await cms.save("products",admin,{...doc,id:saved.id,version:saved.version});
+  assert.deepEqual(await dotsOf("Variant watch DOTS-A"),[undefined]);
 });
 
 test("overview HTML is sanitized and the catalog returns overview and spec groups, translated",async()=>{

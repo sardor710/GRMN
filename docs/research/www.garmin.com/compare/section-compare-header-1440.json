@@ -1,0 +1,158 @@
+{
+ "url": "https://www.garmin.com/en-US/compare/?compareProduct=1953453&compareProduct=1989182&compareProduct=730831",
+ "vw": 1440,
+ "tree": {
+  "tag": "div",
+  "cls": "app-header",
+  "r": [
+   0,
+   100,
+   1440,
+   135
+  ],
+  "css": {
+   "box-sizing": "border-box",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "font-size": "16px",
+   "line-height": "24px",
+   "color": "rgb(0, 0, 0)",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "div",
+    "cls": "container",
+    "r": [
+     0,
+     100,
+     1440,
+     135
+    ],
+    "css": {
+     "display": "flex",
+     "box-sizing": "border-box",
+     "flex-direction": "column",
+     "justify-content": "center",
+     "padding": "24px"
+    },
+    "c": [
+     {
+      "tag": "a",
+      "cls": "app-header__link",
+      "r": [
+       24,
+       124,
+       1392,
+       21
+      ],
+      "t": "Return to shopping",
+      "a": {
+       "href": "https://www.garmin.com/en-US/",
+       "target": "_self"
+      },
+      "css": {
+       "display": "flex",
+       "box-sizing": "border-box",
+       "align-items": "center",
+       "font-size": "14px",
+       "line-height": "21px",
+       "text-decoration-line": "underline",
+       "cursor": "pointer",
+       "transition-property": "color",
+       "transition-duration": "0.2s"
+      },
+      "c": [
+       {
+        "tag": "g-icon-arrow-right",
+        "cls": "app-header__link__icon",
+        "r": [
+         24,
+         127,
+         9,
+         15
+        ],
+        "css": {
+         "display": "block",
+         "box-sizing": "border-box",
+         "margin-right": "9.6px",
+         "transform": "matrix(-1, 0, 0, -1, 0, 0)",
+         "transform-origin": "4.5px 7.5px"
+        },
+        "c": [
+         {
+          "tag": "svg",
+          "r": [
+           24,
+           127,
+           9,
+           15
+          ],
+          "css": {
+           "box-sizing": "border-box",
+           "width": "8.98px",
+           "height": "14.53px",
+           "overflow": "hidden"
+          },
+          "svg": "svg1"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "tag": "g-heading",
+      "cls": "g__heading g__heading--center g__heading--light",
+      "r": [
+       24,
+       145,
+       1392,
+       66
+      ],
+      "css": {
+       "display": "block",
+       "box-sizing": "border-box",
+       "text-align": "center",
+       "text-transform": "uppercase"
+      },
+      "c": [
+       {
+        "tag": "h1",
+        "r": [
+         24,
+         161,
+         1392,
+         50
+        ],
+        "t": "Product Comparison",
+        "css": {
+         "box-sizing": "border-box",
+         "margin-top": "16px",
+         "margin-bottom": "0px",
+         "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+         "font-size": "40px",
+         "line-height": "50px",
+         "letter-spacing": "0.8px"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "svgs": [
+  {
+   "key": "svg1",
+   "hint": "",
+   "count": 1,
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 11.2 18.1\"><path d=\"M11.2 9l-9.1 9.1L0 16l6.9-7L0 2.1 2.1 0l9.1 9z\"></path></svg>",
+   "size": [
+    9,
+    15
+   ],
+   "currentColor": false
+  }
+ ],
+ "animations": []
+}

@@ -62,7 +62,7 @@ async function read(resource:Resource,input:Record<string,unknown>={}):Promise<P
         if(Array.isArray(query.caseSizes)&&query.caseSizes.length&&!query.caseSizes.includes(item.caseSize))return false;
         return true;
       });
-      const sort=String(query.sort??"name_asc");rows.sort((a,b)=>{const x=a as Record<string,unknown>,y=b as Record<string,unknown>;if(sort==="price_asc"||sort==="price_desc")return (Number(x.price)-Number(y.price))*(sort==="price_desc"?-1:1);if(sort==="newest")return String(y.createdAt).localeCompare(String(x.createdAt));return String(x.name??x.title).localeCompare(String(y.name??y.title));});
+      const sort=String(query.sort??"name_asc");rows.sort((a,b)=>{const x=a as Record<string,unknown>,y=b as Record<string,unknown>;if(sort==="price_asc"||sort==="price_desc")return (Number(x.price)-Number(y.price))*(sort==="price_desc"?-1:1);if(sort==="newest")return String(y.createdAt).localeCompare(String(x.createdAt));const byName=String(x.name??x.title).localeCompare(String(y.name??y.title));return sort==="name_desc"?-byName:byName;});
       const binding=JSON.stringify(Object.fromEntries(Object.entries(query).filter(([k])=>!["cursor","limit"].includes(k)).sort()));
       if(query.cursor!==undefined&&(typeof query.cursor!=="string"||query.cursor.length<1||query.cursor.length>2048))throw new AuthFailure("INVALID_CURSOR",400,"Invalid page cursor");
       const limit=typeof query.limit==="number"?query.limit:24;if(!Number.isInteger(limit)||limit<1||limit>100)throw new AuthFailure("INVALID_INPUT",400,"Invalid page limit");

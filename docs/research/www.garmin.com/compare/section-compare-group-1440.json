@@ -1,0 +1,441 @@
+{
+ "url": "https://www.garmin.com/en-US/compare/?compareProduct=1953453&compareProduct=1989182&compareProduct=730831",
+ "vw": 1440,
+ "tree": {
+  "tag": "g-collapsible-region",
+  "cls": "g__collapsible-region hydrated",
+  "r": [
+   224,
+   719,
+   992,
+   1685
+  ],
+  "css": {
+   "display": "flex",
+   "box-sizing": "border-box",
+   "margin-bottom": "16px",
+   "flex-direction": "column",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "font-size": "16px",
+   "line-height": "24px",
+   "color": "rgb(0, 0, 0)",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "div",
+    "cls": "g__collapsible-region__heading",
+    "r": [
+     224,
+     719,
+     992,
+     104
+    ],
+    "a": {
+     "aria-label": "Collapse What You'll Love",
+     "role": "button"
+    },
+    "css": {
+     "display": "flex",
+     "box-sizing": "border-box",
+     "align-items": "center",
+     "cursor": "pointer"
+    },
+    "c": [
+     {
+      "tag": "div",
+      "cls": "heading-wrapper",
+      "r": [
+       224,
+       719,
+       251,
+       104
+      ],
+      "css": {
+       "box-sizing": "border-box"
+      },
+      "c": [
+       {
+        "tag": "g-heading",
+        "cls": "g__heading g__heading--left g__heading--light",
+        "r": [
+         224,
+         743,
+         251,
+         56
+        ],
+        "css": {
+         "box-sizing": "border-box"
+        },
+        "c": [
+         {
+          "tag": "h2",
+          "r": [
+           224,
+           743,
+           251,
+           56
+          ],
+          "t": "What You'll Love",
+          "css": {
+           "box-sizing": "border-box",
+           "margin-top": "24px",
+           "margin-bottom": "24px",
+           "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+           "font-size": "32px",
+           "line-height": "40px",
+           "letter-spacing": "0.8px",
+           "text-transform": "uppercase",
+           "padding": "8px"
+          }
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "tag": "span",
+      "cls": "g__collapsible-region__heading__icon g__collapsible-region__heading__icon--open",
+      "r": [
+       480,
+       759,
+       14,
+       24
+      ],
+      "css": {
+       "display": "block",
+       "box-sizing": "border-box",
+       "margin-left": "4.8px",
+       "transform": "matrix(-1, 0, 0, -1, 0, 0)",
+       "transform-origin": "7.2px 12px"
+      },
+      "c": [
+       {
+        "tag": "svg",
+        "r": [
+         480,
+         766,
+         14,
+         10
+        ],
+        "css": {
+         "display": "inline-block",
+         "box-sizing": "border-box",
+         "width": "14.39px",
+         "height": "9.59px",
+         "font-size": "9.6px",
+         "line-height": "14.4px",
+         "vertical-align": "middle",
+         "overflow": "hidden"
+        },
+        "svg": "svg1"
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "tag": "div",
+    "cls": "g__collapsible-region__body g__collapsible-region__body--open",
+    "r": [
+     224,
+     823,
+     992,
+     1581
+    ],
+    "a": {
+     "role": "tabpanel"
+    },
+    "css": {
+     "box-sizing": "border-box"
+    },
+    "c": [
+     {
+      "tag": "div",
+      "r": [
+       224,
+       823,
+       992,
+       1581
+      ],
+      "css": {
+       "box-sizing": "border-box"
+      },
+      "c": [
+       {
+        "tag": "div",
+        "r": [
+         224,
+         823,
+         992,
+         83
+        ],
+        "css": {
+         "box-sizing": "border-box"
+        },
+        "c": [
+         {
+          "tag": "table",
+          "cls": "table columns-5",
+          "r": [
+           224,
+           823,
+           992,
+           83
+          ],
+          "css": {},
+          "c": [
+           {
+            "tag": "thead",
+            "r": [
+             224,
+             824,
+             992,
+             30
+            ],
+            "css": {
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "tr",
+              "r": [
+               224,
+               824,
+               992,
+               30
+              ],
+              "css": {
+               "box-sizing": "border-box",
+               "vertical-align": "middle"
+              },
+              "c": [
+               {
+                "tag": "th",
+                "r": [
+                 224,
+                 824,
+                 992,
+                 30
+                ],
+                "css": {
+                 "box-sizing": "border-box",
+                 "font-size": "12px",
+                 "line-height": "18px",
+                 "text-align": "left",
+                 "text-transform": "uppercase",
+                 "vertical-align": "top",
+                 "background-color": "rgb(242, 242, 242)",
+                 "border-top-width": "1px",
+                 "border-top-style": "solid",
+                 "border-top-color": "rgb(217, 217, 217)",
+                 "padding": "5.6px 16px"
+                },
+                "c": [
+                 {
+                  "tag": "a",
+                  "r": [
+                   240,
+                   832,
+                   160,
+                   14
+                  ],
+                  "t": "Sleep score and insights",
+                  "a": {
+                   "href": "https://www.garmin.com/en-US/garmin-technology/health-science/sleep-tracking/"
+                  },
+                  "css": {
+                   "box-sizing": "border-box",
+                   "text-decoration-line": "underline",
+                   "cursor": "pointer",
+                   "transition-property": "color",
+                   "transition-duration": "0.2s"
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "tag": "tbody",
+            "r": [
+             224,
+             853,
+             992,
+             53
+            ],
+            "css": {
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "tr",
+              "r": [
+               224,
+               853,
+               992,
+               53
+              ],
+              "css": {
+               "box-sizing": "border-box",
+               "vertical-align": "middle"
+              },
+              "c": [
+               {
+                "tag": "td",
+                "r": [
+                 224,
+                 853,
+                 198,
+                 53
+                ],
+                "css": {
+                 "box-sizing": "border-box",
+                 "font-size": "14px",
+                 "line-height": "21px",
+                 "text-align": "left",
+                 "vertical-align": "top",
+                 "border-right-width": "1px",
+                 "border-right-style": "solid",
+                 "border-right-color": "rgb(217, 217, 217)",
+                 "padding": "16px"
+                },
+                "c": [
+                 {
+                  "tag": "span",
+                  "r": [
+                   240,
+                   871,
+                   23,
+                   17
+                  ],
+                  "t": "Yes",
+                  "css": {
+                   "box-sizing": "border-box"
+                  }
+                 }
+                ],
+                "rep": [
+                 {
+                  "t": "Yes"
+                 },
+                 {},
+                 {}
+                ]
+               },
+               {
+                "tag": "td",
+                "r": [
+                 1018,
+                 853,
+                 198,
+                 53
+                ],
+                "css": {
+                 "box-sizing": "border-box",
+                 "font-size": "14px",
+                 "line-height": "21px",
+                 "text-align": "left",
+                 "vertical-align": "top",
+                 "padding": "16px"
+                },
+                "c": [
+                 {
+                  "tag": "span",
+                  "r": [
+                   1034,
+                   869,
+                   0,
+                   0
+                  ],
+                  "css": {
+                   "box-sizing": "border-box"
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ],
+        "rep": [
+         {
+          "t": "BATTERY LIFE (SMARTWATCH MODE) Up to 31 days"
+         },
+         {
+          "t": "BUILT-IN MAPPING Yes"
+         },
+         {
+          "t": "PULSE OX BLOOD OXYGEN Yes yes (optionally all-day and in sleep)"
+         },
+         {
+          "t": "GARMIN ECG APP Yes"
+         },
+         {
+          "t": "LED FLASHLIGHT Yes"
+         },
+         {
+          "t": "GARMIN PAY™ Yes"
+         },
+         {
+          "t": "MULTI-BAND GPS Yes"
+         },
+         {
+          "t": "MUSIC STORAGE Yes"
+         },
+         {
+          "t": "MAKE CALLS AND SEND TEXTS VIA VOICE Yes"
+         },
+         {
+          "t": "SATELLITE COMMUNICATION yes (inReach plan required, coverage details)"
+         },
+         {
+          "t": "LTE COMMUNICATION yes (inReach plan required, coverage details)"
+         },
+         {
+          "t": "TRAINING READINESS Yes Yes"
+         },
+         {
+          "t": "TRAINING STATUS Yes Yes"
+         },
+         {
+          "t": "DISPLAY TYPE AMOLED (up to 3000 NITS)"
+         },
+         {
+          "t": "TOUCHSCREEN Yes"
+         },
+         {
+          "t": "WATER RATING 10 ATM Swim, 5 ATM"
+         },
+         {
+          "t": "WHEELCHAIR MODE Yes"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "svgs": [
+  {
+   "key": "svg1",
+   "hint": "Collapse What You'll Love",
+   "count": 1,
+   "markup": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 18.2 11.2\"><path d=\"M9.1 11.2L0 2.2 2.2 0l6.9 7L16 0l2.2 2.2-9.1 9z\"></path></svg>",
+   "size": [
+    14,
+    10
+   ],
+   "currentColor": false
+  }
+ ],
+ "animations": []
+}

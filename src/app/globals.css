@@ -58,8 +58,12 @@
 
   /* Garmin elevation (TOKENS.md §4): no hover lift anywhere. */
   --shadow-garmin-card: 0 2px 3px 1px #e5e5e5;
+  /* g-color-swatch::after: the inner shadow over a card's 16px colour dot (ProductCard.spec.md). */
+  --shadow-garmin-swatch: inset 0 3.37px 3.37px 0 rgba(0, 0, 0, 0.25);
   --shadow-garmin-promo: 0 0 6px 0 #d8d8d8;
   --shadow-garmin-raised: 0 1px 1px rgba(77, 77, 77, 0.08), 0 1px 3px 1px rgba(77, 77, 77, 0.16);
+  /* garmin.com compare tiles (Compare.spec.md): the raised tile on hover. */
+  --shadow-garmin-raised-hover: 0 1px 3px 1px rgba(77, 77, 77, 0.2), 0 2px 8px 4px rgba(77, 77, 77, 0.1);
   --radius-garmin-promo: 3px;
   --radius-garmin-pill: 1.625em;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -220,6 +224,19 @@
   :where(a, button, summary, [role="button"], [tabindex]):focus-visible {
     outline: auto 1px var(--ring);
     outline-offset: 1px;
+  }
+  /* Task C-d (WCAG 2.4.11 Focus Not Obscured): the catalogue compare bar sticks to the bottom of the viewport below
+     1024px and to the top from 1024px. While it is on the page, scrolling a focused card into view keeps it clear of
+     the bar (CompareBar keeps --compare-bar-height equal to the bar's measured height). */
+  @media (width < 64rem) {
+    html:has([data-compare-bar]) {
+      scroll-padding-bottom: calc(var(--compare-bar-height, 0px) + 16px);
+    }
+  }
+  @media (width >= 64rem) {
+    html:has([data-compare-bar]) {
+      scroll-padding-top: calc(var(--compare-bar-height, 0px) + 16px);
+    }
   }
 }
 

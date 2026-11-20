@@ -9,6 +9,7 @@ import type { CMSProduct } from "@/lib/cms/types";
 import { usesCmsDetail } from "@/lib/cms/product-variants";
 import type { Locale } from "@/i18n/config";
 import { localizeProduct } from "@/i18n/translate-record";
+import { cardColors } from "@/lib/catalog/card-colors";
 
 
 export { watchFamilies, products } from "./public-products";
@@ -50,10 +51,16 @@ export function getCatalogue(slug: string): CatalogueDef | undefined {
   return catalogues.find((c) => c.slug === slug);
 }
 
+/** Task C-d: colour dots from the record's colour option, counting only colours an active variant is in. */
+function legacyColors(cp:CMSProduct):Pick<Product,"colors">{
+  const active=(cp.variants??[]).filter(v=>v.status==="active");
+  const colors=cardColors(cp.options,(option,value)=>active.some(v=>v.selections?.[option.id]===value.id));
+  return colors.length?{colors}:{};
+}
 /** Task 5a.2: legacy USD-scale prices become tenge here, once, at the importer rate (src/lib/legacy-prices.ts). */
 function publicProduct(raw: CMSProduct, rate: number | undefined): Product {
   const cp=withStorefrontPrices(raw,rate);
-  return {currency:cp.currency,purchasable:cp.stockManaged===false?false:undefined,id:cp.id,name:cp.name,price:cp.price,
+  return {...legacyColors(cp),currency:cp.currency,purchasable:cp.stockManaged===false?false:undefined,id:cp.id,name:cp.name,price:cp.price,
     // A sale shows on the card unless the record is marked currency "USD": those seed records carry a generated originalPrice (+15%), not a sale. An admin save stamps KZT, so a sale set there shows.
     ...(!isLegacyUsdProduct(raw)&&typeof cp.originalPrice==="number"&&cp.originalPrice>cp.price?{compareAt:cp.originalPrice}:{}),
     priceSuffix:cp.priceSuffix,description:cp.description,image:cp.image,badge:cp.badge&&cp.badge!=="NONE"?cp.badge:undefined,family:cp.family,activities:cp.activities,level:cp.level,caseSize:cp.caseSize};

@@ -63,3 +63,21 @@ export function parseServerEnv(source: EnvironmentSource): ServerConfig {
 export function readMigrationDatabaseUrl(source: EnvironmentSource): string {
   return databaseUrl(source, "DATABASE_MIGRATION_URL");
 }
+
+/** Follow-up F-b: the demo-order cap per customer or guest session, and per client address, in 24 h. */
+export const DEFAULT_DEMO_ORDER_LIMIT = 5;
+const MAX_DEMO_ORDER_LIMIT = 1_000_000;
+
+/**
+ * Reads DEMO_ORDER_LIMIT: a whole number, 0 = unlimited, unset or empty = 5. Anything else (negative,
+ * fractional, not a number, absurdly large) falls back to 5 and is reported through `warn`, so a typo
+ * never silently removes the cap. Read on every demo checkout, like DEMO_CHECKOUT_DISABLED.
+ */
+export function readDemoOrderLimit(source: EnvironmentSource, warn: (message: string) => void = console.warn): number {
+  const raw = source.DEMO_ORDER_LIMIT?.trim();
+  if (raw === undefined || raw === "") return DEFAULT_DEMO_ORDER_LIMIT;
+  const value = /^\d+$/.test(raw) ? Number(raw) : Number.NaN;
+  if (Number.isSafeInteger(value) && value <= MAX_DEMO_ORDER_LIMIT) return value;
+  warn(`Invalid DEMO_ORDER_LIMIT ${JSON.stringify(raw)}: expected a whole number (0 = unlimited); using ${DEFAULT_DEMO_ORDER_LIMIT}`);
+  return DEFAULT_DEMO_ORDER_LIMIT;
+}

@@ -1,0 +1,111 @@
+{
+ "target": "https://www.garmin.com/en-US/c/wearables-smartwatches/?compare=1&compareProduct=1462801&compareProduct=1510465&compareProduct=1555457",
+ "clone": "http://localhost:3107/en/c/wearables-smartwatches?compare=1&item=marq-carbon-golfer&item=marq-adventurer-damascus&item=marq-captain",
+ "sel": ".compare-banner",
+ "cloneSel": "[data-compare-bar]",
+ "widths": {
+  "390": {
+   "mismatchPct": 32.1,
+   "size": {
+    "target": [
+     390,
+     247
+    ],
+    "clone": [
+     390,
+     273
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "240-247",
+     "pct": 91.8
+    },
+    {
+     "y": "160-200",
+     "pct": 53.6
+    },
+    {
+     "y": "40-80",
+     "pct": 39.6
+    },
+    {
+     "y": "200-240",
+     "pct": 35.6
+    },
+    {
+     "y": "80-120",
+     "pct": 27.7
+    },
+    {
+     "y": "0-40",
+     "pct": 16.4
+    }
+   ],
+   "file": "docs/design-references/qa/catalogue-compare-bar-390-diff.png",
+   "text": {
+    "matched": 2,
+    "of": 2,
+    "issues": [
+     {
+      "t": "Search for Products",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "14.4px → 16px",
+      "fw": "700 → 400",
+      "lh": "21.6px → 24px",
+      "pos": "194,108 → 15,135"
+     },
+     {
+      "t": "COMPARE",
+      "ff": "Superscripts-Roboto → Roboto",
+      "pos": "16,179 → 16,205"
+     }
+    ],
+    "missing": []
+   }
+  },
+  "1440": {
+   "mismatchPct": 6.72,
+   "size": {
+    "target": [
+     1440,
+     86
+    ],
+    "clone": [
+     1440,
+     87
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "40-80",
+     "pct": 9.3
+    },
+    {
+     "y": "0-40",
+     "pct": 5.1
+    }
+   ],
+   "file": "docs/design-references/qa/catalogue-compare-bar-1440-diff.png",
+   "text": {
+    "matched": 2,
+    "of": 2,
+    "issues": [
+     {
+      "t": "Search for Products",
+      "ff": "Superscripts-Roboto → Roboto",
+      "fs": "14.4px → 16px",
+      "fw": "700 → 400",
+      "lh": "21.6px → 24px",
+      "pos": "852,16 → 732,16"
+     },
+     {
+      "t": "COMPARE",
+      "ff": "Superscripts-Roboto → Roboto"
+     }
+    ],
+    "missing": []
+   }
+  }
+ }
+}

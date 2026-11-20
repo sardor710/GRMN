@@ -21,10 +21,16 @@ import { Price } from "@/components/ui/price";
 import { badgeClass } from "@/components/ui/badge";
 import { isKztSale, toMinor, type KztAmount } from "@/lib/money";
 import { useAppLocale } from "@/i18n/useAppLocale";
+import { COMPARE_MAX_ITEMS } from "@/lib/compare/compare-items";
+import { findVariantEntry, isSelectionFull, selectionHref, toggleVariant, type CompareSelectionItem } from "@/lib/compare/selection";
+import { useCompareSelection } from "@/lib/compare/use-compare-selection";
+
+const COMPARE_LIMIT_ID = "pdp-compare-limit";
 
 export function ProductTop({ product:initial }: { product: ProductDetail }) {
   const t = useTranslations("ProductTop");
   const badgeText = useTranslations("ProductBadge");
+  const tc = useTranslations("CompareBar");
   const locale = useAppLocale();
   // Task 2.4: shared with ProductTabs; the server picked the initial variant from `?variant=<sku>`.
   const { selectedVariantId: variantId, setSelectedVariantId: setVariantId } = useProductVariant();
@@ -42,6 +48,9 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   const [colorIdx, setColorIdx] = useState(0);
   const [added, setAdded] = useState(false);
   const { add, mode } = useCart();
+  const { items: compareItems, update: updateCompare } = useCompareSelection();
+  // The live status speaks only after the shopper used the control, not when the stored selection loads.
+  const [compareActed, setCompareActed] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [wish, setWish] = useState<"idle" | "saving" | "saved">("idle");
 
@@ -76,6 +85,16 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   const onSale = isKztSale(compareAtAmount, priceAmount);
   // A legacy price with no KZT-per-USD rate (src/lib/legacy-prices.ts) is shown without a currency sign.
   const unconverted = product.currency === "USD";
+  // Task C-c: "Add to comparison" adds the size on screen: the PostgreSQL variant from ProductVariantContext, or
+  // the legacy JSON variant picked here. Another size of the same product is its own comparison column.
+  // Computed before the memo below, like the prices above, for the React Compiler.
+  const compareSku = variant?.sku ?? cmsVariant?.sku;
+  const compareRef = { productId: initial.id, ...(compareSku ? { sku: compareSku } : {}) };
+  // A catalogue card adds a product without a SKU; that entry counts as this product being compared (no duplicate).
+  const compareEntryFound = findVariantEntry(compareItems, compareRef);
+  const inComparison = compareEntryFound !== null;
+  const exactInComparison = compareEntryFound?.exact === true;
+  const compareBlocked = !inComparison && isSelectionFull(compareItems);
   const gallery = useMemo(() => {
     if (!vm || !cmsVariant) return product.gallery;
     const byId = new Map(vm.images.map((img) => [img.id, img]));
@@ -131,6 +150,12 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
     } catch (error) { setNotice(error instanceof Error ? error.message : t("addFailed")); return; }
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
+  };
+  const toggleComparison = () => {
+    if (compareBlocked) return;
+    const entry: CompareSelectionItem = { ...compareRef, name: product.title, ...(gallery[0]?.src ? { image: gallery[0].src } : {}) };
+    setCompareActed(true);
+    updateCompare((items) => toggleVariant(items, entry));
   };
   const handleWishlist = async () => {
     setWish("saving"); setNotice(null);
@@ -321,6 +346,25 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
                 {wish === "saved" ? t("savedToWishlist") : t("saveToWishlist")}
               </button>
             )}
+          </div>
+          {/* Task C-c: Garmin-style text actions under the buy buttons; the buy box layout above is unchanged. */}
+          <div data-compare-action className="flex max-w-[570px] flex-wrap items-center gap-x-6 text-[14px] leading-[21px] text-black">
+            <button
+              type="button"
+              onClick={toggleComparison}
+              aria-disabled={compareBlocked || undefined}
+              aria-describedby={compareBlocked ? COMPARE_LIMIT_ID : undefined}
+              className="g-btn g-btn--text text-[14px] underline hover:no-underline focus:no-underline aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+            >
+              {exactInComparison ? tc("removeFromComparison") : inComparison ? tc("compareThisSize") : tc("add")}
+            </button>
+            {inComparison && (
+              <Link href={selectionHref(compareItems)} className="g-btn g-btn--text text-[14px] underline hover:no-underline focus:no-underline">
+                {tc("viewComparison")}
+              </Link>
+            )}
+            {compareBlocked && <p id={COMPARE_LIMIT_ID} className="py-[10px]">{tc("limit", { max: COMPARE_MAX_ITEMS })}</p>}
+            <p role="status" className="sr-only">{compareActed ? tc("status", { count: compareItems.length, max: COMPARE_MAX_ITEMS }) : ""}</p>
           </div>
           <p className="mt-4 mb-4 text-[14px] leading-[21px] text-black">
             {/* PostgreSQL catalog: report real stock only — no delivery promise the server has not made */}

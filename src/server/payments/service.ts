@@ -8,7 +8,8 @@ import { enqueueJob } from "../operations/outbox.ts";
 import { PAYMENT_START_KIND } from "../checkout/service.ts";
 import type { PaymentEvent, PaymentProvenance, PaymentProvider, PaymentProviders } from "./provider.ts";
 
-import { createDemoProvider, demoRefundId } from "./demo.ts";
+import { createDemoProvider } from "./demo.ts";
+import { settleDemoRefund } from "./demo-refund.ts";
 
 export { createPaymentProviders } from "./provider.ts";
 export { createDemoProvider };
@@ -217,24 +218,21 @@ async function requestRefund(client: PoolClient, provider: PaymentProvider, orde
     [refundId, transactionId, order.id, provider.name, provider.environment, provider.merchantAccount, `refund:${transactionId}`,
       sha256(canonical({ transactionId, amountMinor, reason })), amountMinor, reason]);
   await orderEvent(client, order.id, "payment.refund_required", source, `refund-required:${transactionId}`, "internal", { transactionId, amountMinor, reason });
-  if (provider.simulated) await settleSimulatedRefund(client, order.id, refundId, amountMinor, source);
+  // Task 3.2: the refund worker never submits a simulated provider's refund, so a refund that capture()
+  // requests for a demo capture (an allocation exception, a late or duplicate capture) is settled at
+  // once, locally, by the shared helper staff demo refunds use too (payments/demo-refund.ts).
+  if (provider.simulated) await settleDemoRefund(client, { orderId: order.id, refundId, amountMinor, source, actorUserId: null, refreshPaymentSummary: refundedUnlessStillPaid });
 }
 
 /**
- * Task 3.2: the refund worker never submits a simulated provider's refund, so a refund that capture()
- * requests for a demo capture (an allocation exception, a late or duplicate capture) is settled at
- * once, locally, as staff demo refunds are (aftersales.ts settleDemoRefund). The money "returned" is
- * that capture's, and such a capture never pays for the order, so when no other capture still pays
- * for it the order's payment summary becomes refunded.
+ * The money "returned" by a capture-time refund is that capture's, and such a capture never pays for
+ * the order, so when no other capture still pays for it the order's payment summary becomes refunded.
  */
-async function settleSimulatedRefund(client: PoolClient, orderId: string, refundId: string, amountMinor: string, source: string): Promise<void> {
-  const settled = await client.query("UPDATE refunds SET status='succeeded',provider_refund_id=$2,version=version+1,updated_at=now() WHERE id=$1 AND status='reserved' AND provider='demo' AND environment='demo' AND merchant_account='demo'", [refundId, demoRefundId(refundId)]);
-  if (settled.rowCount !== 1) fail("REFUND_NOT_SETTLED", 409, "The demo refund could not be settled");
+async function refundedUnlessStillPaid(client: PoolClient, orderId: string): Promise<void> {
   await client.query(
     `UPDATE orders o SET payment_status='refunded',version=version+1,updated_at=clock_timestamp() WHERE o.id=$1 AND o.payment_status IN ('paid','partially_refunded')
        AND NOT EXISTS (SELECT 1 FROM payment_transactions t WHERE t.order_id=o.id AND t.kind='capture'
          AND NOT EXISTS (SELECT 1 FROM refunds r WHERE r.order_id=t.order_id AND r.idempotency_key='refund:'||t.id::text))`, [orderId]);
-  await orderEvent(client, orderId, "refund.succeeded", source, `refund-succeeded:${refundId}`, "customer", { refundId, amountMinor, demo: true });
 }
 
 /**

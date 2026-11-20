@@ -1,0 +1,410 @@
+{
+ "url": "https://www.garmin.com/en-US/c/wearables-smartwatches/?compare=1",
+ "vw": 1440,
+ "tree": {
+  "tag": "div",
+  "cls": "compare-banner",
+  "r": [
+   0,
+   551,
+   1440,
+   86
+  ],
+  "css": {
+   "display": "flex",
+   "position": "sticky",
+   "top": "-64px",
+   "bottom": "0px",
+   "left": "0px",
+   "z-index": "2",
+   "box-sizing": "border-box",
+   "justify-content": "flex-end",
+   "align-items": "center",
+   "background-color": "rgb(242, 242, 242)",
+   "border-top-width": "1px",
+   "border-top-style": "solid",
+   "border-top-color": "rgb(217, 217, 217)",
+   "padding": "16px",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "font-size": "16px",
+   "line-height": "24px",
+   "color": "rgb(0, 0, 0)",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "div",
+    "cls": "compare-banner__inner-wrap",
+    "r": [
+     734,
+     568,
+     550,
+     53
+    ],
+    "css": {
+     "display": "flex",
+     "box-sizing": "border-box",
+     "align-items": "center"
+    },
+    "c": [
+     {
+      "tag": "div",
+      "cls": "compare-banner__autocomplete-wrapper",
+      "r": [
+       734,
+       568,
+       238,
+       53
+      ],
+      "css": {
+       "box-sizing": "border-box"
+      },
+      "c": [
+       {
+        "tag": "div",
+        "cls": "autocomplete",
+        "r": [
+         734,
+         568,
+         238,
+         53
+        ],
+        "css": {
+         "position": "relative",
+         "top": "0px",
+         "right": "0px",
+         "bottom": "0px",
+         "left": "0px",
+         "box-sizing": "border-box"
+        },
+        "c": [
+         {
+          "tag": "g-input",
+          "cls": "g__input hydrated",
+          "r": [
+           734,
+           568,
+           238,
+           53
+          ],
+          "css": {
+           "display": "block",
+           "box-sizing": "border-box"
+          },
+          "c": [
+           {
+            "tag": "label",
+            "cls": "g__input__label",
+            "r": [
+             734,
+             568,
+             238,
+             0
+            ],
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "span",
+              "cls": "g__input__label__text g__input__label__text--hidden",
+              "r": [
+               852,
+               567,
+               1,
+               1
+              ],
+              "t": "Search for Products",
+              "css": {
+               "display": "block",
+               "position": "absolute",
+               "top": "0px",
+               "right": "120px",
+               "bottom": "54.19px",
+               "left": "119px",
+               "box-sizing": "border-box",
+               "font-size": "14.4px",
+               "font-weight": "700",
+               "line-height": "21.6px",
+               "margin": "-1px",
+               "overflow": "hidden"
+              }
+             }
+            ]
+           },
+           {
+            "tag": "div",
+            "cls": "g__input__wrapper",
+            "r": [
+             734,
+             568,
+             238,
+             53
+            ],
+            "css": {
+             "display": "flex",
+             "box-sizing": "border-box",
+             "align-items": "center"
+            },
+            "c": [
+             {
+              "tag": "div",
+              "r": [
+               734,
+               595,
+               0,
+               0
+              ],
+              "css": {
+               "box-sizing": "border-box"
+              },
+              "c": [
+               {
+                "tag": "g-icon-search",
+                "cls": "g-icon-search",
+                "r": [
+                 734,
+                 595,
+                 0,
+                 0
+                ],
+                "css": {
+                 "box-sizing": "border-box"
+                }
+               }
+              ]
+             },
+             {
+              "tag": "div",
+              "cls": "awesomplete",
+              "r": [
+               734,
+               568,
+               238,
+               53
+              ],
+              "css": {
+               "position": "relative",
+               "top": "0px",
+               "right": "0px",
+               "bottom": "0px",
+               "left": "0px",
+               "box-sizing": "border-box"
+              },
+              "c": [
+               {
+                "tag": "input",
+                "r": [
+                 734,
+                 568,
+                 238,
+                 53
+                ],
+                "a": {
+                 "role": "combobox",
+                 "type": "text",
+                 "placeholder": "Search for Products",
+                 "aria-expanded": "false",
+                 "aria-controls": "awesomplete_list_2"
+                },
+                "css": {
+                 "display": "block",
+                 "width": "238px",
+                 "height": "53.19px",
+                 "line-height": "23.2px",
+                 "padding": "14px 14px 14px 40px",
+                 "border-width": "1px",
+                 "border-style": "solid",
+                 "border-color": "rgb(217, 217, 217)"
+                }
+               },
+               {
+                "tag": "ul",
+                "r": [
+                 757,
+                 557,
+                 0,
+                 0
+                ],
+                "a": {
+                 "aria-label": "Results List",
+                 "role": "listbox"
+                },
+                "css": {
+                 "position": "absolute",
+                 "top": "-8px",
+                 "right": "0px",
+                 "bottom": "56px",
+                 "left": "0px",
+                 "z-index": "1",
+                 "box-sizing": "border-box",
+                 "min-width": "100%",
+                 "margin-top": "3.2px",
+                 "margin-bottom": "0px",
+                 "padding-left": "0px",
+                 "list-style-type": "none",
+                 "background-color": "rgb(255, 255, 255)",
+                 "box-shadow": "rgba(77, 77, 77, 0.08) 0px 1px 1px 0px, rgba(77, 77, 77, 0.16) 0px 1px 3px 1px",
+                 "opacity": "0",
+                 "visibility": "hidden",
+                 "transform": "matrix(0, 0, 0, 0, 0, 0)",
+                 "transform-origin": "22.88px -6.88px",
+                 "transition-duration": "0.3s",
+                 "border-width": "1px",
+                 "border-style": "solid"
+                },
+                "before": {
+                 "display": "none",
+                 "position": "absolute",
+                 "top": "-6.88px",
+                 "left": "16px",
+                 "box-sizing": "border-box",
+                 "background-color": "rgb(255, 255, 255)",
+                 "border-top-width": "1px",
+                 "border-left-width": "1px",
+                 "border-top-style": "solid",
+                 "border-left-style": "solid",
+                 "content": "\"\"",
+                 "padding": "6.4px"
+                }
+               },
+               {
+                "tag": "span",
+                "cls": "visually-hidden",
+                "r": [
+                 852,
+                 621,
+                 1,
+                 1
+                ],
+                "a": {
+                 "role": "status"
+                },
+                "css": {
+                 "display": "block",
+                 "position": "absolute",
+                 "top": "53.19px",
+                 "right": "120px",
+                 "bottom": "1px",
+                 "left": "119px",
+                 "box-sizing": "border-box",
+                 "margin": "-1px",
+                 "overflow": "hidden"
+                }
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "tag": "div",
+      "cls": "compare-items",
+      "r": [
+       980,
+       569,
+       304,
+       53
+      ],
+      "css": {
+       "display": "flex",
+       "box-sizing": "border-box",
+       "margin-left": "8px",
+       "justify-content": "center",
+       "align-self": "center"
+      },
+      "c": [
+       {
+        "tag": "div",
+        "cls": "compare-item",
+        "r": [
+         980,
+         569,
+         53,
+         53
+        ],
+        "css": {
+         "position": "relative",
+         "top": "0px",
+         "right": "0px",
+         "bottom": "0px",
+         "left": "0px",
+         "box-sizing": "border-box",
+         "margin-right": "8px",
+         "flex-shrink": "0",
+         "border-width": "1px",
+         "border-style": "solid",
+         "border-color": "rgb(217, 217, 217)"
+        },
+        "rep": [
+         {},
+         {},
+         {},
+         {}
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "tag": "g-button",
+    "cls": "compare-banner__button g__button__host g__button__host--large",
+    "r": [
+     1284,
+     569,
+     140,
+     52
+    ],
+    "css": {
+     "display": "block",
+     "box-sizing": "border-box"
+    },
+    "c": [
+     {
+      "tag": "a",
+      "cls": "g__button g__button--contained g__button--contained--large",
+      "r": [
+       1284,
+       569,
+       140,
+       52
+      ],
+      "t": "COMPARE",
+      "a": {
+       "href": "https://www.garmin.com/en-US/compare/?"
+      },
+      "css": {
+       "display": "inline-block",
+       "box-sizing": "border-box",
+       "font-weight": "500",
+       "line-height": "18.4px",
+       "text-transform": "uppercase",
+       "vertical-align": "middle",
+       "background-color": "rgb(217, 217, 217)",
+       "cursor": "not-allowed",
+       "transition-property": "background, border, color",
+       "transition-duration": "0.2s, 0.2s, 0.2s",
+       "transition-timing-function": "ease, ease, ease",
+       "transition-delay": "0s, 0s, 0s",
+       "padding": "16px 32px",
+       "border-width": "1px",
+       "border-style": "solid",
+       "border-color": "rgb(217, 217, 217)",
+       "overflow": "auto"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "svgs": [],
+ "animations": []
+}

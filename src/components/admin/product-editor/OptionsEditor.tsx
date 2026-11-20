@@ -181,7 +181,7 @@ export function OptionsEditor({ options, images, onChange }: OptionsEditorProps)
                     <input
                       type="color"
                       value={isHexColor(value.swatchColor) ? value.swatchColor : "#000000"}
-                      onChange={(e) => updateValue(option.id, value.id, { swatchColor: e.target.value })}
+                      onChange={(e) => updateValue(option.id, value.id, { swatchColor: e.target.value, swatchColorSource: "editor" })}
                       aria-label={`Swatch color for ${value.label}`}
                       title="Swatch color"
                       className="h-7 w-9 cursor-pointer border border-border bg-white p-0.5"

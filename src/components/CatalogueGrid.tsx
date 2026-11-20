@@ -6,17 +6,21 @@ import { useTranslations } from "next-intl";
 import type { Product } from "@/types";
 import { activityFilters, levelFilters, caseSizeFilters } from "@/lib/catalog-constants";
 import { ProductCard } from "@/components/ProductCard";
-import { useLocalizeHref } from "@/i18n/useLocalizeHref";
+import { CompareBar, type CompareBarSearch } from "@/components/CompareBar";
+import { CATALOGUE_COMPARE_PARAM, CATALOGUE_COMPARE_SEARCH_PARAM } from "@/lib/compare/compare-items";
+import { COMPARE_LIMIT_NOTE_ID, hasProduct, isSelectionFull, toggleProduct } from "@/lib/compare/selection";
+import { useCompareSelection } from "@/lib/compare/use-compare-selection";
 
-type SortKey = "featured" | "price-asc" | "price-desc" | "name";
+type SortKey = "featured" | "price-asc" | "price-desc" | "name" | "name-desc";
 
 /**
- * Message keys in the `CatalogueGrid` namespace, in garmin.com's order (SideFilterMenu.spec.md). Garmin also offers
- * "Z to A"; the catalogue API has no descending name sort, so it is not offered here.
+ * Message keys in the `CatalogueGrid` namespace, in garmin.com's order (SideFilterMenu.spec.md): Featured (our
+ * Newest), A to Z, Z to A (task C-d, `name_desc`), then the two price sorts.
  */
 const sortLabels: Record<SortKey, string> = {
   featured: "sort.featured",
   name: "sort.name",
+  "name-desc": "sort.nameDesc",
   "price-asc": "sort.priceAsc",
   "price-desc": "sort.priceDesc",
 };
@@ -81,10 +85,18 @@ function Check({
   );
 }
 
-export function CatalogueGrid({ products }: { products: Product[] }) {
+/** The rail's toggle in compare mode carries garmin.com's 20px close mark after the label. */
+function CloseMark() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true" className="ml-4 size-5 shrink-0 stroke-current" fill="none" strokeWidth={2}>
+      <path d="M4 4l12 12M16 4L4 16" />
+    </svg>
+  );
+}
+
+export function CatalogueGrid({ products, compareSearch = null }: { products: Product[]; compareSearch?: CompareBarSearch | null }) {
   const t = useTranslations("CatalogueGrid");
   const tk = useTranslations();
-  const localize = useLocalizeHref();
   const router=useRouter(),pathname=usePathname(),params=useSearchParams();
   const activities=new Set(params.getAll("activities")),levels=new Set(params.getAll("levels")),sizes=new Set(params.getAll("caseSizes"));
   const sort=(params.get("sort")??"featured") as SortKey;
@@ -97,6 +109,33 @@ export function CatalogueGrid({ products }: { products: Product[] }) {
   const filtered=products;
   const clearAll=()=>{const next=new URLSearchParams(params.toString());["activities","levels","caseSizes","cursor"].forEach(name=>next.delete(name));router.push(pathname+"?"+next.toString());};
   const activeCount = activities.size + levels.size + sizes.size;
+  // Task C-c: Garmin's compare mode lives in the URL (`compare=1`); the chosen products live in localStorage.
+  const compareMode = params.get(CATALOGUE_COMPARE_PARAM) === "1";
+  const { items: compareItems, update: updateCompare } = useCompareSelection();
+  const barShown = compareMode || compareItems.length > 0;
+  // Card toggles let the bar's live status speak (never on page load).
+  const [cardActed, setCardActed] = useState(false);
+  const compareFull = isSelectionFull(compareItems);
+  const toggleCompareMode = () => {
+    const next = new URLSearchParams(params.toString());
+    if (compareMode) {
+      next.delete(CATALOGUE_COMPARE_PARAM);
+      next.delete(CATALOGUE_COMPARE_SEARCH_PARAM);
+    } else next.set(CATALOGUE_COMPARE_PARAM, "1");
+    const qs = next.toString();
+    router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  };
+  const compareToggle = (
+    <button
+      type="button"
+      aria-pressed={compareMode}
+      onClick={toggleCompareMode}
+      className={`g-btn g-btn--lg ${compareMode ? "g-btn--secondary" : "g-btn--black"}`}
+    >
+      {t("compare")}
+      {compareMode && <CloseMark />}
+    </button>
+  );
   // Below 1024px garmin.com folds the filters and the sort into one "Filter and Sort" bar.
   const [mobileOpen, setMobileOpen] = useState(false);
   const sortOptions = (Object.keys(sortLabels) as SortKey[]).map((k) => (
@@ -106,15 +145,18 @@ export function CatalogueGrid({ products }: { products: Product[] }) {
   ));
 
   return (
+    <div className="flex flex-col">
+    <CompareBar items={compareItems} onChange={updateCompare} products={products} search={compareSearch} compareMode={compareMode} announce={cardActed} />
     <div className="flex flex-col lg:flex-row lg:items-start">
-      {/* Side filter rail (SideFilterMenu.spec.md): 315px, sticky full height, 1px #D9D9D9 right border */}
+      {/* Side filter rail (SideFilterMenu.spec.md): 315px, sticky full height, 1px #D9D9D9 right border; it sticks
+          under the 87px compare bar while that is shown (garmin.com moves it down the same way). */}
       <aside
         data-filter-rail
-        className="flex w-full shrink-0 flex-col border-b border-garmin-control text-[14px] leading-[21px] text-black lg:sticky lg:top-0 lg:h-screen lg:w-[315px] lg:border-r lg:border-b-0"
+        className={`flex w-full shrink-0 flex-col border-b border-garmin-control text-[14px] leading-[21px] text-black lg:sticky lg:w-[315px] lg:border-r lg:border-b-0 ${barShown ? "lg:top-[87px] lg:h-[calc(100vh-87px)]" : "lg:top-0 lg:h-screen"}`}
       >
         <div className="hidden border-b border-garmin-control lg:block">
           <div className="mt-4 pb-4 pl-4">
-            <a href={localize("/compare")} className="g-btn g-btn--lg g-btn--black">{t("compare")}</a>
+            {compareToggle}
           </div>
         </div>
         <button
@@ -188,9 +230,7 @@ export function CatalogueGrid({ products }: { products: Product[] }) {
           ))}
         </div>
       </aside>
-      <div className="mx-4 mt-4 lg:hidden">
-        <a href={localize("/compare")} className="g-btn g-btn--lg g-btn--black">{t("compare")}</a>
-      </div>
+      <div className="mx-4 mt-4 lg:hidden">{compareToggle}</div>
 
       {/* Grid */}
       <div className="min-w-0 flex-1">
@@ -215,12 +255,25 @@ export function CatalogueGrid({ products }: { products: Product[] }) {
           <div className="flex flex-wrap justify-between gap-y-4 px-4 pt-4 min-[1200px]:justify-start min-[1200px]:gap-y-0 min-[1200px]:px-0 min-[1200px]:pt-0">
             {filtered.map((p) => (
               <div key={p.id} className="w-full min-[480px]:w-[calc(50%-.5rem)] min-[1200px]:mt-4 min-[1200px]:ml-4 min-[1200px]:w-[calc(33.3333%-1.35em)]">
-                <ProductCard product={p} />
+                <ProductCard
+                  product={p}
+                  compare={
+                    compareMode
+                      ? {
+                          selected: hasProduct(compareItems, p.id),
+                          blocked: compareFull && !hasProduct(compareItems, p.id),
+                          onToggle: () => { setCardActed(true); updateCompare((items) => toggleProduct(items, { productId: p.id, name: p.name, image: p.image })); },
+                          describedBy: COMPARE_LIMIT_NOTE_ID,
+                        }
+                      : undefined
+                  }
+                />
               </div>
             ))}
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 }

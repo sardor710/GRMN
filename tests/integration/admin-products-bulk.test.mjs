@@ -140,3 +140,58 @@ test("bulk delete refuses an ordered product and deletes the other",async()=>{
   assert.equal(out.results[1].ok,true);
   assert.equal((await q("SELECT count(*)::int AS n FROM products WHERE public_key=$1",[a.id])).rows[0].n,1);
 });
+
+// Follow-up F-a: publishing needs a selling price above 0 on every path; drafts and archived products may stay at 0.
+const NEEDS_PRICE = "Set a price above 0 before publishing.";
+const refusedPublish = (promise) => assert.rejects(promise,error=>error.code==="INVALID_INPUT"&&error.status===400&&error.message===NEEDS_PRICE);
+
+test("publishing a price-0 product through save is refused; a price-0 draft saves fine",async()=>{
+  const cms=await cmsService();
+  await refusedPublish(cms.save("products",admin,product({price:"0",status:"published"})));
+  const draft=await cms.save("products",admin,product({price:"0",status:"draft"}));
+  assert.equal(draft.status,"draft");assert.equal(Number(draft.price),0);
+  await refusedPublish(cms.save("products",admin,{...product({price:"0",status:"published",sku:draft.sku}),id:draft.id,version:draft.version}));
+  assert.equal((await cms.get("products",admin,draft.id)).status,"draft");
+  const archived=await cms.save("products",admin,product({price:"0",status:"archived"}));
+  assert.equal(archived.status,"archived");
+});
+
+test("publishing a variant product whose default variant costs 0 is refused through save",async()=>{
+  const cms=await cmsService(),sku=`SYN-VAR-${++serial}`;
+  const options=[{id:"size",key:"size",name:"Size",display:"buttons",values:[{id:"s",key:"s",label:"S"},{id:"m",key:"m",label:"M"}]}];
+  const variants=(def)=>[{id:"va",sku:`${sku}-S`,title:"S",selections:{size:"s"},price:def,stock:0,status:"active",isDefault:true,imageIds:[]},{id:"vb",sku:`${sku}-M`,title:"M",selections:{size:"m"},price:5000,stock:0,status:"active",isDefault:false,imageIds:[]}];
+  await refusedPublish(cms.save("products",admin,product({sku,price:"5000",options,variants:variants(0)})));
+  const saved=await cms.save("products",admin,product({sku,price:"5000",options,variants:variants(5000)}));
+  assert.equal(saved.status,"published");
+});
+
+test("publishing a price-0 draft through the status PATCH is refused and the product stays a draft",async()=>{
+  const cms=await cmsService(),draft=await cms.save("products",admin,product({price:"0",status:"draft"}));
+  await refusedPublish(cms.setProductStatus(admin,{id:draft.id,version:draft.version,status:"published"}));
+  const after=await cms.get("products",admin,draft.id);
+  assert.equal(after.status,"draft");assert.equal(after.version,draft.version);
+  const archived=await cms.setProductStatus(admin,{id:draft.id,version:draft.version,status:"archived"});
+  assert.equal(archived.status,"archived");
+});
+
+test("bulk publish reports a price-0 product as INVALID_INPUT per item and publishes the others",async()=>{
+  const cms=await cmsService(),free=await cms.save("products",admin,product({price:"0",status:"draft"})),paid=await cms.save("products",admin,product({status:"draft"}));
+  const out=await cms.bulkProducts(admin,{action:"publish",items:[{id:free.id,version:free.version},{id:paid.id,version:paid.version}]});
+  assert.deepEqual(out.results.map(r=>r.ok),[false,true]);
+  assert.equal(out.results[0].code,"INVALID_INPUT");assert.equal(out.results[0].message,NEEDS_PRICE);
+  assert.equal((await cms.get("products",admin,free.id)).status,"draft");
+  assert.equal((await cms.get("products",admin,paid.id)).status,"published");
+});
+
+// Follow-up F-b (F-a review): a product with no price row cannot be published from the list; the editor
+// must save it first (409 CONFLICT). The 400 price message is only for an existing price of 0 or less.
+test("publishing a product with no price row through the status PATCH is a 409 CONFLICT, not the price message",async()=>{
+  const cms=await cmsService(),draft=await cms.save("products",admin,product({status:"draft"}));
+  const fixup=await database.pool.connect();
+  try{await fixup.query("SET session_replication_role=replica");await fixup.query("DELETE FROM prices WHERE variant_id IN (SELECT v.id FROM product_variants v JOIN products p ON p.id=v.product_id WHERE p.public_key=$1)",[draft.id]);}
+  finally{await fixup.query("RESET session_replication_role");fixup.release();}
+  await assert.rejects(cms.setProductStatus(admin,{id:draft.id,version:draft.version,status:"published"}),
+    error=>error.code==="CONFLICT"&&error.status===409&&/open it in the editor/.test(error.message));
+  // (the admin read cannot project a product with no price, so check the row itself)
+  assert.equal((await q("SELECT status FROM products WHERE public_key=$1",[draft.id])).rows[0].status,"draft");
+});
