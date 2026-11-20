@@ -9,11 +9,12 @@ import type { VariantContent } from "../../lib/catalog/variant-content.ts";
 
 // Owner, 2026-11-19 (commits 5cbad06/e7dc91c on PostgreSQL): the admin product document keeps its
 // options, variants and photos in products.legacy_content; this projects them into the commerce
-// tables the storefront, cart and checkout read. Variants are matched by SKU (then by a stable id
-// derived from the editor id) so their ids survive edits; a variant removed in the editor is
-// archived, never deleted (orders, stock and reservations reference it). Options and values the
-// editor removed are deleted together with their selections. Stock is not written here: it moves
-// only through the inventory workflow.
+// tables the storefront, cart and checkout read. Variants are matched by editor identity (the row
+// they had at the last save, then a stable id derived from the editor id; SKU only for variants new
+// to the editor, see matchVariants), so their ids, stock and prices survive edits and SKU renames.
+// A variant removed in the editor is archived, never deleted (orders, stock and reservations
+// reference it). Options and values the editor removed are deleted together with their selections.
+// Stock is not written here: it moves only through the inventory workflow.
 
 export interface EditorOption { id: string; key: string; name: string; values: { id: string; key: string; label: string }[] }
 export interface EditorVariant { id: string; sku: string; title: string; selections: Record<string, string>; price: number | string; originalPrice?: number | string; status: "draft" | "active" | "archived"; isDefault: boolean; imageIds: string[]; /** Task 2.1: own Specs/Overview/In the box; absent keys inherit. */ content?: VariantContent }
@@ -44,9 +45,41 @@ const overrides = (content: unknown): VariantContent => {
 /** Local photo paths the store serves itself; external URLs are never registered as media. */
 const localPhoto = (src: string) => /^\/(uploads|media|images)\/[^\s\\]+$/.test(src) && !src.includes("..") && !src.startsWith("//");
 
-export async function projectProduct(client: PoolClient, productId: string, doc: ProductDocument): Promise<void> {
+/** An editor variant as the previously saved document named it (its editor id and the SKU it had then). */
+export interface PreviousVariant { id?: unknown; sku?: unknown }
+type ExistingVariant = { id: string; sku: string; status: string; is_default: boolean };
+
+/**
+ * F-c (final review, 2026-11-21): which existing row each editor variant is. Identity comes first, SKU last:
+ * 1. the row that carried this editor variant at the last save (its previous SKU, read from the previous
+ *    document): this is how rows the importer or a migration created (ids not derived from the editor id)
+ *    keep their identity, and it reflects what the earlier SKU-first projection actually matched;
+ * 2. the row whose id is the stable id derived from the editor id;
+ * 3. only for variants new to the editor: an unclaimed row with the same SKU (e.g. an imported default
+ *    variant the editor now lists, or a re-added SKU of an archived row);
+ * otherwise a new row with the stable id. A row is never given to two editor variants.
+ */
+function matchVariants(productId: string, variants: readonly EditorVariant[], existing: readonly ExistingVariant[], bySku: ReadonlyMap<string, ExistingVariant>, previous: readonly PreviousVariant[]): Map<string, string> {
+  const byId = new Map(existing.map(v => [v.id, v]));
+  const previousSku = new Map<string, string>();
+  for (const p of previous) if (typeof p.id === "string" && typeof p.sku === "string" && p.sku.trim()) previousSku.set(p.id, p.sku.trim().toLowerCase());
+  const claimed = new Set<string>(), rows = new Map<string, string>();
+  const claim = (editorId: string, row: ExistingVariant | undefined) => { if (!row || claimed.has(row.id)) return false; claimed.add(row.id); rows.set(editorId, row.id); return true; };
+  for (const v of variants) {
+    const was = previousSku.get(v.id);
+    if (!claim(v.id, was === undefined ? undefined : bySku.get(was))) claim(v.id, byId.get(stableUuid(productId, "variant", v.id)));
+  }
+  for (const v of variants) {
+    if (rows.has(v.id) || claim(v.id, bySku.get(v.sku.trim().toLowerCase()))) continue;
+    const stable = stableUuid(productId, "variant", v.id);
+    rows.set(v.id, claimed.has(stable) ? randomUUID() : stable);
+  }
+  return rows;
+}
+
+export async function projectProduct(client: PoolClient, productId: string, doc: ProductDocument, previous: readonly PreviousVariant[] = []): Promise<void> {
   const hasVariants = doc.options.length > 0 && doc.variants.length > 0;
-  const existing = (await client.query<{ id: string; sku: string; status: string; is_default: boolean }>("SELECT id,sku,status,is_default FROM product_variants WHERE product_id=$1", [productId])).rows;
+  const existing = (await client.query<ExistingVariant>("SELECT id,sku,status,is_default FROM product_variants WHERE product_id=$1", [productId])).rows;
   const bySku = new Map(existing.map(v => [v.sku.toLowerCase(), v]));
 
   // ---- options and values ----
@@ -81,6 +114,17 @@ export async function projectProduct(client: PoolClient, productId: string, doc:
       if (v.originalPrice !== undefined && v.originalPrice !== "" && BigInt(toMinor(v.originalPrice, `Compare-at price of ${sku}`)) < BigInt(amount)) fail(400, `Compare-at price of ${sku} is below its price`);
     }
   }
+  // F-c: rows are matched before any write. A final SKU still held by a row of this product that no
+  // variant claimed (a variant removed in this save, or archived earlier) would hit the global unique
+  // index; refuse it with a reason instead (archived rows keep their SKU for orders and history).
+  const matched = hasVariants ? matchVariants(productId, doc.variants, existing, bySku, previous) : new Map<string, string>();
+  if (hasVariants) {
+    const claimedRows = new Set(matched.values());
+    for (const v of doc.variants) {
+      const holder = bySku.get(v.sku.trim().toLowerCase());
+      if (holder && !claimedRows.has(holder.id)) fail(409, `SKU ${v.sku.trim()} belongs to an archived variant of this product. Add a variant with that SKU to restore the archived one, or choose a different SKU.`);
+    }
+  }
 
   // Selections of options or values that are going away, then the options and values themselves.
   await client.query("DELETE FROM variant_option_values WHERE product_id=$1 AND (NOT option_id=ANY($2::uuid[]) OR NOT option_value_id=ANY($3::uuid[]))", [productId, keepOptions, keepValues]);
@@ -111,9 +155,14 @@ export async function projectProduct(client: PoolClient, productId: string, doc:
     else await client.query("INSERT INTO prices(id,variant_id,amount_minor,compare_at_minor) VALUES($1,$2,$3,$4)", [randomUUID(), id, amount, compare]);
   };
   if (hasVariants) {
+    // Two phases: the SKU unique index is global and not deferrable, so every kept row whose SKU changes
+    // first takes a temporary SKU of its own ('~' + id), then its final one below. Chained renames in one
+    // save (A->C with B->A, or a swap) never collide mid-update. Unchanged rows are not touched here.
+    const finalSku = new Map(doc.variants.map(v => [matched.get(v.id)!, v.sku.trim()]));
+    const renamed = existing.filter(row => finalSku.has(row.id) && finalSku.get(row.id) !== row.sku).map(row => row.id);
+    if (renamed.length) await client.query("UPDATE product_variants SET sku='~'||id::text WHERE product_id=$1 AND id=ANY($2::uuid[])", [productId, renamed]);
     for (const v of doc.variants) {
-      const sku = v.sku.trim(), found = bySku.get(sku.toLowerCase());
-      const id = found?.id ?? stableUuid(productId, "variant", v.id);
+      const sku = v.sku.trim(), id = matched.get(v.id)!;
       editorToRow.set(v.id, id); keepVariants.push(id);
       const amount = toMinor(v.price, `Price of ${sku}`), compare = v.originalPrice === undefined || v.originalPrice === "" ? null : toMinor(v.originalPrice, `Compare-at price of ${sku}`);
       const status = variantStatus(doc.status, v.status);

@@ -160,7 +160,8 @@ const blankForm = () => ({
   level: "Premium" as Level,
   caseSize: "Medium" as CaseSize,
   stock: 50,
-  status: "published" as ProductStatus,
+  // A new product starts as a draft: publishing is a deliberate step (and needs a price above 0).
+  status: "draft" as ProductStatus,
   isFeatured: false,
   specs: DEFAULT_SPECS_TEMPLATE,
   inTheBox: [
@@ -228,6 +229,8 @@ export default function AdminProductsPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
+  // Set when a save was blocked because a published product has no price above 0; cleared when the editor opens.
+  const [priceBlocked, setPriceBlocked] = useState(false);
   const [skuConflicts, setSkuConflicts] = useState<string[]>([]);
 
   const [formData, setFormData] = useState<ProductForm>(blankForm);
@@ -258,6 +261,7 @@ export default function AdminProductsPage() {
     setActiveTab("general");
     setContentLocale("en");
     setSaveError("");
+    setPriceBlocked(false);
     setSkuConflicts([]);
   };
 
@@ -520,10 +524,20 @@ export default function AdminProductsPage() {
     });
   };
 
+  // The default variant's price is the selling price when the product has variants.
+  const sellingPrice = Number((formData.variants.find((v) => v.isDefault) || formData.variants[0])?.price ?? formData.price);
+  const priceError = priceBlocked && formData.status === "published" && !(sellingPrice > 0);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaveError("");
     setSkuConflicts([]);
+    if (formData.status === "published" && !(sellingPrice > 0)) {
+      setPriceBlocked(true);
+      setContentLocale("en");
+      setActiveTab("general");
+      return;
+    }
     if (formData.images.length === 0 && !formData.image) {
       setSaveError("Add at least one product photo.");
       setContentLocale("en");
@@ -1079,10 +1093,17 @@ export default function AdminProductsPage() {
                     min={0}
                     required={!hasVariants}
                     disabled={hasVariants}
+                    aria-invalid={priceError}
+                    aria-describedby={priceError ? "product-price-error" : undefined}
                     value={hasVariants ? (defaultVariant?.price ?? 0) : formData.price}
                     onChange={(e) => setFormData({ ...formData, price: Number(e.target.value) })}
-                    className="mt-1 h-9 w-full border border-border bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none disabled:bg-neutral-100 disabled:text-neutral-500"
+                    className={`mt-1 h-9 w-full border bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none disabled:bg-neutral-100 disabled:text-neutral-500 ${priceError ? "border-garmin-error" : "border-border"}`}
                   />
+                  {priceError && (
+                    <p id="product-price-error" role="alert" className="mt-1 text-xs text-garmin-error">
+                      Set a price above 0 before publishing.
+                    </p>
+                  )}
                 </div>
 
                 <div>

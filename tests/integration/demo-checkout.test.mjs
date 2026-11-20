@@ -490,3 +490,103 @@ test("a same-key replay of a pending demo order does not capture after demo chec
   assert.equal((await checkout.placeOrder(database.pool,secret,actor,idem,input)).status,"confirmed");
   assert.equal((await captures(placed.orderId)).length,1);
 });
+
+// Follow-up F-b (item 3): DEMO_ORDER_LIMIT sets the cap (default 5, 0 = unlimited) and signed-in staff
+// sessions are exempt from it. Read on every checkout, like DEMO_CHECKOUT_DISABLED.
+async function withDemoLimit(value,work){
+  const previous=process.env.DEMO_ORDER_LIMIT;
+  if(value===undefined)delete process.env.DEMO_ORDER_LIMIT;else process.env.DEMO_ORDER_LIMIT=value;
+  try{return await work();}finally{if(previous===undefined)delete process.env.DEMO_ORDER_LIMIT;else process.env.DEMO_ORDER_LIMIT=previous;}
+}
+const refusedOverCap=(promise,limit)=>assert.rejects(promise,error=>{
+  assert.equal(error.status,429);assert.equal(error.code,"TOO_MANY_DEMO_ORDERS");
+  assert.match(error.message,new RegExp(`at most ${limit} demo orders a day`));
+  return true;
+});
+/** A staff account (one role) with an MFA-admitted session, so requirePrincipal lets it shop. */
+async function staffBuyer(){
+  const who=await buyer();
+  const role=(await q("INSERT INTO roles(id,code) VALUES($1,'support') ON CONFLICT (code) DO UPDATE SET code=EXCLUDED.code RETURNING id",[randomUUID()])).rows[0].id;
+  await q("INSERT INTO user_roles(user_id,role_id) VALUES($1,$2)",[who.id,role]);
+  await q("UPDATE users SET two_factor_enabled=true WHERE id=$1",[who.id]);
+  await q("INSERT INTO auth_two_factors(id,user_id,secret,backup_codes,verified) VALUES($1,$2,'synthetic-proof-fixture','synthetic-proof-fixture',true)",[randomUUID(),who.id]);
+  const session=await(await runtime.auth.$context).internalAdapter.createSession(who.id);
+  await q("INSERT INTO staff_session_grants(session_id,user_id,method) VALUES($1,$2,'totp')",[session.id,who.id]);
+  const cookie="grmn-auth.session_token="+encodeURIComponent(session.token+"."+createHmac("sha256",secret).update(session.token).digest("base64"));
+  return{id:who.id,headers:new Headers({cookie})};
+}
+
+test("DEMO_ORDER_LIMIT=2 allows exactly 2 demo orders per customer and per address",async()=>{
+  await setDemo(true);
+  const p=await product({stock:100});
+  await withDemoLimit("2",async()=>{
+    const who=await buyer();
+    for(let i=0;i<2;i++)assert.equal((await place(who,await quoted(who.headers,[[p.variant,1]]),"demo")).status,"confirmed");
+    await refusedOverCap(place(who,await quoted(who.headers,[[p.variant,1]]),"demo"),2);
+    // Per address too: the third customer on one connection is refused.
+    const address="198.51.100."+(++serial%250),buyers=await Promise.all([buyer(),buyer(),buyer()]);
+    const results=[];
+    for(const b of buyers){const quote=await quoted(b.headers,[[p.variant,1]]);results.push(await checkout.placeOrder(database.pool,secret,{userId:b.id,guestTokenHash:null},key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"},{clientAddress:address}).then(r=>r.status,e=>e.code));}
+    assert.deepEqual(results,["confirmed","confirmed","TOO_MANY_DEMO_ORDERS"]);
+  });
+});
+
+test("DEMO_ORDER_LIMIT=0 means no cap (7 demo orders from one customer and address)",async()=>{
+  await setDemo(true);
+  const p=await product({stock:100}),who=await buyer(),address="203.0.113."+(++serial%250);
+  await withDemoLimit("0",async()=>{
+    for(let i=0;i<7;i++){
+      const quote=await quoted(who.headers,[[p.variant,1]]);
+      assert.equal((await checkout.placeOrder(database.pool,secret,{userId:who.id,guestTokenHash:null},key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"},{clientAddress:address})).status,"confirmed");
+    }
+  });
+  assert.equal(await count("SELECT count(*)::int AS n FROM orders WHERE user_id=$1 AND payment_mode='demo'",[who.id]),7);
+});
+
+test("an invalid DEMO_ORDER_LIMIT falls back to 5",async()=>{
+  await setDemo(true);
+  const p=await product({stock:100}),who=await buyer();
+  const warn=console.warn,warnings=[];console.warn=(...args)=>warnings.push(args.join(" "));
+  try{
+    await withDemoLimit("lots",async()=>{
+      for(let i=0;i<5;i++)assert.equal((await place(who,await quoted(who.headers,[[p.variant,1]]),"demo")).status,"confirmed");
+      await refusedOverCap(place(who,await quoted(who.headers,[[p.variant,1]]),"demo"),5);
+    });
+  }finally{console.warn=warn;}
+  assert.ok(warnings.some(w=>/DEMO_ORDER_LIMIT/.test(w)),"the fallback is logged");
+});
+
+test("a signed-in staff session is exempt from the demo cap; a customer over it still gets 429",async()=>{
+  await setDemo(true);
+  const p=await product({stock:100}),staff=await staffBuyer(),address="192.0.2."+(++serial%250);
+  await withDemoLimit("2",async()=>{
+    // Through the cart service, as the route does: the session is resolved by requirePrincipal.
+    for(let i=0;i<4;i++){
+      const quote=await quoted(staff.headers,[[p.variant,1]]);
+      assert.equal((await carts.checkout(staff.headers,key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"})).status,"confirmed");
+    }
+    for(let i=0;i<2;i++){
+      const quote=await quoted(staff.headers,[[p.variant,1]]);
+      assert.equal((await checkout.placeOrder(database.pool,secret,{userId:staff.id,guestTokenHash:null},key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"},{clientAddress:address})).status,"confirmed");
+    }
+    const customer=await buyer();
+    for(let i=0;i<2;i++)assert.equal((await place(customer,await quoted(customer.headers,[[p.variant,1]]),"demo")).status,"confirmed");
+    await refusedOverCap(place(customer,await quoted(customer.headers,[[p.variant,1]]),"demo"),2);
+  });
+  assert.equal(await count("SELECT count(*)::int AS n FROM orders WHERE user_id=$1 AND payment_mode='demo'",[staff.id]),6);
+});
+
+// F-b review fix 1: staff demo orders do not use up a shared address's allowance for customers.
+test("staff demo orders at an address do not count toward that address's customer cap",async()=>{
+  await setDemo(true);
+  const p=await product({stock:100}),staff=await staffBuyer(),address="198.51.100."+(++serial%250);
+  const at=async who=>{const quote=await quoted(who.headers,[[p.variant,1]]);return checkout.placeOrder(database.pool,secret,{userId:who.id,guestTokenHash:null},key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"},{clientAddress:address});};
+  await withDemoLimit("2",async()=>{
+    for(let i=0;i<2;i++)assert.equal((await at(staff)).status,"confirmed");
+    const customer=await buyer();
+    assert.equal((await at(customer)).status,"confirmed","a customer on the staff's address still gets through");
+    assert.equal((await at(await buyer())).status,"confirmed");
+    // Customer orders still count: the address is now at its limit for customers.
+    await assert.rejects(at(await buyer()),error=>error.status===429&&error.code==="TOO_MANY_DEMO_ORDERS"&&/from this connection/.test(error.message));
+  });
+});
