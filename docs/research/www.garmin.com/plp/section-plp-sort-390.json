@@ -1,0 +1,35 @@
+{
+ "url": "https://www.garmin.com/en-US/c/wearables-smartwatches/",
+ "vw": 390,
+ "tree": {
+  "tag": "div",
+  "cls": "product-grid__options product-grid__options--with-filters",
+  "r": [
+   16,
+   823,
+   358,
+   0
+  ],
+  "css": {
+   "display": "flex",
+   "box-sizing": "border-box",
+   "justify-content": "end",
+   "align-items": "center",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "font-size": "16px",
+   "line-height": "24px",
+   "color": "rgb(0, 0, 0)",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "g-drop-down",
+    "sel": "#product-grid>g-drop-down",
+    "hidden": true
+   }
+  ]
+ },
+ "svgs": [],
+ "animations": []
+}

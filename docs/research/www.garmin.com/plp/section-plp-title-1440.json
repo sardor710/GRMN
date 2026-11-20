@@ -1,0 +1,103 @@
+{
+ "url": "https://www.garmin.com/en-US/c/wearables-smartwatches/",
+ "vw": 1440,
+ "tree": {
+  "tag": "g-container",
+  "cls": "card-rail__text-content g__container hydrated",
+  "r": [
+   53,
+   100,
+   390,
+   451
+  ],
+  "css": {
+   "display": "flex",
+   "position": "relative",
+   "top": "0px",
+   "right": "0px",
+   "bottom": "0px",
+   "left": "0px",
+   "box-sizing": "border-box",
+   "flex-direction": "column",
+   "justify-content": "center",
+   "padding": "16px 24px 16px 16px",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "font-size": "16px",
+   "line-height": "24px",
+   "color": "rgb(0, 0, 0)",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "g-heading",
+    "cls": "g__heading g__heading--left g__heading--light",
+    "r": [
+     69,
+     257,
+     350,
+     66
+    ],
+    "css": {
+     "display": "block",
+     "box-sizing": "border-box"
+    },
+    "c": [
+     {
+      "tag": "h1",
+      "r": [
+       69,
+       257,
+       350,
+       50
+      ],
+      "t": "All Smartwatches",
+      "css": {
+       "box-sizing": "border-box",
+       "margin-top": "0px",
+       "margin-bottom": "16px",
+       "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+       "font-size": "40px",
+       "line-height": "50px",
+       "letter-spacing": "0.8px"
+      }
+     }
+    ]
+   },
+   {
+    "tag": "g-copy",
+    "cls": "g__copy g__copy--left g__copy--light",
+    "r": [
+     69,
+     323,
+     350,
+     72
+    ],
+    "a": {
+     "type": "primary"
+    },
+    "css": {
+     "display": "block"
+    },
+    "c": [
+     {
+      "tag": "p",
+      "r": [
+       69,
+       323,
+       350,
+       72
+      ],
+      "t": "We have a smartwatch just for you. Explore the entire lineup or shop our most popular smartwatches, designed for your passions.",
+      "css": {
+       "margin-top": "0px",
+       "margin-bottom": "0px"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "svgs": [],
+ "animations": []
+}

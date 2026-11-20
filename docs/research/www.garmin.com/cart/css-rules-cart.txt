@@ -1,0 +1,34 @@
+/* blocked https://fonts.garmin.com/fonts/roboto-standard/roboto-standard.css */
+/* blocked https://fonts.garmin.com/fonts/oswald/oswald.css */
+/* blocked https://fonts.garmin.com/fonts/superscripts-oswald/superscripts-insidesup-oswald.css */
+/* blocked https://fonts.garmin.com/fonts/superscripts-oswald/superscripts-oswald.css */
+/* blocked https://fonts.garmin.com/fonts/superscripts-roboto/superscripts-insidesup-roboto.css */
+/* blocked https://fonts.garmin.com/fonts/superscripts-roboto/superscripts-roboto.css */
+summary { display: list-item; }
+.quantity-dd[data-v-ad95c004] { width: 100px; margin-bottom: 1rem; }
+.quantity-dd[data-v-ad95c004] .g__dropdown__label__text { font-size: 1rem; font-weight: 400; margin-bottom: 0.5rem; display: inline-block; }
+.order-cost-summary th[data-v-ae88c6c3] { font-weight: 500; }
+.order-cost-summary[data-v-ae88c6c3] { width: 100%; }
+.order-cost-summary td[data-v-ae88c6c3] { font-family: Superscripts-Roboto, Roboto, "Noto Sans TC", "Noto Sans SC", "Noto Sans JP", "Noto Sans KR", Prompt, sans-serif; display: inline-block; width: 49%; border: 0px; padding: 0px 0px 1rem; text-align: right; }
+.order-cost-summary th[data-v-ae88c6c3] { font-family: Superscripts-Roboto, Roboto, "Noto Sans TC", "Noto Sans SC", "Noto Sans JP", "Noto Sans KR", Prompt, sans-serif; display: inline-block; width: 49%; border: 0px; padding: 0px 0px 1rem; text-align: left; text-transform: none; letter-spacing: normal; font-weight: 700; }
+.cart-checkout-button[data-v-ae88c6c3] { display: flex; }
+.cart-checkout-button[data-v-ae88c6c3] button { border-width: medium; border-style: none; border-color: currentcolor; border-image: none; flex-grow: 1; }
+.checkout-error[data-v-ae88c6c3] { color: rgb(146, 0, 0); font-size: 0.875rem; margin: 0px 0px 1rem; }
+.app__cart__shippable-cart-alert[data-v-ae88c6c3] a { text-decoration: underline; }
+.cart[data-v-52847800] { padding: 1rem; }
+.cart__container[data-v-52847800] { max-width: 1200px; margin: 0px auto; }
+@screen and (min-width: 1024px) .cart__container[data-v-52847800] { margin: auto; }
+.cart__info[data-v-52847800] { display: flex; align-items: flex-start; flex-wrap: wrap; justify-content: space-between; }
+@screen and (min-width: 1024px) .cart__info[data-v-52847800] { flex-wrap: nowrap; }
+.gh__utility-bar__cart, .gh__utility-bar__link, .gh__utility-bar__search, .gh__utility-bar__sign-in, .gh__utility-bar__support { display: flex; align-items: center; cursor: pointer; flex: 0 0 auto; height: 100%; justify-content: center; }
+.gh__utility-bar__cart.js__utility-bar-item, .gh__utility-bar__link.js__utility-bar-item, .gh__utility-bar__search.js__utility-bar-item, .gh__utility-bar__sign-in.js__utility-bar-item, .gh__utility-bar__support.js__utility-bar-item { box-shadow: none; transition: box-shadow; }
+.gh__utility-bar__cart.js__utility-bar-item--active, .gh__utility-bar__cart.js__utility-bar-item:hover, .gh__utility-bar__link.js__utility-bar-item--active, .gh__utility-bar__link.js__utility-bar-item:hover, .gh__utility-bar__search.js__utility-bar-item--active, .gh__utility-bar__search.js__utility-bar-item:hover, .gh__utility-bar__sign-in.js__utility-bar-item--active, .gh__utility-bar__sign-in.js__utility-bar-item:hover, .gh__utility-bar__support.js__utility-bar-item--active, .gh__utility-bar__support.js__utility-bar-item:hover { box-shadow: rgb(0, 0, 0) 0px -0.2rem 0px inset; }
+.gh__utility-bar__cart.js__utility-bar-item--active .gh__utility-bar__dd, .gh__utility-bar__cart.js__utility-bar-item:hover .gh__utility-bar__dd, .gh__utility-bar__link.js__utility-bar-item--active .gh__utility-bar__dd, .gh__utility-bar__link.js__utility-bar-item:hover .gh__utility-bar__dd, .gh__utility-bar__search.js__utility-bar-item--active .gh__utility-bar__dd, .gh__utility-bar__search.js__utility-bar-item:hover .gh__utility-bar__dd, .gh__utility-bar__sign-in.js__utility-bar-item--active .gh__utility-bar__dd, .gh__utility-bar__sign-in.js__utility-bar-item:hover .gh__utility-bar__dd, .gh__utility-bar__support.js__utility-bar-item--active .gh__utility-bar__dd, .gh__utility-bar__support.js__utility-bar-item:hover .gh__utility-bar__dd { display: flex; }
+@screen and (min-width: 1024px) .gh__utility-bar__cart.js__utility-bar-item--active, .gh__utility-bar__cart.js__utility-bar-item:hover, .gh__utility-bar__link.js__utility-bar-item--active, .gh__utility-bar__link.js__utility-bar-item:hover, .gh__utility-bar__search.js__utility-bar-item--active, .gh__utility-bar__search.js__utility-bar-item:hover, .gh__utility-bar__sign-in.js__utility-bar-item--active, .gh__utility-bar__sign-in.js__utility-bar-item:hover, .gh__utility-bar__support.js__utility-bar-item--active, .gh__utility-bar__support.js__utility-bar-item:hover { transition-delay: 0.25s; }
+@screen and (min-width: 1024px) .gh__utility-bar__cart.js__utility-bar-item--active .gh__utility-bar__dd, .gh__utility-bar__cart.js__utility-bar-item:hover .gh__utility-bar__dd, .gh__utility-bar__link.js__utility-bar-item--active .gh__utility-bar__dd, .gh__utility-bar__link.js__utility-bar-item:hover .gh__utility-bar__dd, .gh__utility-bar__search.js__utility-bar-item--active .gh__utility-bar__dd, .gh__utility-bar__search.js__utility-bar-item:hover .gh__utility-bar__dd, .gh__utility-bar__sign-in.js__utility-bar-item--active .gh__utility-bar__dd, .gh__utility-bar__sign-in.js__utility-bar-item:hover .gh__utility-bar__dd, .gh__utility-bar__support.js__utility-bar-item--active .gh__utility-bar__dd, .gh__utility-bar__support.js__utility-bar-item:hover .gh__utility-bar__dd { visibility: visible; transition-delay: 0.25s; }
+.gh__utility-bar__cart { width: 1.5rem; }
+.gh__utility-bar__cart-wrapper { position: relative; display: flex; align-items: center; justify-content: center; width: 1.5rem; height: 1.5rem; }
+.gh__utility-bar__cart-wrapper__items-number { position: absolute; width: 1.25rem; height: 1.25rem; background: rgb(0, 0, 0); color: rgb(255, 255, 255); display: inline-block; text-align: center; border-radius: 100%; top: -6px; inset-inline-end: -7px; line-height: 1.25rem; font-size: 0.75rem; }
+.gh__utility-bar__cart-wrapper__items-number.visually-hidden { position: absolute; overflow: hidden; clip: rect(0px, 0px, 0px, 0px); height: 1px; width: 1px; margin: -1px; padding: 0px; border: 0px; }
+.gh__utility-bar__cart__icon { width: 1rem; height: 1rem; }
+.gh__utility-bar__cart .cart-live-reader { clip: rect(1px, 1px, 1px, 1px); position: absolute; overflow: hidden; width: 0px; }

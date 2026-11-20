@@ -1,0 +1,1009 @@
+{
+ "url": "https://www.garmin.com/en-US/p/1462801/",
+ "vw": 390,
+ "tree": {
+  "tag": "div",
+  "cls": "app__product__info",
+  "r": [
+   16,
+   508,
+   358,
+   536
+  ],
+  "css": {
+   "box-sizing": "border-box",
+   "max-width": "100%",
+   "margin-right": "16px",
+   "margin-bottom": "16px",
+   "margin-left": "16px",
+   "flex-grow": "1",
+   "text-align": "left",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "font-size": "18px",
+   "line-height": "27px",
+   "color": "rgb(0, 0, 0)",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "div",
+    "r": [
+     16,
+     508,
+     358,
+     65
+    ],
+    "css": {
+     "box-sizing": "border-box"
+    },
+    "c": [
+     {
+      "tag": "g-heading",
+      "cls": "app__product__info__title g__heading g__heading--left",
+      "r": [
+       16,
+       508,
+       358,
+       40
+      ],
+      "css": {
+       "box-sizing": "border-box"
+      },
+      "c": [
+       {
+        "tag": "h1",
+        "r": [
+         16,
+         508,
+         358,
+         40
+        ],
+        "t": "Forerunner® 970",
+        "css": {
+         "box-sizing": "border-box",
+         "margin-top": "0px",
+         "margin-bottom": "4px",
+         "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+         "line-height": "40px",
+         "letter-spacing": "0.8px"
+        }
+       }
+      ]
+     },
+     {
+      "tag": "p",
+      "cls": "app__product__info__part-number",
+      "r": [
+       16,
+       552,
+       358,
+       21
+      ],
+      "css": {
+       "box-sizing": "border-box",
+       "margin-top": "0px",
+       "margin-bottom": "0px"
+      },
+      "c": [
+       {
+        "tag": "g-copy",
+        "cls": "g__copy g__copy--left g__copy--light",
+        "r": [
+         16,
+         552,
+         358,
+         21
+        ],
+        "a": {
+         "type": "footnote"
+        },
+        "css": {
+         "display": "block",
+         "box-sizing": "border-box",
+         "font-size": "14px",
+         "line-height": "21px"
+        },
+        "c": [
+         {
+          "tag": "span",
+          "cls": "app__product__info__part-number__label",
+          "r": [
+           16,
+           554,
+           83,
+           17
+          ],
+          "t": "part number:",
+          "css": {
+           "text-transform": "capitalize"
+          }
+         },
+         {
+          "tag": "span",
+          "cls": "app__product__info__part-number--light",
+          "r": [
+           99,
+           554,
+           90,
+           17
+          ],
+          "t": "010-02969-01",
+          "css": {
+           "padding-left": "4px"
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "tag": "div",
+    "cls": "badge__container",
+    "r": [
+     16,
+     581,
+     358,
+     35
+    ],
+    "css": {
+     "display": "flex",
+     "box-sizing": "border-box",
+     "margin-top": "8px",
+     "margin-bottom": "16px"
+    },
+    "c": [
+     {
+      "tag": "div",
+      "cls": "g__badge g__badge--candy-blue badge",
+      "r": [
+       16,
+       581,
+       55,
+       35
+      ],
+      "t": "Sale",
+      "css": {
+       "box-sizing": "border-box",
+       "margin-right": "12.8px",
+       "font-size": "14px",
+       "line-height": "21px",
+       "background-color": "rgb(109, 207, 246)",
+       "padding": "7px 14px",
+       "border-radius": "22.75px"
+      }
+     }
+    ]
+   },
+   {
+    "tag": "div",
+    "r": [
+     16,
+     632,
+     358,
+     48
+    ],
+    "css": {
+     "box-sizing": "border-box"
+    },
+    "c": [
+     {
+      "tag": "g-price",
+      "cls": "product__info__price g__price g__price--stacked",
+      "r": [
+       16,
+       632,
+       358,
+       48
+      ],
+      "css": {
+       "display": "flex",
+       "box-sizing": "border-box",
+       "margin-top": "16px",
+       "margin-bottom": "4px",
+       "flex-direction": "column",
+       "flex-wrap": "wrap",
+       "font-size": "20px",
+       "font-weight": "700",
+       "line-height": "24px"
+      },
+      "c": [
+       {
+        "tag": "div",
+        "cls": "g__price__original-price g__price--strike",
+        "r": [
+         16,
+         632,
+         347,
+         24
+        ],
+        "css": {
+         "box-sizing": "border-box",
+         "margin-right": "11px",
+         "font-size": "14px",
+         "white-space": "nowrap",
+         "text-decoration-line": "line-through"
+        },
+        "c": [
+         {
+          "tag": "span",
+          "cls": "original-price-value",
+          "r": [
+           16,
+           635,
+           81,
+           17
+          ],
+          "t": "$749.99 USD",
+          "css": {
+           "box-sizing": "border-box"
+          }
+         },
+         {
+          "tag": "span",
+          "cls": "savings-text",
+          "r": [
+           105,
+           633,
+           115,
+           21
+          ],
+          "t": "$100.00 USD",
+          "css": {
+           "display": "inline-flex",
+           "box-sizing": "border-box",
+           "margin-left": "8px",
+           "line-height": "21px"
+          },
+          "c": [
+           {
+            "tag": "span",
+            "cls": "price-save-text",
+            "r": [
+             105,
+             633,
+             30,
+             21
+            ],
+            "t": "Save",
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box",
+             "margin-right": "4px"
+            }
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "tag": "div",
+        "cls": "g__price__discounted-price",
+        "r": [
+         16,
+         656,
+         358,
+         24
+        ],
+        "t": "$649.99 USD",
+        "css": {
+         "display": "flex",
+         "box-sizing": "border-box",
+         "align-items": "baseline",
+         "white-space": "nowrap"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "tag": "div",
+    "cls": "app__product__affirm__wrapper",
+    "r": [
+     16,
+     684,
+     358,
+     21
+    ],
+    "css": {
+     "box-sizing": "border-box",
+     "min-height": "21.01px",
+     "margin-bottom": "2px"
+    },
+    "c": [
+     {
+      "tag": "div",
+      "cls": "app__product__affirm",
+      "r": [
+       16,
+       684,
+       345,
+       21
+      ],
+      "css": {
+       "box-sizing": "border-box",
+       "max-width": "fit-content",
+       "font-size": "14px",
+       "line-height": "21px"
+      },
+      "c": [
+       {
+        "tag": "p",
+        "cls": "affirm-as-low-as",
+        "r": [
+         16,
+         684,
+         345,
+         21
+        ],
+        "t": "Starting at /mo or 0% APR with .",
+        "css": {
+         "box-sizing": "border-box",
+         "margin-top": "0px",
+         "margin-bottom": "0px"
+        },
+        "c": [
+         {
+          "tag": "span",
+          "cls": "affirm-ala-price",
+          "r": [
+           84,
+           686,
+           24,
+           17
+          ],
+          "t": "$59",
+          "css": {
+           "box-sizing": "border-box"
+          }
+         },
+         {
+          "tag": "span",
+          "cls": "__affirm-logo __affirm-logo-blue __ligature__affirm_full_logo__",
+          "r": [
+           235,
+           685,
+           36,
+           15
+          ],
+          "t": "Affirm",
+          "css": {
+           "position": "relative",
+           "top": "0px",
+           "right": "0px",
+           "bottom": "0px",
+           "left": "0px",
+           "box-sizing": "border-box",
+           "font-family": "affirm",
+           "font-size": "15.01px",
+           "line-height": "15.01px",
+           "white-space": "nowrap",
+           "font-feature-settings": "\"liga\"",
+           "-webkit-font-smoothing": "antialiased",
+           "color": "rgb(6, 8, 9)"
+          },
+          "after": {
+           "display": "block",
+           "position": "absolute",
+           "top": "-0.02px",
+           "right": "0px",
+           "bottom": "0px",
+           "left": "0px",
+           "box-sizing": "border-box",
+           "color": "rgb(74, 74, 244)",
+           "content": "\"\" / \"\""
+          }
+         },
+         {
+          "tag": "a",
+          "cls": "affirm-modal-trigger",
+          "r": [
+           278,
+           689,
+           83,
+           13
+          ],
+          "t": "See if you qualify",
+          "a": {
+           "href": "javascript:void(0)",
+           "aria-label": "See if you qualify - Learn more about Affirm Financing (opens in modal)"
+          },
+          "css": {
+           "box-sizing": "border-box",
+           "font-size": "11px",
+           "line-height": "16.5px",
+           "text-decoration-line": "underline",
+           "cursor": "pointer",
+           "transition-property": "color",
+           "transition-duration": "0.2s"
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "tag": "div",
+    "cls": "truemed-widget",
+    "r": [
+     16,
+     707,
+     358,
+     34
+    ],
+    "css": {
+     "box-sizing": "border-box",
+     "margin-bottom": "2px"
+    },
+    "c": [
+     {
+      "tag": "div",
+      "cls": "truemed-instructions",
+      "r": [
+       16,
+       707,
+       358,
+       34
+      ],
+      "css": {
+       "box-sizing": "border-box",
+       "font-size": "14px",
+       "line-height": "21px"
+      },
+      "c": [
+       {
+        "tag": "div",
+        "r": [
+         16,
+         707,
+         358,
+         34
+        ],
+        "css": {
+         "box-sizing": "border-box"
+        },
+        "c": [
+         {
+          "tag": "style",
+          "sel": "#truemed-instructions-garmin-pdp>div>style",
+          "hidden": true
+         },
+         {
+          "tag": "span",
+          "cls": "truemed-instructions-link-text",
+          "r": [
+           16,
+           707,
+           358,
+           34
+          ],
+          "css": {
+           "display": "inline-flex",
+           "box-sizing": "border-box",
+           "flex-wrap": "wrap",
+           "justify-content": "left",
+           "align-items": "center"
+          },
+          "c": [
+           {
+            "tag": "span",
+            "r": [
+             16,
+             707,
+             253,
+             21
+            ],
+            "t": "HSA/FSA eligible for qualified customers",
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box"
+            }
+           },
+           {
+            "tag": "span",
+            "r": [
+             269,
+             707,
+             70,
+             21
+            ],
+            "t": ".",
+            "css": {
+             "display": "flex",
+             "box-sizing": "border-box",
+             "align-items": "center",
+             "text-align": "center"
+            },
+            "c": [
+             {
+              "tag": "img",
+              "cls": "truemed-logo-img",
+              "r": [
+               273,
+               712,
+               63,
+               11
+              ],
+              "a": {
+               "src": "https://static.truemed.com/widgets/truemed-navy.svg",
+               "alt": "Truemed",
+               "natural": [
+                499,
+                87
+               ],
+               "loading": "eager"
+              },
+              "css": {
+               "display": "block",
+               "position": "relative",
+               "top": "-1px",
+               "right": "-1px",
+               "bottom": "1px",
+               "left": "1px",
+               "box-sizing": "border-box",
+               "width": "63.08px",
+               "height": "11px",
+               "margin-top": "1.5px",
+               "margin-left": "3px"
+              }
+             }
+            ]
+           },
+           {
+            "tag": "button",
+            "cls": "truemed-instructions-open",
+            "r": [
+             16,
+             728,
+             56,
+             13
+            ],
+            "t": "Learn more",
+            "a": {
+             "aria-label": "Learn more about Truemed and how to pay with your HSA or FSA for qualified customers",
+             "type": "button"
+            },
+            "css": {
+             "display": "flex",
+             "font-size": "11px",
+             "line-height": "12.65px",
+             "text-decoration-line": "underline",
+             "background-color": "rgba(0, 0, 0, 0)",
+             "cursor": "pointer",
+             "padding": "0px"
+            }
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "tag": "div",
+    "cls": "app__product__filters",
+    "r": [
+     16,
+     757,
+     358,
+     0
+    ],
+    "css": {
+     "box-sizing": "border-box",
+     "margin-top": "16px",
+     "margin-bottom": "16px"
+    }
+   },
+   {
+    "tag": "div",
+    "cls": "app__color__picker js__filters-wrapper",
+    "r": [
+     16,
+     757,
+     358,
+     114
+    ],
+    "css": {
+     "box-sizing": "border-box",
+     "margin-top": "16px",
+     "margin-bottom": "16px"
+    },
+    "c": [
+     {
+      "tag": "div",
+      "r": [
+       16,
+       757,
+       358,
+       114
+      ],
+      "css": {
+       "box-sizing": "border-box"
+      },
+      "c": [
+       {
+        "tag": "div",
+        "cls": "app__color__picker__title",
+        "r": [
+         16,
+         757,
+         358,
+         42
+        ],
+        "css": {
+         "box-sizing": "border-box"
+        },
+        "c": [
+         {
+          "tag": "g-copy",
+          "cls": "g__copy g__copy--left g__copy--light",
+          "r": [
+           16,
+           757,
+           358,
+           42
+          ],
+          "a": {
+           "type": "small"
+          },
+          "css": {
+           "display": "block",
+           "box-sizing": "border-box",
+           "margin-bottom": "8px",
+           "font-size": "14px",
+           "line-height": "21px"
+          },
+          "c": [
+           {
+            "tag": "span",
+            "r": [
+             16,
+             759,
+             78,
+             17
+            ],
+            "t": "Model/Color",
+            "css": {
+             "box-sizing": "border-box",
+             "font-weight": "700"
+            }
+           },
+           {
+            "tag": "span",
+            "r": [
+             16,
+             759,
+             309,
+             38
+            ],
+            "t": "- Titanium with Whitestone Case and Whitestone/Translucent Amp Yellow Band",
+            "css": {
+             "box-sizing": "border-box"
+            }
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "tag": "ul",
+        "cls": "app__color__picker__list",
+        "r": [
+         16,
+         807,
+         358,
+         64
+        ],
+        "css": {
+         "display": "flex",
+         "box-sizing": "border-box",
+         "margin-top": "0px",
+         "margin-bottom": "0px",
+         "padding-left": "0px",
+         "flex-wrap": "wrap",
+         "justify-content": "flex-start",
+         "align-items": "flex-start",
+         "list-style-type": "none",
+         "gap": "10.8px"
+        },
+        "c": [
+         {
+          "tag": "li",
+          "cls": "app__color__picker__item",
+          "r": [
+           16,
+           807,
+           64,
+           64
+          ],
+          "css": {
+           "display": "block",
+           "box-sizing": "border-box",
+           "font-size": "16.2px",
+           "line-height": "24.3px",
+           "text-transform": "uppercase"
+          },
+          "c": [
+           {
+            "tag": "a",
+            "cls": "app__color__picker__link js__filter-option app__color__picker__link__selected",
+            "r": [
+             16,
+             807,
+             64,
+             64
+            ],
+            "a": {
+             "href": "https://www.garmin.com/en-US/p/1462801/pn/010-02969-01/"
+            },
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box",
+             "text-decoration-line": "underline",
+             "cursor": "pointer",
+             "transition-property": "background-color, border-color, color",
+             "transition-duration": "0.5s, 0.5s, 0.5s",
+             "transition-timing-function": "ease, ease, ease",
+             "transition-delay": "0s, 0s, 0s",
+             "border-width": "2px",
+             "border-style": "solid"
+            },
+            "c": [
+             {
+              "tag": "img",
+              "r": [
+               18,
+               809,
+               60,
+               60
+              ],
+              "a": {
+               "src": "https://res.garmin.com/en/products/010-02969-01/v/cf-sm.jpg",
+               "alt": "Forerunner® 970, Titanium with Whitestone Case and Whitestone/Translucent Amp Yellow Band",
+               "natural": [
+                150,
+                150
+               ]
+              },
+              "css": {
+               "box-sizing": "border-box",
+               "width": "60px",
+               "height": "60px",
+               "vertical-align": "middle",
+               "transition-property": "opacity",
+               "transition-duration": "0.5s",
+               "overflow": "hidden"
+              }
+             }
+            ]
+           }
+          ],
+          "rep": [
+           {
+            "src": "https://res.garmin.com/en/products/010-02969-02/v/cf-sm.jpg"
+           },
+           {
+            "src": "https://res.garmin.com/en/products/010-02969-00/v/cf-sm.jpg"
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "tag": "div",
+    "cls": "app__product__cta",
+    "r": [
+     16,
+     887,
+     358,
+     113
+    ],
+    "css": {
+     "box-sizing": "border-box",
+     "margin-top": "16px",
+     "margin-bottom": "8px"
+    },
+    "c": [
+     {
+      "tag": "div",
+      "r": [
+       16,
+       887,
+       358,
+       113
+      ],
+      "css": {
+       "box-sizing": "border-box"
+      },
+      "c": [
+       {
+        "tag": "div",
+        "cls": "g__button__host g__button__host--large app__product__cta__button",
+        "r": [
+         16,
+         887,
+         358,
+         52
+        ],
+        "css": {
+         "display": "inline-block",
+         "position": "relative",
+         "top": "0px",
+         "right": "0px",
+         "bottom": "0px",
+         "left": "0px",
+         "box-sizing": "border-box",
+         "margin-right": "8px",
+         "margin-bottom": "8px"
+        },
+        "c": [
+         {
+          "tag": "a",
+          "cls": "g__button g__button--contained g__button--contained--large",
+          "r": [
+           16,
+           887,
+           358,
+           52
+          ],
+          "t": "Add To Cart",
+          "a": {
+           "href": "https://buy.garmin.com/en-US/cart/addToCart?partNumQty=010-02969-01:1"
+          },
+          "css": {
+           "display": "inline-block",
+           "box-sizing": "border-box",
+           "font-weight": "500",
+           "line-height": "18.4px",
+           "text-align": "center",
+           "text-transform": "uppercase",
+           "vertical-align": "middle",
+           "background-color": "rgb(109, 207, 246)",
+           "cursor": "pointer",
+           "transition-property": "background, border, color",
+           "transition-duration": "0.2s, 0.2s, 0.2s",
+           "transition-timing-function": "ease, ease, ease",
+           "transition-delay": "0s, 0s, 0s",
+           "padding": "16px 32px",
+           "border-width": "1px",
+           "border-style": "solid",
+           "border-color": "rgb(109, 207, 246)",
+           "overflow": "auto"
+          }
+         }
+        ]
+       },
+       {
+        "tag": "g-button",
+        "cls": "app__product__cta__button app__product__cta__button__customize g__button__host",
+        "r": [
+         16,
+         947,
+         358,
+         52
+        ],
+        "css": {
+         "display": "inline-block",
+         "position": "relative",
+         "top": "0px",
+         "right": "0px",
+         "bottom": "0px",
+         "left": "0px",
+         "box-sizing": "border-box",
+         "margin-right": "8px"
+        },
+        "c": [
+         {
+          "tag": "a",
+          "cls": "g__button g__button--contained g__button--contained--large",
+          "r": [
+           16,
+           947,
+           358,
+           52
+          ],
+          "t": "Customize",
+          "a": {
+           "href": "https://www.garmin.com/en-US/your-watch-your-way/family/50128/model/50148/case/1923891/"
+          },
+          "css": {
+           "display": "inline-block",
+           "box-sizing": "border-box",
+           "font-weight": "500",
+           "line-height": "18.4px",
+           "text-align": "center",
+           "text-transform": "uppercase",
+           "vertical-align": "middle",
+           "background-color": "rgb(255, 255, 255)",
+           "cursor": "pointer",
+           "transition-property": "background, border, color",
+           "transition-duration": "0.2s, 0.2s, 0.2s",
+           "transition-timing-function": "ease, ease, ease",
+           "transition-delay": "0s, 0s, 0s",
+           "padding": "16px 32px",
+           "border-width": "1px",
+           "border-style": "solid",
+           "overflow": "auto"
+          }
+         }
+        ]
+       },
+       {
+        "tag": "div",
+        "r": [
+         16,
+         1000,
+         358,
+         0
+        ],
+        "css": {
+         "box-sizing": "border-box"
+        },
+        "c": [
+         {
+          "tag": "span",
+          "r": [
+           16,
+           1000,
+           0,
+           0
+          ],
+          "css": {
+           "box-sizing": "border-box"
+          }
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "tag": "g-copy",
+    "cls": "app__product__processing g__copy g__copy--left",
+    "r": [
+     16,
+     1008,
+     358,
+     21
+    ],
+    "t": "Available to ship in 1–3 business days.",
+    "a": {
+     "type": "small"
+    },
+    "css": {
+     "display": "block",
+     "box-sizing": "border-box",
+     "margin-bottom": "16px",
+     "font-size": "14px",
+     "line-height": "21px"
+    }
+   },
+   {
+    "tag": "div",
+    "r": [
+     16,
+     1045,
+     358,
+     0
+    ],
+    "css": {
+     "box-sizing": "border-box"
+    }
+   }
+  ]
+ },
+ "svgs": [],
+ "animations": []
+}

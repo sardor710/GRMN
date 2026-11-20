@@ -1,0 +1,2389 @@
+{
+ "url": "https://www.garmin.com/en-US/c/wearables-smartwatches/",
+ "vw": 1440,
+ "tree": {
+  "tag": "div",
+  "cls": "product-grid__products",
+  "r": [
+   315,
+   626,
+   1125,
+   3327
+  ],
+  "css": {
+   "display": "flex",
+   "box-sizing": "border-box",
+   "flex-wrap": "wrap",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "font-size": "16px",
+   "line-height": "24px",
+   "color": "rgb(0, 0, 0)",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "div",
+    "cls": "sticky-custom-card-container",
+    "r": [
+     331,
+     642,
+     353,
+     555
+    ],
+    "css": {
+     "display": "flex",
+     "position": "relative",
+     "top": "0px",
+     "right": "0px",
+     "bottom": "0px",
+     "left": "0px",
+     "box-sizing": "border-box",
+     "margin-top": "16px",
+     "margin-left": "16px"
+    },
+    "c": [
+     {
+      "tag": "a",
+      "cls": "tile-banner-card",
+      "r": [
+       331,
+       642,
+       353,
+       555
+      ],
+      "a": {
+       "href": "https://www.garmin.com/en-US/c/promotions/holiday-sale-guide-americas/"
+      },
+      "css": {
+       "display": "block",
+       "box-sizing": "border-box",
+       "min-height": "500px",
+       "cursor": "pointer",
+       "transition-property": "color",
+       "transition-duration": "0.2s"
+      },
+      "c": [
+       {
+        "tag": "g-tile",
+        "cls": "heading__vertical--top heading__horizontal--center copy__vertical--top",
+        "r": [
+         331,
+         642,
+         353,
+         555
+        ],
+        "css": {
+         "display": "flex",
+         "position": "relative",
+         "top": "0px",
+         "right": "0px",
+         "bottom": "0px",
+         "left": "0px",
+         "box-sizing": "border-box"
+        },
+        "c": [
+         {
+          "tag": "figure",
+          "cls": "g__tile__background",
+          "r": [
+           331,
+           642,
+           353,
+           555
+          ],
+          "css": {
+           "position": "absolute",
+           "top": "0px",
+           "right": "0px",
+           "bottom": "0px",
+           "left": "0px",
+           "box-sizing": "border-box",
+           "margin": "0px"
+          },
+          "c": [
+           {
+            "tag": "picture",
+            "r": [
+             331,
+             1182,
+             353,
+             19
+            ],
+            "css": {
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "source",
+              "r": [
+               331,
+               1182,
+               0,
+               19
+              ],
+              "css": {
+               "box-sizing": "border-box"
+              },
+              "rep": [
+               {},
+               {}
+              ]
+             },
+             {
+              "tag": "img",
+              "cls": "g__tile__background__image",
+              "r": [
+               331,
+               642,
+               353,
+               555
+              ],
+              "a": {
+               "src": "https://res.garmin.com/subcategory/93099/93099-AD-HOLIDAY-SALE.jpg",
+               "alt": "Holiday gift boxes",
+               "natural": [
+                1200,
+                1200
+               ],
+               "sources": [
+                {
+                 "srcset": "",
+                 "media": "(max-width: 640px)"
+                },
+                {
+                 "srcset": "",
+                 "media": "(max-width: 990px)"
+                },
+                {
+                 "srcset": "https://res.garmin.com/subcategory/93099/93099-AD-HOLIDAY-SALE.jpg",
+                 "media": "(min-width: 990px)"
+                }
+               ]
+              },
+              "css": {
+               "box-sizing": "border-box",
+               "width": "353.39px",
+               "height": "555px",
+               "object-fit": "cover"
+              }
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "tag": "div",
+          "cls": "g__tile__content",
+          "r": [
+           331,
+           642,
+           353,
+           555
+          ],
+          "css": {
+           "display": "flex",
+           "z-index": "1",
+           "box-sizing": "border-box",
+           "flex-direction": "column",
+           "justify-content": "flex-start"
+          },
+          "c": [
+           {
+            "tag": "div",
+            "cls": "g__tile__content-text",
+            "r": [
+             331,
+             642,
+             353,
+             184
+            ],
+            "css": {
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "g-heading",
+              "cls": "g__heading g__heading--Center g__heading--dark",
+              "r": [
+               331,
+               658,
+               353,
+               30
+              ],
+              "css": {
+               "box-sizing": "border-box",
+               "margin-bottom": "8px",
+               "color": "rgb(255, 255, 255)"
+              },
+              "c": [
+               {
+                "tag": "h3",
+                "r": [
+                 347,
+                 658,
+                 321,
+                 30
+                ],
+                "t": "HOLIDAY SALE",
+                "css": {
+                 "box-sizing": "border-box",
+                 "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+                 "font-size": "24px",
+                 "line-height": "30px",
+                 "letter-spacing": "0.8px",
+                 "margin": "16px"
+                }
+               }
+              ]
+             },
+             {
+              "tag": "g-copy",
+              "cls": "g__copy g__copy--Center g__copy--dark",
+              "r": [
+               347,
+               704,
+               321,
+               98
+              ],
+              "a": {
+               "type": "primary"
+              },
+              "css": {
+               "display": "block",
+               "box-sizing": "border-box",
+               "margin-right": "16px",
+               "margin-bottom": "24px",
+               "margin-left": "16px",
+               "color": "rgb(255, 255, 255)"
+              },
+              "c": [
+               {
+                "tag": "span",
+                "r": [
+                 347,
+                 704,
+                 321,
+                 98
+                ],
+                "css": {
+                 "box-sizing": "border-box"
+                },
+                "c": [
+                 {
+                  "tag": "p",
+                  "r": [
+                   347,
+                   704,
+                   321,
+                   98
+                  ],
+                  "t": "Save big on great holiday gifts",
+                  "css": {
+                   "box-sizing": "border-box",
+                   "margin-top": "0px",
+                   "margin-bottom": "0px"
+                  },
+                  "c": [
+                   {
+                    "tag": "br",
+                    "r": [
+                     614,
+                     706,
+                     0,
+                     19
+                    ],
+                    "css": {
+                     "box-sizing": "border-box"
+                    },
+                    "rep": [
+                     {}
+                    ]
+                   },
+                   {
+                    "tag": "g-button",
+                    "cls": "g__button__host g__button__host--medium hydrated",
+                    "r": [
+                     448,
+                     752,
+                     119,
+                     50
+                    ],
+                    "css": {
+                     "display": "inline-block",
+                     "box-sizing": "border-box"
+                    },
+                    "c": [
+                     {
+                      "tag": "button",
+                      "cls": "g__button g__button--contained g__button--contained--medium",
+                      "r": [
+                       464,
+                       752,
+                       87,
+                       34
+                      ],
+                      "t": "SHOP",
+                      "css": {
+                       "margin-right": "16px",
+                       "margin-bottom": "16px",
+                       "margin-left": "16px",
+                       "font-size": "14px",
+                       "font-weight": "500",
+                       "line-height": "16.1px",
+                       "text-transform": "uppercase",
+                       "vertical-align": "middle",
+                       "background-color": "rgba(0, 0, 0, 0)",
+                       "transition-property": "background, border, color",
+                       "transition-duration": "0.2s, 0.2s, 0.2s",
+                       "transition-timing-function": "ease, ease, ease",
+                       "transition-delay": "0s, 0s, 0s",
+                       "padding": "8px 24px",
+                       "border-width": "1px",
+                       "border-style": "solid",
+                       "overflow": "auto"
+                      }
+                     }
+                    ]
+                   }
+                  ]
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "tag": "div",
+    "sel": "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(2)",
+    "hidden": true
+   },
+   {
+    "tag": "div",
+    "cls": "product-card-container",
+    "r": [
+     700,
+     642,
+     353,
+     555
+    ],
+    "css": {
+     "display": "flex",
+     "position": "relative",
+     "top": "0px",
+     "right": "0px",
+     "bottom": "0px",
+     "left": "0px",
+     "box-sizing": "border-box",
+     "margin-top": "16px",
+     "margin-left": "16px"
+    },
+    "c": [
+     {
+      "tag": "a",
+      "cls": "product-card",
+      "r": [
+       700,
+       642,
+       353,
+       555
+      ],
+      "a": {
+       "href": "https://www.garmin.com/en-US/p/2021177/"
+      },
+      "css": {
+       "display": "block",
+       "box-sizing": "border-box",
+       "text-align": "left",
+       "color": "rgb(26, 26, 26)",
+       "box-shadow": "rgb(229, 229, 229) 0px 2px 3px 1px",
+       "cursor": "pointer",
+       "transition-property": "color",
+       "transition-duration": "0.2s"
+      },
+      "c": [
+       {
+        "tag": "figure",
+        "cls": "product-card__wrapper",
+        "r": [
+         700,
+         642,
+         353,
+         555
+        ],
+        "css": {
+         "display": "flex",
+         "box-sizing": "border-box",
+         "flex-direction": "column",
+         "align-items": "center",
+         "margin": "0px"
+        },
+        "c": [
+         {
+          "tag": "div",
+          "cls": "product-card__image-container",
+          "r": [
+           700,
+           642,
+           353,
+           300
+          ],
+          "css": {
+           "box-sizing": "border-box",
+           "flex-shrink": "0"
+          },
+          "c": [
+           {
+            "tag": "img",
+            "cls": "product-card__image image-placeholder",
+            "r": [
+             700,
+             642,
+             353,
+             300
+            ],
+            "a": {
+             "src": "https://res.garmin.com/en/products/010-04336-00/g/cf-lg.jpg",
+             "alt": "fēnix® 9",
+             "natural": [
+              600,
+              600
+             ]
+            },
+            "css": {
+             "box-sizing": "border-box",
+             "width": "353.39px",
+             "height": "300px",
+             "mix-blend-mode": "multiply",
+             "object-fit": "contain"
+            }
+           }
+          ]
+         },
+         {
+          "tag": "figcaption",
+          "cls": "product-card__description",
+          "r": [
+           700,
+           942,
+           353,
+           255
+          ],
+          "css": {
+           "display": "flex",
+           "box-sizing": "border-box",
+           "padding-right": "16px",
+           "padding-bottom": "24px",
+           "padding-left": "16px",
+           "flex-direction": "column"
+          },
+          "c": [
+           {
+            "tag": "div",
+            "cls": "badge-wrapper",
+            "r": [
+             716,
+             658,
+             56,
+             51
+            ],
+            "a": {
+             "href": "https://www.garmin.com/en-US/p/2021177/",
+             "aria-label": "fēnix® 9"
+            },
+            "css": {
+             "position": "absolute",
+             "top": "16px",
+             "right": "281.47px",
+             "bottom": "488px",
+             "left": "16px",
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "div",
+              "cls": "g__badge g__badge--candy-blue",
+              "r": [
+               716,
+               658,
+               56,
+               35
+              ],
+              "t": "New",
+              "css": {
+               "box-sizing": "border-box",
+               "margin-bottom": "16px",
+               "font-size": "14px",
+               "line-height": "21px",
+               "background-color": "rgb(109, 207, 246)",
+               "padding": "7px 14px",
+               "border-radius": "22.75px"
+              }
+             }
+            ]
+           },
+           {
+            "tag": "g-color-swatches",
+            "cls": "g__color-swatches hydrated",
+            "r": [
+             716,
+             958,
+             321,
+             16
+            ],
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box",
+             "margin-top": "16px"
+            },
+            "c": [
+             {
+              "tag": "div",
+              "cls": "g__color-swatches__wrapper",
+              "r": [
+               716,
+               958,
+               321,
+               16
+              ],
+              "css": {
+               "display": "flex",
+               "box-sizing": "border-box",
+               "align-items": "center"
+              },
+              "c": [
+               {
+                "tag": "g-color-swatch",
+                "cls": "g__color-swatch hydrated",
+                "r": [
+                 716,
+                 958,
+                 16,
+                 16
+                ],
+                "css": {
+                 "display": "block",
+                 "box-sizing": "border-box",
+                 "margin-right": "8px"
+                },
+                "c": [
+                 {
+                  "tag": "div",
+                  "cls": "g__color-swatch__wrapper g__color-swatch__wrapper--small",
+                  "r": [
+                   716,
+                   958,
+                   16,
+                   16
+                  ],
+                  "a": {
+                   "title": "Shell Pink"
+                  },
+                  "css": {
+                   "display": "flex",
+                   "position": "relative",
+                   "top": "0px",
+                   "right": "0px",
+                   "bottom": "0px",
+                   "left": "0px",
+                   "box-sizing": "border-box",
+                   "align-items": "center"
+                  },
+                  "after": {
+                   "display": "block",
+                   "position": "absolute",
+                   "top": "0px",
+                   "right": "0px",
+                   "bottom": "0px",
+                   "left": "0px",
+                   "box-sizing": "border-box",
+                   "box-shadow": "rgba(0, 0, 0, 0.25) 0px 3.37px 3.37px 0px inset",
+                   "content": "\"\"",
+                   "border-radius": "50%"
+                  },
+                  "c": [
+                   {
+                    "tag": "img",
+                    "cls": "g__color-swatch__image",
+                    "r": [
+                     716,
+                     958,
+                     16,
+                     16
+                    ],
+                    "a": {
+                     "src": "https://res.garmin.com/en/products/010-04335-00/v/col_swatch.jpg",
+                     "alt": "Shell Pink",
+                     "natural": [
+                      64,
+                      64
+                     ]
+                    },
+                    "css": {
+                     "display": "block",
+                     "box-sizing": "border-box",
+                     "width": "16px",
+                     "height": "16px",
+                     "object-fit": "cover",
+                     "border-radius": "50%"
+                    }
+                   }
+                  ]
+                 }
+                ],
+                "rep": [
+                 {
+                  "src": "https://res.garmin.com/en/products/010-04335-10/v/col_swatch.jpg"
+                 },
+                 {
+                  "src": "https://res.garmin.com/en/products/010-04335-20/v/col_swatch.jpg"
+                 },
+                 {
+                  "src": "https://res.garmin.com/en/products/010-04335-40/v/col_swatch.jpg"
+                 },
+                 {
+                  "src": "https://res.garmin.com/en/products/010-04335-80/v/col_swatch.jpg"
+                 },
+                 {
+                  "src": "https://res.garmin.com/en/products/010-04336-00/v/col_swatch.jpg"
+                 },
+                 {
+                  "src": "https://res.garmin.com/en/products/010-04336-B2/v/col_swatch.jpg"
+                 },
+                 {
+                  "src": "https://res.garmin.com/en/products/010-04336-40/v/col_swatch.jpg"
+                 },
+                 {
+                  "src": "https://res.garmin.com/en/products/010-04338-01/v/col_swatch.jpg"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "tag": "g-heading",
+            "cls": "g__heading g__heading--left g__heading--light",
+            "r": [
+             716,
+             974,
+             321,
+             62
+            ],
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "h3",
+              "r": [
+               716,
+               990,
+               321,
+               30
+              ],
+              "t": "fēnix® 9",
+              "css": {
+               "box-sizing": "border-box",
+               "margin-top": "16px",
+               "margin-bottom": "16px",
+               "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+               "font-size": "24px",
+               "line-height": "30px",
+               "letter-spacing": "0.8px"
+              }
+             }
+            ]
+           },
+           {
+            "tag": "g-copy",
+            "cls": "product-card__description__copy g__copy g__copy--left",
+            "r": [
+             716,
+             1036,
+             321,
+             88
+            ],
+            "a": {
+             "type": "primary"
+            },
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "span",
+              "r": [
+               716,
+               1036,
+               321,
+               72
+              ],
+              "css": {
+               "box-sizing": "border-box"
+              },
+              "c": [
+               {
+                "tag": "p",
+                "r": [
+                 716,
+                 1036,
+                 321,
+                 72
+                ],
+                "t": "Premium multisport GPS smartwatches with AMOLED or solar charging displays and options that include inReach® connectivity.",
+                "css": {
+                 "box-sizing": "border-box",
+                 "margin-top": "0px"
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "tag": "div",
+            "cls": "pricing-wrapper",
+            "r": [
+             716,
+             1124,
+             321,
+             49
+            ],
+            "css": {
+             "display": "flex",
+             "box-sizing": "border-box",
+             "justify-content": "flex-start",
+             "align-items": "flex-end"
+            },
+            "c": [
+             {
+              "tag": "g-price",
+              "cls": "g__price hydrated",
+              "r": [
+               716,
+               1149,
+               146,
+               24
+              ],
+              "css": {
+               "display": "block",
+               "box-sizing": "border-box",
+               "flex-wrap": "wrap",
+               "align-self": "flex-end",
+               "font-weight": "700",
+               "white-space": "pre-wrap"
+              },
+              "c": [
+               {
+                "tag": "div",
+                "cls": "g__price__original-price",
+                "r": [
+                 716,
+                 1149,
+                 135,
+                 24
+                ],
+                "css": {
+                 "display": "inline-flex",
+                 "box-sizing": "border-box",
+                 "margin-right": "11px",
+                 "white-space": "nowrap"
+                },
+                "c": [
+                 {
+                  "tag": "span",
+                  "cls": "original-price-value",
+                  "r": [
+                   716,
+                   1149,
+                   94,
+                   24
+                  ],
+                  "t": "$999.99 USD",
+                  "css": {
+                   "display": "block",
+                   "box-sizing": "border-box"
+                  }
+                 },
+                 {
+                  "tag": "span",
+                  "cls": "and-up-text",
+                  "r": [
+                   815,
+                   1149,
+                   36,
+                   24
+                  ],
+                  "t": "and up",
+                  "css": {
+                   "display": "block",
+                   "box-sizing": "border-box",
+                   "margin-left": "4px",
+                   "font-size": "12px"
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "rep": [
+     {
+      "t": "Sale Venu® 4 Advanced health and fitness GPS smartwatches with bright, colorful displays, a built-in flashlight, and wellness and smart features. $549.99 USD$44",
+      "src": "https://res.garmin.com/en/products/010-03014-01/v/cf-lg.jpg"
+     }
+    ]
+   },
+   {
+    "tag": "div",
+    "cls": "sticky-custom-card-container",
+    "r": [
+     331,
+     1213,
+     353,
+     554
+    ],
+    "css": {
+     "display": "flex",
+     "position": "relative",
+     "top": "0px",
+     "right": "0px",
+     "bottom": "0px",
+     "left": "0px",
+     "box-sizing": "border-box",
+     "margin-top": "16px",
+     "margin-left": "16px"
+    },
+    "c": [
+     {
+      "tag": "a",
+      "cls": "tile-banner-card",
+      "r": [
+       331,
+       1213,
+       353,
+       554
+      ],
+      "a": {
+       "href": "https://www.garmin.com/en-US/p/1989182/"
+      },
+      "css": {
+       "display": "block",
+       "box-sizing": "border-box",
+       "min-height": "500px",
+       "cursor": "pointer",
+       "transition-property": "color",
+       "transition-duration": "0.2s"
+      },
+      "c": [
+       {
+        "tag": "g-tile",
+        "cls": "heading__vertical--top heading__horizontal--center copy__vertical--top",
+        "r": [
+         331,
+         1213,
+         353,
+         554
+        ],
+        "css": {
+         "display": "flex",
+         "position": "relative",
+         "top": "0px",
+         "right": "0px",
+         "bottom": "0px",
+         "left": "0px",
+         "box-sizing": "border-box"
+        },
+        "c": [
+         {
+          "tag": "figure",
+          "cls": "g__tile__background",
+          "r": [
+           331,
+           1213,
+           353,
+           554
+          ],
+          "css": {
+           "position": "absolute",
+           "top": "0px",
+           "right": "0px",
+           "bottom": "0px",
+           "left": "0px",
+           "box-sizing": "border-box",
+           "margin": "0px"
+          },
+          "c": [
+           {
+            "tag": "picture",
+            "r": [
+             331,
+             1752,
+             353,
+             19
+            ],
+            "css": {
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "source",
+              "r": [
+               331,
+               1752,
+               0,
+               19
+              ],
+              "css": {
+               "box-sizing": "border-box"
+              },
+              "rep": [
+               {},
+               {}
+              ]
+             },
+             {
+              "tag": "img",
+              "cls": "g__tile__background__image",
+              "r": [
+               331,
+               1213,
+               353,
+               554
+              ],
+              "a": {
+               "src": "https://res.garmin.com/subcategory/90640/90640-AD.jpg",
+               "alt": "a smart band",
+               "natural": [
+                1200,
+                1200
+               ],
+               "sources": [
+                {
+                 "srcset": "",
+                 "media": "(max-width: 640px)"
+                },
+                {
+                 "srcset": "",
+                 "media": "(max-width: 990px)"
+                },
+                {
+                 "srcset": "https://res.garmin.com/subcategory/90640/90640-AD.jpg",
+                 "media": "(min-width: 990px)"
+                }
+               ]
+              },
+              "css": {
+               "box-sizing": "border-box",
+               "width": "353.39px",
+               "height": "554px",
+               "object-fit": "cover"
+              }
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "tag": "div",
+          "cls": "g__tile__content",
+          "r": [
+           331,
+           1213,
+           353,
+           554
+          ],
+          "css": {
+           "display": "flex",
+           "z-index": "1",
+           "box-sizing": "border-box",
+           "flex-direction": "column",
+           "justify-content": "flex-start"
+          },
+          "c": [
+           {
+            "tag": "div",
+            "cls": "g__tile__content-text",
+            "r": [
+             331,
+             1213,
+             353,
+             158
+            ],
+            "css": {
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "g-heading",
+              "cls": "g__heading g__heading--Center g__heading--dark",
+              "r": [
+               331,
+               1229,
+               353,
+               30
+              ],
+              "css": {
+               "box-sizing": "border-box",
+               "margin-bottom": "8px",
+               "color": "rgb(255, 255, 255)"
+              },
+              "c": [
+               {
+                "tag": "h3",
+                "r": [
+                 347,
+                 1229,
+                 321,
+                 30
+                ],
+                "t": "TRACK ALL DAY. LOOK LATER.",
+                "css": {
+                 "box-sizing": "border-box",
+                 "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+                 "font-size": "24px",
+                 "line-height": "30px",
+                 "letter-spacing": "0.8px",
+                 "margin": "16px"
+                }
+               }
+              ]
+             },
+             {
+              "tag": "g-copy",
+              "cls": "g__copy g__copy--Center g__copy--dark",
+              "r": [
+               347,
+               1275,
+               321,
+               72
+              ],
+              "a": {
+               "type": "primary"
+              },
+              "css": {
+               "display": "block",
+               "box-sizing": "border-box",
+               "margin-right": "16px",
+               "margin-bottom": "24px",
+               "margin-left": "16px",
+               "color": "rgb(255, 255, 255)"
+              },
+              "c": [
+               {
+                "tag": "span",
+                "r": [
+                 347,
+                 1275,
+                 321,
+                 72
+                ],
+                "css": {
+                 "box-sizing": "border-box"
+                },
+                "c": [
+                 {
+                  "tag": "p",
+                  "r": [
+                   347,
+                   1275,
+                   321,
+                   72
+                  ],
+                  "t": "Get advanced health and fitness features with the sleek and discreet CIRQA™ Smart Band",
+                  "css": {
+                   "box-sizing": "border-box",
+                   "margin-top": "0px",
+                   "margin-bottom": "0px"
+                  }
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "tag": "div",
+    "sel": "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(6)",
+    "hidden": true
+   },
+   {
+    "tag": "div",
+    "cls": "product-card-container",
+    "r": [
+     700,
+     1213,
+     353,
+     554
+    ],
+    "css": {
+     "display": "flex",
+     "position": "relative",
+     "top": "0px",
+     "right": "0px",
+     "bottom": "0px",
+     "left": "0px",
+     "box-sizing": "border-box",
+     "margin-top": "16px",
+     "margin-left": "16px"
+    },
+    "c": [
+     {
+      "tag": "a",
+      "cls": "product-card",
+      "r": [
+       700,
+       1213,
+       353,
+       554
+      ],
+      "a": {
+       "href": "https://www.garmin.com/en-US/p/1462801/"
+      },
+      "css": {
+       "display": "block",
+       "box-sizing": "border-box",
+       "text-align": "left",
+       "color": "rgb(26, 26, 26)",
+       "box-shadow": "rgb(229, 229, 229) 0px 2px 3px 1px",
+       "cursor": "pointer",
+       "transition-property": "color",
+       "transition-duration": "0.2s"
+      },
+      "c": [
+       {
+        "tag": "figure",
+        "cls": "product-card__wrapper",
+        "r": [
+         700,
+         1213,
+         353,
+         554
+        ],
+        "css": {
+         "display": "flex",
+         "box-sizing": "border-box",
+         "flex-direction": "column",
+         "align-items": "center",
+         "margin": "0px"
+        },
+        "c": [
+         {
+          "tag": "div",
+          "cls": "product-card__image-container",
+          "r": [
+           700,
+           1213,
+           353,
+           300
+          ],
+          "css": {
+           "box-sizing": "border-box",
+           "flex-shrink": "0"
+          },
+          "c": [
+           {
+            "tag": "img",
+            "cls": "product-card__image image-placeholder",
+            "r": [
+             700,
+             1213,
+             353,
+             300
+            ],
+            "a": {
+             "src": "https://res.garmin.com/en/products/010-02969-01/v/cf-lg.jpg",
+             "alt": "Forerunner® 970",
+             "natural": [
+              600,
+              600
+             ]
+            },
+            "css": {
+             "box-sizing": "border-box",
+             "width": "353.39px",
+             "height": "300px",
+             "mix-blend-mode": "multiply",
+             "object-fit": "contain"
+            }
+           }
+          ]
+         },
+         {
+          "tag": "figcaption",
+          "cls": "product-card__description",
+          "r": [
+           700,
+           1513,
+           353,
+           254
+          ],
+          "css": {
+           "display": "flex",
+           "box-sizing": "border-box",
+           "padding-right": "16px",
+           "padding-bottom": "24px",
+           "padding-left": "16px",
+           "flex-direction": "column"
+          },
+          "c": [
+           {
+            "tag": "div",
+            "cls": "badge-wrapper",
+            "r": [
+             716,
+             1229,
+             55,
+             51
+            ],
+            "a": {
+             "href": "https://www.garmin.com/en-US/p/1462801/",
+             "aria-label": "Forerunner® 970"
+            },
+            "css": {
+             "position": "absolute",
+             "top": "16px",
+             "right": "282.64px",
+             "bottom": "487px",
+             "left": "16px",
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "div",
+              "cls": "g__badge g__badge--candy-blue",
+              "r": [
+               716,
+               1229,
+               55,
+               35
+              ],
+              "t": "Sale",
+              "css": {
+               "box-sizing": "border-box",
+               "margin-bottom": "16px",
+               "font-size": "14px",
+               "line-height": "21px",
+               "background-color": "rgb(109, 207, 246)",
+               "padding": "7px 14px",
+               "border-radius": "22.75px"
+              }
+             }
+            ]
+           },
+           {
+            "tag": "g-color-swatches",
+            "cls": "g__color-swatches hydrated",
+            "r": [
+             716,
+             1529,
+             321,
+             16
+            ],
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box",
+             "margin-top": "16px"
+            },
+            "c": [
+             {
+              "tag": "div",
+              "cls": "g__color-swatches__wrapper",
+              "r": [
+               716,
+               1529,
+               321,
+               16
+              ],
+              "css": {
+               "display": "flex",
+               "box-sizing": "border-box",
+               "align-items": "center"
+              },
+              "c": [
+               {
+                "tag": "g-color-swatch",
+                "cls": "g__color-swatch hydrated",
+                "r": [
+                 716,
+                 1529,
+                 16,
+                 16
+                ],
+                "css": {
+                 "display": "block",
+                 "box-sizing": "border-box",
+                 "margin-right": "8px"
+                },
+                "c": [
+                 {
+                  "tag": "div",
+                  "cls": "g__color-swatch__wrapper g__color-swatch__wrapper--small",
+                  "r": [
+                   716,
+                   1529,
+                   16,
+                   16
+                  ],
+                  "a": {
+                   "title": "Black/Translucent Whitestone"
+                  },
+                  "css": {
+                   "display": "flex",
+                   "position": "relative",
+                   "top": "0px",
+                   "right": "0px",
+                   "bottom": "0px",
+                   "left": "0px",
+                   "box-sizing": "border-box",
+                   "align-items": "center"
+                  },
+                  "after": {
+                   "display": "block",
+                   "position": "absolute",
+                   "top": "0px",
+                   "right": "0px",
+                   "bottom": "0px",
+                   "left": "0px",
+                   "box-sizing": "border-box",
+                   "box-shadow": "rgba(0, 0, 0, 0.25) 0px 3.37px 3.37px 0px inset",
+                   "content": "\"\"",
+                   "border-radius": "50%"
+                  },
+                  "c": [
+                   {
+                    "tag": "img",
+                    "cls": "g__color-swatch__image",
+                    "r": [
+                     716,
+                     1529,
+                     16,
+                     16
+                    ],
+                    "a": {
+                     "src": "https://res.garmin.com/en/products/010-02969-00/v/col_swatch.jpg",
+                     "alt": "Black/Translucent Whitestone",
+                     "natural": [
+                      64,
+                      64
+                     ]
+                    },
+                    "css": {
+                     "display": "block",
+                     "box-sizing": "border-box",
+                     "width": "16px",
+                     "height": "16px",
+                     "object-fit": "cover",
+                     "border-radius": "50%"
+                    }
+                   }
+                  ]
+                 }
+                ],
+                "rep": [
+                 {
+                  "src": "https://res.garmin.com/en/products/010-02969-01/v/col_swatch.jpg"
+                 },
+                 {
+                  "src": "https://res.garmin.com/en/products/010-02969-02/v/col_swatch.jpg"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "tag": "g-heading",
+            "cls": "g__heading g__heading--left g__heading--light",
+            "r": [
+             716,
+             1545,
+             321,
+             62
+            ],
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "h3",
+              "r": [
+               716,
+               1561,
+               321,
+               30
+              ],
+              "t": "Forerunner® 970",
+              "css": {
+               "box-sizing": "border-box",
+               "margin-top": "16px",
+               "margin-bottom": "16px",
+               "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+               "font-size": "24px",
+               "line-height": "30px",
+               "letter-spacing": "0.8px"
+              }
+             }
+            ]
+           },
+           {
+            "tag": "g-copy",
+            "cls": "product-card__description__copy g__copy g__copy--left",
+            "r": [
+             716,
+             1607,
+             321,
+             112
+            ],
+            "a": {
+             "type": "primary"
+            },
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "span",
+              "r": [
+               716,
+               1607,
+               321,
+               96
+              ],
+              "css": {
+               "box-sizing": "border-box"
+              },
+              "c": [
+               {
+                "tag": "p",
+                "r": [
+                 716,
+                 1607,
+                 321,
+                 96
+                ],
+                "t": "Premium GPS running and triathlon smartwatch with an AMOLED display, LED flashlight and advanced training and recovery features.",
+                "css": {
+                 "box-sizing": "border-box",
+                 "margin-top": "0px"
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "tag": "div",
+            "cls": "pricing-wrapper",
+            "r": [
+             716,
+             1719,
+             321,
+             24
+            ],
+            "css": {
+             "display": "flex",
+             "box-sizing": "border-box",
+             "justify-content": "flex-start",
+             "align-items": "flex-end"
+            },
+            "c": [
+             {
+              "tag": "g-price",
+              "cls": "g__price hydrated",
+              "r": [
+               716,
+               1719,
+               190,
+               24
+              ],
+              "css": {
+               "display": "block",
+               "box-sizing": "border-box",
+               "flex-wrap": "wrap",
+               "align-self": "flex-end",
+               "font-weight": "700",
+               "white-space": "pre-wrap"
+              },
+              "c": [
+               {
+                "tag": "div",
+                "cls": "g__price__original-price g__price--strike",
+                "r": [
+                 716,
+                 1719,
+                 92,
+                 24
+                ],
+                "css": {
+                 "display": "inline-block",
+                 "box-sizing": "border-box",
+                 "margin-right": "3px",
+                 "white-space": "nowrap",
+                 "text-decoration-line": "line-through"
+                },
+                "c": [
+                 {
+                  "tag": "span",
+                  "cls": "original-price-value",
+                  "r": [
+                   716,
+                   1721,
+                   92,
+                   19
+                  ],
+                  "t": "$749.99 USD",
+                  "css": {
+                   "box-sizing": "border-box"
+                  }
+                 }
+                ]
+               },
+               {
+                "tag": "div",
+                "cls": "g__price__discounted-price",
+                "r": [
+                 812,
+                 1719,
+                 94,
+                 24
+                ],
+                "t": "$649.99 USD",
+                "css": {
+                 "display": "inline-block",
+                 "box-sizing": "border-box",
+                 "align-items": "baseline",
+                 "white-space": "nowrap"
+                }
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "rep": [
+     {
+      "t": "Sale Venu® X1 Sleek, lightweight GPS smartwatch with a bright 2-inch AMOLED display and advanced health and fitness features. $699.99 USD$499.99 USD",
+      "src": "https://res.garmin.com/en/products/010-02980-00/v/cf-lg.jpg"
+     }
+    ]
+   },
+   {
+    "tag": "div",
+    "cls": "sticky-custom-card-container",
+    "r": [
+     331,
+     1783,
+     353,
+     530
+    ],
+    "css": {
+     "display": "flex",
+     "position": "relative",
+     "top": "0px",
+     "right": "0px",
+     "bottom": "0px",
+     "left": "0px",
+     "box-sizing": "border-box",
+     "margin-top": "16px",
+     "margin-left": "16px"
+    },
+    "c": [
+     {
+      "tag": "a",
+      "cls": "tile-banner-card",
+      "r": [
+       331,
+       1783,
+       353,
+       530
+      ],
+      "a": {
+       "href": "https://www.garmin.com/en-US/which-watch/"
+      },
+      "css": {
+       "display": "block",
+       "box-sizing": "border-box",
+       "min-height": "500px",
+       "cursor": "pointer",
+       "transition-property": "color",
+       "transition-duration": "0.2s"
+      },
+      "c": [
+       {
+        "tag": "g-tile",
+        "cls": "heading__vertical--center heading__horizontal--center copy__vertical--center",
+        "r": [
+         331,
+         1783,
+         353,
+         530
+        ],
+        "css": {
+         "display": "flex",
+         "position": "relative",
+         "top": "0px",
+         "right": "0px",
+         "bottom": "0px",
+         "left": "0px",
+         "box-sizing": "border-box"
+        },
+        "c": [
+         {
+          "tag": "figure",
+          "cls": "g__tile__background",
+          "r": [
+           331,
+           1783,
+           353,
+           530
+          ],
+          "css": {
+           "position": "absolute",
+           "top": "0px",
+           "right": "0px",
+           "bottom": "0px",
+           "left": "0px",
+           "box-sizing": "border-box",
+           "margin": "0px"
+          },
+          "c": [
+           {
+            "tag": "picture",
+            "r": [
+             331,
+             2298,
+             353,
+             19
+            ],
+            "css": {
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "source",
+              "r": [
+               331,
+               2298,
+               0,
+               19
+              ],
+              "css": {
+               "box-sizing": "border-box"
+              },
+              "rep": [
+               {},
+               {}
+              ]
+             },
+             {
+              "tag": "img",
+              "cls": "g__tile__background__image",
+              "r": [
+               331,
+               1783,
+               353,
+               530
+              ],
+              "a": {
+               "src": "https://res.garmin.com/subcategory/MCJT-53671/53671-AD-WWW.jpg",
+               "alt": "watches",
+               "natural": [
+                1200,
+                1200
+               ],
+               "sources": [
+                {
+                 "srcset": "",
+                 "media": "(max-width: 640px)"
+                },
+                {
+                 "srcset": "",
+                 "media": "(max-width: 990px)"
+                },
+                {
+                 "srcset": "https://res.garmin.com/subcategory/MCJT-53671/53671-AD-WWW.jpg",
+                 "media": "(min-width: 990px)"
+                }
+               ]
+              },
+              "css": {
+               "box-sizing": "border-box",
+               "width": "353.39px",
+               "height": "530px",
+               "object-fit": "cover"
+              }
+             }
+            ]
+           }
+          ]
+         },
+         {
+          "tag": "div",
+          "cls": "g__tile__content",
+          "r": [
+           331,
+           1783,
+           353,
+           530
+          ],
+          "css": {
+           "display": "flex",
+           "z-index": "1",
+           "box-sizing": "border-box",
+           "flex-direction": "column",
+           "justify-content": "center"
+          },
+          "c": [
+           {
+            "tag": "div",
+            "cls": "g__tile__content-text",
+            "r": [
+             331,
+             1998,
+             353,
+             100
+            ],
+            "css": {
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "g-heading",
+              "cls": "g__heading g__heading--Center g__heading--light",
+              "r": [
+               331,
+               2014,
+               353,
+               60
+              ],
+              "css": {
+               "box-sizing": "border-box",
+               "margin-bottom": "8px"
+              },
+              "c": [
+               {
+                "tag": "h3",
+                "r": [
+                 347,
+                 2014,
+                 321,
+                 60
+                ],
+                "t": "TOO MANY OPTIONS? WE'LL HELP YOU CHOOSE!",
+                "css": {
+                 "box-sizing": "border-box",
+                 "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+                 "font-size": "24px",
+                 "line-height": "30px",
+                 "letter-spacing": "0.8px",
+                 "margin": "16px"
+                }
+               }
+              ]
+             },
+             {
+              "tag": "g-copy",
+              "cls": "g__copy g__copy--Center g__copy--light",
+              "r": [
+               347,
+               2090,
+               321,
+               0
+              ],
+              "a": {
+               "type": "primary"
+              },
+              "css": {
+               "display": "block",
+               "box-sizing": "border-box",
+               "margin-right": "16px",
+               "margin-bottom": "24px",
+               "margin-left": "16px"
+              },
+              "c": [
+               {
+                "tag": "span",
+                "r": [
+                 508,
+                 2090,
+                 0,
+                 0
+                ],
+                "css": {
+                 "box-sizing": "border-box"
+                }
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "tag": "div",
+    "sel": "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(10)",
+    "hidden": true
+   },
+   {
+    "tag": "div",
+    "cls": "product-card-container",
+    "r": [
+     700,
+     1783,
+     353,
+     530
+    ],
+    "css": {
+     "display": "flex",
+     "position": "relative",
+     "top": "0px",
+     "right": "0px",
+     "bottom": "0px",
+     "left": "0px",
+     "box-sizing": "border-box",
+     "margin-top": "16px",
+     "margin-left": "16px"
+    },
+    "c": [
+     {
+      "tag": "a",
+      "cls": "product-card",
+      "r": [
+       700,
+       1783,
+       353,
+       530
+      ],
+      "a": {
+       "href": "https://www.garmin.com/en-US/p/1463821/"
+      },
+      "css": {
+       "display": "block",
+       "box-sizing": "border-box",
+       "text-align": "left",
+       "color": "rgb(26, 26, 26)",
+       "box-shadow": "rgb(229, 229, 229) 0px 2px 3px 1px",
+       "cursor": "pointer",
+       "transition-property": "color",
+       "transition-duration": "0.2s"
+      },
+      "c": [
+       {
+        "tag": "figure",
+        "cls": "product-card__wrapper",
+        "r": [
+         700,
+         1783,
+         353,
+         530
+        ],
+        "css": {
+         "display": "flex",
+         "box-sizing": "border-box",
+         "flex-direction": "column",
+         "align-items": "center",
+         "margin": "0px"
+        },
+        "c": [
+         {
+          "tag": "div",
+          "cls": "product-card__image-container",
+          "r": [
+           700,
+           1783,
+           353,
+           300
+          ],
+          "css": {
+           "box-sizing": "border-box",
+           "flex-shrink": "0"
+          },
+          "c": [
+           {
+            "tag": "img",
+            "cls": "product-card__image image-placeholder",
+            "r": [
+             700,
+             1783,
+             353,
+             300
+            ],
+            "a": {
+             "src": "https://res.garmin.com/en/products/010-02970-02/g/cf-lg.jpg",
+             "alt": "Forerunner® 570",
+             "natural": [
+              600,
+              600
+             ]
+            },
+            "css": {
+             "box-sizing": "border-box",
+             "width": "353.39px",
+             "height": "300px",
+             "mix-blend-mode": "multiply",
+             "object-fit": "contain"
+            }
+           }
+          ]
+         },
+         {
+          "tag": "figcaption",
+          "cls": "product-card__description",
+          "r": [
+           700,
+           2083,
+           353,
+           230
+          ],
+          "css": {
+           "display": "flex",
+           "box-sizing": "border-box",
+           "padding-right": "16px",
+           "padding-bottom": "24px",
+           "padding-left": "16px",
+           "flex-direction": "column"
+          },
+          "c": [
+           {
+            "tag": "div",
+            "cls": "badge-wrapper",
+            "r": [
+             716,
+             1799,
+             55,
+             51
+            ],
+            "a": {
+             "href": "https://www.garmin.com/en-US/p/1463821/",
+             "aria-label": "Forerunner® 570"
+            },
+            "css": {
+             "position": "absolute",
+             "top": "16px",
+             "right": "282.64px",
+             "bottom": "463px",
+             "left": "16px",
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "div",
+              "cls": "g__badge g__badge--candy-blue",
+              "r": [
+               716,
+               1799,
+               55,
+               35
+              ],
+              "t": "Sale",
+              "css": {
+               "box-sizing": "border-box",
+               "margin-bottom": "16px",
+               "font-size": "14px",
+               "line-height": "21px",
+               "background-color": "rgb(109, 207, 246)",
+               "padding": "7px 14px",
+               "border-radius": "22.75px"
+              }
+             }
+            ]
+           },
+           {
+            "tag": "g-color-swatches",
+            "cls": "g__color-swatches hydrated",
+            "r": [
+             716,
+             2099,
+             321,
+             16
+            ],
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box",
+             "margin-top": "16px"
+            },
+            "c": [
+             {
+              "tag": "div",
+              "cls": "g__color-swatches__wrapper",
+              "r": [
+               716,
+               2099,
+               321,
+               16
+              ],
+              "css": {
+               "display": "flex",
+               "box-sizing": "border-box",
+               "align-items": "center"
+              },
+              "c": [
+               {
+                "tag": "g-color-swatch",
+                "cls": "g__color-swatch hydrated",
+                "r": [
+                 716,
+                 2099,
+                 16,
+                 16
+                ],
+                "css": {
+                 "display": "block",
+                 "box-sizing": "border-box",
+                 "margin-right": "8px"
+                },
+                "c": [
+                 {
+                  "tag": "div",
+                  "cls": "g__color-swatch__wrapper g__color-swatch__wrapper--small",
+                  "r": [
+                   716,
+                   2099,
+                   16,
+                   16
+                  ],
+                  "a": {
+                   "title": "Translucent Black"
+                  },
+                  "css": {
+                   "display": "flex",
+                   "position": "relative",
+                   "top": "0px",
+                   "right": "0px",
+                   "bottom": "0px",
+                   "left": "0px",
+                   "box-sizing": "border-box",
+                   "align-items": "center"
+                  },
+                  "after": {
+                   "display": "block",
+                   "position": "absolute",
+                   "top": "0px",
+                   "right": "0px",
+                   "bottom": "0px",
+                   "left": "0px",
+                   "box-sizing": "border-box",
+                   "box-shadow": "rgba(0, 0, 0, 0.25) 0px 3.37px 3.37px 0px inset",
+                   "content": "\"\"",
+                   "border-radius": "50%"
+                  },
+                  "c": [
+                   {
+                    "tag": "img",
+                    "cls": "g__color-swatch__image",
+                    "r": [
+                     716,
+                     2099,
+                     16,
+                     16
+                    ],
+                    "a": {
+                     "src": "https://res.garmin.com/en/products/010-02970-00/v/col_swatch.jpg",
+                     "alt": "Translucent Black",
+                     "natural": [
+                      64,
+                      64
+                     ]
+                    },
+                    "css": {
+                     "display": "block",
+                     "box-sizing": "border-box",
+                     "width": "16px",
+                     "height": "16px",
+                     "object-fit": "cover",
+                     "border-radius": "50%"
+                    }
+                   }
+                  ]
+                 }
+                ],
+                "rep": [
+                 {
+                  "src": "https://res.garmin.com/en/products/010-02970-01/v/col_swatch.jpg"
+                 },
+                 {
+                  "src": "https://res.garmin.com/en/products/010-02970-02/v/col_swatch.jpg"
+                 },
+                 {
+                  "src": "https://res.garmin.com/en/products/010-02971-01/v/col_swatch.jpg"
+                 },
+                 {
+                  "src": "https://res.garmin.com/en/products/010-02971-02/v/col_swatch.jpg"
+                 }
+                ]
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "tag": "g-heading",
+            "cls": "g__heading g__heading--left g__heading--light",
+            "r": [
+             716,
+             2115,
+             321,
+             62
+            ],
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "h3",
+              "r": [
+               716,
+               2131,
+               321,
+               30
+              ],
+              "t": "Forerunner® 570",
+              "css": {
+               "box-sizing": "border-box",
+               "margin-top": "16px",
+               "margin-bottom": "16px",
+               "font-family": "Superscripts-Oswald, Oswald, \"Roboto Condensed\", Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+               "font-size": "24px",
+               "line-height": "30px",
+               "letter-spacing": "0.8px"
+              }
+             }
+            ]
+           },
+           {
+            "tag": "g-copy",
+            "cls": "product-card__description__copy g__copy g__copy--left",
+            "r": [
+             716,
+             2177,
+             321,
+             88
+            ],
+            "a": {
+             "type": "primary"
+            },
+            "css": {
+             "display": "block",
+             "box-sizing": "border-box"
+            },
+            "c": [
+             {
+              "tag": "span",
+              "r": [
+               716,
+               2177,
+               321,
+               72
+              ],
+              "css": {
+               "box-sizing": "border-box"
+              },
+              "c": [
+               {
+                "tag": "p",
+                "r": [
+                 716,
+                 2177,
+                 321,
+                 72
+                ],
+                "t": "Advanced GPS running and triathlon smartwatches with AMOLED displays plus training and recovery features.",
+                "css": {
+                 "box-sizing": "border-box",
+                 "margin-top": "0px"
+                }
+               }
+              ]
+             }
+            ]
+           },
+           {
+            "tag": "div",
+            "cls": "pricing-wrapper",
+            "r": [
+             716,
+             2265,
+             321,
+             24
+            ],
+            "css": {
+             "display": "flex",
+             "box-sizing": "border-box",
+             "justify-content": "flex-start",
+             "align-items": "flex-end"
+            },
+            "c": [
+             {
+              "tag": "g-price",
+              "cls": "g__price hydrated",
+              "r": [
+               716,
+               2265,
+               190,
+               24
+              ],
+              "css": {
+               "display": "block",
+               "box-sizing": "border-box",
+               "flex-wrap": "wrap",
+               "align-self": "flex-end",
+               "font-weight": "700",
+               "white-space": "pre-wrap"
+              },
+              "c": [
+               {
+                "tag": "div",
+                "cls": "g__price__original-price g__price--strike",
+                "r": [
+                 716,
+                 2265,
+                 92,
+                 24
+                ],
+                "css": {
+                 "display": "inline-block",
+                 "box-sizing": "border-box",
+                 "margin-right": "3px",
+                 "white-space": "nowrap",
+                 "text-decoration-line": "line-through"
+                },
+                "c": [
+                 {
+                  "tag": "span",
+                  "cls": "original-price-value",
+                  "r": [
+                   716,
+                   2267,
+                   92,
+                   19
+                  ],
+                  "t": "$549.99 USD",
+                  "css": {
+                   "box-sizing": "border-box"
+                  }
+                 }
+                ]
+               },
+               {
+                "tag": "div",
+                "cls": "g__price__discounted-price",
+                "r": [
+                 812,
+                 2265,
+                 94,
+                 24
+                ],
+                "t": "$449.99 USD",
+                "css": {
+                 "display": "inline-block",
+                 "box-sizing": "border-box",
+                 "align-items": "baseline",
+                 "white-space": "nowrap"
+                }
+               }
+              ]
+             }
+            ]
+           }
+          ]
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "rep": [
+     {
+      "t": "Forerunner® 70/170 GPS running smartwatches with essential training and recovery features. $249.99 USD and up",
+      "src": "https://res.garmin.com/en/products/010-04307-00/v/cf-lg.jpg"
+     },
+     {
+      "t": "Sale Instinct® 3 Rugged GPS smartwatches with dedicated tactical features and solar charging or AMOLED displays. $249.99 USD$199.99 USD and up",
+      "src": "https://res.garmin.com/en/products/010-02936-00/v/cf-lg.jpg"
+     },
+     {
+      "t": "Sale vívoactive® 6 Health and fitness GPS smartwatch with a bright, colorful display and essential fitness, wellness and smart features. $299.99 USD$249.99 USD",
+      "src": "https://res.garmin.com/en/products/010-02985-01/v/cf-lg.jpg"
+     },
+     {
+      "t": "Sale Instinct® Crossover Hybrid outdoor GPS smartwatches with options for solar charging or AMOLED displays. $399.99 USD and up",
+      "src": "https://res.garmin.com/en/products/010-03398-01/v/cf-lg.jpg"
+     },
+     {
+      "t": "New Approach® S72 Premium GPS golf smartwatch with a built-in LED flashlight, AMOLED display and advanced wellness and on-course features. $799.99 USD",
+      "src": "https://res.garmin.com/en/products/010-04147-00/v/cf-lg.jpg"
+     },
+     {
+      "t": "New Enduro™ 4 Ultraperformance GPS smartwatch with extreme battery life and advanced training and performance tools. $899.99 USD",
+      "src": "https://res.garmin.com/en/products/010-04799-00/g/cf-lg.jpg"
+     },
+     {
+      "t": "Sale tactix® 8 Premium tactical GPS smartwatches with solar charging or AMOLED displays. $1,299.99 USD$1,049.99 USD and up",
+      "src": "https://res.garmin.com/en/products/010-03406-00/v/cf-lg.jpg"
+     },
+     {
+      "t": "New MARQ® (Gen 3) Modern tool watches with borderless displays, premium materials and tailored experiences. $2,500.00 USD and up",
+      "src": "https://res.garmin.com/en/products/010-04549-00/v/cf-lg.jpg"
+     },
+     {
+      "t": "Sale Lily® 2 Small fashion smartwatch with essential wellness and smart features plus optional GPS. $249.99 USD$199.99 USD and up",
+      "src": "https://res.garmin.com/en/products/010-02891-00/v/cf-lg.jpg"
+     },
+     {
+      "t": "Sale Bounce™ 2 Kids smartwatch with calling, messaging and location tracking features. $299.99 USD$249.99 USD",
+      "src": "https://res.garmin.com/en/products/010-03399-00/v/cf-lg.jpg"
+     }
+    ]
+   }
+  ]
+ },
+ "svgs": [],
+ "animations": []
+}

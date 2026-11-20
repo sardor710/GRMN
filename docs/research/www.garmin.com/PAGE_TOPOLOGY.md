@@ -13,3 +13,12 @@ s7 main>authorable-email-signup    | Sign up for news        | form             
 s8 body>footer                     | black footer            | static (accordion <768?) | -          | 501 @1440
 
 Overlays: mega menu (abs top 64, z 999, inside header), search panel, account dropdown (abs top 64, right 24).
+
+## Other pages (measured 2026-11-20, task 5a.1)
+PLP /en-US/c/wearables-smartwatches/ (plp/): header 100 | card-rail title band 451 (h1 left 390px + slider) |
+filter rail 315 sticky 100vh + grid 1125 (sort bar 58, 3-col cards, pagination) | email signup 245 | footer 501.
+PDP /en-US/p/1462801/ (pdp/): header | breadcrumb 18px below header | gallery 711 + info 681 (539 tall) |
+tab bar 81 (#E5E5E5) | tab content (overview 14.7k) | quick links + compatible cards | footer 505.
+Cart buy.garmin.com/en-US/US/view-cart.ep (cart/): header | empty state 180 | footer 501.
+Mega menu: computed-megamenu-1440.json. Specs: components/{ProductBuyBox,ProductTabs,ProductCard,SideFilterMenu,
+Price,Buttons,Badges,Forms,MegaMenu,CartEmpty,Footer}.spec.md; tokens TOKENS.md; wording COPY_GUIDE.md.

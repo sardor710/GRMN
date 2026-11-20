@@ -1,0 +1,123 @@
+{
+ "url": "https://www.garmin.com/en-US/p/1462801/",
+ "vw": 1440,
+ "tree": {
+  "tag": "nav",
+  "cls": "app__subnav",
+  "r": [
+   0,
+   676,
+   1440,
+   81
+  ],
+  "a": {
+   "aria-label": "tabs nav",
+   "role": "navigation"
+  },
+  "css": {
+   "position": "sticky",
+   "top": "0px",
+   "z-index": "200",
+   "box-sizing": "border-box",
+   "font-size": "14px",
+   "line-height": "21px",
+   "background-color": "rgb(229, 229, 229)",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "color": "rgb(0, 0, 0)",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "ul",
+    "cls": "app__subnav__list",
+    "r": [
+     0,
+     676,
+     1440,
+     81
+    ],
+    "css": {
+     "box-sizing": "border-box",
+     "margin-top": "0px",
+     "margin-bottom": "0px",
+     "padding-right": "56px",
+     "padding-left": "56px",
+     "text-align": "center"
+    },
+    "c": [
+     {
+      "tag": "li",
+      "cls": "app__subnav__item js__tabs__list__item",
+      "r": [
+       218,
+       676,
+       131,
+       81
+      ],
+      "css": {
+       "display": "inline-block",
+       "box-sizing": "border-box",
+       "padding-right": "16px",
+       "padding-left": "16px",
+       "text-align": "left",
+       "list-style-type": "none"
+      },
+      "c": [
+       {
+        "tag": "a",
+        "cls": "app__subnav__link js__app__tabs__list__tab app__subnav__link--active",
+        "r": [
+         234,
+         676,
+         99,
+         81
+        ],
+        "t": "Overview",
+        "a": {
+         "href": "#overview",
+         "title": "Overview"
+        },
+        "css": {
+         "display": "block",
+         "box-sizing": "border-box",
+         "font-weight": "600",
+         "letter-spacing": "0.28px",
+         "text-transform": "uppercase",
+         "border-bottom-width": "4px",
+         "border-bottom-style": "solid",
+         "cursor": "pointer",
+         "transition-property": "color",
+         "transition-duration": "0.2s",
+         "padding": "28px 14px"
+        }
+       }
+      ],
+      "rep": [
+       {
+        "t": "SPECS"
+       },
+       {
+        "t": "IN THE BOX"
+       },
+       {
+        "t": "VIDEO GALLERY"
+       },
+       {
+        "t": "MAPS"
+       },
+       {
+        "t": "ACCESSORIES"
+       },
+       {
+        "t": "COMPATIBLE DEVICES"
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "svgs": [],
+ "animations": []
+}

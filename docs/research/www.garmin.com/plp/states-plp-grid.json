@@ -1,0 +1,219 @@
+[
+ {
+  "sel": "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a",
+  "label": "HOLIDAY SALE Save big on great holiday gifts SHOP",
+  "transition": "color 0.2s",
+  "hover": {
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile>figure": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile>div": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   }
+  },
+  "focus-visible": {
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  },
+  "active": {
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile>figure": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile>div": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   }
+  }
+ },
+ {
+  "sel": "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile>div>div>g-copy>span>p>g-button>button",
+  "label": "SHOP",
+  "transition": "background 0.2s, border 0.2s, color 0.2s",
+  "hover": {
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile>div>div>g-copy>span>p>g-button>button": {
+    "color": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+    "text-decoration-color": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+    "background-color": "rgba(0, 0, 0, 0) → rgb(255, 255, 255)",
+    "border-top-color": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+    "border-right-color": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+    "border-bottom-color": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+    "border-left-color": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+    "outline-color": "rgb(255, 255, 255) → rgb(0, 0, 0)"
+   }
+  },
+  "focus-visible": {
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile>div>div>g-copy>span>p>g-button>button": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(255, 255, 255) → rgb(16, 16, 16)"
+   }
+  },
+  "jsHover": {
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile>figure": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile>figure>picture": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile>figure>picture>source:nth-of-type(1)": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile>figure>picture>source:nth-of-type(2)": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile>figure>picture>source:nth-of-type(3)": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile>figure>picture>img": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile>div": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>a>g-tile>div>div": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   }
+  }
+ },
+ {
+  "sel": "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(2)>a",
+  "label": "A",
+  "transition": "color 0.2s",
+  "focus-visible": {
+   "#jsProductContainerScroll>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(2)>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(26, 26, 26) → rgb(16, 16, 16)"
+   }
+  }
+ }
+]

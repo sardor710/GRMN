@@ -1,0 +1,50 @@
+div.app__product__filters__group [752,370,557,68] " " 18px/27px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 16px 0px | gap:normal
+  div.app__product__filters__label [752,370,138,29] 18px/27px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+    div.app__tooltip [752,370,138,29] 14px/21px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+      g-tooltip.g__tooltip.hydrated [752,370,138,29] " " 14px/21px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+        div.g__tooltip__summary.g__tooltip__summary__active [752,370,138,21] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px 0px 8px | gap:normal
+          span.g__tooltip__title [752,370,116,21] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+            span. [752,372,116,17] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+              span. [752,372,62,17] "Case Size" 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+              span. [814,372,55,17] "- 43 mm" 14px/21px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+          span.g__tooltip__icon [872,374,18,12] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | -1px 0px 0px 4px | gap:normal
+            svg. [872,374,18,12] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+              path. [875,374,12,12] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+  div.js__filters-wrapper [752,399,557,39] " " 18px/27px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | gap:12px
+    a.app__product__filters__buttons--selected.js__selected [752,399,83,39] "43 mm" 14px/21px | 400 | none | rgb(255, 255, 255) | rgb(0, 0, 0) | 2px solid rgb(0, 0, 0) | 0px | 7px 17.5px | 0px | 
+    a.app__product__filters__buttons.js__filter-option [847,399,83,39] "47 mm" 14px/21px | 400 | none | rgb(0, 0, 0) | rgb(255, 255, 255) | 2px solid rgb(204, 204, 204) | 0px | 7px 17.5px | 0px | 
+    a.app__product__filters__buttons.js__filter-option [941,399,83,39] "51 mm" 14px/21px | 400 | none | rgb(0, 0, 0) | rgb(255, 255, 255) | 2px solid rgb(204, 204, 204) | 0px | 7px 17.5px | 0px | 
+div.app__product__filters__group [752,454,557,68] " " 18px/27px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 16px 0px | gap:normal
+  div.app__product__filters__label [752,454,123,29] 18px/27px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+    div.app__tooltip [752,454,123,29] 14px/21px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+      g-tooltip.g__tooltip.hydrated [752,454,123,29] " " 14px/21px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+        div.g__tooltip__summary.g__tooltip__summary__active [752,454,123,21] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px 0px 8px | gap:normal
+          span.g__tooltip__title [752,454,101,21] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+            span. [752,456,101,17] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+              span. [752,456,48,17] "Version" 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+              span. [800,456,52,17] "- fēnix 9" 14px/21px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+          span.g__tooltip__icon [857,458,18,12] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | -1px 0px 0px 4px | gap:normal
+            svg. [857,458,18,12] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+              path. [860,458,12,12] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+  div.js__filters-wrapper [752,483,557,39] " " 18px/27px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | gap:12px
+    a.app__product__filters__buttons--selected.js__selected [752,483,81,39] "fēnix 9" 14px/21px | 400 | none | rgb(255, 255, 255) | rgb(0, 0, 0) | 2px solid rgb(0, 0, 0) | 0px | 7px 17.5px | 0px | 
+    a.app__product__filters__buttons.js__filter-option [845,483,60,39] "Pro" 14px/21px | 400 | none | rgb(0, 0, 0) | rgb(255, 255, 255) | 2px solid rgb(204, 204, 204) | 0px | 7px 17.5px | 0px | 
+    a.app__product__filters__buttons.js__filter-option [917,483,103,39] "Pro - Solar" 14px/21px | 400 | none | rgb(0, 0, 0) | rgb(255, 255, 255) | 2px solid rgb(204, 204, 204) | 0px | 7px 17.5px | 0px | 
+div.app__product__filters__group [752,538,557,68] " " 18px/27px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 16px 0px | gap:normal
+  div.app__product__filters__label [752,538,191,29] 18px/27px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+    div.app__tooltip [752,538,191,29] 14px/21px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+      g-tooltip.g__tooltip.hydrated [752,538,191,29] " " 14px/21px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+        div.g__tooltip__summary.g__tooltip__summary__active [752,538,191,21] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px 0px 8px | gap:normal
+          span.g__tooltip__title [752,538,169,21] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+            span. [752,540,169,17] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+              span. [752,540,140,17] "inReach® Connectivity" 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+              span. [892,540,29,17] "- No" 14px/21px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+          span.g__tooltip__icon [925,542,18,12] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | -1px 0px 0px 4px | gap:normal
+            svg. [925,542,18,12] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+              path. [928,542,12,12] 14px/21px | 700 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+  div.js__filters-wrapper [752,567,557,39] " " 18px/27px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | gap:12px
+    a.app__product__filters__buttons.js__filter-option [752,567,62,39] "Yes" 14px/21px | 400 | none | rgb(0, 0, 0) | rgb(255, 255, 255) | 2px solid rgb(204, 204, 204) | 0px | 7px 17.5px | 0px | 
+    a.app__product__filters__buttons--selected.js__selected [826,567,57,39] "No" 14px/21px | 400 | none | rgb(255, 255, 255) | rgb(0, 0, 0) | 2px solid rgb(0, 0, 0) | 0px | 7px 17.5px | 0px | 
+div.app__product__filters__group [752,622,557,65] " " 18px/27px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 16px 0px | gap:normal
+  div.app__product__filters__label [752,622,275,29] 18px/27px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px | 
+    g-copy.g__copy.g__copy--left [752,622,275,21] "  " 14px/21px | 400 | none | rgb(0, 0, 0) | rgba(0, 0, 0, 0) | 0px none rgb(0, 0, 0) | 0px | 0px | 0px 0px 8px | 

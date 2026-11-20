@@ -1,0 +1,64 @@
+[
+ {
+  "sel": "#jsProductContainerScroll>div:nth-of-type(1)>g-button>button",
+  "label": "COMPARE",
+  "transition": "background 0.2s, border 0.2s, color 0.2s",
+  "focus-visible": {
+   "#jsProductContainerScroll>div:nth-of-type(1)>g-button>button": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(255, 255, 255) → rgb(16, 16, 16)"
+   }
+  }
+ },
+ {
+  "sel": "#jsProductContainerScroll>div:nth-of-type(1)>div:nth-of-type(2)>div>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)",
+  "label": "Activity",
+  "transition": "all",
+  "focus-visible": {
+   "#jsProductContainerScroll>div:nth-of-type(1)>div:nth-of-type(2)>div>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)"
+   }
+  }
+ },
+ {
+  "sel": "#FILTER_USERPROFILE_BOATING",
+  "label": "INPUT",
+  "transition": "all",
+  "focus-visible": {
+   "#FILTER_USERPROFILE_BOATING": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 2px"
+   }
+  }
+ },
+ {
+  "sel": "#jsProductContainerScroll>div:nth-of-type(1)>div:nth-of-type(2)>div>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>div>g-checkbox>label>span",
+  "label": "Boating",
+  "transition": "all",
+  "focus-visible": {
+   "#jsProductContainerScroll>div:nth-of-type(1)>div:nth-of-type(2)>div>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(2)>div:nth-of-type(1)>div>g-checkbox>label>span": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)"
+   }
+  }
+ },
+ {
+  "sel": "#jsProductContainerScroll>div:nth-of-type(1)>div:nth-of-type(2)>div>div:nth-of-type(2)>div:nth-of-type(9)>div:nth-of-type(2)>div:nth-of-type(1)>div>a",
+  "label": "Previous Models",
+  "transition": "color 0.2s",
+  "focus-visible": {
+   "#jsProductContainerScroll>div:nth-of-type(1)>div:nth-of-type(2)>div>div:nth-of-type(2)>div:nth-of-type(9)>div:nth-of-type(2)>div:nth-of-type(1)>div>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  }
+ }
+]

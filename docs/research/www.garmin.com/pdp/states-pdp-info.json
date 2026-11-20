@@ -1,0 +1,199 @@
+[
+ {
+  "sel": "#js__product__info>g-breadcrumbs>nav>g-breadcrumb:nth-of-type(1)>a",
+  "label": "Sports & Fitness",
+  "transition": "color 0.2s",
+  "focus-visible": {
+   "#js__product__info>g-breadcrumbs>nav>g-breadcrumb:nth-of-type(1)>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(102, 102, 102) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  }
+ },
+ {
+  "sel": "#js__product__info__affirm>div>p>a",
+  "label": "See if you qualify - Learn more about Affirm Finan",
+  "transition": "color 0.2s",
+  "hover": {
+   "#js__product__info__affirm>div>p>a": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   }
+  },
+  "focus-visible": {
+   "#js__product__info__affirm>div>p>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  },
+  "active": {
+   "#js__product__info__affirm>div>p>a": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   }
+  }
+ },
+ {
+  "sel": "#truemed-instructions-garmin-pdp>div>span>button",
+  "label": "Learn more about Truemed and how to pay with your ",
+  "transition": "all",
+  "focus-visible": {
+   "#truemed-instructions-garmin-pdp>div>span>button": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)"
+   }
+  }
+ },
+ {
+  "sel": "#js__product__info>div:nth-of-type(7)>div>ul>li:nth-of-type(1)>a",
+  "label": "A",
+  "transition": "background-color 0.5s, border-color 0.5s, color 0.5s",
+  "hover": {
+   "#js__product__info>div:nth-of-type(7)>div>ul>li:nth-of-type(1)>a": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#js__product__info>div:nth-of-type(7)>div>ul>li:nth-of-type(1)>a>img": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   }
+  },
+  "focus-visible": {
+   "#js__product__info>div:nth-of-type(7)>div>ul>li:nth-of-type(1)>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  },
+  "active": {
+   "#js__product__info>div:nth-of-type(7)>div>ul>li:nth-of-type(1)>a": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#js__product__info>div:nth-of-type(7)>div>ul>li:nth-of-type(1)>a>img": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   }
+  }
+ },
+ {
+  "sel": "#js__product__info>div:nth-of-type(7)>div>ul>li:nth-of-type(2)>a",
+  "label": "A",
+  "transition": "background-color 0.5s, border-color 0.5s, color 0.5s",
+  "hover": {
+   "#js__product__info>div:nth-of-type(7)>div>ul>li:nth-of-type(2)>a": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(204, 204, 204) → rgb(0, 0, 0)",
+    "border-right-color": "rgb(204, 204, 204) → rgb(0, 0, 0)",
+    "border-bottom-color": "rgb(204, 204, 204) → rgb(0, 0, 0)",
+    "border-left-color": "rgb(204, 204, 204) → rgb(0, 0, 0)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#js__product__info>div:nth-of-type(7)>div>ul>li:nth-of-type(2)>a>img": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   }
+  },
+  "focus-visible": {
+   "#js__product__info>div:nth-of-type(7)>div>ul>li:nth-of-type(2)>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  },
+  "active": {
+   "#js__product__info>div:nth-of-type(7)>div>ul>li:nth-of-type(2)>a": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   },
+   "#js__product__info>div:nth-of-type(7)>div>ul>li:nth-of-type(2)>a>img": {
+    "color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-top-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-right-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-bottom-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "border-left-color": "rgb(0, 0, 0) → rgb(51, 51, 51)",
+    "outline-color": "rgb(0, 0, 0) → rgb(51, 51, 51)"
+   }
+  }
+ },
+ {
+  "sel": "#js__cta__buy>a",
+  "label": "ADD TO CART",
+  "transition": "background 0.2s, border 0.2s, color 0.2s",
+  "hover": {
+   "#js__cta__buy>a": {
+    "background-color": "rgb(109, 207, 246) → rgb(15, 176, 240)",
+    "border-top-color": "rgb(109, 207, 246) → rgb(15, 176, 240)",
+    "border-right-color": "rgb(109, 207, 246) → rgb(15, 176, 240)",
+    "border-bottom-color": "rgb(109, 207, 246) → rgb(15, 176, 240)",
+    "border-left-color": "rgb(109, 207, 246) → rgb(15, 176, 240)"
+   }
+  },
+  "focus-visible": {
+   "#js__cta__buy>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  }
+ },
+ {
+  "sel": "#js__cta__customize>a",
+  "label": "CUSTOMIZE",
+  "transition": "background 0.2s, border 0.2s, color 0.2s",
+  "hover": {
+   "#js__cta__customize>a": {
+    "color": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+    "text-decoration-color": "rgb(0, 0, 0) → rgb(255, 255, 255)",
+    "background-color": "rgb(255, 255, 255) → rgb(0, 0, 0)",
+    "outline-color": "rgb(0, 0, 0) → rgb(255, 255, 255)"
+   }
+  },
+  "focus-visible": {
+   "#js__cta__customize>a": {
+    "outline-width": "3px → 1px",
+    "outline-style": "none → auto",
+    "outline-color": "rgb(0, 0, 0) → rgb(16, 16, 16)",
+    "outline-offset": "0px → 1px"
+   }
+  }
+ }
+]

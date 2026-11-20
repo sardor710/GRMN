@@ -1,0 +1,205 @@
+{
+ "url": "https://www.garmin.com/en-US/c/wearables-smartwatches/",
+ "vw": 390,
+ "tree": {
+  "tag": "g-pagination",
+  "cls": "g__pagination hydrated",
+  "r": [
+   102,
+   8845,
+   186,
+   26
+  ],
+  "css": {
+   "display": "block",
+   "box-sizing": "border-box",
+   "margin-top": "32px",
+   "margin-right": "85.98px",
+   "margin-left": "85.98px",
+   "font-family": "Superscripts-Roboto, Roboto, \"Noto Sans TC\", \"Noto Sans SC\", \"Noto Sans JP\", \"Noto Sans KR\", Prompt, sans-serif",
+   "font-size": "16px",
+   "line-height": "24px",
+   "color": "rgb(0, 0, 0)",
+   "letter-spacing": "normal",
+   "font-weight": "400"
+  },
+  "c": [
+   {
+    "tag": "nav",
+    "r": [
+     102,
+     8845,
+     186,
+     26
+    ],
+    "a": {
+     "aria-label": "Pagination Navigation",
+     "role": "navigation"
+    },
+    "css": {
+     "box-sizing": "border-box"
+    },
+    "c": [
+     {
+      "tag": "ul",
+      "cls": "g__pagination__list",
+      "r": [
+       102,
+       8845,
+       186,
+       26
+      ],
+      "css": {
+       "box-sizing": "border-box",
+       "margin-top": "0px",
+       "margin-bottom": "0px",
+       "padding-left": "0px",
+       "list-style-type": "none"
+      },
+      "c": [
+       {
+        "tag": "li",
+        "cls": "g__pagination__list__item",
+        "r": [
+         102,
+         8845,
+         40,
+         26
+        ],
+        "css": {
+         "display": "inline-block",
+         "box-sizing": "border-box"
+        },
+        "c": [
+         {
+          "tag": "g-button",
+          "cls": "g__pagination__button g__pagination__button--previous g__button__host",
+          "r": [
+           102,
+           8845,
+           40,
+           26
+          ],
+          "css": {
+           "display": "inline-block",
+           "box-sizing": "border-box"
+          },
+          "c": [
+           {
+            "tag": "button",
+            "cls": "g__button g__button--contained g__button--contained--small",
+            "r": [
+             102,
+             8845,
+             40,
+             26
+            ],
+            "t": "<",
+            "a": {
+             "aria-label": "Go to previous page"
+            },
+            "css": {
+             "font-size": "12px",
+             "font-weight": "500",
+             "line-height": "13.8px",
+             "text-transform": "uppercase",
+             "vertical-align": "middle",
+             "background-color": "rgb(217, 217, 217)",
+             "cursor": "not-allowed",
+             "transition-property": "background, border, color",
+             "transition-duration": "0.2s, 0.2s, 0.2s",
+             "transition-timing-function": "ease, ease, ease",
+             "transition-delay": "0s, 0s, 0s",
+             "padding": "5.01px 16px",
+             "border-width": "1px",
+             "border-style": "solid",
+             "border-color": "rgb(217, 217, 217)",
+             "overflow": "auto"
+            }
+           }
+          ]
+         }
+        ]
+       },
+       {
+        "tag": "li",
+        "cls": "g__pagination__list__item",
+        "r": [
+         150,
+         8845,
+         41,
+         26
+        ],
+        "css": {
+         "display": "inline-block",
+         "box-sizing": "border-box",
+         "margin-left": "8px"
+        },
+        "c": [
+         {
+          "tag": "g-button",
+          "cls": "g__button__host g__button__host--small hydrated",
+          "r": [
+           150,
+           8845,
+           41,
+           26
+          ],
+          "css": {
+           "display": "inline-block",
+           "box-sizing": "border-box"
+          },
+          "c": [
+           {
+            "tag": "button",
+            "cls": "g__button g__button--contained g__button--contained--small",
+            "r": [
+             150,
+             8845,
+             41,
+             26
+            ],
+            "t": "1",
+            "a": {
+             "aria-label": "Page 1"
+            },
+            "css": {
+             "font-size": "12px",
+             "font-weight": "500",
+             "line-height": "13.8px",
+             "text-transform": "uppercase",
+             "vertical-align": "middle",
+             "color": "rgb(255, 255, 255)",
+             "background-color": "rgb(0, 0, 0)",
+             "cursor": "pointer",
+             "transition-property": "background, border, color",
+             "transition-duration": "0.2s, 0.2s, 0.2s",
+             "transition-timing-function": "ease, ease, ease",
+             "transition-delay": "0s, 0s, 0s",
+             "padding": "5.01px 16px",
+             "border-width": "1px",
+             "border-style": "solid",
+             "overflow": "auto"
+            }
+           }
+          ]
+         }
+        ],
+        "rep": [
+         {
+          "t": "2"
+         },
+         {
+          "t": ">"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "svgs": [],
+ "animations": []
+}
