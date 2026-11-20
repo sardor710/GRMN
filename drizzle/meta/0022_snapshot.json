@@ -4064,8 +4064,7 @@
           "name": "payment_mode",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": "'demo'"
+          "notNull": true
         },
         "snapshot_sealed": {
           "name": "snapshot_sealed",
