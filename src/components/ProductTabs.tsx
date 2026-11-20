@@ -7,6 +7,7 @@ import type { ProductDetail } from "@/types";
 import { ProductOverview } from "@/components/product/ProductOverview";
 import { ProductAccessories } from "@/components/product/ProductAccessories";
 import overviewStyles from "@/components/product/CmsOverview.module.css";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { useProductVariant } from "@/components/product/ProductVariantContext";
 import { ownsEmptyOverview, variantTabContent } from "@/lib/catalog/variant-selection";
 
@@ -23,6 +24,9 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
   const [tab, setTab] = useState<Tab>("overview");
   // Below 1024 garmin.com closes the open accordion row when it is tapped again; the desktop bar always shows a tab.
   const [collapsed, setCollapsed] = useState(false);
+  // The open tab's body is rendered exactly once: after its accordion row below 1024, in the desktop panel from 1024.
+  // Mobile-first until hydrated (matches the server render); the lg: classes keep the right chrome visible meanwhile.
+  const isDesktop = useMediaQuery("(min-width:1024px)");
   const openTab = (id: Tab) => { setTab(id); setCollapsed(false); };
   // Task 2.4: Specs, Overview and In the box follow the selected variant (the open tab stays open on a switch).
   const { selectedVariantId } = useProductVariant();
@@ -108,7 +112,7 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
         </ul>
       </nav>
       {/* The desktop panel (≥1024) follows the tab bar. */}
-      <div id="product-tab-panel" className={`hidden lg:block ${panelClass}`}>{body}</div>
+      {isDesktop && <div id="product-tab-panel" className={panelClass}>{body}</div>}
 
       {/* Below 1024 every tab is an accordion row (50px, #DCDCDC rule, chevron). Final review M14 (WCAG 2.4.3): the
           open panel is rendered directly after its row in DOM order, so focus and reading order follow the layout. */}
@@ -121,7 +125,7 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
                 id={`product-tab-row-${id}`}
                 type="button"
                 aria-expanded={open}
-                aria-controls={open ? "product-tab-panel-mobile" : undefined}
+                aria-controls={open && !isDesktop ? "product-tab-panel" : undefined}
                 onClick={() => (open ? setCollapsed(true) : openTab(id))}
                 className={`${tabType} flex h-[50px] w-full items-center justify-between border-t border-[#DCDCDC] px-7 py-[14px] text-left`}
               >
@@ -130,7 +134,7 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
                   <path d="M9.1 11.2L0 2.2 2.2 0l6.9 7L16 0l2.2 2.2-9.1 9z" />
                 </svg>
               </button>
-              {open && <div id="product-tab-panel-mobile" role="region" aria-labelledby={`product-tab-row-${id}`} className={panelClass}>{body}</div>}
+              {open && !isDesktop && <div id="product-tab-panel" role="region" aria-labelledby={`product-tab-row-${id}`} className={panelClass}>{body}</div>}
             </Fragment>
           );
         })}
