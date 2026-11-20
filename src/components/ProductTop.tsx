@@ -106,8 +106,6 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
 
   const price = cmsVariant?.price ?? product.price;
   const partNumber = cmsVariant?.sku || product.partNumber;
-  // garmin.com imports are converted to tenge (sourcePrice keeps the USD original). Only legacy products still show the US financing lines below.
-  const isKzt = Boolean(cmsVariant?.sourcePrice?.rateKztPerUsd);
 
   // Server cart (Task 13A): the selected variant's real availability decides; the server prices it.
   // In the browser-only cart a JSON CMS variant must be active and in stock.
@@ -143,11 +141,12 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   };
 
   return (
-    <div className="mx-auto max-w-[1440px] px-4 pb-8 pt-4 lg:px-0">
-      {/* garmin.com layout (measured at 1440px): gallery column ≈ 700px, buy box 561px starting 32px after it */}
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,701px)_minmax(0,561px)]">
+    <div className="mx-auto max-w-[1440px] px-4 pb-8 pt-4 lg:px-0 lg:pt-[18px]">
+      {/* garmin.com layout (ProductBuyBox.spec.md, 1440): gallery column, then the buy box at x 743, 566px wide
+          (max-width 720, margin 0 16 16, padding-right 115.2). Below 1024 the buy box follows the gallery. */}
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[727px_minmax(0,1fr)] lg:gap-0">
         {/* Gallery: 80px thumbnails in a column (1.6px #ccc frame, black when shown) beside a square photo */}
-        <div className="flex flex-col-reverse gap-2 lg:flex-row lg:justify-end lg:gap-[5px]">
+        <div className="flex flex-col-reverse gap-2 lg:flex-row lg:justify-end lg:gap-[5px] lg:pr-[46px]">
           <div className="flex items-center gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
             <button
               aria-label={t("previousImage")}
@@ -194,29 +193,31 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
           </div>
         </div>
 
-        {/* Buy box */}
-        <div>
-          <nav className="mb-4 flex flex-wrap items-center gap-2 text-[13px] text-black">
+        {/* Buy box (ProductBuyBox.spec.md) */}
+        <div data-buy-box className="text-black lg:mx-4 lg:mb-4 lg:max-w-[720px] lg:pr-[115.2px]">
+          <nav aria-label={t("breadcrumb")} className="mb-4 flex flex-wrap items-center text-[14px] leading-[14px] text-garmin-text-muted">
             {product.breadcrumb.map((b, i) => (
-              <span key={b.label} className="flex items-center gap-2">
-                {i > 0 && <span aria-hidden>/</span>}
-                <Link href={b.href} className="underline hover:no-underline">
+              <span key={b.label} className="flex items-center">
+                {i > 0 && <span aria-hidden className="mx-2">/</span>}
+                <Link href={b.href} className="underline">
                   {b.label}
                 </Link>
               </span>
             ))}
           </nav>
-          <h1 className="g-heading text-[32px] normal-case leading-[40px] tracking-[0.8px] text-black lg:text-[40px] lg:leading-[50px]">
+          <h1 className="g-heading g-h1 mb-1 text-black">
             {product.title}
           </h1>
-          <p className="mt-1 text-[14px] leading-[21px] text-black">{t("partNumber", { partNumber })}</p>
+          <p className="text-[14px] leading-[21px] text-black">{t("partNumber", { partNumber })}</p>
 
           {product.badge && product.badge !== "NONE" ? (
-            <div className="mt-3">
-              <GarminBadge badge={product.badge} variant="pill" />
+            <div className="mt-2 mb-4 flex">
+              <GarminBadge badge={product.badge} variant="pill" className="mr-[12.8px]" />
             </div>
           ) : onSale ? (
-            <span className={badgeClass({ className: "mt-3" })}>{t("sale")}</span>
+            <div className="mt-2 mb-4 flex">
+              <span className={badgeClass({ className: "mr-[12.8px]" })}>{t("sale")}</span>
+            </div>
           ) : null}
 
           {priceAmount ? (
@@ -231,17 +232,7 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
           ) : (
             <p className="mt-4 mb-1 text-[20px] font-bold leading-[24px] text-black">{price}</p>
           )}
-          {product.currency !== "KZT" && !isKzt && (
-            <>
-              <p className="mt-1 text-[14px] text-black">
-                {t.rich("financing", { brand: (chunks) => <span className="font-semibold">{chunks}</span> })}{" "}
-                <a href="#" className="underline">{t("qualify")}</a>
-              </p>
-              <p className="text-[14px] text-black">
-                {t("hsa")} <a href="#" className="underline">{t("learnMore")}</a>
-              </p>
-            </>
-          )}
+          {/* garmin.com shows US financing and HSA/FSA lines here; they do not apply in Kazakhstan (Task 5a.3). */}
           {product.commerce && commerceModel && commerceSelections && (
             <VariantPicker
               options={commerceModel.options}
@@ -270,12 +261,12 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
           />
 
           {/* Model / Color */}
-          <div className="mt-4">
-            <p className="text-[14px] font-bold leading-[21px] text-black">
+          <div className="my-4">
+            <p className="mb-2 text-[14px] font-bold leading-[21px] text-black">
               {t("modelColor")}
               {product.colors[colorIdx] && <span className="font-normal"> - {product.colors[colorIdx].label}</span>}
             </p>
-            <div className="mt-2 flex flex-wrap gap-[10.8px]">
+            <div className="flex max-w-[570px] flex-wrap gap-[10.8px]">
               {product.colors.map((c, i) => (
                 <button
                   key={c.label}
@@ -285,11 +276,13 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
                     setColorIdx(i);
                     setMainIdx(0);
                   }}
-                  className={`relative h-[83px] w-[83px] border-[1.6px] bg-white ${
-                    i === colorIdx ? "border-black" : "border-[#ccc] hover:border-black"
+                  className={`relative h-16 w-16 border-2 bg-white p-0.5 transition-[border-color] duration-500 lg:h-[84px] lg:w-[84px] ${
+                    i === colorIdx ? "border-black" : "border-garmin-option hover:border-black"
                   }`}
                 >
-                  <Image src={c.src} alt="" fill sizes="80px" className="object-contain" />
+                  <span className="relative block h-full w-full">
+                    <Image src={c.src} alt="" fill sizes="80px" className="object-contain" />
+                  </span>
                 </button>
               ))}
             </div>
@@ -297,7 +290,7 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
           </>}
 
           {/* garmin.com CTAs (Buttons.spec.md): large candy-blue buy button and large secondary buttons, 8px apart */}
-          <div className="mt-4 flex flex-wrap items-center gap-2">
+          <div className="mt-4 mb-2 flex max-w-[570px] flex-wrap items-center gap-2">
             <button
               disabled={!sellable} onClick={handleAdd}
               className="g-btn g-btn--lg g-btn--primary w-full md:w-auto"
@@ -316,7 +309,7 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
               </button>
             )}
           </div>
-          <p className="mt-4 text-[14px] leading-[21px] text-black">
+          <p className="mt-4 mb-4 text-[14px] leading-[21px] text-black">
             {/* PostgreSQL catalog: report real stock only — no delivery promise the server has not made */}
             {product.commerce
               ? variant?.availability === "available"
@@ -328,7 +321,7 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
                 ? t("outOfStockNote")
                 : t("shipsIn")}
           </p>
-          {notice && <p role="status" className="mt-3 text-[13px] text-neutral-700">{notice}</p>}
+          {notice && <p role="status" className="mb-4 text-[14px] leading-[21px] text-black">{notice}</p>}
         </div>
       </div>
     </div>
@@ -347,21 +340,21 @@ function Selector({
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="mt-4">
-      <p className="text-[14px] font-bold leading-[21px] text-black">
+    <div className="my-4">
+      <p className="mb-2 text-[14px] font-bold leading-[21px] text-black">
         {label}
         {value && <span className="font-normal"> - {value}</span>}
       </p>
-      <div className="mt-2 flex flex-wrap gap-[10.8px]">
+      <div className="flex flex-wrap gap-3">
         {options.map((o) => (
           <button
             key={o}
             onClick={() => onChange(o)}
             aria-pressed={o === value}
-            className={`h-[38px] min-w-[82px] border-[1.6px] px-[17.5px] text-[14px] leading-[21px] transition-colors ${
+            className={`h-[39px] border-2 px-[17.5px] py-[7px] text-[14px] leading-[21px] transition-colors ${
               o === value
                 ? "border-black bg-black text-white"
-                : "border-[#ccc] bg-white text-black hover:border-black"
+                : "border-garmin-option bg-white text-black hover:border-black"
             }`}
           >
             {o}
