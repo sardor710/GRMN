@@ -509,7 +509,13 @@ async function adminShotsScenario({cms,headers,send,evaluate,navigate,text,click
       await step(`product-variants-${width}.png`,async()=>{await ui.open();await ui.openContent(51).catch(()=>{});await shoot(`product-variants-${width}.png`);await ui.close();});
       // The queue has rendered its first response (the page is hydrated and the unfiltered list arrived), so the
       // filter change below is handled by React; then the queue must show only demo orders.
-      await navigate("/admin/orders");await until(()=>evaluate("document.querySelectorAll('section[aria-label=\"Order queue\"] li button').length>0"),"The order queue did not load").catch(async error=>{await writeFile(path.join(receipt,`admin-shots-orders-${width}.txt`),await text());throw error;});
+      // Dev-only: in some runs the orders page served right after /admin/products compiled never hydrated (no
+      // client request at all for 90 s; see the 5b.1 fix report). That is detected (no React props on the filter
+      // after 30 s), logged, and the page is reloaded once; it is not a retry of the filter.
+      await navigate("/admin/orders");
+      const hydrated=()=>evaluate("(()=>{const s=document.querySelector('select[aria-label=\"Payment mode filter\"]');return !!s&&Object.keys(s).some(k=>k.startsWith('__reactProps'));})()");
+      if(!await until(hydrated,"not hydrated",30000).catch(()=>false)){console.log(`admin-shots: /admin/orders did not hydrate in 30 s at ${width} px; reloading once`);await send("Page.reload",{ignoreCache:true});await until(()=>evaluate("document.readyState==='complete'"),"Reload timed out");}
+      await until(()=>evaluate("document.querySelectorAll('section[aria-label=\"Order queue\"] li button').length>0"),"The order queue did not load").catch(async error=>{await writeFile(path.join(receipt,`admin-shots-orders-${width}.txt`),await text());throw error;});
       await evaluate(`(()=>{const select=document.querySelector('select[aria-label="Payment mode filter"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,'demo');select.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
       const queue="[...document.querySelectorAll('section[aria-label=\"Order queue\"] li button')]";
       await until(()=>evaluate(`${queue}.length>0&&${queue}.every(b=>!!b.querySelector('[data-demo-badge]'))`),"The Demo filter did not list only demo orders").catch(async error=>{await writeFile(path.join(receipt,`admin-shots-orders-${width}.txt`),await text());throw error;});
