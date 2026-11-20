@@ -94,10 +94,13 @@ function quoted(variantId, client) {
   const cart = json(post("/api/cart/lines", "cart_add", { variantId, quantity: 1, expectedCartVersion: 0 }, { client, allow: [409] }));
   if (!cart || typeof cart.version !== "number") return null;
   const quote = json(post("/api/cart/quote", "quote", { cartVersion: cart.version, displayCurrency: "KZT", delivery: DELIVERY }, { client, allow: [409] }));
-  return quote && quote.id ? { quoteId: quote.id, cartVersion: quote.cartVersion } : null;
+  // Task 3.1: check out with the method the store offers now (demo while demo checkout is on, else manual).
+  return quote && quote.id ? { quoteId: quote.id, cartVersion: quote.cartVersion, paymentMethod: offered(cart) } : null;
 }
+/** The payment method a cart payload offers (Task 3.1: exactly one of demo or manual). */
+function offered(cart) { return cart && Array.isArray(cart.paymentMethods) && cart.paymentMethods[0] ? cart.paymentMethods[0] : "manual"; }
 function placeOrder(ready, client, key, allow) {
-  const res = post("/api/cart/checkout", "checkout", { quoteId: ready.quoteId, cartVersion: ready.cartVersion, paymentMethod: "manual" }, { client, allow, headers: { "idempotency-key": key } });
+  const res = post("/api/cart/checkout", "checkout", { quoteId: ready.quoteId, cartVersion: ready.cartVersion, paymentMethod: ready.paymentMethod }, { client, allow, headers: { "idempotency-key": key } });
   checkoutDb.add(res.timings.duration);
   return res;
 }
@@ -130,9 +133,11 @@ export function lastUnit(data) {
 // Duplicate key: one shopper's checkout is sent 50 times at once with the same key and cart.
 export function duplicateKey(data) {
   const shared = dup;
+  // Task 3.1: the fixture may name the method; otherwise ask the shared cart which one is offered.
+  const paymentMethod = shared.paymentMethod || offered(json(get("/api/cart", "cart_get", { client: shared.client, headers: { cookie: shared.cookie } })));
   const wait = data.at - Date.now();
   if (wait > 0) sleep(wait / 1000);
-  const res = post("/api/cart/checkout", "checkout", { quoteId: shared.quoteId, cartVersion: shared.cartVersion, paymentMethod: "manual" },
+  const res = post("/api/cart/checkout", "checkout", { quoteId: shared.quoteId, cartVersion: shared.cartVersion, paymentMethod },
     { client: shared.client, allow: [409], headers: { "idempotency-key": shared.key, cookie: shared.cookie } });
   const body = json(res);
   outcome(res.status === 200 ? "order:" + body.orderId + (body.replayed ? ":replayed" : ":first") : body && body.error ? body.error.code : "status_" + res.status);

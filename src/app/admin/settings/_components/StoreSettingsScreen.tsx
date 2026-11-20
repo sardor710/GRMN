@@ -3,14 +3,16 @@
 import { useEffect, useState } from "react";
 
 // Task 18B: typed, versioned store settings and the audited KZT-per-USD rate editor (PostgreSQL mode).
-// The payment mode is shown but cannot be changed here (demo until a provider is activated).
+// Task 3.1: Payments -> "Demo checkout" (the payment mode): on, checkout offers only the demo method;
+// off, only manual payment. DEMO_CHECKOUT_DISABLED=1 on the server forces it off.
 // O07 (Task 21C): the payment instructions shown to manual-payment customers and the hold time.
 
 interface Settings {
   version: number; storeName: string | null; contactEmail: string | null; supportPhone: string | null; baseCurrency: string;
   usdDisplayEnabled: boolean; exchangeRate: { version: number; kztPerUsd: string; createdAt: string } | null;
-  freeShippingThresholdMinor: string | null; maintenanceMode: boolean; paymentMode: string; seoTitle: string | null; seoDescription: string | null;
+  freeShippingThresholdMinor: string | null; maintenanceMode: boolean; paymentMode: "demo" | "live"; seoTitle: string | null; seoDescription: string | null;
   manualPayment: { instructions: string | null; holdHours: number };
+  demoCheckout: { enabled: boolean; forcedOff: boolean };
 }
 async function json<T>(response: Response): Promise<T> {
   const body = await response.json().catch(() => null) as { error?: { message?: string } } | null;
@@ -69,6 +71,17 @@ export default function StoreSettingsScreen() {
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.usd} onChange={event => setForm(current => ({ ...current, usd: event.target.checked }))} /> Show USD equivalents</label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.maintenance} onChange={event => setForm(current => ({ ...current, maintenance: event.target.checked }))} /> Maintenance mode</label>
         <button type="button" disabled={busy} onClick={save} className="bg-black px-3 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50 sm:col-span-2">Save settings</button>
+      </section>
+      <section className="space-y-2 border border-neutral-200 p-4">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-600">Payments</h2>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" name="demoCheckout" checked={settings.paymentMode === "demo"} disabled={busy}
+            onChange={event => void send("PUT", { expectedVersion: settings.version, paymentMode: event.target.checked ? "demo" : "live" }, event.target.checked ? "Demo checkout turned on" : "Demo checkout turned off")} />
+          Demo checkout
+        </label>
+        <p className="text-xs text-neutral-500">While demo checkout is on, customers can only place demo orders: no real money is taken and manual payment is not offered. Turn it off to take real orders with manual payment.</p>
+        {settings.demoCheckout.forcedOff && <p role="status" className="border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900">The server sets DEMO_CHECKOUT_DISABLED=1, so demo checkout is off whatever this setting says.</p>}
+        <p className="text-sm">Checkout now offers: <span className="font-bold">{settings.demoCheckout.enabled ? "demo orders only" : "manual payment only"}</span></p>
       </section>
       <section className="space-y-2 border border-neutral-200 p-4">
         <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-600">Manual payment</h2>

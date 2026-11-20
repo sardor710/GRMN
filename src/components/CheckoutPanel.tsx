@@ -9,14 +9,18 @@ import type { CartDTO, CheckoutQuoteDTO, CheckoutStatusDTO } from "@/contracts/c
 import { formatKzt } from "@/lib/account-client";
 import {
   beginCheckout, checkoutRecovery, createCheckoutClient, createCheckoutStorage, forgetCheckoutKey, pollOrderStatus, rememberOrder, resumePendingCheckout,
+  retryOrderPayment, settleCheckoutKey,
   type PlacedOrder,
 } from "@/lib/checkout-client";
+import { CartRequestError } from "@/lib/cart-client";
+import { DemoBadge } from "@/components/DemoBadge";
 
 // Task 14A checkout. The server prices the quote and places the order; this panel only collects
 // the delivery contact (D06: name, phone, address; email optional), shows the server's KZT quote
-// and submits it once with an idempotency key kept for retries. Payment is manual (O07): the order
-// awaits payment, the receipt shows the KZT total and the staff-edited instructions, and staff
-// confirm the payment. The browser never decides that an order is paid.
+// and submits it once with an idempotency key kept for retries. The method is the one the cart offers
+// (Task 3.1). Manual (O07): the order awaits payment, the receipt shows the KZT total and the
+// staff-edited instructions, and staff confirm the payment. Demo (Task 3.3): "Pay (demo)" places an
+// order the server captures as a demo payment, labelled DEMO. The browser never decides that an order is paid.
 
 const session = createCheckoutStorage(() => sessionStorage);
 const browserClient = () => createCheckoutClient((url, init) => fetch(url, { ...init, credentials: "same-origin" }));
@@ -39,7 +43,7 @@ const FIELDS: { name: Field; placeholder?: string; autoComplete: string; optiona
   { name: "coupon", autoComplete: "off", optional: true },
 ];
 
-export function CheckoutPanel({ cart, disabled, onPlaced }: { cart: CartDTO; disabled: boolean; onPlaced: (order: PlacedOrder) => unknown }) {
+export function CheckoutPanel({ cart, disabled, onPlaced, onCartStale }: { cart: CartDTO; disabled: boolean; onPlaced: (order: PlacedOrder) => unknown; onCartStale?: () => unknown }) {
   const t = useTranslations("Checkout");
   const locale = useAppLocale();
   const kzt = (value: Parameters<typeof formatKzt>[0]) => formatKzt(value, INTL_LOCALE[locale]);
@@ -52,6 +56,9 @@ export function CheckoutPanel({ cart, disabled, onPlaced }: { cart: CartDTO; dis
   // A quote is for one cart revision; any cart change needs a new one.
   const current = quote && quote.cartVersion === cart.version ? quote : null;
   const missing = FIELDS.some(field => !field.optional && !form[field.name].trim());
+  // Task 3.1/3.3: the server offers exactly one method, demo while demo checkout is on, otherwise manual.
+  const method = cart.paymentMethods[0] ?? "manual";
+  const demo = method === "demo";
 
   async function review() {
     setBusy(true); setError(null); setRetry(false);
@@ -70,16 +77,20 @@ export function CheckoutPanel({ cart, disabled, onPlaced }: { cart: CartDTO; dis
     setBusy(true); setError(null);
     const email = form.email.trim();
     try {
-      const command = { quoteId: current.id, cartVersion: current.cartVersion, paymentMethod: "manual" as const, ...(email ? { contactEmail: email } : {}) };
+      const command = { quoteId: current.id, cartVersion: current.cartVersion, paymentMethod: method, ...(email ? { contactEmail: email } : {}) };
       const result = await client.placeOrder(command, beginCheckout(session, command));
-      forgetCheckoutKey(session);
+      // A demo order whose capture failed keeps its key for the receipt's "Try again" (Task 3.3).
+      settleCheckoutKey(session, result);
       const placed = { orderId: result.orderId, orderNumber: result.orderNumber, statusToken: result.statusToken };
       rememberOrder(session, placed);
       setRetry(false);
       onPlaced(placed);
     } catch (failure) {
       const next = checkoutRecovery(failure);
-      if (next === "retry") { setRetry(true); setError(t("retryNotice")); }
+      // Task 3.3: demo checkout was switched while this page was open. Re-read the cart so the offered
+      // method (and the button) is current; the server message is English, so show ours by its code.
+      if (failure instanceof CartRequestError && failure.code === "PAYMENT_METHOD_UNAVAILABLE") { forgetCheckoutKey(session); setRetry(false); setError(t("methodChanged")); void onCartStale?.(); }
+      else if (next === "retry") { setRetry(true); setError(t("retryNotice")); }
       else if (next === "requote") { forgetCheckoutKey(session); setQuote(null); setRetry(false); setError(t("requote", { error: message(failure, t("failed")) })); }
       else { setRetry(false); setError(message(failure, t("failed"))); }
     } finally { setBusy(false); }
@@ -112,10 +123,11 @@ export function CheckoutPanel({ cart, disabled, onPlaced }: { cart: CartDTO; dis
             <div className="flex justify-between"><dt className="text-neutral-600">{t("tax")}</dt><dd>{kzt(current.tax)}</dd></div>
             <div className="flex justify-between border-t border-neutral-200 pt-2 text-[17px] font-medium"><dt>{t("total")}</dt><dd>{kzt(current.total)}</dd></div>
           </dl>
-          <p className="mt-3 text-[12px] text-neutral-500">{t("paymentNotice", { time: new Date(current.expiresAt).toLocaleTimeString(INTL_LOCALE[locale]) })}</p>
+          {!demo && <p className="mt-3 text-[12px] text-neutral-500">{t("paymentNotice", { time: new Date(current.expiresAt).toLocaleTimeString(INTL_LOCALE[locale]) })}</p>}
           <button type="button" disabled={busy || disabled} onClick={() => { void place(); }} className="g-btn g-btn--solid mt-4 w-full disabled:cursor-not-allowed disabled:opacity-50">
-            {retry ? t("retry") : t("place")}
+            {retry ? t("retry") : demo ? t("payDemo") : t("place")}
           </button>
+          {demo && <p className="mt-2 text-[12px] text-neutral-500">{t("demoNote")}</p>}
         </div>
       )}
     </aside>
@@ -132,13 +144,29 @@ export function OrderReceived({ order }: { order: PlacedOrder }) {
   const kzt = (value: Parameters<typeof formatKzt>[0]) => formatKzt(value, INTL_LOCALE[locale]);
   const client = useClient();
   const [status, setStatus] = useState<CheckoutStatusDTO | null>(null);
+  const [reads, setReads] = useState(0);
+  const [retrying, setRetrying] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
   useEffect(() => {
     const signal = { aborted: false };
     void pollOrderStatus(client, order, { signal, onUpdate: next => { if (!signal.aborted) setStatus(next); } }).catch(() => { /* the receipt stays; status is retried on reload */ });
     return () => { signal.aborted = true; };
-  }, [client, order]);
+  }, [client, order, reads]);
+  const demo = status?.paymentMode === "demo";
+  // Task 3.2/3.3: a demo order still awaiting payment means its demo capture failed after checkout.
+  const unpaidDemo = demo && status?.status === "pending_payment";
+  // "Try again" resends the same checkout with the same idempotency key: the server replays this order
+  // and captures it once. The browser still only shows what the server status says.
+  async function tryAgain() {
+    setRetrying(true); setRetryError(null);
+    try {
+      if (!(await retryOrderPayment(client, session, order.orderId))) setRetryError(t("tryAgainFailed"));
+    } catch { setRetryError(t("tryAgainFailed")); }
+    finally { setRetrying(false); setReads(count => count + 1); }
+  }
   return (
     <div className="mx-auto max-w-[640px] px-4 py-24 text-center">
+      {demo && <DemoBadge label={t("demoBadge")} className="mb-4" />}
       <h1 className="g-heading text-[30px] text-black">{t("received", { number: order.orderNumber })}</h1>
       <p className="mt-3 text-neutral-600">{t("statusLine", { status: status ? (status.status === "confirmed" && status.paymentStatus === "paid" ? t("paid") : STATUS_KEYS.has(status.status) ? t(`status.${status.status}`) : status.status) : t("status.pending_payment") })}{status ? ` · ${t("totalLine", { total: kzt(status.total) })}` : ""}</p>
       {status?.paymentMethod === "manual" && status.status === "pending_payment" && (
@@ -152,7 +180,15 @@ export function OrderReceived({ order }: { order: PlacedOrder }) {
           <p className="mt-2 text-[13px] text-neutral-500">{t("notPaidUntilConfirmed")}</p>
         </div>
       )}
-      {status?.paymentMethod === "demo" && <p className="mt-2 text-[14px] text-neutral-500">{t("demoReceipt")}</p>}
+      {unpaidDemo && (
+        <div role="alert" className="mx-auto mt-6 max-w-[520px] border border-red-200 bg-red-50 p-4 text-left">
+          <h2 className="text-[15px] font-medium text-red-900">{t("paymentNotCompleted")}</h2>
+          <p className="mt-1 text-[14px] text-red-800">{t("paymentNotCompletedBody")}</p>
+          {retryError && <p className="mt-2 text-[13px] text-red-800">{retryError}</p>}
+          <button type="button" disabled={retrying} onClick={() => { void tryAgain(); }} className="g-btn g-btn--solid mt-3 disabled:cursor-not-allowed disabled:opacity-50">{t("tryAgain")}</button>
+        </div>
+      )}
+      {demo && !unpaidDemo && <p className="mt-2 text-[14px] text-neutral-500">{t("demoReceipt")}</p>}
       <Link href="/c/wearables-smartwatches" className="g-btn g-btn--solid mt-8">{t("continueShopping")}</Link>
     </div>
   );

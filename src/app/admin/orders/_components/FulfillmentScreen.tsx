@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AdminOrderDetailDTO, AdminOrderSummaryDTO, ShipmentDTO } from "@/contracts/commerce";
+import { DemoBadge } from "@/components/DemoBadge";
 
 // Task 16A: PostgreSQL-mode staff fulfillment. Every action sends the version it was based on and
 // an idempotency key; the server decides eligibility (paid, not an exception, not legacy) and
@@ -10,6 +11,8 @@ import type { AdminOrderDetailDTO, AdminOrderSummaryDTO, ShipmentDTO } from "@/c
 // amount received, an optional note), and record the payout of a manual refund.
 
 const STATUSES = ["", "unfulfilled", "processing", "partially_shipped", "shipped", "delivered", "exception"] as const;
+// Task 3.3: "Demo" finds demo-checkout orders (no money was charged) so stray ones can be cancelled.
+const MODES = [["", "All"], ["demo", "Demo"], ["live", "Live"]] as const;
 const REASONS: Record<string, string> = {
   LEGACY_ORDER: "Legacy summary order: item operations are not available.",
   ORDER_NOT_PAID: "Not paid: only captured orders can ship.",
@@ -37,6 +40,7 @@ async function readError(response: Response): Promise<string> {
 
 export default function FulfillmentScreen() {
   const [status, setStatus] = useState<string>("");
+  const [mode, setMode] = useState<string>("");
   const [orders, setOrders] = useState<AdminOrderSummaryDTO[] | null>(null);
   const [selected, setSelected] = useState<string | null>(null);
   const [detail, setDetail] = useState<AdminOrderDetailDTO | null>(null);
@@ -55,10 +59,13 @@ export default function FulfillmentScreen() {
 
   const loadOrders = useCallback(async () => {
     setError(null);
-    const response = await fetch("/api/admin/orders" + (status ? `?fulfillmentStatus=${status}` : ""), { cache: "no-store" });
+    const query = new URLSearchParams();
+    if (status) query.set("fulfillmentStatus", status);
+    if (mode) query.set("paymentMode", mode);
+    const response = await fetch("/api/admin/orders" + (query.size ? `?${query}` : ""), { cache: "no-store" });
     if (!response.ok) { setError(await readError(response)); setOrders([]); return; }
     setOrders((await response.json() as { items: AdminOrderSummaryDTO[] }).items);
-  }, [status]);
+  }, [status, mode]);
   const loadDetail = useCallback(async (id: string) => {
     const response = await fetch(`/api/admin/orders?id=${id}`, { cache: "no-store" });
     if (!response.ok) { setError(await readError(response)); return; }
@@ -126,11 +133,18 @@ export default function FulfillmentScreen() {
           <h1 className="text-2xl font-bold text-black">Orders and fulfillment</h1>
           <p className="text-sm text-neutral-500">Ship paid orders in parts; every action is recorded in the order timeline.</p>
         </div>
-        <label className="text-sm text-neutral-700">Fulfillment status{" "}
-          <select aria-label="Fulfillment status filter" className="ml-2 border border-neutral-300 px-2 py-1" value={status} onChange={event => setStatus(event.target.value)}>
-            {STATUSES.map(value => <option key={value} value={value}>{value || "All"}</option>)}
-          </select>
-        </label>
+        <div className="flex flex-wrap items-end gap-4">
+          <label className="text-sm text-neutral-700">Payment{" "}
+            <select aria-label="Payment mode filter" className="ml-2 border border-neutral-300 px-2 py-1" value={mode} onChange={event => setMode(event.target.value)}>
+              {MODES.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </select>
+          </label>
+          <label className="text-sm text-neutral-700">Fulfillment status{" "}
+            <select aria-label="Fulfillment status filter" className="ml-2 border border-neutral-300 px-2 py-1" value={status} onChange={event => setStatus(event.target.value)}>
+              {STATUSES.map(value => <option key={value} value={value}>{value || "All"}</option>)}
+            </select>
+          </label>
+        </div>
       </div>
       {error && <p role="alert" className="border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
       <div className="grid gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
@@ -140,7 +154,7 @@ export default function FulfillmentScreen() {
               {orders.map(order => (
                 <li key={order.id}>
                   <button type="button" onClick={() => setSelected(order.id)} className={`flex w-full flex-wrap items-center justify-between gap-2 p-3 text-left text-sm hover:bg-neutral-50 ${selected === order.id ? "bg-neutral-100" : ""}`}>
-                    <span className="font-mono font-semibold">{order.orderNumber}</span>
+                    <span className="flex items-center gap-2"><span className="font-mono font-semibold">{order.orderNumber}</span>{order.paymentMode === "demo" && <DemoBadge label="DEMO" className="text-[10px]" />}</span>
                     <span className="text-neutral-600">{order.contactName}</span>
                     <span className="text-xs uppercase tracking-wider text-neutral-500">{order.paymentStatus} · {order.fulfillmentStatus}{order.dataQuality !== "complete" ? " · legacy" : ""}</span>
                     <span>{formatKzt(order.total.amountMinor)}</span>
@@ -158,7 +172,7 @@ export default function FulfillmentScreen() {
                 <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.status}</span>
                 <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.paymentStatus}</span>
                 <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.fulfillmentStatus}</span>
-                <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.paymentMode}</span>
+                {detail.paymentMode === "demo" ? <DemoBadge label="DEMO" className="text-[10px]" /> : <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.paymentMode}</span>}
               </div>
               {!detail.fulfillable.allowed && detail.fulfillable.reason && <p className="border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900">{REASONS[detail.fulfillable.reason]}</p>}
               <div aria-label="Payment" className="border border-neutral-200 p-3">

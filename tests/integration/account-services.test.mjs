@@ -25,7 +25,7 @@ async function order(user,{phone=user?.phone??"+77000000009",email="unverified@e
   const id=randomUUID(),client=await database.pool.connect();
   try{
     await client.query("BEGIN");
-    await client.query("INSERT INTO orders(id,user_id,contact_name,contact_phone,contact_email,data_quality,total_minor,subtotal_minor,discount_minor,shipping_minor,tax_minor,placed_at,legacy_summary) VALUES($1,$2,'Synthetic purchase',$3,$4,'complete',$5,$5,0,0,0,COALESCE($6::timestamptz,clock_timestamp()),$7)",[id,user?.id??null,phone,email,total,time??null,JSON.stringify({privateToken:"INERT-PRIVATE",trackingNumber:"INERT-PRIVATE"})]);
+    await client.query("INSERT INTO orders(id,user_id,contact_name,contact_phone,contact_email,data_quality,total_minor,subtotal_minor,discount_minor,shipping_minor,tax_minor,placed_at,legacy_summary,payment_mode) VALUES($1,$2,'Synthetic purchase',$3,$4,'complete',$5,$5,0,0,0,COALESCE($6::timestamptz,clock_timestamp()),$7,'live')",[id,user?.id??null,phone,email,total,time??null,JSON.stringify({privateToken:"INERT-PRIVATE",trackingNumber:"INERT-PRIVATE"})]);
     await client.query("INSERT INTO order_addresses(id,order_id,kind,recipient_name,phone,country_code,city,line1) VALUES($1,$2,'structured','Synthetic purchase',$3,'KZ','Almaty','Purchased street 7')",[randomUUID(),id,phone]);
     await client.query("INSERT INTO order_items(id,order_id,name,quantity,unit_price_minor,discount_minor,tax_minor,total_minor,options,legacy_source) VALUES($1,$2,'Purchased snapshot',1,$3,0,0,$3,$4,$5)",[randomUUID(),id,total,JSON.stringify({size:"Large",private:{token:"INERT-PRIVATE"}}),JSON.stringify({privateToken:"INERT-PRIVATE"})]);
     await client.query("COMMIT");

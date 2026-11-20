@@ -194,6 +194,8 @@ export interface CartDTO {
   /** True when a signed-in shopper still holds a guest cart that can be merged. */
   pendingMerge: boolean;
   notices: { code: CartNoticeCode; variantId: string }[];
+  /** The checkout methods offered now: ["demo"] while demo checkout is on, otherwise ["manual"]. */
+  paymentMethods: ("demo" | "manual")[];
 }
 
 export interface QuoteCommand {
@@ -301,6 +303,8 @@ export interface OrderSummaryDTO {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   fulfillmentStatus: FulfillmentStatus;
+  /** Task 3.3: "demo" for a demo-checkout order (no money was charged), shown with a DEMO label. */
+  paymentMode: "demo" | "live" | "legacy_unknown";
   total: Money;
   itemsCount: number;
 }

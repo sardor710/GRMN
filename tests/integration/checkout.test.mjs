@@ -69,16 +69,17 @@ before(async()=>{
 },{timeout:120000});
 after(async()=>{try{await database?.close();}finally{await temporary?.stop();}},{timeout:45000});
 
-test("a checkout writes one sealed pending order with snapshots, a demo payment attempt, an outbox event and converts the cart",async()=>{
+// Task 3.2: the demo order is then captured at once (confirmed/paid, hold consumed), like a paid order.
+test("a checkout writes one sealed order with snapshots, a demo payment attempt, an outbox event and converts the cart",async()=>{
   const api=await cartService(),buyer=await owner(),a=await product({price:10000}),b=await product({price:2550});
   const {quote}=await quoted(buyer.headers,[[a.variant,2],[b.variant,1]]);
   const idem=key(),result=await api.checkout(buyer.headers,idem,body(quote,{contactEmail:"buyer@example.invalid"}));
   assert.match(result.orderNumber,/^GRM-\d+$/);
   assert.deepEqual({status:result.status,paymentMode:result.paymentMode,paymentState:result.paymentState,redirect:result.paymentRedirectUrl,total:result.total,replayed:result.replayed,token:result.statusToken},
-    {status:"pending_payment",paymentMode:"demo",paymentState:"pending",redirect:null,total:quote.total,replayed:false,token:null});
+    {status:"confirmed",paymentMode:"demo",paymentState:"simulated",redirect:null,total:quote.total,replayed:false,token:null});
   const order=(await q("SELECT * FROM orders WHERE id=$1",[result.orderId])).rows[0];
   assert.equal(order.user_id,buyer.id);assert.equal(order.snapshot_sealed,true);assert.equal(order.order_number,result.orderNumber);
-  assert.deepEqual([order.order_status,order.payment_status,order.fulfillment_status,order.payment_mode],["pending_payment","unpaid","unfulfilled","demo"]);
+  assert.deepEqual([order.order_status,order.payment_status,order.fulfillment_status,order.payment_mode],["confirmed","paid","unfulfilled","demo"]);
   assert.deepEqual([order.subtotal_minor,order.discount_minor,order.shipping_minor,order.tax_minor,order.total_minor].map(String),[quote.subtotal,quote.discount,quote.shipping,quote.tax,quote.total].map(m=>m.amountMinor));
   assert.deepEqual([order.contact_name,order.contact_phone,order.contact_email],["Checkout Buyer","+77010000000","buyer@example.invalid"]);
   assert.equal(order.policy_versions.quoteId,quote.id);assert.equal(order.policy_versions.tax,quote.policyVersions.tax);
@@ -89,10 +90,10 @@ test("a checkout writes one sealed pending order with snapshots, a demo payment 
   const attempt=(await q("SELECT a.status,a.actor_scope FROM checkout_attempts a WHERE a.id=$1",[order.checkout_attempt_id])).rows[0];
   assert.deepEqual(attempt,{status:"committed",actor_scope:"user:"+buyer.id});
   const payment=(await q("SELECT provider,environment,status,amount_minor::text AS amount,currency FROM payment_attempts WHERE order_id=$1",[order.id])).rows;
-  assert.deepEqual(payment,[{provider:"demo",environment:"demo",status:"created",amount:quote.total.amountMinor,currency:"KZT"}]);
+  assert.deepEqual(payment,[{provider:"demo",environment:"demo",status:"captured",amount:quote.total.amountMinor,currency:"KZT"}]);
   const reservation=(await q("SELECT status,order_id FROM inventory_reservations WHERE checkout_attempt_id=$1",[order.checkout_attempt_id])).rows;
-  assert.deepEqual(reservation,[{status:"active",order_id:order.id}]);
-  assert.deepEqual(await balance(a.variant),{on_hand:50,reserved:2});assert.deepEqual(await balance(b.variant),{on_hand:50,reserved:1});
+  assert.deepEqual(reservation,[{status:"consumed",order_id:order.id}]);
+  assert.deepEqual(await balance(a.variant),{on_hand:48,reserved:0});assert.deepEqual(await balance(b.variant),{on_hand:49,reserved:0});
   assert.equal(await count("SELECT count(*)::int AS n FROM outbox_events WHERE topic='order.placed' AND aggregate_id=$1",[order.id]),1);
   assert.equal(await count("SELECT count(*)::int AS n FROM order_events WHERE order_id=$1 AND type='order.placed'",[order.id]),1);
   const record=(await q("SELECT status,result FROM idempotency_records WHERE actor_scope=$1 AND operation='checkout' AND key=$2",["user:"+buyer.id,idem])).rows[0];
@@ -112,7 +113,7 @@ test("the same key twice gives one order; the same key with a different body is 
   assert.ok(concurrent.every(r=>r.orderId===first.orderId));
   await rejectsWith(api.checkout(buyer.headers,idem,body(quote,{contactEmail:"other@example.invalid"})),409,"IDEMPOTENCY_CONFLICT");
   assert.equal(await count("SELECT count(*)::int AS n FROM orders o JOIN checkout_attempts a ON a.id=o.checkout_attempt_id WHERE a.cart_id=$1",[quote.cartId]),1);
-  assert.deepEqual(await balance(p.variant),{on_hand:50,reserved:1});
+  assert.deepEqual(await balance(p.variant),{on_hand:49,reserved:0});
   const other=await owner();await rejectsWith(api.checkout(other.headers,idem,body(quote)),404,"NOT_FOUND");
 });
 
@@ -125,7 +126,7 @@ test("two keys racing on the same cart revision have exactly one winner",async()
   for(const r of lost){assert.equal(r.reason.status,409);assert.ok(["CHECKOUT_CONFLICT","QUOTE_STALE"].includes(r.reason.code),r.reason.code);}
   assert.equal(await count("SELECT count(*)::int AS n FROM checkout_attempts WHERE cart_id=$1",[quote.cartId]),1);
   assert.equal(await count("SELECT count(*)::int AS n FROM inventory_reservations r JOIN checkout_attempts a ON a.id=r.checkout_attempt_id WHERE a.cart_id=$1",[quote.cartId]),1);
-  assert.deepEqual(await balance(p.variant),{on_hand:10,reserved:3});
+  assert.deepEqual(await balance(p.variant),{on_hand:7,reserved:0});
 });
 
 test("a failure anywhere leaves no attempt, stock hold, coupon hold or order, and the key can be retried",async()=>{
@@ -145,8 +146,8 @@ test("a failure anywhere leaves no attempt, stock hold, coupon hold or order, an
   assert.equal((await q("SELECT status,version FROM carts WHERE id=$1",[quote.cartId])).rows[0].status,"active");
   const retried=await api.checkout(buyer.headers,idem,body(quote));
   assert.match(retried.orderNumber,/^GRM-/);assert.equal(retried.replayed,false);
-  assert.equal((await q("SELECT r.status FROM promotion_redemptions r JOIN promotions p ON p.id=r.promotion_id WHERE p.code='failsafe'")).rows[0].status,"reserved");
-  assert.deepEqual(await balance(p.variant),{on_hand:50,reserved:2});
+  assert.equal((await q("SELECT r.status FROM promotion_redemptions r JOIN promotions p ON p.id=r.promotion_id WHERE p.code='failsafe'")).rows[0].status,"used");
+  assert.deepEqual(await balance(p.variant),{on_hand:48,reserved:0});
 });
 
 test("a stale, expired, foreign or unpayable checkout is refused before anything is written",async()=>{
@@ -182,7 +183,7 @@ test("a guest gets a hashed status token; status needs the token or the owning s
   assert.equal((await q("SELECT user_id FROM orders WHERE id=$1",[result.orderId])).rows[0].user_id,null);
   const status=await api.checkoutStatus(guestHeaders(),{orderId:result.orderId,statusToken:result.statusToken});
   assert.deepEqual({id:status.orderId,number:status.orderNumber,status:status.status,payment:status.paymentStatus,mode:status.paymentMode,total:status.total},
-    {id:result.orderId,number:result.orderNumber,status:"pending_payment",payment:"unpaid",mode:"demo",total:quote.total});
+    {id:result.orderId,number:result.orderNumber,status:"confirmed",payment:"paid",mode:"demo",total:quote.total});
   await rejectsWith(api.checkoutStatus(guestHeaders(),{orderId:result.orderId,statusToken:"A".repeat(43)}),404,"NOT_FOUND");
   await rejectsWith(api.checkoutStatus(guestHeaders(),{orderId:randomUUID(),statusToken:result.statusToken}),404,"NOT_FOUND");
   await rejectsWith(api.checkoutStatus(guestHeaders(),{orderId:result.orderId}),404,"NOT_FOUND");
@@ -217,7 +218,11 @@ test("the worker expires overdue coupon holds on a schedule",async()=>{
   const api=await cartService(),buyer=await owner(),p=await product({price:20000});
   await coupon({code:"sweepme",usageLimit:1});
   const {quote}=await quoted(buyer.headers,[[p.variant,1]],{couponCode:"sweepme"});
-  const result=await api.checkout(buyer.headers,key(),body(quote));
+  // Task 3.2: a demo order consumes its coupon at once, so the held coupon belongs to a manual order.
+  await q("UPDATE store_settings SET payment_mode='live',version=version+1 WHERE id=1");
+  let result;
+  try{result=await api.checkout(buyer.headers,key(),body(quote,{paymentMethod:"manual"}));}
+  finally{await q("UPDATE store_settings SET payment_mode='demo',version=version+1 WHERE id=1");}
   const attempt=(await q("SELECT checkout_attempt_id FROM orders WHERE id=$1",[result.orderId])).rows[0].checkout_attempt_id;
   await q("ALTER TABLE promotion_redemptions DISABLE TRIGGER USER");
   try{await q("UPDATE promotion_redemptions SET created_at=now()-interval '2 hours',expires_at=now()-interval '1 hour' WHERE checkout_attempt_id=$1",[attempt]);}
@@ -248,7 +253,7 @@ test("review I2: the coupon redemption is linked to the order it was reserved fo
   const {quote}=await quoted(buyer.headers,[[p.variant,1]],{couponCode:"linked"});
   const result=await api.checkout(buyer.headers,key(),body(quote));
   const row=(await q("SELECT r.order_id,r.status FROM promotion_redemptions r JOIN promotions p ON p.id=r.promotion_id WHERE p.code='linked'")).rows[0];
-  assert.deepEqual(row,{order_id:result.orderId,status:"reserved"});
+  assert.deepEqual(row,{order_id:result.orderId,status:"used"});
 });
 
 // Review I3: an inclusive-tax order stores the tax included in each line as a tax adjustment.

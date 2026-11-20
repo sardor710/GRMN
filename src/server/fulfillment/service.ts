@@ -52,6 +52,8 @@ const updateInput = z.strictObject({
 }).refine(value => value.action !== "annotate" || value.carrier !== undefined || value.trackingReference !== undefined || value.internalNote !== undefined);
 const listInput = z.strictObject({
   fulfillmentStatus: z.enum(FULFILLMENT_STATUSES).optional(),
+  // Task 3.3: "demo" lists only demo-checkout orders (to find and cancel stray ones), "live" only real ones.
+  paymentMode: z.enum(["demo", "live"]).optional(),
   cursor: z.string().regex(/^[A-Za-z0-9_-]{1,200}$/).optional(),
   limit: z.coerce.number().int().min(1).max(100).optional(),
 });
@@ -87,7 +89,8 @@ export const isLegacy = (order: Pick<OrderRow, "data_quality" | "payment_mode" |
 /** Why this order cannot ship now, or null when it can. */
 export function fulfillmentBlock(order: Pick<OrderRow, "data_quality" | "payment_mode" | "checkout_attempt_id" | "payment_status" | "captured" | "fulfillment_status" | "order_status">): FulfillmentBlock | null {
   if (isLegacy(order)) return "LEGACY_ORDER";
-  if (order.payment_mode !== "live" || !order.captured || !["paid", "partially_refunded"].includes(order.payment_status)) return "ORDER_NOT_PAID";
+  // Task 3.2 ("full demo"): a captured demo order is fulfilled like a paid one; an uncaptured one never ships.
+  if (!["live", "demo"].includes(order.payment_mode) || !order.captured || !["paid", "partially_refunded"].includes(order.payment_status)) return "ORDER_NOT_PAID";
   if (order.fulfillment_status === "exception") return "FULFILLMENT_EXCEPTION";
   if (order.order_status !== "confirmed") return "ORDER_NOT_SHIPPABLE";
   return null;
@@ -197,13 +200,14 @@ interface Options { pool: Pool; authorize: (headers: Headers, permission: Permis
 
 export function createFulfillmentService({ pool, authorize }: Options) {
   return {
-    /** Staff order queue, newest first, optionally by fulfillment status. Keyset-paged. */
+    /** Staff order queue, newest first, optionally by fulfillment status and payment mode. Keyset-paged. */
     async listOrders(headers: Headers, input: unknown): Promise<{ items: AdminOrderSummaryDTO[]; nextCursor: string | null }> {
       await authorize(headers, "orders:read");
       const query = parse(listInput, input ?? {});
       const limit = query.limit ?? PAGE_LIMIT, args: unknown[] = [limit + 1];
       let where = "";
       if (query.fulfillmentStatus) { args.push(query.fulfillmentStatus); where += ` AND o.fulfillment_status=$${args.length}`; }
+      if (query.paymentMode) { args.push(query.paymentMode); where += ` AND o.payment_mode=$${args.length}`; }
       if (query.cursor) {
         const cursor = decodeCursor(query.cursor);
         args.push(cursor.at, cursor.id);

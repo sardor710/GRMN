@@ -123,7 +123,9 @@ async function guestOrder() {
   const buyer = jar(); buyer.set("grmn-maintenance-bypass", bypassCookie ?? "");
   const add = await call(buyer, "POST", "/api/cart/lines", { body: { variantId: variant, quantity: 1, expectedCartVersion: 0 } });
   const quote = await call(buyer, "POST", "/api/cart/quote", { body: { cartVersion: add.json?.version, displayCurrency: "KZT", delivery } });
-  const order = await call(buyer, "POST", "/api/cart/checkout", { body: { quoteId: quote.json?.id, cartVersion: quote.json?.cartVersion, paymentMethod: "manual" }, headers: { "idempotency-key": "rehearsal-" + randomUUID() } });
+  // Task 3.1: check out with the method the cart offers (demo while demo checkout is on, else manual).
+  const paymentMethod = add.json?.paymentMethods?.[0] ?? "manual";
+  const order = await call(buyer, "POST", "/api/cart/checkout", { body: { quoteId: quote.json?.id, cartVersion: quote.json?.cartVersion, paymentMethod }, headers: { "idempotency-key": "rehearsal-" + randomUUID() } });
   return { buyer, add, quote, order };
 }
 const stockOf = async () => (await call(staff, "GET", `/api/admin/inventory?variantId=${variant}`)).json;
@@ -133,6 +135,8 @@ if (variant) {
   const before = await stockOf();
   const { buyer, add, quote, order } = await guestOrder();
   check("guest cart add", add.status === 200, `status ${add.status}`);
+  // The rehearsal confirms a manual payment below, so it needs demo checkout off (Settings -> Payments).
+  check("checkout offers manual payment (demo checkout is off)", add.json?.paymentMethods?.[0] === "manual", `offered ${JSON.stringify(add.json?.paymentMethods)}; turn Demo checkout off before the rehearsal`);
   check("guest quote in KZT", quote.status === 200 && quote.json?.total?.currency === "KZT", `status ${quote.status}`);
   if (deliveryRule) {
     const [fee, freeFrom] = deliveryRule, goods = BigInt(quote.json?.subtotal?.amountMinor ?? -1), shipping = quote.json?.shipping?.amountMinor;
