@@ -195,7 +195,8 @@ export function saveProduct(product: Partial<CMSProduct> & { name: string; price
       name: product.name,
       sku: product.sku || `GRM-${Date.now().toString().slice(-6)}`,
       price: product.price,
-      originalPrice: product.originalPrice || product.price * 1.1,
+      // No invented sale: a compare-at price exists only when the editor sends one.
+      originalPrice: product.originalPrice || undefined,
       priceSuffix: product.priceSuffix,
       description: product.description || "Premium Garmin GPS device.",
       image: product.image || "/images/products/1228429.jpg",
