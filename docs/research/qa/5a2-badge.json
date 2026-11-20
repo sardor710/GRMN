@@ -1,0 +1,60 @@
+{
+ "target": "https://www.garmin.com/en-US/p/1462801/",
+ "clone": "http://localhost:3021/en/p/prod-1794921197218",
+ "sel": ".g__badge",
+ "cloneSel": "[data-badge]",
+ "widths": {
+  "390": {
+   "mismatchPct": 14.18,
+   "size": {
+    "target": [
+     55,
+     35
+    ],
+    "clone": [
+     56,
+     35
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "0-35",
+     "pct": 14.2
+    }
+   ],
+   "file": "docs/design-references/qa/5a2-badge-390-diff.png",
+   "text": {
+    "matched": 0,
+    "of": 0,
+    "issues": [],
+    "missing": []
+   }
+  },
+  "1440": {
+   "mismatchPct": 16.05,
+   "size": {
+    "target": [
+     55,
+     35
+    ],
+    "clone": [
+     56,
+     35
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "0-35",
+     "pct": 16.1
+    }
+   ],
+   "file": "docs/design-references/qa/5a2-badge-1440-diff.png",
+   "text": {
+    "matched": 0,
+    "of": 0,
+    "issues": [],
+    "missing": []
+   }
+  }
+ }
+}

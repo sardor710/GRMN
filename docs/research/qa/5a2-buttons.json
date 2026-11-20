@@ -1,0 +1,82 @@
+{
+ "target": "https://www.garmin.com/en-US/p/1462801/",
+ "clone": "http://localhost:3021/en/p/1462801",
+ "sel": "div.app__product__cta",
+ "cloneSel": "div:has(> button.g-btn--primary)",
+ "widths": {
+  "390": {
+   "mismatchPct": 2.35,
+   "size": {
+    "target": [
+     358,
+     113
+    ],
+    "clone": [
+     358,
+     113
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "80-113",
+     "pct": 6.5
+    }
+   ],
+   "file": "docs/design-references/qa/5a2-buttons-390-diff.png",
+   "text": {
+    "matched": 2,
+    "of": 2,
+    "issues": [
+     {
+      "t": "Add To Cart",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Customize",
+      "ff": "Superscripts-Roboto → Roboto"
+     }
+    ],
+    "missing": []
+   }
+  },
+  "1440": {
+   "mismatchPct": 3.86,
+   "size": {
+    "target": [
+     566,
+     52
+    ],
+    "clone": [
+     561,
+     52
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "0-40",
+     "pct": 4.3
+    },
+    {
+     "y": "40-52",
+     "pct": 2.3
+    }
+   ],
+   "file": "docs/design-references/qa/5a2-buttons-1440-diff.png",
+   "text": {
+    "matched": 2,
+    "of": 2,
+    "issues": [
+     {
+      "t": "Add To Cart",
+      "ff": "Superscripts-Roboto → Roboto"
+     },
+     {
+      "t": "Customize",
+      "ff": "Superscripts-Roboto → Roboto"
+     }
+    ],
+    "missing": []
+   }
+  }
+ }
+}

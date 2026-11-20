@@ -1,0 +1,78 @@
+{
+ "target": "https://www.garmin.com/en-US/p/1462801/",
+ "clone": "http://localhost:3021/en/p/prod-1794921197218",
+ "sel": "g-price.product__info__price",
+ "cloneSel": "[data-price",
+ "widths": {
+  "390": {
+   "mismatchPct": 19.78,
+   "size": {
+    "target": [
+     358,
+     48
+    ],
+    "clone": [
+     358,
+     48
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "0-40",
+     "pct": 20.1
+    },
+    {
+     "y": "40-48",
+     "pct": 18.2
+    }
+   ],
+   "file": "docs/design-references/qa/5a2-price-pdp-390-diff.png",
+   "text": {
+    "matched": 0,
+    "of": 4,
+    "issues": [],
+    "missing": [
+     "$749.99 USD",
+     "$100.00 USD",
+     "Save",
+     "$649.99 USD"
+    ]
+   }
+  },
+  "1440": {
+   "mismatchPct": 11.72,
+   "size": {
+    "target": [
+     566,
+     48
+    ],
+    "clone": [
+     561,
+     48
+    ]
+   },
+   "hotBands": [
+    {
+     "y": "0-40",
+     "pct": 12.7
+    },
+    {
+     "y": "40-48",
+     "pct": 7
+    }
+   ],
+   "file": "docs/design-references/qa/5a2-price-pdp-1440-diff.png",
+   "text": {
+    "matched": 0,
+    "of": 4,
+    "issues": [],
+    "missing": [
+     "$749.99 USD",
+     "$100.00 USD",
+     "Save",
+     "$649.99 USD"
+    ]
+   }
+  }
+ }
+}
