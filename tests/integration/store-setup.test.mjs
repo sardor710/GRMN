@@ -40,6 +40,6 @@ test("setup creates the settings, tax and shipping once, with the store closed, 
   const s = (await handle.pool.query(`SELECT s.store_name,s.maintenance_mode,s.payment_mode,s.free_shipping_threshold_minor::text AS free,s.manual_payment_instructions AS instr,s.manual_payment_hold_hours AS hold,
     t.mode,t.rate_bps,t.country_code,(SELECT count(*)::int FROM shipping_rates r WHERE r.policy_id=s.active_shipping_policy_id) AS rates
     FROM store_settings s JOIN tax_configuration t ON t.id=s.active_tax_configuration_id WHERE s.id=1`)).rows[0];
-  assert.deepEqual(s, { store_name: "GRMN Kazakhstan", maintenance_mode: true, payment_mode: "live", free: "5000000", instr: config.manualPayment.instructions, hold: 48, mode: "inclusive", rate_bps: 1200, country_code: "KZ", rates: 1 });
+  assert.deepEqual(s, { store_name: "GRMN Kazakhstan", maintenance_mode: true, payment_mode: "demo", free: "5000000", instr: config.manualPayment.instructions, hold: 48, mode: "inclusive", rate_bps: 1200, country_code: "KZ", rates: 1 });
   await assert.rejects(setupStore(handle.pool, config), /already set up/);
 });

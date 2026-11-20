@@ -119,7 +119,7 @@ try{
       await c("INSERT INTO shipping_policy_versions(id,version) VALUES($1,1)",[policy]);
       await c("INSERT INTO shipping_zones(id,key,name,countries,active) VALUES($1,'kz','Kazakhstan','[\"KZ\"]'::jsonb,true)",[zone]);
       await c("INSERT INTO shipping_rates(id,policy_id,zone_id,key,amount_minor) VALUES($1,$2,$3,'standard',150000)",[randomUUID(),policy,zone]);
-      await c("INSERT INTO store_settings(id,store_name,active_tax_configuration_id,active_shipping_policy_id,maintenance_mode,manual_payment_instructions) VALUES(1,'GRMN perf',$1,$2,false,'Synthetic perf instructions')",[tax,policy]);
+      await c("INSERT INTO store_settings(id,store_name,active_tax_configuration_id,active_shipping_policy_id,maintenance_mode,payment_mode,manual_payment_instructions) VALUES(1,'GRMN perf',$1,$2,false,'live','Synthetic perf instructions')",[tax,policy]);
     });
     await client.query("COMMIT");
   }catch(error){await client.query("ROLLBACK");throw error;}

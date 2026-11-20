@@ -85,7 +85,7 @@ test("the target import refuses a database that already holds live checkout orde
     await client.query("BEGIN"); await client.query("SET LOCAL session_replication_role=replica");
     const attempt = randomUUID(), cart = randomUUID(), quote = randomUUID();
     await client.query("INSERT INTO checkout_attempts(id,cart_id,cart_version,quote_id,actor_scope,idempotency_key,request_hash) VALUES($1,$2,1,$3,'user:x','live-order-key-0001',repeat('a',64))", [attempt, cart, quote]);
-    await client.query("INSERT INTO orders(id,checkout_attempt_id,contact_name,contact_phone,placed_at,subtotal_minor,discount_minor,shipping_minor,tax_minor,total_minor) VALUES($1,$2,'Live buyer','+77010000009',clock_timestamp(),100,0,0,0,100)", [randomUUID(), attempt]);
+    await client.query("INSERT INTO orders(id,checkout_attempt_id,contact_name,contact_phone,placed_at,subtotal_minor,discount_minor,shipping_minor,tax_minor,total_minor,payment_mode) VALUES($1,$2,'Live buyer','+77010000009',clock_timestamp(),100,0,0,0,100,'live')", [randomUUID(), attempt]);
     await client.query("COMMIT");
   } finally { client.release(); }
   try { await assert.rejects(importIntoTarget(handle.pool, snapshot(), { confirmDatabase: name, output: dir }), /live checkout orders/); }

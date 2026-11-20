@@ -219,7 +219,7 @@ test("settings are typed and versioned; invalid combinations are refused; the US
   assert.equal(current.baseCurrency,"KZT");assert.equal(current.paymentMode,"demo");
   assert.ok(!("legacySettings" in current),"raw legacy settings (possible secrets) are never returned");
   await rejectsWith(settingsApi.update(settingsAdmin,{expectedVersion:current.version,usdDisplayEnabled:true}),409,"INVALID_SETTINGS");
-  await rejectsWith(settingsApi.update(settingsAdmin,{expectedVersion:current.version,paymentMode:"live"}),400,"INVALID_INPUT");
+  await rejectsWith(settingsApi.update(settingsAdmin,{expectedVersion:current.version,paymentMode:"kaspi"}),400,"INVALID_INPUT");
   await rejectsWith(settingsApi.update(settingsAdmin,{expectedVersion:current.version,freeShippingThresholdMinor:"-5"}),400,"INVALID_INPUT");
   await rejectsWith(settingsApi.update(settingsAdmin,{expectedVersion:current.version,contactEmail:"not-an-email"}),400,"INVALID_INPUT");
   await rejectsWith(settingsApi.setExchangeRate(settingsAdmin,{expectedVersion:current.version,kztPerUsd:"0"}),400,"INVALID_INPUT");
@@ -313,4 +313,24 @@ test("review I7/I9: a shipping policy with no bands is 409, and each export kind
   const {unlink}=await import("node:fs/promises"),path=await import("node:path");
   await unlink(path.join(storage,"private","exports",job.id+".csv"));
   await rejectsWith(svc.download(exporter,job.id),410,"EXPORT_EXPIRED");
+});
+
+// Task 3.3: the order export labels every row with its payment mode, so demo orders are never read as money.
+test("the order export has a payment_mode column that marks demo orders",async()=>{
+  await services();
+  const svc=exportsApi.createExportService({pool:database.pool,authorize,storageDir:storage});
+  const p=await product();
+  const live=await paidOrder([[p.variant,1]]);
+  const buyer=await owner(),quote=await quoted(buyer.headers,[[p.variant,1]]);
+  const demo=await carts.checkout(buyer.headers,key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"});
+  assert.equal(demo.paymentMode,"demo");
+  const job=await svc.request(exporter,{kind:"orders",from:today(),to:today()});
+  await exportsApi.generateExport(database.pool,storage,job.id);
+  const rows=Buffer.from((await svc.download(exporter,job.id)).bytes).toString("utf8").trim().split(/\r?\n/).map(line=>line.split(","));
+  const header=rows[0].map(cell=>cell.replace(/"/g,"")),column=header.indexOf("payment_mode"),number=header.indexOf("order_number");
+  assert.ok(column>=0,"payment_mode column");
+  const modeOf=orderNumber=>rows.slice(1).find(row=>row[number].replace(/"/g,"")===orderNumber)?.[column].replace(/"/g,"");
+  const liveNumber=(await q("SELECT order_number FROM orders WHERE id=$1",[live.orderId])).rows[0].order_number;
+  assert.equal(modeOf(demo.orderNumber),"demo");
+  assert.equal(modeOf(liveNumber),"live");
 });

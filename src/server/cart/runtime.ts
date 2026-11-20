@@ -24,8 +24,8 @@ function getCartHandler() {
     const config = parseAuthConfig(process.env);
     const service = createCartService({
       database: getDatabase(), secret: config.secret,
-      // O07: the demo adapter is for tests and development only; production checkout is manual.
-      allowDemoPayments: process.env.NODE_ENV !== "production",
+      // Task 3.1: demo or manual is chosen by the "Demo checkout" setting (and DEMO_CHECKOUT_DISABLED),
+      // on every environment, inside placeOrder; NODE_ENV no longer decides it.
       // Hold-abuse limit: unpaid manual orders are also counted per trusted client address.
       clientAddress: headers => trustedClientAddress(headers),
       identify: async headers => {

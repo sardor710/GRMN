@@ -39,7 +39,7 @@ async function order(attemptId,items){
   const total=items.reduce((sum,item)=>sum+item.quantity*100,0);
   try{
     await client.query("BEGIN");
-    await client.query("INSERT INTO orders(id,contact_name,contact_phone,subtotal_minor,discount_minor,shipping_minor,tax_minor,total_minor,placed_at,checkout_attempt_id) VALUES($1,'Synthetic buyer','+77000000000',$2,0,0,0,$2,now(),$3)",[id,total,attemptId]);
+    await client.query("INSERT INTO orders(id,contact_name,contact_phone,subtotal_minor,discount_minor,shipping_minor,tax_minor,total_minor,placed_at,checkout_attempt_id,payment_mode) VALUES($1,'Synthetic buyer','+77000000000',$2,0,0,0,$2,now(),$3,'demo')",[id,total,attemptId]);
     await client.query("INSERT INTO order_addresses(id,order_id,kind,recipient_name,phone,country_code,city,line1) VALUES($1,$2,'structured','Synthetic buyer','+77000000000','KZ','Almaty','Synthetic street')",[randomUUID(),id]);
     for(const item of items){
       const itemId=randomUUID();ids.push(itemId);
