@@ -53,6 +53,8 @@ export interface ProductCardDTO {
   noIndex?: boolean;
   canonicalUrl?: string | null;
   updatedAt?: string;
+  /** Task C-d: the card's colour dots (swatch photo or hex per colour on sale); absent when the data has none. */
+  colors?: { label: string; image?: string; hex?: string }[];
 }
 
 export interface VariantDTO {
@@ -103,7 +105,7 @@ export interface ProductQuery {
   caseSizes?: readonly ("Small" | "Medium" | "Large")[];
   level?: "Entry" | "Advanced" | "Premium" | "Youth";
   caseSize?: "Small" | "Medium" | "Large";
-  sort?: "name_asc" | "price_asc" | "price_desc" | "newest";
+  sort?: "name_asc" | "name_desc" | "price_asc" | "price_desc" | "newest";
 }
 
 export interface DeliveryAddress {

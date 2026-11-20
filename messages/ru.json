@@ -227,7 +227,8 @@
       "featured": "Сначала новые",
       "priceAsc": "Цена: по возрастанию",
       "priceDesc": "Цена: по убыванию",
-      "name": "От А до Я"
+      "name": "От А до Я",
+      "nameDesc": "От Я до А"
     },
     "groups": {
       "battery": "Время работы в режиме смарт-часов",
@@ -688,7 +689,8 @@
     "sale": "Распродажа"
   },
   "ProductCard": {
-    "andUp": "и выше"
+    "andUp": "и выше",
+    "colors": "Цвета: {list}"
   },
   "ProductTabs": {
     "tabs": {

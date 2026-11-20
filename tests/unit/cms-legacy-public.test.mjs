@@ -21,3 +21,14 @@ test("explicit draft/archive records shadow legacy static membership and read fa
   for(const status of ["draft","archived"]){const api=source({products:[{id:"static-only",status}],blogs:[{slug:"static-article",status}]});assert.equal(await api.readProduct("static-only"),undefined);assert.equal(await api.readBlog("static-article"),undefined);}
   const failed=source({fail:true});await assert.rejects(failed.readProduct("static-only"),/source unavailable/);await assert.rejects(failed.readBlog("static-article"),/source unavailable/);
 });
+// Task C-d: the legacy JSON listing sorts Z to A too, across cursor pages bound to that order.
+test("legacy listing: name_desc pages names Z to A and its cursor does not carry over to another sort",async()=>{
+  const item=(id,name)=>({id,name,status:"published",price:10,description:"",activities:[],level:"Entry",caseSize:"Medium"});
+  const api=source({products:[item("b","Bravo"),item("d","Delta"),item("a","Alpha"),item("c","Charlie")]});
+  const first=await api.readProductsPage({limit:2,sort:"name_desc"});
+  assert.deepEqual(first.items.map(p=>p.name),["Delta","Charlie"]);
+  const second=await api.readProductsPage({limit:2,sort:"name_desc",cursor:first.nextCursor});
+  assert.deepEqual(second.items.map(p=>p.name),["Bravo","Alpha"]);assert.equal(second.nextCursor,null);
+  assert.deepEqual((await api.readProductsPage({limit:4,sort:"name_asc"})).items.map(p=>p.name),["Alpha","Bravo","Charlie","Delta"]);
+  await assert.rejects(api.readProductsPage({limit:2,sort:"name_asc",cursor:first.nextCursor}),error=>error.status===400);
+});

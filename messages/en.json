@@ -227,7 +227,8 @@
       "featured": "Newest",
       "priceAsc": "Price: Low to High",
       "priceDesc": "Price: High to Low",
-      "name": "A to Z"
+      "name": "A to Z",
+      "nameDesc": "Z to A"
     },
     "groups": {
       "battery": "Battery Life in Smartwatch Mode",
@@ -688,7 +689,8 @@
     "sale": "Sale"
   },
   "ProductCard": {
-    "andUp": "and up"
+    "andUp": "and up",
+    "colors": "Colors: {list}"
   },
   "ProductTabs": {
     "tabs": {

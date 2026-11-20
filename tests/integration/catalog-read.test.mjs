@@ -48,6 +48,20 @@ test("catalog keyset sorting scopes cursors and retains sub-millisecond timestam
   for(const sort of ["name_asc","price_asc","price_desc","newest"]){let cursor,keys=[];do{const page=await api.listProducts(query({search:"SortFixture",sort}),{limit:1,cursor});keys.push(...page.items.map(item=>item.publicKey));cursor=page.nextCursor??undefined;}while(cursor);assert.equal(keys.length,3);assert.equal(new Set(keys).size,3);}
   const page=await api.listProducts(query({search:"SortFixture",sort:"price_asc"}),{limit:1});await assert.rejects(api.listProducts(query({search:"SortFixture",sort:"price_desc"}),{cursor:page.nextCursor}),error=>error.status===400);
 });
+// Task C-d: garmin.com's "Z to A". Names descend across pages, the cursor is bound to this order, ties on a
+// name keep a stable id order, and an unknown sort key is still refused.
+test("name_desc lists names Z to A across cursor pages; its cursor is bound to the order; unknown sorts are refused",async()=>{
+  const api=await reader();for(const suffix of ["Bravo","Delta","Alpha","Charlie","Charlie"])await product({name:"ZtoAFixture "+suffix});
+  const first=await api.listProducts(query({search:"ZtoAFixture",sort:"name_desc"}),{limit:3});
+  assert.deepEqual(first.items.map(item=>item.name),["ZtoAFixture Delta","ZtoAFixture Charlie","ZtoAFixture Charlie"]);assert.ok(first.nextCursor);
+  const second=await api.listProducts(query({search:"ZtoAFixture",sort:"name_desc"}),{limit:3,cursor:first.nextCursor});
+  assert.deepEqual(second.items.map(item=>item.name),["ZtoAFixture Bravo","ZtoAFixture Alpha"]);assert.equal(second.nextCursor,null);
+  const all=[...first.items,...second.items].map(item=>item.publicKey);assert.equal(new Set(all).size,5,"no product repeats or goes missing across the page boundary");
+  const asc=[];let cursor;do{const page=await api.listProducts(query({search:"ZtoAFixture",sort:"name_asc"}),{limit:2,cursor});asc.push(...page.items.map(item=>item.publicKey));cursor=page.nextCursor??undefined;}while(cursor);
+  assert.deepEqual(all,[...asc].reverse(),"Z to A is exactly A to Z reversed, ties included");
+  await assert.rejects(api.listProducts(query({search:"ZtoAFixture",sort:"name_asc"}),{limit:3,cursor:first.nextCursor}),error=>error.status===400);
+  for(const sort of ["name-desc","z_a","NAME_DESC"])await assert.rejects(api.listProducts(query({search:"ZtoAFixture",sort}),{}),error=>error.status===400);
+});
 test("filters apply before pagination and literal wildcard/Unicode searches stay literal",async()=>{
   const api=await reader();await product({name:"Percent% Құрылғы",metadata:{category:"Running",activities:["Running"],level:"Premium",caseSize:"Small"}});await product({name:"PercentA other",metadata:{activities:["Swimming"],level:"Entry",caseSize:"Large"}});
   const page=await api.listProducts(query({search:"Percent%",activities:["running"],level:"Premium",caseSize:"Small"}),{limit:1});assert.equal(page.items.length,1);assert.ok(page.items[0].name.includes("Құрылғы"));assert.equal(page.nextCursor,null);

@@ -45,7 +45,7 @@ export default async function CataloguePage({ params, searchParams }: PageProps<
   if (!def) notFound();
 
   const query=await searchParams,one=(k:string)=>typeof query[k]==="string"?query[k] as string:undefined,many=(k:string)=>[query[k]??[]].flat();
-  const sorts={featured:"newest","price-asc":"price_asc","price-desc":"price_desc",name:"name_asc"} as const;
+  const sorts={featured:"newest","price-asc":"price_asc","price-desc":"price_desc",name:"name_asc","name-desc":"name_desc"} as const;
   const page = await readOr(catalogueProducts(def,{cursor:one("cursor"),search:one("search"),activities:many("activities"),levels:many("levels") as import("@/contracts/commerce").ProductQuery["levels"],caseSizes:many("caseSizes") as import("@/contracts/commerce").ProductQuery["caseSizes"],sort:sorts[(one("sort")??"featured") as keyof typeof sorts]??"name_asc"},locale), notFound);
   const next=new URLSearchParams();Object.entries(query).forEach(([key,value])=>[value??[]].flat().forEach(v=>next.append(key,v)));if(page.nextCursor)next.set("cursor",page.nextCursor);
   const items = page.items;

@@ -11,15 +11,16 @@ import { CATALOGUE_COMPARE_PARAM, CATALOGUE_COMPARE_SEARCH_PARAM } from "@/lib/c
 import { COMPARE_LIMIT_NOTE_ID, hasProduct, isSelectionFull, toggleProduct } from "@/lib/compare/selection";
 import { useCompareSelection } from "@/lib/compare/use-compare-selection";
 
-type SortKey = "featured" | "price-asc" | "price-desc" | "name";
+type SortKey = "featured" | "price-asc" | "price-desc" | "name" | "name-desc";
 
 /**
- * Message keys in the `CatalogueGrid` namespace, in garmin.com's order (SideFilterMenu.spec.md). Garmin also offers
- * "Z to A"; the catalogue API has no descending name sort, so it is not offered here.
+ * Message keys in the `CatalogueGrid` namespace, in garmin.com's order (SideFilterMenu.spec.md): Featured (our
+ * Newest), A to Z, Z to A (task C-d, `name_desc`), then the two price sorts.
  */
 const sortLabels: Record<SortKey, string> = {
   featured: "sort.featured",
   name: "sort.name",
+  "name-desc": "sort.nameDesc",
   "price-asc": "sort.priceAsc",
   "price-desc": "sort.priceDesc",
 };

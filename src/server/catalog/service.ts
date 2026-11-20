@@ -10,12 +10,13 @@ import { PRODUCT_SPEC, isRecordTranslated, localizeRecord, resolveSeoText } from
 import type { Locale } from "../../i18n/config.ts";
 import { effectiveVariantContent, localizeVariantOverride, parseVariantContent, type ProductContentDTO, type VariantContent } from "../../lib/catalog/variant-content.ts";
 import { PRODUCT_HTML_FIELDS } from "../../lib/cms/product-input.ts";
+import { cardColors, projectedOptionKey } from "../../lib/catalog/card-colors.ts";
 
 const fail = (): never => { throw new AuthFailure("INVALID_INPUT", 400, "Invalid catalog query or cursor"); };
 const text = z.string().trim().min(1).max(200);
 const level = z.enum(["Entry", "Advanced", "Premium", "Youth"]);
 const size = z.enum(["Small", "Medium", "Large"]);
-const schema = z.object({market:text,locale:z.enum(["en","ru","kk"]),displayCurrency:z.enum(["KZT","USD"]),search:z.string().trim().max(200).optional(),category:text.optional(),activities:z.array(text).max(30).optional(),activitiesAll:z.array(text).max(30).optional(),level:level.optional(),levels:z.array(level).max(4).optional(),caseSize:size.optional(),caseSizes:z.array(size).max(3).optional(),sort:z.enum(["name_asc","price_asc","price_desc","newest"]).default("name_asc")}).strict();
+const schema = z.object({market:text,locale:z.enum(["en","ru","kk"]),displayCurrency:z.enum(["KZT","USD"]),search:z.string().trim().max(200).optional(),category:text.optional(),activities:z.array(text).max(30).optional(),activitiesAll:z.array(text).max(30).optional(),level:level.optional(),levels:z.array(level).max(4).optional(),caseSize:size.optional(),caseSizes:z.array(size).max(3).optional(),sort:z.enum(["name_asc","name_desc","price_asc","price_desc","newest"]).default("name_asc")}).strict();
 const pages = z.object({limit:z.number().int().min(1).max(100).default(24),cursor:z.string().min(1).max(2048).optional()}).strict();
 function parse<T>(s:z.ZodType<T>,input:unknown):T { const result=s.safeParse(input);return result.success?result.data:fail(); }
 type Row = Record<string,unknown>;
@@ -78,6 +79,7 @@ const base = (byPrice: boolean, keys: ReadonlySet<KeyColumn>) => `WITH eligible 
 const pageColumns = `p.id,p.public_key,p.name,p.description,p.family,p.badge,p.price_suffix,p.specs,p.features,p.in_the_box,p.seo_title,p.seo_description,p.canonical_url,p.no_index,p.og_image_source,
  selected.created_key,selected.amount,${(Object.keys(keySQL) as KeyColumn[]).map(column => `${keySQL[column]} AS ${column}`).join(",")},
  offers.variants,chosen.offer,
+ CASE WHEN jsonb_typeof(p.legacy_content->'options')='array' THEN p.legacy_content->'options' END AS editor_options,
  CASE WHEN offers.variants @> '[{"availability":"available"}]' THEN 'available' WHEN offers.variants @> '[{"availability":"unavailable"}]' THEN 'unavailable' ELSE 'out_of_stock' END AS availability`;
 // Built only for the selected rows (`selected`): every eligible variant with options, stock state and gallery, and the chosen offer.
 const offersSQL = `JOIN products p ON p.id=selected.id
@@ -102,8 +104,14 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
     if(fx){const [a,b=""]=fx.kztPerUsd.split("."),scale=BigInt(10)**BigInt(b.length),den=BigInt(a+b);if(den>BigInt(0))result.usdEquivalent={currency:"USD",amountMinor:((BigInt(amount)*scale+den/BigInt(2))/den).toString(),exchangeRate:fx};}
     return result;
   }
+  // Task C-d: the card's colour dots, from the editor's colour option (legacy_content, already on the selected row)
+  // and only the colours an eligible variant of this page's offers is in: no extra query per card.
+  function colors(row:Row):NonNullable<ProductCardDTO["colors"]>{
+    const variants=array(row.variants).map(v=>obj(obj(v).options));
+    return cardColors(row.editor_options,(option,value)=>{const key=projectedOptionKey(option);return variants.some(o=>o[key]===value.label);});
+  }
   function card(row:Row,fx:ExchangeRateSnapshotDTO|null):ProductCardDTO {
-    const offer=obj(row.offer);return {id:String(row.id),publicKey:String(row.public_key),name:String(row.name),description:String(row.description),noIndex:row.no_index===true,canonicalUrl:row.canonical_url==null?null:String(row.canonical_url),updatedAt:String(row.created_key),family:String(row.family??""),badge:row.badge==null?null:String(row.badge),priceSuffix:row.price_suffix==null?undefined:String(row.price_suffix),activities:strings(row.activity_keys),level:level.safeParse(row.level).success?row.level as ProductCardDTO["level"]:null,caseSize:size.safeParse(row.case_size).success?row.case_size as ProductCardDTO["caseSize"]:null,image:array(offer.gallery).map(media).find(Boolean)??null,price:price(offer,fx),availability:row.availability as Availability};
+    const offer=obj(row.offer),dots=colors(row);return {...(dots.length?{colors:dots}:{}),id:String(row.id),publicKey:String(row.public_key),name:String(row.name),description:String(row.description),noIndex:row.no_index===true,canonicalUrl:row.canonical_url==null?null:String(row.canonical_url),updatedAt:String(row.created_key),family:String(row.family??""),badge:row.badge==null?null:String(row.badge),priceSuffix:row.price_suffix==null?undefined:String(row.price_suffix),activities:strings(row.activity_keys),level:level.safeParse(row.level).success?row.level as ProductCardDTO["level"]:null,caseSize:size.safeParse(row.case_size).success?row.case_size as ProductCardDTO["caseSize"]:null,image:array(offer.gallery).map(media).find(Boolean)??null,price:price(offer,fx),availability:row.availability as Availability};
   }
   async function select(q:ReturnType<typeof queryInput>,page:PageInput={},keys?:string[]):Promise<{rows:Row[];nextCursor:string|null;fx:ExchangeRateSnapshotDTO|null}>{
     const pg=parse(pages,page),fx=await rate(q.displayCurrency),scope=createHash("sha256").update(JSON.stringify([q,fx?.id??null,keys??null])).digest("hex"),args:unknown[]=[q.market],where:string[]=[];
@@ -118,7 +126,7 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
     if(q.levels?.length)where.push(`level=ANY(${param(q.levels)}::text[])`);
     if(q.caseSize)where.push(`case_size=${param(q.caseSize)}`);
     if(q.caseSizes?.length)where.push(`case_size=ANY(${param(q.caseSizes)}::text[])`);
-    const field=q.sort==="name_asc"?"name":q.sort==="newest"?"created_key":"amount",desc=q.sort==="price_desc"||q.sort==="newest",cast=field==="amount"?"::bigint":"::text";
+    const field=q.sort==="name_asc"||q.sort==="name_desc"?"name":q.sort==="newest"?"created_key":"amount",desc=q.sort==="name_desc"||q.sort==="price_desc"||q.sort==="newest",cast=field==="amount"?"::bigint":"::text";
     if(pg.cursor){let c;try{if(!/^[A-Za-z0-9_-]+$/.test(pg.cursor))throw Error();c=JSON.parse(Buffer.from(pg.cursor,"base64url").toString("utf8"));if(c.v!==1||c.scope!==scope||!z.uuid().safeParse(c.id).success||typeof c.value!=="string"||c.value.length>1000||Object.keys(c).length!==4||(field==="amount"&&!/^(0|[1-9][0-9]*)$/.test(c.value)))throw Error();}catch{return fail();}where.push(`(${field},id) ${desc?"<":">"} (${param(c.value)}${cast},${param(c.id)}::uuid)`);}
     const order=`${field} ${desc?"DESC":"ASC"},id ${desc?"DESC":"ASC"}`;
     const rows=(await pool.query(`${base(field==="amount",keyColumns)}, selected AS (SELECT * FROM eligible${where.length?" WHERE "+where.join(" AND "):""} ORDER BY ${order} LIMIT ${param(pg.limit+1)}) SELECT ${pageColumns} FROM selected ${offersSQL} ORDER BY selected.${order.replace(",id",",selected.id")}`,args)).rows;
