@@ -41,8 +41,10 @@ export function createCMSHTTP(input:{cms:CMSService;authorize:(headers:Headers,p
       }
       queries(url,[]);
       // garmin.com imports (overview, up to 300 photos, all variants) exceed 128 KB, like the legacy route.
+      // Task 2.5: imports also carry each variant's own specs/overview (a fēnix 9 draft is ~2 MB), so products
+      // allow 4 MiB. The body is read only after the catalog:write check and same-origin check above.
       const bulk=resource==="products"&&request.method==="POST"&&url.pathname==="/api/admin/products/bulk";
-      const raw=await readAdminJSON(request,true,resource==="products"?1048576:131072);
+      const raw=await readAdminJSON(request,true,resource==="products"?4194304:131072);
       if(resource==="homepage"){
         if(request.method==="POST"){const data=parsed(z.object({action:z.literal("reset"),version:z.number().int().nonnegative()}).strict(),raw);const saved=await input.cms.saveHomepage(request.headers,{version:data.version,config:input.defaults()});return adminJSON({success:true,config:saved.config,version:saved.version});}
         if(request.method!=="PUT")return bad();const saved=await input.cms.saveHomepage(request.headers,raw);return adminJSON({success:true,config:saved.config,version:saved.version});
