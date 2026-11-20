@@ -109,3 +109,26 @@ test("RU request returns translated override, falls back to the English override
   const en=await service.getProductByPublicKey(saved.id,"default","KZT","en");
   assert.deepEqual(bySku(en,"VC-C-1").content.inTheBox,["Watch 51 mm","Cable"]);
 });
+
+const noSpecs=Object.fromEntries(Object.entries(own51).filter(([k])=>k!=="specs"));
+test("variant translations survive every product save, are sanitized, and only cover owned blocks",async()=>{
+  const cms=await cmsService();
+  const variantTr={"var-1":{content:{overviewHtml:"<p>Обзор 51</p><script>alert(1)</script>",inTheBox:["Часы 51 мм","Кабель"],specGroups:[{title:"Физика",items:[{label:"Вес",value:"89 г"}]}],specs:[{label:"Вес",value:"89"}]}},
+    // var-0 owns nothing, and "var-9" does not exist: neither may be stored.
+    "var-0":{content:{inTheBox:["Не своё"]}},"var-9":{content:{inTheBox:["Нет"]}}};
+  const saved=await cms.save("products",admin,{...watch("VC-D",noSpecs),translations:{ru:{name:"Часы",variants:variantTr}}});
+  const stored=async()=>(await q("SELECT t.locale,t.content FROM product_translations t JOIN products p ON p.id=t.product_id WHERE p.public_key=$1",[saved.id])).rows;
+  const first=(await stored()).find(r=>r.locale==="ru").content;
+  assert.deepEqual(Object.keys(first.variants),["var-1"]);
+  // Owned blocks only: this override owns specGroups, overviewHtml and inTheBox, not specs.
+  assert.deepEqual(first.variants["var-1"].content,{overviewHtml:"<p>Обзор 51</p>",inTheBox:["Часы 51 мм","Кабель"],specGroups:[{title:"Физика",items:[{label:"Вес",value:"89 г"}]}]});
+  // Save the product again twice (a version bump, with and without translations): the variant translations stay.
+  const second=await cms.save("products",admin,{...watch("VC-D",noSpecs),id:saved.id,version:saved.version,description:"Changed"});
+  assert.deepEqual((await stored()).find(r=>r.locale==="ru").content.variants,first.variants);
+  const third=await cms.save("products",admin,{...watch("VC-D",noSpecs),id:saved.id,version:second.version,translations:{ru:{name:"Часы 2",variants:first.variants}}});
+  assert.deepEqual((await stored()).find(r=>r.locale==="ru").content.variants,first.variants);
+  assert.equal((await cms.get("products",admin,saved.id)).translations.ru.variants["var-1"].content.inTheBox[0],"Часы 51 мм");
+  // A variant that stops owning a block loses the translation of it on the next translated save.
+  await cms.save("products",admin,{...watch("VC-D",{inTheBox:["Watch 51 mm"]}),id:saved.id,version:third.version,translations:{ru:{name:"Часы 3",variants:first.variants}}});
+  assert.deepEqual((await stored()).find(r=>r.locale==="ru").content.variants["var-1"].content,{inTheBox:["Часы 51 мм","Кабель"]});
+});

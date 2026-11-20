@@ -13,10 +13,12 @@ export interface FieldSpec {
   stringLists?: readonly string[];
   lists?: Readonly<Record<string, FieldSpec>>;
   keyed?: Readonly<Record<string, FieldSpec>>;
+  objects?: Readonly<Record<string, FieldSpec>>;
   idPatches?: readonly { map: string; path: readonly string[]; field: string }[];
 }
 
 export const PRODUCT_SPEC: FieldSpec = js.PRODUCT_SPEC;
+export const VARIANT_CONTENT_SPEC: FieldSpec = js.VARIANT_CONTENT_SPEC;
 export const BLOG_SPEC: FieldSpec = js.BLOG_SPEC;
 export const BANNER_SPEC: FieldSpec = js.BANNER_SPEC;
 export const SETTINGS_SPEC: FieldSpec = js.SETTINGS_SPEC;

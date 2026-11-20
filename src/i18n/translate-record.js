@@ -6,6 +6,8 @@
 //   stringLists: string[] fields merged by index (blank entries fall back, extra rows ignored)
 //   lists:       arrays of objects merged by index, each item resolved with the nested spec
 //   keyed:       arrays of objects whose overlay is a Record<itemId, Partial<item>>, nested spec
+//   objects:     one nested object per key (item[key]), resolved with the nested spec; absent in the
+//                base means nothing to merge (a translation never creates the object)
 //   idPatches:   overlay maps Record<id, string> patching `field` on items found by walking
 //                `path` (array fields) of the base record, e.g. valueLabels -> options.values.label
 
@@ -56,6 +58,10 @@ function mergeInto(target, overlay, spec) {
     target[key].forEach((item, i) => mergeInto(item, rows[i], nested));
   }
 
+  for (const [key, nested] of Object.entries(spec.objects ?? {})) {
+    if (isPlainObject(target[key])) mergeInto(target[key], overlay[key], nested);
+  }
+
   for (const [key, nested] of Object.entries(spec.keyed ?? {})) {
     const byId = overlay[key];
     if (!isPlainObject(byId) || !Array.isArray(target[key])) continue;
@@ -97,6 +103,16 @@ export function isRecordTranslated(record, locale, requiredFields) {
   });
 }
 
+/**
+ * Task 2.2: the blocks a variant may own (`variants[].content`). Same fields as the product's own
+ * blocks; the overlay lives at translations.<locale>.variants[<editor variant id>].content.
+ */
+export const VARIANT_CONTENT_SPEC = Object.freeze({
+  scalars: ['overviewHtml'],
+  stringLists: ['inTheBox'],
+  lists: { specs: { scalars: ['label', 'value'] }, specGroups: { scalars: ['title'], lists: { items: { scalars: ['label', 'value'] } } } },
+});
+
 export const PRODUCT_SPEC = Object.freeze({
   scalars: ['name', 'description', 'overviewHtml', 'seoTitle', 'seoDescription', 'priceSuffix'],
   stringLists: ['inTheBox'],
@@ -105,6 +121,7 @@ export const PRODUCT_SPEC = Object.freeze({
     features: { scalars: ['title', 'body'] },
     specGroups: { scalars: ['title'], lists: { items: { scalars: ['label', 'value'] } } },
   },
+  keyed: { variants: { objects: { content: VARIANT_CONTENT_SPEC } } },
   idPatches: [
     { map: 'optionNames', path: ['options'], field: 'name' },
     { map: 'valueLabels', path: ['options', 'values'], field: 'label' },
