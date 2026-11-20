@@ -569,13 +569,13 @@ try{
     const customerSession=await(await runtime.auth.$context).internalAdapter.createSession(customerId);
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:encodeURIComponent(customerSession.token+"."+createHmac("sha256",secret).update(customerSession.token).digest("base64")),url:origin,httpOnly:true,sameSite:"Lax"});
     await navigate("/account");await until(async()=>(await low()).includes("ui account owner"),"Account page did not load the session profile");
-    assert.ok(!(await low()).includes("alex rivera"));assert.ok((await low()).includes("no saved addresses yet"));
+    assert.ok(!(await low()).includes("alex rivera"));assert.ok((await low()).includes("no saved addresses"));
     await click("Add Address");await until(()=>evaluate("!!document.querySelector('form[name=address]')"),"Address form missing");
     await fill("Address Title","UI Home");await fill("Street Address","UI street 10");await fill("City","Almaty");
     await evaluate("document.querySelector('form[name=address]').requestSubmit();true");await until(()=>evaluate("!document.querySelector('form[name=address]')"),"Address save failed");
     const savedAddress=(await database.pool.query("SELECT label,line1,is_primary,phone FROM customer_addresses WHERE user_id=$1",[customerId])).rows;assert.equal(savedAddress.length,1);assert.equal(savedAddress[0].label,"UI Home");assert.equal(savedAddress[0].is_primary,true);assert.equal(savedAddress[0].phone,"+77000000077");
     await navigate("/account");await until(async()=>(await low()).includes("ui street 10"),"Saved address did not persist across reload");
-    await click("Orders");await until(async()=>(await low()).includes(legacyNumber.toLowerCase()),"Owned order missing from history");assert.ok((await low()).includes("43.21 kzt"));
+    await click("Orders");await until(async()=>(await low()).includes(legacyNumber.toLowerCase()),"Owned order missing from history");assert.match(await low(),/kzt\s?43\.21\b/);
     await click(legacyNumber);await until(async()=>(await low()).includes("ui legacy typed address"),"Order detail did not load");assert.match(await low(),/subtotal\s+—/);
     assert.ok(!(await low()).includes("send reset link"));
     console.log("PASS Task10C account page: signed-out phone sign-in, session profile, address create + reload persistence, owned legacy order with missing money shown as —");
@@ -603,7 +603,7 @@ try{
     await until(async()=>(await database.pool.query("SELECT ci.quantity FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.status='active' AND c.user_id IS NULL AND ci.variant_id=$1",[cartVariant])).rows[0]?.quantity===3,"Guest server cart did not hold the imported and added quantity");
     const guestCookie=(await send("Network.getCookies",{urls:[origin+"/api/cart"]})).cookies.find(c=>c.name==="grmn-cart");assert.ok(guestCookie?.httpOnly,"guest cart capability must be HttpOnly");
     await navigate("/cart");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Cart page did not show the server cart");
-    assert.match(await text(),/7[\s ,.]?500[.,]00 KZT/);assert.ok(!(await text()).includes("Forged name"));
+    assert.match(await text(),/KZT\s?7[\s ,.]?500[.,]00/);assert.ok(!(await text()).includes("Forged name"));
     await navigate("/cart");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Server cart did not persist across reload");
     assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Review order')?.disabled"),true,"the server checkout panel is offered and waits for the delivery contact (Task 14A)");
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:encodeURIComponent(customerSession.token+"."+createHmac("sha256",secret).update(customerSession.token).digest("base64")),url:origin,httpOnly:true,sameSite:"Lax"});
@@ -645,12 +645,12 @@ try{
     for(const [name,value] of [["recipientName","UI Checkout Buyer"],["phone","+77000000077"],["city","Almaty"],["line1","UI checkout street 1"]])await until(()=>setInput(name,value),"Could not fill "+name);
     await until(async()=>{try{await click("Review order");return true;}catch{return false;}},"Review order stayed disabled");
     await until(async()=>/total payable/i.test(await text()),"The server quote did not render");
-    assert.match(await text(),/8[\s ,.]?415[.,]00 KZT/,"7 500 KZT goods + 12% tax + 15 KZT shipping, all computed on the server");
+    assert.match(await text(),/KZT\s?8[\s ,.]?415[.,]00/,"7 500 KZT goods + 12% tax + 15 KZT shipping, all computed on the server");
     await click("Place order");
     await until(async()=>/order grm-\d+ received/i.test(await text()),"The order receipt did not render").catch(async error=>{await writeFile(path.join(receipt,"checkout-body.txt"),await text());throw error;});
     // O07: the receipt says awaiting payment, shows the KZT total and the staff-edited instructions.
     await until(async()=>(await text()).includes(instructions),"The receipt did not show the payment instructions").catch(async error=>{await writeFile(path.join(receipt,"receipt-body.txt"),await text());throw error;});
-    assert.match(await text(),/awaiting payment/i);assert.match(await text(),/how to pay/i);assert.match(await text(),/8[\s ,.]?415[.,]00 KZT/);
+    assert.match(await text(),/awaiting payment/i);assert.match(await text(),/how to pay/i);assert.match(await text(),/KZT\s?8[\s ,.]?415[.,]00/);
     assert.match(await text(),/not paid/i);assert.ok(!/thank you for your order/i.test(await text()));
     const placedOrders=(await database.pool.query("SELECT id,order_number,order_status,payment_status,payment_mode,total_minor::text AS total FROM orders WHERE user_id=$1 AND checkout_attempt_id IS NOT NULL",[customerId])).rows;
     assert.equal(placedOrders.length,1,"exactly one order");assert.deepEqual({...placedOrders[0],id:undefined,order_number:undefined},{id:undefined,order_number:undefined,order_status:"pending_payment",payment_status:"unpaid",payment_mode:"live",total:"841500"});
