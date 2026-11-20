@@ -789,16 +789,19 @@ try{
     await click("2. Photos & Description");await until(async()=>{try{await click("Forerunner 970");return true;}catch{return false;}},"Preset photo missing");await fill("Product Description","UI created product description");
     await evaluate("document.querySelector('form').requestSubmit();true");await until(()=>evaluate("!document.querySelector('form')"),"Product save failed",30000).catch(async error=>{await writeFile(path.join(receipt,"admin-product-save-body.txt"),await text()+"\n---invalid---\n"+await evaluate("JSON.stringify([...document.querySelectorAll('form :invalid')].map(e=>e.outerHTML.slice(0,200)).concat([...document.querySelectorAll('form input')].map(i=>i.value).slice(0,8)))"));throw error;});
     saved=(await cms.list("products",headers,{search:"UI-CREATED"})).items[0];assert.ok(saved);assert.equal(saved.price,123);assert.equal(saved.version,1);
+    // Follow-up F-a (208bc05): a new product starts as a draft; the edit below publishes it.
+    assert.equal(saved.status,"draft","a product created in the editor starts as a draft");
     // Search narrows a server query; current-page edits must keep the loaded version.
     await evaluate("(()=>{const input=document.querySelector('input[placeholder*="+JSON.stringify("Search by model")+"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'UI-CREATED');input.dispatchEvent(new Event('input',{bubbles:true}));})()");
     await until(()=>evaluate("document.querySelectorAll('tbody tr').length===1 && document.body.innerText.includes('UI CREATED PRODUCT')"),"Server search failed");
     await evaluate("document.querySelector('tbody tr button[aria-label^=\"Edit \"]').click();true");
     await until(()=>evaluate("!!document.querySelector('form')"),"Edit modal missing");await fill("Product Title","UI UPDATED PRODUCT");
+    await until(()=>evaluate("(()=>{const select=[...document.querySelectorAll('form label')].find(l=>l.textContent.trim()==='Status')?.parentElement.querySelector('select');if(!select)return false;Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,'published');select.dispatchEvent(new Event('change',{bubbles:true}));return select.value==='published';})()"),"Could not set the product status to Published");
     await click("Cross-Selling");await evaluate("(()=>{const input=document.querySelector('input[placeholder=\"Filter catalog to link...\"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'UI-FIXTURE-24');input.dispatchEvent(new Event('input',{bubbles:true}));})()");
     await until(()=>evaluate("[...document.querySelectorAll('form label')].some(label=>label.textContent.includes('UI-FIXTURE-24'))"),"Cross-sell search did not reach another main-list page");
     await evaluate("[...document.querySelectorAll('form label')].find(label=>label.textContent.includes('UI-FIXTURE-24')).querySelector('input[type=checkbox]').click();true");
     await evaluate("document.querySelector('form').requestSubmit();true");
-    await until(()=>evaluate("!document.querySelector('form')"),"Product update failed");saved=(await cms.list("products",headers,{search:"UI-CREATED"})).items[0];assert.equal(saved.version,2);assert.equal(saved.name,"UI UPDATED PRODUCT");assert.equal(saved.compatibleAccessories.length,1);
+    await until(()=>evaluate("!document.querySelector('form')"),"Product update failed");saved=(await cms.list("products",headers,{search:"UI-CREATED"})).items[0];assert.equal(saved.version,2);assert.equal(saved.name,"UI UPDATED PRODUCT");assert.equal(saved.compatibleAccessories.length,1);assert.equal(saved.status,"published","the edit published the product");
     await productsListScenario({cms,headers,send,evaluate,navigate,text});
     await navigate("/");await until(async()=>(await text()).includes("UI HOMEPAGE FIXTURE"),"Persisted homepage did not render");
     const screenshot=await send("Page.captureScreenshot",{format:"png"});await saveShot("ui-homepage.png",screenshot.data);
@@ -826,7 +829,11 @@ try{
     const missing=await fetch(origin+"/p/absent-fixture");assert.equal(missing.status,404);const sitemap=await(await fetch(origin+"/sitemap.xml")).text();assert.ok(sitemap.includes(saved.id));
     const unicode=await cms.save("blogs",headers,{title:"Қазақша UI мақала",slug:"қазақша-ui-мақала",content:"UNICODE PUBLIC BODY",status:"published",category:"Fixture"});await navigate("/blog/"+encodeURIComponent(unicode.slug));await until(async()=>(await text()).includes("UNICODE PUBLIC BODY"),"Unicode URL failed");
     await navigate("/blog?search="+encodeURIComponent("Қазақша")+"&category=Fixture");await until(async()=>(await text()).toLowerCase().includes("қазақша ui мақала"),"Blog server filters failed");assert.ok(!(await text()).includes("UI ARTICLE"));
-    for(const route of ["/c/wearables-smartwatches?levels=Foo","/c/wearables-smartwatches?cursor=tampered","/compare?cursor=tampered","/blog?cursor=x","/blog/foo%20bar","/p/"+"x".repeat(250)]){const status=(await fetch(origin+route)).status;assert.equal(status,404,route+" returned "+status);}
+    for(const route of ["/c/wearables-smartwatches?levels=Foo","/c/wearables-smartwatches?cursor=tampered","/blog?cursor=x","/blog/foo%20bar","/p/"+"x".repeat(250)]){const status=(await fetch(origin+route)).status;assert.equal(status,404,route+" returned "+status);}
+    // C-b removed the cursor-paged product list from /compare, so `cursor` is no longer read there; tampered compare
+    // input (unknown products, unknown SKUs, a stray cursor) is dropped and the page shows its empty state, never an error.
+    {const response=await fetch(origin+"/en/compare?item=no-such-product&item=absent-fixture~NOPE&cursor=tampered");const body=await response.text();
+    assert.equal(response.status,200,"tampered compare input returned "+response.status);assert.ok(body.includes("There are no products to compare yet"),"tampered compare input did not show the empty state");}
     assert.notEqual((await fetch(origin+"/x%E0%A4%A")).status,503,"malformed URL must not report an outage");
     console.log("PASS Task09 review fixes: invalid filters/cursors/keys are 404 and malformed URLs are not 503");
     console.log("PASS Task09 public catalog/filters/Compare/exact JSONLD/sitemap/404/Unicode and newly-admin-created visibility without rebuild");
