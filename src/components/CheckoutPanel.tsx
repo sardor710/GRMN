@@ -110,7 +110,7 @@ export function CheckoutPanel({ cart, disabled, onPlaced, onCartStale }: { cart:
               onChange={event => { const value = event.target.value; setForm(previous => ({ ...previous, [field.name]: value })); setQuote(null); }} className={input} />
           </label>
         ))}
-        <button type="submit" disabled={busy || disabled || missing} className="g-btn mt-2 w-full disabled:cursor-not-allowed disabled:opacity-50">{t("review")}</button>
+        <button type="submit" disabled={busy || disabled || missing} className="g-btn mt-2 w-full">{t("review")}</button>
       </form>
       {disabled && <p className="mt-3 text-[12px] text-neutral-500">{t("resolveNotices")}</p>}
       {error && <p role="alert" className="mt-3 border border-red-200 bg-red-50 p-3 text-[13px] text-red-800">{error}</p>}
@@ -124,7 +124,7 @@ export function CheckoutPanel({ cart, disabled, onPlaced, onCartStale }: { cart:
             <div className="flex justify-between border-t border-neutral-200 pt-2 text-[17px] font-medium"><dt>{t("total")}</dt><dd>{kzt(current.total)}</dd></div>
           </dl>
           {!demo && <p className="mt-3 text-[12px] text-neutral-500">{t("paymentNotice", { time: new Date(current.expiresAt).toLocaleTimeString(INTL_LOCALE[locale]) })}</p>}
-          <button type="button" disabled={busy || disabled} onClick={() => { void place(); }} className="g-btn g-btn--solid mt-4 w-full disabled:cursor-not-allowed disabled:opacity-50">
+          <button type="button" disabled={busy || disabled} onClick={() => { void place(); }} className="g-btn g-btn--black mt-4 w-full">
             {retry ? t("retry") : demo ? t("payDemo") : t("place")}
           </button>
           {demo && <p className="mt-2 text-[12px] text-neutral-500">{t("demoNote")}</p>}
@@ -185,11 +185,11 @@ export function OrderReceived({ order }: { order: PlacedOrder }) {
           <h2 className="text-[15px] font-medium text-red-900">{t("paymentNotCompleted")}</h2>
           <p className="mt-1 text-[14px] text-red-800">{t("paymentNotCompletedBody")}</p>
           {retryError && <p className="mt-2 text-[13px] text-red-800">{retryError}</p>}
-          <button type="button" disabled={retrying} onClick={() => { void tryAgain(); }} className="g-btn g-btn--solid mt-3 disabled:cursor-not-allowed disabled:opacity-50">{t("tryAgain")}</button>
+          <button type="button" disabled={retrying} onClick={() => { void tryAgain(); }} className="g-btn g-btn--black mt-3">{t("tryAgain")}</button>
         </div>
       )}
       {demo && !unpaidDemo && <p className="mt-2 text-[14px] text-neutral-500">{t("demoReceipt")}</p>}
-      <Link href="/c/wearables-smartwatches" className="g-btn g-btn--solid mt-8">{t("continueShopping")}</Link>
+      <Link href="/c/wearables-smartwatches" className="g-btn g-btn--black mt-8">{t("continueShopping")}</Link>
     </div>
   );
 }

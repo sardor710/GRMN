@@ -2,20 +2,61 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@font-face {
-  font-family: "Knockout";
-  src: local("Knockout"), local("Knockout 49 Junior Liteweight"), local("Knockout-HTF49-Liteweight"), local("Knockout 49"), local("Knockout 50 Welterweight"), local("Knockout 50"), local("Knockout 51 Middleweight"), local("Knockout 51"), local("Knockout 52 Cruiserweight"), local("Knockout 52"), local("Knockout HTF");
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
-
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-roboto, "Roboto"), "Roboto", -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", sans-serif;
   --font-mono: ui-monospace, monospace;
-  --font-heading: "Knockout", "Knockout 49", "Knockout 50", "Knockout 51", "Knockout 52", "Knockout-HTF49-Liteweight", "Knockout HTF", var(--font-oswald, "Oswald"), "Roboto Condensed", sans-serif;
+  /* Task 5a.2: garmin.com display stack (TOKENS.md §2). Garmin web never loads Knockout; Oswald comes first. */
+  --font-heading: "GarminSuperscriptOswald", "GarminOswald", var(--font-oswald, "Oswald"), "Oswald", "Roboto Condensed", "Roboto", sans-serif;
+
+  /* Garmin type scale (TOKENS.md §2): size / line-height / tracking. Display = Oswald 400, body = Roboto. */
+  --text-g-h1: 40px;
+  --text-g-h1--line-height: 50px;
+  --text-g-h1--letter-spacing: 0.8px;
+  --text-g-h2: 32px;
+  --text-g-h2--line-height: 40px;
+  --text-g-h2--letter-spacing: 0.8px;
+  --text-g-h3: 24px;
+  --text-g-h3--line-height: 30px;
+  --text-g-h3--letter-spacing: 0.8px;
+  --text-g-h4: 20px;
+  --text-g-h4--line-height: 25px;
+  --text-g-h4--letter-spacing: 0.8px;
+  --text-g-body-lg: 18px;
+  --text-g-body-lg--line-height: 27px;
+  --text-g-body: 16px;
+  --text-g-body--line-height: 24px;
+  --text-g-small: 14px;
+  --text-g-small--line-height: 21px;
+  --text-g-xsmall: 12.8px;
+  --text-g-xsmall--line-height: 19.2px;
+  --text-g-micro: 11px;
+  --text-g-micro--line-height: 16.5px;
+
+  /* Garmin colours (TOKENS.md §1) as utilities: bg-garmin-candy-blue, text-garmin-blue, border-garmin-option ... */
+  --color-garmin-blue: var(--garmin-blue);
+  --color-garmin-blue-hover: var(--garmin-blue-hover);
+  --color-garmin-candy-blue: var(--garmin-candy-blue);
+  --color-garmin-candy-blue-hover: var(--garmin-candy-blue-hover);
+  --color-garmin-black-hover: var(--garmin-black-hover);
+  --color-garmin-card-text: var(--garmin-card-text);
+  --color-garmin-text-muted: var(--garmin-text-muted);
+  --color-garmin-rule: var(--garmin-rule);
+  --color-garmin-control: var(--garmin-control-border);
+  --color-garmin-option: var(--garmin-option-border);
+  --color-garmin-checkbox: var(--garmin-checkbox-border);
+  --color-garmin-tab: var(--garmin-tab-bg);
+  --color-garmin-disabled: var(--garmin-disabled);
+  --color-garmin-error: var(--garmin-error);
+  --color-garmin-badge-red: var(--garmin-badge-red);
+
+  /* Garmin elevation (TOKENS.md §4): no hover lift anywhere. */
+  --shadow-garmin-card: 0 2px 3px 1px #e5e5e5;
+  --shadow-garmin-promo: 0 0 6px 0 #d8d8d8;
+  --shadow-garmin-raised: 0 1px 1px rgba(77, 77, 77, 0.08), 0 1px 3px 1px rgba(77, 77, 77, 0.16);
+  --radius-garmin-promo: 3px;
+  --radius-garmin-pill: 1.625em;
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -56,37 +97,51 @@
 
 :root {
   --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  /* Task 5a.2: values measured on garmin.com (docs/research/www.garmin.com/TOKENS.md). */
+  --foreground: #000000;
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: #000000;
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
+  --popover-foreground: #000000;
   --primary: oklch(0 0 0);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.45 0 0);
-  --garmin-blue: #007cc3;
-  --garmin-text-muted: #5b5b5b;
+  --muted: #f2f2f2;
+  --muted-foreground: #666666;
+  --garmin-blue: #106fad;
+  --garmin-blue-hover: #0d5a8c;
+  --garmin-text-muted: #666666;
+  --garmin-card-text: #1a1a1a;
+  --garmin-black-hover: #333333;
+  --garmin-candy-blue: #6dcff6;
+  --garmin-candy-blue-hover: #0fb0f0;
+  --garmin-rule: #d8d8d8;
+  --garmin-control-border: #d9d9d9;
+  --garmin-option-border: #cccccc;
+  --garmin-checkbox-border: #737373;
+  --garmin-tab-bg: #e5e5e5;
+  --garmin-disabled: #d9d9d9;
+  --garmin-error: #920000;
+  --garmin-badge-red: #c20f2f;
   /* MARQ minisite tokens */
   --marq-bg: #000000;
   --marq-nav: #141414;
   --marq-red: #e2231a; /* Damascus Steel Edition accent */
   --marq-green: #89c541; /* Carbon Edition accent */
   --marq-gold: #c8a95a; /* Titanium Edition accent */
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --accent: #eeeeee;
+  --accent-foreground: #000000;
+  --destructive: #920000;
+  --border: #d9d9d9;
+  --input: #d9d9d9;
+  --ring: #101010;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
+  --radius: 0;
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
   --sidebar-primary: oklch(0.205 0 0);
@@ -133,7 +188,7 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border outline-ring;
   }
   html,
   body {
@@ -150,67 +205,181 @@
   p, span, a, button, input, textarea, select, label, li, td, th, table, small, blockquote {
     font-family: var(--font-sans);
   }
+  /* garmin.com focus: UA ring, 1px #101010, offset 1px (TOKENS.md §1). */
+  :where(a, button, summary, [role="button"], [tabindex]):focus-visible {
+    outline: auto 1px var(--ring);
+    outline-offset: 1px;
+  }
 }
 
-/* ---- Garmin design-system utilities ---- */
+/* ---- Garmin design-system utilities (Task 5a.2: values from docs/research/www.garmin.com) ---- */
 @layer components {
-  /* Knockout heading, uppercase, tracked */
+  /* Display heading: Oswald 400, no forced uppercase (product names stay mixed case), .8px tracking, line-height 1.25. */
   .g-heading {
     font-family: var(--font-heading);
     font-weight: 400;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    line-height: 1.1;
+    letter-spacing: 0.8px;
+    line-height: 1.25;
+  }
+  /* Heading sizes: 40/50 (390: 32/40), 32/40, 24/30 (<768: 20/25), 20/25. Pair with .g-heading or an h1-h4. */
+  .g-h1 { font-size: 32px; line-height: 40px; letter-spacing: 0.8px; }
+  .g-h2 { font-size: 32px; line-height: 40px; letter-spacing: 0.8px; }
+  .g-h3 { font-size: 20px; line-height: 25px; letter-spacing: 0.8px; }
+  .g-h4 { font-size: 20px; line-height: 25px; letter-spacing: 0.8px; }
+  @media (min-width: 768px) {
+    .g-h3 { font-size: 24px; line-height: 30px; }
+  }
+  @media (min-width: 1024px) {
+    .g-h1 { font-size: 40px; line-height: 50px; }
   }
 
-
-  /* Base square button */
+  /*
+   * Buttons (Buttons.spec.md): Roboto 500 uppercase, no tracking, radius 0, 1px border, line-height 1.15.
+   * Sizes: --lg 16px 16/32 (52px), default medium 14px 8/24 (34px), --sm 12px 5/16 (26px).
+   * Colours: --primary (candy-blue buy CTA), --black, --secondary (white, black border), --dark, --on-image,
+   * --text (flat), --text-link (flat blue), --text-dark (flat on black). :focus maps to the hover colours like
+   * garmin.com; :focus-visible adds the 1px #101010 ring. Disabled = #D9D9D9, not-allowed, no hover.
+   */
   .g-btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 0.6em;
     font-family: var(--font-sans);
     font-size: 14px;
     font-weight: 500;
-    letter-spacing: 0.06em;
+    line-height: 1.15;
+    letter-spacing: normal;
     text-transform: uppercase;
+    text-align: center;
+    text-decoration: none;
     padding: 8px 24px;
+    border: 1px solid transparent;
     border-radius: 0;
-    line-height: 1.2;
-    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+    background-color: transparent;
+    color: #000;
+    transition: background 0.2s ease, border 0.2s ease, color 0.2s ease;
     cursor: pointer;
     white-space: nowrap;
+    vertical-align: middle;
   }
-  /* Solid black */
-  .g-btn--solid {
-    background-color: #000;
-    color: #fff;
-    border: 1px solid #000;
+  .g-btn:focus-visible {
+    outline: auto 1px var(--ring);
+    outline-offset: 1px;
   }
-  .g-btn--solid:hover {
+  .g-btn--lg { font-size: 16px; padding: 16px 32px; }
+  .g-btn--sm { font-size: 12px; padding: 5.008px 16px; }
+
+  .g-btn--primary { background-color: var(--garmin-candy-blue); border-color: var(--garmin-candy-blue); color: #000; }
+  .g-btn--primary:hover,
+  .g-btn--primary:focus { background-color: var(--garmin-candy-blue-hover); border-color: var(--garmin-candy-blue-hover); color: #000; }
+  .g-btn--primary:active { background-color: var(--garmin-candy-blue); border-color: var(--garmin-candy-blue); }
+
+  .g-btn--black { background-color: #000; border-color: #000; color: #fff; }
+  .g-btn--black:hover,
+  .g-btn--black:focus,
+  .g-btn--black:active { background-color: var(--garmin-black-hover); border-color: var(--garmin-black-hover); color: #fff; }
+
+  .g-btn--secondary { background-color: #fff; border-color: #000; color: #000; }
+  .g-btn--secondary:hover,
+  .g-btn--secondary:focus { background-color: #000; border-color: #000; color: #fff; }
+  .g-btn--secondary:active { background-color: #fff; color: #000; }
+
+  .g-btn--dark { background-color: #000; border-color: #fff; color: #fff; }
+  .g-btn--dark:hover,
+  .g-btn--dark:focus { background-color: #fff; border-color: #000; color: #000; }
+  .g-btn--dark:active { background-color: #000; color: #fff; }
+
+  .g-btn--on-image { background-color: transparent; border-color: #fff; color: #fff; }
+  .g-btn--on-image:hover,
+  .g-btn--on-image:focus { background-color: #fff; border-color: #000; color: #000; }
+
+  .g-btn--text,
+  .g-btn--text-link,
+  .g-btn--text-dark { padding: 10px 0; border: none; background-color: transparent; font-size: inherit; }
+  .g-btn--text { color: #000; }
+  .g-btn--text:hover,
+  .g-btn--text:focus { text-decoration: underline; }
+  .g-btn--text-link { color: var(--garmin-blue); }
+  .g-btn--text-link:hover,
+  .g-btn--text-link:focus { color: var(--garmin-blue-hover); text-decoration: none; }
+  .g-btn--text-dark { color: #fff; }
+  .g-btn--text-dark:hover,
+  .g-btn--text-dark:focus { color: #ccc; }
+
+  .g-btn:disabled,
+  .g-btn[aria-disabled="true"],
+  .g-btn--disabled {
+    background-color: var(--garmin-disabled);
+    border-color: var(--garmin-disabled);
+    color: #000;
+    cursor: not-allowed;
+    text-decoration: none;
+  }
+  .g-btn--text:disabled,
+  .g-btn--text-link:disabled,
+  .g-btn--text-dark:disabled { background-color: transparent; opacity: 0.5; }
+
+  /*
+   * Forms (Forms.spec.md): radius 0, 1px #D9D9D9, focus = black border (no ring), error #920000.
+   * Inputs use Roboto (garmin.com leaves the UA Arial; deliberate deviation, see spec).
+   */
+  .g-label { display: block; font-size: 0.9em; font-weight: 700; text-align: start; }
+  .g-label__required { color: var(--garmin-error); padding-inline-start: 4px; }
+  .g-input,
+  .g-select {
+    display: block;
+    width: 100%;
+    margin: 0.3rem 0;
+    border: 1px solid var(--garmin-control-border);
+    border-radius: 0;
     background-color: #fff;
     color: #000;
+    font-family: var(--font-sans);
+    font-size: 1em;
+    line-height: 1.15;
+    padding: 0.875em;
   }
-  /* Outlined on dark imagery (white border) */
-  .g-btn--outline-light {
-    background-color: transparent;
-    color: #fff;
-    border: 1px solid #fff;
+  .g-select {
+    appearance: none;
+    padding: 0.875em 3em 0.875em 0.875em;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 18.2 11.2'%3E%3Cpath d='M9.1 11.2L0 2.2 2.2 0l6.9 7L16 0l2.2 2.2-9.1 9z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    background-size: 12px 12px;
   }
-  .g-btn--outline-light:hover {
+  .g-input:focus,
+  .g-input:active,
+  .g-select:focus,
+  .g-select:active { border-color: #000; outline: none; }
+  .g-input:disabled { cursor: not-allowed; }
+  .g-select:disabled { cursor: not-allowed; opacity: 0.5; }
+  .g-input[aria-invalid="true"],
+  .g-select[aria-invalid="true"] { border-color: var(--garmin-error); }
+  .g-error-text { margin: 0 0 16px; color: var(--garmin-error); font-size: 0.875rem; }
+
+  /* Checkbox: 1.15em square, 2px #737373, checked = black border + black check; focus = soft shadow. */
+  .g-checkbox {
+    appearance: none;
+    flex-shrink: 0;
+    width: 1.15em;
+    height: 1.15em;
+    margin: 0;
+    border: 2px solid var(--garmin-checkbox-border);
+    border-radius: 0;
     background-color: #fff;
-    color: #000;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 75%;
+    cursor: pointer;
+    vertical-align: middle;
   }
-  /* Outlined on light bg (black border) */
-  .g-btn--outline-dark {
-    background-color: transparent;
-    color: #000;
-    border: 1px solid #000;
+  .g-checkbox:checked {
+    border-color: #000;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M6.2 12.6 1.6 8l1.4-1.4 3.2 3.2 6.8-6.8L14.4 4.4z'/%3E%3C/svg%3E");
   }
-  .g-btn--outline-dark:hover {
-    background-color: #000;
-    color: #fff;
-  }
+  .g-checkbox:focus-visible { outline: none; border-color: #000; box-shadow: 0 0 0.5em rgba(0, 0, 0, 0.4); }
+  .g-checkbox:disabled { cursor: not-allowed; opacity: 0.5; }
 }
 
 /* Hide scrollbar for horizontal carousels */

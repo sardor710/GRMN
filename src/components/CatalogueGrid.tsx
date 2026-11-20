@@ -90,7 +90,7 @@ export function CatalogueGrid({ products }: { products: Product[] }) {
     <div className="mx-auto flex max-w-[1400px] flex-col gap-8 px-4 lg:flex-row">
       {/* Sidebar */}
       <aside className="w-full shrink-0 lg:w-[240px]">
-        <a href={localize("/compare")} className="g-btn g-btn--solid w-full">{t("compare")}</a>
+        <a href={localize("/compare")} className="g-btn g-btn--black w-full">{t("compare")}</a>
         {activeCount > 0 && (
           <button
             onClick={clearAll}

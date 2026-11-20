@@ -111,5 +111,6 @@
 }
 :root {
   --garmin-body: "GarminSuperscriptRoboto", "GarminRoboto", var(--font-roboto), Roboto, sans-serif;
-  --garmin-display: "GarminSuperscriptOswald", "GarminOswald", var(--font-oswald), Oswald, sans-serif;
+  /* Task 5a.2: garmin.com display stack Superscripts-Oswald, Oswald, "Roboto Condensed", Roboto (TOKENS.md §2); same as --font-heading. */
+  --garmin-display: "GarminSuperscriptOswald", "GarminOswald", var(--font-oswald), Oswald, "Roboto Condensed", Roboto, sans-serif;
 }

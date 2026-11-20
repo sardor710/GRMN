@@ -75,7 +75,7 @@ export default async function GarminPayPage({ params }: PageProps<"/[lang]/garmi
             No wallet? No phone? No problem. With Garmin Pay, all you need is your compatible
             smartwatch or bike computer to make purchases on the go.<sup>1</sup>
           </p>
-          <a href="#compatible" className="g-btn g-btn--outline-dark mt-6">Shop</a>
+          <a href="#compatible" className="g-btn g-btn--secondary mt-6">Shop</a>
         </section>
 
         {/* Icon strip — 4 columns */}
