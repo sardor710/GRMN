@@ -3,6 +3,9 @@ import sanitizeHtml from 'sanitize-html';
 import { parseDocument, DomUtils } from 'htmlparser2';
 import { extractBootstrap, extractJsonLdProduct, GarminParseError } from './garmin-bootstrap.js';
 import { ensureSingleDefault, syncLegacyFields } from '../cms/product-variants.js';
+import { OVERVIEW_ATTRIBUTES, OVERVIEW_CLASSES, OVERVIEW_TAGS, OVERVIEW_URL_SCHEMES, isAllowedOverviewImageSrc } from '../overview/allowlist.ts';
+import { mediaBlock } from '../overview/video.ts';
+import { watchUrl, youtubeIdFromUrl } from '../overview/youtube.ts';
 
 export { extractBootstrap, GarminParseError };
 
@@ -28,29 +31,41 @@ export function validateGarminUrl(raw) {
 
 // ---------- HTML helpers ----------
 
-const OVERVIEW_IMG_OK = (src) => /^https:\/\/res\.garmin\.com\//.test(src) || /^\/uploads\//.test(src);
+const integerAttr = (value) => (/^\d{1,5}$/.test(String(value ?? '')) ? String(value) : undefined);
+const definedOnly = (attribs) => Object.fromEntries(Object.entries(attribs).filter(([, v]) => v !== undefined));
 
-/** Allowlist sanitizer for overview HTML (also used by the products API on save). */
+/**
+ * Allowlist sanitizer for overview HTML (import, every admin save, storefront read). Tags, attributes, classes,
+ * image hosts and media providers come from the shared allowlist (src/lib/overview/allowlist.ts) that also
+ * configures the admin CKEditor. Scripts, styles, iframes, event handlers, javascript: URLs, foreign images
+ * and non-YouTube embeds never survive; classes are kept only where the allowlist lists them.
+ */
 export function sanitizeOverviewHtml(html) {
-  return sanitizeHtml(String(html || ''), {
-    allowedTags: ['h1', 'h2', 'h3', 'h4', 'p', 'ul', 'ol', 'li', 'strong', 'em', 'b', 'i', 'sup', 'sub', 'br', 'a', 'img',
-      'table', 'thead', 'tbody', 'tr', 'th', 'td', 'figure', 'figcaption', 'div', 'section', 'span'],
-    allowedAttributes: { a: ['href', 'rel', 'target'], img: ['src', 'alt', 'loading'], td: ['colspan'], th: ['colspan'], '*': ['class'] },
-    allowedClasses: {
-      div: ['ov-features', 'ov-feature', 'ov-highlight', 'ov-video'],
-      p: ['ov-disclaimer'],
-      figure: ['ov-lifestyle'],
-      section: ['ov-intro'],
-    },
-    allowedSchemes: ['https'],
+  const out = sanitizeHtml(String(html || ''), {
+    allowedTags: [...OVERVIEW_TAGS],
+    allowedAttributes: Object.fromEntries(Object.entries(OVERVIEW_ATTRIBUTES).map(([tag, attrs]) => [tag, [...attrs]])),
+    allowedClasses: { ...Object.fromEntries(Object.entries(OVERVIEW_CLASSES).map(([tag, list]) => [tag, [...list]])), '*': [] },
+    allowedSchemes: [...OVERVIEW_URL_SCHEMES],
     allowedSchemesAppliedToAttributes: ['href', 'src'],
     allowProtocolRelative: false,
-    exclusiveFilter: (frame) => frame.tag === 'img' && !OVERVIEW_IMG_OK(frame.attribs.src || ''),
+    exclusiveFilter: (frame) =>
+      (frame.tag === 'img' && !isAllowedOverviewImageSrc(frame.attribs.src || '')) ||
+      (frame.tag === 'oembed' && !youtubeIdFromUrl(frame.attribs.url)),
     transformTags: {
       a: (tagName, attribs) => ({ tagName, attribs: { ...attribs, rel: 'noopener noreferrer', target: '_blank' } }),
-      img: (tagName, attribs) => ({ tagName, attribs: { ...attribs, loading: 'lazy' } }),
+      img: (tagName, attribs) => ({
+        tagName,
+        attribs: definedOnly({ ...attribs, width: integerAttr(attribs.width), height: integerAttr(attribs.height), loading: 'lazy' }),
+      }),
+      // One canonical stored form for every YouTube link the owner pasted (watch, youtu.be, shorts, embed).
+      oembed: (tagName, attribs) => {
+        const id = youtubeIdFromUrl(attribs.url);
+        return { tagName, attribs: id ? { url: watchUrl(id) } : {} };
+      },
     },
   });
+  // A media figure whose embed was removed (foreign provider) would render as an empty box.
+  return out.replace(/<figure class="media">\s*<\/figure>/g, '');
 }
 
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -94,13 +109,15 @@ export function overviewFromGarmin(html) {
           out.push(`<figure class="ov-lifestyle">${img(a['bg-image'], a.text)}${caption ? `<figcaption>${caption}</figcaption>` : ''}</figure>`);
         }
         break;
-      case 'pc-video-banner':
+      case 'pc-video-banner': {
         closeGroup();
-        if (a['bg-image']) {
-          const body = img(a['bg-image'], 'Watch the video');
-          out.push(`<div class="ov-video">${a['video-link'] ? `<a href="${esc(a['video-link'])}">${body}</a>` : body}</div>`);
-        }
+        // YouTube banners become CKEditor media blocks (swappable in the editor, click-to-play on the
+        // storefront). Other videos keep their poster as a plain image block.
+        const id = a['not-youtube'] === 'true' ? null : youtubeIdFromUrl(a['video-link']);
+        if (id) out.push(mediaBlock(id));
+        else if (a['bg-image']) out.push(`<figure class="ov-lifestyle">${img(a['bg-image'], a['video-title'] || a['img-alt'] || '')}</figure>`);
         break;
+      }
       case 'pc-feature-card': {
         if (!inGroup) out.push('<div class="ov-features">');
         inGroup = true;
@@ -151,10 +168,45 @@ export function parseSpecsTable(html) {
   return groups.filter((g) => g.items.length);
 }
 
+const firstImg = (node) => (node.name === 'img' ? node : DomUtils.findOne((n) => n.name === 'img', node.children || [], true));
+
+/** First Garmin-CDN image inside a node (img src or lazy data-src), as an https URL. */
+function boxImage(node) {
+  const img = firstImg(node);
+  const raw = String(img?.attribs?.src || img?.attribs?.['data-src'] || '').trim();
+  const src = raw.startsWith('//') ? `https:${raw}` : raw;
+  return /^https:\/\/res\.garmin\.com\/[^\s"'<>\\]+$/.test(src) ? src : undefined;
+}
+
+/**
+ * garmin.com "In the Box" → items: a plain label (string) per entry, or `{ label, image }` when the entry has a
+ * photo on res.garmin.com (the import route downloads it to /uploads). Lists (`<li>`) first, then image tiles
+ * (`<figure>`/`<div>` with an image and a caption), then text lines. Never invents items.
+ */
 export function parseInTheBox(html) {
   const doc = parseDocument(String(html || ''), { decodeEntities: true });
-  const items = DomUtils.getElementsByTagName('li', doc).map(textOf).filter(Boolean);
-  if (items.length) return items;
+  const item = (label, image) => (image ? { label, image } : label);
+  const lis = DomUtils.getElementsByTagName('li', doc);
+  if (lis.length) {
+    return lis
+      .map((li) => {
+        const image = boxImage(li);
+        const label = textOf(li) || (image ? plain(firstImg(li)?.attribs?.alt) : '');
+        return label ? item(label, image) : null;
+      })
+      .filter(Boolean);
+  }
+  const images = DomUtils.getElementsByTagName('img', doc);
+  if (images.length) {
+    return images
+      .map((imgNode) => {
+        let tile = imgNode.parent;
+        if (tile && !textOf(tile) && tile.parent && tile.parent.type === 'tag') tile = tile.parent;
+        const label = (tile && tile.type === 'tag' ? textOf(tile) : '') || plain(imgNode.attribs?.alt);
+        return label ? item(label, boxImage(imgNode)) : null;
+      })
+      .filter(Boolean);
+  }
   return plain(String(html || '').replace(/<br\s*\/?>/gi, '\n')).split('\n').map((s) => s.trim()).filter(Boolean);
 }
 

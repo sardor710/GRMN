@@ -162,3 +162,61 @@ test('parseInTheBox and familyFromName', () => {
   assert.equal(familyFromName('Edge® 1060 Plus'), 'Edge 1060');
   assert.equal(familyFromName('Forerunner® 970 – 47 mm'), 'Forerunner 970');
 });
+
+// ---------- M5.5: video banners and in-the-box images ----------
+
+test('fēnix 9: YouTube video banners import as CKEditor media blocks, never as poster links', () => {
+  const { product } = parse('fenix9');
+  const media = [...product.overviewHtml.matchAll(/<figure class="media"><oembed url="([^"]+)"><\/oembed><\/figure>/g)].map((m) => m[1]);
+  assert.ok(media.length >= 1, 'at least one media block');
+  for (const url of media) assert.match(url, /^https:\/\/www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}$/);
+  assert.ok(media.includes('https://www.youtube.com/watch?v=bdOC8EBYs_E'));
+  assert.doesNotMatch(product.overviewHtml, /class="ov-video"|youtube-nocookie|<iframe/);
+});
+
+test('overviewFromGarmin keeps a non-YouTube video banner as its poster image only', () => {
+  const html = overviewFromGarmin(
+    '<pc-video-banner bg-image="https://res.garmin.com/v.jpg" video-link="https://vimeo.com/123" not-youtube="true" />' +
+      '<pc-video-banner bg-image="https://res.garmin.com/y.jpg" video-link="https://youtu.be/G9LZgkrKj7U" />',
+  );
+  assert.match(html, /<figure class="ov-lifestyle"><img src="https:\/\/res\.garmin\.com\/v\.jpg"/);
+  assert.doesNotMatch(html, /vimeo/);
+  assert.match(html, /<oembed url="https:\/\/www\.youtube\.com\/watch\?v=G9LZgkrKj7U"><\/oembed>/);
+});
+
+const BOX_WITH_IMAGES =
+  '<ul>\r\n\t<li><img src="https://res.garmin.com/en/products/010-02908-00/g/box-watch.png" alt="Edge"> Edge 1060 GPS cycling computer</li>' +
+  '\r\n\t<li><img data-src="//res.garmin.com/en/products/010-02908-00/g/box-mount.png"> Flush out-front mount</li>' +
+  '\r\n\t<li><img src="https://evil.example/x.png"> Tether</li>\r\n\t<li>Documentation</li>\r\n</ul>';
+
+test('parseInTheBox keeps res.garmin.com photos as {label, image} and plain labels as strings', () => {
+  assert.deepEqual(parseInTheBox(BOX_WITH_IMAGES), [
+    { label: 'Edge 1060 GPS cycling computer', image: 'https://res.garmin.com/en/products/010-02908-00/g/box-watch.png' },
+    { label: 'Flush out-front mount', image: 'https://res.garmin.com/en/products/010-02908-00/g/box-mount.png' },
+    'Tether',
+    'Documentation',
+  ]);
+  // Image tiles without a list (figure + caption) and empty content never invent items.
+  assert.deepEqual(parseInTheBox('<div><figure><img src="https://res.garmin.com/a.png"><figcaption>Cable</figcaption></figure></div>'), [
+    { label: 'Cable', image: 'https://res.garmin.com/a.png' },
+  ]);
+  assert.deepEqual(parseInTheBox(''), []);
+  assert.deepEqual(parseInTheBox('<p class="disclaimer-block"></p>'), []);
+});
+
+test('Edge 1060 fixture extended with in-the-box photos imports image items (A7)', () => {
+  const html = fixture('edge1060');
+  // The page bootstrap is JSON inside a script, so the fixture holds JSON-escaped markup.
+  const original = '<ul>\\r\\n\\t<li>Edge 1060 GPS cycling computer</li>';
+  assert.ok(html.includes(original), 'fixture in-the-box markup present');
+  const extended = html.replace(
+    original,
+    '<ul>\\r\\n\\t<li><img src=\\"https://res.garmin.com/en/products/010-02908-00/g/box-watch.png\\"> Edge 1060 GPS cycling computer</li>',
+  );
+  const { product } = parseGarminProduct(extended, { sourceUrl: 'https://www.garmin.com/en-US/p/1953453', rateKztPerUsd: 500, now: NOW });
+  assert.deepEqual(product.inTheBox[0], { label: 'Edge 1060 GPS cycling computer', image: 'https://res.garmin.com/en/products/010-02908-00/g/box-watch.png' });
+  assert.equal(product.inTheBox.length, 6);
+  assert.ok(product.inTheBox.slice(1).every((item) => typeof item === 'string'));
+  // The unmodified page has no photos: plain labels, no presets added.
+  assert.deepEqual(parse('edge1060').product.inTheBox, ['Edge 1060 GPS cycling computer', 'Flush out-front mount', 'Standard mount', 'Tether', 'Charging/data cable', 'Documentation']);
+});
