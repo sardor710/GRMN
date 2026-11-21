@@ -46,6 +46,10 @@ export function ProductCard({ product }: { product: Product }) {
           <span className="text-[#5b5b5b]"> {product.priceSuffix}</span>
         )}
       </p>
+      {/* Postgres cards only: no active variant has free stock (on hand − reserved). */}
+      {(product.availability === "out_of_stock" || product.availability === "unavailable") && (
+        <p className="mt-1 text-[14px] font-medium text-[#5b5b5b]">Out of stock</p>
+      )}
     </Link>
   );
 }

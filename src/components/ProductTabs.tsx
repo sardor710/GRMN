@@ -5,13 +5,20 @@ import Image from "next/image";
 import type { ProductDetail } from "@/types";
 import { ProductOverview } from "@/components/product/ProductOverview";
 import { ProductAccessories } from "@/components/product/ProductAccessories";
+import { CompatibleDevices } from "@/components/product/CompatibleDevices";
 import overviewStyles from "@/components/product/CmsOverview.module.css";
 
 const TABS = ["Overview", "Specs", "In the Box", "Accessories", "Maps", "Compatible Devices"] as const;
 type Tab = (typeof TABS)[number];
 
-export function ProductTabs({ product }: { product: ProductDetail }) {
+/** `selectedVariantId`: the variant chosen in the buy box; the Accessories tab lists what fits it. */
+export function ProductTabs({ product, selectedVariantId }: { product: ProductDetail; selectedVariantId?: string }) {
   const [tab, setTab] = useState<Tab>("Overview");
+  const accessories = product.commerce?.compatibleAccessories ?? [];
+  const devices = product.commerce?.compatibleDevices ?? [];
+  // Accessories and Compatible Devices come from product_compatibility; a tab without links is hidden.
+  const tabs = TABS.filter(t => (t !== "Accessories" || accessories.length > 0) && (t !== "Compatible Devices" || devices.length > 0));
+  const variantId = selectedVariantId ?? product.commerce?.selectedVariantId;
 
   const isRichOverview = tab === "Overview" && product.id === "1228429" && !product.overviewHtml;
 
@@ -20,7 +27,7 @@ export function ProductTabs({ product }: { product: ProductDetail }) {
       {/* Tab bar */}
       <div className="sticky top-0 z-30 border-y border-neutral-200 bg-[#f2f2f2]">
         <div className="mx-auto flex max-w-[1280px] gap-8 overflow-x-auto px-4">
-          {TABS.map((t) => (
+          {tabs.map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -61,9 +68,9 @@ export function ProductTabs({ product }: { product: ProductDetail }) {
             <InTheBox product={product} />
           </div>
         )}
-        {tab === "Accessories" && (
+        {tab === "Accessories" && accessories.length > 0 && (
           <div className="mx-auto max-w-[1280px]">
-            <ProductAccessories accessories={product.accessories} />
+            <ProductAccessories accessories={accessories} variantId={variantId} />
           </div>
         )}
         {tab === "Maps" && (
@@ -71,9 +78,9 @@ export function ProductTabs({ product }: { product: ProductDetail }) {
             <Placeholder text="Preloaded TopoActive maps plus support for downloadable outdoor, cycling and ski maps." />
           </div>
         )}
-        {tab === "Compatible Devices" && (
+        {tab === "Compatible Devices" && devices.length > 0 && (
           <div className="mx-auto max-w-[1080px]">
-            <Placeholder text="Compatible with the Garmin Connect™ app and Connect IQ™ store on iPhone® and Android™ devices." />
+            <CompatibleDevices devices={devices} />
           </div>
         )}
       </div>

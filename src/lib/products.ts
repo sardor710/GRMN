@@ -1,12 +1,16 @@
 import "server-only";
-import type { Product, ProductDetail, AccessoryItem } from "@/types";
+import type { Product, ProductDetail } from "@/types";
 import { cmsBackend, readProduct, readProductsPage } from "@/server/cms/source";
 import { getCatalogService } from "@/server/catalog/runtime";
 import { catalogCardView } from "@/lib/public-catalog";
 import type { ProductQuery } from "@/contracts/commerce";
 import type { CMSProduct } from "@/lib/cms/types";
 import { usesCmsDetail } from "@/lib/cms/product-variants";
-
+import { activityFilters, caseSizeFilters, levelFilters } from "@/lib/catalog-constants";
+import { parseSort, SORT_OPTIONS } from "@/lib/catalog-facets";
+import type { CatalogSortKey } from "@/contracts/catalog-browse";
+import { taxonomySeed } from "@/server/catalog/taxonomy-seed";
+import { URL_PRESET_SLUGS } from "@/server/catalog/category-page";
 
 export { watchFamilies, products, activityFilters, levelFilters, caseSizeFilters } from "./public-products";
 
@@ -64,6 +68,86 @@ export async function catalogueProducts(def:CatalogueDef,input:Partial<ProductQu
   const page=await readProductsPage({limit:24,cursor,...filters,...(def.slug.includes("running-smartwatches")?{activitiesAll:["running"]}:{})});return {items:page.items.map(publicProduct),nextCursor:page.nextCursor};
 }
 
+// ---- Taxonomy category pages (M4.2/M4.3) ----
+
+/** URL parameters of the facet rail (CatalogueGrid writes them, the /c/ page reads them). */
+export const FACET_PARAMS = ["series", "activities", "levels", "caseSizes", "prices", "availability"] as const;
+/** Present when the shopper cleared every facet on a page with a garmin.com URL preset. */
+export const EXPLICIT_PARAM = "all";
+type SearchQuery = Readonly<Record<string, string | string[] | undefined>>;
+
+export interface GridFacet { key: string; label: string; options: { value: string; label: string; count?: number; checked: boolean }[] }
+export interface CategoryView {
+  name: string;
+  slug: string;
+  path: { name: string; slug: string }[];
+  description: string | null;
+  hero: CatalogueDef["hero"] | "families" | null;
+  items: Product[];
+  facets: GridFacet[];
+  sort: CatalogSortKey;
+  sortOptions: readonly { value: CatalogSortKey; label: string }[];
+  categoryTotal: number;
+  total: number;
+  page: number;
+  pageCount: number;
+  /** The rail must keep the selection explicit (EXPLICIT_PARAM) when it empties: the page has a URL preset. */
+  hasPreset: boolean;
+  /** Legacy JSON storefront only: keyset paging. */
+  nextCursor?: string | null;
+}
+
+const one = (query: SearchQuery, key: string) => typeof query[key] === "string" ? query[key] as string : undefined;
+const many = (query: SearchQuery, key: string) => [query[key] ?? []].flat().filter((v): v is string => typeof v === "string" && v.length > 0).slice(0, 30);
+
+/** The page for a taxonomy slug, or null (404). Postgres: from `categories`; legacy JSON: the two original pages, other taxonomy slugs render empty. */
+export async function getCategoryView(slug: string, query: SearchQuery): Promise<CategoryView | null> {
+  const def = getCatalogue(slug);
+  const hero: CategoryView["hero"] = def ? (def.showFamilies ? "families" : def.hero ?? null) : null;
+  const sortParam = parseSort(one(query, "sort"));
+  if (cmsBackend() === "postgres") {
+    const rawPage = Number.parseInt(one(query, "page") ?? "1", 10);
+    const data = await getCatalogService().getCategoryPage(slug, {
+      filters: { series: many(query, "series"), activities: many(query, "activities"), levels: many(query, "levels"), caseSizes: many(query, "caseSizes"), prices: many(query, "prices"), inStock: one(query, "availability") === "in-stock" },
+      explicit: [...FACET_PARAMS, EXPLICIT_PARAM].some(key => query[key] !== undefined),
+      sort: sortParam, page: Number.isSafeInteger(rawPage) && rawPage >= 1 ? Math.min(rawPage, 10000) : 1,
+    });
+    if (!data) return null;
+    return {
+      name: data.category.name, slug: data.category.slug, path: data.category.path, description: data.category.description, hero,
+      items: data.items.map(card => catalogCardView(card)), facets: data.facets, sort: data.sort, sortOptions: SORT_OPTIONS,
+      categoryTotal: data.categoryTotal, total: data.total, page: data.page, pageCount: data.pageCount,
+      hasPreset: data.presetApplied || URL_PRESET_SLUGS.has(data.category.slug),
+    };
+  }
+  // Legacy JSON storefront (frozen): behaves as before for its two catalogues.
+  if (!def) {
+    const node = taxonomySeed.find(n => n.slug === slug && (n.kind !== "group" || n.navVisible || n.slug.startsWith("watch-series/")));
+    if (!node) return null;
+    const path: { name: string; slug: string }[] = [];
+    for (let at: typeof node | undefined = node; at; at = taxonomySeed.find(n => n.key === at!.parentKey)) path.unshift({ name: at.name, slug: at.slug });
+    return { name: node.name, slug, path, description: null, hero: null, items: [], facets: [], sort: "featured", sortOptions: SORT_OPTIONS, categoryTotal: 0, total: 0, page: 1, pageCount: 1, hasPreset: false };
+  }
+  const legacySorts = { featured: "newest", "price-asc": "price_asc", "price-desc": "price_desc", "name-asc": "name_asc", "name-desc": "name_asc" } as const;
+  const activities = many(query, "activities"), levels = many(query, "levels"), caseSizes = many(query, "caseSizes");
+  const page = await catalogueProducts(def, { cursor: one(query, "cursor"), search: one(query, "search"), activities, levels: levels as ProductQuery["levels"], caseSizes: caseSizes as ProductQuery["caseSizes"], sort: legacySorts[sortParam] });
+  const facets: GridFacet[] = [
+    { key: "activities", label: "Activity", options: activityFilters.map(label => ({ value: label, label, checked: activities.includes(label) })) },
+    { key: "levels", label: "Level", options: levelFilters.map(label => ({ value: label, label, checked: levels.includes(label) })) },
+    { key: "caseSizes", label: "Case Size", options: caseSizeFilters.map(c => ({ value: c.value, label: c.label, checked: caseSizes.includes(c.value) })) },
+  ];
+  return {
+    name: def.title, slug, path: [{ name: def.title, slug }], description: null, hero, items: page.items, facets, sort: sortParam,
+    sortOptions: SORT_OPTIONS.filter(o => o.value !== "name-desc"), categoryTotal: page.items.length, total: page.items.length, page: 1, pageCount: 1, hasPreset: false, nextCursor: page.nextCursor,
+  };
+}
+
+/** Category slugs for the sitemap: Postgres = categories with at least one listed product; legacy = the two catalogues. */
+export async function getSitemapCategorySlugs(): Promise<string[]> {
+  if (cmsBackend() === "postgres") return getCatalogService().listCategorySlugsWithProducts();
+  return catalogues.map(c => c.slug);
+}
+
 // Back-compat: simple metadata lookup keyed by slug.
 export const catalogueMeta: Record<string, { title: string; heading: string }> = Object.fromEntries(
   catalogues.map((c) => [c.slug, { title: c.title, heading: c.heading }]),
@@ -75,75 +159,6 @@ export async function getProduct(id:string):Promise<Product|undefined> {
   const found=await readProduct(id);return found?publicProduct(found):undefined;
 }
 
-
-export const fenix8Accessories: AccessoryItem[] = [
-  {
-    id: "acc-hrm-pro-plus",
-    name: "HRM-Pro™ Plus",
-    category: "Heart Rate & Sensors",
-    price: 129.99,
-    image: "/images/accessories/hrm-pro-plus.jpg",
-    partNumber: "010-13118-05",
-    description: "Premium chest strap transmitter with running dynamics, dual transmission (ANT+ & BLE) and tool-free battery door.",
-    badge: "POPULAR",
-  },
-  {
-    id: "acc-hrm-dual",
-    name: "HRM-Dual™",
-    category: "Heart Rate & Sensors",
-    price: 69.99,
-    image: "/images/accessories/hrm-dual.jpg",
-    partNumber: "010-12845-00",
-    description: "Transmits real-time heart rate data over ANT+ connectivity and BLUETOOTH Low Energy technology.",
-  },
-  {
-    id: "acc-speed-cadence",
-    name: "Speed Sensor 2 and Cadence Sensor 2 Bundle",
-    category: "Heart Rate & Sensors",
-    price: 69.99,
-    image: "/images/accessories/speed-cadence-bundle.jpg",
-    partNumber: "010-12843-00",
-    description: "Monitor your pedaling cadence and wheel speed as you ride with easy-to-install wireless sensors.",
-  },
-  {
-    id: "acc-qf22-silicone-black",
-    name: "QuickFit® 22 Watch Band (Silicone Black)",
-    category: "Bands & Straps",
-    price: 49.99,
-    image: "/images/accessories/quickfit-22-silicone.jpg",
-    partNumber: "010-13392-10",
-    description: "Stay stylish and sport-ready with this 22 mm silicone band for compatible Garmin watches.",
-    badge: "INCLUDED SIZE",
-  },
-  {
-    id: "acc-qf26-silicone-graphite",
-    name: "QuickFit® 26 Watch Band (Silicone Graphite/Black)",
-    category: "Bands & Straps",
-    price: 49.99,
-    image: "/images/accessories/quickfit-26-silicone.jpg",
-    partNumber: "010-13393-00",
-    description: "Interchangeable 26 mm silicone band for 51 mm fēnix models. Quick snap on and off mechanism.",
-  },
-  {
-    id: "acc-charging-cable",
-    name: "Garmin Charging / Data Cable",
-    category: "Cables & Power",
-    price: 24.99,
-    image: "/images/accessories/charging-cable.jpg",
-    partNumber: "010-12496-00",
-    description: "Complete 2 tasks with 1 cable: connect to USB to recharge your device and transfer data.",
-  },
-  {
-    id: "acc-inreach-mini2",
-    name: "inReach® Mini 2",
-    category: "Satellite & Navigation",
-    price: 399.99,
-    image: "/images/accessories/inreach-mini-2.jpg",
-    partNumber: "010-02602-00",
-    description: "Compact satellite communicator with two-way messaging and interactive SOS capabilities.",
-    badge: "SAFETY ESSENTIAL",
-  },
-];
 
 // ---- Detailed product page data (fēnix 8, id 1228429) ----
 export const fenix8Detail: ProductDetail = {
@@ -217,7 +232,6 @@ export const fenix8Detail: ProductDetail = {
     "Charging/data cable",
     "Documentation",
   ],
-  accessories: fenix8Accessories,
   related: ["1462801", "1316397", "1828641", "851039"],
 };
 
@@ -323,8 +337,9 @@ export async function getProductDetail(id: string): Promise<ProductDetail | unde
   if(cmsBackend()==="postgres"){
     const detail=await getCatalogService().getProductByPublicKey(id,"default","KZT");if(!detail)return undefined;
     const view=catalogCardView(detail),editorial=id==="1228429"?fenix8Detail:undefined;
-    return {id:detail.publicKey,title:detail.name,subtitle:detail.description,partNumber:detail.variants.find(v=>v.id===detail.selectedVariantId)?.sku??detail.variants[0]?.sku??"",price:view.price,priceLabel:view.priceLabel,currency:"KZT",purchasable:false,badge:view.badge,commerce:detail,
-      breadcrumb:editorial?.breadcrumb??[{label:"SMARTWATCHES",href:"/c/wearables-smartwatches"}],
+    return {id:detail.publicKey,title:detail.name,subtitle:detail.description,partNumber:detail.variants.find(v=>v.id===detail.selectedVariantId)?.sku??detail.variants[0]?.sku??"",price:view.price,priceLabel:view.priceLabel,currency:"KZT",purchasable:view.purchasable,badge:view.badge,commerce:detail,
+      // M4.7: the primary category path; products without a primary category fall back to Smartwatches.
+      breadcrumb:detail.breadcrumb?.length?detail.breadcrumb.map(c=>({label:c.name,href:`/c/${c.slug}`})):[{label:"SMARTWATCHES",href:"/c/wearables-smartwatches"}],
       gallery:detail.gallery.map(m=>({view:m.alt||detail.name,src:m.url})),
       caseSizes:[],defaultCaseSize:"",versions:[],defaultVersion:"",colors:[],
       features:detail.features.length?detail.features.map(f=>({title:f.title,body:f.body,image:f.image?.url})):editorial?.features??[],specs:detail.specs.length?detail.specs:editorial?.specs??[],inTheBox:detail.inTheBox.length?detail.inTheBox:editorial?.inTheBox??[],related:detail.relatedProductKeys??[]};
@@ -339,7 +354,6 @@ export async function getProductDetail(id: string): Promise<ProductDetail | unde
     if (!dynamicProduct) return undefined;
     return {
       ...fenix8Detail,
-      accessories:dynamicProduct.currency==="KZT"?undefined:fenix8Detail.accessories,
       title: dynamicProduct.name || fenix8Detail.title,
       subtitle: dynamicProduct.description || fenix8Detail.subtitle,
       currency:dynamicProduct.currency,purchasable:dynamicProduct.purchasable,

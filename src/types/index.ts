@@ -78,17 +78,6 @@ export interface WatchFamily {
   image: string;
 }
 
-export interface AccessoryItem {
-  id: string;
-  name: string;
-  category: "Bands & Straps" | "Heart Rate & Sensors" | "Cables & Power" | "Mounts & Protection" | "Satellite & Navigation";
-  price: number;
-  image: string;
-  partNumber: string;
-  description?: string;
-  badge?: string;
-}
-
 export interface ProductDetail {
   priceLabel?: string;
   commerce?: import("../contracts/commerce").ProductDetailDTO;
@@ -110,7 +99,6 @@ export interface ProductDetail {
   features: { title: string; body: string; image?: string }[];
   specs: { label: string; value: string }[];
   inTheBox: string[];
-  accessories?: AccessoryItem[];
   related: string[]; // product ids
   /** Present when the CMS product defines options/variants: drives the storefront variant pickers. */
   variantModel?: { options: ProductOption[]; variants: ProductVariant[]; images: ProductImage[] };

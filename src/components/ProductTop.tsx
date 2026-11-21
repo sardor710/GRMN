@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {minorToMajor,catalogPriceLabel} from "@/lib/public-catalog";
@@ -11,13 +11,23 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { GarminBadge } from "@/components/GarminBadge";
 import { VariantPicker } from "@/components/product/VariantPicker";
 import { isPurchasable, selectValue } from "@/lib/cms/product-variants";
+import { CommerceVariantPicker } from "@/components/product/CommerceVariantPicker";
+import { chooseOptionValue, initialVariantId, isAvailable, optionValueStates, stockStateText } from "@/lib/variant-availability";
 
 // Same price format the storefront used before variants (site-wide currency display is a separate follow-up).
 const money = (n: number) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2 })} USD`;
 
-export function ProductTop({ product:initial }: { product: ProductDetail }) {
-  const [variantId,setVariantId]=useState(initial.commerce?.selectedVariantId??initial.commerce?.variants[0]?.id??"");
-  const variant=initial.commerce?.variants.find(v=>v.id===variantId);
+/**
+ * `selectedVariantId` / `onSelectVariant` let the page share the chosen variant with the tabs (Accessories);
+ * without them the buy box keeps its own selection.
+ */
+export function ProductTop({ product:initial, selectedVariantId, onSelectVariant }: { product: ProductDetail; selectedVariantId?: string; onSelectVariant?: (variantId: string) => void }) {
+  const commerce=initial.commerce;
+  // M4.5: open on the default variant only when it is in stock, else on the first in-stock variant.
+  const [localVariantId,setLocalVariantId]=useState(()=>commerce?initialVariantId(commerce.variants,{defaultId:commerce.selectedVariantId??commerce.defaultVariantId})??"":"");
+  const variantId=selectedVariantId??localVariantId;
+  const setVariantId=(id:string)=>{setLocalVariantId(id);onSelectVariant?.(id);};
+  const variant=commerce?.variants.find(v=>v.id===variantId);
   const product:ProductDetail=variant?{...initial,price:minorToMajor(variant.price.selling.amountMinor),priceLabel:catalogPriceLabel(variant.price,"KZT"),partNumber:variant.sku,gallery:(variant.gallery??[]).map(m=>({view:m.alt||variant.name,src:m.url}))}:initial;
   const [mainIdx, setMainIdx] = useState(0);
   const [caseSize, setCaseSize] = useState(product.defaultCaseSize);
@@ -34,6 +44,19 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   const [cmsVariantId, setCmsVariantId] = useState(defaultCmsVariant?.id);
   const cmsVariant = vm?.variants.find((v) => v.id === cmsVariantId) || defaultCmsVariant;
 
+  // Postgres products: the ?sku= deep link is resolved on the server (ProductView); a choice updates the URL.
+  const chooseCommerceVariant = (id: string) => {
+    const next = commerce?.variants.find(v => v.id === id);
+    if (!next) return;
+    setVariantId(next.id);
+    setMainIdx(0);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("sku", next.sku);
+      window.history.replaceState(null, "", url);
+    }
+  };
+
   // Deep link: /p/<id>?sku=<variant sku>
   useEffect(() => {
     if (!vm) return;
@@ -46,12 +69,14 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
     if (match) setCmsVariantId(match.id);
   }, [vm]);
 
-  const gallery = useMemo(() => {
+  // Plain derivation (the React Compiler memoizes it); a manual useMemo could not be preserved once the
+  // commerce variant helpers receive the product's nested data.
+  const gallery = (() => {
     if (!vm || !cmsVariant) return product.gallery;
     const byId = new Map(vm.images.map((img) => [img.id, img]));
     const own = cmsVariant.imageIds.map((id) => byId.get(id)).filter((img): img is NonNullable<typeof img> => Boolean(img));
     return own.length ? own.map((img, i) => ({ view: `${img.alt || product.title} ${i + 1}`, src: img.src })) : product.gallery;
-  }, [vm, cmsVariant, product.gallery, product.title]);
+  })();
   const safeIdx = Math.max(0, Math.min(mainIdx, gallery.length - 1));
 
   const chooseValue = (optionId: string, valueId: string) => {
@@ -72,7 +97,8 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   // Server cart (Task 13A): the selected variant's real availability decides; the server prices it.
   // In the browser-only cart a JSON CMS variant must be active and in stock.
   const serverCart = mode === "server" && !!initial.commerce;
-  const sellable = serverCart ? variant?.availability === "available" : product.purchasable !== false && isPurchasable(cmsVariant);
+  // Add to cart is disabled only when the selected variant has no free stock (or the browser-only cart cannot sell it).
+  const sellable = serverCart ? isAvailable(variant) : !initial.commerce && product.purchasable !== false && isPurchasable(cmsVariant);
   const addLabel = !sellable
     ? (serverCart && variant?.availability === "out_of_stock") || (!serverCart && cmsVariant && !isPurchasable(cmsVariant)) ? "Out of stock" : "Purchasing unavailable"
     : added ? "Added ✓" : "Add to Cart";
@@ -126,17 +152,20 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
             >
               <ChevronLeftIcon className="h-4 w-4 rotate-90" />
             </button>
+            {/* Imported galleries can hold hundreds of images: the thumbnail strip scrolls. */}
+            <div className="flex max-h-[520px] flex-col gap-2 overflow-y-auto">
             {gallery.map((g, i) => (
               <button
                 key={`${g.view}-${i}`}
                 onClick={() => setMainIdx(i)}
-                className={`relative h-16 w-16 border ${
+                className={`relative h-16 w-16 shrink-0 border ${
                   i === safeIdx ? "border-black" : "border-neutral-200"
                 }`}
               >
                 <Image src={g.src} alt={g.view} fill sizes="64px" unoptimized={g.src.startsWith("http")} className="object-contain p-1" />
               </button>
             ))}
+            </div>
             <button
               aria-label="Next"
               onClick={() => setMainIdx((i) => Math.min(gallery.length - 1, i + 1))}
@@ -191,7 +220,10 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
           </p>
 
           </>}
-          {product.commerce&&<label className="mt-6 block">Variant<select aria-label="Variant" value={variantId} onChange={e=>{setVariantId(e.target.value);setMainIdx(0);}} className="mt-2 block w-full border p-3">{product.commerce.variants.map(v=><option key={v.id} value={v.id}>{v.name} {Object.values(v.options).join(" / ")}</option>)}</select><span>{variant?.availability==="available"?"In stock":variant?.availability==="out_of_stock"?"Out of stock":"Availability unavailable"}</span></label>}
+          {commerce&&commerce.options?.length?<>
+            <CommerceVariantPicker groups={optionValueStates(commerce.options,commerce.variants,variant)} onSelect={(key,label)=>{const next=chooseOptionValue(commerce.variants,variant,key,label);if(next)chooseCommerceVariant(next.id);}} />
+            <p role="status" className={`mt-6 text-[14px] font-medium ${isAvailable(variant)?"text-black":"text-[#5b5b5b]"}`}>{stockStateText(variant?.availability)}</p>
+          </>:commerce&&<label className="mt-6 block">Variant<select aria-label="Variant" value={variantId} onChange={e=>chooseCommerceVariant(e.target.value)} className="mt-2 block w-full border p-3">{commerce.variants.map(v=><option key={v.id} value={v.id}>{v.name} {Object.values(v.options).join(" / ")}{isAvailable(v)?"":" (out of stock)"}</option>)}</select><span>{stockStateText(variant?.availability)}</span></label>}
           {!product.commerce && vm && cmsVariant && (
             <VariantPicker options={vm.options} variants={vm.variants} selections={cmsVariant.selections} onSelect={chooseValue} />
           )}
