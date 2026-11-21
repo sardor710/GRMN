@@ -258,12 +258,13 @@ async function buildFallbackDetail(p: Product): Promise<ProductDetail> {
     { label: "Case size", value: p.caseSize },
     { label: "Activities", value: p.activities.join(", ") },
   ];
-  let inTheBox = [p.name, "Charging/data cable", "Documentation"];
+  // No in-the-box preset (plan #7): the tab is hidden until the product lists its contents.
+  let inTheBox: string[] = [];
   let gallery = [{ view: "Front", src: p.image }];
 
   const found=await readProduct(p.id);
   if(found?.specs?.length)specs=found.specs;
-  if(found?.inTheBox?.length)inTheBox=found.inTheBox;
+  if(found?.inTheBox?.length)inTheBox=boxFields(found.inTheBox).inTheBox;
   // Photos uploaded in the admin show on the legacy page too (default photo first).
   if(found?.images?.length){
     const ordered=[...found.images.filter((i)=>i.id===found.defaultImageId),...found.images.filter((i)=>i.id!==found.defaultImageId)];
@@ -304,6 +305,17 @@ async function buildFallbackDetail(p: Product): Promise<ProductDetail> {
   };
 }
 
+/** In-the-box labels, plus the items when any has a photo (stored items are strings or `{label, image?}`). */
+function boxFields(raw: unknown): Pick<ProductDetail, "inTheBox" | "inTheBoxItems"> {
+  const items = (Array.isArray(raw) ? raw : []).flatMap((entry: unknown) => {
+    if (typeof entry === "string") return entry.trim() ? [{ label: entry, image: null }] : [];
+    const record = entry && typeof entry === "object" ? (entry as { label?: unknown; image?: unknown }) : {};
+    const image = typeof record.image === "string" && record.image.startsWith("/") && !record.image.startsWith("//") ? record.image : null;
+    return typeof record.label === "string" && record.label.trim() ? [{ label: record.label, image }] : [];
+  });
+  return { inTheBox: items.map((item) => item.label), ...(items.some((item) => item.image) ? { inTheBoxItems: items } : {}) };
+}
+
 /** Storefront detail for CMS products that use the media/options/variants model. */
 export async function buildDetailFromCms(p: CMSProduct): Promise<ProductDetail> {
   const images = p.images || [];
@@ -336,7 +348,7 @@ export async function buildDetailFromCms(p: CMSProduct): Promise<ProductDetail> 
     colors: [],
     features: p.features || [],
     specs: p.specs || [],
-    inTheBox: p.inTheBox || [],
+    ...boxFields(p.inTheBox),
     related: (await getAllProducts())
       .filter((x) => x.id !== p.id && x.family === p.family)
       .slice(0, 4)
@@ -357,7 +369,9 @@ export async function getProductDetail(id: string): Promise<ProductDetail | unde
       breadcrumb:detail.breadcrumb?.length?detail.breadcrumb.map(c=>({label:c.name,href:`/c/${c.slug}`})):[{label:"SMARTWATCHES",href:"/c/wearables-smartwatches"}],
       gallery:detail.gallery.map(m=>({view:m.alt||detail.name,src:m.url})),
       caseSizes:[],defaultCaseSize:"",versions:[],defaultVersion:"",colors:[],
-      features:detail.features.length?detail.features.map(f=>({title:f.title,body:f.body,image:f.image?.url})):editorial?.features??[],specs:detail.specs.length?detail.specs:editorial?.specs??[],inTheBox:detail.inTheBox.length?detail.inTheBox:editorial?.inTheBox??[],related:detail.relatedProductKeys??[]};
+      features:detail.features.length?detail.features.map(f=>({title:f.title,body:f.body,image:f.image?.url})):editorial?.features??[],specs:detail.specs.length?detail.specs:editorial?.specs??[],inTheBox:detail.inTheBox.length?detail.inTheBox:editorial?.inTheBox??[],related:detail.relatedProductKeys??[],
+      // M5.6: overview, grouped specs and in-the-box photos from the Postgres catalog.
+      ...(detail.overviewHtml?{overviewHtml:detail.overviewHtml}:{}),...(detail.specGroups?.length?{specGroups:detail.specGroups}:{}),...(detail.inTheBoxItems?.length?{inTheBoxItems:detail.inTheBoxItems}:{})};
   }
   const cms = await getCMSProduct(id);
   // Only products with variants or an overview get the CMS page; legacy products keep their hand-built page

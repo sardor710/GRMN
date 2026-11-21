@@ -85,6 +85,13 @@ export interface ProductDetailDTO extends ProductCardDTO {
   compatibleAccessories?: import("./catalog-browse.ts").CompatibleAccessoryDTO[];
   /** Devices this accessory fits (accessory pages). */
   compatibleDevices?: import("./catalog-browse.ts").CompatibleDeviceDTO[];
+  // M5.6 additive fields.
+  /** Sanitized overview HTML (garmin.com import or the admin editor); absent when the product has none. */
+  overviewHtml?: string;
+  /** Grouped specifications (garmin.com-style tables); `specs` stays the flat list. */
+  specGroups?: { title: string; items: { label: string; value: string }[] }[];
+  /** In-the-box items with their local photo; present only when at least one item has a photo. */
+  inTheBoxItems?: { label: string; image: string | null }[];
 }
 
 export interface ProductQuery {
