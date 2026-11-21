@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 2 | 19/56 | 2026-11-21 | Wave 2: M3 admin editor ‖ M4 storefront (M3.1 control shape waits on owner A/B) |
+| Executing | 3 | 33/57 | 2026-11-21 | Wave 3: M5 CKEditor overview ‖ M6 variants UX + compatibility UI |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -260,23 +260,23 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 - [x] M2.7 Garmin import route writes into the new command shape (draft) — verify: existing import tests + integration — done: garmin import draft validates against the command schema (unit test with fenix9 fixture). Merged d98990b; merged branch unit 226/226, integration 121/121 (13 files), boundaries ok
 
 ### M3 — Admin shell, list, editor base (wave 2, owner: `frontend-developer`)
-- [ ] M3.1 Measure garmin.com button/select shape (`scripts/clone/inspect.mjs states`), build `src/components/admin/ui/{Button,Select,StatusSelect}.tsx`, replace rectangular controls across admin screens — verify: grep audit, screenshots
-- [ ] M3.2 Replace `ProductsScreen` + `PostgresProductsScreen` with one `ProductEditor` (full-viewport sheet, sticky save bar, unsaved indicator) split into tab files: General, Media, Variants, Specs, Overview, InTheBox, Accessories, SEO — verify: typecheck, cms-ui smoke
-- [ ] M3.3 Category tree multi-select with primary; remove default activities — verify: A1 browser step
-- [ ] M3.4 List page: Grouped / All SKUs toggle (remembered), expandable variants, quick-edit drawer, total count, debounced search, virtualized rows if >100 — verify: A2
-- [ ] M3.5 Specs tab: editable groups + `src/lib/admin/spec-paste.ts` + Paste dialog with preview; remove default specs — verify: A4
-- [ ] M3.6 In-the-box tab: no presets, items with optional image upload — verify: A7 grep + UI
-- [ ] M3.7 Preview modal includes overview and in-the-box from unsaved state — verify: browser
+- [x] M3.1 Measure garmin.com button/select shape (`scripts/clone/inspect.mjs states`), build `src/components/admin/ui/{Button,Select,StatusSelect}.tsx`, replace rectangular controls across admin screens — verify: grep audit, screenshots — done: src/components/admin/ui/{Button,Select,StatusBadge,StatusSelect}.tsx from CONTROLS.md; shape in ui/shape.ts = square (option A, owner confirmation pending; one-line switch to pill); applied across all admin screens. Merged d9f65dc
+- [x] M3.2 Replace `ProductsScreen` + `PostgresProductsScreen` with one `ProductEditor` (full-viewport sheet, sticky save bar, unsaved indicator) split into tab files: General, Media, Variants, Specs, Overview, InTheBox, Accessories, SEO — verify: typecheck, cms-ui smoke — done: ProductEditor full-viewport sheet + sticky save, useProductEditorState + editor-state.ts, tabs/ per-tab files; old ProductsScreen/PostgresProductsScreen deleted; 409 handling. Merged d9f65dc
+- [x] M3.3 Category tree multi-select with primary; remove default activities — verify: A1 browser step — done: CategoryPicker tree (catalog/accessory/group panels), one primary star, import breadcrumb preselect; default activities removed. Merged d9f65dc
+- [x] M3.4 List page: Grouped / All SKUs toggle (remembered), expandable variants, quick-edit drawer, total count, debounced search, virtualized rows if >100 — verify: A2 — done: CatalogScreen Grouped/All SKUs, lazy variant expand, quick-edit drawer → PATCH variants/:id, filters, total, keyset pager. Merged d9f65dc
+- [x] M3.5 Specs tab: editable groups + `src/lib/admin/spec-paste.ts` + Paste dialog with preview; remove default specs — verify: A4 — done: editable spec groups + src/lib/admin/spec-paste.ts (TSV, colon lines, HTML tables, dl) + paste dialog; unit spec-paste 11/11. Merged d9f65dc
+- [x] M3.6 In-the-box tab: no presets, items with optional image upload — verify: A7 grep + UI — done: in-the-box {label,image?} rows with image pick/upload; no presets in client. Merged d9f65dc
+- [x] M3.7 Preview modal includes overview and in-the-box from unsaved state — verify: browser — done: preview shows overview/specs/in-the-box from unsaved state. Merged d9f65dc; agent: unit 247/247, build ok, browser checks + screenshots docs/design-references/admin-products/
 
 ### M4 — Storefront catalog, stock, accessories (wave 2, owner: `frontend-developer`)
 - [x] M4.1 Recon garmin.com nav and category filter sets → `docs/research/www.garmin.com/NAV_AND_FILTERS.md` — verify: file exists with per-category preset list — done: docs/research/www.garmin.com/NAV_AND_FILTERS.md (+CONTROLS.md, ACCESSORY_TAXONOMY.md)
-- [ ] M4.2 `/c/[...slug]` resolves taxonomy slug (any depth), includes descendants, applies preset filters, empty state instead of 404 — verify: A1/A13
-- [ ] M4.3 Facets computed from data with counts (Series, Case size per variant, Activity, Price range, Availability) — verify: unit + browser
-- [ ] M4.4 `homepage-nav.ts` + homepage tiles/carousels → local links; nav link test — verify: A13
-- [ ] M4.5 Availability: card "Out of stock" badge, product page disables out-of-stock values and selects an in-stock default — verify: A15
-- [ ] M4.6 Accessories tab grouped by the 9 categories + View All, variant-resolved compatibility; "Supported models" on accessory pages; remove hardcoded fēnix 8 accessories notice — verify: A9/A10
-- [ ] M4.7 Breadcrumbs from primary category — verify: unit
-- [ ] M4.8 Catalog `publicImage` accepts `/uploads/` media so imported galleries display (gap found by M0) — verify: product page shows imported gallery
+- [x] M4.2 `/c/[...slug]` resolves taxonomy slug (any depth), includes descendants, applies preset filters, empty state instead of 404 — verify: A1/A13 — done: /c/[...slug] from taxonomy, curated membership incl. descendants, empty state 200, 404 unknown, sitemap. Merged 3f69578
+- [x] M4.3 Facets computed from data with counts (Series, Case size per variant, Activity, Price range, Availability) — verify: unit + browser — done: computed facets with counts (Activity, Level, Case size per variant with garmin buckets, Series, Price, Availability), sorts. Merged 3f69578
+- [x] M4.4 `homepage-nav.ts` + homepage tiles/carousels → local links; nav link test — verify: A13 — done: 94 megaNav links local; EXTERNAL_NAV_LINKS allowlist with reasons; home/series tiles local; unit nav-links. Merged 3f69578
+- [x] M4.5 Availability: card "Out of stock" badge, product page disables out-of-stock values and selects an in-stock default — verify: A15 — done: Out of stock on cards, struck sold-out option values, in-stock default variant, ?sku= wins. Merged 3f69578
+- [x] M4.6 Accessories tab grouped by the 9 categories + View All, variant-resolved compatibility; "Supported models" on accessory pages; remove hardcoded fēnix 8 accessories notice — verify: A9/A10 — done: Accessories tab per selected variant grouped Apps…Sensors+View All; Compatible devices on accessory pages; hardcoded fēnix 8 accessories removed. Merged 3f69578
+- [x] M4.7 Breadcrumbs from primary category — verify: unit — done: breadcrumbs from primary category path (hidden groups skipped). Merged 3f69578
+- [x] M4.8 Catalog `publicImage` accepts `/uploads/` media so imported galleries display (gap found by M0) — verify: product page shows imported gallery — done: publicImage accepts /uploads/ safely; imported galleries display. Merged 3f69578; screenshots docs/design-references/storefront-catalog/
 
 ### M5 — Overview editor + import (wave 3, owner: `frontend-developer`)
 - [ ] M5.1 Read Next 16 dynamic-import docs; add `ckeditor5` + `@ckeditor/ckeditor5-react` pinned; client-only `OverviewEditor` with GPL key — verify: `npm run build`, no CKEditor in storefront chunks
@@ -339,6 +339,7 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 - 2026-11-21: Research landed (`docs/research/www.garmin.com/NAV_AND_FILTERS.md`, `CONTROLS.md`, `ACCESSORY_TAXONOMY.md`). Findings that change the build: (a) garmin.com subcategories are curated lists, not "parent + preset filter" (Running 73 vs All-Smartwatches-filtered-to-running 102); only Women pre-applies a filter. So M4 category pages list explicitly assigned products (incl. descendant categories) and `preset_filters` only pre-check facets where garmin.com does (Women). (b) garmin.com buttons, selects, checkboxes and size options are square (0 radius); only badges are pills (1.625em) and swatches are circles. Item 14 wording ("change status dropdown shape according to garmin design") asked to the owner.
 - 2026-11-21: Wave 1 done: M2 merged d98990b (9 commits; API under /api/admin/catalog; compatibility ownership rule in catalog-media-schema.md). Incident: removing Wave 0 worktrees with `git worktree remove --force` followed per-package junctions and emptied main `node_modules/pg` and `postcss` (16:53). Restored from M2's locked-version copies (pg 8.23.1, postcss 8.5.33); lockfile audit shows only 4 optional wasm packages absent (not used on win32). Worktree cleanup now unlinks junctions and stops test clusters first (memory saved). M2 worktree, its orphan test postgres and the outside fallback D:projectsgarmin
 ode_modules removed.
+- 2026-11-21: Wave 2 done: M3 merged d9f65dc, M4 merged 3f69578. Lead fix eca8e77: dev import publishes imported homepage/active banners once (homepage was 503 on fresh DB), stack check gained a homepage row; cms-services test moved off the deleted PostgresProductsScreen. Merged-branch checks: unit 258/258, legacy 73/73, integration 150/150 (17 files, after the test fix), boundaries ok, typecheck ok, lint 0 errors in project code (15 errors only in the owner's untracked .claude/skills/design-taste-frontend/assets/effects/fx.js), `dev:stack --check` 6/6 (outputs/runtime/dev-stack-check-2.log). Worktrees removed with junction-safe cleanup.
 - 2026-11-21: Q3 answered "Yes, commit them" → WhatsApp alert edits committed as `7d0f76f`; `checkout/service.ts` and `payments/service.ts` are now free for M7. Note: Wave 0 worktrees were cut from 51b72b3 (before 7d0f76f); merges will carry it forward.
 - 2026-11-21: M0 owns a reusable `src/server/catalog/variant-sync.ts` (legacy-shaped options/variants/prices/opening stock → Postgres) because the existing migration importer only writes a default variant; M2 reuses it in the admin save path. Category mapping of imported products into the taxonomy runs as a lead task after the Wave 0 merge (needs M1 columns).
 
