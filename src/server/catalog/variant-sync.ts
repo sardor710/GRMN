@@ -41,7 +41,8 @@ const optionSchema = z.looseObject({ id: trimmed(200), key: trimmed(200), name: 
 const variantSchema = z.looseObject({
   id: trimmed(200), sku: trimmed(100), title: z.string().trim().max(300).nullish(),
   selections: z.record(z.string(), z.string()).default({}),
-  price: money, originalPrice: money.nullish(),
+  /** null = no price: nothing is written to `prices` (an existing row is left alone); refused for an active variant. */
+  price: money.nullable(), originalPrice: money.nullish(),
   stock: z.number().int().min(0).max(2_000_000_000).optional(),
   /** The on-hand the stock change was computed from; checked against the locked balance (STOCK_CONFLICT). */
   expectedOnHand: z.number().int().min(0).max(2_000_000_000).optional(),
@@ -130,7 +131,8 @@ function validate(data: Input): string | null {
       if (combinations.has(signature)) invalid(`Variant ${variant.sku} repeats another variant's option combination`);
       combinations.add(signature);
     }
-    if (variant.originalPrice != null && variant.originalPrice < variant.price) invalid(`Compare-at price of ${variant.sku} is below its selling price`);
+    if (variant.price === null) { if (variant.status === "active") invalid(`Active variant ${variant.sku} needs a price`); }
+    else if (variant.originalPrice != null && variant.originalPrice < variant.price) invalid(`Compare-at price of ${variant.sku} is below its selling price`);
   }
   const live = data.variants.filter(variant => variant.status !== "archived"), defaults = live.filter(variant => variant.isDefault);
   if (defaults.length > 1) invalid("Only one variant can be the default");
@@ -282,6 +284,7 @@ export async function syncProductVariants(client: PoolClient, raw: VariantSyncIn
 
   // 7. One active KZT price per live variant and market, updated in place (version+1) when it changes.
   for (const plan of variantPlan.filter(plan => plan.variant.status !== "archived")) {
+    if (plan.variant.price === null) continue; // no price given: never create one (no 0 KZT row)
     const amount = plan.variant.price.toString(), compare = plan.variant.originalPrice == null ? null : plan.variant.originalPrice.toString();
     const price = (await client.query<{ id: string; amount: string; compare: string | null }>("SELECT id,amount_minor::text AS amount,compare_at_minor::text AS compare FROM prices WHERE variant_id=$1 AND market=$2 AND currency='KZT' AND is_active", [plan.id, data.market])).rows[0];
     if (!price) {

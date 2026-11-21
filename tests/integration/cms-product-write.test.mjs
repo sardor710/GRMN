@@ -212,3 +212,43 @@ test("a garmin.com import draft (fēnix 9 fixture) saves as a draft product with
   assert.deepEqual(v.imageIds, product.variants[0].imageIds);
   assert.equal(v.sourcePartNumber, product.variants[0].sourcePartNumber);
 });
+
+// M9.3 review finding 4: a missing price is carried as null (read → editor → write); a resave never
+// invents a 0 KZT price row, and an ACTIVE variant without a price is a clear 400.
+test("a variant without an active price stays unpriced on resave; an active one without a price is refused", async () => {
+  const n = nextSerial();
+  const device = await f.catalog.saveProduct(f.admin, deviceCommand(n));
+  const productId = await internal(device.id);
+  const sku = `DEV-${n}-47-B`;
+  const priceRows = async () => rows("SELECT v.sku,p.amount_minor::text AS amount FROM prices p JOIN product_variants v ON v.id=p.variant_id WHERE v.product_id=$1 AND p.is_active ORDER BY v.sku", [productId]);
+  await f.q("UPDATE product_variants SET status='draft' WHERE sku=$1", [sku]);
+  await f.q("DELETE FROM prices WHERE variant_id=(SELECT id FROM product_variants WHERE sku=$1)", [sku]);
+  const before = await priceRows();
+  let read = await f.catalog.getProduct(f.admin, device.id);
+  assert.equal(read.variants.find(v => v.sku === sku).price, null, "the read carries null, not 0");
+  // Full editor echo, quick edit of another variant, and an older payload without variants: no 0 KZT row appears.
+  read = await f.catalog.saveProduct(f.admin, { ...read, name: `${read.name} (resaved)` });
+  assert.deepEqual(await priceRows(), before);
+  assert.equal(read.variants.find(v => v.sku === sku).price, null);
+  const other = read.variants.find(v => v.sku === `DEV-${n}-43-B`);
+  const quick = await f.catalog.quickEditVariant(f.admin, other.id, { version: read.version, stock: 9, stockBaseline: other.stockBaseline });
+  assert.deepEqual(await priceRows(), before);
+  await f.cms.save("products", f.admin, { id: device.id, version: quick.product.version, name: read.name, description: "Older screen" });
+  assert.deepEqual(await priceRows(), before, "the variants-omitted path keeps the unpriced variant unpriced");
+  // Publishing that variant without giving it a price is refused with a clear message; with a price it saves.
+  read = await f.catalog.getProduct(f.admin, device.id);
+  const activate = price => ({ ...read, variants: read.variants.map(v => v.sku === sku ? { ...v, status: "active", price } : v) });
+  await assert.rejects(f.catalog.saveProduct(f.admin, activate(null)), e => e.status === 400 && e.message.includes(`Active variant ${sku} needs a price`));
+  await f.catalog.saveProduct(f.admin, activate(3799.95));
+  assert.equal((await priceRows()).find(r => r.sku === sku).amount, "379995");
+});
+
+test("a draft simple product may be created without a price; publishing it needs one", async () => {
+  const n = nextSerial();
+  const draft = await f.catalog.saveProduct(f.admin, simpleCommand(n, { status: "draft", price: null }));
+  assert.equal(draft.price, null);
+  assert.deepEqual(await rows("SELECT p.id FROM prices p JOIN product_variants v ON v.id=p.variant_id WHERE v.product_id=$1", [await internal(draft.id)]), []);
+  await assert.rejects(f.catalog.saveProduct(f.admin, { ...draft, status: "published" }), e => e.status === 400 && /needs a price/.test(e.message));
+  const published = await f.catalog.saveProduct(f.admin, { ...draft, status: "published", price: 2499.5 });
+  assert.equal(published.price, 2499.5);
+});

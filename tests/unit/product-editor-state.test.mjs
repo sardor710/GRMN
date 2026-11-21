@@ -87,6 +87,21 @@ test("clearing the compare-at price on an existing product sends null; money kee
   assert.equal(moneyValue(null), undefined);
 });
 
+// M9.3 review finding 4: a variant with no active price round-trips as null, never as 0 KZT.
+test("a variant without a price round-trips null; an active one without a price is flagged", () => {
+  const variant = (extra) => ({ id: "v1", sku: "A-1", title: "Black", selections: {}, price: null, stock: 0, stockBaseline: 0, status: "draft", isDefault: true, imageIds: [], ...extra });
+  const base = { ...simplePayload(), price: null, variants: [variant(), variant({ id: "v2", sku: "A-2", price: 100, status: "active", isDefault: false })] };
+  const form = formFromPayload(base);
+  assert.equal(form.variants[0].price, null);
+  assert.equal(form.price, null);
+  const command = buildCommand(base, form, false);
+  assert.equal(command.variants[0].price, null, "no 0 KZT invented for the unpriced draft variant");
+  assert.equal(command.variants[1].price, 100);
+  assert.equal(validateForm(form), null, "a draft variant may lack a price");
+  const active = { ...form, variants: [{ ...form.variants[0], status: "active" }, form.variants[1]] };
+  assert.deepEqual([validateForm(active)?.tab, /A-1/.test(validateForm(active)?.message ?? ""), /price/.test(validateForm(active)?.message ?? "")], ["variants", true, true]);
+});
+
 test("validation points at the tab to fix", () => {
   assert.equal(validateForm(blankForm()).tab, "general");
   assert.match(validateForm({ ...blankForm(), name: "X" }).message, /SKU/);

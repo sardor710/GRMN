@@ -154,6 +154,9 @@ export function validateForm(form: EditorForm): { tab: "general" | "variants" | 
     if (form.price === null || form.price < 0) return { tab: "general", message: "A product without variants needs a price." };
   }
   if (form.variants.some(variant => !variant.sku.trim())) return { tab: "variants", message: "Every variant needs a SKU." };
+  // A variant may have no price (null round-trips as null, never 0 KZT); only an active one must have one.
+  const unpriced = form.variants.find(variant => variant.status === "active" && variant.price === null);
+  if (unpriced) return { tab: "variants", message: `Active variant ${unpriced.sku.trim()} needs a price (or set it to draft).` };
   if (form.categories.length && form.categories.filter(category => category.primary).length !== 1) return { tab: "general", message: "Mark exactly one category as primary." };
   if (form.inTheBox.some(item => !item.label.trim())) return { tab: "box", message: "Every in-the-box item needs a name (or delete the empty row)." };
   return null;

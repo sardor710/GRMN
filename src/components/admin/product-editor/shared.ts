@@ -23,8 +23,8 @@ export const newId = (prefix: string): string =>
 const kztFormatter = new Intl.NumberFormat("ru-RU", { maximumFractionDigits: 0 });
 const usdFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
-export const formatKzt = (value: number | undefined): string =>
-  value === undefined || Number.isNaN(value) ? "—" : `${kztFormatter.format(Math.round(value))} ₸`;
+export const formatKzt = (value: number | null | undefined): string =>
+  value === undefined || value === null || Number.isNaN(value) ? "—" : `${kztFormatter.format(Math.round(value))} ₸`;
 
 export const formatUsd = (value: number | undefined): string =>
   value === undefined || Number.isNaN(value) ? "—" : usdFormatter.format(value);

@@ -34,7 +34,8 @@ const sourcePrice = z.object({ currency: z.literal("USD"), list: z.number().fini
 const variant = z.object({
   id: key, sku: z.string().trim().min(1, "Every variant needs a SKU").max(100), title: short.default(""),
   selections: z.record(key, key).default({}),
-  price: kztMoney, originalPrice: kztMoney.nullish(),
+  /** null = no price (what the read API returns for a variant without an active price); only draft/archived variants may have none. */
+  price: kztMoney.nullable(), originalPrice: kztMoney.nullish(),
   /** On-hand quantity at the main location; omitted = leave stock unchanged. */
   stock: count.optional(),
   /** The on-hand quantity the editor loaded; when given, a concurrent stock change is a 409 instead of being overwritten. */
@@ -63,7 +64,8 @@ export const productCommandSchema = productInput.extend({
   id: key.optional(),
   version: z.number().int().min(0).max(2147483646).optional(),
   sku: z.string().trim().max(100).optional(),
-  price: kztMoney.optional(),
+  /** Simple products: null = no price (allowed while the product is not published). */
+  price: kztMoney.nullish(),
   originalPrice: kztMoney.nullish(),
   stock: count.optional(),
   stockBaseline: count.optional(),

@@ -69,7 +69,8 @@ export async function writeProduct(client: PoolClient, context: WriteContext, ra
   const defaultCurrent = current.variants.find(variant => variant.isDefault) ?? current.variants[0];
   const simpleDefault = (): ProductCommandVariant => ({
     id: defaultCurrent?.id ?? "default", sku: data.sku ?? defaultCurrent?.sku ?? invalid("A product without variants needs a SKU"), title: "", selections: {},
-    price: data.price ?? defaultCurrent?.priceMinor ?? invalid("A product without variants needs a price"),
+    // null (sent, or read back for a variant without an active price) stays null: never a made-up 0 KZT.
+    price: data.price !== undefined ? data.price : defaultCurrent ? defaultCurrent.priceMinor : invalid("A product without variants needs a price"),
     originalPrice: data.originalPrice === undefined ? defaultCurrent?.compareAtMinor ?? null : data.originalPrice,
     stock: data.stock, stockBaseline: data.stockBaseline, status: variantStatusFor(status), isDefault: true, imageIds: [],
   });
@@ -77,14 +78,21 @@ export async function writeProduct(client: PoolClient, context: WriteContext, ra
     options = current.options.map(option => ({ id: option.id, key: option.key, name: option.name, display: option.display, values: option.values.map(value => ({ id: value.id, key: value.key, label: value.label, ...(value.swatchColor ? { swatchColor: value.swatchColor } : {}), ...(value.swatchImage ? { swatchImage: value.swatchImage } : {}) })) }));
     variants = current.variants.map(variant => variant === defaultCurrent
       ? { ...simpleDefault(), id: variant.id, title: variant.title ?? "", selections: variant.selections, status: variant.status }
-      : { id: variant.id, sku: variant.sku, title: variant.title ?? "", selections: variant.selections, price: variant.priceMinor ?? "0", originalPrice: variant.compareAtMinor, status: variant.status, isDefault: false, imageIds: [] });
+      : { id: variant.id, sku: variant.sku, title: variant.title ?? "", selections: variant.selections, price: variant.priceMinor, originalPrice: variant.compareAtMinor, status: variant.status, isDefault: false, imageIds: [] });
   } else if (!data.variants?.length) { options = []; variants = [simpleDefault()]; }
   else variants = data.variants;
   options ??= [];
   const isSimple = !data.variants?.length && !options.length;
 
   // 2. Exact money rules and SKU uniqueness (case-insensitive, across every product) before any write.
-  for (const variant of variants) if (variant.originalPrice != null && BigInt(variant.originalPrice) < BigInt(variant.price)) invalid(`Compare-at price of ${variant.sku} cannot be below its selling price`);
+  for (const variant of variants) {
+    // A missing price is never invented (no price row is written); only a variant that is for sale needs one.
+    if (variant.price === null) {
+      if (variant.status === "active") invalid(isSimple ? "A published product needs a price" : `Active variant ${variant.sku} needs a price (or keep it as a draft)`);
+      continue;
+    }
+    if (variant.originalPrice != null && BigInt(variant.originalPrice) < BigInt(variant.price)) invalid(`Compare-at price of ${variant.sku} cannot be below its selling price`);
+  }
   const lowered = variants.map(variant => variant.sku.toLowerCase());
   const duplicates = [...new Set(variants.filter((variant, index) => lowered.indexOf(variant.sku.toLowerCase()) !== index).map(variant => variant.sku))];
   if (duplicates.length) throw new SkuConflict(duplicates);
@@ -130,7 +138,7 @@ export async function writeProduct(client: PoolClient, context: WriteContext, ra
   const images = data.images;
   const files = images ? await resolveImageFiles(client, images.map(image => image.src)) : undefined;
   const input: VariantSyncInput = {
-    productId, options, variants: syncVariants.map(variant => ({ ...variant, price: minorToKzt(variant.price), originalPrice: variant.originalPrice == null ? null : minorToKzt(variant.originalPrice) })),
+    productId, options, variants: syncVariants.map(variant => ({ ...variant, price: variant.price === null ? null : minorToKzt(variant.price), originalPrice: variant.originalPrice == null ? null : minorToKzt(variant.originalPrice) })),
     ...(images ? { images: images.map(image => ({ id: image.id, src: image.src, alt: image.alt, width: image.width, height: image.height, file: files?.get(image.src) ?? null })), defaultImageId: data.defaultImageId ?? null } : {}),
     stock: { sourceReference: `admin:${publicKey}`, actorUserId: context.principal.userId },
   };
