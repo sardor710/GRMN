@@ -16,6 +16,7 @@ import {createAuthFoundation} from "../../src/server/auth/http.ts";
 import {bootstrapFirstStaff} from "../../src/server/auth/bootstrap.ts";
 import {requireStaffPrincipal,requirePermission} from "../../src/server/auth/principal.ts";
 import {createCMSService} from "../../src/server/cms/service.ts";
+import {seedTaxonomy} from "../integration/catalog-helpers.mjs";
 
 const execute=promisify(execFile),root=path.resolve("temp"),receipt=path.resolve(process.env.CMS_SMOKE_RECEIPT??"temp/backend-next-three/08");
 const source=path.resolve("src/lib/cms/data.json"),hash=()=>createHash("sha256").update(fs.readFileSync(source)).digest("hex"),before=hash();
@@ -25,6 +26,8 @@ async function port(){const server=createServer();await new Promise(resolve=>ser
 let temporary,database,app,chrome,ws,profile,logFile;
 try{
   temporary=await startTemporaryPostgres();database=createDatabase(parseServerEnv({DATABASE_URL:temporary.url}));const migration=createDatabase(parseServerEnv({DATABASE_URL:temporary.url,DATABASE_POOL_MAX:"1",DATABASE_CONNECT_TIMEOUT_MS:"10000",DATABASE_STATEMENT_TIMEOUT_MS:"60000"}));try{await migrate(migration.db,{migrationsFolder:"drizzle"});}finally{await migration.close();}
+  // Category pages are taxonomy-driven (M4): seed the category tree the way dev:seed does.
+  await seedTaxonomy((sql,values)=>database.pool.query(sql,values));
   const appPort=await port(),origin=`http://localhost:${appPort}`,secret=randomBytes(32).toString("hex");
   const config=parseAuthConfig({AUTH_ENABLED:"1",AUTH_SECRET:secret,AUTH_BASE_URL:origin,NODE_ENV:"test"});
   const runtime=createAuthFoundation({database,config}),staff=await bootstrapFirstStaff(database,{name:"Synthetic browser operator",email:"ui@example.invalid",password:randomBytes(24).toString("base64url")});
@@ -38,7 +41,7 @@ try{
   for(let i=0;i<25;i++)await cms.save("products",headers,{name:`UI fixture ${i}`,sku:`UI-FIXTURE-${i}`,price:"123.45",status:"published",family:"Test",image:"/images/products/1228429.jpg",activities:[],level:"Entry",caseSize:"Medium"});
   await cms.saveHomepage(headers,{version:0,config:{heroBanners:[{id:"ui-hero",key:"ui",title:"UI HOMEPAGE FIXTURE",subtitle:"Disposable data",href:"/c/wearables-smartwatches",image:"/homepage/featured/holiday.jpg",active:true,order:0}],carousels:[],promoTiles:[],storyTiles:[],categoryTiles:[]}});
   fs.mkdirSync(receipt,{recursive:true});logFile=fs.openSync(path.join(receipt,"ui-next.log"),"w");
-  app=spawn(process.execPath,["node_modules/next/dist/bin/next","dev",...(process.env.CMS_TEST_BUNDLER==="webpack"?["--webpack"]:[]),"--hostname","localhost","--port",String(appPort)],{windowsHide:true,stdio:["ignore",logFile,logFile],env:{...process.env,CMS_BACKEND:"postgres",AUTH_ENABLED:"1",AUTH_SECRET:secret,AUTH_BASE_URL:origin,DATABASE_URL:temporary.url,NODE_ENV:"development",NEXT_TELEMETRY_DISABLED:"1"}});
+  app=spawn(process.execPath,["node_modules/next/dist/bin/next","dev",...(process.env.CMS_TEST_BUNDLER==="webpack"?["--webpack"]:[]),"--hostname","localhost","--port",String(appPort)],{windowsHide:true,stdio:["ignore",logFile,logFile],env:{...process.env,CMS_BACKEND:"postgres",AUTH_ENABLED:"1",AUTH_SECRET:secret,AUTH_BASE_URL:origin,DATABASE_URL:temporary.url,DATABASE_CONNECT_TIMEOUT_MS:process.env.DATABASE_CONNECT_TIMEOUT_MS??"10000",NODE_ENV:"development",NEXT_TELEMETRY_DISABLED:"1"}});
   await until(async()=>{const response=await fetch(origin+"/api/admin/products");return response.status===401;},"Next did not start",120000);
   const chromePath=process.env.CMS_TEST_CHROME??"C:/Program Files/Google/Chrome/Application/chrome.exe";assert.ok(fs.existsSync(chromePath),"Set CMS_TEST_CHROME to a Chrome executable");
   profile=await mkdtemp(path.join(root,"cms-ui-chrome-"));
@@ -82,7 +85,8 @@ try{
   await navigate("/");await until(async()=>(await text()).includes("UI HOMEPAGE FIXTURE"),"Persisted homepage did not render");
   const screenshot=await send("Page.captureScreenshot",{format:"png"});await writeFile(path.join(receipt,"ui-homepage.png"),Buffer.from(screenshot.data,"base64"));
   await navigate(`/p/${saved.id}`);await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Saved product did not render");assert.ok((await text()).includes("KZT"));
-  await navigate("/admin/homepage");await until(async()=>(await text()).includes("Save All Changes"),"Homepage editor did not load");await click("Save All Changes");await until(async()=>(await cms.homepage(headers)).version===2,"Homepage UI save failed");
+  // The shared admin Button renders uppercase (CSS text-transform), and innerText reflects it: match case-insensitively.
+  await navigate("/admin/homepage");await until(async()=>(await text()).toLowerCase().includes("save all changes"),"Homepage editor did not load").catch(async error=>{await writeFile(path.join(receipt,"admin-homepage-body.txt"),await text());throw error;});await click("Save All Changes");await until(async()=>(await cms.homepage(headers)).version===2,"Homepage UI save failed");
   await navigate("/admin/blogs");await until(async()=>(await text()).toLowerCase().includes("write new article"),"Blog editor did not load");await click("Write New Article");await until(()=>evaluate("!!document.querySelector('form')"),"Blog modal missing");
   await fill("Article Title","UI ARTICLE");await fill("Summary / Excerpt","UI excerpt");await fill("Cover Image","/images/blog/train-for-triathlon.jpg");await fill("Full Article Body","UI persisted article body");await evaluate("document.querySelector('form').requestSubmit();true");await until(()=>evaluate("!document.querySelector('form')"),"Blog UI save failed");
   const blog=(await cms.list("blogs",headers,{search:"UI ARTICLE"})).items[0];assert.ok(blog);await navigate("/blog/"+blog.slug);await until(async()=>(await text()).includes("UI persisted article body"),"Blog public content did not render");
@@ -91,14 +95,19 @@ try{
   await navigate("/admin/clients");await until(()=>evaluate("!![...document.querySelectorAll('button')].find(b=>b.textContent.includes('Add New Client')&&!b.disabled)"),"Client editor did not load");await click("Add New Client");await until(()=>evaluate("!!document.querySelector('form')"),"Client modal missing");await fill("Full Name","UI CUSTOMER");await fill("Phone Number","+77000000001");await fill("Email","");await fill("Country","KZ");await evaluate("document.querySelector('form').requestSubmit();true");await until(()=>evaluate("!document.querySelector('form')"),"Customer UI save failed");assert.equal((await cms.list("clients",headers,{search:"UI CUSTOMER"})).items[0].country,"KZ");
   await navigate("/admin/discounts");await until(()=>evaluate("!!document.querySelector('[role=alert]')"),"Unavailable discounts did not show an error");
   }else{saved=await cms.save("products",headers,{name:"UI UPDATED PRODUCT",sku:"UI-CREATED",price:"123.45",status:"published",image:"/images/products/1228429.jpg"});}
+  // /c pages list explicitly assigned products (M4): put every published fixture under Smartwatches.
+  await database.pool.query("INSERT INTO product_categories(product_id,category_id,is_primary) SELECT p.id,c.id,true FROM products p JOIN categories c ON c.key='wearables-smartwatches' WHERE p.status='published' AND NOT EXISTS(SELECT 1 FROM product_categories pc WHERE pc.product_id=p.id)");
   await navigate("/c/wearables-smartwatches");await until(async()=>(await text()).toLowerCase().includes("ui fixture"),"Catalog did not load normalized products").catch(async error=>{await writeFile(path.join(receipt,"catalog-body.txt"),await text());await writeFile(path.join(receipt,"catalog-response.html"),await(await fetch(origin+"/c/wearables-smartwatches")).text());throw error;});assert.equal(await evaluate("document.querySelectorAll('a[href^=\"/p/\"]').length"),24);
-  await navigate("/c/wearables-smartwatches?search=UI%20UPDATED%20PRODUCT");await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Catalog search missed newly added product");assert.equal(await evaluate("document.querySelectorAll('a[href^=\"/p/\"]').length"),1);
+  // Taxonomy /c pages (M4) have no free-text search: tick the admin-created product into Running and expect it alone there.
+  await database.pool.query("INSERT INTO product_categories(product_id,category_id,is_primary) SELECT p.id,c.id,false FROM products p JOIN categories c ON c.key='sports-fitness/running-smartwatches' WHERE p.public_key=$1",[saved.id]);
+  await navigate("/c/sports-fitness/running-smartwatches");await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Category page missed the newly added product");assert.equal(await evaluate("document.querySelectorAll('a[href^=\"/p/\"]').length"),1);
   await navigate("/compare?selected="+saved.id+"&search=UI%20UPDATED%20PRODUCT");await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Compare did not read normalized product");assert.ok((await text()).includes("123.45 KZT"));assert.ok(!(await text()).includes("Forbidden seed"));
   await navigate("/p/"+saved.id);await until(()=>evaluate("!!document.querySelector('script[type=\"application/ld+json\"]')"),"Product metadata missing");const structured=await evaluate("JSON.parse(document.querySelector('script[type=\"application/ld+json\"]').textContent)");assert.equal(structured.offers[0].price,"123.45");assert.equal(structured.offers[0].priceCurrency,"KZT");
   const missing=await fetch(origin+"/p/absent-fixture");assert.equal(missing.status,404);const sitemap=await(await fetch(origin+"/sitemap.xml")).text();assert.ok(sitemap.includes(saved.id));
   const unicode=await cms.save("blogs",headers,{title:"Қазақша UI мақала",slug:"қазақша-ui-мақала",content:"UNICODE PUBLIC BODY",status:"published",category:"Fixture"});await navigate("/blog/"+encodeURIComponent(unicode.slug));await until(async()=>(await text()).includes("UNICODE PUBLIC BODY"),"Unicode URL failed");
   await navigate("/blog?search="+encodeURIComponent("Қазақша")+"&category=Fixture");await until(async()=>(await text()).toLowerCase().includes("қазақша ui мақала"),"Blog server filters failed");assert.ok(!(await text()).includes("UI ARTICLE"));
-  for(const route of ["/c/wearables-smartwatches?levels=Foo","/c/wearables-smartwatches?cursor=tampered","/compare?cursor=tampered","/blog?cursor=x","/blog/foo%20bar","/p/"+"x".repeat(250)]){const status=(await fetch(origin+route)).status;assert.equal(status,404,route+" returned "+status);}
+  // /c pages are page-numbered (M4): unknown facet values and stray params just match nothing; an unknown category is a 404.
+  for(const route of ["/c/not-a-category","/c/watch-series/not-a-series","/compare?cursor=tampered","/blog?cursor=x","/blog/foo%20bar","/p/"+"x".repeat(250)]){const status=(await fetch(origin+route)).status;assert.equal(status,404,route+" returned "+status);}
   assert.notEqual((await fetch(origin+"/x%E0%A4%A")).status,503,"malformed URL must not report an outage");
   console.log("PASS Task09 review fixes: invalid filters/cursors/keys are 404 and malformed URLs are not 503");
   console.log("PASS Task09 public catalog/filters/Compare/exact JSONLD/sitemap/404/Unicode and newly-admin-created visibility without rebuild");
@@ -116,7 +125,7 @@ try{
   await navigate("/account");await until(async()=>(await low()).includes("ui account owner"),"Account page did not load the session profile");
   assert.ok(!(await low()).includes("alex rivera"));assert.ok((await low()).includes("no saved addresses yet"));
   await click("Add Address");await until(()=>evaluate("!!document.querySelector('form[name=address]')"),"Address form missing");
-  await fill("Address Title","UI Home");await fill("Street Address","UI street 10");await fill("City","Almaty");
+  await fill("Address Title","UI Home");await fill("Street and house","UI street 10");await fill("City","Almaty");
   await evaluate("document.querySelector('form[name=address]').requestSubmit();true");await until(()=>evaluate("!document.querySelector('form[name=address]')"),"Address save failed");
   const savedAddress=(await database.pool.query("SELECT label,line1,is_primary,phone FROM customer_addresses WHERE user_id=$1",[customerId])).rows;assert.equal(savedAddress.length,1);assert.equal(savedAddress[0].label,"UI Home");assert.equal(savedAddress[0].is_primary,true);assert.equal(savedAddress[0].phone,"+77000000077");
   await navigate("/account");await until(async()=>(await low()).includes("ui street 10"),"Saved address did not persist across reload");
@@ -146,7 +155,8 @@ try{
   await navigate("/cart");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Cart page did not show the server cart");
   assert.match(await text(),/7[\s ,.]?500[.,]00 KZT/);assert.ok(!(await text()).includes("Forged name"));
   await navigate("/cart");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Server cart did not persist across reload");
-  assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Review order')?.disabled"),true,"the server checkout panel is offered and waits for the delivery contact (Task 14A)");
+  // M8.5: Review order stays clickable and the Kazakhstan delivery step is validated on submit.
+  await until(()=>evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Review order')?.disabled===false && !!document.querySelector('input[name=line1]')"),"The server checkout panel with the typed Kazakhstan address form was not offered (Task 14A)");
   await send("Network.setCookie",{name:"grmn-auth.session_token",value:encodeURIComponent(customerSession.token+"."+createHmac("sha256",secret).update(customerSession.token).digest("base64")),url:origin,httpOnly:true,sameSite:"Lax"});
   await navigate("/cart");
   await until(async()=>(await database.pool.query("SELECT ci.quantity FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=$1 AND c.status='active' AND ci.variant_id=$2",[customerId,cartVariant])).rows[0]?.quantity===3,"Sign-in did not merge the guest cart into the account cart");
@@ -172,7 +182,10 @@ try{
   await database.pool.query("INSERT INTO store_settings(id,active_tax_configuration_id,active_shipping_policy_id) VALUES(1,$1,$2) ON CONFLICT (id) DO UPDATE SET active_tax_configuration_id=EXCLUDED.active_tax_configuration_id,active_shipping_policy_id=EXCLUDED.active_shipping_policy_id,version=store_settings.version+1",[uiTax,uiPolicy]);
   const setInput=(name,value)=>evaluate(`(()=>{const input=document.querySelector('input[name=${name}]');if(!input)throw Error('Missing input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`);
   await navigate("/cart");await until(async()=>/review order/i.test(await text()),"Checkout panel missing");
-  for(const [name,value] of [["recipientName","UI Checkout Buyer"],["phone","+77000000077"],["city","Almaty"],["line1","UI checkout street 1"]])await until(()=>setInput(name,value),"Could not fill "+name);
+  // M8.5: a signed-in customer's primary saved address (UI Home, saved in Task 10C) is preselected; the
+  // typed form is only for a new address.
+  if(await until(()=>evaluate("document.querySelector('input[name=delivery-address]')?'saved':document.querySelector('input[name=line1]')?'typed':''"),"Delivery step missing")==="saved")await until(()=>evaluate("!!document.querySelector('input[name=delivery-address]:checked')"),"The primary saved address was not preselected");
+  else for(const [name,value] of [["name","UI Checkout Buyer"],["phone","+77000000077"],["city","Almaty"],["line1","UI checkout street 1"]])await until(()=>setInput(name,value),"Could not fill "+name);
   await until(async()=>{try{await click("Review order");return true;}catch{return false;}},"Review order stayed disabled");
   await until(async()=>/total payable/i.test(await text()),"The server quote did not render");
   assert.match(await text(),/8[\s ,.]?415[.,]00 KZT/,"7 500 KZT goods + 12% tax + 15 KZT shipping, all computed on the server");
