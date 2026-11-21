@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 5 | 53/57 | 2026-11-21 | Wave 5 (M9): full gates, E2E of owner spot checks, independent review |
+| Done | 5 | 57/57 | 2026-11-21 | Owner review; optional follow-ups below (control shape A/B confirmation pending) |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -307,10 +307,10 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 - [x] M8.5 Account modal + profile birthday/email UI; checkout reuses AddressForm (after M7 merge) — verify: browser — done: account modal + birthday/email (026b053); checkout saved-address cards + AddressForm + server checkKzAddress (400 non-KZ inline, ADDRESS_NOT_DELIVERABLE saved non-KZ) + admin "Deliver to" with region labels (fb83a00); agent: unit 333/333, integration 74/74, build ok, dev:stack --check 7/7, real-key guest + saved-card demo purchases
 
 ### M9 — Verification & review (wave 5, owner: `superpowers:verification-before-completion`)
-- [~] M9.1 `npm test`, `npm run check` — verify: exit 0, counts recorded
-- [~] M9.2 Browser E2E of all manual spot checks with screenshots in `outputs/smoke/2026-11-21/` — verify: files
+- [x] M9.1 `npm test`, `npm run check` — verify: exit 0, counts recorded — done: final on bf4a3c7: `npm test` exit 0 (legacy 77/77, unit 342/342, integration 428/428, boundaries ok); `npm run check` exit 0 (lint 0 errors / 24 pre-existing warnings, typecheck, build 99 pages); `dev:stack --check` 7/7 incl. demo checkout → paid. Logs outputs/runtime/final-*.log
+- [x] M9.2 Browser E2E of all manual spot checks with screenshots in `outputs/smoke/2026-11-21/` — verify: files — done: evidence-collector run 12/12 PASS (2 wording deviations explained) — docs/design-references/e2e-2026-11-21/RESULTS.md + screenshots; `npm run test:cms-ui` exit 0 after test-only fix (uppercase button text) and stale-step updates; storefront fix: single-SKU products no longer show a 'null' variant select. Merged bf4a3c7
 - [x] M9.3 `code-reviewer` + `reality-checker` passes; fix Critical/Important — verify: review notes — done: code-reviewer pass (no money/stock/SQLi/leak issues) + 6 findings fixed TDD and merged 4e34845 (agent: unit 342/342, integration 151/151 across 15 suites, boundaries ok)
-- [ ] M9.4 Fill Result + Handoff; remove merged worktrees created by this run — verify: `git worktree list`
+- [x] M9.4 Fill Result + Handoff; remove merged worktrees created by this run — verify: `git worktree list` — done: Result + Handoff filled; all agent worktrees/branches removed with junction-safe cleanup; no stray postgres
 
 ## 6. Verification
 - `npm run typecheck`, `npm run lint`, `npm run build` (= `npm run check`)
@@ -350,7 +350,35 @@ ode_modules removed.
 - 2026-11-21: M0 owns a reusable `src/server/catalog/variant-sync.ts` (legacy-shaped options/variants/prices/opening stock → Postgres) because the existing migration importer only writes a default variant; M2 reuses it in the admin save path. Category mapping of imported products into the taxonomy runs as a lead task after the Wave 0 merge (needs M1 columns).
 
 ## Result
-Delivered: – · Checks run: – · Gaps: – · Follow-ups: –
+**Delivered (all 15 owner items, branch `merge/backend-into-cms-variants`, final merge bf4a3c7, not pushed):**
+1. Multi-category assignment (tree + primary) saved to `product_categories`; category pages list assigned products incl. descendants.
+2. Admin list: Grouped / All SKUs views, lazy variant expand, SKU quick-edit drawer.
+3. Redesigned Options & variants step (chips, create/keep/remove preview, ready-to-sell summary, selection bulk bar).
+4. Editable spec groups + "Paste specs" (Excel/Sheets TSV, colon lines, website tables).
+5. CKEditor 5 (GPL, 49.1.0) overview editor, admin-only bundle.
+6. Edit-in-preview of imported garmin.com overview (storefront styling, block move, any language).
+7. No in-the-box presets anywhere; items with photos; importer downloads garmin.com in-the-box photos.
+8. YouTube media blocks swappable in the editor; storefront click-to-play inline iframe in place.
+9. Accessories by category (Apps…Sensors + View All) on device pages; "Compatible devices" on accessory pages; editable from both sides.
+10. Variant-level compatibility via option values (e.g. fēnix 51 mm only), single stored link (`product_compatibility`).
+11. Demo purchases: sandbox provider (D03a), paid at checkout, stock consumed, Demo labels in orders/dashboard/reports, exports exclude sandbox; staff-only under the production override.
+12. Kazakhstan-only addresses with Yandex map two-way sync + geocoder proxy, birthday and email; KZ address step in checkout with saved cards.
+13. Taxonomy-driven `/c/` pages with computed facets; 94 mega-menu links local; homepage/series tiles local.
+14. Admin list API p95 ≤ 91 ms at 1,000 products / 5,000 SKUs (pages ≤ 34 KB vs 834 KB before); Garmin-measured square controls across admin.
+15. Stock through the inventory ledger everywhere (editor, drawer, restock); availability on cards/product page; purchasable when stock > 0.
+Foundation: Postgres single runtime with `npm run dev:stack` (persistent embedded PG, migrations 0013–0015, KZ seed, taxonomy, data.json import, dev OTP).
+
+**Checks run:** see M9.1 (npm test / npm run check / dev:stack --check all green), M9.2 (12/12 browser scenarios + test:cms-ui green), M9.3 (independent review; 6 findings fixed TDD), M2 benchmark.
+
+**Gaps (honest):**
+- Admin control shape implemented as option A (Garmin square, pill badges); owner has not confirmed A vs B — one-line switch in `src/components/admin/ui/shape.ts`.
+- Legacy JSON mode is frozen: new features need `CMS_BACKEND=postgres` (use `npm run dev:stack`).
+- Imported legacy simple products carry small prices (e.g. 249.99 KZT) from data.json — likely USD-era values; needs owner price review.
+- Generated draft SKUs can be very long; Women page preset is empty (no tag data); KZT price facet buckets are my choice.
+- Yandex keys must be restricted by HTTP referrer in the Yandex console; free-tier quota/terms need checking for production.
+- `DEMO_PURCHASES` must be off for the real launch (refused automatically in production unless overridden).
+
+**Follow-ups (owner):** confirm control shape A/B; review imported prices and stock; assign products to categories/accessory groups in the new editor; restrict Yandex keys.
 
 ## Handoff
-Plan drafted, not approved yet. On approval: answer Q1–Q4 into §1, set Status `Executing`, expand Wave 0 with `superpowers:writing-plans`, run M0 ‖ M1 in separate worktrees. Key context: admin and commerce only work on Postgres (`AUTH_ENABLED=1`); the JSON editor path is frozen after D-R1. Don't touch the WhatsApp dirty files.
+All 57 tasks done and merged on `merge/backend-into-cms-variants` (HEAD after bf4a3c7 + plan commit); nothing pushed, no worktrees left. Run locally with `npm run dev:stack` (first run: `npm run dev:admin` for an owner account, enroll TOTP at first login). Only open owner decision: admin control shape A (current) vs B (`src/components/admin/ui/shape.ts`). Evidence: docs/design-references/e2e-2026-11-21/RESULTS.md and outputs/runtime/final-*.log. Next work, if any, should start a new plan.
