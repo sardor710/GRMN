@@ -20,6 +20,9 @@ export interface CategoryPresetFilters {
 }
 
 export const categoryKinds = ["catalog", "accessory", "group"] as const;
+/** How the storefront renders an option's values (0014). */
+export const optionDisplays = ["buttons", "swatch", "dropdown"] as const;
+export type OptionDisplay = (typeof optionDisplays)[number];
 export type CategoryKind = (typeof categoryKinds)[number];
 
 export const products = pgTable("products", {
@@ -45,12 +48,16 @@ export const products = pgTable("products", {
   canonicalUrl: text("canonical_url"),
   noIndex: boolean("no_index").notNull().default(false),
   ogImageSource: text("og_image_source"),
+  // Admin list thumbnail fallback, computed at write time so list queries never detoast legacy_content (0014).
+  thumbnailSource: text("thumbnail_source").generatedAlwaysAs(sql`("legacy_content"->>'image')`),
   version: integer("version").notNull().default(1),
   configurationEpoch: bigint("configuration_epoch", { mode: "bigint" }).notNull().default(sql`0`),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, (table) => [
   index("products_published_order_idx").on(table.status, table.createdAt, table.id),
+  // Admin product/SKU lists: keyset order updated_at DESC, id DESC (0014).
+  index("products_admin_order_idx").on(table.updatedAt.desc().nullsFirst(), table.id.desc().nullsFirst()),
   check("products_public_key_present", sql`length(btrim(${table.publicKey}))>0 AND ${table.publicKey}=btrim(${table.publicKey})`),
   check("products_slug_valid", sql`${table.slug} IS NULL OR (length(btrim(${table.slug}))>0 AND ${table.slug}=btrim(${table.slug}))`),
   check("products_name_present", sql`length(btrim(${table.name}))>0`),
@@ -90,8 +97,10 @@ export const productVariants = pgTable("product_variants", {
 export const productOptions = pgTable("product_options", {
   id: id(), productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
   key: text("key").notNull(), name: text("name").notNull(), position: integer("position").notNull().default(0),
+  display: text("display", { enum: optionDisplays }).notNull().default("buttons"),
 }, (table) => [
   unique("product_options_id_product_unique").on(table.id, table.productId),
+  check("product_options_display_valid", sql`${table.display} IN ('buttons','swatch','dropdown')`),
   uniqueIndex("product_options_key_unique").on(table.productId, table.key),
   check("product_options_fields_valid", sql`length(btrim(${table.key}))>0 AND ${table.key}=lower(btrim(${table.key})) AND length(btrim(${table.name}))>0 AND ${table.position}>=0`),
 ]);
@@ -99,8 +108,13 @@ export const productOptions = pgTable("product_options", {
 export const optionValues = pgTable("option_values", {
   id: id(), productId: uuid("product_id").notNull(), optionId: uuid("option_id").notNull(),
   key: text("key").notNull(), label: text("label").notNull(), position: integer("position").notNull().default(0),
+  // Swatch presentation (0014): a lowercase #rrggbb color and/or an image path or https URL.
+  swatchColor: text("swatch_color"),
+  swatchImageSource: text("swatch_image_source"),
 }, (table) => [
   foreignKey({ columns: [table.optionId, table.productId], foreignColumns: [productOptions.id, productOptions.productId] }).onDelete("restrict"),
+  check("option_values_swatch_color_valid", sql`${table.swatchColor} IS NULL OR ${table.swatchColor} ~ '^#[0-9a-f]{6}$'`),
+  check("option_values_swatch_image_valid", sql`${table.swatchImageSource} IS NULL OR (length(btrim(${table.swatchImageSource}))>0 AND length(${table.swatchImageSource})<=2048)`),
   unique("option_values_identity_unique").on(table.id, table.productId, table.optionId),
   // Target for product_compatibility's device ownership FK (0013).
   unique("option_values_id_product_unique").on(table.id, table.productId),
