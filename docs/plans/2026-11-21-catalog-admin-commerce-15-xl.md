@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 3 | 33/57 | 2026-11-21 | Wave 3: M5 CKEditor overview ‖ M6 variants UX + compatibility UI |
+| Executing | 4 | 43/57 | 2026-11-21 | Wave 4: M7 demo purchases ‖ M8 KZ address + Yandex map |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -279,18 +279,18 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 - [x] M4.8 Catalog `publicImage` accepts `/uploads/` media so imported galleries display (gap found by M0) — verify: product page shows imported gallery — done: publicImage accepts /uploads/ safely; imported galleries display. Merged 3f69578; screenshots docs/design-references/storefront-catalog/
 
 ### M5 — Overview editor + import (wave 3, owner: `frontend-developer`)
-- [ ] M5.1 Read Next 16 dynamic-import docs; add `ckeditor5` + `@ckeditor/ckeditor5-react` pinned; client-only `OverviewEditor` with GPL key — verify: `npm run build`, no CKEditor in storefront chunks
-- [ ] M5.2 Shared allowlist `src/lib/overview/allowlist.ts` used by GHS config and `sanitizeOverviewHtml` — verify: A5 round trip
-- [ ] M5.3 Editor styled with storefront overview CSS (edit-in-preview), block drag/cut-paste — verify: A6
-- [ ] M5.4 YouTube: Media Embed limited to YouTube, stored as `<figure class="media"><oembed url>`; storefront click-to-play inline iframe (youtube-nocookie) — verify: A8
-- [ ] M5.5 Importer: `ov-video` → media block (poster kept), in-the-box images downloaded — verify: import tests with fixture
-- [ ] M5.6 Migrate existing overview HTML (3 imported products) to the new video markup, idempotent — verify: integration
+- [x] M5.1 Read Next 16 dynamic-import docs; add `ckeditor5` + `@ckeditor/ckeditor5-react` pinned; client-only `OverviewEditor` with GPL key — verify: `npm run build`, no CKEditor in storefront chunks — done: OverviewEditor (CKEditor 5 classic, GPL key, next/dynamic ssr:false), textarea fallback; build shows CKEditor chunks only in admin/products. Merged b50781c; merged branch unit 269/269, legacy 77/77, boundaries ok
+- [x] M5.2 Shared allowlist `src/lib/overview/allowlist.ts` used by GHS config and `sanitizeOverviewHtml` — verify: A5 round trip — done: src/lib/overview/allowlist.ts shared by GHS config and sanitizeOverviewHtml; unit overview-roundtrip
+- [x] M5.3 Editor styled with storefront overview CSS (edit-in-preview), block drag/cut-paste — verify: A6 — done: editor surface uses storefront overview CSS; fēnix 9 Pro text/blocks preserved; preview modal uses the storefront component
+- [x] M5.4 YouTube: Media Embed limited to YouTube, stored as `<figure class="media"><oembed url>`; storefront click-to-play inline iframe (youtube-nocookie) — verify: A8 — done: src/lib/overview/youtube.ts + OverviewContent click-to-play inline youtube-nocookie iframe; legacy ov-video converted in editor; browser verified
+- [x] M5.5 Importer: `ov-video` → media block (poster kept), in-the-box images downloaded — verify: import tests with fixture — done: importer: ov-video → media block, in-the-box {label,image} with res.garmin.com downloads (cap 40); garmin-import 17/17
+- [x] M5.6 Migrate existing overview HTML (3 imported products) to the new video markup, idempotent — verify: integration — done: Postgres product pages render overview, spec groups, in-the-box tiles (no data migration needed: old ov-video renders and converts on edit); integration catalog-read 17/17
 
 ### M6 — Variants UX + compatibility UI (wave 3, owner: `frontend-developer`)
-- [ ] M6.1 `ui-radar` references for variant matrices; design contract per `anti-ui-slop` — verify: contract in `docs/design-references/admin-variants/`
-- [ ] M6.2 Variants step: options-as-chips step, responsive grid with key columns, selection bulk bar, ready-to-sell indicators — verify: A3 finish gate + screenshots
-- [ ] M6.3 Accessories & compatibility tab: category→group→product picker (and reverse), add whole group, option-value chips, sentence readback, copy-from — verify: A9/A10 browser
-- [ ] M6.4 Watch-side "add accessory" writes the same compatibility row — verify: integration via API
+- [x] M6.1 `ui-radar` references for variant matrices; design contract per `anti-ui-slop` — verify: contract in `docs/design-references/admin-variants/` — done: design contract docs/design-references/admin-variants/README.md (UIZZE MCP not connected; references from knowledge, stated). Merged 4e28dd3
+- [x] M6.2 Variants step: options-as-chips step, responsive grid with key columns, selection bulk bar, ready-to-sell indicators — verify: A3 finish gate + screenshots — done: VariantsStep: options as chip cards with Buttons/Swatches/Dropdown, one create/keep/remove bar with preview, responsive rows, ready-to-sell summary, selection bulk bar incl. 'All 51 mm'; finish gate pass. Merged 4e28dd3
+- [x] M6.3 Accessories & compatibility tab: category→group→product picker (and reverse), add whole group, option-value chips, sentence readback, copy-from — verify: A9/A10 browser — done: CompatibilityTab: accessory side device picker → option-value chips → sentences ('fēnix 9 Pro – 51 mm (all 11 variants)'), exceptions, copy-from, QuickFit hint; device side grouped accessories, add whole group, finer rows read-only with 'Edit on accessory'; related products below. Merged 4e28dd3
+- [x] M6.4 Watch-side "add accessory" writes the same compatibility row — verify: integration via API — done: tests/integration/compatibility-editor.test.mjs 4 cases + unit variants-state/compatibility-state; agent: unit 275/275, integration 28/28, build ok. Merged 4e28dd3
 
 ### M7 — Demo purchases (wave 4, owner: `payments-billing-engineer`)
 - [ ] M7.1 Record D03a in `docs/backend/decisions.md` — verify: file diff
@@ -340,6 +340,7 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 - 2026-11-21: Wave 1 done: M2 merged d98990b (9 commits; API under /api/admin/catalog; compatibility ownership rule in catalog-media-schema.md). Incident: removing Wave 0 worktrees with `git worktree remove --force` followed per-package junctions and emptied main `node_modules/pg` and `postcss` (16:53). Restored from M2's locked-version copies (pg 8.23.1, postcss 8.5.33); lockfile audit shows only 4 optional wasm packages absent (not used on win32). Worktree cleanup now unlinks junctions and stops test clusters first (memory saved). M2 worktree, its orphan test postgres and the outside fallback D:projectsgarmin
 ode_modules removed.
 - 2026-11-21: Wave 2 done: M3 merged d9f65dc, M4 merged 3f69578. Lead fix eca8e77: dev import publishes imported homepage/active banners once (homepage was 503 on fresh DB), stack check gained a homepage row; cms-services test moved off the deleted PostgresProductsScreen. Merged-branch checks: unit 258/258, legacy 73/73, integration 150/150 (17 files, after the test fix), boundaries ok, typecheck ok, lint 0 errors in project code (15 errors only in the owner's untracked .claude/skills/design-taste-frontend/assets/effects/fx.js), `dev:stack --check` 6/6 (outputs/runtime/dev-stack-check-2.log). Worktrees removed with junction-safe cleanup.
+- 2026-11-21: Wave 3 done: M5 merged b50781c, M6 merged 4e28dd3 (clean merges). Notes: M6 accidentally created 2 test products in M5's dev DB through the shared browser pane (that DB was deleted with M5's worktree; no effect on the main checkout). Open items for M9: `npm run test:cms-ui` fails at the homepage-editor step (pre-existing on b65f05b); check watch-series group assignment of imported products on the main dev DB.
 - 2026-11-21: Q3 answered "Yes, commit them" → WhatsApp alert edits committed as `7d0f76f`; `checkout/service.ts` and `payments/service.ts` are now free for M7. Note: Wave 0 worktrees were cut from 51b72b3 (before 7d0f76f); merges will carry it forward.
 - 2026-11-21: M0 owns a reusable `src/server/catalog/variant-sync.ts` (legacy-shaped options/variants/prices/opening stock → Postgres) because the existing migration importer only writes a default variant; M2 reuses it in the admin save path. Category mapping of imported products into the taxonomy runs as a lead task after the Wave 0 merge (needs M1 columns).
 
