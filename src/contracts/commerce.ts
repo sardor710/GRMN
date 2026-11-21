@@ -120,11 +120,18 @@ export interface DeliveryAddress {
   postalCode?: string;
 }
 
+/** How a saved-address map pin was obtained (migration 0013 `geo_precision`). */
+export type GeoPrecision = "exact" | "street" | "locality" | "manual";
+
 export interface SavedAddressDTO extends DeliveryAddress {
   id: string;
   label: string;
   isPrimary: boolean;
   version: number;
+  /** Optional map pin (WGS84, 6 decimals); both coordinates or neither. */
+  lat?: number;
+  lng?: number;
+  geoPrecision?: GeoPrecision;
 }
 
 export type DeliveryAddressSelection =
@@ -141,6 +148,8 @@ export interface CompleteProfileCommand {
   name: string;
   email: string;
   phone: string;
+  /** ISO date (YYYY-MM-DD); null clears it, omitted keeps the stored value. */
+  birthDate?: string | null;
   expectedVersion: number;
 }
 
@@ -153,6 +162,8 @@ export interface CustomerProfileDTO {
   emailVerified: boolean;
   phone: string | null;
   phoneVerified: boolean;
+  /** Optional birthday as an ISO date (YYYY-MM-DD). */
+  birthDate: string | null;
   profileState: "provisional" | "complete";
   version: number;
 }
