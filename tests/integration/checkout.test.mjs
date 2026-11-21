@@ -267,3 +267,35 @@ test("review I3: an order under an inclusive tax policy keeps the included tax p
     assert.equal((await q("SELECT tax_minor::text AS tax FROM orders WHERE id=$1",[result.orderId])).rows[0].tax,"0","inclusive tax adds nothing to the total");
   }finally{await policies();}
 });
+
+// M8.5: checkout delivery is Kazakhstan only, like saved addresses (M8).
+test("M8.5: other countries are refused with 400, typed regions are stored as codes, saved addresses abroad are refused",async()=>{
+  const api=await cartService(),buyer=await owner(),p=await product({price:15000});
+  const filled=await fill(buyer.headers,[[p.variant,1]]),base={cartVersion:filled.version,displayCurrency:"KZT"};
+  const inline=address=>api.quote(buyer.headers,{...base,delivery:{kind:"inline",address:{...KZ.address,...address}}});
+  const refused=(promise,pattern,code="INVALID_INPUT")=>assert.rejects(promise,error=>{assert.equal(error.status,400,error.message);assert.equal(error.code,code,error.message);assert.match(error.message,pattern);return true;});
+  await refused(inline({countryCode:"UZ",city:"Tashkent",region:"Tashkent"}),/only within Kazakhstan/);
+  await refused(inline({countryCode:"Kazakhstan"}),/only within Kazakhstan/);
+  await refused(inline({region:"Bavaria"}),/Unknown region of Kazakhstan/);
+  await refused(inline({city:"Springfield"}),/Choose a region of Kazakhstan/);
+  assert.equal(await count("SELECT count(*)::int AS n FROM checkout_quotes q JOIN carts c ON c.id=q.cart_id WHERE c.user_id=$1",[buyer.id]),0,"no quote is written for a refused address");
+
+  // A region typed by name (Russian here) is stored as its kz-regions code in the quote and the order.
+  const quote=await inline({region:"Алматинская область",city:"Konaev",line1:"Abay 12"});
+  assert.deepEqual((await q("SELECT delivery_snapshot->>'region' AS region,delivery_snapshot->>'countryCode' AS country FROM checkout_quotes WHERE id=$1",[quote.id])).rows[0],{region:"almaty-region",country:"KZ"});
+  const order=await api.checkout(buyer.headers,key(),body(quote));
+  assert.deepEqual((await q("SELECT country_code,region,city,line1 FROM order_addresses WHERE order_id=$1",[order.orderId])).rows[0],{country_code:"KZ",region:"almaty-region",city:"Konaev",line1:"Abay 12"});
+  // Without a region, a listed city identifies it.
+  const again=await fill(buyer.headers,[[p.variant,1]]);
+  const byCity=await api.quote(buyer.headers,{cartVersion:again.version,displayCurrency:"KZT",delivery:KZ});
+  assert.equal((await q("SELECT delivery_snapshot->>'region' AS region FROM checkout_quotes WHERE id=$1",[byCity.id])).rows[0].region,"almaty");
+
+  // Saved addresses: one abroad (kept from before M8) is refused; an older KZ one with a region name is normalised.
+  const abroad=randomUUID(),astana=randomUUID();
+  await q("INSERT INTO customer_addresses(id,user_id,label,recipient_name,phone,country_code,city,line1,region,is_primary) VALUES($1,$2,'Berlin','Saved Buyer','+77011112233','DE','Berlin','Unter den Linden 1','Berlin',true)",[abroad,buyer.id]);
+  await q("INSERT INTO customer_addresses(id,user_id,label,recipient_name,phone,country_code,city,line1,region) VALUES($1,$2,'Astana','Saved Buyer','+77011112233','KZ','Astana','Kabanbay Batyr 53','Астана')",[astana,buyer.id]);
+  await refused(api.quote(buyer.headers,{cartVersion:again.version,displayCurrency:"KZT",delivery:{kind:"saved",addressId:abroad,version:1}}),/edit this saved address in your account/,"ADDRESS_NOT_DELIVERABLE");
+  const saved=await api.quote(buyer.headers,{cartVersion:again.version,displayCurrency:"KZT",delivery:{kind:"saved",addressId:astana,version:1}});
+  const placed=await api.checkout(buyer.headers,key(),body(saved));
+  assert.deepEqual((await q("SELECT country_code,region,city FROM order_addresses WHERE order_id=$1",[placed.orderId])).rows[0],{country_code:"KZ",region:"astana",city:"Astana"});
+});
