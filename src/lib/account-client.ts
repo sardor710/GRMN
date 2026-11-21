@@ -43,7 +43,7 @@ export function deliveryAddressLines(delivery: OrderDetailDTO["deliveryAddress"]
   if (!delivery) return [];
   if (delivery.kind === "legacy_unstructured") return [delivery.raw];
   const value = delivery.address;
-  return [value.recipientName, value.line1, value.line2, [value.city, kzRegionLabel(value.region), value.postalCode].filter(Boolean).join(" "), value.countryCode ? countryName(value.countryCode) : "", value.phone]
+  return [value.recipientName, value.line1, value.line2, [value.city, kzRegionLabel(value.region), value.postalCode].filter((part, index, parts) => Boolean(part) && parts.indexOf(part) === index).join(" "), value.countryCode ? countryName(value.countryCode) : "", value.phone]
     .filter((line): line is string => Boolean(line && line.trim()));
 }
 

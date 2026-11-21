@@ -610,7 +610,7 @@ export function AccountDashboard() {
                             <p className="font-semibold text-black">{address.recipientName}</p>
                             <p>{address.line1}</p>
                             {address.line2 && <p>{address.line2}</p>}
-                            <p>{[address.city, kzRegionLabel(address.region), address.postalCode].filter(Boolean).join(", ")}</p>
+                            <p>{[address.city, kzRegionLabel(address.region), address.postalCode].filter((part, index, parts) => Boolean(part) && parts.indexOf(part) === index).join(", ")}</p>
                             <p>
                               {countryName(address.countryCode)}
                               {address.countryCode !== "KZ" && <span className="ml-2 border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">Edit to ship in Kazakhstan</span>}
@@ -894,7 +894,8 @@ export function AccountDashboard() {
       )}
 
       {isAddressModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-2 backdrop-blur-xs sm:items-center sm:p-4" onClick={() => setIsAddressModalOpen(false)}>
+        // Above the sticky site header (z-index 1000): the taller map modal must not slide under it.
+        <div className="fixed inset-0 z-[1100] flex items-start justify-center overflow-y-auto bg-black/60 p-2 backdrop-blur-xs sm:items-center sm:p-4" onClick={() => setIsAddressModalOpen(false)}>
           <div role="dialog" aria-modal="true" aria-label={editingAddress ? "Edit shipping address" : "Add shipping address"} className="my-2 w-full max-w-2xl border border-neutral-300 bg-white p-4 shadow-2xl sm:my-0 sm:max-h-[94vh] sm:overflow-y-auto sm:p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
               <h3 className="g-heading text-lg font-bold uppercase tracking-wider text-black">{editingAddress ? "Edit Shipping Address" : "Add New Shipping Address"}</h3>
