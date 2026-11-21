@@ -24,7 +24,8 @@ export function ProductTabs({ product, selectedVariantId }: { product: ProductDe
   const isRichOverview = tab === "Overview" && product.id === "1228429" && !product.overviewHtml;
 
   return (
-    <section className="mt-8">
+    // overflow-x-clip: full-bleed overview blocks (100vw) must not add a horizontal page scrollbar.
+    <section className="mt-8 overflow-x-clip">
       {/* Tab bar */}
       <div className="sticky top-0 z-30 border-y border-neutral-200 bg-[#f2f2f2]">
         <div className="mx-auto flex max-w-[1280px] gap-8 overflow-x-auto px-4">

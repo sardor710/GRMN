@@ -20,7 +20,7 @@ import {
   FileRepository,
   GeneralHtmlSupport,
   Heading,
-  Image,
+  ImageBlock,
   ImageCaption,
   ImageInsert,
   ImageTextAlternative,
@@ -136,7 +136,7 @@ export function OverviewEditor({ value, onChange, onFailure }: OverviewEditorPro
       licenseKey: "GPL",
       plugins: [
         Essentials, Autoformat, Paragraph, Heading, Bold, Italic, Link, List, BlockQuote, RemoveFormat,
-        Image, ImageToolbar, ImageCaption, ImageTextAlternative, ImageUpload, ImageInsert, LinkImage, AdminUploads,
+        ImageBlock, ImageToolbar, ImageCaption, ImageTextAlternative, ImageUpload, ImageInsert, LinkImage, AdminUploads,
         Table, TableToolbar, MediaEmbed, GeneralHtmlSupport, PasteFromOffice, SourceEditing, BlockToolbar, WordCount,
       ],
       initialData,

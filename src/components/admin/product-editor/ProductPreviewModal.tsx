@@ -73,7 +73,7 @@ function PreviewTabs({ product }: { product: PreviewProduct }) {
   const groups = (product.specGroups ?? []).filter((group) => group.items.some((item) => item.label || item.value));
   const box = (product.inTheBox ?? []).filter((item) => item.label.trim());
   return (
-    <section className="mt-10 border-t border-neutral-200">
+    <section className="mt-10 overflow-x-clip border-t border-neutral-200">
       <div className="flex gap-8 overflow-x-auto border-b border-neutral-200 bg-[#f2f2f2] px-4" role="tablist" aria-label="Product page tabs">
         {PREVIEW_TABS.map((name) => (
           <button
