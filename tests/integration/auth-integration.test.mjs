@@ -308,6 +308,16 @@ test("legacy product saves keep variants, sanitize overview HTML and reject SKU 
     assert.deepEqual((await conflict.json()).conflicts.map(sku=>sku.toUpperCase()),["TAKEN"]);
   }finally{rows.products.pop();}
   assert.equal((await request("products","POST",operator,{...body,variants:[{...variant,sku:" "}]})).status,400);
+  // Price to publish on the legacy save path: the PostgreSQL message and status (400); drafts may stay at 0.
+  const beforeWrites=writes;
+  const unpriced=await request("products","POST",operator,{name:"Unpriced",price:0,status:"published"});
+  assert.equal(unpriced.status,400);assert.equal((await unpriced.json()).error.message,"Set a price above 0 before publishing.");
+  assert.equal((await request("products","POST",operator,{name:"Unpriced",price:0})).status,400,"a new product without a status is published by the store");
+  const zeroSize=await request("products","POST",operator,{...body,variants:[{...variant,price:0}]});
+  assert.equal(zeroSize.status,400);assert.equal((await zeroSize.json()).error.message,"Set a price above 0 for 43 mm (SKU-V1) before publishing.");
+  assert.equal(writes,beforeWrites,"nothing is written");
+  assert.equal((await request("products","POST",operator,{name:"Unpriced",price:0,status:"draft"})).status,200);
+  assert.equal((await request("products","POST",operator,{...body,variants:[{...variant,price:0,status:"draft",isDefault:true}]})).status,200,"a draft size is not sold");
   assert.equal((await request("products","POST",operator,{...body,options:[{...body.options[0],values:[{id:"a",key:"43",label:"43",swatchColor:"red;background:url(x)"}]}]})).status,400);
   assert.equal((await request("products","POST",operator,{...body,images:[{id:"i1",src:"https://evil.invalid/x.jpg",alt:"x",source:"url"}]})).status,400);
 });
