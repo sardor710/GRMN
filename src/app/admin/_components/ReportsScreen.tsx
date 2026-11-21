@@ -94,7 +94,7 @@ export default function ReportsScreen() {
       <div className="grid gap-6 lg:grid-cols-2">
         <section aria-label="Daily revenue" className="border border-neutral-200 p-4">
           <h2 className="mb-2 text-xs font-bold uppercase tracking-wider text-neutral-600">By day</h2>
-          <table className="w-full text-sm">
+          <table className="w-full text-sm [&_td]:pr-3 [&_th]:pr-3">
             <thead><tr className="text-left text-xs uppercase text-neutral-500"><th>Date</th><th>Series</th><th>Captured</th><th>Refunded</th><th>Net</th></tr></thead>
             <tbody>{(summary?.days ?? []).map(day => (
               <tr key={day.date + day.environment + day.currency} className="border-t border-neutral-100"><td className="py-1 font-mono">{day.date}</td><td className="text-xs">{isDemo(day.environment) ? <DemoBadge /> : "Live"}</td><td>{money(day.capturedMinor, day.currency)}</td><td>{money(day.refundedMinor, day.currency)}</td><td>{money(day.netMinor, day.currency)}</td></tr>
