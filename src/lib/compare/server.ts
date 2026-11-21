@@ -11,8 +11,10 @@ import type { CompareItemRef } from "./compare-items";
 export type { CompareItem, CompareVariantOption } from "./resolve";
 
 /**
- * One detail read per product and locale per request: generateMetadata and the page share it, on top of the
- * per-call dedupe in collectCompareItems (several sizes of one product).
+ * Memoised per request by product and locale. Only the page calls getCompareItems (generateMetadata reads no
+ * product), so the COMPARE_READ_CONCURRENCY limit inside collectCompareItems bounds the whole request; if
+ * another caller in the same render ever calls getCompareItems, wrap it in cache() too so the limit holds.
+ * collectCompareItems also reads each product once per call (several sizes of one product share it).
  */
 const readCompareDetail = cache((productId: string, locale: Locale) => getProductDetail(productId, locale));
 
