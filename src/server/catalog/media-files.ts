@@ -27,7 +27,10 @@ export function localImagePath(src: string): { file: string; mimeType: string } 
   if (!clean.startsWith("/") || clean.startsWith("//") || clean.includes("\\") || clean.split("/").includes("..")) return null;
   const uploads = clean.startsWith("/uploads/");
   const base = uploads ? uploadRoot() : path.resolve(/*turbopackIgnore: true*/ process.cwd(), "public");
-  const file = path.resolve(base, ...(uploads ? clean.slice("/uploads/".length) : clean.slice(1)).split("/").map(part => decodeURIComponent(part)));
+  let parts: string[];
+  // A malformed percent-escape (e.g. /uploads/%E0.jpg) names no file: same as any other unusable path.
+  try { parts = (uploads ? clean.slice("/uploads/".length) : clean.slice(1)).split("/").map(part => decodeURIComponent(part)); } catch { return null; }
+  const file = path.resolve(base, ...parts);
   const mimeType = MIME[path.extname(file).toLowerCase()];
   if (!mimeType || !file.startsWith(base + path.sep)) return null;
   return { file, mimeType };
