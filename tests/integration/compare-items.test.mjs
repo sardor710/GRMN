@@ -113,7 +113,9 @@ test("item=id~51sku returns the 51 mm variant's own specs and price; the other p
 
 test("the same product twice with different sizes; the default variant when no SKU is given",async()=>{
   const items=await read(`item=${watchId}~CMP-W-47&item=${watchId}~CMP-W-51&item=${watchId}`);
-  assert.deepEqual(items.map(i=>i.sku),["CMP-W-47","CMP-W-51","CMP-W-47"]);
+  // Final review I3: the bare ref resolves to CMP-W-47, already a column, so it is not a second one.
+  assert.deepEqual(items.map(i=>i.sku),["CMP-W-47","CMP-W-51"]);
+  assert.deepEqual((await read(`item=${watchId}`)).map(i=>i.sku),["CMP-W-47"],"no SKU: the default variant");
   assert.deepEqual(items[0].price,{minor:"40000000"});
   assert.deepEqual(items[0].content.specGroups,groups47);
 });
@@ -132,8 +134,10 @@ test("an unknown SKU gives the default variant; unknown and unpublished products
   assert.deepEqual(await read(`item=does-not-exist~X&item=${draftId}`),[],"unknown id and draft product are dropped");
   const six=["CMP-W-47","CMP-W-51","x1","x2","x3","x4"].map(s=>`item=${watchId}~${s}`).join("&");
   const capped=await read(six);
-  assert.equal(capped.length,5);
-  assert.deepEqual(capped.map(i=>i.sku),["CMP-W-47","CMP-W-51","CMP-W-47","CMP-W-47","CMP-W-47"]);
+  // Five refs are read (the sixth is cut); the unknown SKUs fall back to CMP-W-47 and merge into its column (I3).
+  assert.deepEqual(capped.map(i=>i.sku),["CMP-W-47","CMP-W-51"]);
+  // A renamed SKU (stale link) next to the default variant itself is one column, whatever the case.
+  assert.deepEqual((await read(`item=${watchId}~OLD-NAME&item=${watchId}~cmp-w-47`)).map(i=>i.sku),["CMP-W-47"]);
   // Old links keep working.
   assert.deepEqual((await read(`selected=${plainId}&selected=${watchId}`)).map(i=>i.productId),[plainId,watchId]);
 });
