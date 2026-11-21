@@ -11,8 +11,10 @@ import {
 
 // Task 14A checkout. The server prices the quote and places the order; this panel only collects
 // the delivery contact (D06: name, phone, address; email optional), shows the server's KZT quote
-// and submits it once with an idempotency key kept for retries. Payments are the demo mode (D03):
-// no money is taken and an order is never shown as paid.
+// and submits it once with an idempotency key kept for retries. The payment method comes from the
+// server's quote: "demo" (D03: no money is taken and the order is never shown as paid) or, while the
+// store runs demo purchases, "sandbox" (D03a: no real payment is taken; the server marks the order
+// paid in its sandbox environment and the receipt shows "Paid (Demo)" from the server status).
 
 const session = createCheckoutStorage(() => sessionStorage);
 const browserClient = () => createCheckoutClient((url, init) => fetch(url, { ...init, credentials: "same-origin" }));
@@ -62,7 +64,7 @@ export function CheckoutPanel({ cart, disabled, onPlaced }: { cart: CartDTO; dis
     setBusy(true); setError(null);
     const email = form.email.trim();
     try {
-      const command = { quoteId: current.id, cartVersion: current.cartVersion, paymentMethod: "demo" as const, ...(email ? { contactEmail: email } : {}) };
+      const command = { quoteId: current.id, cartVersion: current.cartVersion, paymentMethod: current.paymentMethod, ...(email ? { contactEmail: email } : {}) };
       const result = await client.placeOrder(command, beginCheckout(session, command));
       forgetCheckoutKey(session);
       const placed = { orderId: result.orderId, orderNumber: result.orderNumber, statusToken: result.statusToken };
@@ -104,9 +106,16 @@ export function CheckoutPanel({ cart, disabled, onPlaced }: { cart: CartDTO; dis
             <div className="flex justify-between"><dt className="text-neutral-600">Tax</dt><dd>{formatKzt(current.tax)}</dd></div>
             <div className="flex justify-between border-t border-neutral-200 pt-2 text-[17px] font-medium"><dt>Total payable</dt><dd>{formatKzt(current.total)}</dd></div>
           </dl>
-          <p className="mt-3 text-[12px] text-neutral-500">Payment is a demo: no money is taken and your order stays awaiting payment. This total is held until {new Date(current.expiresAt).toLocaleTimeString()}.</p>
+          {current.paymentMethod === "sandbox" ? (
+            <div role="note" className="mt-3 border border-amber-300 bg-amber-50 p-3 text-[13px] text-amber-900">
+              <p className="font-medium">Demo purchase — no real payment is taken.</p>
+              <p className="mt-1 text-[12px]">Placing the order marks it paid (Demo) at once, so the store can test orders and dashboards. This total is held until {new Date(current.expiresAt).toLocaleTimeString()}.</p>
+            </div>
+          ) : (
+            <p className="mt-3 text-[12px] text-neutral-500">Payment is a demo: no money is taken and your order stays awaiting payment. This total is held until {new Date(current.expiresAt).toLocaleTimeString()}.</p>
+          )}
           <button type="button" disabled={busy || disabled} onClick={() => { void place(); }} className="g-btn g-btn--solid mt-4 w-full disabled:cursor-not-allowed disabled:opacity-50">
-            {retry ? "Retry placing order" : "Place order"}
+            {retry ? "Retry placing order" : current.paymentMethod === "sandbox" ? "Place demo order" : "Place order"}
           </button>
         </div>
       )}
@@ -125,11 +134,20 @@ export function OrderReceived({ order }: { order: PlacedOrder }) {
     void pollOrderStatus(client, order, { signal, onUpdate: next => { if (!signal.aborted) setStatus(next); } }).catch(() => { /* the receipt stays; status is retried on reload */ });
     return () => { signal.aborted = true; };
   }, [client, order]);
+  const sandbox = status?.paymentMode === "sandbox" ? status : null;
   return (
     <div className="mx-auto max-w-[640px] px-4 py-24 text-center">
       <h1 className="g-heading text-[30px] text-black">Order {order.orderNumber} received</h1>
       <p className="mt-3 text-neutral-600">Status: {status ? STATUS_LABEL[status.status] ?? status.status : "Awaiting payment"}{status ? ` · Total ${formatKzt(status.total)}` : ""}</p>
-      <p className="mt-2 text-[14px] text-neutral-500">This is a demo checkout: no payment has been taken, and the order is not paid.</p>
+      {sandbox ? (
+        <>
+          {/* "Paid" is shown only when the server reports the sandbox capture. */}
+          <p className="mt-2 text-[15px] text-black">Payment: {sandbox.paymentStatus === "paid" ? <strong>Paid (Demo)</strong> : "Awaiting demo payment"}</p>
+          <p className="mx-auto mt-2 max-w-[480px] border border-amber-300 bg-amber-50 p-3 text-[14px] text-amber-900">Demo purchase — no real payment was taken. The order is paid in the store&apos;s sandbox only.</p>
+        </>
+      ) : (
+        <p className="mt-2 text-[14px] text-neutral-500">This is a demo checkout: no payment has been taken, and the order is not paid.</p>
+      )}
       <Link href="/c/wearables-smartwatches" className="g-btn g-btn--solid mt-8">Continue Shopping</Link>
     </div>
   );

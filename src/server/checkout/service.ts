@@ -36,7 +36,7 @@ const stale = (): never => fail("QUOTE_STALE", 409, "Your cart changed; request 
 const checkoutInput = z.strictObject({
   quoteId: z.string().regex(UUID),
   cartVersion: z.number().int().min(1).max(2147483647),
-  paymentMethod: z.enum(["demo", "kaspi", "secondary"]),
+  paymentMethod: z.enum(["demo", "kaspi", "secondary", "sandbox"]),
   contactEmail: z.string().trim().max(254).email().optional(),
 });
 const statusInput = z.strictObject({ orderId: z.string().regex(UUID), statusToken: z.string().regex(STATUS_TOKEN).optional() });
@@ -58,6 +58,8 @@ const canonical = (value: unknown): string => Array.isArray(value) ? "[" + value
   : value !== null && typeof value === "object" ? "{" + Object.keys(value).sort().map(key => JSON.stringify(key) + ":" + canonical((value as Record<string, unknown>)[key])).join(",") + "}"
   : JSON.stringify(value);
 
+const checkoutPaymentMode = (mode: string): CheckoutResultDTO["paymentMode"] => mode === "demo" ? "demo" : mode === "sandbox" ? "sandbox" : "live";
+
 function actorScope(actor: CheckoutActor): string | null {
   if (actor.userId) return `user:${actor.userId}`;
   return actor.guestTokenHash ? `guest:${actor.guestTokenHash}` : null;
@@ -68,10 +70,11 @@ function actorScope(actor: CheckoutActor): string | null {
 const statusToken = (secret: string, orderId: string) => createHmac("sha256", secret).update("grmn-order-status:v1:" + orderId).digest("base64url");
 
 async function result(client: Pick<PoolClient, "query">, secret: string, scope: string, orderId: string, replayed: boolean): Promise<CheckoutResultDTO> {
-  const order = (await client.query<{ order_number: string; order_status: OrderStatus; total_minor: string; payment_mode: string }>(
-    "SELECT order_number,order_status,total_minor::text AS total_minor,payment_mode FROM orders WHERE id=$1", [orderId])).rows[0] ?? notFound();
+  const order = (await client.query<{ order_number: string; order_status: OrderStatus; payment_status: PaymentStatus; total_minor: string; payment_mode: string }>(
+    "SELECT order_number,order_status,payment_status,total_minor::text AS total_minor,payment_mode FROM orders WHERE id=$1", [orderId])).rows[0] ?? notFound();
   return {
-    orderId, orderNumber: order.order_number, status: order.order_status, paymentMode: order.payment_mode === "demo" ? "demo" : "live", paymentState: "pending", paymentRedirectUrl: null,
+    orderId, orderNumber: order.order_number, status: order.order_status, paymentMode: checkoutPaymentMode(order.payment_mode),
+    paymentState: order.payment_status === "paid" ? "captured" : "pending", paymentRedirectUrl: null,
     total: kzt(order.total_minor), statusToken: scope.startsWith("guest:") ? statusToken(secret, orderId) : null, replayed,
   };
 }
@@ -88,13 +91,20 @@ async function replay(client: PoolClient, secret: string, scope: string, key: st
  * Places a pending order for the actor's quoted cart revision. A repeated key returns the original
  * order. Payment is the demo adapter unless the caller registers a real provider for the requested
  * method (Task 14B; the application registers none yet, D03), so kaspi/secondary stay 409.
+ * "sandbox" (D03a demo purchases) needs the registered sandbox adapter and places a sandbox order;
+ * the caller captures it after commit (payments captureSandboxOrder).
  */
 export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActor, idempotencyKey: string, input: unknown, options: { payments?: PaymentProviders } = {}): Promise<CheckoutResultDTO> {
   if (typeof idempotencyKey !== "string" || !IDEMPOTENCY_KEY.test(idempotencyKey)) invalid();
   const command = parse(checkoutInput, input);
   const provider: PaymentProvider | null = command.paymentMethod === "demo" ? null : options.payments?.get(command.paymentMethod) ?? null;
   if (command.paymentMethod !== "demo" && (!provider || provider.simulated || provider.name !== command.paymentMethod)) fail("PAYMENT_UNAVAILABLE", 409, "This payment method is not available yet");
-  const paymentMode = provider ? "live" : "demo";
+  // D03a demo purchases: the sandbox adapter places a sandbox order (captured right after commit by
+  // the cart service). It is refused next to a live provider and when the store is in live payment mode.
+  const sandbox = provider?.name === "sandbox";
+  if (sandbox && (provider!.environment !== "sandbox" || [...(options.payments?.values() ?? [])].some(other => other.environment === "live")))
+    fail("PAYMENT_UNAVAILABLE", 409, "Demo purchases are not available while live payments are configured");
+  const paymentMode = sandbox ? "sandbox" : provider ? "live" : "demo";
   const payment = provider ? { name: provider.name, environment: provider.environment, merchantAccount: provider.merchantAccount } : { name: "demo", environment: "demo", merchantAccount: "demo" };
   const scope = actorScope(actor) ?? notFound();
   const requestHash = sha256(canonical({ quoteId: command.quoteId.toLowerCase(), cartVersion: command.cartVersion, paymentMethod: command.paymentMethod, contactEmail: command.contactEmail ?? null }));
@@ -102,6 +112,8 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
   return withInventoryTransaction(pool, async client => {
     const replayed = await replay(client, secret, scope, idempotencyKey, requestHash);
     if (replayed) return replayed;
+    if (sandbox && (await client.query("SELECT 1 FROM store_settings WHERE id=1 AND payment_mode='live'")).rowCount)
+      fail("PAYMENT_UNAVAILABLE", 409, "Demo purchases are not available while the store takes live payments");
 
     // The quote must belong to one of the actor's own carts: a session uses its account cart, a guest its capability cart.
     const owned = (await client.query<{ cart_id: string; cart_version: number }>(
@@ -215,11 +227,11 @@ export async function readCheckoutStatus(pool: Pool, actor: CheckoutActor, input
   const command = parse(statusInput, input);
   const row = (await pool.query<{ id: string; order_number: string; order_status: OrderStatus; payment_status: PaymentStatus; fulfillment_status: FulfillmentStatus; total_minor: string; placed_at: Date | null; payment_mode: string }>(
     `SELECT o.id,o.order_number,o.order_status,o.payment_status,o.fulfillment_status,o.total_minor::text AS total_minor,o.placed_at,o.payment_mode FROM orders o
-     WHERE o.id=$1 AND o.payment_mode IN ('demo','live') AND o.checkout_attempt_id IS NOT NULL AND (($2::uuid IS NOT NULL AND o.user_id=$2::uuid) OR EXISTS(
+     WHERE o.id=$1 AND o.payment_mode IN ('demo','live','sandbox') AND o.checkout_attempt_id IS NOT NULL AND (($2::uuid IS NOT NULL AND o.user_id=$2::uuid) OR EXISTS(
        SELECT 1 FROM order_access_tokens t WHERE t.order_id=o.id AND t.token_hash=$3 AND t.scope='order_status' AND t.revoked_at IS NULL AND t.expires_at>clock_timestamp()))`,
     [command.orderId, actor.userId, command.statusToken ? sha256(command.statusToken) : null])).rows[0] ?? notFound();
   return {
     orderId: row.id, orderNumber: row.order_number, status: row.order_status, paymentStatus: row.payment_status, fulfillmentStatus: row.fulfillment_status,
-    paymentMode: row.payment_mode === "demo" ? "demo" : "live", total: kzt(row.total_minor), placedAt: row.placed_at ? row.placed_at.toISOString() : null,
+    paymentMode: checkoutPaymentMode(row.payment_mode), total: kzt(row.total_minor), placedAt: row.placed_at ? row.placed_at.toISOString() : null,
   };
 }
