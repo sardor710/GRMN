@@ -57,23 +57,28 @@ try{
   await send("Network.enable");await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
   let saved;
   if(process.env.CMS_SMOKE_PUBLIC_ONLY!=="1"){
-  await navigate("/admin/products");await until(async()=>(await text()).toLowerCase().includes("ui fixture"),"Product page did not load").catch(async error=>{await writeFile(path.join(receipt,"admin-products-body.txt"),await text());throw error;});
-  assert.equal(await evaluate("document.querySelectorAll('tbody tr').length"),20);await click("Next page");await until(async()=>(await text()).includes("Page 2"),"Pagination failed");
-  await until(async()=>await evaluate("document.querySelectorAll('tbody tr').length===5"),"Second page did not load");
-  await click("Add New");await until(()=>evaluate("!!document.querySelector('form')"),"Product modal missing");
-  await fill("Product Title","UI CREATED PRODUCT");await fill("SKU / Part","UI-CREATED");await fill("Regular Price","123.45");
-  await evaluate("document.querySelector('form').requestSubmit();true");await until(()=>evaluate("!document.querySelector('form')"),"Product save failed");
+  // Product admin (M3): Grouped list on /api/admin/catalog (50 per page), full-viewport ProductEditor (no <form>).
+  await navigate("/admin/products");await until(async()=>(await text()).toLowerCase().includes("ui fixture")&&await evaluate("!document.querySelector('tbody .animate-pulse')"),"Product page did not load").catch(async error=>{await writeFile(path.join(receipt,"admin-products-body.txt"),await text());throw error;});
+  assert.equal(await evaluate("document.querySelectorAll('tbody tr').length"),25);
+  const setField=(selector,value)=>evaluate(`(()=>{const input=document.querySelector(${JSON.stringify(selector)});if(!input)throw Error("Missing "+${JSON.stringify(selector)});Object.getOwnPropertyDescriptor(input.tagName==="TEXTAREA"?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,"value").set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event("input",{bubbles:true}));return true;})()`);
+  const editorOpen=()=>evaluate("!!document.querySelector('#product-editor-main')");
+  await click("Add product");await until(()=>evaluate("!!document.querySelector('#product-name')"),"Product editor missing");
+  await setField("#product-name","UI CREATED PRODUCT");await setField("#product-sku","UI-CREATED");await setField("#product-price","123.45");
+  // New products start as drafts; publish so the storefront checks below can see it.
+  await evaluate(`(()=>{const select=document.querySelector("#product-status");Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,"value").set.call(select,"published");select.dispatchEvent(new Event("change",{bubbles:true}));return true;})()`);
+  await click("Create product");await until(async()=>(await text()).includes("Saved"),"Product save failed");
   saved=(await cms.list("products",headers,{search:"UI-CREATED"})).items[0];assert.ok(saved);assert.equal(saved.price,123.45);assert.equal(saved.version,1);
-  // Search narrows a server query; current-page edits must keep the loaded version.
-  await evaluate("(()=>{const input=document.querySelector('input[placeholder*="+JSON.stringify("Search by model")+"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'UI-CREATED');input.dispatchEvent(new Event('input',{bubbles:true}));})()");
+  await click("Close");await until(async()=>!(await editorOpen()),"Editor did not close");
+  // Search narrows a server query (debounced); the editor loads the full payload by key.
+  await setField("input[aria-label='Search products']","UI-CREATED");
   await until(()=>evaluate("document.querySelectorAll('tbody tr').length===1 && document.body.innerText.includes('UI CREATED PRODUCT')"),"Server search failed");
-  await evaluate("document.querySelector('tbody tr button').click();true");
-  await until(()=>evaluate("!!document.querySelector('form')"),"Edit modal missing");await fill("Product Title","UI UPDATED PRODUCT");
-  await click("Cross-Selling");await evaluate("(()=>{const input=document.querySelector('input[placeholder=\"Filter catalog to link...\"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'UI-FIXTURE-24');input.dispatchEvent(new Event('input',{bubbles:true}));})()");
-  await until(()=>evaluate("[...document.querySelectorAll('form label')].some(label=>label.textContent.includes('UI-FIXTURE-24'))"),"Cross-sell search did not reach another main-list page");
-  await evaluate("[...document.querySelectorAll('form label')].find(label=>label.textContent.includes('UI-FIXTURE-24')).querySelector('input[type=checkbox]').click();true");
-  await evaluate("document.querySelector('form').requestSubmit();true");
-  await until(()=>evaluate("!document.querySelector('form')"),"Product update failed");saved=(await cms.list("products",headers,{search:"UI-CREATED"})).items[0];assert.equal(saved.version,2);assert.equal(saved.name,"UI UPDATED PRODUCT");assert.equal(saved.compatibleAccessories.length,1);
+  await click("Edit");await until(()=>evaluate("document.querySelector('#product-name')?.value==='UI CREATED PRODUCT'"),"Edit sheet missing");await setField("#product-name","UI UPDATED PRODUCT");
+  await click("Related");await until(()=>evaluate("!!document.querySelector('input[aria-label=\"Search products to relate\"]')"),"Related tab missing");await setField("input[aria-label='Search products to relate']","UI-FIXTURE-24");
+  await until(()=>evaluate("[...document.querySelectorAll('#product-editor-main label')].some(label=>label.textContent.includes('UI fixture 24'))"),"Related-product search did not reach another list page");
+  await evaluate("[...document.querySelectorAll('#product-editor-main label')].find(label=>label.textContent.includes('UI fixture 24')).querySelector('input[type=checkbox]').click();true");
+  await click("Save changes");await until(async()=>(await text()).includes("Saved · version 2"),"Product update failed");
+  saved=(await cms.list("products",headers,{search:"UI-CREATED"})).items[0];assert.equal(saved.version,2);assert.equal(saved.name,"UI UPDATED PRODUCT");
+  const editorPayload=await(await fetch(origin+"/api/admin/catalog/products/"+encodeURIComponent(saved.id),{headers})).json();assert.equal(editorPayload.product.relations.related.length,1);
   await navigate("/");await until(async()=>(await text()).includes("UI HOMEPAGE FIXTURE"),"Persisted homepage did not render");
   const screenshot=await send("Page.captureScreenshot",{format:"png"});await writeFile(path.join(receipt,"ui-homepage.png"),Buffer.from(screenshot.data,"base64"));
   await navigate(`/p/${saved.id}`);await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Saved product did not render");assert.ok((await text()).includes("KZT"));
