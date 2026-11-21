@@ -15,6 +15,10 @@ const MAX_IMAGES_PER_IMPORT = 300;
 const DOWNLOAD_CONCURRENCY = 6;
 const MAX_IMPORT_BYTES = 500 * 1024 * 1024;
 const IMPORT_DEADLINE_MS = 120_000;
+const MAX_BOX_IMAGES = 40;
+
+/** In-the-box item as parsed: a label, or a label with a res.garmin.com photo. */
+type BoxItem = string | { label: string; image?: string };
 
 /** One import at a time per server process (imports download hundreds of photos). */
 let importInFlight = false;
@@ -64,7 +68,7 @@ async function mapLimit<T>(items: T[], limit: number, fn: (item: T) => Promise<v
   );
 }
 
-/** Download variant galleries (capped) and overview photos; rewrite srcs to /uploads. Returns warnings. */
+/** Download variant galleries (capped), overview and in-the-box photos; rewrite srcs to /uploads. Returns warnings. */
 async function localizeImages(draft: GarminDraft, remoteImages: { id: string; url: string }[]): Promise<string[]> {
   const warnings: string[] = [];
   const deadline = Date.now() + IMPORT_DEADLINE_MS;
@@ -106,6 +110,25 @@ async function localizeImages(draft: GarminDraft, remoteImages: { id: string; ur
     if ("src" in result) bytes += result.bytes;
     else warnings.push(result.error.slice(0, 200));
   });
+  // In-the-box photos (res.garmin.com only, same size caps and budget). A photo that fails to download is
+  // dropped and the item keeps its label; items are never added or defaulted here.
+  const box = (draft.inTheBox ?? []) as unknown as BoxItem[];
+  const boxUrls = [...new Set(box.flatMap((item) => (typeof item === "object" && item.image ? [item.image] : [])))].slice(0, MAX_BOX_IMAGES);
+  await mapLimit(boxUrls, DOWNLOAD_CONCURRENCY, async (url) => {
+    if (!withinBudget()) return;
+    const result = await downloadRemoteImage(url, { folder: `${folder}/in-the-box`, cache });
+    if ("src" in result) bytes += result.bytes;
+    else warnings.push(result.error.slice(0, 200));
+  });
+  let boxDropped = 0;
+  draft.inTheBox = box.map((item) => {
+    if (typeof item === "string" || !item.image) return item;
+    const hit = cache.get(item.image);
+    if (hit && "src" in hit) return { label: item.label, image: hit.src };
+    boxDropped += 1;
+    return item.label;
+  }) as unknown as GarminDraft["inTheBox"];
+  if (boxDropped) warnings.push(`${boxDropped} in-the-box photo(s) could not be downloaded; those items keep their label only.`);
   if (budgetHit) warnings.push("Stopped downloading photos early (time or size limit reached); some photos were skipped.");
 
   draft.images = (draft.images || [])
