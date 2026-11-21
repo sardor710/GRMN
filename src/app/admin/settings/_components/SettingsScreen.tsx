@@ -10,6 +10,7 @@ import {
   Search,
 } from "lucide-react";
 import type { StoreSettings } from "@/lib/cms/types";
+import { Button, Select } from "@/components/admin/ui";
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<StoreSettings | null>(null);
@@ -77,11 +78,10 @@ export default function AdminSettingsPage() {
           </p>
         </div>
 
-        <button
+        <Button variant="primary" size="md"
           type="button"
           onClick={handleSubmit}
           disabled={saving}
-          className="inline-flex items-center gap-2 bg-black px-6 py-2.5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none shadow-xs disabled:opacity-50"
         >
           {saving ? (
             <span>Saving...</span>
@@ -95,7 +95,7 @@ export default function AdminSettingsPage() {
               <span>Save Settings</span>
             </>
           )}
-        </button>
+        </Button>
       </div>
 
       {savedSuccess && (
@@ -178,20 +178,19 @@ export default function AdminSettingsPage() {
               <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Currency Code
               </label>
-              <select
+              <Select
                 value={settings.currency}
                 onChange={(e) => {
                   const curr = e.target.value;
                   const sym = curr === "SGD" ? "S$" : curr === "USD" ? "$" : curr === "EUR" ? "€" : "£";
                   setSettings({ ...settings, currency: curr, currencySymbol: sym });
                 }}
-                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-semibold uppercase text-neutral-900 focus:border-black focus:outline-none rounded-none"
               >
                 <option value="SGD">SGD (Singapore Dollar)</option>
                 <option value="USD">USD (US Dollar)</option>
                 <option value="EUR">EUR (Euro)</option>
                 <option value="GBP">GBP (British Pound)</option>
-              </select>
+              </Select>
             </div>
 
             <div>

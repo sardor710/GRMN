@@ -34,6 +34,7 @@ import type {
 import { IMAGE_DIMENSION_SPECS } from "@/lib/cms/homepage-schema";
 import {writeAdminRecord} from "@/lib/admin-collection";
 import { AdminModal } from "@/components/admin/AdminModal";
+import { Button, Select } from "@/components/admin/ui";
 
 export default function AdminHomepagePage() {
   const [version,setVersion]=useState<number>();
@@ -335,12 +336,11 @@ export default function AdminHomepagePage() {
         {notification?.type==="error"&&<p role="alert">{notification.message}</p>}
         <p className="font-semibold">{version===0?"No homepage has been published.":"Unable to load homepage configuration."}</p>
         {version===0&&<button className="mt-3 rounded border p-3" disabled={saving} onClick={handleReset}>Create from default template</button>}
-        <button
+        <Button variant="danger" size="md" className="mt-3"
           onClick={loadConfig}
-          className="mt-3 rounded bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700"
         >
           Reload configuration
-        </button>
+        </Button>
       </div>
     );
   }
@@ -400,15 +400,14 @@ export default function AdminHomepagePage() {
             View Storefront
           </Link>
 
-          <button
+          <Button variant="outline" size="md"
             onClick={handleReset}
             disabled={saving}
-            className="inline-flex items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-3.5 py-2 text-xs font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50 disabled:opacity-50"
             title="Reset to default template"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             Reset Defaults
-          </button>
+          </Button>
 
           <button
             onClick={handleSave}
@@ -528,13 +527,12 @@ export default function AdminHomepagePage() {
                 Rotates across the top of the homepage. Use full-width 1920 × 800 px images.
               </p>
             </div>
-            <button
+            <Button variant="primary" size="sm"
               onClick={handleOpenAddBanner}
-              className="inline-flex items-center gap-1.5 rounded-md bg-neutral-900 px-3.5 py-1.5 text-xs font-semibold text-white shadow-xs hover:bg-black"
             >
               <Plus className="h-3.5 w-3.5" />
               Add Hero Slide
-            </button>
+            </Button>
           </div>
 
           <div className="grid gap-3">
@@ -636,20 +634,18 @@ export default function AdminHomepagePage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button
+              <Button variant="outline" size="sm"
                 onClick={() => handleOpenAddCarousel("product")}
-                className="inline-flex items-center gap-1.5 rounded-md border border-[#007cc3] bg-[#007cc3]/10 px-3 py-1.5 text-xs font-semibold text-[#007cc3] hover:bg-[#007cc3]/20"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Add Type 1 (Product Carousel)
-              </button>
-              <button
+              </Button>
+              <Button variant="outline" size="sm"
                 onClick={() => handleOpenAddCarousel("promo")}
-                className="inline-flex items-center gap-1.5 rounded-md border border-purple-600 bg-purple-50 px-3 py-1.5 text-xs font-semibold text-purple-700 hover:bg-purple-100"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Add Type 2 (Promo Carousel)
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -690,13 +686,12 @@ export default function AdminHomepagePage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button
+                      <Button variant="primary" size="sm"
                         onClick={() => handleOpenAddCarouselItem(cIndex)}
-                        className="inline-flex items-center gap-1 rounded bg-neutral-900 px-2.5 py-1 text-xs font-medium text-white hover:bg-black"
                       >
                         <Plus className="h-3.5 w-3.5" />
                         Add Card
-                      </button>
+                      </Button>
                       <button
                         onClick={() => handleOpenEditCarousel(cIndex)}
                         className="rounded p-1 text-neutral-500 hover:bg-neutral-100 hover:text-black"
@@ -1120,13 +1115,12 @@ export default function AdminHomepagePage() {
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t border-neutral-200">
-              <button
+              <Button variant="outline" size="md"
                 type="button"
                 onClick={() => setBannerModalOpen(false)}
-                className="rounded border border-neutral-300 px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
               >
                 Cancel
-              </button>
+              </Button>
               <button
                 type="button"
                 onClick={handleSaveBannerModal}
@@ -1152,7 +1146,7 @@ export default function AdminHomepagePage() {
               <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider">
                 Carousel Type
               </label>
-              <select
+              <Select wrapperClassName="mt-1"
                 value={editingCarousel.data.type}
                 onChange={(e) =>
                   setEditingCarousel({
@@ -1160,11 +1154,10 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarousel.data, type: e.target.value as CarouselType },
                   })
                 }
-                className="mt-1 w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-[#007cc3] focus:outline-hidden"
               >
                 <option value="product">Type 1: Product Carousel (Product, Price, NEW/SALE Tag)</option>
                 <option value="promo">Type 2: Promo Carousel (Photo, Hyperlink Button, Title)</option>
-              </select>
+              </Select>
               <p className="mt-1 text-[11px] text-neutral-500">
                 {editingCarousel.data.type === "product"
                   ? "Required Image Size: 800 × 800 px (1:1 Square)"
@@ -1250,13 +1243,12 @@ export default function AdminHomepagePage() {
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t border-neutral-200">
-              <button
+              <Button variant="outline" size="md"
                 type="button"
                 onClick={() => setCarouselModalOpen(false)}
-                className="rounded border border-neutral-300 px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
               >
                 Cancel
-              </button>
+              </Button>
               <button
                 type="button"
                 onClick={handleSaveCarouselModal}
@@ -1375,7 +1367,7 @@ export default function AdminHomepagePage() {
                   <label className="block text-xs font-bold text-neutral-700 uppercase tracking-wider">
                     Tag / Badge (e.g. NEW, SALE)
                   </label>
-                  <select
+                  <Select wrapperClassName="mt-1"
                     value={editingCarouselItem.data.badge || ""}
                     onChange={(e) =>
                       setEditingCarouselItem({
@@ -1383,13 +1375,12 @@ export default function AdminHomepagePage() {
                         data: { ...editingCarouselItem.data, badge: e.target.value || undefined },
                       })
                     }
-                    className="mt-1 w-full rounded border border-neutral-300 bg-white px-3 py-2 text-sm focus:border-[#007cc3] focus:outline-hidden"
                   >
                     <option value="">No Badge</option>
                     <option value="NEW">NEW (Blue badge)</option>
                     <option value="SALE">SALE (Green badge)</option>
                     <option value="EXCLUSIVE">EXCLUSIVE</option>
-                  </select>
+                  </Select>
                 </div>
               </div>
             )}
@@ -1434,13 +1425,12 @@ export default function AdminHomepagePage() {
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t border-neutral-200">
-              <button
+              <Button variant="outline" size="md"
                 type="button"
                 onClick={() => setCarouselItemModalOpen(false)}
-                className="rounded border border-neutral-300 px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
               >
                 Cancel
-              </button>
+              </Button>
               <button
                 type="button"
                 onClick={handleSaveCarouselItemModal}
@@ -1540,13 +1530,12 @@ export default function AdminHomepagePage() {
             </div>
 
             <div className="flex justify-end gap-2 pt-4 border-t border-neutral-200">
-              <button
+              <Button variant="outline" size="md"
                 type="button"
                 onClick={() => setTileModalOpen(false)}
-                className="rounded border border-neutral-300 px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
               >
                 Cancel
-              </button>
+              </Button>
               <button
                 type="button"
                 onClick={handleSaveTileModal}

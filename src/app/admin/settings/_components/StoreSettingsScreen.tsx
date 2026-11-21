@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "@/components/admin/ui";
 
 // Task 18B: typed, versioned store settings and the audited KZT-per-USD rate editor (PostgreSQL mode).
 // The payment mode is shown but cannot be changed here (demo until a provider is activated).
@@ -58,7 +59,7 @@ export default function StoreSettingsScreen() {
         {field("SEO title", "seoTitle")}{field("SEO description", "seoDescription")}
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.usd} onChange={event => setForm(current => ({ ...current, usd: event.target.checked }))} /> Show USD equivalents</label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={form.maintenance} onChange={event => setForm(current => ({ ...current, maintenance: event.target.checked }))} /> Maintenance mode</label>
-        <button type="button" disabled={busy} onClick={save} className="bg-black px-3 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50 sm:col-span-2">Save settings</button>
+        <Button variant="primary" size="md" className="sm:col-span-2" type="button" disabled={busy} onClick={save}>Save settings</Button>
       </section>
       <section className="space-y-2 border border-neutral-200 p-4">
         <h2 className="text-xs font-bold uppercase tracking-wider text-neutral-600">USD display rate</h2>
@@ -66,7 +67,7 @@ export default function StoreSettingsScreen() {
         <p className="text-xs text-neutral-500">Display only. Payable amounts stay in KZT, and past quotes, orders and refunds keep the rate they were shown with.</p>
         <div className="flex gap-2">
           <input aria-label="KZT per USD" className="border border-neutral-300 px-2 py-1 text-sm" value={rate} placeholder="498.25" onChange={event => setRate(event.target.value)} />
-          <button type="button" disabled={busy || !rate.trim()} onClick={() => void send("POST", { action: "set_exchange_rate", expectedVersion: settings.version, kztPerUsd: rate.trim() }, "Rate saved")} className="border border-black px-3 py-1 text-xs font-bold uppercase disabled:opacity-50">Save rate</button>
+          <Button variant="outline" size="sm" type="button" disabled={busy || !rate.trim()} onClick={() => void send("POST", { action: "set_exchange_rate", expectedVersion: settings.version, kztPerUsd: rate.trim() }, "Rate saved")}>Save rate</Button>
         </div>
       </section>
     </div>
