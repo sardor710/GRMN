@@ -5,6 +5,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { resolveUploadFile, sniffImageType } from "../../lib/media/storage.ts";
 import { AuthFailure } from "../auth/config.ts";
+import { PRICE_TO_PUBLISH, isSellableVariantStatus, unpricedMessage } from "../../lib/cms/publish-price.ts";
 import type { VariantContent } from "../../lib/catalog/variant-content.ts";
 
 // Owner, 2026-11-19 (commits 5cbad06/e7dc91c on PostgreSQL): the admin product document keeps its
@@ -101,11 +102,12 @@ export async function projectProduct(client: PoolClient, productId: string, doc:
     });
   }
   // Validate variants before any write.
-  // Final review I1: a published product sells every non-archived variant (the storefront shows the cheapest
-  // available one), so each needs a price above 0. Checked on the projected document, which is what save,
-  // the status change and bulk publish all write; a simple product (no options) sells its product price.
+  // Final review I1: a published product sells its active variants (variantStatus projects a draft editor
+  // variant as a draft row, which the storefront and cart never sell), so each of those needs a price above 0.
+  // Checked on the projected document, which is what save, the status change and bulk publish all write; a
+  // simple product (no options) sells its product price. Shared rule: src/lib/cms/publish-price.
   const published = doc.status === "published";
-  if (published && !hasVariants && BigInt(doc.priceMinor) <= BigInt(0)) fail(400, "Set a price above 0 before publishing.");
+  if (published && !hasVariants && BigInt(doc.priceMinor) <= BigInt(0)) fail(400, PRICE_TO_PUBLISH);
   const skus = new Set<string>();
   if (hasVariants) {
     if (doc.variants.filter(v => v.isDefault && v.status !== "archived").length !== 1) fail(400, "Exactly one variant must be the default");
@@ -116,7 +118,7 @@ export async function projectProduct(client: PoolClient, productId: string, doc:
       skus.add(sku.toLowerCase());
       for (const option of doc.options) if (!valueIds.has(`${option.id}\u0000${v.selections[option.id]}`)) fail(400, `Variant ${sku} has no valid ${option.name} choice`);
       const amount = toMinor(v.price, `Price of ${sku}`);
-      if (published && v.status !== "archived" && BigInt(amount) <= BigInt(0)) fail(400, `Set a price above 0 for ${v.title?.trim() ? `${v.title.trim()} (${sku})` : sku} before publishing.`);
+      if (published && isSellableVariantStatus(v.status) && BigInt(amount) <= BigInt(0)) fail(400, unpricedMessage({ sku, title: v.title }));
       if (v.originalPrice !== undefined && v.originalPrice !== "" && BigInt(toMinor(v.originalPrice, `Compare-at price of ${sku}`)) < BigInt(amount)) fail(400, `Compare-at price of ${sku} is below its price`);
     }
   }

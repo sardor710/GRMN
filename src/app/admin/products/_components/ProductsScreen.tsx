@@ -62,6 +62,7 @@ import { LocaleTabs, type ContentLocale } from "@/components/admin/LocaleTabs";
 import { translationStatus } from "@/lib/cms/translation-input";
 import { PRODUCT_SPEC } from "@/i18n/translate-record";
 import { dropVariantTranslation } from "@/lib/cms/variant-content-edit";
+import { isSellableVariantStatus, unpricedMessage } from "@/lib/cms/publish-price";
 
 /** RU/KK tab is "complete" once the product title and description are translated (storefront indexing rule). */
 const PRODUCT_REQUIRED_FIELDS = ["name", "description"] as const;
@@ -526,19 +527,22 @@ export default function AdminProductsPage() {
 
   // The default variant's price is the selling price when the product has variants.
   const sellingPrice = Number((formData.variants.find((v) => v.isDefault) || formData.variants[0])?.price ?? formData.price);
-  const priceError = priceBlocked && formData.status === "published" && !(sellingPrice > 0);
-  // Final review I1: a published product sells every non-archived variant, so each row needs a price above 0
-  // (the server refuses the same, naming the variant).
+  // Mirrors the server rule (src/lib/cms/publish-price): a product with options and variants sells its active
+  // variants only, so each of those needs a price above 0; otherwise the product sells its own price.
+  const sellsVariants = formData.options.length > 0 && formData.variants.length > 0;
+  const simpleUnpriced = formData.status === "published" && !sellsVariants && !(sellingPrice > 0);
+  const priceError = priceBlocked && simpleUnpriced;
+  // Final review I1: draft and archived rows are not sold, so they may stay at 0 (the server names the variant).
   const unpricedVariants =
-    formData.status === "published" && formData.options.length > 0
-      ? formData.variants.filter((v) => v.status !== "archived" && !(Number(v.price) > 0))
+    formData.status === "published" && sellsVariants
+      ? formData.variants.filter((v) => isSellableVariantStatus(v.status) && !(Number(v.price) > 0))
       : [];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaveError("");
     setSkuConflicts([]);
-    if (formData.status === "published" && !(sellingPrice > 0)) {
+    if (simpleUnpriced) {
       setPriceBlocked(true);
       setContentLocale("en");
       setActiveTab("general");
@@ -547,7 +551,7 @@ export default function AdminProductsPage() {
     if (unpricedVariants.length > 0) {
       const first = unpricedVariants[0];
       setPriceBlocked(true);
-      setSaveError(`Set a price above 0 for ${first.title.trim() ? `${first.title.trim()} (${first.sku.trim()})` : first.sku.trim()} before publishing.`);
+      setSaveError(unpricedMessage(first));
       setContentLocale("en");
       setActiveTab("variants");
       return;

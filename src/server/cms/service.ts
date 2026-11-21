@@ -11,6 +11,7 @@ import { appendOutboxEvent } from "../operations/outbox.ts";
 import { mergeTranslationsSafely } from "../../lib/cms/translation-input.ts";
 import { PRODUCT_HTML_FIELDS, sanitizeProductInput } from "../../lib/cms/product-input.ts";
 import { projectProduct, toMinor, type ProductDocument } from "./product-projection.ts";
+import { PRICE_TO_PUBLISH } from "../../lib/cms/publish-price.ts";
 import { BLOG_HTML_FIELDS } from "../../lib/cms/content-input.ts";
 import { BANNER_SPEC, BLOG_SPEC, HOMEPAGE_SPEC, PRODUCT_SPEC } from "../../i18n/translate-record.ts";
 import type { FieldSpec } from "../../i18n/translate-record.ts";
@@ -27,7 +28,6 @@ const identity = z.string().trim().min(1).max(128);
 type ProductStatus = "published" | "draft" | "archived";
 type BulkAction = "publish" | "draft" | "archive" | "delete";
 export type BulkResult = { id: string; ok: true; version?: number } | { id: string; ok: false; code: string; message: string };
-const PRICE_TO_PUBLISH = "Set a price above 0 before publishing.";
 const BULK_STATUS: Record<Exclude<BulkAction, "delete">, ProductStatus> = { publish: "published", draft: "draft", archive: "archived" };
 const statusCommand = z.object({ id: identity, version, status: z.enum(["published", "draft", "archived"]) }).strict();
 const bulkCommand = z.object({ action: z.enum(["publish", "draft", "archive", "delete"]), items: z.array(z.object({ id: identity, version }).strict()).min(1).max(100) }).strict();
@@ -139,11 +139,13 @@ export function createCMSService({pool,authorize}:Options) {
     if(data.version!==Number(old.version))return fail("VERSION_CONFLICT",409,"Product changed; reload before saving");
     // No default variant or no price row at all: only the editor can repair it (409), whatever the target status.
     if(old.sku==null||old.amount_minor==null)return fail("CONFLICT",409,"This product has no default variant or price; open it in the editor and save it first");
-    // Fast path for the default variant's price; projectProduct below checks every non-archived variant (I1).
-    if(data.status==="published"&&BigInt(old.amount_minor)<=BigInt(0))return fail("INVALID_INPUT",400,PRICE_TO_PUBLISH);
+    const meta=record(old.legacy_content);
+    // Fast path for a simple product's own price; projectProduct below checks the variants the storefront
+    // sells (active ones), so a draft default variant at 0 does not block a variant product (I1).
+    const hasVariants=Array.isArray(meta.options)&&meta.options.length>0&&Array.isArray(meta.variants)&&meta.variants.length>0;
+    if(data.status==="published"&&!hasVariants&&BigInt(old.amount_minor)<=BigInt(0))return fail("INVALID_INPUT",400,PRICE_TO_PUBLISH);
     // The column and the editor document keep the same status, like save.
     await client.query("UPDATE products SET status=$2,legacy_content=jsonb_set(legacy_content,'{status}',to_jsonb($2::text)),version=version+1,updated_at=clock_timestamp() WHERE id=$1",[old.id,data.status]);
-    const meta=record(old.legacy_content);
     // Archiving mirrors archive(): the projection would clear is_default on the only variant and hide the product from every admin read.
     if(data.status!=="archived")await projectProduct(client,old.id,{status:data.status,sku:old.sku,priceMinor:String(old.amount_minor??"0"),compareMinor:old.compare_at_minor==null?null:String(old.compare_at_minor),
       options:(Array.isArray(meta.options)?meta.options:[]) as ProductDocument["options"],variants:(Array.isArray(meta.variants)?meta.variants:[]) as ProductDocument["variants"],

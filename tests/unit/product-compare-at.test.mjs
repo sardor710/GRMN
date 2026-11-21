@@ -110,8 +110,10 @@ test("the admin form blocks publishing when a non-default variant costs 0 and na
   assert.deepEqual(table?.props.unpriced, ["vb"], "the variants table marks the row");
 });
 
-test("an archived 0 variant, or a 0 variant on a draft, does not block the save", async () => {
+test("an archived or draft 0 variant, or a 0 variant on a draft, does not block the save", async () => {
   assert.equal((await editAndSave(sized(0, "archived"))).posts.length, 1);
+  // The storefront sells only active variants, so a draft size may wait for its price on a published product.
+  assert.equal((await editAndSave(sized(0, "draft"))).posts.length, 1);
   assert.equal((await editAndSave({ ...sized(0), status: "draft" })).posts.length, 1);
 });
 

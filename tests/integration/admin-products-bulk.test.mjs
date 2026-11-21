@@ -208,7 +208,35 @@ test("the read-only data check lists a published product with an active 0 varian
   try{rows=await listUnpricedPublished(sql=>client.query(sql));}finally{client.release();}
   const mine=rows.filter(row=>row.product===draft.id);
   assert.deepEqual(mine.map(row=>[row.sku,String(row.amount_minor)]),[[`${sku}-M`,"0"]]);
+  // A draft size at 0 on a published product is not sold, so it is not listed.
+  const waiting=await cms.save("products",admin,product({sku:`${sku}-D`,price:"5000",...sizes(`${sku}-D`,{m:0,mStatus:"draft"})}));
+  const again=await database.pool.connect();
+  try{rows=await listUnpricedPublished(sql=>again.query(sql));}finally{again.release();}
+  assert.equal(rows.some(row=>row.product===waiting.id),false);
   assert.equal(rows.some(row=>row.sku.startsWith("SYN-VZ-")&&row.product!==draft.id&&row.variant_status==="archived"),false);
+});
+
+// The storefront sells only active variants of a published product: a draft size at 0 does not block
+// publishing on any path, while an active one is refused.
+test("a draft 0 variant does not block publishing through save, the status PATCH or bulk; an active one is refused",async()=>{
+  const cms=await cmsService(),sku=`SYN-VD-${++serial}`;
+  const saved=await cms.save("products",admin,product({sku,price:"5000",...sizes(sku,{m:0,mStatus:"draft"})}));
+  assert.equal(saved.status,"published");
+  const variant=(await q("SELECT v.status FROM product_variants v WHERE v.sku=$1",[`${sku}-M`])).rows[0];
+  assert.equal(variant.status,"draft","the unpriced size is not sold");
+  const draft=await cms.setProductStatus(admin,{id:saved.id,version:saved.version,status:"draft"});
+  const republished=await cms.setProductStatus(admin,{id:saved.id,version:draft.version,status:"published"});
+  assert.equal(republished.status,"published");
+  const again=await cms.setProductStatus(admin,{id:saved.id,version:republished.version,status:"draft"});
+  const out=await cms.bulkProducts(admin,{action:"publish",items:[{id:saved.id,version:again.version}]});
+  assert.equal(out.results[0].ok,true);
+  // A draft default variant at 0 does not block the status PATCH either (the default is not what is sold).
+  const dsku=`SYN-VD-${++serial}`,dsizes=sizes(dsku);
+  dsizes.variants[0]={...dsizes.variants[0],price:0,status:"draft"};
+  const ddraft=await cms.save("products",admin,product({sku:dsku,price:"5000",status:"draft",...dsizes}));
+  assert.equal((await cms.setProductStatus(admin,{id:ddraft.id,version:ddraft.version,status:"published"})).status,"published");
+  const current=await cms.get("products",admin,saved.id);
+  await refusedVariant(cms.save("products",admin,{...product({sku,price:"5000",...sizes(sku,{m:0,mStatus:"active"})}),id:saved.id,version:current.version}),`M (${sku}-M)`);
 });
 
 test("an archived 0 variant does not block publishing",async()=>{

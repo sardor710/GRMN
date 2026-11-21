@@ -1,19 +1,21 @@
 #!/usr/bin/env node
-// Final review I1 (read-only data check): lists published products that have an active (non-archived)
-// variant with no KZT price or a price of 0 or less. Before I1 only the default variant was checked on
-// publish, so such rows could exist; the storefront would show and sell that size at 0 ₸.
+// Final review I1 (read-only data check): lists published products that have an active variant (the only
+// ones the storefront sells; draft and archived variants are not sold) with no KZT price or a price of 0 or
+// less. Before I1 only the default variant was checked on publish, so such rows could exist; the storefront
+// would show and sell that size at 0 ₸.
 // It never writes: the query runs in a READ ONLY transaction that is rolled back.
 // Usage: DATABASE_URL=postgres://... node scripts/check-unpriced-published.mjs [--allow-remote]
 //        node scripts/check-unpriced-published.mjs --json [src/lib/cms/data.json]   (legacy JSON store)
 // A non-local host is refused unless --allow-remote is given (do not point it at production casually).
 import { pathToFileURL } from "node:url";
 import pg from "pg";
+import { isSellableVariantStatus } from "../src/lib/cms/publish-price.js";
 
 export const UNPRICED_PUBLISHED_SQL = `
 SELECT p.public_key AS product, p.name AS product_name, v.sku, v.name AS variant, v.status AS variant_status,
        v.is_default, pr.amount_minor
   FROM products p
-  JOIN product_variants v ON v.product_id = p.id AND v.status <> 'archived'
+  JOIN product_variants v ON v.product_id = p.id AND v.status = 'active'
   LEFT JOIN prices pr ON pr.variant_id = v.id AND pr.is_active AND pr.currency = 'KZT' AND pr.market = 'default'
  WHERE p.status = 'published' AND (pr.amount_minor IS NULL OR pr.amount_minor <= 0)
  ORDER BY p.name, v.sku`;
@@ -29,14 +31,15 @@ export async function listUnpricedPublished(query) {
 }
 
 /** The same check on a legacy JSON store (src/lib/cms/data.json): published products with options whose
- *  non-archived variants cost 0 or less, or, without options, whose product price is 0 or less. */
+ *  active variants cost 0 or less, or, without options, whose product price is 0 or less
+ *  (the shared rule in src/lib/cms/publish-price.js). */
 export function listUnpricedPublishedJSON(data) {
   const rows = [];
   for (const p of data.products ?? []) {
     if ((p.status ?? "published") !== "published") continue;
     const variants = (p.options ?? []).length > 0 ? (p.variants ?? []) : [];
     if (!variants.length) { if (!(Number(p.price) > 0)) rows.push({ product: p.id, product_name: p.name, sku: p.sku, variant: null, variant_status: "active", is_default: true, amount_minor: p.price ?? null }); continue; }
-    for (const v of variants) if (v.status !== "archived" && !(Number(v.price) > 0)) rows.push({ product: p.id, product_name: p.name, sku: v.sku, variant: v.title, variant_status: v.status, is_default: Boolean(v.isDefault), amount_minor: v.price ?? null });
+    for (const v of variants) if (isSellableVariantStatus(v.status) && !(Number(v.price) > 0)) rows.push({ product: p.id, product_name: p.name, sku: v.sku, variant: v.title, variant_status: v.status, is_default: Boolean(v.isDefault), amount_minor: v.price ?? null });
   }
   return rows;
 }
