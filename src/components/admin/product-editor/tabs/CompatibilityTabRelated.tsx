@@ -10,14 +10,14 @@ import { Section } from "../Field";
 import { formatKzt, inputClass } from "../shared";
 import type { ProductEditorState } from "../useProductEditorState";
 
-// "You may also like" / related products (relations.related). The picker loads lazily from
-// GET /api/admin/catalog/picker only when this tab is open. Compatibility (accessory ↔ device) comes in M6.
+// "You may also like" / related products (relations.related), the last section of the Accessories &
+// compatibility tab. The picker loads lazily from GET /api/admin/catalog/picker only when the tab is open.
 type PickerState = { status: "loading" } | { status: "error"; message: string } | { status: "ready"; items: PickerRow[]; nextCursor: string | null; loadingMore: boolean };
 
 const priceRange = (row: PickerRow) =>
   row.price.min === null ? "—" : row.price.max !== null && row.price.max !== row.price.min ? `${formatKzt(row.price.min)} – ${formatKzt(row.price.max)}` : formatKzt(row.price.min);
 
-export function AccessoriesTab({ editor }: { editor: ProductEditorState }) {
+export function RelatedProductsSection({ editor }: { editor: ProductEditorState }) {
   const { form, update, productKey } = editor;
   const [query, setQuery] = useState("");
   const search = useDebouncedValue(query.trim(), 250);
@@ -67,9 +67,9 @@ export function AccessoriesTab({ editor }: { editor: ProductEditorState }) {
 
   return (
     <Section
-      id="accessories"
-      title="Related products"
-      description="Shown as “You may also like” on the product page, in this order. Accessory compatibility (bands that fit a watch size) is set up separately."
+      id="related-products"
+      title="You may also like"
+      description="Related products shown at the bottom of the product page, in this order. They do not need to fit this product; use the sections above for that."
     >
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
         <div>

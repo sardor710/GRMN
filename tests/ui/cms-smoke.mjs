@@ -73,7 +73,7 @@ try{
   await setField("input[aria-label='Search products']","UI-CREATED");
   await until(()=>evaluate("document.querySelectorAll('tbody tr').length===1 && document.body.innerText.includes('UI CREATED PRODUCT')"),"Server search failed");
   await click("Edit");await until(()=>evaluate("document.querySelector('#product-name')?.value==='UI CREATED PRODUCT'"),"Edit sheet missing");await setField("#product-name","UI UPDATED PRODUCT");
-  await click("Related");await until(()=>evaluate("!!document.querySelector('input[aria-label=\"Search products to relate\"]')"),"Related tab missing");await setField("input[aria-label='Search products to relate']","UI-FIXTURE-24");
+  await click("Accessories & compatibility");await until(()=>evaluate("!!document.querySelector('input[aria-label=\"Search products to relate\"]')"),"Related tab missing");await setField("input[aria-label='Search products to relate']","UI-FIXTURE-24");
   await until(()=>evaluate("[...document.querySelectorAll('#product-editor-main label')].some(label=>label.textContent.includes('UI fixture 24'))"),"Related-product search did not reach another list page");
   await evaluate("[...document.querySelectorAll('#product-editor-main label')].find(label=>label.textContent.includes('UI fixture 24')).querySelector('input[type=checkbox]').click();true");
   await click("Save changes");await until(async()=>(await text()).includes("Saved · version 2"),"Product update failed");

@@ -8,6 +8,7 @@ import type { CMSProduct, ProductImage, ProductOption, ProductSource, ProductSta
 import { matchBreadcrumbCategories } from "../../../lib/admin/category-breadcrumb.ts";
 import type { TaxonomyNode } from "../../../contracts/admin-catalog.ts";
 import { normalizeCategories, type CategoryRef } from "../../../lib/admin/taxonomy-tree.ts";
+import { compatibilityCommand, compatibilityFromPayload, emptyCompatibility, type CompatibilityForm } from "./compatibility-state.ts";
 
 export type RawPayload = Record<string, unknown>;
 export interface InTheBoxItem { label: string; image?: string }
@@ -41,6 +42,8 @@ export interface EditorForm {
   inTheBox: InTheBoxItem[];
   categories: CategoryRef[];
   related: string[];
+  /** Accessory ↔ device links (compatibility-state.ts); an untouched side is sent back as GET returned it. */
+  compatibility: CompatibilityForm;
   source?: ProductSource;
   seoTitle: string;
   seoDescription: string;
@@ -62,7 +65,7 @@ export function blankForm(): EditorForm {
   return {
     name: "", sku: "", price: null, originalPrice: null, priceSuffix: "", stock: 0, description: "", badge: "NONE", family: "",
     activities: [], level: "Premium", caseSize: "Medium", status: "draft", isFeatured: false, image: "", images: [], defaultImageId: "",
-    options: [], variants: [], overviewHtml: "", specGroups: [], inTheBox: [], categories: [], related: [],
+    options: [], variants: [], overviewHtml: "", specGroups: [], inTheBox: [], categories: [], related: [], compatibility: emptyCompatibility(),
     seoTitle: "", seoDescription: "", focusKeywords: [], canonicalUrl: "", noIndex: false, ogImage: "",
   };
 }
@@ -125,6 +128,7 @@ export function formFromPayload(payload: RawPayload, makeId: (prefix: string) =>
     inTheBox: normalizeInTheBox(payload.inTheBox),
     categories: normalizeCategories(arr<CategoryRef>(payload.categories).filter(item => item && typeof item.key === "string")),
     related: arr<string>(relations.related).filter(item => typeof item === "string"),
+    compatibility: compatibilityFromPayload(payload),
     ...(payload.source && typeof payload.source === "object" ? { source: payload.source as ProductSource } : {}),
     seoTitle: str(payload.seoTitle),
     seoDescription: str(payload.seoDescription),
@@ -206,6 +210,8 @@ export function buildCommand(base: RawPayload, form: EditorForm, isNew: boolean)
     noIndex: form.noIndex,
     ogImage: form.ogImage,
   });
+  const compatibility = compatibilityCommand(base, form.compatibility);
+  if (compatibility) command.compatibility = compatibility; else delete command.compatibility;
   if (form.source) command.source = form.source; else delete command.source;
   if (!form.defaultImageId) delete command.defaultImageId;
   const price = moneyValue(form.price);
