@@ -323,3 +323,28 @@ test("review I4: support sees no carrier, tracking reference or internal note",a
   const staff=JSON.stringify(await fulfillment.getOrder(fulfiller,orderId));
   for(const value of ["Support-hidden carrier","SUPPORT-HIDDEN-TRK","Support-hidden note"])assert.ok(staff.includes(value),value+" missing for orders:fulfill");
 });
+
+// M7/D03a: a captured sandbox order (demo purchase) ships end to end like a live one, carries
+// paymentMode "sandbox" for the admin Demo badge; a demo-method order still cannot ship (above).
+test("a captured sandbox demo purchase ships and is delivered; the admin list shows it as sandbox",async()=>{
+  await load();
+  const {configuredPaymentProviders}=await import("../../src/server/payments/providers.ts");
+  const {createCartService}=await import("../../src/server/cart/service.ts");
+  const providers=payments.createPaymentProviders(configuredPaymentProviders({DEMO_PURCHASES:"1",NODE_ENV:"test"}));
+  const demoCarts=createCartService({database,secret,identify:async h=>{try{return await requirePrincipal(runtime,h);}catch(error){if(error.status===401)return null;throw error;}},payments:providers});
+  const p=await product({stock:3}),buyer=await owner();
+  let version=0;version=(await demoCarts.addLine(buyer.headers,{variantId:p.variant,quantity:2,expectedCartVersion:version})).cart.version;
+  const quote=await demoCarts.quote(buyer.headers,{cartVersion:version,displayCurrency:"KZT",delivery:KZ});
+  const placed=await demoCarts.checkout(buyer.headers,key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:quote.paymentMethod});
+  assert.equal(placed.paymentMode,"sandbox");assert.equal(placed.paymentState,"captured");
+  const detail=await fulfillment.getOrder(fulfiller,placed.orderId);
+  assert.equal(detail.paymentMode,"sandbox");assert.equal(detail.fulfillable.allowed,true);
+  const listed=(await fulfillment.listOrders(support,{})).items.find(order=>order.id===placed.orderId);
+  assert.equal(listed.paymentMode,"sandbox");
+  const itemId=(await q("SELECT id FROM order_items WHERE order_id=$1",[placed.orderId])).rows[0].id;
+  const shipped=await ship(placed.orderId,[{orderItemId:itemId,quantity:2}]);
+  await act(shipped.shipment,"dispatch");await act(shipped.shipment,"deliver");
+  const final=await orderRow(placed.orderId);
+  assert.deepEqual([final.order_status,final.payment_status,final.fulfillment_status],["confirmed","paid","delivered"]);
+  assert.deepEqual(await balance(p.variant),{on_hand:1,reserved:0},"stock was consumed once at capture; shipping never touches it");
+});

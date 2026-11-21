@@ -130,6 +130,8 @@ test("the demo adapter is explicitly simulated: the session job records provenan
   // The demo emits no webhooks and its reconciliation never reports a payment.
   await rejectsWith(payments.receiveWebhook(database.pool,payments.createPaymentProviders([demo]),"demo",Buffer.from("{}"),new Headers()),404,"NOT_FOUND");
   await payments.reconcilePayments(database.pool,payments.createPaymentProviders([demo]),{olderThanMs:0,limit:50});
+  // M7/D03a: registering the sandbox auto-capture adapter beside it changes nothing for a demo order: reconciliation reads only sandbox attempts.
+  await payments.reconcilePayments(database.pool,payments.createPaymentProviders([demo,payments.createSandboxProvider()]),{olderThanMs:0,limit:50});
   assert.equal((await orderRow(placed.orderId)).payment_status,"unpaid");
   assert.equal(await count("SELECT count(*)::int AS n FROM payment_transactions WHERE order_id=$1",[placed.orderId]),0,"a simulated payment never creates a capture fact");
   assert.equal((await carts.checkoutStatus(buyer.headers,{orderId:placed.orderId})).paymentStatus,"unpaid");
