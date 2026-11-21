@@ -22,7 +22,8 @@ export function catalogCardView(card: ProductCardDTO, currency: DisplayCurrency 
     id: card.publicKey, name: card.name, description: card.description,
     image: card.image?.url ?? "", badge: card.badge ?? undefined,
     price: minorToMajor(card.price.selling.amountMinor), priceLabel: catalogPriceLabel(card.price, currency, locale),
-    currency: "KZT" as const, purchasable: false, availability: card.availability,
+    // Sellable only with free stock (on hand − reserved) on some active variant.
+    currency: "KZT" as const, purchasable: card.availability === "available", availability: card.availability,
     family: card.family ?? "", activities: card.activities ?? [], level: card.level ?? "Unknown", caseSize: card.caseSize ?? "Unknown",
     priceSuffix: card.priceSuffix,
   };

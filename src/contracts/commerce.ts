@@ -74,6 +74,17 @@ export interface ProductDetailDTO extends ProductCardDTO {
   relatedProductKeys?: string[];
   selectedVariantId?: string;
   seo?: { title: string; description: string; canonicalUrl: string | null; noIndex: boolean; image: string | null };
+  // M4 additive fields (types in ./catalog-browse.ts).
+  /** The product's default variant (may be out of stock; selectedVariantId prefers an in-stock one). */
+  defaultVariantId?: string;
+  /** Option definitions in display order; VariantDTO.options maps option key → value label. */
+  options?: import("./catalog-browse.ts").ProductOptionDTO[];
+  /** Primary category path, root first. */
+  breadcrumb?: import("./catalog-browse.ts").CategoryCrumbDTO[];
+  /** Accessories linked through product_compatibility, each with the device variants it fits. */
+  compatibleAccessories?: import("./catalog-browse.ts").CompatibleAccessoryDTO[];
+  /** Devices this accessory fits (accessory pages). */
+  compatibleDevices?: import("./catalog-browse.ts").CompatibleDeviceDTO[];
 }
 
 export interface ProductQuery {
