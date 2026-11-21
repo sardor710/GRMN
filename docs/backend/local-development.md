@@ -2,6 +2,28 @@
 
 Requires Node 24+ and `npm ci`. Existing frontend commands still work without database credentials. The new auth route is disabled by default; existing commerce/CMS routes still use their prior backend. No migration runs in install/build/start. Use the project's current lockfile; no real source data is seeded into the test DB.
 
+## One-command local stack (persistent PostgreSQL, no Docker)
+
+```powershell
+npm run dev:stack                 # cluster → migrations → seed → data.json import → next dev on :3000
+npm run dev:stack -- --check      # same bootstrap, Next on a free port, HTTP checks, pass/fail table, shutdown
+npm run dev:stack -- --reimport   # re-sync every data.json product even if unchanged
+npm run dev:db -- start|stop|status|url
+npm run dev:seed                  # store settings, tax, shipping, stock location (idempotent)
+npm run dev:import [-- --reimport]
+npm run dev:admin                 # first owner account (or lists existing staff)
+```
+
+- **Where data lives:** one PostgreSQL 18.6 cluster (the `embedded-postgres` development binaries) under `storage/devdb/` (gitignored): `data/` (cluster), `dev-secrets.json` (random DB password and a 64-hex `AUTH_SECRET`, created once), `import-state.json` (data.json hashes), `postgres.log`, `next-check.log`. It listens on `127.0.0.1:55433` (`DEV_DB_PORT` overrides). Data survives restarts; no script deletes it. `dev:stack` stops PostgreSQL when Next exits (Ctrl+C) if it started it; `dev:db -- start` leaves it running until `dev:db -- stop`.
+- **Next environment:** `dev:stack` runs `next dev` with `CMS_BACKEND=postgres`, `AUTH_ENABLED=1`, `DATABASE_URL`, `DATABASE_POOL_MAX=5`, `AUTH_SECRET`, `AUTH_BASE_URL=http://localhost:3000`, `AUTH_DEV_OTP_CONSOLE=1`, `DEMO_PURCHASES=1`. `.env.local` is loaded and wins, except `CMS_BACKEND`, `AUTH_ENABLED`, `DATABASE_URL`, `DATABASE_MIGRATION_URL`, `AUTH_SECRET` and `AUTH_BASE_URL`, which always come from the dev stack. Variable names: [dev-stack-env.md](dev-stack-env.md).
+- **Seed (dev placeholders, change them in the admin):** `main` stock location; tax `inclusive`, 16% VAT (1600 bps), KZ only, so totals equal the catalog's VAT-inclusive prices; one shipping policy with a KZ zone and a flat `standard` band of **2 000 KZT**, no free-shipping threshold; store settings with demo payment mode. Re-runs only fill missing pieces and never replace an active policy.
+- **Import:** on the first run the legacy importer (`importSnapshot`, namespace `garmin-dev-v1`) imports base records (contacts, homepage/banner drafts, audit history, the 3 products it accepts). Its strict reconciliation rejects a changed source (`SOURCE_CHANGED`) and quarantines most current products (4-decimal compare-at prices, unresolved accessory references), so it is never re-run. Then every data.json product is upserted by public key (the CMS id) and `src/server/catalog/variant-sync.ts` writes options, variants, KZT prices (major units × 100, float artifacts rounded to whole tiyn with a warning), media and stock. Later runs re-sync only products whose data.json record changed; products removed from data.json are archived. Data.json is the dev source of truth: a changed record overwrites DB edits of that product.
+- **Opening stock:** written through the inventory ledger (`setStockFromSource`): an `opening` movement per variant on first import (simple products: `product.stock`), `adjust` movements for later changes; a zero balance row for zero stock.
+- **Media:** images found under `public/` (or `UPLOAD_DIR`, default `storage/uploads`) become `ready` public `media_assets` (SHA-256, size, MIME) linked via `product_media` (variant galleries from `imageIds`, the rest at product level). Missing files are skipped. The PostgreSQL catalog currently serves only `/images/…` URLs, so `/uploads/…` galleries do not display yet.
+- **First admin login:** set `DEV_ADMIN_EMAIL` and `DEV_ADMIN_PASSWORD` (16–128 characters) in `.env.local`, or run `npm run dev:admin` in a terminal to be prompted. It uses the `auth:bootstrap` code path (super_admin) and refuses `NODE_ENV=production`. Sign in at `/admin/login`; the first sign-in requires enrolling TOTP MFA (keep the backup codes). MFA is not disabled for development.
+- **Customer phone sign-in:** no SMS provider exists; with `AUTH_DEV_OTP_CONSOLE=1` (set by `dev:stack`) the code prints in the Next console as `[dev-otp] <phone> <code>`. It is refused when `NODE_ENV=production`.
+- **Deliberate reset:** `npm run dev:db -- stop`, then delete `storage/devdb/data` and `storage/devdb/import-state.json` yourself (keep `dev-secrets.json` to reuse the same secrets, or delete the whole `storage/devdb` folder for new ones). The next `dev:stack` re-initializes and re-imports. A future change of the bundled PostgreSQL major version also needs a reset.
+
 ## Disposable real PostgreSQL tests (no Docker required)
 
 ```powershell
