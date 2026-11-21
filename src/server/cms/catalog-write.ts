@@ -106,7 +106,8 @@ export async function writeProduct(client: PoolClient, context: WriteContext, ra
     if ((!existing || !existing.tracked) && stock === 0) return { ...rest, stock };
     if (existing && stock < existing.reserved) fail("INSUFFICIENT_STOCK", 409, `Stock of ${variant.sku} cannot go below its ${existing.reserved} reserved units`);
     stockChanges++;
-    return { ...rest, stock };
+    // The check above read the balance unlocked; the ledger write re-checks the baseline under the row lock.
+    return { ...rest, stock, ...(existing && stockBaseline !== undefined ? { expectedOnHand: stockBaseline } : {}) };
   });
   if (stockChanges && old) await context.requireInventory();
 

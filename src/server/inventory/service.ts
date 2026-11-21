@@ -173,15 +173,20 @@ export interface SourceStockResult { variantId: string; movementId: string | nul
 // movement (same dedupe key as importOpeningBalances), later changes are `adjust` movements whose
 // dedupe key is bound to the balance version they were computed from, so a replay cannot apply twice.
 // An unchanged level writes nothing (the zero balance row is still created). On-hand may not drop
-// below the reserved quantity.
-export async function setStockFromSource(client: PoolClient, input: { variantId: string; onHand: number; sourceReference: string; actorUserId?: string | null }): Promise<SourceStockResult> {
+// below the reserved quantity. `expectedOnHand` is the level the caller computed its change from (the
+// editor's stockBaseline): a different LOCKED on-hand means a sale or restock landed in between, which is a
+// 409 STOCK_CONFLICT (the same code and message as the catalog writer) instead of a silent overwrite.
+export async function setStockFromSource(client: PoolClient, input: { variantId: string; onHand: number; sourceReference: string; actorUserId?: string | null; expectedOnHand?: number; label?: string }): Promise<SourceStockResult> {
   if (!UUID.test(input.variantId) || !Number.isInteger(input.onHand) || input.onHand < 0 || input.onHand > MAX_ON_HAND) invalid("Invalid stock level");
+  if (input.expectedOnHand !== undefined && (!Number.isInteger(input.expectedOnHand) || input.expectedOnHand < 0 || input.expectedOnHand > MAX_ON_HAND)) invalid("Invalid stock level");
   const sourceReference = input.sourceReference.trim();
   if (!sourceReference || sourceReference.length > 500) invalid("A stock source reference is required");
   const locationId = await mainLocation(client);
   const before = await lockBalance(client, input.variantId, locationId);
   const delta = input.onHand - before.on_hand;
   if (delta === 0) return { variantId: input.variantId, movementId: null, reason: null, delta: 0, onHand: before.on_hand };
+  if (input.expectedOnHand !== undefined && before.on_hand !== input.expectedOnHand)
+    fail("STOCK_CONFLICT", 409, `Stock of ${input.label ?? "this variant"} changed to ${before.on_hand} since it was loaded; reload before saving`);
   if (input.onHand < before.reserved) fail("INSUFFICIENT_STOCK", 409, "Stock cannot go below the reserved quantity");
   const history = (await client.query("SELECT 1 FROM stock_movements WHERE variant_id=$1 AND location_id=$2 LIMIT 1", [input.variantId, locationId])).rowCount;
   const reason = !history && delta > 0 ? "opening" as const : "adjust" as const;

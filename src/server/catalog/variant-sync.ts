@@ -43,6 +43,8 @@ const variantSchema = z.looseObject({
   selections: z.record(z.string(), z.string()).default({}),
   price: money, originalPrice: money.nullish(),
   stock: z.number().int().min(0).max(2_000_000_000).optional(),
+  /** The on-hand the stock change was computed from; checked against the locked balance (STOCK_CONFLICT). */
+  expectedOnHand: z.number().int().min(0).max(2_000_000_000).optional(),
   status: z.enum(["draft", "active", "archived"]), isDefault: z.boolean().default(false),
   imageIds: z.array(z.string()).max(500).default([]),
 });
@@ -299,7 +301,10 @@ export async function syncProductVariants(client: PoolClient, raw: VariantSyncIn
   if (data.stock) {
     const reference = data.stock.sourceReference;
     for (const plan of variantPlan.filter(plan => plan.variant.status !== "archived" && plan.variant.stock !== undefined).sort((a, b) => a.id.localeCompare(b.id))) {
-      const change = await setStockFromSource(client, { variantId: plan.id, onHand: plan.variant.stock!, sourceReference: `${reference}#${plan.variant.id}`, actorUserId: data.stock.actorUserId ?? null });
+      const change = await setStockFromSource(client, {
+        variantId: plan.id, onHand: plan.variant.stock!, sourceReference: `${reference}#${plan.variant.id}`, actorUserId: data.stock.actorUserId ?? null,
+        ...(plan.variant.expectedOnHand !== undefined ? { expectedOnHand: plan.variant.expectedOnHand, label: plan.variant.sku } : {}),
+      });
       if (change.movementId) result.stock.movements++; else result.stock.unchanged++;
     }
   }
