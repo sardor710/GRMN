@@ -165,6 +165,33 @@ export async function reconcileStock(pool: Pool | PoolClient): Promise<Reconcili
   };
 }
 
+export interface SourceStockResult { variantId: string; movementId: string | null; reason: "opening" | "adjust" | null; delta: number; onHand: number }
+
+// Brings one variant's on-hand quantity at `main` to a level stated by an external source (a dev
+// catalog import, or a catalog editor saving a variant's stock) inside the caller's transaction.
+// The ledger stays the only writer: a variant with no movement history gets one `opening`
+// movement (same dedupe key as importOpeningBalances), later changes are `adjust` movements whose
+// dedupe key is bound to the balance version they were computed from, so a replay cannot apply twice.
+// An unchanged level writes nothing (the zero balance row is still created). On-hand may not drop
+// below the reserved quantity.
+export async function setStockFromSource(client: PoolClient, input: { variantId: string; onHand: number; sourceReference: string; actorUserId?: string | null }): Promise<SourceStockResult> {
+  if (!UUID.test(input.variantId) || !Number.isInteger(input.onHand) || input.onHand < 0 || input.onHand > MAX_ON_HAND) invalid("Invalid stock level");
+  const sourceReference = input.sourceReference.trim();
+  if (!sourceReference || sourceReference.length > 500) invalid("A stock source reference is required");
+  const locationId = await mainLocation(client);
+  const before = await lockBalance(client, input.variantId, locationId);
+  const delta = input.onHand - before.on_hand;
+  if (delta === 0) return { variantId: input.variantId, movementId: null, reason: null, delta: 0, onHand: before.on_hand };
+  if (input.onHand < before.reserved) fail("INSUFFICIENT_STOCK", 409, "Stock cannot go below the reserved quantity");
+  const history = (await client.query("SELECT 1 FROM stock_movements WHERE variant_id=$1 AND location_id=$2 LIMIT 1", [input.variantId, locationId])).rowCount;
+  const reason = !history && delta > 0 ? "opening" as const : "adjust" as const;
+  const dedupeKey = reason === "opening" ? `opening:${input.variantId}:${locationId}` : `source-sync:${input.variantId}:${locationId}:v${before.version}`;
+  const movementId = randomUUID();
+  await client.query("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key,source_reference,actor_user_id,occurred_at) VALUES($1,$2,$3,$4,0,$5,$6,$7,$8,clock_timestamp())",
+    [movementId, input.variantId, locationId, delta, reason, dedupeKey, sourceReference, input.actorUserId ?? null]);
+  return { variantId: input.variantId, movementId, reason, delta, onHand: input.onHand };
+}
+
 // Opening-balance import for one completed legacy migration run (owner decision O08:
 // preserve opening stock with provenance). Each importable product's default variant gets
 // at most one opening movement naming the source record and checksum. Records with unusable
