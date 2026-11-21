@@ -107,5 +107,7 @@ export interface ProductDetail {
   /** Sanitized overview HTML (garmin.com import or admin edit). */
   overviewHtml?: string;
   specGroups?: SpecGroup[];
+  /** In-the-box items with photos (shown as tiles); `inTheBox` keeps the plain labels. */
+  inTheBoxItems?: { label: string; image?: string | null }[];
 }
 

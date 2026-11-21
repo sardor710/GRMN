@@ -6,7 +6,7 @@ import type { ProductDetail } from "@/types";
 import { ProductOverview } from "@/components/product/ProductOverview";
 import { ProductAccessories } from "@/components/product/ProductAccessories";
 import { CompatibleDevices } from "@/components/product/CompatibleDevices";
-import overviewStyles from "@/components/product/CmsOverview.module.css";
+import { OverviewContent } from "@/components/product/OverviewContent";
 
 const TABS = ["Overview", "Specs", "In the Box", "Accessories", "Maps", "Compatible Devices"] as const;
 type Tab = (typeof TABS)[number];
@@ -17,13 +17,15 @@ export function ProductTabs({ product, selectedVariantId }: { product: ProductDe
   const accessories = product.commerce?.compatibleAccessories ?? [];
   const devices = product.commerce?.compatibleDevices ?? [];
   // Accessories and Compatible Devices come from product_compatibility; a tab without links is hidden.
-  const tabs = TABS.filter(t => (t !== "Accessories" || accessories.length > 0) && (t !== "Compatible Devices" || devices.length > 0));
+  // An empty in-the-box list hides its tab (no preset contents, plan #7).
+  const tabs = TABS.filter(t => (t !== "Accessories" || accessories.length > 0) && (t !== "Compatible Devices" || devices.length > 0) && (t !== "In the Box" || product.inTheBox.length > 0));
   const variantId = selectedVariantId ?? product.commerce?.selectedVariantId;
 
   const isRichOverview = tab === "Overview" && product.id === "1228429" && !product.overviewHtml;
 
   return (
-    <section className="mt-8">
+    // overflow-x-clip: full-bleed overview blocks (100vw) must not add a horizontal page scrollbar.
+    <section className="mt-8 overflow-x-clip">
       {/* Tab bar */}
       <div className="sticky top-0 z-30 border-y border-neutral-200 bg-[#f2f2f2]">
         <div className="mx-auto flex max-w-[1280px] gap-8 overflow-x-auto px-4">
@@ -49,8 +51,8 @@ export function ProductTabs({ product, selectedVariantId }: { product: ProductDe
             <ProductOverview product={product} />
           ) : product.overviewHtml ? (
             <div className="mx-auto max-w-[1080px] py-8">
-              {/* overviewHtml is sanitized with an allowlist on import and on every admin save */}
-              <div className={overviewStyles.overview} dangerouslySetInnerHTML={{ __html: product.overviewHtml }} />
+              {/* overviewHtml is sanitized with an allowlist on import, on every admin save and on read */}
+              <OverviewContent html={product.overviewHtml} />
             </div>
           ) : (
             <div className="mx-auto max-w-[1080px] py-8">
@@ -117,21 +119,24 @@ function DefaultOverview({ product }: { product: ProductDetail }) {
 
 function Specs({ product }: { product: ProductDetail }) {
   if (product.specGroups?.length) {
+    // Grouped tables like garmin.com: a heading row per group, then label/value rows.
     return (
       <div>
         <h2 className="g-heading text-[32px] md:text-[38px] uppercase tracking-wide text-black">Specifications</h2>
-        {product.specGroups.map((group) => (
-          <section key={group.title} className="mt-8">
-            <h3 className="g-heading text-[20px] uppercase tracking-[0.04em] text-black">{group.title}</h3>
-            <dl className="mt-3 divide-y divide-neutral-200 border-t border-neutral-200">
+        {product.specGroups.map((group, index) => (
+          <table key={`${group.title}-${index}`} className="mt-8 w-full border-collapse text-left">
+            {group.title && (
+              <caption className="g-heading pb-3 text-left text-[20px] uppercase tracking-[0.04em] text-black">{group.title}</caption>
+            )}
+            <tbody className="border-t border-neutral-200">
               {group.items.map((s, i) => (
-                <div key={`${s.label}-${i}`} className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3">
-                  <dt className="text-[15px] font-semibold text-black sm:col-span-1">{s.label}</dt>
-                  <dd className="text-[15px] leading-relaxed text-neutral-700 sm:col-span-2">{s.value}</dd>
-                </div>
+                <tr key={`${s.label}-${i}`} className="border-b border-neutral-200 align-top">
+                  <th scope="row" className="w-1/2 py-3 pr-4 text-[15px] font-semibold text-black sm:w-1/3">{s.label}</th>
+                  <td className="py-3 text-[15px] leading-relaxed text-neutral-700 sm:w-2/3">{s.value}</td>
+                </tr>
               ))}
-            </dl>
-          </section>
+            </tbody>
+          </table>
         ))}
       </div>
     );
@@ -152,6 +157,29 @@ function Specs({ product }: { product: ProductDetail }) {
 }
 
 function InTheBox({ product }: { product: ProductDetail }) {
+  const items = product.inTheBoxItems?.filter((item) => item.label.trim()) ?? [];
+  if (items.some((item) => item.image)) {
+    // Image tiles when the product (or its garmin.com import) has photos of the box contents.
+    return (
+      <div>
+        <h2 className="g-heading text-[32px] md:text-[38px] uppercase tracking-wide text-black">In the Box</h2>
+        <ul className="mt-6 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+          {items.map((item, index) => (
+            <li key={`${item.label}-${index}`} className="text-center">
+              <div className="relative flex aspect-square items-center justify-center bg-white">
+                {item.image ? (
+                  <Image src={item.image} alt="" fill sizes="(max-width:640px) 45vw, (max-width:1024px) 30vw, 250px" className="object-contain" />
+                ) : (
+                  <span className="h-1.5 w-1.5 rounded-full bg-black" aria-hidden="true" />
+                )}
+              </div>
+              <p className="mt-3 text-[15px] leading-snug text-neutral-700">{item.label}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
   return (
     <div>
       <h2 className="g-heading text-[32px] md:text-[38px] uppercase tracking-wide text-black">In the Box</h2>

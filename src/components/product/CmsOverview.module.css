@@ -107,3 +107,178 @@
   line-height: 18px;
   color: #666;
 }
+
+/* ---- Blocks written by the admin CKEditor (plan M5): headings, lists, quotes, image/table figures ---- */
+.overview :global(h4) {
+  margin: 16px 0 8px;
+  font-family: var(--garmin-display);
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 22px;
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.overview :global(ul),
+.overview :global(ol) {
+  margin: 0 0 16px;
+  padding-left: 24px;
+  color: #333;
+}
+
+.overview :global(ul) {
+  list-style: disc;
+}
+
+.overview :global(ol) {
+  list-style: decimal;
+}
+
+.overview :global(li) {
+  margin: 4px 0;
+}
+
+.overview :global(blockquote) {
+  margin: 24px 0;
+  padding: 4px 0 4px 20px;
+  border-left: 4px solid #000;
+  font-style: italic;
+}
+
+.overview :global(figure) {
+  margin: 0;
+}
+
+.overview :global(figure.image) {
+  margin: 24px auto;
+}
+
+.overview :global(.ov-feature figure.image),
+.overview :global(.ov-highlight figure.image),
+.overview :global(.ov-lifestyle figure.image) {
+  margin: 0;
+}
+
+.overview :global(figure.image img) {
+  margin: 0 auto;
+}
+
+.overview :global(figure.image figcaption) {
+  padding: 8px 0 0;
+  font-size: 13px;
+  color: #666;
+  text-align: center;
+}
+
+.overview :global(figure.table) {
+  margin: 24px 0;
+  overflow-x: auto;
+}
+
+.overview :global(table) {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.overview :global(th),
+.overview :global(td) {
+  padding: 12px 16px 12px 0;
+  border-bottom: 1px solid #e5e5e5;
+  text-align: left;
+  vertical-align: top;
+}
+
+.overview :global(th) {
+  font-weight: 700;
+  color: #000;
+}
+
+/* ---- YouTube: click-to-play poster swapped for an inline youtube-nocookie player (OverviewContent) ---- */
+.overview :global(.ov-yt) {
+  position: relative;
+  max-width: 1080px;
+  margin: 32px auto;
+  background: #000;
+}
+
+.overview :global(.ov-yt-banner) {
+  max-width: none;
+  margin: 32px calc(50% - 50vw);
+}
+
+.overview :global(.ov-yt-poster) {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  color: #fff;
+}
+
+.overview :global(.ov-yt-banner .ov-yt-poster) {
+  aspect-ratio: auto;
+}
+
+.overview :global(.ov-yt-poster img) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: opacity 0.2s ease;
+}
+
+.overview :global(.ov-yt-poster:hover img) {
+  opacity: 0.85;
+}
+
+.overview :global(.ov-yt-poster:focus-visible) {
+  outline: 3px solid #007cc3;
+  outline-offset: 2px;
+}
+
+.overview :global(.ov-yt-play) {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 72px;
+  height: 72px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  transform: translate(-50%, -50%);
+  transition: background-color 0.2s ease;
+}
+
+.overview :global(.ov-yt-play)::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 54%;
+  border-width: 12px 0 12px 20px;
+  border-style: solid;
+  border-color: transparent transparent transparent #fff;
+  transform: translate(-50%, -50%);
+}
+
+.overview :global(.ov-yt-poster:hover .ov-yt-play) {
+  background: #000;
+}
+
+.overview :global(.ov-yt.is-playing) {
+  max-width: 1080px;
+  margin: 32px auto;
+  aspect-ratio: 16 / 9;
+}
+
+.overview :global(.ov-yt iframe) {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overview :global(.ov-yt-poster img),
+  .overview :global(.ov-yt-play) {
+    transition: none;
+  }
+}

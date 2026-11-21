@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ProductImage, ProductOption, ProductVariant, SpecGroup } from "@/lib/cms/types";
 import { availableValueIds, resolveVariant } from "@/lib/cms/product-variants";
 import { GarminBadge } from "@/components/GarminBadge";
-import overviewStyles from "@/components/product/CmsOverview.module.css";
+import { OverviewContent } from "@/components/product/OverviewContent";
 import { previewSafeHtml } from "@/lib/admin/preview-html";
 import { EditorDialog } from "./EditorDialog";
 import { formatKzt, galleryFor, secondaryButtonClass } from "./shared";
@@ -73,7 +73,7 @@ function PreviewTabs({ product }: { product: PreviewProduct }) {
   const groups = (product.specGroups ?? []).filter((group) => group.items.some((item) => item.label || item.value));
   const box = (product.inTheBox ?? []).filter((item) => item.label.trim());
   return (
-    <section className="mt-10 border-t border-neutral-200">
+    <section className="mt-10 overflow-x-clip border-t border-neutral-200">
       <div className="flex gap-8 overflow-x-auto border-b border-neutral-200 bg-[#f2f2f2] px-4" role="tablist" aria-label="Product page tabs">
         {PREVIEW_TABS.map((name) => (
           <button
@@ -92,7 +92,7 @@ function PreviewTabs({ product }: { product: PreviewProduct }) {
       <div className="mx-auto max-w-[1080px] py-8" role="tabpanel">
         {tab === "Overview" &&
           (overview ? (
-            <div className={overviewStyles.overview} dangerouslySetInnerHTML={{ __html: overview }} />
+            <OverviewContent html={overview} />
           ) : (
             <p className="text-[14px] text-neutral-500">No overview yet.</p>
           ))}

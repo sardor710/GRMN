@@ -9,6 +9,7 @@ import type { CategoryDTO, CategoryPageDTO, ProductOptionDTO } from "../../contr
 import { initialVariantId } from "../../lib/variant-availability.ts";
 import { categorySlugsWithProducts, loadCategoryPage, resolveCategory, type CategoryPageInput } from "./category-page.ts";
 import { compatibleAccessories, compatibleDevices, primaryCategoryPath } from "./compatibility-public.ts";
+import { sanitizeOverviewHtml } from "../../lib/import/garmin-parse.ts";
 
 const fail = (): never => { throw new AuthFailure("INVALID_INPUT", 400, "Invalid catalog query or cursor"); };
 const text = z.string().trim().min(1).max(200);
@@ -35,6 +36,18 @@ export function swatchImage(url:unknown):string|null {
   const local=publicImage(url);if(local)return local;
   if(typeof url!=="string"||url.length>2048||/[\x00-\x20\\"'<>]/.test(url))return null;
   try{const u=new URL(url);return u.protocol==="https:"&&/(^|\.)(garmin\.com|garmincdn\.com)$/.test(u.hostname)?u.toString():null;}catch{return null;}
+}
+/** In-the-box labels (strings and `{label,image}` items alike) plus, when any item has a public photo, the items. */
+function boxContent(value:unknown):Pick<ProductDetailDTO,"inTheBox"|"inTheBoxItems">{
+  const items=array(value).flatMap(entry=>{if(typeof entry==="string")return entry.trim()?[{label:entry,image:null}]:[];const r=obj(entry);return typeof r.label==="string"&&r.label.trim()?[{label:r.label,image:publicImage(r.image)}]:[];});
+  return{inTheBox:items.map(item=>item.label),...(items.some(item=>item.image)?{inTheBoxItems:items}:{})};
+}
+// Overview HTML is sanitized on every write; it is sanitized again on read (defense in depth: rows imported
+// by older code or edited by hand). Sanitizing a 100 KB overview costs milliseconds, so results are cached.
+const overviewCache=new Map<string,string>();
+function overviewForStorefront(html:string):string{
+  const hash=createHash("sha256").update(html).digest("base64url"),hit=overviewCache.get(hash);if(hit!==undefined)return hit;
+  const clean=sanitizeOverviewHtml(html);if(overviewCache.size>=200)overviewCache.delete(overviewCache.keys().next().value as string);overviewCache.set(hash,clean);return clean;
 }
 function media(value:unknown):MediaDTO|null {const v=obj(value),url=publicImage(v.url);return url?{url,alt:typeof v.alt==="string"?v.alt:"",width:typeof v.width==="number"?v.width:null,height:typeof v.height==="number"?v.height:null}:null;}
 const imageSQL = `SELECT jsonb_build_object('url',COALESCE(m.source_path,m.storage_key),'alt',COALESCE(pm.alt_text,m.alt_text,''),'width',m.width,'height',m.height) AS image FROM product_media pm JOIN media_assets m ON m.id=pm.media_id WHERE pm.product_id=p.id AND (pm.variant_id=v.id OR pm.variant_id IS NULL) AND m.status='ready' AND m.visibility='public' AND m.kind='image' ORDER BY (pm.variant_id IS NOT NULL) DESC,pm.is_primary DESC,pm.position,pm.id`;
@@ -127,6 +140,13 @@ export function createCatalogService({pool,publicMarkets=["default"]}:{pool:Pick
     for(let i=0;i<keys.length;i+=100){const result=await select(queryInput({market,displayCurrency,locale:"en"}),{limit:100},keys.slice(i,i+100));out.push(...result.rows.map(row=>card(row,result.fx)));}
     return out;
   }
+  /** M5.6: overview HTML and spec groups live in legacy_content; only these two projected fields leave it. */
+  async function productContent(productId:string):Promise<Pick<ProductDetailDTO,"overviewHtml"|"specGroups">>{
+    const row=(await pool.query("SELECT legacy_content->'overviewHtml' AS overview_html,legacy_content->'specGroups' AS spec_groups FROM products WHERE id=$1",[productId])).rows[0]??{};
+    const specGroups=array(row.spec_groups).flatMap(value=>{const g=obj(value),items=array(g.items).flatMap(item=>{const r=obj(item);return typeof r.label==="string"&&typeof r.value==="string"&&(r.label||r.value)?[{label:r.label,value:r.value}]:[];});return items.length?[{title:typeof g.title==="string"?g.title:"",items}]:[];});
+    const overviewHtml=typeof row.overview_html==="string"&&row.overview_html.trim()?overviewForStorefront(row.overview_html):"";
+    return{...(overviewHtml?{overviewHtml}:{}),...(specGroups.length?{specGroups}:{})};
+  }
   async function productOptions(productId:string):Promise<ProductOptionDTO[]>{
     const rows=(await pool.query(`SELECT po.key,po.name,po.display,COALESCE(jsonb_agg(jsonb_build_object('label',ov.label,'swatchColor',ov.swatch_color,'swatchImage',ov.swatch_image_source) ORDER BY ov.position,ov.key) FILTER (WHERE ov.id IS NOT NULL),'[]') AS values
       FROM product_options po LEFT JOIN option_values ov ON ov.option_id=po.id WHERE po.product_id=$1 GROUP BY po.id ORDER BY po.position,po.key`,[productId])).rows;
@@ -159,8 +179,8 @@ export function createCatalogService({pool,publicMarkets=["default"]}:{pool:Pick
       const variants:VariantDTO[]=array(row.variants).map(value=>{const v=obj(value);return{id:String(v.id),sku:String(v.sku),name:String(v.name),options:Object.fromEntries(Object.entries(obj(v.options)).filter((pair):pair is [string,string]=>typeof pair[1]==="string")),price:price(v,result.fx),availability:v.availability as Availability,gallery:array(v.gallery).map(media).filter((x):x is MediaDTO=>x!==null)};});
       const defaultVariantId=String(obj(array(row.variants).find(v=>obj(v).isDefault===true)??array(row.variants)[0]).id),selectedVariantId=initialVariantId(variants,{defaultId:defaultVariantId})??String(obj(row.offer).id);
       const productId=String(row.id),cards=(keys:string[])=>cardsByKeys(keys,market,displayCurrency);
-      const [options,breadcrumb,compatibleAccessoriesList,compatibleDevicesList]=await Promise.all([productOptions(productId),primaryCategoryPath(pool,productId),compatibleAccessories(pool,productId,cards),compatibleDevices(pool,productId,cards)]);
-      return{...card(row,result.fx),selectedVariantId,defaultVariantId,options,breadcrumb,compatibleAccessories:compatibleAccessoriesList,compatibleDevices:compatibleDevicesList,variants,gallery:variants.find(v=>v.id===selectedVariantId)?.gallery??[],specs:array(row.specs).flatMap(v=>{const r=obj(v);return typeof r.label==="string"&&typeof r.value==="string"?[{label:r.label,value:r.value}]:[];}),features:array(row.features).flatMap(v=>{const r=obj(v);return typeof r.title==="string"&&typeof r.body==="string"?[{title:r.title,body:r.body,image:media({url:r.image,alt:r.title})}]:[];}),inTheBox:strings(row.in_the_box),compatibleProductKeys:relations.filter(r=>r.relation_type==="compatible_accessory").map(r=>r.public_key),relatedProductKeys:relations.filter(r=>r.relation_type==="related"||r.relation_type==="upsell").map(r=>r.public_key),seo:{title:String(row.seo_title??row.name),description:String(row.seo_description??row.description),canonicalUrl:row.canonical_url==null?null:String(row.canonical_url),noIndex:row.no_index===true,image:publicImage(row.og_image_source)}};
+      const [options,breadcrumb,compatibleAccessoriesList,compatibleDevicesList,content]=await Promise.all([productOptions(productId),primaryCategoryPath(pool,productId),compatibleAccessories(pool,productId,cards),compatibleDevices(pool,productId,cards),productContent(productId)]);
+      return{...card(row,result.fx),selectedVariantId,defaultVariantId,options,breadcrumb,compatibleAccessories:compatibleAccessoriesList,compatibleDevices:compatibleDevicesList,variants,gallery:variants.find(v=>v.id===selectedVariantId)?.gallery??[],specs:array(row.specs).flatMap(v=>{const r=obj(v);return typeof r.label==="string"&&typeof r.value==="string"?[{label:r.label,value:r.value}]:[];}),features:array(row.features).flatMap(v=>{const r=obj(v);return typeof r.title==="string"&&typeof r.body==="string"?[{title:r.title,body:r.body,image:media({url:r.image,alt:r.title})}]:[];}),...boxContent(row.in_the_box),...content,compatibleProductKeys:relations.filter(r=>r.relation_type==="compatible_accessory").map(r=>r.public_key),relatedProductKeys:relations.filter(r=>r.relation_type==="related"||r.relation_type==="upsell").map(r=>r.public_key),seo:{title:String(row.seo_title??row.name),description:String(row.seo_description??row.description),canonicalUrl:row.canonical_url==null?null:String(row.canonical_url),noIndex:row.no_index===true,image:publicImage(row.og_image_source)}};
     },
   };
 }

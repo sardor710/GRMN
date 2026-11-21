@@ -152,3 +152,20 @@ test("an active variant that does not choose every option cannot be committed",a
   }finally{await client.query("ROLLBACK").catch(()=>{});client.release();}
   assert.equal((await q("SELECT count(*)::int AS n FROM product_variants WHERE id=$1",[partial])).rows[0].n,0);
 });
+
+test("M5.6 detail exposes sanitized overview HTML, spec groups and in-the-box photos; nothing else from legacy_content",async()=>{
+  const api=await reader();
+  const overviewHtml='<h2 onclick="x()">Обзор</h2><script>alert("INERT-SECRET")</script><figure class="media"><oembed url="https://youtu.be/G9LZgkrKj7U"></oembed></figure><div class="ov-video"><a href="https://www.youtube-nocookie.com/embed/bdOC8EBYs_E"><img src="/uploads/p.jpg"></a></div><iframe src="https://evil.example"></iframe>';
+  const p=await product({name:"OverviewFixture",metadata:{overviewHtml,specGroups:[{title:"General",items:[{label:"Lens",value:"Sapphire",secret:"INERT-SECRET"},{label:"",value:""}]},{title:"Empty",items:[]}],privateNote:"INERT-SECRET"}});
+  await q("UPDATE products SET in_the_box=$2 WHERE id=$1",[p.id,JSON.stringify(["Watch",{label:"Cable",image:"/uploads/products/box/cable.jpg"},{label:"Foreign",image:"https://evil.example/x.jpg"}," "])]);
+  const detail=await api.getProductByPublicKey(p.key,"default","KZT");
+  assert.equal(detail.overviewHtml,'<h2>Обзор</h2><figure class="media"><oembed url="https://www.youtube.com/watch?v=G9LZgkrKj7U"></oembed></figure><div class="ov-video"><a href="https://www.youtube-nocookie.com/embed/bdOC8EBYs_E" rel="noopener noreferrer" target="_blank"><img src="/uploads/p.jpg" loading="lazy" /></a></div>');
+  assert.deepEqual(detail.specGroups,[{title:"General",items:[{label:"Lens",value:"Sapphire"}]}]);
+  assert.deepEqual(detail.inTheBox,["Watch","Cable","Foreign"]);
+  assert.deepEqual(detail.inTheBoxItems,[{label:"Watch",image:null},{label:"Cable",image:"/uploads/products/box/cable.jpg"},{label:"Foreign",image:null}]);
+  assert.ok(!JSON.stringify(detail).includes("INERT-SECRET"));
+  // A product without overview, groups or photos gets none of the new fields.
+  const plain=await api.getProductByPublicKey((await product({name:"PlainFixture"})).key,"default","KZT");
+  assert.ok(!("overviewHtml" in plain)&&!("specGroups" in plain)&&!("inTheBoxItems" in plain));
+  assert.deepEqual(plain.inTheBox,[]);
+});
