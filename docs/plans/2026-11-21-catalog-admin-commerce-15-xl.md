@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 4 | 52/57 | 2026-11-21 | M8.5 checkout wiring of AddressForm (account part done), then Wave 5 (M9) |
+| Executing | 5 | 53/57 | 2026-11-21 | Wave 5 (M9): full gates, E2E of owner spot checks, independent review |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -304,7 +304,7 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 - [x] M8.2 Server: KZ-only validation, lat/lng, birthday + email in profile DTO/service — verify: integration — done: src/server/account/address-rules.ts: KZ only (400 otherwise), region codes, lat/lng KZ bbox, geo_precision; birthDate (age 10–120) + email; integration account-kz-address 7/7. Merged 026b053
 - [x] M8.3 Geocoder proxy `src/app/api/geo/geocode` (forward + reverse, KZ bbox, rate limit, key server-side) — verify: unit with mocked fetch — done: POST /api/geo/geocode same-origin proxy, server-side key, KZ filter, fuzzy-guess guard, rate limits, 502/503/429 without leaking key; unit geo-geocode 12/12. Merged 026b053
 - [x] M8.4 `AddressForm` with Yandex JS API 2.1 map (lazy script), two-way sync, not-found flow that keeps the typed line — verify: A12 browser with real keys — done: src/components/address/AddressForm.tsx with lazy Yandex JS 2.1 map, two-way sync, not-found flow keeps typed line (precision manual), graceful no-map mode; real-key browser checks passed. Merged 026b053
-- [~] M8.5 Account modal + profile birthday/email UI; checkout reuses AddressForm (after M7 merge) — verify: browser
+- [x] M8.5 Account modal + profile birthday/email UI; checkout reuses AddressForm (after M7 merge) — verify: browser — done: account modal + birthday/email (026b053); checkout saved-address cards + AddressForm + server checkKzAddress (400 non-KZ inline, ADDRESS_NOT_DELIVERABLE saved non-KZ) + admin "Deliver to" with region labels (fb83a00); agent: unit 333/333, integration 74/74, build ok, dev:stack --check 7/7, real-key guest + saved-card demo purchases
 
 ### M9 — Verification & review (wave 5, owner: `superpowers:verification-before-completion`)
 - [ ] M9.1 `npm test`, `npm run check` — verify: exit 0, counts recorded
