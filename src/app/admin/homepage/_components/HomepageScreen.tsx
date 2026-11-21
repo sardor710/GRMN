@@ -34,7 +34,7 @@ import type {
 import { IMAGE_DIMENSION_SPECS } from "@/lib/cms/homepage-schema";
 import {writeAdminRecord} from "@/lib/admin-collection";
 import { AdminModal } from "@/components/admin/AdminModal";
-import { Button, Select } from "@/components/admin/ui";
+import { Button, Select, buttonClass } from "@/components/admin/ui";
 
 export default function AdminHomepagePage() {
   const [version,setVersion]=useState<number>();
@@ -394,7 +394,7 @@ export default function AdminHomepagePage() {
           <Link
             href="/"
             target="_blank"
-            className="inline-flex items-center gap-1.5 rounded-md border border-neutral-300 bg-white px-3.5 py-2 text-xs font-semibold text-neutral-700 shadow-sm hover:bg-neutral-50"
+            className={buttonClass({ variant: "outline", size: "md" })}
           >
             <ExternalLink className="h-3.5 w-3.5" />
             View Storefront
@@ -409,14 +409,10 @@ export default function AdminHomepagePage() {
             Reset Defaults
           </Button>
 
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="inline-flex items-center gap-1.5 rounded-md bg-[#007cc3] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#0066a1] disabled:opacity-50"
-          >
+          <Button variant="primary" size="md" onClick={handleSave} disabled={saving}>
             <Save className="h-3.5 w-3.5" />
             {saving ? "Saving Changes..." : "Save All Changes"}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -1121,13 +1117,12 @@ export default function AdminHomepagePage() {
               >
                 Cancel
               </Button>
-              <button
+              <Button variant="primary" size="md"
                 type="button"
                 onClick={handleSaveBannerModal}
-                className="rounded bg-[#007cc3] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1]"
               >
                 Save Slide
-              </button>
+              </Button>
             </div>
           </div>
         </AdminModal>
@@ -1249,13 +1244,12 @@ export default function AdminHomepagePage() {
               >
                 Cancel
               </Button>
-              <button
+              <Button variant="primary" size="md"
                 type="button"
                 onClick={handleSaveCarouselModal}
-                className="rounded bg-[#007cc3] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1]"
               >
                 Save Section
-              </button>
+              </Button>
             </div>
           </div>
         </AdminModal>
@@ -1431,13 +1425,12 @@ export default function AdminHomepagePage() {
               >
                 Cancel
               </Button>
-              <button
+              <Button variant="primary" size="md"
                 type="button"
                 onClick={handleSaveCarouselItemModal}
-                className="rounded bg-[#007cc3] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1]"
               >
                 Save Card
-              </button>
+              </Button>
             </div>
           </div>
         </AdminModal>
@@ -1536,13 +1529,12 @@ export default function AdminHomepagePage() {
               >
                 Cancel
               </Button>
-              <button
+              <Button variant="primary" size="md"
                 type="button"
                 onClick={handleSaveTileModal}
-                className="rounded bg-[#007cc3] px-4 py-2 text-xs font-semibold text-white hover:bg-[#0066a1]"
               >
                 Save Tile
-              </button>
+              </Button>
             </div>
           </div>
         </AdminModal>
