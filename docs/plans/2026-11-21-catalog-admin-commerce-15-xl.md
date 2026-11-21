@@ -307,9 +307,9 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 - [x] M8.5 Account modal + profile birthday/email UI; checkout reuses AddressForm (after M7 merge) — verify: browser — done: account modal + birthday/email (026b053); checkout saved-address cards + AddressForm + server checkKzAddress (400 non-KZ inline, ADDRESS_NOT_DELIVERABLE saved non-KZ) + admin "Deliver to" with region labels (fb83a00); agent: unit 333/333, integration 74/74, build ok, dev:stack --check 7/7, real-key guest + saved-card demo purchases
 
 ### M9 — Verification & review (wave 5, owner: `superpowers:verification-before-completion`)
-- [ ] M9.1 `npm test`, `npm run check` — verify: exit 0, counts recorded
-- [ ] M9.2 Browser E2E of all manual spot checks with screenshots in `outputs/smoke/2026-11-21/` — verify: files
-- [ ] M9.3 `code-reviewer` + `reality-checker` passes; fix Critical/Important — verify: review notes
+- [~] M9.1 `npm test`, `npm run check` — verify: exit 0, counts recorded
+- [~] M9.2 Browser E2E of all manual spot checks with screenshots in `outputs/smoke/2026-11-21/` — verify: files
+- [~] M9.3 `code-reviewer` + `reality-checker` passes; fix Critical/Important — verify: review notes
 - [ ] M9.4 Fill Result + Handoff; remove merged worktrees created by this run — verify: `git worktree list`
 
 ## 6. Verification
@@ -344,6 +344,8 @@ ode_modules removed.
 - 2026-11-21: Post-Wave-3 full suite on the merged branch (402d3b3): unit 286/286, legacy 77/77, FULL integration 405/405 (all files), boundaries ok.
 - 2026-11-21: Wave 4 merged: M7 25f0bb9, M8 026b053. Account address modal + birthday/email done; checkout wiring of AddressForm remains (M8.5). Server-only `YANDEX_GEOCODER_API_KEY` added to `.env.local` (same value). Key scan: no key values in tracked files.
 - 2026-11-21: Checked main dev DB: all 22 imported products have a primary category and their watch-series group (open item resolved; M6 observation came from its own DB). Still open for M9: `test:cms-ui` fails at "Homepage editor did not load" (button text exists in HomepageScreen; page likely errors at render under Postgres).
+- 2026-11-21: M9.3 independent review (code-reviewer, read-only, diff 51b72b3..b1b12b7): no money/stock/SQLi/leak issues; findings: (1) Important archived variant with compatibility link blocks saves, (2) Important DEMO_PURCHASES_ALLOW_PRODUCTION lets anonymous users take real stock, (3) stockBaseline race, (4) missing price becomes 0 KZT on resave, (5) bad percent-encoding 500, (6) editor reload/double-submit/restock double-click. Fix agent launched (TDD); E2E evidence + homepage-editor smoke fix agent launched in parallel. Lint config now ignores .claude/** and storage/** (b1b12b7): lint 0 errors.
+- 2026-11-21: M9.1 gates on b1b12b7 (all features merged, before review fixes): `npm test` exit 0 — legacy 77/77, unit 333/333, integration 421/421, boundaries ok; `npm run check` exit 0 — lint 0 errors (24 pre-existing warnings), typecheck ok, build ok (99 pages). Logs: outputs/runtime/m9-npm-test.log, m9-npm-check.log. Gates rerun after the review-fix merge.
 - 2026-11-21: Q3 answered "Yes, commit them" → WhatsApp alert edits committed as `7d0f76f`; `checkout/service.ts` and `payments/service.ts` are now free for M7. Note: Wave 0 worktrees were cut from 51b72b3 (before 7d0f76f); merges will carry it forward.
 - 2026-11-21: M0 owns a reusable `src/server/catalog/variant-sync.ts` (legacy-shaped options/variants/prices/opening stock → Postgres) because the existing migration importer only writes a default variant; M2 reuses it in the admin save path. Category mapping of imported products into the taxonomy runs as a lead task after the Wave 0 merge (needs M1 columns).
 
