@@ -1,46 +1,27 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import { OptionsEditor } from "../OptionsEditor";
-import { VariantsTable } from "../VariantsTable";
-import { Section } from "../Field";
+import { useCallback, useMemo } from "react";
+import type { ProductOption } from "@/lib/cms/types";
+import { VariantsStep } from "../VariantsStep";
+import type { VariantsUpdater } from "../VariantsTable";
 import type { ProductEditorState } from "../useProductEditorState";
 
-// Thin wrapper: the options/variants UI itself lives in OptionsEditor + VariantsTable (redesigned in M6).
+// Thin wrapper: the options/variants UI lives in VariantsStep (OptionsEditor + sync bar + VariantsTable).
 export function VariantsTab({ editor, skuConflicts, focusSku }: { editor: ProductEditorState; skuConflicts: string[]; focusSku?: string | null }) {
   const { form, update } = editor;
-  const tableRef = useRef<HTMLDivElement>(null);
-
-  // "Open full editor" from the SKU drawer: scroll to and highlight that variant's SKU field.
-  useEffect(() => {
-    if (!focusSku || !tableRef.current) return;
-    const input = [...tableRef.current.querySelectorAll<HTMLInputElement>("input")].find((element) => element.value.trim().toUpperCase() === focusSku.toUpperCase());
-    if (!input) return;
-    input.scrollIntoView({ block: "center" });
-    input.focus({ preventScroll: true });
-    const row = input.closest("tr");
-    row?.classList.add("bg-[#fff8db]");
-    const timer = window.setTimeout(() => row?.classList.remove("bg-[#fff8db]"), 2500);
-    return () => window.clearTimeout(timer);
-  }, [focusSku]);
-
+  const base = useMemo(() => ({ sku: form.sku, price: form.price ?? 0, stock: form.stock }), [form.sku, form.price, form.stock]);
+  const onOptions = useCallback((options: ProductOption[]) => update({ options }), [update]);
+  const onVariants = useCallback((updater: VariantsUpdater) => update((previous) => ({ ...previous, variants: updater(previous.variants) })), [update]);
   return (
-    <div className="space-y-8">
-      <Section id="variants-options" title="Options" description="Option names and values, e.g. Case size: 43 mm / 47 mm / 51 mm. Then generate variants; existing variants keep their SKU, price, stock and photos.">
-        <OptionsEditor options={form.options} images={form.images} onChange={(options) => update({ options })} />
-      </Section>
-      <Section id="variants-table" title="Variants">
-        <div ref={tableRef}>
-          <VariantsTable
-            options={form.options}
-            variants={form.variants}
-            images={form.images}
-            base={{ sku: form.sku, price: form.price ?? 0, stock: form.stock }}
-            conflicts={skuConflicts}
-            onChange={(variants) => update({ variants })}
-          />
-        </div>
-      </Section>
-    </div>
+    <VariantsStep
+      options={form.options}
+      variants={form.variants}
+      images={form.images}
+      base={base}
+      conflicts={skuConflicts}
+      focusSku={focusSku}
+      onOptions={onOptions}
+      onVariants={onVariants}
+    />
   );
 }
