@@ -61,10 +61,51 @@ The taxonomy singleton uses a real epoch update before category statements, foll
 - Media rows contain metadata, not binary contents. Ready rows require size, MIME and a lowercase SHA-256 checksum; dimensions must be positive pairs. This does not prove the object exists or is safe. Storage access, uploads/content inspection, private serving and cleanup are later service work. Metadata defaults to private/pending.
 - Versions and `updated_at` are not automatic SQL optimistic-lock enforcement: Drizzle supplies its update hook, while services must compare/increment versions and direct SQL writers must set timestamps explicitly.
 
+## Migration 0013: taxonomy kinds, product compatibility, box items
+
+Additive migration `drizzle/0013_taxonomy-compatibility-geo.sql` (also adds the saved-address map pin; see [identity-customer-schema.md](identity-customer-schema.md)). Completed migrations and the 0001 triggers are unchanged.
+
+**`categories`** gains:
+
+| Column | Rule |
+|---|---|
+| `kind` | `catalog` (default; storefront navigation), `accessory` (accessory tree) or `group` (compatibility groupings such as band fittings and watch series); check `categories_kind_valid` |
+| `slug` | Nullable for existing rows, unique (`categories_slug_unique`), lowercase ASCII words joined by `-` with `/` between segments (`categories_slug_valid`), for example `sports-fitness/running-smartwatches` |
+| `preset_filters` | JSON object, default `{}` (`categories_preset_filters_object`); keys match the public catalog query: `activities`, `levels`, `caseSizes`, plus `families` (product family) |
+| `nav_visible` | Default true |
+| `description` | Optional text |
+
+The new columns do not interact with the taxonomy triggers. `catalog_taxonomy_lock` still serializes every category statement, and `catalog_category_cycle` still runs on `parent_id` changes. The database does not enforce which kinds may be parents of which; the seed data does. Seed data lives in `src/server/catalog/taxonomy-seed.ts`: catalog nodes mirror the garmin.com mega-menu, followed by the accessory tree and the groups. It is data only, and this migration inserts no category rows.
+
+**`product_compatibility`** stores one row per "accessory fits device" fact:
+
+| Device scope | Meaning |
+|---|---|
+| `device_option_value_id` and `device_variant_id` both NULL | Fits every variant of the device |
+| `device_option_value_id` set | Fits every current and future variant carrying that value, e.g. fēnix 8, Case size "51 mm" |
+| `device_variant_id` set | Fits one device variant only. Use this only for rare exceptions |
+
+`accessory_variant_id` optionally narrows the accessory side to one SKU. The two product columns are mandatory and must differ (`product_compatibility_not_self`). At most one device scope column may be set (`product_compatibility_single_device_scope`). The unique index `product_compatibility_link_unique` covers (accessory product, accessory variant, device product, option value, device variant), with NULLs coalesced to the all-zero UUID. Two different rows can still overlap, for example a fits-all row and a 51 mm row for the same pair. The service should avoid storing redundant rows like that.
+
+Both reads come from the same rows:
+- **Compatible accessories for a device variant `v`:** rows for `v`'s product whose scope is NULL/NULL, equals `v`, or is one of `v`'s selected option values. The integration test contains the reference query.
+- **Supported models for an accessory:** the rows' `device_product_id` values. Use `product_compatibility_device_idx` for the first read and `product_compatibility_accessory_idx` for the second; both are ordered by `position`.
+
+Ownership is enforced by composite foreign keys, the same pattern `variant_option_values` uses, so no trigger is needed:
+- `(accessory_variant_id, accessory_product_id)` → `product_variants(id, product_id)`
+- `(device_variant_id, device_product_id)` → `product_variants(id, product_id)`
+- `(device_option_value_id, device_product_id)` → `option_values(id, product_id)`. The new unique key `option_values_id_product_unique` makes this possible. Because `option_values` already references its option by `(option_id, product_id)`, a value matched to the device product always belongs to one of that product's options.
+
+With MATCH SIMPLE, a NULL variant or value skips its check. `catalog_configuration_lock` makes the product of a variant or value immutable, so ownership cannot drift after insert. Changing a row's `device_product_id` re-checks its scope.
+
+Every foreign key uses **ON DELETE RESTRICT**, which reports SQLSTATE 23001. This follows the catalog convention: no service deletes variants or option values, products, variants and option values are archived, and option values are pinned by `variant_option_values` with RESTRICT. A cascade would silently drop a fit fact. A service that really removes an option value must first delete or rescope its compatibility rows. Partial indexes on the three optional FK columns keep these RESTRICT checks cheap. The older `product_relations.compatible_accessory` type is untouched. New fit data belongs in `product_compatibility`.
+
+**`products.in_the_box`** items may be any JSON string (legacy text, kept as-is) or an object `{label, image?}`. `label` must be a non-blank string, `image` must be a string, and no other keys are allowed. The custom immutable function `catalog_in_the_box_valid(jsonb)` backs the check `products_in_the_box_items`. The array container check `products_content_shapes` is unchanged. The Drizzle type is `InTheBoxItem[]` = `(string | { label: string; image?: string })[]`. Existing rows must already satisfy the check, or the migration aborts. Rows holding only string arrays pass.
+
 ## Service boundaries and future migrations
 
 Publishing must later require an active default variant, authoritative price and suitable ready/public media. Neither setting `published` nor a valid metadata row alone grants storefront availability. Authentication, permission checks, import reconciliation, search/facet query tuning and asset delivery are separate tasks.
 
-Migration 0001 includes custom locking, deferred-signature and cycle-check functions/triggers plus the taxonomy infrastructure row. These bodies are **not modeled in Drizzle's schema snapshot**. Preserve and review them when appending migrations; do not regenerate away custom SQL. Migration 0000 and its consent trigger remain unchanged. No business seed records were added.
+Migration 0001 includes custom locking, deferred-signature and cycle-check functions/triggers plus the taxonomy infrastructure row. These bodies are **not modeled in Drizzle's schema snapshot**. Preserve and review them when appending migrations; do not regenerate away custom SQL. Migration 0013 adds one more such object, the `catalog_in_the_box_valid` function and its `products_in_the_box_items` check. Migration 0000 and its consent trigger remain unchanged. No business seed records were added.
 
 The schema is a foundation for the owner's growth targets, not a performance certification. Product count, variant count, query plans, media delivery, concurrent requests and disk/backup growth must be measured in Task 21 before selecting a minimum VPS.
