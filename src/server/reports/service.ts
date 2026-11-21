@@ -9,6 +9,7 @@ import { AuthFailure } from "../auth/config.ts";
 // calendar days in the requested IANA time zone (at most 92 days). A capture belongs to the day it
 // was recorded, a refund to the day it succeeded (its immutable refund.succeeded event, review I6).
 // Different currencies and payment environments (sandbox, live) are never added together (review I5).
+// Sandbox captures are the D03a demo purchases: each row carries an explicit "Demo (sandbox)" label.
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_DAYS = 92;
@@ -22,8 +23,11 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
 }
 const day = (value: string) => { const date = new Date(value + "T00:00:00Z"); return Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value ? invalid() : date; };
 
-export interface CurrencyTotalDTO { currency: string; environment: "sandbox" | "live"; capturedMinor: string; refundedMinor: string; netMinor: string; ordersPaid: number }
-export interface DayTotalDTO { date: string; currency: string; environment: "sandbox" | "live"; capturedMinor: string; refundedMinor: string; netMinor: string }
+/** D03a: "Live" is real money; "Demo (sandbox)" is demo purchases (sandbox environment). The two are never added together. */
+export type RevenueSeriesLabel = "Live" | "Demo (sandbox)";
+export const seriesLabel = (environment: string): RevenueSeriesLabel => environment === "live" ? "Live" : "Demo (sandbox)";
+export interface CurrencyTotalDTO { currency: string; environment: "sandbox" | "live"; label: RevenueSeriesLabel; capturedMinor: string; refundedMinor: string; netMinor: string; ordersPaid: number }
+export interface DayTotalDTO { date: string; currency: string; environment: "sandbox" | "live"; label: RevenueSeriesLabel; capturedMinor: string; refundedMinor: string; netMinor: string }
 export interface SummaryDTO { from: string; to: string; timeZone: string; totals: CurrencyTotalDTO[]; days: DayTotalDTO[] }
 export interface LowStockDTO { variantId: string; productKey: string; name: string; sku: string | null; onHand: number; reserved: number; available: number }
 
@@ -56,8 +60,8 @@ export function createReportsService({ pool, authorize }: Options) {
       const net = (captured: string, refunded: string) => (BigInt(captured) - BigInt(refunded)).toString();
       return {
         from: command.from, to: command.to, timeZone: command.timeZone,
-        totals: totals.rows.map(row => ({ currency: row.currency, environment: row.environment, capturedMinor: row.captured, refundedMinor: row.refunded, netMinor: net(row.captured, row.refunded), ordersPaid: row.orders })),
-        days: days.rows.map(row => ({ date: row.day, currency: row.currency, environment: row.environment, capturedMinor: row.captured, refundedMinor: row.refunded, netMinor: net(row.captured, row.refunded) })),
+        totals: totals.rows.map(row => ({ currency: row.currency, environment: row.environment, label: seriesLabel(row.environment), capturedMinor: row.captured, refundedMinor: row.refunded, netMinor: net(row.captured, row.refunded), ordersPaid: row.orders })),
+        days: days.rows.map(row => ({ date: row.day, currency: row.currency, environment: row.environment, label: seriesLabel(row.environment), capturedMinor: row.captured, refundedMinor: row.refunded, netMinor: net(row.captured, row.refunded) })),
       };
     },
 

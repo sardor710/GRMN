@@ -18,6 +18,8 @@ const REASONS: Record<string, string> = {
 const formatKzt = (amountMinor: string) => `${(Number(amountMinor) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} KZT`;
 const formatDate = (value: string | null) => value ? new Date(value).toLocaleString("en-GB", { dateStyle: "medium", timeStyle: "short" }) : "—";
 const newKey = () => `ui-${crypto.randomUUID()}`;
+// D03a: sandbox orders are demo purchases (paid without real money); they ship like live orders.
+const DemoBadge = () => <span className="ml-1.5 border border-amber-400 bg-amber-50 px-1.5 py-px align-middle font-sans text-[10px] font-bold uppercase tracking-wider text-amber-900">Demo</span>;
 
 async function readError(response: Response): Promise<string> {
   try { const body = await response.json() as { error?: { message?: string; code?: string }; message?: string }; return body.error?.message ?? body.message ?? `Request failed (${response.status})`; }
@@ -102,7 +104,7 @@ export default function FulfillmentScreen() {
               {orders.map(order => (
                 <li key={order.id}>
                   <button type="button" onClick={() => setSelected(order.id)} className={`flex w-full flex-wrap items-center justify-between gap-2 p-3 text-left text-sm hover:bg-neutral-50 ${selected === order.id ? "bg-neutral-100" : ""}`}>
-                    <span className="font-mono font-semibold">{order.orderNumber}</span>
+                    <span className="font-mono font-semibold">{order.orderNumber}{order.paymentMode === "sandbox" && <DemoBadge />}</span>
                     <span className="text-neutral-600">{order.contactName}</span>
                     <span className="text-xs uppercase tracking-wider text-neutral-500">{order.paymentStatus} · {order.fulfillmentStatus}{order.dataQuality !== "complete" ? " · legacy" : ""}</span>
                     <span>{formatKzt(order.total.amountMinor)}</span>
@@ -120,7 +122,9 @@ export default function FulfillmentScreen() {
                 <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.status}</span>
                 <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.paymentStatus}</span>
                 <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.fulfillmentStatus}</span>
-                <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.paymentMode}</span>
+                {detail.paymentMode === "sandbox"
+                  ? <span title="Demo purchase (sandbox): paid without real money; never counted as live revenue" className="border border-amber-400 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">Demo · sandbox</span>
+                  : <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.paymentMode}</span>}
               </div>
               {!detail.fulfillable.allowed && detail.fulfillable.reason && <p className="border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900">{REASONS[detail.fulfillable.reason]}</p>}
               {!detail.legacy && detail.status !== "cancelled" && detail.status !== "closed" && (
