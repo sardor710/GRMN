@@ -12,7 +12,7 @@ import {
   parseCompareItems,
   serializeCompareItems,
 } from "../../src/lib/compare/compare-items.ts";
-import { compareItemFromDetail, collectCompareItems } from "../../src/lib/compare/resolve.ts";
+import { compareItemFromDetail, collectCompareItems, collectCompareResult } from "../../src/lib/compare/resolve.ts";
 
 test("parse reads repeated item=<id>~<sku> with the sku optional, and round-trips through serialize", () => {
   const items = parseCompareItems("item=1953453~010-04337-00&item=2000~&item=3000");
@@ -291,4 +291,21 @@ test("collectCompareItems dedupes columns on product + resolved SKU", async () =
   assert.deepEqual(renamed.map((i) => `${i.productId}:${i.sku}`), ["P1:W-47", "L1:L-46"]);
   const cased = await collectCompareItems([{ productId: "P1", sku: "W-51" }, { productId: "P1", sku: "w-51" }, { productId: "P1", sku: "W-47" }], "en", read);
   assert.deepEqual(cased.map((i) => i.sku), ["W-51", "W-47"]);
+});
+
+// Review round: a read that fails is not "this product is gone". The result names the products whose read
+// errored, so the page can keep them in the shopper's stored selection; unknown products are simply absent.
+test("collectCompareResult tells unavailable (failed read) products apart from unknown ones", async () => {
+  const read = async (id) => {
+    if (id === "DOWN") throw new Error("database down");
+    if (id === "GONE") return undefined;
+    return { ...legacyDetail(), id, variantModel: undefined, partNumber: id };
+  };
+  const errors = [];
+  const result = await collectCompareResult([{ productId: "A" }, { productId: "DOWN", sku: "1" }, { productId: "DOWN", sku: "2" }, { productId: "GONE" }], "en", read, (error, ref) => errors.push(ref.productId));
+  assert.deepEqual(result.items.map((i) => i.productId), ["A"]);
+  assert.deepEqual(result.unavailable, ["DOWN"]);
+  assert.deepEqual(errors, ["DOWN", "DOWN"]);
+  // collectCompareItems is the columns alone.
+  assert.deepEqual((await collectCompareItems([{ productId: "A" }, { productId: "DOWN" }], "en", read)).map((i) => i.productId), ["A"]);
 });

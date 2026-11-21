@@ -46,7 +46,8 @@ export default async function ComparePage({ params, searchParams }: PageProps<"/
   const tc = await getTranslations("Compare");
   const query = await searchParams;
   // `item=<id>~<sku>` (repeated, max 5); old `selected=<id>` links keep working.
-  const items = await getCompareItems(parseCompareItems(query), locale);
+  // Products whose read failed are passed on, so the stored selection keeps them (they are not gone).
+  const { items, unavailable } = await getCompareItems(parseCompareItems(query), locale);
   const groups = buildCompareRows(items.map((item) => item.content), tc("specs"));
   const skuParam = cmsBackend() === "postgres" ? VARIANT_PARAM : "sku";
   const searchText = readCompareSearch(query);
@@ -61,6 +62,7 @@ export default async function ComparePage({ params, searchParams }: PageProps<"/
           search={search}
           catalogueHref={CATALOGUE_HREF}
           renderedFor={renderedQuery(query)}
+          unavailable={unavailable}
         />
       </main>
       <SiteFooter />

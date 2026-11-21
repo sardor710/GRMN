@@ -324,3 +324,15 @@ test("after mount the stored selection follows the resolved columns (stale SKU r
   fixture.effects.forEach((effect) => effect());
   assert.equal(stored.updates, 0);
 });
+
+test("a product whose read failed stays in the stored selection (the page passes it as unavailable)", () => {
+  const stored = { items: [{ productId: "down", sku: "D-1" }, { productId: "gone" }] };
+  const hook = { useCompareSelection: () => ({ items: stored.items, update: (change) => { stored.items = change(stored.items); } }) };
+  const url = "item=down~D-1&item=gone&item=band";
+  const fixture = componentFixture("src/components/CompareTool.tsx", {
+    modules: { "next/navigation": { useRouter: () => ({ push() {}, replace() {}, refresh() {} }), usePathname: () => "/en/compare", useSearchParams: () => new URLSearchParams(url) }, "@/lib/compare/compare-items": compareItems, "@/lib/compare/use-compare-selection": hook },
+  });
+  fixture.render(props({ items: [band], unavailable: ["down"], renderedFor: compareItems.renderedQuery(url) }));
+  fixture.effects.forEach((effect) => effect());
+  assert.deepEqual(stored.items, [{ productId: "down", sku: "D-1" }]);
+});

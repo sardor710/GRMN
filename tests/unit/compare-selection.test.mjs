@@ -181,3 +181,14 @@ test("reconcileSelection syncs the stored selection with the resolved columns", 
   assert.equal(reconcileSelection(same, [{ productId: "p", sku: "d" }, { productId: "v" }], [{ productId: "p", sku: "D" }, { productId: "v", sku: "V-1" }]), same);
   assert.equal(reconcileSelection([], [{ productId: "p" }], []).length, 0);
 });
+
+test("reconcileSelection keeps entries of products whose read failed (unavailable), and still drops unknown ones", () => {
+  const { reconcileSelection } = selection;
+  const stored = [{ productId: "down", sku: "D1", name: "Down" }, { productId: "gone" }, { productId: "p", sku: "OLD" }];
+  const requested = [{ productId: "down", sku: "D1" }, { productId: "gone" }, { productId: "p", sku: "OLD" }];
+  const next = reconcileSelection(stored, requested, [{ productId: "p", sku: "D" }], ["down"]);
+  assert.deepEqual(next, [{ productId: "down", sku: "D1", name: "Down" }, { productId: "p", sku: "D" }]);
+  // Only unavailable products: nothing changes (same array).
+  const only = [{ productId: "down", sku: "D1" }];
+  assert.equal(reconcileSelection(only, [{ productId: "down", sku: "D1" }], [], ["down"]), only);
+});

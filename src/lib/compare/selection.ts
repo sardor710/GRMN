@@ -143,14 +143,17 @@ export function toggleProduct(items: readonly CompareSelectionItem[], item: Comp
  * each requested ref is matched to its column in that order. Then, for the stored selection:
  * - an entry for a stale SKU takes its column's SKU (name and image kept);
  * - an entry whose product no longer resolves, or that merged into another column, is dropped;
- * - an entry the page did not ask for, or a SKU-less card entry (it stands for the default size), is kept as is.
+ * - an entry the page did not ask for, or a SKU-less card entry (it stands for the default size), is kept as is;
+ * - an entry of a product in `unavailable` (its read failed: not known to be gone) is kept as is.
  * Returns the same array when nothing changes.
  */
 export function reconcileSelection(
   items: readonly CompareSelectionItem[],
   requested: readonly CompareItemRef[],
   resolved: readonly CompareItemRef[],
+  unavailable: readonly string[] = [],
 ): readonly CompareSelectionItem[] {
+  const failed = new Set(unavailable);
   const shown = new Set(resolved.map((column) => column.productId));
   let next = 0;
   // The column each requested ref ended up in; null when its product did not resolve or it merged into another.
@@ -169,7 +172,7 @@ export function reconcileSelection(
   const out: CompareSelectionItem[] = [];
   for (const item of items) {
     const at = requested.findIndex((ref) => sameItem(ref, item));
-    if (at < 0) { out.push(item); continue; }
+    if (at < 0 || failed.has(item.productId)) { out.push(item); continue; }
     const column = columns[at];
     if (!column) { changed = true; continue; }
     if (!item.sku || sameItem(column, item)) { out.push(item); continue; }

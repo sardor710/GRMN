@@ -145,6 +145,13 @@ function limiter(limit: number) {
   };
 }
 
+/** The compare columns, plus the products whose read failed (not the same as unknown: they may come back). */
+export interface CompareResult {
+  items: CompareItem[];
+  /** Product ids whose read threw, in request order, once each; their columns are missing from `items`. */
+  unavailable: string[];
+}
+
 /**
  * The compare columns for the requested refs, in order: at most five, read with `read` at most
  * COMPARE_READ_CONCURRENCY at a time and once per product (several sizes of one product share one read).
@@ -159,6 +166,20 @@ export async function collectCompareItems(
   read: CompareDetailReader,
   onError?: (error: unknown, ref: CompareItemRef) => void,
 ): Promise<CompareItem[]> {
+  return (await collectCompareResult(items, locale, read, onError)).items;
+}
+
+/**
+ * collectCompareItems plus `unavailable`: the products whose read failed. A failed read is not "this product is
+ * gone", so the page keeps those products in the shopper's stored selection (review round, item 2).
+ */
+export async function collectCompareResult(
+  items: readonly CompareItemRef[] | null | undefined,
+  locale: Locale,
+  read: CompareDetailReader,
+  onError?: (error: unknown, ref: CompareItemRef) => void,
+): Promise<CompareResult> {
+  const unavailable: string[] = [];
   const valid = (value: unknown): value is string => typeof value === "string" && value.trim() !== "" && value.trim().length <= COMPARE_VALUE_MAX_LENGTH;
   const refs = (Array.isArray(items) ? items : [])
     .filter((ref): ref is CompareItemRef => ref !== null && typeof ref === "object" && valid(ref.productId))
@@ -181,15 +202,19 @@ export async function collectCompareItems(
       return detail ? compareItemFromDetail(detail, ref.sku) : null;
     } catch (error) {
       onError?.(error, ref);
+      if (!unavailable.includes(ref.productId)) unavailable.push(ref.productId);
       return null;
     }
   }));
   const seen = new Set<string>();
-  return columns.filter((column): column is CompareItem => {
+  const kept = columns.filter((column): column is CompareItem => {
     if (column === null) return false;
     const key = `${column.productId}\u0000${column.sku.toLowerCase()}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+  // Request order (the catch blocks above can run in any order).
+  const order = refs.map((ref) => ref.productId);
+  return { items: kept, unavailable: unavailable.sort((a, b) => order.indexOf(a) - order.indexOf(b)) };
 }

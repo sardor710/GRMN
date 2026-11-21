@@ -28,7 +28,11 @@ export interface CompareToolProps {
   catalogueHref: string;
   /** `renderedQuery(...)` of the URL the server rendered these props for. */
   renderedFor: string;
+  /** Product ids whose read failed on the server: kept in the stored selection (not known to be gone). */
+  unavailable?: readonly string[];
 }
+
+const NO_PRODUCTS: readonly string[] = [];
 
 /** garmin.com compare shows five slots at ≥1024px: products, the "+" tile, then grey placeholders. */
 const SLOTS = COMPARE_MAX_ITEMS;
@@ -49,7 +53,7 @@ const refValue = (ref: CompareItemRef) => (ref.sku ? `${ref.productId}~${ref.sku
 const columnKey = (ref: CompareItemRef, index: number) => `${index}:${refValue(ref)}`;
 
 /** The Garmin product comparison (docs/research/www.garmin.com/components/Compare.spec.md). The URL is the state. */
-export function CompareTool({ items, groups, search, catalogueHref, renderedFor }: CompareToolProps) {
+export function CompareTool({ items, groups, search, catalogueHref, renderedFor, unavailable = NO_PRODUCTS }: CompareToolProps) {
   const t = useTranslations("Compare");
   const locale = useAppLocale();
   const router = useRouter();
@@ -62,15 +66,15 @@ export function CompareTool({ items, groups, search, catalogueHref, renderedFor 
     if (liveQuery !== renderedFor) router.refresh();
   }, [liveQuery, renderedFor, router]);
   // The stored catalogue selection (localStorage, guarded in the store) follows the columns the server resolved:
-  // a stale SKU takes the resolved one and a product that no longer resolves is dropped; entries this page did
-  // not ask for are kept. Only for a current render (a stale one is being refetched above).
+  // a stale SKU takes the resolved one and a product confirmed missing is dropped; a product whose read failed,
+  // and entries this page did not ask for, are kept. Only for a current render (a stale one is refetched above).
   const { update: updateSelection } = useCompareSelection();
   useEffect(() => {
     if (liveQuery !== renderedFor) return;
     const requested = parseCompareItems(renderedFor);
     const resolved = items.map(refOf);
-    updateSelection((stored) => reconcileSelection(stored, requested, resolved));
-  }, [items, liveQuery, renderedFor, updateSelection]);
+    updateSelection((stored) => reconcileSelection(stored, requested, resolved, unavailable));
+  }, [items, liveQuery, renderedFor, unavailable, updateSelection]);
   // "Show only differences" lives in the URL (`diff=1`), so Back and Forward restore it.
   const diff = params.get(COMPARE_DIFF_PARAM) === "1";
   const [collapsed, setCollapsed] = useState<string[]>([]);

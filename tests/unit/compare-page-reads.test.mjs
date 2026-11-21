@@ -6,7 +6,7 @@ import fs from "node:fs";
 import { test } from "node:test";
 import ts from "typescript";
 import * as compareItems from "../../src/lib/compare/compare-items.ts";
-import { collectCompareItems, COMPARE_READ_CONCURRENCY } from "../../src/lib/compare/resolve.ts";
+import { collectCompareResult, COMPARE_READ_CONCURRENCY } from "../../src/lib/compare/resolve.ts";
 
 const legacyDetail = (id) => ({ id, title: id, partNumber: id, price: "100", gallery: [], specs: [], specGroups: [] });
 
@@ -22,7 +22,7 @@ function loadPage(read) {
     "@/components/CompareTool": { CompareTool: () => null },
     "@/lib/products": { catalogues: [{ slug: "wearables" }] },
     "@/lib/compare/compare-items": compareItems,
-    "@/lib/compare/server": { getCompareItems: (items, locale) => collectCompareItems(items, locale, read) },
+    "@/lib/compare/server": { getCompareItems: (items, locale) => collectCompareResult(items, locale, read) },
     "@/lib/compare/search": { searchCompareProducts: async () => null },
     "@/lib/catalog/variant-selection": { VARIANT_PARAM: "variant" },
     "@/server/cms/source": { cmsBackend: () => "json" },
@@ -55,4 +55,18 @@ test("one compare request (metadata + page) keeps at most 2 detail reads in flig
   assert.ok(peak <= COMPARE_READ_CONCURRENCY, `peak ${peak}`);
   assert.equal(peak, 2);
   assert.deepEqual(calls.sort(), ["A", "B", "C", "D", "E"], "generateMetadata reads no product; the page reads each once");
+});
+
+test("the page passes products whose read failed to CompareTool as unavailable (kept in the stored selection)", async () => {
+  const page = loadPage(async (id) => { if (id === "B") throw new Error("down"); return legacyDetail(id); });
+  const params = Promise.resolve({ lang: "en" });
+  const tree = await page.default({ params, searchParams: Promise.resolve({ item: ["A", "B"] }) });
+  const tool = (function find(node) {
+    if (!node || typeof node !== "object") return undefined;
+    if (node.props && "unavailable" in node.props) return node;
+    for (const child of [].concat(node.props?.children ?? [])) { const hit = find(child); if (hit) return hit; }
+    return undefined;
+  })(tree);
+  assert.deepEqual(tool?.props.unavailable, ["B"]);
+  assert.deepEqual(tool.props.items.map((item) => item.productId), ["A"]);
 });
