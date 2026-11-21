@@ -56,6 +56,16 @@ Variants: no options (simple product), options without values, out of sync, part
 - No horizontal page scroll at 390 and 1440; every control keyboard-reachable with the 2 px black focus outline; segmented control and chips operable by keyboard.
 - Browser: link a QuickFit 26 band to fēnix 9 Pro "51 mm" from the band, add the QuickFit 22 group from the watch, reopen both and see matching readbacks; bulk-edit variants. Screenshots `before-*` / `after-*` at 1440 and 390 in this folder.
 
-## Finish-gate result
+## Finish-gate result (2026-11-21, dev stack on :3204, headless Chrome via `scripts/clone/cdp.mjs`)
 
-(filled in after verification)
+**Pass**, with the limits listed below.
+
+- **Layout:** document scroll width = viewport at 390 and 1440 on every capture (measured, 0 px overflow). The variant list no longer has a forced width: grid rows at ≥1024 px, cards below; the 860 px table is gone.
+- **Hierarchy:** each tab reads top-down as numbered steps; the only create/remove action is the sync bar, and it states the outcome before applying ("create 159 · keep 33", "keep 4 · remove 2" → second-step danger button). The bulk bar exists only while rows are selected.
+- **States exercised in the browser:** new product empty state + presets, values via comma, swatch value editor, first "Create 6 variants", removal confirmation, imported partial matrix ("33 of 144 … add the other 111 as drafts"), >100 warning, select "All 51 mm" → bulk stock → Save → reopen ("33 variants · 11 ready to sell · 22 out of stock", ledger-backed), more panel, accessory empty state, device browse/search, option-value step with the QuickFit 26 hint, whole-group add, read-only "51 mm only" row with "Edit on accessory" (opens the band's editor), copy-from empty category.
+- **Keyboard:** Tab reaches the segmented control (one stop, `:focus-visible` with a 2 px solid black outline), ArrowRight changes Buttons → Swatches, Tab continues to the value chips and their remove buttons (checked with real CDP key events). Chip shortcuts (Alt+←/→ reorder, Delete removes, Enter/Escape close the value editor) are implemented but were not separately exercised with key events.
+- **Consistency:** shared `Button`, `Select`, `StatusSelect`, `StatusBadge`, square shape token, Garmin colours (lime ready, red blockers, gold attention edge, black bulk bar); no raw `<select>`.
+
+Known limits: the UIZZE reference service was not connected (references are described, not inspected); product photos from garmin.com URLs did not load in the offline headless browser, so thumbnails show placeholders in the captures; drag-to-reorder of chips was not exercised with a real mouse drag; screen-reader output was not tested with an actual screen reader.
+
+Screenshots: `before-*` (M3 UI at b65f05b) and `after-*` (this work) at 1440 and 390.

@@ -10,7 +10,8 @@ import { defaultImageSrc, validateForm } from "./editor-state";
 import { GarminImportDialog } from "./GarminImportDialog";
 import { ProductPreviewModal } from "./ProductPreviewModal";
 import { useProductEditorState, type EditorTab } from "./useProductEditorState";
-import { AccessoriesTab } from "./tabs/AccessoriesTab";
+import { compatibilityCount, fineAccessoryLinks } from "./compatibility-state";
+import { CompatibilityTab } from "./tabs/CompatibilityTab";
 import { GeneralTab } from "./tabs/GeneralTab";
 import { InTheBoxTab } from "./tabs/InTheBoxTab";
 import { MediaTab } from "./tabs/MediaTab";
@@ -29,11 +30,13 @@ export interface ProductEditorProps {
   onClose: () => void;
   /** Called after every successful save with the saved payload. */
   onSaved?: (product: Record<string, unknown>) => void;
+  /** Opens another product's editor on a tab (e.g. "Edit on accessory" from the compatibility tab). */
+  onOpenProduct?: (productKey: string, tab: EditorTab) => void;
 }
 
 // The product editor (plan M3.2): a full-viewport sheet with a sticky header (name, status, unsaved
 // indicator, Preview, Import) and a sticky save bar. Tabs are separate files under ./tabs.
-export function ProductEditor({ productKey, initialTab = "general", focusSku = null, onClose, onSaved }: ProductEditorProps) {
+export function ProductEditor({ productKey, initialTab = "general", focusSku = null, onClose, onSaved, onOpenProduct }: ProductEditorProps) {
   const editor = useProductEditorState(productKey);
   const { form, load, dirty, saving, saveError } = editor;
   const [tab, setTab] = useState<EditorTab>(initialTab);
@@ -107,7 +110,7 @@ export function ProductEditor({ productKey, initialTab = "general", focusSku = n
     { id: "specs", label: "Specs", count: rows },
     { id: "overview", label: "Overview" },
     { id: "box", label: "In the box", count: form.inTheBox.length },
-    { id: "accessories", label: "Related", count: form.related.length },
+    { id: "accessories", label: "Accessories & compatibility", count: compatibilityCount(form.compatibility, fineAccessoryLinks(editor.base)) + form.related.length },
     { id: "seo", label: "SEO" },
   ];
 
@@ -159,7 +162,7 @@ export function ProductEditor({ productKey, initialTab = "general", focusSku = n
                     aria-selected={active}
                     onClick={() => setTab(item.id)}
                     className={cn(
-                      "flex w-full items-center justify-between gap-2 whitespace-nowrap px-4 py-3 text-left text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-black lg:py-2.5",
+                      "flex w-full items-center justify-between gap-2 whitespace-nowrap px-4 py-3 text-left lg:whitespace-normal text-[13px] font-semibold uppercase tracking-[0.04em] transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-black lg:py-2.5",
                       "border-b-4 lg:border-b-0 lg:border-l-4",
                       active ? "border-black bg-[#f7f7f7] text-black" : "border-transparent text-[#666] hover:text-black",
                     )}
@@ -197,7 +200,15 @@ export function ProductEditor({ productKey, initialTab = "general", focusSku = n
                 {tab === "specs" && <SpecsTab editor={editor} />}
                 {tab === "overview" && <OverviewTab editor={editor} onPreview={() => setPreviewOpen(true)} />}
                 {tab === "box" && <InTheBoxTab editor={editor} />}
-                {tab === "accessories" && <AccessoriesTab editor={editor} />}
+                {tab === "accessories" && (
+                  <CompatibilityTab
+                    editor={editor}
+                    onOpenProduct={onOpenProduct ? (key) => {
+                      if (dirty && !window.confirm("Open the accessory? Your unsaved changes to this product will be lost.")) return;
+                      onOpenProduct(key, "accessories");
+                    } : undefined}
+                  />
+                )}
                 {tab === "seo" && <SeoTab editor={editor} />}
               </>
             )}

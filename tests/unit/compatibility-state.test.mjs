@@ -77,6 +77,7 @@ test("save command: an untouched side is GET's exact value; a changed side is re
   assert.equal(command.accessories, base.compatibility.accessories);
   assert.equal(command.compatibleDevices, base.compatibility.compatibleDevices, "read-only echoes ride along (ignored by the server)");
   // A new product with nothing linked sends no compatibility; with links it sends only the changed side.
+  assert.equal(compatibilityCommand({}, { devices: [], accessories: [] }), undefined);
   assert.equal(buildCommand({}, { ...blankForm(), name: "x", sku: "x", price: 1 }, true).compatibility, undefined);
   const withDevice = { ...blankForm(), name: "x", sku: "x", price: 1, compatibility: { devices: compatibilityFromPayload(base).devices, accessories: [] } };
   assert.deepEqual(Object.keys(buildCommand({}, withDevice, true).compatibility), ["devices"]);

@@ -222,6 +222,7 @@ export default function CatalogScreen() {
           focusSku={editor.focusSku}
           onClose={() => setEditor(null)}
           onSaved={reloadAll}
+          onOpenProduct={(key, tab) => setEditor({ key, tab })}
         />
       )}
     </div>

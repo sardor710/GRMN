@@ -382,5 +382,6 @@ export function suggestForWidth(width: 20 | 22 | 26, device: Pick<DeviceSummary,
   return { whole: false, valueIds: values.map((value) => value.id), labels, text: `QuickFit ${width} mm usually fits the ${labels.join(" / ")} case` };
 }
 
-/** Number shown on the tab: links on either side. */
-export const compatibilityCount = (form: CompatibilityForm): number => form.devices.length + form.accessories.length;
+/** Number shown on the tab: links on either side, plus finer accessory-side links shown read-only on a device. */
+export const compatibilityCount = (form: CompatibilityForm, fine: readonly FineAccessoryLink[] = []): number =>
+  form.devices.length + form.accessories.length + new Set(fine.filter((link) => !hasWholeAccessory(form.accessories, link.productKey)).map((link) => link.productKey)).size;
