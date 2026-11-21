@@ -205,9 +205,10 @@ export async function syncProductVariants(client: PoolClient, raw: VariantSyncIn
 
   // 3. Removed variants: delete when unreferenced (savepoint), otherwise archive.
   const wantedSkus = new Set(data.variants.map(variant => variant.sku.toLowerCase()));
-  for (const row of existingVariants.filter(row => !matched.has(row.id))) {
-    // A fit fact scoped to a variant that leaves the catalog no longer describes anything (0013 RESTRICT FKs).
-    await client.query("DELETE FROM product_compatibility WHERE device_variant_id=$1 OR accessory_variant_id=$1", [row.id]);
+  const removedVariants = existingVariants.filter(row => !matched.has(row.id));
+  // A fit fact scoped to a variant that leaves the catalog no longer describes anything (0013 RESTRICT FKs).
+  await dropVariantCompatibility(client, productId, removedVariants.map(row => row.id));
+  for (const row of removedVariants) {
     await client.query("SAVEPOINT variant_sync_remove");
     try {
       await client.query("DELETE FROM variant_option_values WHERE variant_id=$1", [row.id]);
@@ -243,6 +244,9 @@ export async function syncProductVariants(client: PoolClient, raw: VariantSyncIn
       } else result.variants.unchanged++;
     }
   }
+  // An archived variant is no longer sold: rows scoped to it go too (M9.3), so no editor can be left holding
+  // a link to a SKU the compatibility writer cannot resolve.
+  await dropVariantCompatibility(client, productId, variantPlan.filter(plan => plan.variant.status === "archived").map(plan => plan.id));
 
   // 5. Option selections: write only differences.
   const selections = (await client.query<{ variant_id: string; option_id: string; option_value_id: string }>("SELECT variant_id,option_id,option_value_id FROM variant_option_values WHERE product_id=$1", [productId])).rows;
@@ -262,7 +266,8 @@ export async function syncProductVariants(client: PoolClient, raw: VariantSyncIn
   const removedOptions = existingOptions.filter(row => !keptOptions.has(row.id)).map(row => row.id);
   if (removedValues.length) {
     // Fit facts scoped to a removed option value go with it (product_compatibility RESTRICTs the delete).
-    await client.query("DELETE FROM product_compatibility WHERE device_product_id=$1 AND device_option_value_id=ANY($2::uuid[])", [productId, removedValues]);
+    const dropped = (await client.query<{ accessory_product_id: string }>("DELETE FROM product_compatibility WHERE device_product_id=$1 AND device_option_value_id=ANY($2::uuid[]) RETURNING accessory_product_id", [productId, removedValues])).rows;
+    await bumpProducts(client, dropped.map(row => row.accessory_product_id).filter(id => id !== productId));
     await client.query("DELETE FROM variant_option_values WHERE product_id=$1 AND option_value_id=ANY($2::uuid[])", [productId, removedValues]);
     await client.query("DELETE FROM option_values WHERE id=ANY($1::uuid[])", [removedValues]);
     result.values.removed = removedValues.length;
@@ -299,6 +304,20 @@ export async function syncProductVariants(client: PoolClient, raw: VariantSyncIn
     }
   }
   return result;
+}
+
+/** version+1 for products whose visible compatibility changed through another product's save (D-C1), so their stale editors get 409. */
+async function bumpProducts(client: PoolClient, ids: string[]) {
+  const unique = [...new Set(ids)].sort();
+  if (unique.length) await client.query("UPDATE products SET version=version+1 WHERE id=ANY($1::uuid[])", [unique]);
+}
+
+/** Deletes the compatibility rows scoped to these variants (accessory or device side) and bumps the other products. */
+async function dropVariantCompatibility(client: PoolClient, productId: string, variantIds: string[]) {
+  if (!variantIds.length) return;
+  const rows = (await client.query<{ accessory_product_id: string; device_product_id: string }>(
+    "DELETE FROM product_compatibility WHERE device_variant_id=ANY($1::uuid[]) OR accessory_variant_id=ANY($1::uuid[]) RETURNING accessory_product_id,device_product_id", [variantIds])).rows;
+  await bumpProducts(client, rows.flatMap(row => [row.accessory_product_id, row.device_product_id]).filter(id => id !== productId));
 }
 
 async function syncMedia(client: PoolClient, data: Input, variantPlan: { variant: Input["variants"][number]; id: string }[], result: VariantSyncResult) {
