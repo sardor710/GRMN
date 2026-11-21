@@ -17,7 +17,8 @@ export async function fetchCatalogPage<V extends CatalogView>(fetcher: typeof fe
   return body as ListPage<Row<V>>;
 }
 
-export function useCatalogList<V extends CatalogView>(view: V, filters: Omit<CatalogListQuery, "cursor"> = {}) {
+export function useCatalogList<V extends CatalogView>(view: V, filters: Omit<CatalogListQuery, "cursor"> = {}, options: { enabled?: boolean } = {}) {
+  const enabled = options.enabled ?? true;
   const scope = JSON.stringify([view, filters]);
   const [paging, setPaging] = useState<{ scope: string; cursor?: string; history: (string | undefined)[] }>({ scope, history: [] });
   const cursor = paging.scope === scope ? paging.cursor : undefined, history = paging.scope === scope ? paging.history : [];
@@ -25,6 +26,7 @@ export function useCatalogList<V extends CatalogView>(view: V, filters: Omit<Cat
   const key = JSON.stringify([scope, cursor, revision]);
   const [result, setResult] = useState<{ key: string; page: ListPage<Row<V>> | null; error: string | null }>();
   useEffect(() => {
+    if (!enabled) return;
     let active = true;
     const timer = setTimeout(() => {
       fetchCatalogPage(fetch, view, { ...(JSON.parse(scope)[1] as CatalogListQuery), cursor })
@@ -32,7 +34,7 @@ export function useCatalogList<V extends CatalogView>(view: V, filters: Omit<Cat
         .catch(reason => { if (active) setResult({ key, page: null, error: reason instanceof Error ? reason.message : "Data is unavailable" }); });
     }, 150);
     return () => { active = false; clearTimeout(timer); };
-  }, [view, scope, cursor, key]);
+  }, [view, scope, cursor, key, enabled]);
   const reload = useCallback(() => setRevision(value => value + 1), [setRevision]);
   const loading = result?.key !== key, page = loading ? null : result?.page ?? null;
   return {

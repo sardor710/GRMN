@@ -5,12 +5,11 @@ import ts from "typescript";
 import {componentFixture,nodes,nodeText} from "../helpers/component-fixture.mjs";
 
 const screen=resource=>`src/app/admin/${resource}/_components/${resource[0].toUpperCase()+resource.slice(1)}Screen.tsx`;
-// Products have two screens: the legacy JSON editor (options/variants) and the PostgreSQL catalog screen.
-const postgresProducts="src/app/admin/products/_components/PostgresProductsScreen.tsx";
-const productEditor={"@/components/admin/product-editor":{formatKzt:value=>String(value),newId:prefix=>`${prefix}-fixture`}};
+// Products moved to the PostgreSQL catalog screen (CatalogScreen + ProductEditor, plan M3); its pure logic is
+// covered by tests/unit/product-editor-state.test.mjs and spec-paste.test.mjs, archive wording by the screen.
 test("legacy destructive confirmations say permanently delete, while candidate actions say archive",async()=>{
-  for(const resource of ["products","blogs","banners"]){
-    let message;const fixture=componentFixture(screen(resource),{backend:"legacy",items:[{id:"test",name:"Fixture",title:"Fixture",sku:"SKU",price:1,category:"",position:"hero",active:true,activities:[],compatibleAccessories:[],stock:1}],modules:resource==="products"?productEditor:{},confirm:value=>{message=value;return false;}});
+  for(const resource of ["blogs","banners"]){
+    let message;const fixture=componentFixture(screen(resource),{backend:"legacy",items:[{id:"test",name:"Fixture",title:"Fixture",sku:"SKU",price:1,category:"",position:"hero",active:true,activities:[],compatibleAccessories:[],stock:1}],modules:{},confirm:value=>{message=value;return false;}});
     const action=nodes(fixture.render()).find(node=>node.props?.title?.startsWith("Delete"));assert.ok(action);await action.props.onClick();assert.match(message,/permanently delete/i);assert.doesNotMatch(message,/archive/i);
   }
 });
@@ -41,12 +40,6 @@ test("unsupported discounts load as an unavailable state rather than a successfu
   fixture.render();fixture.effects[0]();await fixture.flush();const tree=fixture.render();
   assert.ok(nodes(tree).some(node=>node.props?.role==="alert"&&/unavailable/i.test(nodeText(node))));
 });
-test("cross-sell target selection can reach a product outside the main list page",()=>{
-  for(const [file,modules] of [[postgresProducts,{}],[screen("products"),productEditor]]){
-  const fixture=componentFixture(file,{items:[],modules,collectionFactory:(_resource,input,page)=>input?.family===undefined?{...page,items:[{id:"outside",name:"Beyond page",sku:"OUTSIDE",category:"Cat",price:1}]}:page});
-  nodes(fixture.render()).find(node=>node.type==="button"&&nodeText(node).includes("Cross-Selling")).props.onClick();assert.match(nodeText(fixture.render()),/Beyond page/);
-  }
-});
 test("article category choices remain available independently of the loaded/filtered article page",()=>{
   const fixture=componentFixture(screen("blogs"),{collectionFactory:(resource,_input,page)=>resource.endsWith("categories")?{...page,items:[{id:"Outside category",category:"Outside category"}]}:page});
   assert.ok(nodes(fixture.render()).some(node=>node.type==="option"&&nodeText(node)==="Outside category"));
@@ -55,11 +48,6 @@ test("successful article saves refresh independent category choices",async()=>{
   const reloaded=[];const fixture=componentFixture(screen("blogs"),{collectionFactory:(resource,_input,page)=>({...page,reload:()=>reloaded.push(resource)})});
   const tree=fixture.render();await nodes(tree).find(node=>node.type==="form").props.onSubmit({preventDefault(){}});
   assert.deepEqual(reloaded,["blogs","blogs/categories"]);
-});
-test("successful product saves refresh the independent target picker",async()=>{
-  const reloaded=[];const fixture=componentFixture(postgresProducts,{collectionFactory:(_resource,input,page)=>({...page,reload:()=>reloaded.push(input?.family===undefined?"picker":"main")})});
-  await nodes(fixture.render()).find(node=>node.type==="form").props.onSubmit({preventDefault(){}});
-  assert.deepEqual(reloaded,["main","picker"]);
 });
 for(const empty of [false,true])test(`homepage ${empty?"first publication":"save"} conflicts render a reload message`,async()=>{
   const actual=await import("../../src/lib/admin-collection.ts");
