@@ -28,6 +28,11 @@
   },
   "scripts": {
     "dev": "next dev",
+    "dev:stack": "node --env-file-if-exists=.env.local --conditions=react-server scripts/dev/stack.mjs",
+    "dev:db": "node --env-file-if-exists=.env.local --conditions=react-server scripts/dev/postgres.mjs",
+    "dev:seed": "node --env-file-if-exists=.env.local --conditions=react-server scripts/dev/seed.mjs",
+    "dev:import": "node --env-file-if-exists=.env.local --conditions=react-server scripts/dev/import.mjs",
+    "dev:admin": "node --env-file-if-exists=.env.local --conditions=react-server scripts/dev/admin.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
