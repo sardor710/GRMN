@@ -29,9 +29,11 @@ export function SpecPasteDialog({ open, onClose, existing, onApply }: { open: bo
       footer={
         <>
           <Button variant="ghost" onClick={close}>Cancel</Button>
-          <Button variant="secondary" disabled={!parsed.rowCount || !existingRows} onClick={() => apply("append")} title={existingRows ? undefined : "There are no specs to append to yet"}>
-            Append to {existingRows} rows
-          </Button>
+          {existingRows > 0 && (
+            <Button variant="secondary" disabled={!parsed.rowCount} onClick={() => apply("append")}>
+              Append to current {existingRows} rows
+            </Button>
+          )}
           <Button variant="primary" disabled={!parsed.rowCount} onClick={() => apply("replace")}>
             {existingRows ? "Replace all specs" : "Add specs"}
           </Button>

@@ -27,6 +27,15 @@ export function CategoryPicker({ value, onChange }: { value: CategoryRef[]; onCh
   const selected = useMemo(() => new Map(value.map((item) => [item.key, item.primary])), [value]);
   const startExpanded = useMemo(() => expandedForKeys(nodes ?? [], value.map((item) => item.key)), [nodes, value]);
   const kindOf = (key: string) => index.get(key)?.kind;
+  // A node is listed in the panel of its root (e.g. the QuickFit 22 group sits under Bands), so count by panel.
+  const panelOf = useMemo(() => {
+    const result = new Map<string, string>();
+    for (const section of TAXONOMY_SECTIONS) {
+      const walk = (items: typeof tree.catalog) => items.forEach((item) => { result.set(item.node.key, section.kind); walk(item.children); });
+      walk(tree[section.kind]);
+    }
+    return result;
+  }, [tree]);
 
   return (
     <div className="space-y-3">
@@ -100,7 +109,7 @@ export function CategoryPicker({ value, onChange }: { value: CategoryRef[]; onCh
           {(["catalog", "side"] as const).map((column) => (
             <div key={column} className="space-y-3">
               {TAXONOMY_SECTIONS.filter((section) => (column === "catalog" ? section.kind === "catalog" : section.kind !== "catalog")).map((section) => {
-                const count = value.filter((item) => kindOf(item.key) === section.kind).length;
+                const count = value.filter((item) => panelOf.get(item.key) === section.kind).length;
                 return (
                   <section key={section.kind} aria-label={section.title} className="border border-[#d9d9d9] bg-white">
                     <h4 className="flex items-center justify-between border-b border-[#e5e5e5] px-3 py-2 text-[12px] font-bold uppercase tracking-[0.04em] text-black">

@@ -140,10 +140,12 @@ export function AccessoriesTab({ editor }: { editor: ProductEditorState }) {
 }
 
 function Thumb({ src }: { src: string | null }) {
+  const [failed, setFailed] = useState<string | null>(null);
+  const usable = src && failed !== src ? src : null;
   return (
     <span className="grid h-9 w-9 shrink-0 place-items-center overflow-hidden border border-[#e5e5e5] bg-white">
       {/* eslint-disable-next-line @next/next/no-img-element -- admin thumbnails from uploads or garmin.com */}
-      {src ? <img src={src} alt="" loading="lazy" className="h-full w-full object-contain" /> : <span className="h-3 w-3 bg-[#eee]" />}
+      {usable ? <img src={usable} alt="" loading="lazy" onError={() => setFailed(usable)} className="h-full w-full object-contain" /> : <span className="h-3 w-3 bg-[#eee]" />}
     </span>
   );
 }

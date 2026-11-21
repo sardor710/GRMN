@@ -71,11 +71,14 @@ const navPermissions: Record<string,string> = {
   "/admin/blogs": "content:write", "/admin/seo": "content:write",
   "/admin/admins": "staff:manage", "/admin/settings": "settings:write",
 };
-export function AdminSidebar({permissions}: {permissions: readonly string[]}) {
+export function AdminSidebar({permissions, open = false, onNavigate}: {permissions: readonly string[]; open?: boolean; onNavigate?: () => void}) {
   const pathname = usePathname();
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-neutral-200 bg-white text-black font-sans">
+    <aside
+      id="admin-sidebar"
+      className={`fixed inset-y-0 left-0 z-40 flex w-64 flex-col border-r border-neutral-200 bg-white text-black font-sans transition-transform duration-200 lg:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"}`}
+    >
       {/* Top Brand Header */}
       <div className="flex h-16 items-center justify-between border-b border-neutral-200 px-5 bg-white">
         <Link href="/admin" className="flex items-center gap-2">
@@ -108,6 +111,7 @@ export function AdminSidebar({permissions}: {permissions: readonly string[]}) {
                   <li key={item.href}>
                     <Link
                       href={item.href}
+                      onClick={onNavigate}
                       className={`flex items-center justify-between px-3 py-2 text-[13px] transition-colors border-l-2 ${
                         isActive
                           ? "border-black bg-neutral-100 text-black font-semibold"

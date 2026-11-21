@@ -9,6 +9,7 @@ import { Button, Select, StatusBadge } from "@/components/admin/ui";
 import { controlRadius } from "@/components/admin/ui/shape";
 import { CategoryFilter } from "@/components/admin/catalog/CategoryFilter";
 import { QuickEditDrawer } from "@/components/admin/catalog/QuickEditDrawer";
+import { Thumb } from "@/components/admin/catalog/Thumb";
 import { useDebouncedValue } from "@/components/admin/catalog/useDebouncedValue";
 import { usePersistentChoice } from "@/components/admin/catalog/usePersistentChoice";
 import { ProductEditor, formatKzt, type EditorTab } from "@/components/admin/product-editor";
@@ -227,15 +228,6 @@ export default function CatalogScreen() {
   );
 }
 
-function Thumb({ src, size = "md" }: { src: string | null; size?: "sm" | "md" }) {
-  return (
-    <span className={cn("grid shrink-0 place-items-center overflow-hidden border border-[#e5e5e5] bg-white", size === "md" ? "h-12 w-12" : "h-9 w-9")}>
-      {/* eslint-disable-next-line @next/next/no-img-element -- admin thumbnails from uploads or garmin.com */}
-      {src ? <img src={src} alt="" loading="lazy" className="h-full w-full object-contain p-0.5" /> : <Package className="h-4 w-4 text-[#bfbfbf]" aria-hidden="true" />}
-    </span>
-  );
-}
-
 function StockCell({ available, onHand, compact = false }: { available: number; onHand?: number; compact?: boolean }) {
   const state = stockState(available);
   return (
@@ -274,7 +266,8 @@ function GroupedTable({ rows, loading, expanded, onToggle, onEdit, onArchive, on
   onSku: (row: SkuRow) => void;
 }) {
   return (
-    <div className="overflow-x-auto">
+    // `relative` keeps the sr-only (absolute) header labels inside the scroll box, so they cannot widen the page.
+    <div className="relative overflow-x-auto">
       <table className="w-full text-[13px]">
         <thead className="bg-[#f7f7f7]">
           <tr>
@@ -366,7 +359,8 @@ function GroupedTable({ rows, loading, expanded, onToggle, onEdit, onArchive, on
 
 function SkuTable({ rows, loading, onSku }: { rows: SkuRow[]; loading: boolean; onSku: (row: SkuRow) => void }) {
   return (
-    <div className="overflow-x-auto">
+    // `relative` keeps the sr-only (absolute) header labels inside the scroll box, so they cannot widen the page.
+    <div className="relative overflow-x-auto">
       <table className="w-full text-[13px]">
         <thead className="bg-[#f7f7f7]">
           <tr>
