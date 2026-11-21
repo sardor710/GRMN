@@ -3,7 +3,7 @@
 ## Progress
 | Status | Done | Last updated | Next action |
 |---|---|---|---|
-| Executing | 0/10 | 2026-11-21 | Tracks F and C running |
+| Done | 10/10 | 2026-11-21 | — (pushed to beta4) |
 
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked · `[-]` dropped
 
@@ -58,20 +58,20 @@ Sharing/printing compare, comparing accessories against watches by category rule
 Branch `feat/compare-followups` from `beta4` (90024bd). Two parallel tracks in their own worktrees (disjoint files), merged at the end. Each task: implementer → task review → fix loop. Global constraints as in the 2026-11-19 plan (TypeScript strict, no `any`, Tailwind only, PostgreSQL first and legacy kept working, authorize + version checks, EN/RU/KZ keys in sync, money only through `formatKzt`/`Price`, Garmin tokens, no slop).
 
 ### Track F — follow-ups (worktree GRMN-wt-f)
-- [ ] **F-a (items 2, 4):** publish requires price > 0 (server `cms.save`/status/bulk publish → 409/400 with readable message; admin form validation); legacy JSON save sets no default compare-at. Tests: integration (publish 0 refused, draft 0 allowed), legacy unit.
-- [ ] **F-b (items 3, 8):** `DEMO_ORDER_LIMIT` env (default 5, 0 = unlimited) in env config + .env.example + deploy/env.example; staff sessions exempt from the demo cap; one shared demo-refund settle helper used by payments and aftersales. Tests: integration (env limit, staff exempt), existing refund tests green.
-- [ ] **F-c (item 5):** product projection matches variants by stable editor id first, then SKU; chained rename (A→C, B→A) in one save keeps both variants, their stock and overrides. Test: integration.
-- [ ] **F-d (item 1):** ProductTabs renders one panel (mobile accordion vs desktop tabs) with no hidden duplicate; keeps ownsOverview/variant swap and aria. Test: unit render.
+- [x] **F-a (items 2, 4):** publish requires price > 0 (server `cms.save`/status/bulk publish → 409/400 with readable message; admin form validation); legacy JSON save sets no default compare-at. Tests: integration (publish 0 refused, draft 0 allowed), legacy unit.
+- [x] **F-b (items 3, 8):** `DEMO_ORDER_LIMIT` env (default 5, 0 = unlimited) in env config + .env.example + deploy/env.example; staff sessions exempt from the demo cap; one shared demo-refund settle helper used by payments and aftersales. Tests: integration (env limit, staff exempt), existing refund tests green.
+- [x] **F-c (item 5):** product projection matches variants by stable editor id first, then SKU; chained rename (A→C, B→A) in one save keeps both variants, their stock and overrides. Test: integration.
+- [x] **F-d (item 1):** ProductTabs renders one panel (mobile accordion vs desktop tabs) with no hidden duplicate; keeps ownsOverview/variant swap and aria. Test: unit render.
 
 ### Track C — compare (worktree GRMN-wt-c)
-- [ ] **C-a:** `src/lib/compare/` pure helpers — parse/serialize `item=<id>~<sku>` (max 5, legacy `selected`), label normalisation, row union, "only differences" rule; server read `getCompareItems(items, locale)` reusing the product-detail read. Tests: unit (C2), integration (C1).
-- [ ] **C-b:** compare page + `CompareTool` rewrite: header, columns (image, name, price, Shop, ×, size picker), + tile, "Show only differences" (`diff=1`), collapsible spec groups, mobile scroll, messages EN/RU/KZ, Garmin styling per measured tokens. Test: unit render.
-- [ ] **C-c:** catalogue compare mode: Compare toggle, "Add to comparison" on cards, sticky 5-slot bar with search + Compare, localStorage persistence; PDP "Add to comparison" (selected variant). Test: unit for the store helper.
-- [ ] **C-d (items 6, 7):** `name_desc` (Z→A) sort end to end; card colour dots from variant colour options when present. Tests: integration (sort), unit (dots only when data exists).
-- [ ] **C-e:** browser smoke block `compare` (C3) + garmin.com side-by-side diff at 1440/390 (C4); screenshots to receipt, docs copy only with CMS_SMOKE_SAVE_SHOTS=1.
+- [x] **C-a:** `src/lib/compare/` pure helpers — parse/serialize `item=<id>~<sku>` (max 5, legacy `selected`), label normalisation, row union, "only differences" rule; server read `getCompareItems(items, locale)` reusing the product-detail read. Tests: unit (C2), integration (C1).
+- [x] **C-b:** compare page + `CompareTool` rewrite: header, columns (image, name, price, Shop, ×, size picker), + tile, "Show only differences" (`diff=1`), collapsible spec groups, mobile scroll, messages EN/RU/KZ, Garmin styling per measured tokens. Test: unit render.
+- [x] **C-c:** catalogue compare mode: Compare toggle, "Add to comparison" on cards, sticky 5-slot bar with search + Compare, localStorage persistence; PDP "Add to comparison" (selected variant). Test: unit for the store helper.
+- [x] **C-d (items 6, 7):** `name_desc` (Z→A) sort end to end; card colour dots from variant colour options when present. Tests: integration (sort), unit (dots only when data exists).
+- [x] **C-e:** browser smoke block `compare` (C3) + garmin.com side-by-side diff at 1440/390 (C4); screenshots to receipt, docs copy only with CMS_SMOKE_SAVE_SHOTS=1.
 
 ### Final
-- [ ] Merge both tracks; full gate (typecheck, lint, unit, legacy, boundaries, integration, build, full cms-ui); whole-branch review; fix wave; push `beta4`.
+- [x] Merge both tracks; full gate (typecheck, lint, unit, legacy, boundaries, integration, build, full cms-ui); whole-branch review; fix wave; push `beta4`.
 
 ## Revisions
 - 2026-11-21: owner chose A (size picker per column).
