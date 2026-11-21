@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { cmsBackend, readProductsPage, readBlogsPage } from "@/server/cms/source";
-import { catalogues } from "@/lib/products";
+import { getSitemapCategorySlugs } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
 
@@ -60,8 +60,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
   ];
 
-  // Category Routes
-  const categories = catalogues.map((c) => c.slug);
+  // Category Routes: taxonomy pages with at least one listed product (Postgres), or the legacy catalogues.
+  const categories = await getSitemapCategorySlugs();
   const categoryRoutes: MetadataRoute.Sitemap = categories.map((slug) => ({
     url: `${baseUrl}/c/${slug}`,
     lastModified: now,

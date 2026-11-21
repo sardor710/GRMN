@@ -4,8 +4,7 @@ import { readOr } from "@/server/public-input";
 import type { Metadata } from "next";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { ProductTop } from "@/components/ProductTop";
-import { ProductTabs } from "@/components/ProductTabs";
+import { ProductView } from "./ProductView";
 import { RelatedProducts } from "@/components/RelatedProducts";
 import { getProductDetail, getAllProducts, getCMSProduct } from "@/lib/products";
 import { ProductJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
@@ -75,11 +74,14 @@ export async function generateMetadata({
 }
 
 export default async function ProductPage({
-  params,
+  params, searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const id = decodeRouteParam((await params).id);
+  const skuParam = (await searchParams).sku;
+  const sku = typeof skuParam === "string" && skuParam.length <= 100 ? skuParam : undefined;
   const detail = await readOr(getProductDetail(id), () => undefined);
   if (!detail) notFound();
 
@@ -106,9 +108,10 @@ export default async function ProductPage({
     createdAt: new Date().toISOString(),
   };
 
+  // Structured breadcrumbs follow the visible ones (the primary category path for Postgres products).
   const breadcrumbs = [
     { name: "Garmin", url: "https://www.garmin.com" },
-    { name: "Smartwatches", url: "https://www.garmin.com/c/wearables-smartwatches" },
+    ...detail.breadcrumb.map((crumb) => ({ name: crumb.label, url: `https://www.garmin.com${crumb.href}` })),
     { name: fullProduct.name, url: `https://www.garmin.com/p/${fullProduct.id}` },
   ];
 
@@ -120,8 +123,7 @@ export default async function ProductPage({
 
       <SiteHeader />
       <main className="flex-1">
-        <ProductTop product={detail} />
-        <ProductTabs product={detail} />
+        <ProductView product={detail} sku={sku} />
         <RelatedProducts ids={detail.related} />
       </main>
       <SiteFooter />

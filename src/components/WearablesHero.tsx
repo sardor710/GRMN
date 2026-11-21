@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 import { watchFamilies } from "@/lib/catalog-constants";
 
 export function WearablesHero() {
@@ -18,7 +19,7 @@ export function WearablesHero() {
         </h1>
         <div className="mt-8 grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
           {watchFamilies.map((fam) => (
-            <a key={fam.name} href="#" className="group flex flex-col items-center text-center">
+            <Link key={fam.name} href={fam.href ?? "/c/wearables-smartwatches"} className="group flex flex-col items-center text-center">
               <div className="relative h-[200px] w-full">
                 <Image
                   src={fam.image}
@@ -30,7 +31,7 @@ export function WearablesHero() {
               </div>
               <h3 className="g-heading mt-3 text-[22px] text-black">{fam.name}</h3>
               <p className="mt-1 max-w-[180px] text-[14px] text-neutral-700">{fam.tagline}</p>
-            </a>
+            </Link>
           ))}
         </div>
       </div>

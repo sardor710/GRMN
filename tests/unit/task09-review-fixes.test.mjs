@@ -27,10 +27,19 @@ test("proxy still reports genuine database failures as 503",async()=>{
   const proxy=proxyWith(async()=>{throw Error("connection refused");});
   const response=await proxy(request("/p/x"));assert.equal(response.kind,"error");assert.equal(response.status,503);
 });
+// M4.2: the sitemap lists the category slugs the catalog layer reports (taxonomy pages with ≥1 listed product
+// in Postgres, the two legacy catalogues in JSON mode) instead of reading the hardcoded catalogue list itself.
 test("sitemap category URLs come from real catalogue routes",async()=>{
-  const {default:sitemap}=load("src/app/sitemap.ts",{"cms/source":{cmsBackend:()=>"legacy",readProductsPage:async()=>({items:[],nextCursor:null}),readBlogsPage:async()=>({items:[],nextCursor:null})},"lib/products":{catalogues:[{slug:"wearables-smartwatches"},{slug:"sports-fitness/running-smartwatches"}]}},{NEXT_PUBLIC_SITE_URL:"https://example.test"});
+  const {default:sitemap}=load("src/app/sitemap.ts",{"cms/source":{cmsBackend:()=>"legacy",readProductsPage:async()=>({items:[],nextCursor:null}),readBlogsPage:async()=>({items:[],nextCursor:null})},"lib/products":{getSitemapCategorySlugs:async()=>["wearables-smartwatches","sports-fitness/running-smartwatches"]}},{NEXT_PUBLIC_SITE_URL:"https://example.test"});
   const urls=(await sitemap()).map(e=>e.url).filter(u=>u.includes("/c/"));
   assert.deepEqual(urls,["https://example.test/c/wearables-smartwatches","https://example.test/c/sports-fitness/running-smartwatches"]);
+});
+test("legacy sitemap category slugs stay the two original catalogues",async()=>{
+  const exports={};const code=ts.transpileModule(fs.readFileSync("src/lib/products.ts","utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
+  new Function("require","exports",code)(name=>name.includes("cms/source")?{cmsBackend:()=>"legacy"}:{},exports);
+  assert.deepEqual(await exports.getSitemapCategorySlugs(),["wearables-smartwatches","sports-fitness/running-smartwatches"]);
+  const pg={};new Function("require","exports",code)(name=>name.includes("cms/source")?{cmsBackend:()=>"postgres"}:name.includes("catalog/runtime")?{getCatalogService:()=>({listCategorySlugsWithProducts:async()=>["bands","watch-series/fenix"]})}:{},pg);
+  assert.deepEqual(await pg.getSitemapCategorySlugs(),["bands","watch-series/fenix"]);
 });
 test("public reads map invalid input/cursor to a not-found fallback and rethrow real failures",async()=>{
   const {readOr,isInvalidPublicInput}=await import("../../src/server/public-input.ts");

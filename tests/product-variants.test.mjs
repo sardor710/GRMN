@@ -102,10 +102,15 @@ test('resolveVariant and availableValueIds disable combos with no active variant
   assert.ok(!avail.has('o2-v1'));
 });
 
+// M4.3: buckets follow garmin.com's Case Size facet (Small 35 to 43, Medium 44 to 49, Large ≥ 50 mm);
+// they were ≤42 / 43–46 / ≥47, which put fēnix 43 mm in Medium and 47 mm in Large.
 test('sizeBucketFromLabel maps mm sizes and ignores free text', () => {
   assert.equal(sizeBucketFromLabel('42 mm'), 'Small');
-  assert.equal(sizeBucketFromLabel('43 mm'), 'Medium');
+  assert.equal(sizeBucketFromLabel('43 mm'), 'Small');
   assert.equal(sizeBucketFromLabel('46mm'), 'Medium');
+  assert.equal(sizeBucketFromLabel('47 mm'), 'Medium');
+  assert.equal(sizeBucketFromLabel('49 mm'), 'Medium');
+  assert.equal(sizeBucketFromLabel('50 mm'), 'Large');
   assert.equal(sizeBucketFromLabel('51 mm'), 'Large');
   assert.equal(sizeBucketFromLabel('Biggest'), undefined);
 });
