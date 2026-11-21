@@ -70,6 +70,8 @@ The checks are:
 
 Coordinates without a precision are allowed. node-postgres returns the numbers as decimal strings, e.g. `"43.238949"`. Existing rows stay unpinned. The 0006 address guard and primary triggers are unchanged. Each address write still serializes on the owner and requires READ COMMITTED. A pin is customer-entered delivery data: keep it out of logs and public DTOs, like the rest of the address.
 
+Service rules (M8, `src/server/account/address-rules.ts`): new and edited saved addresses must use `country_code='KZ'` (anything else is 400 "We deliver only within Kazakhstan"). `region` stores a stable code from `src/lib/kz-regions.ts` (17 regions plus `astana`, `almaty`, `shymkent`); any en/ru/kk name is mapped to its code, and a missing region is inferred only from a listed city. The city stays free text (at most 120). `lat`/`lng` are optional, both or neither, inside the Kazakhstan box, rounded to 6 decimals; `geoPrecision` needs coordinates. Older non-KZ rows still list and can be edited into KZ. The profile `birthDate` maps `customer_profiles.birth_date`: optional ISO date, not in the future, age 10 to 120; `null` clears it and omitting it keeps the stored value.
+
 ## Migration and recovery
 
 The first migration is additive: 16 new tables, one view and one trigger function/trigger; no original source-data update, role grant, customer import or seed occurs. The custom consent trigger is intentionally appended to reviewed SQL; Drizzle snapshots do not model it, so later changes require explicit custom migration SQL.
