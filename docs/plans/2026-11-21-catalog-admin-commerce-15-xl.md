@@ -309,7 +309,7 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 ### M9 — Verification & review (wave 5, owner: `superpowers:verification-before-completion`)
 - [~] M9.1 `npm test`, `npm run check` — verify: exit 0, counts recorded
 - [~] M9.2 Browser E2E of all manual spot checks with screenshots in `outputs/smoke/2026-11-21/` — verify: files
-- [~] M9.3 `code-reviewer` + `reality-checker` passes; fix Critical/Important — verify: review notes
+- [x] M9.3 `code-reviewer` + `reality-checker` passes; fix Critical/Important — verify: review notes — done: code-reviewer pass (no money/stock/SQLi/leak issues) + 6 findings fixed TDD and merged 4e34845 (agent: unit 342/342, integration 151/151 across 15 suites, boundaries ok)
 - [ ] M9.4 Fill Result + Handoff; remove merged worktrees created by this run — verify: `git worktree list`
 
 ## 6. Verification
