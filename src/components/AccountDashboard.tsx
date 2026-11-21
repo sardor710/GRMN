@@ -6,9 +6,10 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { Check, Plus, Trash2, Edit3, X, AlertCircle, Lock, KeyRound, Package, ChevronRight, Phone, Loader2 } from "lucide-react";
 import { AccountIcon } from "@/components/icons";
 import type { CustomerProfileDTO, OrderDetailDTO, OrderSummaryDTO, SavedAddressDTO, WishlistItemDTO } from "@/contracts/commerce";
+import { AddressForm } from "@/components/address/AddressForm";
+import { findKzCityAnywhere, kzRegionLabel } from "@/lib/kz-regions";
 import {
   AccountRequestError,
-  COUNTRY_OPTIONS,
   countryName,
   createAccountClient,
   deliveryAddressLines,
@@ -22,7 +23,13 @@ const TABS = ["Profile", "Orders", "Wishlist", "Devices", "Subscriptions"] as co
 type Tab = (typeof TABS)[number];
 type Phase = "loading" | "signed_out" | "unavailable" | "error" | "ready";
 const MAX_ADDRESSES = 5;
-const EMPTY_ADDRESS: AddressFields = { label: "", recipientName: "", phone: "", countryCode: "KZ", city: "", line1: "", line2: "", region: "", postalCode: "", isPrimary: false };
+const EMPTY_ADDRESS: AddressFields = { label: "", recipientName: "", phone: "", countryCode: "KZ", city: "", line1: "", line2: "", region: "", postalCode: "", lat: null, lng: null, geoPrecision: null, isPrimary: false };
+const EMPTY_PROFILE_FORM = { name: "", email: "", birthDate: "" };
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const yearsAgoISO = (years: number) => { const date = new Date(); date.setUTCFullYear(date.getUTCFullYear() - years); return date.toISOString().slice(0, 10); };
+const formatBirthday = (iso: string) => new Date(`${iso}T00:00:00Z`).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
+const pinOf = (address: SavedAddressDTO) => ({ lat: address.lat ?? null, lng: address.lng ?? null, geoPrecision: address.geoPrecision ?? null });
 
 const errorMessage = (error: unknown) => error instanceof Error && error.message ? error.message : "Something went wrong. Please try again.";
 const statusOf = (error: unknown) => error instanceof AccountRequestError ? error.status : -1;
@@ -86,7 +93,7 @@ export function AccountDashboard() {
 
   // Profile
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [profileForm, setProfileForm] = useState({ name: "", email: "" });
+  const [profileForm, setProfileForm] = useState(EMPTY_PROFILE_FORM);
   const [profileError, setProfileError] = useState<string | null>(null);
 
   // Addresses
@@ -138,7 +145,7 @@ export function AccountDashboard() {
     setSignInChallenge(null); setSignInCode(""); setNeedsCompletion(false); setCompletion({ name: "", email: "" }); setSignInError(null);
     // Nothing typed by this person may survive for the next person on the device.
     setTab("Profile"); setBusy(null); setStatusMessage(null);
-    setIsEditingProfile(false); setProfileForm({ name: "", email: "" }); setProfileError(null);
+    setIsEditingProfile(false); setProfileForm(EMPTY_PROFILE_FORM); setProfileError(null);
     setIsAddressModalOpen(false); setEditingAddress(null); setAddressForm(EMPTY_ADDRESS); setAddressError(null);
     setOrdersError(null); setOrderDetailError(null); setWishlist(null); setWishlistError(null);
     setClaim({ orderId: "", receipt: "", code: "" }); setClaimChallenge(null); setClaimError(null);
@@ -220,7 +227,7 @@ export function AccountDashboard() {
   // ---------------------------------------------------------------- profile
   const handleStartEditProfile = () => {
     if (!profile) return;
-    setProfileForm({ name: profile.name, email: profile.email ?? "" });
+    setProfileForm({ name: profile.name, email: profile.email ?? "", birthDate: profile.birthDate ?? "" });
     setProfileError(null); setIsEditingProfile(true);
   };
 
@@ -229,9 +236,12 @@ export function AccountDashboard() {
     if (!profile) return;
     if (!profile.phone || !profile.phoneVerified) { setProfileError("Verify a phone number before saving your details."); return; }
     if (!profileForm.name.trim() || !profileForm.email.trim()) { setProfileError("Name and email are required fields."); return; }
+    if (!EMAIL.test(profileForm.email.trim())) { setProfileError("Enter a valid email address."); return; }
+    const birthDate = profileForm.birthDate.trim();
+    if (birthDate && (birthDate > todayISO() || birthDate > yearsAgoISO(10) || birthDate < yearsAgoISO(120))) { setProfileError("Birthday must be a past date for an age from 10 to 120 years."); return; }
     setProfileError(null); setBusy("profile");
     try {
-      const saved = await client.saveProfile({ name: profileForm.name.trim(), email: profileForm.email.trim(), phone: profile.phone, expectedVersion: profile.version });
+      const saved = await client.saveProfile({ name: profileForm.name.trim(), email: profileForm.email.trim(), phone: profile.phone, birthDate: birthDate || null, expectedVersion: profile.version });
       setProfile(saved); setIsEditingProfile(false);
       showNotification(saved.emailVerified ? "Personal details updated." : "Personal details updated. Your email is not verified yet.");
     } catch (error) {
@@ -250,18 +260,19 @@ export function AccountDashboard() {
 
   const handleOpenEditAddress = (address: SavedAddressDTO) => {
     setEditingAddress(address);
-    setAddressForm({ label: address.label, recipientName: address.recipientName, phone: address.phone, countryCode: address.countryCode, city: address.city, line1: address.line1, line2: address.line2 ?? "", region: address.region ?? "", postalCode: address.postalCode ?? "", isPrimary: address.isPrimary });
+    // Saving always stores Kazakhstan; an older non-KZ address is shown with a note and moves on save.
+    setAddressForm({ label: address.label, recipientName: address.recipientName, phone: address.phone, countryCode: "KZ", city: address.city, line1: address.line1, line2: address.line2 ?? "", region: address.region ?? "", postalCode: address.postalCode ?? "", ...pinOf(address), isPrimary: address.isPrimary });
     setAddressError(null); setIsAddressModalOpen(true);
   };
 
   const handleSaveAddress = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!addressForm.label.trim() || !addressForm.recipientName.trim() || !addressForm.line1.trim() || !addressForm.city.trim() || !addressForm.phone.trim()) {
-      setAddressError("Title, recipient, phone, street and city are required."); return;
+    if (!addressForm.label.trim() || !addressForm.recipientName.trim() || !addressForm.line1.trim() || !addressForm.city.trim() || !addressForm.phone.trim() || !(addressForm.region?.trim() || findKzCityAnywhere(addressForm.city))) {
+      setAddressError("Title, recipient, phone, region, city and street are required."); return;
     }
     setAddressError(null); setBusy("address");
     try {
-      await client.saveAddress({ ...addressForm, phone: cleanPhone(addressForm.phone) }, editingAddress ? { id: editingAddress.id, version: editingAddress.version } : undefined);
+      await client.saveAddress({ ...addressForm, countryCode: "KZ", phone: cleanPhone(addressForm.phone) }, editingAddress ? { id: editingAddress.id, version: editingAddress.version } : undefined);
     } catch (error) {
       setAddressError(errorMessage(error));
       if (statusOf(error) === 409) {
@@ -292,7 +303,7 @@ export function AccountDashboard() {
     if (address.isPrimary) return;
     setBusy("address");
     try {
-      await client.saveAddress({ label: address.label, recipientName: address.recipientName, phone: address.phone, countryCode: address.countryCode, city: address.city, line1: address.line1, line2: address.line2, region: address.region, postalCode: address.postalCode, isPrimary: true }, address);
+      await client.saveAddress({ label: address.label, recipientName: address.recipientName, phone: address.phone, countryCode: address.countryCode, city: address.city, line1: address.line1, line2: address.line2, region: address.region, postalCode: address.postalCode, ...pinOf(address), isPrimary: true }, address);
     } catch (error) { showNotification(errorMessage(error), "error"); try { await reloadAddresses(); } catch { /* keep the error visible */ } setBusy(null); return; }
     await refreshAfterWrite(`"${address.label}" is now your primary address.`);
     setBusy(null);
@@ -532,6 +543,10 @@ export function AccountDashboard() {
                       </dd>
                     </div>
                     <div className="border border-neutral-100 bg-neutral-50/50 p-3">
+                      <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">Birthday</dt>
+                      <dd className="mt-1 font-semibold text-black">{profile.birthDate ? formatBirthday(profile.birthDate) : <span className="font-normal text-neutral-500">Not provided</span>}</dd>
+                    </div>
+                    <div className="border border-neutral-100 bg-neutral-50/50 p-3">
                       <dt className="text-[12px] font-medium uppercase tracking-wider text-neutral-500">Profile</dt>
                       <dd className="mt-1 font-semibold text-black">{profile.profileState === "complete" ? "Complete" : "Not completed yet"}</dd>
                     </div>
@@ -548,7 +563,12 @@ export function AccountDashboard() {
                         <input id="profileEmail" name="email" type="email" required maxLength={254} value={profileForm.email} onChange={e => setProfileForm({ ...profileForm, email: e.target.value })} className={inputClass} />
                         <p className="mt-1 text-[11px] text-neutral-400">A changed email is stored as unverified.</p>
                       </div>
-                      <div className="sm:col-span-2">
+                      <div>
+                        <label className={labelClass} htmlFor="profileBirthDate">Birthday (optional)</label>
+                        <input id="profileBirthDate" name="birthDate" type="date" min={yearsAgoISO(120)} max={yearsAgoISO(10)} value={profileForm.birthDate} onChange={e => setProfileForm({ ...profileForm, birthDate: e.target.value })} className={inputClass} aria-describedby="profileBirthDateHint" />
+                        <p id="profileBirthDateHint" className="mt-1 text-[11px] text-neutral-400">Leave empty if you prefer not to say. Clear the field to remove it.</p>
+                      </div>
+                      <div>
                         <label className={labelClass} htmlFor="profilePhone">Phone Number</label>
                         <input id="profilePhone" type="tel" disabled value={profile.phone ?? ""} className={inputClass} />
                         <p className="mt-1 flex items-center gap-1 text-[11px] text-neutral-400"><Lock className="h-3 w-3" /> Change your phone number under Sign-in &amp; Security.</p>
@@ -590,8 +610,12 @@ export function AccountDashboard() {
                             <p className="font-semibold text-black">{address.recipientName}</p>
                             <p>{address.line1}</p>
                             {address.line2 && <p>{address.line2}</p>}
-                            <p>{[address.city, address.region, address.postalCode].filter(Boolean).join(", ")}</p>
-                            <p>{countryName(address.countryCode)}</p>
+                            <p>{[address.city, kzRegionLabel(address.region), address.postalCode].filter(Boolean).join(", ")}</p>
+                            <p>
+                              {countryName(address.countryCode)}
+                              {address.countryCode !== "KZ" && <span className="ml-2 border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">Edit to ship in Kazakhstan</span>}
+                            </p>
+                            {typeof address.lat === "number" && <p className="text-[12px] text-neutral-500">Pinned on the map</p>}
                             <p className="pt-0.5 text-[12px] text-neutral-500">Phone: {address.phone}</p>
                           </div>
                         </div>
@@ -870,55 +894,14 @@ export function AccountDashboard() {
       )}
 
       {isAddressModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs" onClick={() => setIsAddressModalOpen(false)}>
-          <div role="dialog" aria-modal="true" aria-label={editingAddress ? "Edit shipping address" : "Add shipping address"} className="w-full max-w-lg border border-neutral-300 bg-white p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/60 p-2 backdrop-blur-xs sm:items-center sm:p-4" onClick={() => setIsAddressModalOpen(false)}>
+          <div role="dialog" aria-modal="true" aria-label={editingAddress ? "Edit shipping address" : "Add shipping address"} className="my-2 w-full max-w-2xl border border-neutral-300 bg-white p-4 shadow-2xl sm:my-0 sm:max-h-[94vh] sm:overflow-y-auto sm:p-6" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
               <h3 className="g-heading text-lg font-bold uppercase tracking-wider text-black">{editingAddress ? "Edit Shipping Address" : "Add New Shipping Address"}</h3>
               <button type="button" onClick={() => setIsAddressModalOpen(false)} className="text-neutral-400 hover:text-black" aria-label="Close"><X className="h-5 w-5" /></button>
             </div>
             <form name="address" onSubmit={handleSaveAddress} className="mt-4 space-y-3">
-              <div>
-                <label className={labelClass} htmlFor="addressLabel">Address Title (e.g. Home, Office) *</label>
-                <input id="addressLabel" name="label" required maxLength={60} value={addressForm.label} onChange={e => setAddressForm({ ...addressForm, label: e.target.value })} className={inputClass} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className={labelClass} htmlFor="addressRecipient">Recipient Name *</label>
-                  <input id="addressRecipient" name="recipientName" required maxLength={200} value={addressForm.recipientName} onChange={e => setAddressForm({ ...addressForm, recipientName: e.target.value })} className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass} htmlFor="addressPhone">Contact Phone *</label>
-                  <input id="addressPhone" name="phone" type="tel" required placeholder="+77001234567" value={addressForm.phone} onChange={e => setAddressForm({ ...addressForm, phone: e.target.value })} className={inputClass} />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="addressLine1">Street Address *</label>
-                <input id="addressLine1" name="line1" required maxLength={200} value={addressForm.line1} onChange={e => setAddressForm({ ...addressForm, line1: e.target.value })} className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="addressLine2">Apartment, suite (optional)</label>
-                <input id="addressLine2" name="line2" maxLength={200} value={addressForm.line2 ?? ""} onChange={e => setAddressForm({ ...addressForm, line2: e.target.value })} className={inputClass} />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className={labelClass} htmlFor="addressCity">City *</label>
-                  <input id="addressCity" name="city" required maxLength={120} value={addressForm.city} onChange={e => setAddressForm({ ...addressForm, city: e.target.value })} className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass} htmlFor="addressRegion">Region</label>
-                  <input id="addressRegion" name="region" maxLength={120} value={addressForm.region ?? ""} onChange={e => setAddressForm({ ...addressForm, region: e.target.value })} className={inputClass} />
-                </div>
-                <div>
-                  <label className={labelClass} htmlFor="addressPostal">Postal Code</label>
-                  <input id="addressPostal" name="postalCode" maxLength={20} value={addressForm.postalCode ?? ""} onChange={e => setAddressForm({ ...addressForm, postalCode: e.target.value })} className={inputClass} />
-                </div>
-              </div>
-              <div>
-                <label className={labelClass} htmlFor="addressCountry">Country *</label>
-                <select id="addressCountry" name="countryCode" value={addressForm.countryCode} onChange={e => setAddressForm({ ...addressForm, countryCode: e.target.value })} className={inputClass}>
-                  {COUNTRY_OPTIONS.map(option => <option key={option.code} value={option.code}>{option.name}</option>)}
-                </select>
-              </div>
+              <AddressForm idPrefix="account-address" value={addressForm} onChange={setAddressForm} legacyCountry={editingAddress?.countryCode} disabled={busy === "address"} />
               {!(editingAddress?.isPrimary) && (
                 <label className="flex cursor-pointer items-center gap-2 pt-2">
                   <input type="checkbox" name="isPrimary" checked={addressForm.isPrimary} onChange={e => setAddressForm({ ...addressForm, isPrimary: e.target.checked })} className="h-4 w-4 accent-black" />
