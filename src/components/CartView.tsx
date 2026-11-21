@@ -45,7 +45,7 @@ function serverCart(cart: CartDTO, actions: { busy: boolean; error: string | nul
       )}
       {adjusted && <p role="status" className="mt-4 border border-amber-300 bg-amber-50 p-3 text-[14px] text-amber-900">Some quantities were adjusted to the per-item limit.</p>}
       {unavailable && <p role="status" className="mt-4 border border-neutral-300 bg-neutral-50 p-3 text-[14px] text-neutral-700">Some items are no longer available and are not included in the subtotal.</p>}
-      <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_360px]">
+      <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_420px] xl:grid-cols-[minmax(0,1fr)_460px]">
         <div>
           <div className="hidden grid-cols-[1fr_120px_140px] border-b border-neutral-200 pb-3 text-[12px] font-medium uppercase tracking-[0.06em] text-neutral-500 sm:grid">
             <span>Item</span>

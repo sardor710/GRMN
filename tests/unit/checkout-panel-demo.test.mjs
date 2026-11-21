@@ -7,6 +7,8 @@ import fs from "node:fs";
 import ts from "typescript";
 import { nodes, nodeText } from "../helpers/component-fixture.mjs";
 import * as accountClient from "../../src/lib/account-client.ts";
+import * as checkoutAddress from "../../src/lib/checkout-address.ts";
+import * as kzRegions from "../../src/lib/kz-regions.ts";
 
 const source = fs.readFileSync(new URL("../../src/components/CheckoutPanel.tsx", import.meta.url), "utf8");
 const kzt = amountMinor => ({ amountMinor, currency: "KZT" });
@@ -27,7 +29,7 @@ function load(name, seed = {}) {
     createCheckoutClient: () => ({ placeOrder: async (command, key) => { calls.push({ command, key }); return { orderId: "o1", orderNumber: "GRM-1", statusToken: "t".repeat(43) }; } }),
     beginCheckout: () => "checkout-key-0000001", checkoutRecovery: () => "fail", forgetCheckoutKey() {}, pollOrderStatus: async () => null, rememberOrder() {}, resumePendingCheckout: async () => null,
   };
-  const modules = { react: hooks, "react/jsx-runtime": { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) }, "next/link": "a", "@/lib/account-client": accountClient, "@/lib/checkout-client": checkoutClient };
+  const modules = { react: hooks, "react/jsx-runtime": { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) }, "next/link": "a", "@/lib/account-client": accountClient, "@/lib/checkout-client": checkoutClient, "@/lib/checkout-address": checkoutAddress, "@/lib/kz-regions": kzRegions };
   const output = {};
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true, target: ts.ScriptTarget.ES2022 } }).outputText;
   new Function("require", "exports", "fetch", "sessionStorage", code)(id => modules[id] ?? {}, output, async () => ({}), {});

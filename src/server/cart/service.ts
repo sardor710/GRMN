@@ -11,6 +11,8 @@ import { createQuote, QUOTE_TTL_SECONDS, type DeliverySnapshot } from "../pricin
 import { placeOrder, readCheckoutStatus } from "../checkout/service.ts";
 import { captureSandboxOrder } from "../payments/service.ts";
 import type { PaymentProviders } from "../payments/provider.ts";
+import { checkKzAddress, DELIVERY_COUNTRY } from "../account/address-rules.ts";
+import { findKzCityAnywhere, resolveKzRegion } from "../../lib/kz-regions.ts";
 
 // Server carts (Task 13A). A guest cart is opened only by a random capability held in an HttpOnly
 // cookie; only its HMAC digest is stored. A signed-in shopper always uses the account cart, and the
@@ -51,6 +53,13 @@ const quoteInput = z.strictObject({
   couponCode: z.string().trim().regex(/^[\p{L}\p{N}_-]{1,64}$/u).transform(code => code.toLowerCase()).optional(),
   paymentCurrency: z.string().max(16).optional(),
 });
+
+/** The raw inline delivery address of a quote request, if it has one (checked before the strict schema). */
+function inlineAddressOf(input: unknown): Record<string, unknown> | null {
+  const record = (value: unknown) => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+  const delivery = record(record(input)?.delivery);
+  return delivery?.kind === "inline" ? record(delivery.address) : null;
+}
 
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
@@ -283,17 +292,25 @@ export function createCartService({ database, secret, identify, market = "defaul
     async quote(headers: Headers, input: unknown): Promise<CheckoutQuoteDTO> {
       const payment = input && typeof input === "object" && !Array.isArray(input) ? (input as Record<string, unknown>).paymentCurrency : undefined;
       if (payment !== undefined && payment !== "KZT") throw new AuthFailure("UNSUPPORTED_CURRENCY", 400, "Payment is accepted in KZT only");
+      // M8.5: delivery is Kazakhstan only. A typed address gets the clear country/region reason
+      // before the strict schema, and its region is stored as a kz-regions code.
+      const inline = inlineAddressOf(input);
+      const kz = inline ? checkKzAddress(inline) : null;
+      if (kz && !kz.ok) invalid(kz.message);
       const command = parse(quoteInput, input), who = await actor(headers);
       let delivery: DeliverySnapshot;
-      if (command.delivery.kind === "inline") delivery = command.delivery.address;
+      if (command.delivery.kind === "inline") delivery = { ...command.delivery.address, countryCode: DELIVERY_COUNTRY, ...(kz?.ok ? { region: kz.value.region } : {}) };
       else {
         if (!who.userId) throw new AuthFailure("UNAUTHENTICATED", 401, "Sign in to use a saved address");
         const saved = (await database.pool.query<{ version: number; recipient_name: string; phone: string; country_code: string; city: string; line1: string; line2: string | null; region: string | null; postal_code: string | null }>(
           "SELECT version,recipient_name,phone,country_code,city,line1,line2,region,postal_code FROM customer_addresses WHERE id=$1 AND user_id=$2", [command.delivery.addressId, who.userId])).rows[0];
         if (!saved) throw new AuthFailure("NOT_FOUND", 404, "Not found");
         if (saved.version !== command.delivery.version) conflict();
-        delivery = { addressId: command.delivery.addressId, addressVersion: saved.version, recipientName: saved.recipient_name, phone: saved.phone, countryCode: saved.country_code, city: saved.city, line1: saved.line1,
-          ...(saved.line2 ? { line2: saved.line2 } : {}), ...(saved.region ? { region: saved.region } : {}), ...(saved.postal_code ? { postalCode: saved.postal_code } : {}) };
+        // Older saved addresses may be outside Kazakhstan: they must be edited in the account first.
+        if (saved.country_code !== DELIVERY_COUNTRY) throw new AuthFailure("ADDRESS_NOT_DELIVERABLE", 400, "We deliver only within Kazakhstan; edit this saved address in your account to ship in Kazakhstan");
+        const region = resolveKzRegion(saved.region)?.code ?? (saved.region || findKzCityAnywhere(saved.city)?.region.code || null);
+        delivery = { addressId: command.delivery.addressId, addressVersion: saved.version, recipientName: saved.recipient_name, phone: saved.phone, countryCode: DELIVERY_COUNTRY, city: saved.city, line1: saved.line1,
+          ...(saved.line2 ? { line2: saved.line2 } : {}), ...(region ? { region } : {}), ...(saved.postal_code ? { postalCode: saved.postal_code } : {}) };
       }
       return transaction(async client => {
         const cart = await loadCart(client, who, true);
