@@ -5,7 +5,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { resolveUploadFile, sniffImageType } from "../../lib/media/storage.ts";
 import { AuthFailure } from "../auth/config.ts";
-import { PRICE_TO_PUBLISH, isSellableVariantStatus, unpricedMessage } from "../../lib/cms/publish-price.ts";
+import { NO_ACTIVE_VARIANT, PRICE_TO_PUBLISH, effectiveVariantStatus, isSellableVariantStatus, unpricedMessage } from "../../lib/cms/publish-price.ts";
 import type { VariantContent } from "../../lib/catalog/variant-content.ts";
 
 // Owner, 2026-11-19 (commits 5cbad06/e7dc91c on PostgreSQL): the admin product document keeps its
@@ -36,7 +36,9 @@ export function toMinor(value: number | string, field: string): string {
   if (!match) return fail(400, `${field} must be an exact KZT amount`);
   return (BigInt(match[1]) * BigInt(100) + BigInt((match[2] ?? "").padEnd(2, "0"))).toString();
 }
-const variantStatus = (product: string, variant: string) => product === "archived" || variant === "archived" ? "archived" : product === "published" && variant === "active" ? "active" : variant === "draft" || product === "draft" ? "draft" : "active";
+// On a published product the editor status maps through the shared effectiveVariantStatus (a missing status is
+// active), so the price-to-publish check below sees exactly what is sold.
+const variantStatus = (product: string, variant: string | undefined) => product === "archived" ? "archived" : product === "published" ? effectiveVariantStatus(variant) : variant === "archived" ? "archived" : "draft";
 /** Only the known content blocks leave the editor document (a non-object is "inherit everything"). */
 const overrides = (content: unknown): VariantContent => {
   if (content === null || typeof content !== "object" || Array.isArray(content)) return {};
@@ -103,7 +105,8 @@ export async function projectProduct(client: PoolClient, productId: string, doc:
   }
   // Validate variants before any write.
   // Final review I1: a published product sells its active variants (variantStatus projects a draft editor
-  // variant as a draft row, which the storefront and cart never sell), so each of those needs a price above 0.
+  // variant as a draft row, which the storefront and cart never sell, and a status-less one as active), so each
+  // of those needs a price above 0, and at least one must be sold or the product is published yet invisible.
   // Checked on the projected document, which is what save, the status change and bulk publish all write; a
   // simple product (no options) sells its product price. Shared rule: src/lib/cms/publish-price.
   const published = doc.status === "published";
@@ -118,9 +121,10 @@ export async function projectProduct(client: PoolClient, productId: string, doc:
       skus.add(sku.toLowerCase());
       for (const option of doc.options) if (!valueIds.has(`${option.id}\u0000${v.selections[option.id]}`)) fail(400, `Variant ${sku} has no valid ${option.name} choice`);
       const amount = toMinor(v.price, `Price of ${sku}`);
-      if (published && isSellableVariantStatus(v.status) && BigInt(amount) <= BigInt(0)) fail(400, unpricedMessage({ sku, title: v.title }));
+      if (published && isSellableVariantStatus(v.status) && BigInt(amount) <= BigInt(0)) fail(400, unpricedMessage({ reason: "variant", variant: { sku, title: v.title } }));
       if (v.originalPrice !== undefined && v.originalPrice !== "" && BigInt(toMinor(v.originalPrice, `Compare-at price of ${sku}`)) < BigInt(amount)) fail(400, `Compare-at price of ${sku} is below its price`);
     }
+    if (published && !doc.variants.some(v => isSellableVariantStatus(v.status))) fail(400, NO_ACTIVE_VARIANT);
   }
   // F-c: rows are matched before any write. A final SKU still held by a row of this product that no
   // variant claimed (a variant removed in this save, or archived earlier) would hit the global unique

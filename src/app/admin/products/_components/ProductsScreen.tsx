@@ -62,7 +62,7 @@ import { LocaleTabs, type ContentLocale } from "@/components/admin/LocaleTabs";
 import { translationStatus } from "@/lib/cms/translation-input";
 import { PRODUCT_SPEC } from "@/i18n/translate-record";
 import { dropVariantTranslation } from "@/lib/cms/variant-content-edit";
-import { isSellableVariantStatus, unpricedMessage } from "@/lib/cms/publish-price";
+import { findUnpricedForPublish, hasSellableOptions, isSellableVariantStatus, unpricedMessage } from "@/lib/cms/publish-price";
 
 /** RU/KK tab is "complete" once the product title and description are translated (storefront indexing rule). */
 const PRODUCT_REQUIRED_FIELDS = ["name", "description"] as const;
@@ -525,14 +525,15 @@ export default function AdminProductsPage() {
     });
   };
 
-  // The default variant's price is the selling price when the product has variants.
-  const sellingPrice = Number((formData.variants.find((v) => v.isDefault) || formData.variants[0])?.price ?? formData.price);
-  // Mirrors the server rule (src/lib/cms/publish-price): a product with options and variants sells its active
-  // variants only, so each of those needs a price above 0; otherwise the product sells its own price.
-  const sellsVariants = formData.options.length > 0 && formData.variants.length > 0;
-  const simpleUnpriced = formData.status === "published" && !sellsVariants && !(sellingPrice > 0);
-  const priceError = priceBlocked && simpleUnpriced;
-  // Final review I1: draft and archived rows are not sold, so they may stay at 0 (the server names the variant).
+  // The server's rule through the shared helper (src/lib/cms/publish-price): without options the product sells its
+  // own price; with options and variants it sells its active variants (a missing status counts as active), each
+  // needs a price above 0, and at least one must be sold. Draft and archived rows may stay at 0.
+  const sellsVariants = hasSellableOptions(formData);
+  const unpriced = findUnpricedForPublish(
+    { published: formData.status === "published", hasVariants: sellsVariants, price: formData.price, variants: formData.variants },
+    (price) => Number(price) > 0,
+  );
+  const priceError = priceBlocked && unpriced?.reason === "price";
   const unpricedVariants =
     formData.status === "published" && sellsVariants
       ? formData.variants.filter((v) => isSellableVariantStatus(v.status) && !(Number(v.price) > 0))
@@ -542,16 +543,15 @@ export default function AdminProductsPage() {
     e.preventDefault();
     setSaveError("");
     setSkuConflicts([]);
-    if (simpleUnpriced) {
+    if (unpriced?.reason === "price") {
       setPriceBlocked(true);
       setContentLocale("en");
       setActiveTab("general");
       return;
     }
-    if (unpricedVariants.length > 0) {
-      const first = unpricedVariants[0];
+    if (unpriced) {
       setPriceBlocked(true);
-      setSaveError(unpricedMessage(first));
+      setSaveError(unpricedMessage(unpriced));
       setContentLocale("en");
       setActiveTab("variants");
       return;

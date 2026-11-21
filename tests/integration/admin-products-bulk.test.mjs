@@ -213,7 +213,36 @@ test("the read-only data check lists a published product with an active 0 varian
   const again=await database.pool.connect();
   try{rows=await listUnpricedPublished(sql=>again.query(sql));}finally{again.release();}
   assert.equal(rows.some(row=>row.product===waiting.id),false);
-  assert.equal(rows.some(row=>row.sku.startsWith("SYN-VZ-")&&row.product!==draft.id&&row.variant_status==="archived"),false);
+  assert.equal(rows.some(row=>(row.sku??"").startsWith("SYN-VZ-")&&row.product!==draft.id&&row.variant_status==="archived"),false);
+  // A published product that sells no variant at all is listed once, without a variant.
+  const hidden=await cms.save("products",admin,product({sku:`${sku}-H`,price:"5000",...sizes(`${sku}-H`)}));
+  await q("UPDATE product_variants SET status='draft' WHERE product_id=(SELECT id FROM products WHERE public_key=$1)",[hidden.id]);
+  const third=await database.pool.connect();
+  try{rows=await listUnpricedPublished(sql=>third.query(sql));}finally{third.release();}
+  assert.deepEqual(rows.filter(row=>row.product===hidden.id).map(row=>[row.sku,row.variant_status]),[[null,"none"]]);
+});
+
+// Review round: a published product with variants must sell at least one (active and priced), on every path;
+// and a stored variant without a status is projected active, so it is checked like one.
+const NO_ACTIVE = "Make at least one variant active with a price above 0 before publishing.";
+test("publishing a product whose variants are all draft is refused through save, the status PATCH and bulk",async()=>{
+  const cms=await cmsService(),sku=`SYN-NA-${++serial}`;
+  const refusedNoActive=(promise)=>assert.rejects(promise,error=>error.code==="INVALID_INPUT"&&error.status===400&&error.message===NO_ACTIVE);
+  const all=sizes(sku);all.variants=all.variants.map(v=>({...v,status:"draft"}));
+  await refusedNoActive(cms.save("products",admin,product({sku,price:"5000",...all})));
+  const draft=await cms.save("products",admin,product({sku,price:"5000",status:"draft",...all}));
+  await refusedNoActive(cms.setProductStatus(admin,{id:draft.id,version:draft.version,status:"published"}));
+  const out=await cms.bulkProducts(admin,{action:"publish",items:[{id:draft.id,version:draft.version}]});
+  assert.deepEqual([out.results[0].ok,out.results[0].message],[false,NO_ACTIVE]);
+  assert.equal((await cms.get("products",admin,draft.id)).status,"draft");
+});
+
+test("a stored variant without a status is sold, so at 0 it blocks publishing through the status PATCH",async()=>{
+  const cms=await cmsService(),sku=`SYN-NS-${++serial}`;
+  const draft=await cms.save("products",admin,product({sku,price:"5000",status:"draft",...sizes(sku,{m:0,mStatus:"draft"})}));
+  // Older editor documents could lack a variant status; the projection treats it as active.
+  await q("UPDATE products SET legacy_content=legacy_content #- '{variants,1,status}' WHERE public_key=$1",[draft.id]);
+  await refusedVariant(cms.setProductStatus(admin,{id:draft.id,version:draft.version,status:"published"}),`M (${sku}-M)`);
 });
 
 // The storefront sells only active variants of a published product: a draft size at 0 does not block

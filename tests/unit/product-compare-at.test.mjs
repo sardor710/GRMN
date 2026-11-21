@@ -117,6 +117,36 @@ test("an archived or draft 0 variant, or a 0 variant on a draft, does not block 
   assert.equal((await editAndSave({ ...sized(0), status: "draft" })).posts.length, 1);
 });
 
+// Review round: the form uses the server's rule through the shared helper (src/lib/cms/publish-price).
+const savedText = (tree) => JSON.stringify(nodes(tree).map(node => node.props?.children).filter(c => typeof c === "string"));
+const withVariants = (s, m) => { const item = sized(m.price, m.status); item.variants = [{ ...item.variants[0], ...s }, { ...item.variants[1], ...m }]; return item; };
+
+test("a draft default at 0 does not block publishing while another variant is active and priced", async () => {
+  assert.equal((await editAndSave(withVariants({ price: 0, status: "draft" }, { price: 50000, status: "active" }))).posts.length, 1);
+});
+
+test("a published product with variants needs at least one active variant", async () => {
+  const { posts, tree } = await editAndSave(withVariants({ status: "draft" }, { price: 50000, status: "draft" }));
+  assert.equal(posts.length, 0, "nothing is sent");
+  assert.match(savedText(tree), /Make at least one variant active with a price above 0 before publishing\./);
+});
+
+test("a variant without a status is sold (the projection makes it active), so at 0 it blocks publishing", async () => {
+  const item = sized(0);
+  delete item.variants[1].status;
+  const { posts, tree } = await editAndSave(item);
+  assert.equal(posts.length, 0);
+  assert.match(savedText(tree), /Set a price above 0 for M \(FR-1-M\) before publishing\./);
+});
+
+test("simple product means no options, as on the server: its own price counts, not a leftover variant's", async () => {
+  // No options: the server sells product.price, whatever variant rows the form still holds.
+  const leftover = { ...product, price: 0, options: [], variants: [{ ...sized(5000).variants[0] }] };
+  assert.equal((await editAndSave(leftover)).posts.length, 0);
+  // Options with priced variants: the product price field is not what is sold.
+  assert.equal((await editAndSave({ ...sized(5000), price: 0 })).posts.length, 1);
+});
+
 test("a price-0 draft still saves", async () => {
   const posts = [];
   const fixture = componentFixture(FILE, {

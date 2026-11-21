@@ -11,7 +11,7 @@ import { appendOutboxEvent } from "../operations/outbox.ts";
 import { mergeTranslationsSafely } from "../../lib/cms/translation-input.ts";
 import { PRODUCT_HTML_FIELDS, sanitizeProductInput } from "../../lib/cms/product-input.ts";
 import { projectProduct, toMinor, type ProductDocument } from "./product-projection.ts";
-import { PRICE_TO_PUBLISH } from "../../lib/cms/publish-price.ts";
+import { PRICE_TO_PUBLISH, hasSellableOptions } from "../../lib/cms/publish-price.ts";
 import { BLOG_HTML_FIELDS } from "../../lib/cms/content-input.ts";
 import { BANNER_SPEC, BLOG_SPEC, HOMEPAGE_SPEC, PRODUCT_SPEC } from "../../i18n/translate-record.ts";
 import type { FieldSpec } from "../../i18n/translate-record.ts";
@@ -142,7 +142,7 @@ export function createCMSService({pool,authorize}:Options) {
     const meta=record(old.legacy_content);
     // Fast path for a simple product's own price; projectProduct below checks the variants the storefront
     // sells (active ones), so a draft default variant at 0 does not block a variant product (I1).
-    const hasVariants=Array.isArray(meta.options)&&meta.options.length>0&&Array.isArray(meta.variants)&&meta.variants.length>0;
+    const hasVariants=hasSellableOptions({options:Array.isArray(meta.options)?meta.options:[],variants:Array.isArray(meta.variants)?meta.variants:[]});
     if(data.status==="published"&&!hasVariants&&BigInt(old.amount_minor)<=BigInt(0))return fail("INVALID_INPUT",400,PRICE_TO_PUBLISH);
     // The column and the editor document keep the same status, like save.
     await client.query("UPDATE products SET status=$2,legacy_content=jsonb_set(legacy_content,'{status}',to_jsonb($2::text)),version=version+1,updated_at=clock_timestamp() WHERE id=$1",[old.id,data.status]);

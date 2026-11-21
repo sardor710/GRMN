@@ -1,5 +1,7 @@
 // Pure product option/variant logic. Plain JS so `node --test` can run it; typed wrapper in product-variants.ts.
 
+import { sellableVariant } from './publish-price.js';
+
 export const MAX_VARIANTS = 500;
 export const WARN_VARIANTS = 100;
 
@@ -131,12 +133,16 @@ export function sizeBucketFromLabel(label) {
   return 'Large';
 }
 
-/** Mirror the default variant / default image / grouped specs into the legacy single-SKU fields. */
+/**
+ * Mirror the variant the storefront shows / default image / grouped specs into the legacy single-SKU fields.
+ * The card reads the mirrored price, so it comes from a sold variant like the PostgreSQL card: the default while
+ * it is sold (active), else the first sold one; with none sold (a draft product), the default.
+ */
 export function syncLegacyFields(product) {
   const next = { ...product };
   const variants = product.variants || [];
   if (variants.length) {
-    const def = variants.find((v) => v.isDefault) || variants[0];
+    const def = sellableVariant(variants) || variants.find((v) => v.isDefault) || variants[0];
     next.price = def.price;
     if (def.originalPrice !== undefined) next.originalPrice = def.originalPrice;
     else delete next.originalPrice;

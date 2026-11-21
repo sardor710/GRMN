@@ -317,7 +317,13 @@ test("legacy product saves keep variants, sanitize overview HTML and reject SKU 
   assert.equal(zeroSize.status,400);assert.equal((await zeroSize.json()).error.message,"Set a price above 0 for 43 mm (SKU-V1) before publishing.");
   assert.equal(writes,beforeWrites,"nothing is written");
   assert.equal((await request("products","POST",operator,{name:"Unpriced",price:0,status:"draft"})).status,200);
-  assert.equal((await request("products","POST",operator,{...body,variants:[{...variant,price:0,status:"draft",isDefault:true}]})).status,200,"a draft size is not sold");
+  // A draft size is not sold, but a published product must sell one: with only a draft size it is refused.
+  const none=await request("products","POST",operator,{...body,variants:[{...variant,price:0,status:"draft",isDefault:true}]});
+  assert.equal(none.status,400);assert.equal((await none.json()).error.message,"Make at least one variant active with a price above 0 before publishing.");
+  const second={...body,options:[{...body.options[0],values:[...body.options[0].values,{id:"b",key:"47",label:"47 mm"}]}],
+    variants:[{...variant,price:0,status:"draft",isDefault:true},{...variant,id:"v2",sku:"SKU-V2",title:"47 mm",selections:{o1:"b"},price:50000,isDefault:false}]};
+  // (The real store then mirrors the sold size into the card price: tests/publish-price.test.mjs.)
+  assert.equal((await request("products","POST",operator,second)).status,200,"a draft default at 0 next to an active priced size");
   assert.equal((await request("products","POST",operator,{...body,options:[{...body.options[0],values:[{id:"a",key:"43",label:"43",swatchColor:"red;background:url(x)"}]}]})).status,400);
   assert.equal((await request("products","POST",operator,{...body,images:[{id:"i1",src:"https://evil.invalid/x.jpg",alt:"x",source:"url"}]})).status,400);
 });

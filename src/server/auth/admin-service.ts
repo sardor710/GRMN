@@ -7,7 +7,7 @@ import { authErrorResponse } from "./http.ts";
 import { getSessionIdentity, requireStaffPrincipal, requirePermission } from "./principal.ts";
 import type { AuthRuntime } from "./principal.ts";
 import { sanitizeProductInput } from "../../lib/cms/product-input.ts";
-import { findSkuConflicts } from "../../lib/cms/product-variants.ts";
+import { findSkuConflicts, syncLegacyFields } from "../../lib/cms/product-variants.ts";
 import { legacyPublishRefusal } from "../../lib/cms/publish-price.ts";
 import { BLOG_HTML_FIELDS, sanitizeBannerInput, sanitizeBlogInput, sanitizeHomepageInput, sanitizeSettingsInput } from "../../lib/cms/content-input.ts";
 import { mergeTranslationsSafely } from "../../lib/cms/translation-input.ts";
@@ -144,10 +144,11 @@ export function createAdminHandlers(input:{runtime:AuthRuntime;store:AdminStore;
           if(!sanitized.ok)throw new AuthFailure("INVALID_INPUT",400,sanitized.error);
           const data=sanitized.product as typeof parsed;
           if(data.variants?.some(variant=>!variant.sku.trim()))throw new AuthFailure("INVALID_INPUT",400,"Every variant needs a SKU");
-          // Price to publish, as the PostgreSQL projection refuses it (same message, 400), on the record the store
-          // will keep: the save merges over the stored product, and a product saved without a status is published.
+          // Price to publish, as the PostgreSQL projection refuses it (same messages, 400), on the record the store
+          // will keep: the save merges over the stored product and mirrors the sold variant into the legacy fields
+          // (syncLegacyFields), and a product saved without a status is published.
           // The legacy store has no status or bulk endpoint, so this save is its only way to publish.
-          const publishRefusal=legacyPublishRefusal({...stored,...data});
+          const publishRefusal=legacyPublishRefusal(syncLegacyFields({...stored,...data}));
           if(publishRefusal)throw new AuthFailure("INVALID_INPUT",400,publishRefusal);
           const products=store.get("products");
           const conflicts=findSkuConflicts({id:data.id??"",sku:data.sku??"",variants:data.variants},(Array.isArray(products)?products:[]) as CMSProduct[]);
