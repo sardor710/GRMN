@@ -5,7 +5,7 @@
 // save sends back exactly what GET returned (`base`) with the edited fields laid over it. Fields the editor
 // does not touch (compatibility, upsell relations, features, read-only echoes) round-trip unchanged.
 import type { CMSProduct, ProductImage, ProductOption, ProductSource, ProductStatus, ProductVariant, SpecGroup } from "../../../lib/cms/types.ts";
-import { matchLegacyCategories, type CategoryMatchNode } from "../../../server/catalog/category-match.ts";
+import { matchBreadcrumbCategories } from "../../../lib/admin/category-breadcrumb.ts";
 import type { TaxonomyNode } from "../../../contracts/admin-catalog.ts";
 import { normalizeCategories, type CategoryRef } from "../../../lib/admin/taxonomy-tree.ts";
 
@@ -230,8 +230,7 @@ export function applyImportedDraft(form: EditorForm, draft: Partial<CMSProduct>,
   const defaultImageId = images.some(image => image.id === draft.defaultImageId) ? str(draft.defaultImageId) : images[0]?.id ?? "";
   let categories: CategoryRef[] = [];
   if (taxonomy?.length) {
-    const nodes = taxonomy.filter((node): node is TaxonomyNode & CategoryMatchNode => node.kind === "catalog" || node.kind === "accessory" || node.kind === "group");
-    const match = matchLegacyCategories(nodes, { category: draft.category, subCategory: draft.subCategory, family: draft.family });
+    const match = matchBreadcrumbCategories(taxonomy, { category: draft.category, subCategory: draft.subCategory, family: draft.family });
     categories = normalizeCategories(match.keys.map(key => ({ key, primary: key === match.primaryKey })));
   }
   return {

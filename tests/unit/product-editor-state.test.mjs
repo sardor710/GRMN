@@ -97,7 +97,7 @@ test("validation points at the tab to fix", () => {
 });
 
 test("garmin.com import stays a draft, brings no in-the-box presets and preselects breadcrumb categories", () => {
-  const draft = { name: "fēnix 9", sku: "010-03000-00", price: 500000, status: "published", category: "Wearables", subCategory: "Adventure Watches", family: "fēnix 9", inTheBox: [] };
+  const draft = { name: "fēnix 9", sku: "010-03000-00", price: 500000, status: "published", category: "Wearables", subCategory: "Adventure", family: "fēnix 9", inTheBox: [] };
   const form = applyImportedDraft(blankForm(), draft, taxonomy);
   assert.equal(form.status, "draft");
   assert.deepEqual(form.inTheBox, []);
