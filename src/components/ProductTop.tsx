@@ -223,7 +223,9 @@ export function ProductTop({ product:initial, selectedVariantId, onSelectVariant
           {commerce&&commerce.options?.length?<>
             <CommerceVariantPicker groups={optionValueStates(commerce.options,commerce.variants,variant)} onSelect={(key,label)=>{const next=chooseOptionValue(commerce.variants,variant,key,label);if(next)chooseCommerceVariant(next.id);}} />
             <p role="status" className={`mt-6 text-[14px] font-medium ${isAvailable(variant)?"text-black":"text-[#5b5b5b]"}`}>{stockStateText(variant?.availability)}</p>
-          </>:commerce&&<label className="mt-6 block">Variant<select aria-label="Variant" value={variantId} onChange={e=>chooseCommerceVariant(e.target.value)} className="mt-2 block w-full border p-3">{commerce.variants.map(v=><option key={v.id} value={v.id}>{v.name} {Object.values(v.options).join(" / ")}{isAvailable(v)?"":" (out of stock)"}</option>)}</select><span>{stockStateText(variant?.availability)}</span></label>}
+          </>:commerce&&commerce.variants.length>1?<label className="mt-6 block">Variant<select aria-label="Variant" value={variantId} onChange={e=>chooseCommerceVariant(e.target.value)} className="mt-2 block w-full border p-3">{commerce.variants.map(v=><option key={v.id} value={v.id}>{v.name||v.sku} {Object.values(v.options).join(" / ")}{isAvailable(v)?"":" (out of stock)"}</option>)}</select><span>{stockStateText(variant?.availability)}</span></label>
+          // A single-SKU product has nothing to choose: show only its stock state.
+          :commerce&&<p role="status" className={`mt-6 text-[14px] font-medium ${isAvailable(variant)?"text-black":"text-[#5b5b5b]"}`}>{stockStateText(variant?.availability)}</p>}
           {!product.commerce && vm && cmsVariant && (
             <VariantPicker options={vm.options} variants={vm.variants} selections={cmsVariant.selections} onSelect={chooseValue} />
           )}
