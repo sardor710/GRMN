@@ -118,3 +118,13 @@ test("amount parsing accepts spaces and comma decimals, rejects negatives", () =
   assert.ok(Number.isNaN(parseAmount("-1")));
   assert.ok(Number.isNaN(parseAmount("abc")));
 });
+
+// M9.3 review finding 4: "no price" stays null through the variants step (never 0 KZT).
+test("an unpriced variant is not ready, and edits that do not touch the price keep it null", () => {
+  const unpriced = variant("u", {}, { price: null, status: "draft" });
+  assert.deepEqual(variantReadiness(unpriced).blockers, ["draft", "noPrice"]);
+  const [bulk] = applyBulk([unpriced], new Set(["u"]), { stock: 5, status: "active" });
+  assert.deepEqual([bulk.price, bulk.stock, bulk.status], [null, 5, "active"]);
+  assert.equal(patchVariant([unpriced], "u", { title: "Renamed" })[0].price, null);
+  assert.equal(applyBulk([unpriced], new Set(["u"]), { price: 1500 })[0].price, 1500);
+});

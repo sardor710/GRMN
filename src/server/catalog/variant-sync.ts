@@ -41,8 +41,11 @@ const optionSchema = z.looseObject({ id: trimmed(200), key: trimmed(200), name: 
 const variantSchema = z.looseObject({
   id: trimmed(200), sku: trimmed(100), title: z.string().trim().max(300).nullish(),
   selections: z.record(z.string(), z.string()).default({}),
-  price: money, originalPrice: money.nullish(),
+  /** null = no price: nothing is written to `prices` (an existing row is left alone); refused for an active variant. */
+  price: money.nullable(), originalPrice: money.nullish(),
   stock: z.number().int().min(0).max(2_000_000_000).optional(),
+  /** The on-hand the stock change was computed from; checked against the locked balance (STOCK_CONFLICT). */
+  expectedOnHand: z.number().int().min(0).max(2_000_000_000).optional(),
   status: z.enum(["draft", "active", "archived"]), isDefault: z.boolean().default(false),
   imageIds: z.array(z.string()).max(500).default([]),
 });
@@ -128,7 +131,8 @@ function validate(data: Input): string | null {
       if (combinations.has(signature)) invalid(`Variant ${variant.sku} repeats another variant's option combination`);
       combinations.add(signature);
     }
-    if (variant.originalPrice != null && variant.originalPrice < variant.price) invalid(`Compare-at price of ${variant.sku} is below its selling price`);
+    if (variant.price === null) { if (variant.status === "active") invalid(`Active variant ${variant.sku} needs a price`); }
+    else if (variant.originalPrice != null && variant.originalPrice < variant.price) invalid(`Compare-at price of ${variant.sku} is below its selling price`);
   }
   const live = data.variants.filter(variant => variant.status !== "archived"), defaults = live.filter(variant => variant.isDefault);
   if (defaults.length > 1) invalid("Only one variant can be the default");
@@ -205,9 +209,10 @@ export async function syncProductVariants(client: PoolClient, raw: VariantSyncIn
 
   // 3. Removed variants: delete when unreferenced (savepoint), otherwise archive.
   const wantedSkus = new Set(data.variants.map(variant => variant.sku.toLowerCase()));
-  for (const row of existingVariants.filter(row => !matched.has(row.id))) {
-    // A fit fact scoped to a variant that leaves the catalog no longer describes anything (0013 RESTRICT FKs).
-    await client.query("DELETE FROM product_compatibility WHERE device_variant_id=$1 OR accessory_variant_id=$1", [row.id]);
+  const removedVariants = existingVariants.filter(row => !matched.has(row.id));
+  // A fit fact scoped to a variant that leaves the catalog no longer describes anything (0013 RESTRICT FKs).
+  await dropVariantCompatibility(client, productId, removedVariants.map(row => row.id));
+  for (const row of removedVariants) {
     await client.query("SAVEPOINT variant_sync_remove");
     try {
       await client.query("DELETE FROM variant_option_values WHERE variant_id=$1", [row.id]);
@@ -243,6 +248,9 @@ export async function syncProductVariants(client: PoolClient, raw: VariantSyncIn
       } else result.variants.unchanged++;
     }
   }
+  // An archived variant is no longer sold: rows scoped to it go too (M9.3), so no editor can be left holding
+  // a link to a SKU the compatibility writer cannot resolve.
+  await dropVariantCompatibility(client, productId, variantPlan.filter(plan => plan.variant.status === "archived").map(plan => plan.id));
 
   // 5. Option selections: write only differences.
   const selections = (await client.query<{ variant_id: string; option_id: string; option_value_id: string }>("SELECT variant_id,option_id,option_value_id FROM variant_option_values WHERE product_id=$1", [productId])).rows;
@@ -262,7 +270,8 @@ export async function syncProductVariants(client: PoolClient, raw: VariantSyncIn
   const removedOptions = existingOptions.filter(row => !keptOptions.has(row.id)).map(row => row.id);
   if (removedValues.length) {
     // Fit facts scoped to a removed option value go with it (product_compatibility RESTRICTs the delete).
-    await client.query("DELETE FROM product_compatibility WHERE device_product_id=$1 AND device_option_value_id=ANY($2::uuid[])", [productId, removedValues]);
+    const dropped = (await client.query<{ accessory_product_id: string }>("DELETE FROM product_compatibility WHERE device_product_id=$1 AND device_option_value_id=ANY($2::uuid[]) RETURNING accessory_product_id", [productId, removedValues])).rows;
+    await bumpProducts(client, dropped.map(row => row.accessory_product_id).filter(id => id !== productId));
     await client.query("DELETE FROM variant_option_values WHERE product_id=$1 AND option_value_id=ANY($2::uuid[])", [productId, removedValues]);
     await client.query("DELETE FROM option_values WHERE id=ANY($1::uuid[])", [removedValues]);
     result.values.removed = removedValues.length;
@@ -275,6 +284,7 @@ export async function syncProductVariants(client: PoolClient, raw: VariantSyncIn
 
   // 7. One active KZT price per live variant and market, updated in place (version+1) when it changes.
   for (const plan of variantPlan.filter(plan => plan.variant.status !== "archived")) {
+    if (plan.variant.price === null) continue; // no price given: never create one (no 0 KZT row)
     const amount = plan.variant.price.toString(), compare = plan.variant.originalPrice == null ? null : plan.variant.originalPrice.toString();
     const price = (await client.query<{ id: string; amount: string; compare: string | null }>("SELECT id,amount_minor::text AS amount,compare_at_minor::text AS compare FROM prices WHERE variant_id=$1 AND market=$2 AND currency='KZT' AND is_active", [plan.id, data.market])).rows[0];
     if (!price) {
@@ -294,11 +304,28 @@ export async function syncProductVariants(client: PoolClient, raw: VariantSyncIn
   if (data.stock) {
     const reference = data.stock.sourceReference;
     for (const plan of variantPlan.filter(plan => plan.variant.status !== "archived" && plan.variant.stock !== undefined).sort((a, b) => a.id.localeCompare(b.id))) {
-      const change = await setStockFromSource(client, { variantId: plan.id, onHand: plan.variant.stock!, sourceReference: `${reference}#${plan.variant.id}`, actorUserId: data.stock.actorUserId ?? null });
+      const change = await setStockFromSource(client, {
+        variantId: plan.id, onHand: plan.variant.stock!, sourceReference: `${reference}#${plan.variant.id}`, actorUserId: data.stock.actorUserId ?? null,
+        ...(plan.variant.expectedOnHand !== undefined ? { expectedOnHand: plan.variant.expectedOnHand, label: plan.variant.sku } : {}),
+      });
       if (change.movementId) result.stock.movements++; else result.stock.unchanged++;
     }
   }
   return result;
+}
+
+/** version+1 for products whose visible compatibility changed through another product's save (D-C1), so their stale editors get 409. */
+async function bumpProducts(client: PoolClient, ids: string[]) {
+  const unique = [...new Set(ids)].sort();
+  if (unique.length) await client.query("UPDATE products SET version=version+1 WHERE id=ANY($1::uuid[])", [unique]);
+}
+
+/** Deletes the compatibility rows scoped to these variants (accessory or device side) and bumps the other products. */
+async function dropVariantCompatibility(client: PoolClient, productId: string, variantIds: string[]) {
+  if (!variantIds.length) return;
+  const rows = (await client.query<{ accessory_product_id: string; device_product_id: string }>(
+    "DELETE FROM product_compatibility WHERE device_variant_id=ANY($1::uuid[]) OR accessory_variant_id=ANY($1::uuid[]) RETURNING accessory_product_id,device_product_id", [variantIds])).rows;
+  await bumpProducts(client, rows.flatMap(row => [row.accessory_product_id, row.device_product_id]).filter(id => id !== productId));
 }
 
 async function syncMedia(client: PoolClient, data: Input, variantPlan: { variant: Input["variants"][number]; id: string }[], result: VariantSyncResult) {

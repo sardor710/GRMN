@@ -42,10 +42,12 @@ async function productIds(client: PoolClient, keys: string[], self: string): Pro
   return map;
 }
 
-async function variantIdsBySku(client: PoolClient, productIds: string[]): Promise<Map<string, string>> {
+interface VariantRef { id: string; archived: boolean }
+/** Every variant (archived ones included, flagged) by `${productId}|${lower(sku)}`. */
+async function variantIdsBySku(client: PoolClient, productIds: string[]): Promise<Map<string, VariantRef>> {
   if (!productIds.length) return new Map();
-  const rows = (await client.query<{ id: string; product_id: string; sku: string }>("SELECT id,product_id,lower(sku) AS sku FROM product_variants WHERE product_id=ANY($1::uuid[]) AND status<>'archived'", [productIds])).rows;
-  return new Map(rows.map(row => [`${row.product_id}|${row.sku}`, row.id]));
+  const rows = (await client.query<{ id: string; product_id: string; sku: string; archived: boolean }>("SELECT id,product_id,lower(sku) AS sku,status='archived' AS archived FROM product_variants WHERE product_id=ANY($1::uuid[])", [productIds])).rows;
+  return new Map(rows.map(row => [`${row.product_id}|${row.sku}`, { id: row.id, archived: row.archived }]));
 }
 
 /** Applies a desired row set to the rows in `scope`, returns the counterpart product ids whose rows changed. */
@@ -77,10 +79,16 @@ export async function writeAccessoryCompatibility(client: PoolClient, productId:
   const deviceVariants = await variantIdsBySku(client, [...deviceIds.values()]);
   const values = deviceIds.size ? (await client.query<{ id: string; product_id: string; key: string }>("SELECT id,product_id,key FROM option_values WHERE product_id=ANY($1::uuid[])", [[...deviceIds.values()]])).rows : [];
   const desired: Desired[] = [];
+  // A link naming an ARCHIVED SKU (an editor opened before the archive) is dropped, never widened and never
+  // rejected: archiving already deleted the stored row, so sending it back must not make the product unsavable.
   devices.forEach((item, position) => {
     const deviceProductId = deviceIds.get(item.productKey)!;
     let accessoryVariantId: string | null = null;
-    if (item.accessoryVariantSku) accessoryVariantId = ownVariants.get(`${productId}|${item.accessoryVariantSku.toLowerCase()}`) ?? invalid(`Unknown accessory SKU ${item.accessoryVariantSku}`);
+    if (item.accessoryVariantSku) {
+      const own = ownVariants.get(`${productId}|${item.accessoryVariantSku.toLowerCase()}`) ?? invalid(`Unknown accessory SKU ${item.accessoryVariantSku}`);
+      if (own.archived) return;
+      accessoryVariantId = own.id;
+    }
     const base = { accessoryProductId: productId, accessoryVariantId, deviceProductId, position };
     if (!item.optionValueKeys.length && !item.variantSkus.length) { desired.push({ ...base, optionValueId: null, deviceVariantId: null }); return; }
     for (const reference of item.optionValueKeys) {
@@ -92,8 +100,8 @@ export async function writeAccessoryCompatibility(client: PoolClient, productId:
       desired.push({ ...base, optionValueId: value.id, deviceVariantId: null });
     }
     for (const sku of item.variantSkus) {
-      const variantId = deviceVariants.get(`${deviceProductId}|${sku.toLowerCase()}`) ?? invalid(`Unknown device SKU ${sku} on ${item.productKey}`);
-      desired.push({ ...base, optionValueId: null, deviceVariantId: variantId });
+      const variant = deviceVariants.get(`${deviceProductId}|${sku.toLowerCase()}`) ?? invalid(`Unknown device SKU ${sku} on ${item.productKey}`);
+      if (!variant.archived) desired.push({ ...base, optionValueId: null, deviceVariantId: variant.id });
     }
   });
   const existing = (await client.query<Row>("SELECT * FROM product_compatibility WHERE accessory_product_id=$1 FOR UPDATE", [productId])).rows;
@@ -104,10 +112,11 @@ export async function writeAccessoryCompatibility(client: PoolClient, productId:
 export async function writeDeviceCompatibility(client: PoolClient, productId: string, accessories: AccessoryLinkInput[]): Promise<Set<string>> {
   const accessoryIds = await productIds(client, accessories.map(item => item.productKey), productId);
   const variants = await variantIdsBySku(client, [...accessoryIds.values()]);
-  const desired: Desired[] = accessories.map((item, position) => {
+  const desired: Desired[] = accessories.flatMap((item, position) => {
     const accessoryProductId = accessoryIds.get(item.productKey)!;
-    const accessoryVariantId = item.accessoryVariantSku ? variants.get(`${accessoryProductId}|${item.accessoryVariantSku.toLowerCase()}`) ?? invalid(`Unknown accessory SKU ${item.accessoryVariantSku} on ${item.productKey}`) : null;
-    return { accessoryProductId, accessoryVariantId, deviceProductId: productId, optionValueId: null, deviceVariantId: null, position };
+    const variant = item.accessoryVariantSku ? variants.get(`${accessoryProductId}|${item.accessoryVariantSku.toLowerCase()}`) ?? invalid(`Unknown accessory SKU ${item.accessoryVariantSku} on ${item.productKey}`) : null;
+    if (variant?.archived) return []; // stale echo of a link whose accessory SKU was archived: dropped
+    return [{ accessoryProductId, accessoryVariantId: variant?.id ?? null, deviceProductId: productId, optionValueId: null, deviceVariantId: null, position }];
   });
   const existing = (await client.query<Row>("SELECT * FROM product_compatibility WHERE device_product_id=$1 AND device_option_value_id IS NULL AND device_variant_id IS NULL FOR UPDATE", [productId])).rows;
   return replaceScope(client, existing, desired, row => row.accessoryProductId);
@@ -156,6 +165,10 @@ const counterpartSQL = (alias: string) => `${alias}.public_key,${alias}.name,${a
   (SELECT c.key FROM product_categories x JOIN categories c ON c.id=x.category_id WHERE x.product_id=${alias}.id AND x.is_primary) AS category_key,
   (SELECT c.name FROM product_categories x JOIN categories c ON c.id=x.category_id WHERE x.product_id=${alias}.id AND x.is_primary) AS category_name`;
 
+// Rows scoped to an archived variant (left by older saves) describe nothing sellable: never read back, so
+// an editor echo never sends an archived SKU (the writer then drops the row as not wanted).
+const liveScope = "(pc.accessory_variant_id IS NULL OR av.status<>'archived') AND (pc.device_variant_id IS NULL OR dv.status<>'archived')";
+
 export async function readCompatibility(client: Pick<PoolClient, "query">, productId: string): Promise<CompatibilityRead> {
   const asAccessory = (await client.query<{ device_id: string; public_key: string; name: string; status: string; thumbnail: string | null; category_key: string | null; accessory_sku: string | null; value_id: string | null; value_key: string | null; value_label: string | null; option_key: string | null; option_name: string | null; value_variants: string; variant_sku: string | null; variant_title: string | null; device_variants: string; position: number }>(`
     SELECT pc.device_product_id AS device_id,${counterpartSQL("d")},av.sku AS accessory_sku,
@@ -167,7 +180,7 @@ export async function readCompatibility(client: Pick<PoolClient, "query">, produ
     LEFT JOIN product_variants av ON av.id=pc.accessory_variant_id
     LEFT JOIN option_values ov ON ov.id=pc.device_option_value_id LEFT JOIN product_options o ON o.id=ov.option_id
     LEFT JOIN product_variants dv ON dv.id=pc.device_variant_id
-    WHERE pc.accessory_product_id=$1 ORDER BY pc.position,d.name,pc.id`, [productId])).rows;
+    WHERE pc.accessory_product_id=$1 AND ${liveScope} ORDER BY pc.position,d.name,pc.id`, [productId])).rows;
   const devices = new Map<string, { command: DeviceLinkInput; view: CompatibleDeviceView }>();
   for (const row of asAccessory) {
     const key = `${row.device_id}|${row.accessory_sku ?? ""}`;
@@ -199,7 +212,7 @@ export async function readCompatibility(client: Pick<PoolClient, "query">, produ
     LEFT JOIN product_variants av ON av.id=pc.accessory_variant_id
     LEFT JOIN option_values ov ON ov.id=pc.device_option_value_id LEFT JOIN product_options o ON o.id=ov.option_id
     LEFT JOIN product_variants dv ON dv.id=pc.device_variant_id
-    WHERE pc.device_product_id=$1 ORDER BY pc.position,a.name,pc.id`, [productId])).rows;
+    WHERE pc.device_product_id=$1 AND ${liveScope} ORDER BY pc.position,a.name,pc.id`, [productId])).rows;
   const accessories: AccessoryLinkInput[] = [], compatibleAccessories: CompatibleAccessoryView[] = [];
   for (const row of asDevice) {
     const scope = row.variant_id ? "variant" as const : row.value_id ? "optionValue" as const : "device" as const;

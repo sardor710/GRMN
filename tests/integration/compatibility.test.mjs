@@ -108,3 +108,70 @@ test("invalid references are rejected; removed option values and variants take t
   await f.catalog.saveProduct(f.admin, { ...w, options: w.options.map(o => o.id === size.id ? { ...o, values: o.values.filter(v => v.key !== "43 mm") } : o), variants: kept });
   assert.deepEqual(await linkRows(saved.id), [], "rows scoped to the removed value and variant are gone");
 });
+
+// M9.3 review finding 1: an archived variant must never make the product unsavable. Archiving deletes the
+// rows scoped to that variant (the other product gets version+1), reads skip archived SKUs, and a stale
+// command that still names an archived SKU drops that link instead of failing with 400.
+test("archiving an accessory variant with a narrowed link drops the link; both products keep saving", async () => {
+  const n = nextSerial();
+  const watch = await f.catalog.saveProduct(f.admin, deviceCommand(n));
+  const strapSku = `DEV-${n}-strap-43-B`;
+  let strap = await f.catalog.saveProduct(f.admin, deviceCommand(`${n}-strap`, { name: `Synthetic strap ${n}`, compatibility: { devices: [{ productKey: watch.id, accessoryVariantSku: strapSku }] } }));
+  assert.deepEqual(await linkRows(strap.id), [{ device: watch.id, value: null, variant: null, accessory_sku: strapSku }]);
+  const staleLinks = strap.compatibility.devices;
+  const watchVersion = (await f.catalog.getProduct(f.admin, watch.id)).version;
+  // Archive the narrowed strap variant from the editor (full save, the variant stays in the list as archived).
+  const variants = strap.variants.map(v => v.sku === strapSku ? { ...v, status: "archived", isDefault: false } : v.sku === `DEV-${n}-strap-47-B` ? { ...v, isDefault: true } : v);
+  strap = await f.catalog.saveProduct(f.admin, { ...strap, variants });
+  assert.deepEqual(await linkRows(strap.id), [], "the link scoped to the archived accessory variant is gone");
+  assert.deepEqual(strap.compatibility.devices, []);
+  assert.equal((await f.catalog.getProduct(f.admin, watch.id)).version, watchVersion + 1, "the watch's visible compatibility changed: version+1");
+  // The editor echo saves; a stale editor command naming the archived SKU drops the link (no 400, no widening).
+  strap = await f.catalog.saveProduct(f.admin, await f.catalog.getProduct(f.admin, strap.id));
+  strap = await f.catalog.saveProduct(f.admin, { ...strap, compatibility: { devices: staleLinks } });
+  assert.deepEqual(await linkRows(strap.id), []);
+  // The device side may also echo a link to an archived accessory SKU: dropped, never rejected.
+  const device = await f.catalog.getProduct(f.admin, watch.id);
+  await f.catalog.saveProduct(f.admin, { ...device, compatibility: { accessories: [{ productKey: strap.id, accessoryVariantSku: strapSku }] } });
+  assert.deepEqual(await linkRows(strap.id), []);
+  // Unknown SKUs are still rejected.
+  await assert.rejects(f.catalog.saveProduct(f.admin, { ...(await f.catalog.getProduct(f.admin, strap.id)), compatibility: { devices: [{ productKey: watch.id, accessoryVariantSku: "NO-SUCH-SKU" }] } }), e => e.status === 400);
+});
+
+test("archiving a device variant (quick edit) drops variant-scoped links; accessories still save", async () => {
+  const n = nextSerial();
+  let watch = await f.catalog.saveProduct(f.admin, deviceCommand(n));
+  const sku51g = `DEV-${n}-51-G`, sku47b = `DEV-${n}-47-B`;
+  let band = await f.catalog.saveProduct(f.admin, simpleCommand(n, { compatibility: { devices: [{ productKey: watch.id, variantSkus: [sku51g] }] } }));
+  const other = await f.catalog.saveProduct(f.admin, simpleCommand(`${n}-o`, { compatibility: { devices: [{ productKey: watch.id, variantSkus: [sku51g, sku47b] }] } }));
+  const staleBand = band.compatibility.devices;
+  watch = await f.catalog.getProduct(f.admin, watch.id);
+  const target = watch.variants.find(v => v.sku === sku51g);
+  await f.catalog.quickEditVariant(f.admin, target.id, { version: watch.version, status: "archived" });
+  assert.deepEqual(await linkRows(band.id), [], "the only link pointed at the archived device variant");
+  assert.deepEqual(await linkRows(other.id), [{ device: watch.id, value: null, variant: sku47b, accessory_sku: null }]);
+  const fresh = await f.catalog.getProduct(f.admin, band.id);
+  assert.equal(fresh.version, band.version + 1, "the accessory's visible compatibility changed: version+1");
+  band = await f.catalog.saveProduct(f.admin, fresh);
+  // A stale command whose only scope is the archived SKU drops the item instead of widening it to the whole device.
+  band = await f.catalog.saveProduct(f.admin, { ...band, compatibility: { devices: staleBand } });
+  assert.deepEqual(await linkRows(band.id), []);
+  const otherFresh = await f.catalog.getProduct(f.admin, other.id);
+  await f.catalog.saveProduct(f.admin, { ...otherFresh, compatibility: { devices: [{ productKey: watch.id, variantSkus: [sku51g, sku47b] }] } });
+  assert.deepEqual(await linkRows(other.id), [{ device: watch.id, value: null, variant: sku47b, accessory_sku: null }]);
+});
+
+test("rows left pointing at an archived variant (older data) are not read back and do not block saving", async () => {
+  const n = nextSerial();
+  const watch = await f.catalog.saveProduct(f.admin, deviceCommand(n));
+  const sku51g = `DEV-${n}-51-G`;
+  const band = await f.catalog.saveProduct(f.admin, simpleCommand(n, { compatibility: { devices: [{ productKey: watch.id, variantSkus: [sku51g] }, { productKey: watch.id, optionValueKeys: ["43 mm"] }] } }));
+  await f.q("UPDATE product_variants SET status='archived',is_default=false WHERE sku=$1", [sku51g]);
+  const payload = await f.catalog.getProduct(f.admin, band.id);
+  assert.deepEqual(payload.compatibility.devices.map(d => [d.optionValueKeys.length, d.variantSkus]), [[1, []]]);
+  assert.deepEqual(payload.compatibility.compatibleDevices.flatMap(d => d.variants), []);
+  const device = await f.catalog.getProduct(f.admin, watch.id);
+  assert.deepEqual(device.compatibility.compatibleAccessories.map(a => a.scope), ["optionValue"]);
+  await f.catalog.saveProduct(f.admin, payload);
+  assert.deepEqual((await linkRows(band.id)).map(r => [r.value, r.variant]), [["43 mm", null]]);
+});

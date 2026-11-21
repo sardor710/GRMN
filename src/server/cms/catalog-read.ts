@@ -21,7 +21,8 @@ const iso = `'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'`;
 export const LOW_STOCK_THRESHOLD = 5;
 
 export interface EditorVariant {
-  id: string; sku: string; title: string; selections: Record<string, string>; price: number; originalPrice?: number;
+  /** KZT; null when the variant has no active price (never shown or resaved as 0). */
+  id: string; sku: string; title: string; selections: Record<string, string>; price: number | null; originalPrice?: number;
   /** On-hand at the main location (what the editor sets). */
   stock: number; stockBaseline: number; stockReserved: number; stockAvailable: number; stockTracked: boolean;
   status: "draft" | "active" | "archived"; isDefault: boolean; imageIds: string[]; sourcePartNumber?: string; sourcePrice?: Record<string, unknown>;
@@ -29,7 +30,7 @@ export interface EditorVariant {
 }
 export interface EditorOption { id: string; key: string; name: string; display: "buttons" | "swatch" | "dropdown"; values: { id: string; key: string; label: string; swatchColor?: string; swatchImage?: string }[] }
 export interface EditorProduct extends Record<string, unknown> {
-  id: string; version: number; name: string; sku: string; price: number; originalPrice?: number; description: string; image: string; family: string;
+  id: string; version: number; name: string; sku: string; price: number | null; originalPrice?: number; description: string; image: string; family: string;
   category: string; subCategory: string; activities: string[];
   stock: number; stockBaseline?: number; stockReserved: number; stockAvailable: number; stockTracked: boolean; stockManaged: boolean;
   status: string; isFeatured: boolean; specs: unknown[]; inTheBox: unknown[]; features: unknown[]; compatibleAccessories: string[];
@@ -62,7 +63,7 @@ export async function loadEditorProduct(client: Query, productId: string, input:
   const variants: EditorVariant[] = config.variants.map(variant => {
     const extra = extras(variant.id, variant.sku);
     return {
-      id: variant.id, sku: variant.sku, title: variant.title ?? "", selections: variant.selections, price: kzt(variant.priceMinor) ?? 0,
+      id: variant.id, sku: variant.sku, title: variant.title ?? "", selections: variant.selections, price: kzt(variant.priceMinor) ?? null,
       ...(variant.compareAtMinor != null ? { originalPrice: kzt(variant.compareAtMinor) } : {}),
       stock: variant.onHand, stockBaseline: variant.onHand, stockReserved: variant.reserved, stockAvailable: variant.onHand - variant.reserved, stockTracked: variant.tracked,
       status: variant.status, isDefault: variant.isDefault, imageIds: Array.isArray(extra?.imageIds) ? extra.imageIds as string[] : [],
@@ -101,7 +102,7 @@ export async function loadEditorProduct(client: Query, productId: string, input:
     ...level, ...caseSize,
     ...(optional(row.badge) ? { badge: row.badge } : {}), ...(optional(row.price_suffix) ? { priceSuffix: row.price_suffix } : {}),
     id: String(row.public_key), version: Number(row.version), name: String(row.name), sku: main?.sku ?? (typeof legacy.sku === "string" ? legacy.sku : ""),
-    price: main?.price ?? 0, ...(main?.originalPrice !== undefined ? { originalPrice: main.originalPrice } : {}),
+    price: main?.price ?? null, ...(main?.originalPrice !== undefined ? { originalPrice: main.originalPrice } : {}),
     description: String(row.description ?? ""), image: typeof legacy.image === "string" ? legacy.image : row.thumbnail ?? "", family: String(row.family ?? ""),
     category: typeof legacy.category === "string" ? legacy.category : "", subCategory: typeof legacy.subCategory === "string" ? legacy.subCategory : "",
     activities: Array.isArray(legacy.activities) ? legacy.activities as string[] : [],

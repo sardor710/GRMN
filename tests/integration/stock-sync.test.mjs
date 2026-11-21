@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { before, after, test } from "node:test";
 import { startCatalogFixture, deviceCommand, simpleCommand, nextSerial, config } from "./catalog-helpers.mjs";
 import { createCatalogHTTP } from "../../src/server/cms/catalog-http.ts";
-import { reconcileStock } from "../../src/server/inventory/service.ts";
+import { reconcileStock, setStockFromSource } from "../../src/server/inventory/service.ts";
 
 let f;
 before(async () => { f = await startCatalogFixture({ taxonomy: false }); }, { timeout: 180000 });
@@ -85,5 +85,33 @@ test("legacy CMS saves of a simple product's stock also go through the ledger", 
   assert.equal(again.stock, 9);
   assert.deepEqual((await ledger(variantId)).map(m => [m.reason, m.delta_on_hand]), [["opening", 4], ["adjust", 5]]);
   // (The reservation test leaves a synthetic hold without reservation lines; check only this variant.)
+  assert.deepEqual((await reconcileStock(f.database.pool)).drift.filter(row => row.variantId === variantId), []);
+});
+
+// M9.3 review finding 3: the writer's stockBaseline check reads the balance without a lock, so a sale or
+// restock can land between that check and the ledger write. setStockFromSource compares the editor's
+// baseline (expectedOnHand) with the LOCKED balance and raises the writer's STOCK_CONFLICT.
+test("the stock baseline is checked against the locked balance (a change after the editor's check is a 409)", async () => {
+  const band = await f.catalog.saveProduct(f.admin, simpleCommand(nextSerial(), { stock: 5 }));
+  const variantId = await defaultVariant(band.id);
+  const inTx = async work => {
+    const client = await f.database.pool.connect();
+    try { await client.query("BEGIN"); const result = await work(client); await client.query("COMMIT"); return result; }
+    catch (error) { await client.query("ROLLBACK"); throw error; } finally { client.release(); }
+  };
+  // The editor loaded 4 (stale: the balance is 5 by the time the write locks it).
+  await assert.rejects(inTx(client => setStockFromSource(client, { variantId, onHand: 9, expectedOnHand: 4, sourceReference: "admin:test#race", label: "BAND-RACE" })),
+    e => e.status === 409 && e.code === "STOCK_CONFLICT" && /Stock of BAND-RACE changed to 5 since it was loaded; reload before saving/.test(e.message));
+  assert.deepEqual(await balance(variantId), { on_hand: 5, reserved: 0 });
+  // The level already equals the target: nothing to write and nothing to conflict with (dedupe semantics kept).
+  const same = await inTx(client => setStockFromSource(client, { variantId, onHand: 5, expectedOnHand: 4, sourceReference: "admin:test#race" }));
+  assert.deepEqual([same.movementId, same.delta], [null, 0]);
+  // A matching baseline writes the adjustment.
+  const ok = await inTx(client => setStockFromSource(client, { variantId, onHand: 9, expectedOnHand: 5, sourceReference: "admin:test#race" }));
+  assert.deepEqual([ok.reason, ok.delta, ok.onHand], ["adjust", 4, 9]);
+  // The catalog save passes the baseline through: an editor save with a stale baseline that slipped past
+  // the unlocked check would now be refused at the locked write as well.
+  const read = await f.catalog.getProduct(f.admin, band.id);
+  await assert.rejects(f.catalog.saveProduct(f.admin, { ...read, stock: 12, stockBaseline: 7 }), e => e.status === 409 && e.code === "STOCK_CONFLICT");
   assert.deepEqual((await reconcileStock(f.database.pool)).drift.filter(row => row.variantId === variantId), []);
 });

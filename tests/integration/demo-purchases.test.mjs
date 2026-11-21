@@ -238,6 +238,43 @@ test("refused in production (without the override), next to a live provider, and
   assert.deepEqual(await balance(p.variant),{on_hand:5,reserved:0},"no stock held by refused checkouts");
 });
 
+// M9.3 review finding 2: with the production override, anonymous visitors and customers must not take real
+// stock and coupons for free (and have them shipped). Only signed-in staff may demo-buy there; outside
+// production nothing changes (the owner's local guest demo buying keeps working).
+test("with DEMO_PURCHASES_ALLOW_PRODUCTION=1 only signed-in staff may demo-buy; guests and customers get 403",async()=>{
+  const production=payments.createPaymentProviders(registry.configuredPaymentProviders({DEMO_PURCHASES:"1",NODE_ENV:"production",DEMO_PURCHASES_ALLOW_PRODUCTION:"1"}));
+  assert.equal(production.get("sandbox").staffOnly,true);
+  assert.equal(demoProviders().get("sandbox").staffOnly,false,"outside production the sandbox is open to every shopper");
+  // The test identity wraps the real session lookup; a staff principal is one holding staff permissions
+  // (the real one is MFA-admitted by requirePrincipal before it ever reaches checkout).
+  const staffUsers=new Set();
+  const staffIdentify=async h=>{const principal=await identify(h);return principal&&staffUsers.has(principal.userId)?{...principal,permissions:["orders:read","orders:fulfill"]}:principal;};
+  const carts=createCartService({database,secret,identify:staffIdentify,payments:production});
+  const p=await product({stock:4});
+  await coupon("prodstaff");
+  // Guest: refused with a clear 403, nothing placed, no stock or coupon taken.
+  const guest=await quoted(carts,guestHeaders(),[[p.variant,1]],{couponCode:"prodstaff"});
+  assert.equal(guest.quote.paymentMethod,"sandbox");
+  await assert.rejects(carts.checkout(guest.headers,key(),body(guest.quote)),error=>{assert.equal(error.status,403);assert.equal(error.code,"DEMO_PURCHASE_STAFF_ONLY");assert.match(error.message,/staff/i);return true;});
+  // Signed-in customer (no staff role): refused the same way.
+  const customer=await owner();
+  const bought=await quoted(carts,customer.headers,[[p.variant,1]],{couponCode:"prodstaff"});
+  await rejectsWith(carts.checkout(customer.headers,key(),body(bought.quote)),403,"DEMO_PURCHASE_STAFF_ONLY");
+  await rejectsWith(checkout.placeOrder(database.pool,secret,{userId:customer.id,guestTokenHash:null,staff:false},key(),body(bought.quote),{payments:production}),403,"DEMO_PURCHASE_STAFF_ONLY");
+  assert.equal((await q("SELECT count(*)::int AS n FROM orders WHERE user_id=$1",[customer.id])).rows[0].n,0);
+  assert.deepEqual(await balance(p.variant),{on_hand:4,reserved:0},"no stock taken by refused checkouts");
+  assert.equal((await q("SELECT count(*)::int AS n FROM promotion_redemptions r JOIN promotions m ON m.id=r.promotion_id WHERE m.code='prodstaff'")).rows[0].n,0,"no coupon taken");
+  // Signed-in staff: the demo purchase goes through and is captured.
+  const operator=await owner();staffUsers.add(operator.id);
+  const staffQuote=await quoted(carts,operator.headers,[[p.variant,1]]);
+  const result=await carts.checkout(operator.headers,key(),body(staffQuote.quote));
+  assert.deepEqual([result.paymentMode,result.paymentState],["sandbox","captured"]);
+  assert.deepEqual(await balance(p.variant),{on_hand:3,reserved:0});
+  // Outside production a guest still demo-buys (unchanged).
+  const open=cartsWith(demoProviders()),local=await quoted(open,guestHeaders(),[[p.variant,1]]);
+  assert.equal((await open.checkout(local.headers,key(),body(local.quote))).paymentState,"captured");
+});
+
 test("the demo provider still never captures, sandbox facts stay in the sandbox, and the sandbox has no webhooks",async()=>{
   // A demo-method order (D03): unpaid, and the database refuses any attempt to make it look captured.
   const plain=cartsWith(),buyer=await owner(),p=await product();

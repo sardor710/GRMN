@@ -252,7 +252,7 @@ function PreviewBody({ product }: { product: PreviewProduct }) {
 
         <p className="mt-4 text-[28px] font-medium text-black">
           {formatKzt(price)}
-          {compareAt !== undefined && compareAt > price && (
+          {compareAt !== undefined && price !== null && compareAt > price && (
             <span className="ml-3 text-[18px] font-normal text-neutral-500 line-through">{formatKzt(compareAt)}</span>
           )}
           {product.priceSuffix && <span className="ml-2 text-[14px] font-normal text-neutral-500">{product.priceSuffix}</span>}

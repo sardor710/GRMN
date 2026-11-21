@@ -69,7 +69,7 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
 export type CartCookie = { token: string } | { clear: true };
 export interface CartResult { cart: CartDTO; cookie?: CartCookie }
 type Notice = { code: CartNoticeCode; variantId: string };
-interface Actor { userId: string | null; token: string | null; tokenHash: string | null }
+interface Actor { userId: string | null; staff?: boolean; token: string | null; tokenHash: string | null }
 interface CartRow { id: string; version: number; expires_at: Date }
 interface Offer { variantId: string; productKey: string; name: string; variantName: string; image: string | null; amount: string | null; availability: Availability; free: number }
 type Queryable = Pick<PoolClient, "query">;
@@ -114,7 +114,9 @@ export function createCartService({ database, secret, identify, market = "defaul
   }
   async function actor(headers: Headers): Promise<Actor> {
     const principal = await identify(headers), token = readToken(headers);
-    return { userId: principal?.userId ?? null, token, tokenHash: token ? digest(token) : null };
+    // Staff = a signed-in principal holding staff permissions (customers hold none; requirePrincipal already
+    // refuses a staff session without MFA admission).
+    return { userId: principal?.userId ?? null, staff: (principal?.permissions.length ?? 0) > 0, token, tokenHash: token ? digest(token) : null };
   }
 
   async function transaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {
@@ -329,7 +331,7 @@ export function createCartService({ database, secret, identify, market = "defaul
     // once (worker reconciliation would also complete it).
     async checkout(headers: Headers, idempotencyKey: string, input: unknown): Promise<CheckoutResultDTO> {
       const who = await actor(headers);
-      const placed = await placeOrder(database.pool, secret, { userId: who.userId, guestTokenHash: who.userId ? null : who.tokenHash }, idempotencyKey, input, payments ? { payments } : {});
+      const placed = await placeOrder(database.pool, secret, { userId: who.userId, guestTokenHash: who.userId ? null : who.tokenHash, staff: who.staff }, idempotencyKey, input, payments ? { payments } : {});
       if (placed.paymentMode !== "sandbox" || !payments) return placed;
       await captureSandboxOrder(database.pool, payments, placed.orderId);
       const now = (await database.pool.query<{ order_status: CheckoutResultDTO["status"]; payment_status: string }>("SELECT order_status,payment_status FROM orders WHERE id=$1", [placed.orderId])).rows[0];

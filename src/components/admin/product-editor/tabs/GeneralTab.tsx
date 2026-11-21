@@ -27,7 +27,7 @@ export function GeneralTab({ editor, skuConflicts, onOpenTab }: { editor: Produc
   const hasVariants = form.variants.length > 0;
   const skuConflict = skuConflicts.includes(form.sku.trim().toUpperCase());
   const reserved = typeof base.stockReserved === "number" ? base.stockReserved : 0;
-  const prices = form.variants.map((variant) => variant.price).filter((price) => Number.isFinite(price));
+  const prices = form.variants.map((variant) => variant.price).filter((price): price is number => price !== null && Number.isFinite(price));
   const stockSum = form.variants.filter((variant) => variant.status !== "archived").reduce((total, variant) => total + (variant.stock || 0), 0);
 
   return (

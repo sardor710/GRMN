@@ -289,7 +289,7 @@ const VariantRow = memo(function VariantRow({ variant, chips, issue, thumbnail, 
           </div>
           <div>
             <span aria-hidden="true" className="mb-0.5 block text-[11px] font-semibold uppercase tracking-[0.06em] text-[#595959] lg:hidden">Price ₸</span>
-            <input type="number" min={0} inputMode="decimal" value={variant.price} onChange={(event) => onPatch(variant.id, { price: numberValue(event.target.value) })} aria-label={`Price in tenge for ${name}`} className={cn(smallInputClass, "tabular-nums")} />
+            <input type="number" min={0} inputMode="decimal" value={variant.price ?? ""} onChange={(event) => onPatch(variant.id, { price: event.target.value.trim() === "" ? null : numberValue(event.target.value) })} aria-label={`Price in tenge for ${name}`} className={cn(smallInputClass, "tabular-nums")} />
           </div>
           <div>
             <span aria-hidden="true" className="mb-0.5 block text-[11px] font-semibold uppercase tracking-[0.06em] text-[#595959] lg:hidden">Stock</span>

@@ -1,7 +1,7 @@
 // M7 / decision D03a: demo purchases are an env-gated sandbox auto-capture adapter.
 import assert from "node:assert/strict";
 import test from "node:test";
-import { createSandboxProvider, demoPurchasesGate, SANDBOX_MERCHANT } from "../../src/server/payments/sandbox.ts";
+import { assertDemoPurchaseActor, createSandboxProvider, demoPurchasesGate, SANDBOX_MERCHANT } from "../../src/server/payments/sandbox.ts";
 import { configuredPaymentProviders } from "../../src/server/payments/providers.ts";
 import { acceptsWebhooks, createPaymentProviders } from "../../src/server/payments/provider.ts";
 import { createDemoProvider } from "../../src/server/payments/demo.ts";
@@ -60,4 +60,20 @@ test("the sandbox adapter is honest: sandbox environment, no webhooks, stable ca
   assert.deepEqual(event, { eventId: "sandbox-capture:a1", kind: "captured", merchantAccount: SANDBOX_MERCHANT, environment: "sandbox", merchantReference: "GRM-1", sessionId: "sandbox-session:a1", transactionId: "sandbox-txn:a1", amountMinor: "123400", currency: "KZT" });
   assert.equal(second.event.transactionId, first.event.transactionId, "the same attempt always reports the same capture");
   assert.deepEqual(await sandbox.refund({ refundId: "r1", orderId: "o1", idempotencyKey: "refund:r1", transactionExternalId: "sandbox-txn:a1", amountMinor: "100", currency: "KZT" }), { state: "succeeded", providerRefundId: "sandbox-refund:r1" });
+});
+
+// M9.3 review finding 2: the production override admits signed-in staff only.
+test("with the production override the sandbox adapter is staff-only; elsewhere it is open", () => {
+  const prod = configuredPaymentProviders({ DEMO_PURCHASES: "1", NODE_ENV: "production", DEMO_PURCHASES_ALLOW_PRODUCTION: "1" }).find(p => p.name === "sandbox");
+  const dev = configuredPaymentProviders({ DEMO_PURCHASES: "1", NODE_ENV: "development" }).find(p => p.name === "sandbox");
+  assert.equal(prod.staffOnly, true);
+  assert.equal(dev.staffOnly, false);
+  assert.equal(createSandboxProvider().staffOnly, false);
+  const refused = actor => assert.throws(() => assertDemoPurchaseActor(prod, actor), error => error.status === 403 && error.code === "DEMO_PURCHASE_STAFF_ONLY" && /staff/i.test(error.message));
+  refused({ userId: null, staff: false });
+  refused({ userId: null, staff: true }); // a guest is never staff, whatever the flag says
+  refused({ userId: "u1", staff: false });
+  refused({ userId: "u1" });
+  assert.doesNotThrow(() => assertDemoPurchaseActor(prod, { userId: "u1", staff: true }));
+  for (const actor of [{ userId: null }, { userId: "u1", staff: false }]) assert.doesNotThrow(() => assertDemoPurchaseActor(dev, actor));
 });

@@ -154,6 +154,9 @@ export function validateForm(form: EditorForm): { tab: "general" | "variants" | 
     if (form.price === null || form.price < 0) return { tab: "general", message: "A product without variants needs a price." };
   }
   if (form.variants.some(variant => !variant.sku.trim())) return { tab: "variants", message: "Every variant needs a SKU." };
+  // A variant may have no price (null round-trips as null, never 0 KZT); only an active one must have one.
+  const unpriced = form.variants.find(variant => variant.status === "active" && variant.price === null);
+  if (unpriced) return { tab: "variants", message: `Active variant ${unpriced.sku.trim()} needs a price (or set it to draft).` };
   if (form.categories.length && form.categories.filter(category => category.primary).length !== 1) return { tab: "general", message: "Mark exactly one category as primary." };
   if (form.inTheBox.some(item => !item.label.trim())) return { tab: "box", message: "Every in-the-box item needs a name (or delete the empty row)." };
   return null;
@@ -296,6 +299,12 @@ export function describeSaveError(status: number, body: unknown): SaveError {
   if (status === 0) return { kind: "network", conflicts, reloadable: false, message: "Network error: the product was not saved. Check the connection and try again." };
   return { kind: "other", conflicts, reloadable: false, message: serverMessage || `Save failed (HTTP ${status}).` };
 }
+
+/**
+ * Whether the editor must (re)load `key`. After a create, the save response already is the stored payload
+ * and becomes the base: the key change it causes must not refetch, or edits typed meanwhile would be wiped.
+ */
+export const shouldLoadProduct = (key: string | null, adoptedKey: string | null): boolean => key !== null && key !== adoptedKey;
 
 /** Stable string for unsaved-change detection. */
 export const formSignature = (form: EditorForm): string => JSON.stringify(form);
