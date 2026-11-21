@@ -22,6 +22,7 @@ import type {
 import {useAdminCollection} from "@/hooks/useAdminCollection";
 import {AdminPageControls} from "@/components/admin/AdminPageControls";
 import { AdminModal } from "@/components/admin/AdminModal";
+import { Button, Select } from "@/components/admin/ui";
 
 const AVAILABLE_CATEGORIES = [
   "Smartwatches & Wearables",
@@ -222,14 +223,13 @@ export default function AdminDiscountsPage() {
           </p>
         </div>
 
-        <button
+        <Button variant="primary" size="md"
           type="button"
           onClick={handleOpenAdd}
-          className="inline-flex items-center gap-2 bg-black px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none"
         >
           <Plus className="h-3.5 w-3.5" />
           <span>Create Promotion</span>
-        </button>
+        </Button>
       </div>
 
       {/* Discounts Table */}
@@ -435,14 +435,13 @@ export default function AdminDiscountsPage() {
               <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Discount Rule
               </label>
-              <select
+              <Select
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value as DiscountType })}
-                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-semibold uppercase text-neutral-900 focus:border-black focus:outline-none rounded-none"
               >
                 <option value="percentage">Percentage Discount (% Off)</option>
                 <option value="fixed">Fixed Dollar Reduction ($ Off)</option>
-              </select>
+              </Select>
             </div>
           </div>
 
@@ -654,15 +653,14 @@ export default function AdminDiscountsPage() {
               <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Status
               </label>
-              <select
+              <Select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as DiscountStatus })}
-                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-semibold uppercase text-neutral-900 focus:border-black focus:outline-none rounded-none"
               >
                 <option value="active">Active</option>
                 <option value="disabled">Disabled</option>
                 <option value="expired">Expired</option>
-              </select>
+              </Select>
             </div>
             <div className="flex items-center pt-5">
               <label className="flex items-center gap-2 cursor-pointer text-xs text-neutral-700">
@@ -679,19 +677,17 @@ export default function AdminDiscountsPage() {
 
           {/* Submit Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200">
-            <button
+            <Button variant="outline" size="md"
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-700 hover:bg-neutral-50 rounded-none transition-colors"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button variant="primary" size="md"
               type="submit"
-              className="bg-black px-6 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none"
             >
               {editingDiscount ? "Save Promotion" : "Deploy Promotion"}
-            </button>
+            </Button>
           </div>
         </form>
       </AdminModal>

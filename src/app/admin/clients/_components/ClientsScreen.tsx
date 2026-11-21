@@ -17,6 +17,7 @@ import { useAdminCollection } from "@/hooks/useAdminCollection";
 import { AdminPageControls } from "@/components/admin/AdminPageControls";
 import { writeAdminRecord, archiveAdminRecord } from "@/lib/admin-collection";
 import { AdminModal } from "@/components/admin/AdminModal";
+import { Button, Select } from "@/components/admin/ui";
 
 export default function AdminClientsPage() {
   const [search, setSearch] = useState("");
@@ -110,14 +111,13 @@ export default function AdminClientsPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
+          <Button variant="primary" size="md"
             type="button"
             disabled={collection.backend!=="postgres"} onClick={handleOpenAdd}
-            className="inline-flex items-center gap-2 bg-black px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none"
           >
             <Plus className="h-3.5 w-3.5" />
             <span>Add New Client</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -335,16 +335,15 @@ export default function AdminClientsPage() {
               <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700 mb-1">
                 Status Tier
               </label>
-              <select
+              <Select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as ClientStatus })}
-                className="h-10 w-full border border-neutral-300 bg-white px-3 text-sm font-semibold uppercase text-neutral-900 focus:border-black focus:outline-none rounded-none"
               >
                 <option value="active">Active</option>
                 <option value="vip">VIP Tier</option>
                 <option value="pending">Pending</option>
                 <option value="suspended">Suspended</option>
-              </select>
+              </Select>
             </div>
           </div>
 
@@ -362,19 +361,17 @@ export default function AdminClientsPage() {
           </div>
 
           <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200">
-            <button
+            <Button variant="outline" size="md"
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-700 hover:bg-neutral-50 rounded-none transition-colors"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button variant="primary" size="md"
               type="submit"
-              className="bg-black px-6 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none"
             >
               {editingClient ? "Save Changes" : "Create Profile"}
-            </button>
+            </Button>
           </div>
         </form>
       </AdminModal>

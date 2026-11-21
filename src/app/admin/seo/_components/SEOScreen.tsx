@@ -25,6 +25,7 @@ import {
   generateBlogSEOMeta,
 } from "@/lib/seo/analyzer";
 import type { CMSProduct, CMSBlog } from "@/lib/cms/types";
+import { Button } from "@/components/admin/ui";
 
 export default function AdminSEOPage({permissions}: {permissions: readonly string[]}) {
   const productPage=useAdminCollection<CMSProduct>("products");
@@ -126,11 +127,10 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
           </p>
         </div>
 
-        <button
+        <Button variant="primary" size="md"
           type="button"
           onClick={handleBulkOptimize}
           disabled={bulkOptimizing || (!canEditSeo("product",permissions) && !canEditSeo("blog",permissions))}
-          className="inline-flex items-center gap-2 bg-black px-5 py-2.5 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none shadow-xs disabled:opacity-50"
         >
           {bulkOptimizing ? (
             <RefreshCw className="h-4 w-4 animate-spin" />
@@ -138,7 +138,7 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
             <Sparkles className="h-4 w-4" />
           )}
           <span>Optimize These Results</span>
-        </button>
+        </Button>
       </div>
 
       {/* Toast Notification */}
@@ -430,7 +430,7 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
 
                         {/* Actions */}
                         <td className="py-3.5 px-4 text-right">
-                          <button
+                          <Button variant="outline" size="sm"
                             type="button"
                             disabled={!canEditSeo(page.type==="product"?"product":"blog",permissions)}
                             onClick={() => {
@@ -443,11 +443,10 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
                                 if (blog) setEditingItem({ type: "blog", data: blog });
                               }
                             }}
-                            className="px-3 py-1.5 bg-white hover:bg-neutral-100 text-neutral-800 border border-neutral-300 rounded-none text-xs font-semibold uppercase tracking-wider inline-flex items-center gap-1.5 transition-colors"
                           >
                             <Edit3 className="h-3.5 w-3.5 text-[#007cc3]" />
                             <span>Edit SEO</span>
-                          </button>
+                          </Button>
                         </td>
                       </tr>
                     );
@@ -657,14 +656,13 @@ Sitemap: https://www.garmin.com/sitemap.xml`}
             />
 
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-neutral-200">
-              <button
+              <Button variant="outline" size="md"
                 type="button"
                 onClick={() => setEditingItem(null)}
-                className="border border-neutral-200 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-wider text-neutral-700 hover:bg-neutral-50 rounded-none transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="primary" size="md"
                 type="button"
                 onClick={() =>
                   handleSaveEditedSEO({
@@ -676,10 +674,9 @@ Sitemap: https://www.garmin.com/sitemap.xml`}
                     ogImage: editingItem.data.ogImage,
                   })
                 }
-                className="bg-black px-6 py-2 text-xs font-semibold uppercase tracking-wider text-white hover:bg-neutral-800 transition-colors rounded-none"
               >
                 Save SEO Metadata
-              </button>
+              </Button>
             </div>
           </div>
         </AdminModal>

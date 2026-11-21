@@ -13,6 +13,8 @@ import {
   AlertCircle,
   ExternalLink,
   Globe,
+  Menu,
+  X,
 } from "lucide-react";
 
 interface AdminHeaderProps {
@@ -22,9 +24,12 @@ interface AdminHeaderProps {
     role: string;
     avatar?: string;
   };
+  /** Opens the off-canvas sidebar below the lg breakpoint. */
+  onMenu?: () => void;
+  navOpen?: boolean;
 }
 
-export function AdminHeader({ user }: AdminHeaderProps) {
+export function AdminHeader({ user, onMenu, navOpen = false }: AdminHeaderProps) {
   const router = useRouter();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -46,10 +51,22 @@ export function AdminHeader({ user }: AdminHeaderProps) {
   const adminRole = user?.role || "staff";
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-neutral-200 bg-white px-6 font-sans">
-      {/* Search bar */}
-      <div className="flex items-center gap-4">
-        <div className="relative w-80 lg:w-96">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-neutral-200 bg-white px-3 font-sans sm:px-6">
+      {/* Menu (small screens) + search bar */}
+      <div className="flex items-center gap-2 sm:gap-4">
+        {onMenu && (
+          <button
+            type="button"
+            onClick={onMenu}
+            aria-expanded={navOpen}
+            aria-controls="admin-sidebar"
+            aria-label={navOpen ? "Close navigation" : "Open navigation"}
+            className="grid h-10 w-10 place-items-center text-black hover:bg-neutral-100 focus-visible:outline-2 focus-visible:outline-black lg:hidden"
+          >
+            {navOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
+          </button>
+        )}
+        <div className="relative hidden w-64 md:block lg:w-96">
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-neutral-400" />
           <input
             type="text"
@@ -65,7 +82,7 @@ export function AdminHeader({ user }: AdminHeaderProps) {
       {/* Right actions */}
       <div className="flex items-center gap-3">
         {logoutError && <span role="alert" className="text-xs text-rose-700">{logoutError}</span>}
-        <Link href="/admin/login" className="text-xs underline">Verify MFA again</Link>
+        <Link href="/admin/login" className="hidden text-xs underline sm:inline">Verify MFA again</Link>
         {/* SEO Hub Link */}
         <Link
           href="/admin/seo"

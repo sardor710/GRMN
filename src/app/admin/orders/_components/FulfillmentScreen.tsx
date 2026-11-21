@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { AdminOrderDetailDTO, AdminOrderSummaryDTO, ShipmentDTO } from "@/contracts/commerce";
+import { Button, Select } from "@/components/admin/ui";
 
 // Task 16A: PostgreSQL-mode staff fulfillment. Every action sends the version it was based on and
 // an idempotency key; the server decides eligibility (paid, not an exception, not legacy) and
@@ -88,9 +89,9 @@ export default function FulfillmentScreen() {
           <p className="text-sm text-neutral-500">Ship paid orders in parts; every action is recorded in the order timeline.</p>
         </div>
         <label className="text-sm text-neutral-700">Fulfillment status{" "}
-          <select aria-label="Fulfillment status filter" className="ml-2 border border-neutral-300 px-2 py-1" value={status} onChange={event => setStatus(event.target.value)}>
+          <Select wrapperClassName="ml-2" aria-label="Fulfillment status filter" value={status} onChange={event => setStatus(event.target.value)}>
             {STATUSES.map(value => <option key={value} value={value}>{value || "All"}</option>)}
-          </select>
+          </Select>
         </label>
       </div>
       {error && <p role="alert" className="border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
@@ -123,7 +124,7 @@ export default function FulfillmentScreen() {
               </div>
               {!detail.fulfillable.allowed && detail.fulfillable.reason && <p className="border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900">{REASONS[detail.fulfillable.reason]}</p>}
               {!detail.legacy && detail.status !== "cancelled" && detail.status !== "closed" && (
-                <button type="button" disabled={busy} onClick={() => void cancelOrder()} className="border border-red-700 px-3 py-1 text-xs font-bold uppercase tracking-wider text-red-800 disabled:opacity-50">Cancel order</button>
+                <Button variant="outline" size="sm" type="button" disabled={busy} onClick={() => void cancelOrder()}>Cancel order</Button>
               )}
               <table className="w-full text-sm">
                 <thead><tr className="text-left text-xs uppercase text-neutral-500"><th>Item</th><th>Ordered</th><th>Shipped</th><th>Left</th><th>Ship now</th></tr></thead>
@@ -143,7 +144,7 @@ export default function FulfillmentScreen() {
                   <input aria-label="Carrier" placeholder="Carrier (staff only)" className="border border-neutral-300 px-2 py-1 text-sm" value={carrier} onChange={event => setCarrier(event.target.value)} />
                   <input aria-label="Tracking reference" placeholder="Tracking reference" className="border border-neutral-300 px-2 py-1 text-sm" value={tracking} onChange={event => setTracking(event.target.value)} />
                   <input aria-label="Internal note" placeholder="Internal note (staff only)" className="border border-neutral-300 px-2 py-1 text-sm" value={note} onChange={event => setNote(event.target.value)} />
-                  <button type="button" disabled={busy} onClick={() => void createShipment()} className="bg-black px-3 py-2 text-xs font-bold uppercase tracking-wider text-white disabled:opacity-50 sm:col-span-3">Create shipment</button>
+                  <Button variant="primary" size="md" className="sm:col-span-3" type="button" disabled={busy} onClick={() => void createShipment()}>Create shipment</Button>
                 </div>
               )}
               <div>
@@ -156,9 +157,9 @@ export default function FulfillmentScreen() {
                           <span className="font-bold uppercase">{shipment.status}</span>
                           <span className="text-neutral-600">{shipment.items.map(line => `${line.quantity}× ${detail.items.find(item => item.id === line.orderItemId)?.name ?? "item"}`).join(", ")}</span>
                           <span className="flex gap-1">
-                            {shipment.status === "ready" && <button type="button" disabled={busy || !detail.fulfillable.allowed} onClick={() => void act(shipment, "dispatch")} className="border border-black px-2 py-0.5 text-xs font-bold uppercase disabled:opacity-50">Dispatch</button>}
-                            {shipment.status === "ready" && <button type="button" disabled={busy} onClick={() => void act(shipment, "cancel")} className="border border-neutral-400 px-2 py-0.5 text-xs font-bold uppercase disabled:opacity-50">Cancel shipment</button>}
-                            {shipment.status === "dispatched" && <button type="button" disabled={busy} onClick={() => void act(shipment, "deliver")} className="border border-black px-2 py-0.5 text-xs font-bold uppercase disabled:opacity-50">Mark delivered</button>}
+                            {shipment.status === "ready" && <Button variant="outline" size="sm" type="button" disabled={busy || !detail.fulfillable.allowed} onClick={() => void act(shipment, "dispatch")}>Dispatch</Button>}
+                            {shipment.status === "ready" && <Button variant="outline" size="sm" type="button" disabled={busy} onClick={() => void act(shipment, "cancel")}>Cancel shipment</Button>}
+                            {shipment.status === "dispatched" && <Button variant="outline" size="sm" type="button" disabled={busy} onClick={() => void act(shipment, "deliver")}>Mark delivered</Button>}
                           </span>
                         </div>
                         <p className="mt-1 text-xs text-neutral-500">Dispatched {formatDate(shipment.dispatchedAt)} · Delivered {formatDate(shipment.deliveredAt)}{shipment.carrier ? ` · ${shipment.carrier}` : ""}{shipment.trackingReference ? ` · ${shipment.trackingReference}` : ""}</p>

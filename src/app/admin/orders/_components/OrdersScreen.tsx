@@ -36,6 +36,9 @@ import {
   filterOrdersByStatuses,
   filterOrdersByDateRange,
 } from "@/lib/cms/order-filters";
+import { Button, StatusSelect } from "@/components/admin/ui";
+
+const FULFILLMENT_STATUSES: FulfillmentStatus[] = ["new", "processing", "shipped", "delivered", "canceled", "returned"];
 
 type DateRangePreset = "all" | "week" | "month" | "ytd" | "custom";
 type ViewMode = "board" | "list";
@@ -735,32 +738,14 @@ export default function AdminOrdersPage() {
 
                         {/* Fulfillment Status Dropdown */}
                         <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
-                          <select
+                          <StatusSelect
+                            size="sm"
+                            wrapperClassName="inline-block min-w-[140px]"
+                            aria-label={`Fulfillment status of ${ord.orderNumber}`}
                             value={ord.fulfillmentStatus}
-                            onChange={(e) =>
-                              handleUpdateStatus(ord.id, e.target.value as FulfillmentStatus)
-                            }
-                            className={`border px-2.5 py-1 text-xs font-heading uppercase font-semibold rounded-none focus:outline-none focus:border-black cursor-pointer ${
-                              ord.fulfillmentStatus === "delivered"
-                                ? "bg-emerald-50 border-emerald-300 text-emerald-800"
-                                : ord.fulfillmentStatus === "shipped"
-                                ? "bg-sky-50 border-sky-300 text-sky-800"
-                                : ord.fulfillmentStatus === "processing"
-                                ? "bg-amber-50 border-amber-300 text-amber-800"
-                                : ord.fulfillmentStatus === "new"
-                                ? "bg-neutral-100 border-neutral-300 text-neutral-800"
-                                : ord.fulfillmentStatus === "returned"
-                                ? "bg-purple-50 border-purple-300 text-purple-800"
-                                : "bg-rose-50 border-rose-300 text-rose-800"
-                            }`}
-                          >
-                            <option value="new">New</option>
-                            <option value="processing">Processing</option>
-                            <option value="shipped">Shipped</option>
-                            <option value="delivered">Delivered</option>
-                            <option value="canceled">Canceled</option>
-                            <option value="returned">Returned</option>
-                          </select>
+                            options={FULFILLMENT_STATUSES}
+                            onChange={(value) => handleUpdateStatus(ord.id, value as FulfillmentStatus)}
+                          />
                         </td>
 
                         {/* Destination Address */}
@@ -839,20 +824,14 @@ export default function AdminOrdersPage() {
                   <span className="text-[10px] font-heading uppercase tracking-wider text-neutral-400 block font-semibold">
                     Current Fulfillment
                   </span>
-                  <select
+                  <StatusSelect
+                    size="sm"
+                    wrapperClassName="mt-0.5 min-w-[160px]"
+                    aria-label="Current fulfillment status"
                     value={selectedOrder.fulfillmentStatus}
-                    onChange={(e) =>
-                      handleUpdateStatus(selectedOrder.id, e.target.value as FulfillmentStatus)
-                    }
-                    className="border border-neutral-300 bg-white px-2.5 py-1 text-xs font-heading uppercase font-semibold text-black focus:outline-none focus:border-black rounded-none cursor-pointer mt-0.5"
-                  >
-                    <option value="new">New</option>
-                    <option value="processing">Processing</option>
-                    <option value="shipped">Shipped</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="canceled">Canceled</option>
-                    <option value="returned">Returned</option>
-                  </select>
+                    options={FULFILLMENT_STATUSES}
+                    onChange={(value) => handleUpdateStatus(selectedOrder.id, value as FulfillmentStatus)}
+                  />
                 </div>
               </div>
 
@@ -1102,13 +1081,12 @@ export default function AdminOrdersPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <button
+                <Button variant="primary" size="md"
                   type="button"
                   onClick={() => setSelectedOrder(null)}
-                  className="bg-black text-white hover:bg-neutral-800 border border-black px-6 py-2 text-xs font-semibold tracking-wider uppercase rounded-none transition-colors"
                 >
                   Close Window
-                </button>
+                </Button>
               </div>
             </div>
           </div>
