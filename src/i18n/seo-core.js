@@ -23,6 +23,7 @@ export const ROUTE_LOCALES = Object.freeze({
   account: NONE,
   newsletter: ALL,
   garminPay: EN_ONLY,
+  selectLocation: ALL,
   'minisite:fenix-8': EN_ONLY,
   'minisite:marq': EN_ONLY,
   'minisite:marq2': EN_ONLY,

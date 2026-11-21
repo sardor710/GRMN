@@ -990,5 +990,16 @@
     "tryAgain": "Try again",
     "tryAgainFailed": "The payment could not be retried. Reload the page and try again.",
     "methodChanged": "Checkout options changed (demo checkout was turned off or on). Review your order and try again."
+  },
+  "Locations": {
+    "metaTitle": "Select a Location | Garmin Kazakhstan",
+    "metaDescription": "Find the official Garmin website or distributor for your country.",
+    "title": "Select a Location",
+    "intro": "You are on the Garmin Kazakhstan website. Choose another country to visit its official Garmin website or distributor.",
+    "current": "You are here",
+    "dialogTitle": "You are leaving Garmin.kz",
+    "dialogBody": "You clicked a link to leave Garmin.kz and visit the website of an external distributor. Do you want to continue?",
+    "continue": "Continue",
+    "stay": "Cancel"
   }
 }

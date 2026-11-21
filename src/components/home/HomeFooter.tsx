@@ -111,7 +111,7 @@ export function HomeFooter() {
       </nav>
       <div className={styles.company}>
         <div className={styles.locale}>
-          <a href="https://www.garmin.com/en-US/select-a-location/">{t("Footer.region")}</a>
+          <a href={localize("/select-a-location")}>{t("Footer.region")}</a>
           <LanguageSwitcher variant="footer" />
         </div>
         <ul className={styles.socials}>
