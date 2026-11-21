@@ -4,6 +4,7 @@ import { z } from "zod";
 import { AuthFailure } from "../auth/config.ts";
 import { adminDTO } from "../auth/admin-schemas.ts";
 import { readVariantConfiguration } from "../catalog/variant-sync.ts";
+import type { ListPage, PickerRow, ProductListRow, SkuRow, TaxonomyNode } from "../../contracts/admin-catalog.ts";
 import { readCompatibility, type AccessoryLinkInput, type CompatibleAccessoryView, type CompatibleDeviceView, type DeviceLinkInput } from "./compatibility.ts";
 
 // Admin catalog reads for the PostgreSQL CMS (M2). Lists are slim by design (owner: "products list is
@@ -176,11 +177,6 @@ const encodeCursor = (binding: string, at: unknown) => Buffer.from(JSON.stringif
 const stamp = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/);
 const stockCondition = (state: "in" | "low" | "out", available: string) => state === "in" ? `${available}>0` : state === "low" ? `${available}>0 AND ${available}<=${LOW_STOCK_THRESHOLD}` : `${available}<=0`;
 
-export interface ProductListRow {
-  id: string; name: string; family: string | null; status: string; primaryCategory: { key: string; name: string } | null; thumbnail: string | null;
-  variantCount: number; stock: { onHand: number; available: number }; price: { min: number | null; max: number | null }; updatedAt: string; version: number;
-}
-export interface ListPage<T> { items: T[]; nextCursor: string | null; total: number; limit: number }
 
 const productAggregates = `LEFT JOIN LATERAL (
   SELECT count(*)::int AS variant_count,min(pr.amount_minor)::text AS min_price,max(pr.amount_minor)::text AS max_price,
@@ -218,10 +214,6 @@ export async function listProducts(client: Query, raw: unknown, input: { withTot
   };
 }
 
-export interface SkuRow {
-  variantId: string; sku: string; title: string | null; options: { option: string; value: string }[]; productId: string; productName: string; productStatus: string; productVersion: number;
-  price: number | null; compareAt: number | null; stock: { onHand: number; reserved: number; available: number; tracked: boolean }; status: string; isDefault: boolean; thumbnail: string | null; updatedAt: string;
-}
 
 const skuSelect = `SELECT v.id,v.sku,v.name,v.status,v.is_default,p.public_key,p.name AS product_name,p.status AS product_status,p.version AS product_version,
     to_char(p.updated_at AT TIME ZONE 'UTC',${iso}) AS updated,pr.amount_minor::text AS amount,pr.compare_at_minor::text AS compare,b.on_hand,b.reserved,
@@ -263,7 +255,6 @@ export async function productVariantRows(client: Query, productKey: string): Pro
   return (await client.query<SkuDbRow>(`${skuSelect} WHERE v.product_id=$1 AND v.status<>'archived' ORDER BY v.is_default DESC,v.sku COLLATE "C"`, [productId])).rows.map(skuRow);
 }
 
-export interface TaxonomyNode { key: string; name: string; kind: string; slug: string | null; parentKey: string | null; position: number; navVisible: boolean }
 export async function readTaxonomy(client: Query): Promise<{ categories: TaxonomyNode[]; epoch: string }> {
   const epoch = (await client.query<{ epoch: string }>("SELECT epoch::text AS epoch FROM catalog_taxonomy_guard WHERE id=1")).rows[0]?.epoch ?? "0";
   const rows = (await client.query<{ key: string; name: string; kind: string; slug: string | null; parent_key: string | null; position: number; nav_visible: boolean }>(
@@ -271,10 +262,10 @@ export async function readTaxonomy(client: Query): Promise<{ categories: Taxonom
   return { epoch, categories: rows.map(row => ({ key: row.key, name: row.name, kind: row.kind, slug: row.slug, parentKey: row.parent_key, position: row.position, navVisible: row.nav_visible })) };
 }
 
-export interface PickerRow { id: string; name: string; family: string | null; status: string; thumbnail: string | null; primaryCategory: { key: string; name: string } | null; variantCount: number; price: { min: number | null; max: number | null } }
 /** Lazy relations/cross-sell picker: products by name/SKU/category, paged, no total. */
 export async function pickProducts(client: Query, raw: unknown): Promise<{ items: PickerRow[]; nextCursor: string | null }> {
   const input = { limit: 20, ...(raw && typeof raw === "object" ? raw : {}) };
   const page = await listProducts(client, input, { withTotal: false });
   return { items: page.items.map(({ id, name, family, status, thumbnail, primaryCategory, variantCount, price }) => ({ id, name, family, status, thumbnail, primaryCategory, variantCount, price })), nextCursor: page.nextCursor };
 }
+export type { ListPage, PickerRow, ProductListRow, SkuRow, TaxonomyNode };
