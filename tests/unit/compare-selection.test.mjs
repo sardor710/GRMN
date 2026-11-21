@@ -156,3 +156,28 @@ test("product page toggle without a SKU turns off every entry of the product", (
   // With a SKU only that size goes.
   assert.deepEqual(ids(toggleVariant(compared, { productId: "fenix-8", sku: "F8-47" })), ["venu", "fenix-8~F8-51"]);
 });
+
+// The compare page resolved its columns: stale SKUs in the stored selection follow the resolved column, entries
+// for products that no longer resolve are dropped, and entries the page did not ask for are left alone.
+test("reconcileSelection syncs the stored selection with the resolved columns", () => {
+  const { reconcileSelection } = selection;
+  const keys = (items) => items.map((i) => (i.sku ? `${i.productId}~${i.sku}` : i.productId));
+  // A renamed SKU is replaced by the resolved one, keeping the name and image.
+  assert.deepEqual(reconcileSelection([{ productId: "p", sku: "OLD", name: "P", image: "/p.jpg" }], [{ productId: "p", sku: "OLD" }], [{ productId: "p", sku: "D" }]),
+    [{ productId: "p", sku: "D", name: "P", image: "/p.jpg" }]);
+  // An unknown product is dropped; an entry the page was not asked for stays as it is, in place.
+  assert.deepEqual(keys(reconcileSelection([{ productId: "q", sku: "Q1" }, { productId: "x" }, { productId: "p", sku: "D" }], [{ productId: "x" }, { productId: "p", sku: "D" }], [{ productId: "p", sku: "D" }])),
+    ["q~Q1", "p~D"]);
+  // The stale SKU fell back to a size already compared (one column): the stale entry goes.
+  assert.deepEqual(keys(reconcileSelection([{ productId: "p", sku: "D" }, { productId: "p", sku: "OLD" }], [{ productId: "p", sku: "D" }, { productId: "p", sku: "OLD" }], [{ productId: "p", sku: "D" }])),
+    ["p~D"]);
+  // Columns follow the request order: the stale ref takes the next column, not one a later ref asked for.
+  assert.deepEqual(keys(reconcileSelection([{ productId: "p", sku: "OLD" }, { productId: "p", sku: "E" }], [{ productId: "p", sku: "OLD" }, { productId: "p", sku: "E" }], [{ productId: "p", sku: "D" }, { productId: "p", sku: "E" }])),
+    ["p~D", "p~E"]);
+  // A product without variants is shown without a SKU.
+  assert.deepEqual(keys(reconcileSelection([{ productId: "b", sku: "OLD" }], [{ productId: "b", sku: "OLD" }], [{ productId: "b" }])), ["b"]);
+  // Nothing to change (SKU case differences, a SKU-less card entry): the same array comes back.
+  const same = [{ productId: "p", sku: "d" }, { productId: "v" }];
+  assert.equal(reconcileSelection(same, [{ productId: "p", sku: "d" }, { productId: "v" }], [{ productId: "p", sku: "D" }, { productId: "v", sku: "V-1" }]), same);
+  assert.equal(reconcileSelection([], [{ productId: "p" }], []).length, 0);
+});

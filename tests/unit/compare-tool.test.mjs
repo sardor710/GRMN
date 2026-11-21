@@ -307,3 +307,20 @@ test("the compact column bar appears when the cards scroll away, is aria-hidden 
     globalThis.IntersectionObserver = previous;
   }
 });
+
+test("after mount the stored selection follows the resolved columns (stale SKU replaced, unknown product dropped)", () => {
+  const stored = { items: [{ productId: "fenix-8", sku: "F8-OLD", name: "fēnix 8" }, { productId: "gone" }, { productId: "venu", sku: "V-1" }], updates: 0 };
+  const hook = { useCompareSelection: () => ({ items: stored.items, update: (change) => { stored.updates++; stored.items = change(stored.items); } }) };
+  const url = "item=fenix-8~F8-OLD&item=gone&item=band";
+  const fixture = componentFixture("src/components/CompareTool.tsx", {
+    modules: { "next/navigation": { useRouter: () => ({ push() {}, replace() {}, refresh() {} }), usePathname: () => "/en/compare", useSearchParams: () => new URLSearchParams(url) }, "@/lib/compare/compare-items": compareItems, "@/lib/compare/use-compare-selection": hook },
+  });
+  fixture.render(props({ renderedFor: compareItems.renderedQuery(url) }));
+  fixture.effects.forEach((effect) => effect());
+  assert.deepEqual(stored.items, [{ productId: "fenix-8", sku: "F8-47", name: "fēnix 8" }, { productId: "venu", sku: "V-1" }]);
+  // A stale render (a refresh is on its way) leaves the selection alone.
+  stored.items = [{ productId: "gone" }]; stored.updates = 0;
+  fixture.render(props({ renderedFor: compareItems.renderedQuery("item=fenix-8~F8-47") }));
+  fixture.effects.forEach((effect) => effect());
+  assert.equal(stored.updates, 0);
+});

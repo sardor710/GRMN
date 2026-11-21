@@ -136,6 +136,50 @@ export function toggleProduct(items: readonly CompareSelectionItem[], item: Comp
   return hasProduct(items, item.productId) ? removeProduct(items, item.productId) : addItem(items, item);
 }
 
+/**
+ * The compare page resolved `requested` (the URL's refs, in order) into `resolved` (the columns shown, in order; a
+ * column of a product without variants has no SKU). The server keeps the request order, drops products that do
+ * not resolve, shows a stale SKU as the product's default size and merges a column equal to an earlier one, so
+ * each requested ref is matched to its column in that order. Then, for the stored selection:
+ * - an entry for a stale SKU takes its column's SKU (name and image kept);
+ * - an entry whose product no longer resolves, or that merged into another column, is dropped;
+ * - an entry the page did not ask for, or a SKU-less card entry (it stands for the default size), is kept as is.
+ * Returns the same array when nothing changes.
+ */
+export function reconcileSelection(
+  items: readonly CompareSelectionItem[],
+  requested: readonly CompareItemRef[],
+  resolved: readonly CompareItemRef[],
+): readonly CompareSelectionItem[] {
+  const shown = new Set(resolved.map((column) => column.productId));
+  let next = 0;
+  // The column each requested ref ended up in; null when its product did not resolve or it merged into another.
+  const columns = requested.map((ref, index): CompareItemRef | null => {
+    if (!shown.has(ref.productId)) return null;
+    const exactEarlier = resolved.slice(0, next).find((column) => sameItem(column, ref));
+    if (exactEarlier) return exactEarlier;
+    const candidate = resolved[next];
+    if (!candidate || candidate.productId !== ref.productId) return null;
+    // A stale ref takes the next column of its product unless a later ref asks for exactly that column.
+    if (!sameItem(candidate, ref) && requested.slice(index + 1).some((other) => sameItem(other, candidate))) return null;
+    next++;
+    return candidate;
+  });
+  let changed = false;
+  const out: CompareSelectionItem[] = [];
+  for (const item of items) {
+    const at = requested.findIndex((ref) => sameItem(ref, item));
+    if (at < 0) { out.push(item); continue; }
+    const column = columns[at];
+    if (!column) { changed = true; continue; }
+    if (!item.sku || sameItem(column, item)) { out.push(item); continue; }
+    const { productId, name, image } = item;
+    out.push({ productId, ...(column.sku ? { sku: column.sku } : {}), ...(name ? { name } : {}), ...(image ? { image } : {}) });
+    changed = true;
+  }
+  return changed ? normalizeSelection(out) : items;
+}
+
 /** The compare page link for the selection (no locale prefix), e.g. `/compare?item=fenix-8~F8-47&item=venu-4`. */
 export function selectionHref(items: readonly CompareSelectionItem[]): string {
   return compareHref(items.map(({ productId, sku }) => (sku ? { productId, sku } : { productId })));

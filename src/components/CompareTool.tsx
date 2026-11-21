@@ -7,7 +7,9 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { useAppLocale } from "@/i18n/useAppLocale";
 import { Price } from "@/components/ui/price";
-import { COMPARE_DIFF_PARAM, COMPARE_MAX_ITEMS, COMPARE_SEARCH_MAX_LENGTH, compareSearch, isDifferentRow, renderedQuery, type CompareGroup, type CompareItemRef } from "@/lib/compare/compare-items";
+import { COMPARE_DIFF_PARAM, COMPARE_MAX_ITEMS, COMPARE_SEARCH_MAX_LENGTH, compareSearch, isDifferentRow, parseCompareItems, renderedQuery, type CompareGroup, type CompareItemRef } from "@/lib/compare/compare-items";
+import { reconcileSelection } from "@/lib/compare/selection";
+import { useCompareSelection } from "@/lib/compare/use-compare-selection";
 import type { CompareItem } from "@/lib/compare/resolve";
 
 /** One compare column as the page sends it: the compare read without its spec content, plus the Shop link. */
@@ -59,6 +61,16 @@ export function CompareTool({ items, groups, search, catalogueHref, renderedFor 
   useEffect(() => {
     if (liveQuery !== renderedFor) router.refresh();
   }, [liveQuery, renderedFor, router]);
+  // The stored catalogue selection (localStorage, guarded in the store) follows the columns the server resolved:
+  // a stale SKU takes the resolved one and a product that no longer resolves is dropped; entries this page did
+  // not ask for are kept. Only for a current render (a stale one is being refetched above).
+  const { update: updateSelection } = useCompareSelection();
+  useEffect(() => {
+    if (liveQuery !== renderedFor) return;
+    const requested = parseCompareItems(renderedFor);
+    const resolved = items.map(refOf);
+    updateSelection((stored) => reconcileSelection(stored, requested, resolved));
+  }, [items, liveQuery, renderedFor, updateSelection]);
   // "Show only differences" lives in the URL (`diff=1`), so Back and Forward restore it.
   const diff = params.get(COMPARE_DIFF_PARAM) === "1";
   const [collapsed, setCollapsed] = useState<string[]>([]);
