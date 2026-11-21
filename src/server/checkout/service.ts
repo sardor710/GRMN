@@ -8,6 +8,7 @@ import { reserveStock, withInventoryTransaction } from "../inventory/reservation
 import { reserveCouponQuota } from "../pricing/coupons.ts";
 import { revalidateQuote, type DeliverySnapshot } from "../pricing/quote.ts";
 import { appendOutboxEvent } from "../operations/outbox.ts";
+import { enqueueOrderAlerts } from "../notifications/whatsapp.ts";
 import type { PaymentProvider, PaymentProviders } from "../payments/provider.ts";
 
 // Task 14A. Idempotent checkout inside the exact plan Section 6 boundary, in ONE short
@@ -194,6 +195,8 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
       topic: "order.placed", dedupeKey: `order-placed:${orderId}`, aggregate: { type: "order", id: orderId }, consumers: [PAYMENT_START_KIND],
       payload: { orderId, orderNumber, checkoutAttemptId: attemptId, paymentAttemptId, totalMinor: quote.total_minor, currency: "KZT", paymentMode },
     });
+    // Staff WhatsApp alert (no-op unless WHATSAPP_* is configured); the worker sends it after commit.
+    await enqueueOrderAlerts(client, orderId, "placed");
     if (!actor.userId) await client.query(
       `INSERT INTO order_access_tokens(id,order_id,token_hash,scope,expires_at) VALUES($1,$2,$3,'order_status',clock_timestamp()+make_interval(days=>${STATUS_TOKEN_DAYS}))`,
       [randomUUID(), orderId, sha256(statusToken(secret, orderId))]);

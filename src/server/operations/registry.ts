@@ -10,6 +10,7 @@ import { CONTENT_INVALIDATE_KIND } from "../content/publishing.ts";
 import { cleanupOrphanMedia } from "../content/media.ts";
 import { EXPORT_EXPIRE_KIND, EXPORT_GENERATE_KIND, expireExports, generateExport } from "../reports/exports.ts";
 import { pruneRateLimits } from "./rate-limit.ts";
+import { WHATSAPP_ORDER_ALERT_KIND, sendWhatsAppOrderAlert } from "../notifications/whatsapp.ts";
 import path from "node:path";
 import { JobError } from "./outbox.ts";
 import type { ClaimedJob, JobHandler, JobHandlers } from "./outbox.ts";
@@ -145,6 +146,7 @@ export const jobHandlers: JobHandlers = {
   [EXPORT_GENERATE_KIND]: buildExport,
   [EXPORT_EXPIRE_KIND]: sweepExports,
   [RATE_LIMIT_PRUNE_KIND]: pruneLimits,
+  [WHATSAPP_ORDER_ALERT_KIND]: sendWhatsAppOrderAlert,
 };
 
 /**

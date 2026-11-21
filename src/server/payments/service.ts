@@ -5,6 +5,7 @@ import { AuthFailure } from "../auth/config.ts";
 import { consumeReservation, expireReservation, releaseReservation, reserveStock, withInventoryTransaction } from "../inventory/reservations.ts";
 import { consumeCouponQuota, releaseCouponQuota } from "../pricing/coupons.ts";
 import { enqueueJob } from "../operations/outbox.ts";
+import { enqueueOrderAlerts } from "../notifications/whatsapp.ts";
 import { PAYMENT_START_KIND } from "../checkout/service.ts";
 import type { PaymentEvent, PaymentProvenance, PaymentProvider, PaymentProviders } from "./provider.ts";
 
@@ -367,6 +368,7 @@ async function capture(client: PoolClient, provider: PaymentProvider, order: Ord
     { transactionId, code: typeof errorCode(coupon.error) === "string" ? errorCode(coupon.error) : null });
   await client.query("UPDATE orders SET order_status='confirmed',payment_status='paid',version=version+1,updated_at=clock_timestamp() WHERE id=$1", [order.id]);
   await orderEvent(client, order.id, "order.paid", source, `order-paid:${transactionId}`, "customer", { transactionId });
+  await enqueueOrderAlerts(client, order.id, "paid");
   if (expired) await orderEvent(client, order.id, "order.reinstated", source, `order-reinstated:${transactionId}`, "customer", { transactionId });
   return "paid";
 }
