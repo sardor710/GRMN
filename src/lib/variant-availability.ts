@@ -37,7 +37,9 @@ export interface OptionValueState {
 export function optionValueStates(options: readonly ProductOptionDTO[], variants: readonly SelectableVariant[], current: SelectableVariant | undefined): { option: ProductOptionDTO; values: OptionValueState[] }[] {
   return options.map(option => ({
     option,
+    // Variants identify values by label, so two stored values with the same label are one choice.
     values: option.values
+      .filter((value, index) => option.values.findIndex(other => other.label === value.label) === index)
       .filter(value => variants.some(v => v.options[option.key] === value.label))
       .map(value => ({
         label: value.label,

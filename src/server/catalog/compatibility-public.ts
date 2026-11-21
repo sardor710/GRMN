@@ -8,6 +8,7 @@ import "server-only";
 import type { Pool } from "pg";
 import type { ProductCardDTO } from "../../contracts/commerce.ts";
 import type { CategoryCrumbDTO, CompatibleAccessoryDTO, CompatibleDeviceDTO } from "../../contracts/catalog-browse.ts";
+import { groupResolvable } from "./category-page.ts";
 
 type Query = Pick<Pool, "query">;
 type Cards = (keys: string[]) => Promise<ProductCardDTO[]>;
@@ -82,11 +83,14 @@ export async function compatibleDevices(pool: Query, accessoryProductId: string,
   return [...seen.values()].sort((a, b) => collator.compare(a.label, b.label));
 }
 
-/** Primary category path (root first) for breadcrumbs; empty when the product has no primary category. */
+/**
+ * Primary category path (root first) for breadcrumbs; empty when the product has no primary category.
+ * Nodes without a public page (hidden compatibility groups such as "QuickFit 26 mm") are skipped.
+ */
 export async function primaryCategoryPath(pool: Query, productId: string): Promise<CategoryCrumbDTO[]> {
-  const rows = (await pool.query<CategoryCrumbDTO & { archived: boolean }>(`WITH RECURSIVE up AS (
-      SELECT c.id,c.parent_id,c.name,c.slug,c.archived,0 AS depth FROM product_categories pc JOIN categories c ON c.id=pc.category_id WHERE pc.product_id=$1 AND pc.is_primary
-      UNION ALL SELECT c.id,c.parent_id,c.name,c.slug,c.archived,up.depth+1 FROM categories c JOIN up ON c.id=up.parent_id WHERE up.depth<20
-    ) SELECT name,slug,archived FROM up WHERE slug IS NOT NULL ORDER BY depth DESC`, [productId])).rows;
-  return rows.some(r => r.archived) ? [] : rows.map(({ name, slug }) => ({ name, slug }));
+  const rows = (await pool.query<CategoryCrumbDTO & { archived: boolean; kind: "catalog" | "accessory" | "group"; nav_visible: boolean }>(`WITH RECURSIVE up AS (
+      SELECT c.id,c.parent_id,c.name,c.slug,c.archived,c.kind,c.nav_visible,0 AS depth FROM product_categories pc JOIN categories c ON c.id=pc.category_id WHERE pc.product_id=$1 AND pc.is_primary
+      UNION ALL SELECT c.id,c.parent_id,c.name,c.slug,c.archived,c.kind,c.nav_visible,up.depth+1 FROM categories c JOIN up ON c.id=up.parent_id WHERE up.depth<20
+    ) SELECT name,slug,archived,kind,nav_visible FROM up WHERE slug IS NOT NULL ORDER BY depth DESC`, [productId])).rows;
+  return rows.some(r => r.archived) ? [] : rows.filter(r => groupResolvable(r)).map(({ name, slug }) => ({ name, slug }));
 }

@@ -84,6 +84,8 @@ test("breadcrumbs follow the primary category path", async () => {
   const n = nextSerial();
   const watch = await f.catalog.saveProduct(f.admin, simpleCommand(`${n}-bc`, { categories: [{ key: "watch-series/forerunner" }, { key: "sports-fitness/running-smartwatches", primary: true }] }));
   assert.deepEqual((await detail(watch.id)).breadcrumb, [{ name: "Smartwatches", slug: "wearables-smartwatches" }, { name: "Running", slug: "sports-fitness/running-smartwatches" }]);
+  const band = await f.catalog.saveProduct(f.admin, simpleCommand(`${n}-band`, { categories: [{ key: "bands/quickfit-26-mm", primary: true }] }));
+  assert.deepEqual((await detail(band.id)).breadcrumb, [{ name: "Bands", slug: "bands" }], "hidden groups have no page, so no crumb");
   const loose = await f.catalog.saveProduct(f.admin, simpleCommand(`${n}-loose`));
   assert.deepEqual((await detail(loose.id)).breadcrumb, []);
 });
