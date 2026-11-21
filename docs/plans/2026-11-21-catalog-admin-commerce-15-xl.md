@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 4 | 43/57 | 2026-11-21 | Wave 4: M7 demo purchases ‖ M8 KZ address + Yandex map |
+| Executing | 4 | 52/57 | 2026-11-21 | M8.5 checkout wiring of AddressForm (account part done), then Wave 5 (M9) |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -293,18 +293,18 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 - [x] M6.4 Watch-side "add accessory" writes the same compatibility row — verify: integration via API — done: tests/integration/compatibility-editor.test.mjs 4 cases + unit variants-state/compatibility-state; agent: unit 275/275, integration 28/28, build ok. Merged 4e28dd3
 
 ### M7 — Demo purchases (wave 4, owner: `payments-billing-engineer`)
-- [ ] M7.1 Record D03a in `docs/backend/decisions.md` — verify: file diff
-- [ ] M7.2 Sandbox auto-capture provider, env gates and production refusal — verify: unit
-- [ ] M7.3 Cart service passes providers; CheckoutPanel uses sandbox method when enabled; immediate capture path (depends on Q3) — verify: A11 integration
-- [ ] M7.4 Demo labels in orders, dashboard, reports; exports can exclude sandbox — verify: integration + screenshots
-- [ ] M7.5 Update the affected existing tests (checkout, payments, fulfillment, cart-view) deliberately — verify: `npm test`
+- [x] M7.1 Record D03a in `docs/backend/decisions.md` — verify: file diff — done: D03a recorded in docs/backend/decisions.md. Merged 25f0bb9
+- [x] M7.2 Sandbox auto-capture provider, env gates and production refusal — verify: unit — done: migration 0015 (sandbox provider/environment, orders.payment_mode sandbox, payment_attempts_sandbox_guard trigger; demo/live guards untouched) + src/server/payments/sandbox.ts gate (DEMO_PURCHASES, production refusal, live-provider refusal). Merged 25f0bb9
+- [x] M7.3 Cart service passes providers; CheckoutPanel uses sandbox method when enabled; immediate capture path (depends on Q3) — verify: A11 integration — done: cart passes providers; checkout captures sandbox orders at once via applyPaymentEvent (paid, stock consumed, coupon used, order.paid, capture row); idempotent; CheckoutPanel demo notice + Paid (Demo) receipt. Merged 25f0bb9
+- [x] M7.4 Demo labels in orders, dashboard, reports; exports can exclude sandbox — verify: integration + screenshots — done: Demo badges in fulfillment, 'Demo (sandbox)' series in reports/dashboard, exports exclude sandbox unless toggled; sandbox orders can ship. Merged 25f0bb9
+- [x] M7.5 Update the affected existing tests (checkout, payments, fulfillment, cart-view) deliberately — verify: `npm test` — done: tests/integration/demo-purchases.test.mjs 6 tests + unit gate/panel; existing checkout/payments/fulfillment/promotions/reports tests updated with reasons; agent: unit 294/294, integration 136/136, build ok, dev:stack --check 7/7 incl. demo checkout → paid. Merged 25f0bb9
 
 ### M8 — KZ address + Yandex map + profile (wave 4, owner: `frontend-developer`)
-- [ ] M8.1 `src/lib/kz-regions.ts` (17 oblasts + 3 cities, main cities per region, centers) — verify: unit
-- [ ] M8.2 Server: KZ-only validation, lat/lng, birthday + email in profile DTO/service — verify: integration
-- [ ] M8.3 Geocoder proxy `src/app/api/geo/geocode` (forward + reverse, KZ bbox, rate limit, key server-side) — verify: unit with mocked fetch
-- [ ] M8.4 `AddressForm` with Yandex JS API 2.1 map (lazy script), two-way sync, not-found flow that keeps the typed line — verify: A12 browser with real keys
-- [ ] M8.5 Account modal + profile birthday/email UI; checkout reuses AddressForm (after M7 merge) — verify: browser
+- [x] M8.1 `src/lib/kz-regions.ts` (17 oblasts + 3 cities, main cities per region, centers) — verify: unit — done: src/lib/kz-regions.ts 17 regions + Astana/Almaty/Shymkent, en/ru/kk, centres verified via Wikipedia + Yandex; unit kz-regions. Merged 026b053
+- [x] M8.2 Server: KZ-only validation, lat/lng, birthday + email in profile DTO/service — verify: integration — done: src/server/account/address-rules.ts: KZ only (400 otherwise), region codes, lat/lng KZ bbox, geo_precision; birthDate (age 10–120) + email; integration account-kz-address 7/7. Merged 026b053
+- [x] M8.3 Geocoder proxy `src/app/api/geo/geocode` (forward + reverse, KZ bbox, rate limit, key server-side) — verify: unit with mocked fetch — done: POST /api/geo/geocode same-origin proxy, server-side key, KZ filter, fuzzy-guess guard, rate limits, 502/503/429 without leaking key; unit geo-geocode 12/12. Merged 026b053
+- [x] M8.4 `AddressForm` with Yandex JS API 2.1 map (lazy script), two-way sync, not-found flow that keeps the typed line — verify: A12 browser with real keys — done: src/components/address/AddressForm.tsx with lazy Yandex JS 2.1 map, two-way sync, not-found flow keeps typed line (precision manual), graceful no-map mode; real-key browser checks passed. Merged 026b053
+- [~] M8.5 Account modal + profile birthday/email UI; checkout reuses AddressForm (after M7 merge) — verify: browser
 
 ### M9 — Verification & review (wave 5, owner: `superpowers:verification-before-completion`)
 - [ ] M9.1 `npm test`, `npm run check` — verify: exit 0, counts recorded
@@ -342,6 +342,7 @@ ode_modules removed.
 - 2026-11-21: Wave 2 done: M3 merged d9f65dc, M4 merged 3f69578. Lead fix eca8e77: dev import publishes imported homepage/active banners once (homepage was 503 on fresh DB), stack check gained a homepage row; cms-services test moved off the deleted PostgresProductsScreen. Merged-branch checks: unit 258/258, legacy 73/73, integration 150/150 (17 files, after the test fix), boundaries ok, typecheck ok, lint 0 errors in project code (15 errors only in the owner's untracked .claude/skills/design-taste-frontend/assets/effects/fx.js), `dev:stack --check` 6/6 (outputs/runtime/dev-stack-check-2.log). Worktrees removed with junction-safe cleanup.
 - 2026-11-21: Wave 3 done: M5 merged b50781c, M6 merged 4e28dd3 (clean merges). Notes: M6 accidentally created 2 test products in M5's dev DB through the shared browser pane (that DB was deleted with M5's worktree; no effect on the main checkout). Open items for M9: `npm run test:cms-ui` fails at the homepage-editor step (pre-existing on b65f05b); check watch-series group assignment of imported products on the main dev DB.
 - 2026-11-21: Post-Wave-3 full suite on the merged branch (402d3b3): unit 286/286, legacy 77/77, FULL integration 405/405 (all files), boundaries ok.
+- 2026-11-21: Wave 4 merged: M7 25f0bb9, M8 026b053. Account address modal + birthday/email done; checkout wiring of AddressForm remains (M8.5). Server-only `YANDEX_GEOCODER_API_KEY` added to `.env.local` (same value). Key scan: no key values in tracked files.
 - 2026-11-21: Q3 answered "Yes, commit them" → WhatsApp alert edits committed as `7d0f76f`; `checkout/service.ts` and `payments/service.ts` are now free for M7. Note: Wave 0 worktrees were cut from 51b72b3 (before 7d0f76f); merges will carry it forward.
 - 2026-11-21: M0 owns a reusable `src/server/catalog/variant-sync.ts` (legacy-shaped options/variants/prices/opening stock → Postgres) because the existing migration importer only writes a default variant; M2 reuses it in the admin save path. Category mapping of imported products into the taxonomy runs as a lead task after the Wave 0 merge (needs M1 columns).
 
