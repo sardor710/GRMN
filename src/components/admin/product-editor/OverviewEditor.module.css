@@ -1,0 +1,66 @@
+/* Admin overview editor chrome. The editable itself gets the storefront .overview class (CmsOverview.module.css),
+   so text, headings and Garmin layout blocks look as they do on the product page; the rules below only undo
+   what cannot work inside an editor column and add light editing affordances. */
+.shell :global(.ck.ck-editor__main > .ck-editor__editable) {
+  min-height: 480px;
+  max-height: none;
+  padding: 24px 32px 32px 56px; /* left gutter for the ⋮⋮ block drag handle */
+  background: #fff;
+}
+
+.shell :global(.ck.ck-toolbar) {
+  border-color: #d9d9d9;
+  background: #f7f7f7;
+}
+
+.shell :global(.ck.ck-editor__main > .ck-editor__editable:not(.ck-focused)) {
+  border-color: #d9d9d9;
+}
+
+/* Full-bleed storefront blocks stay inside the editor column. */
+.surface :global(.ov-lifestyle),
+.surface :global(.ov-video) {
+  margin: 32px 0;
+}
+
+/* Garmin layout containers get a faint outline so they can be selected, cut and pasted as blocks. */
+.surface :global(.ov-features),
+.surface :global(.ov-feature),
+.surface :global(.ov-highlight),
+.surface :global(.ov-intro),
+.surface :global(.ov-lifestyle) {
+  outline: 1px dashed #d0d0d0;
+  outline-offset: 4px;
+}
+
+/* CKEditor's content stylesheet stretches block images to the full width; Garmin icons stay small. */
+.surface :global(.ov-highlight figure.image),
+.surface :global(.ov-highlight .image) {
+  display: block;
+  width: 50px;
+  min-width: 0;
+  margin: 0 auto;
+}
+
+.surface :global(.ov-highlight .image img) {
+  width: 50px;
+  min-width: 0;
+  height: 50px;
+  object-fit: contain;
+}
+
+.surface :global(.ov-feature .image) {
+  display: block;
+  width: 100%;
+  margin: 0;
+}
+
+.surface :global(.ov-lifestyle .image) {
+  display: block;
+  width: 100%;
+  margin: 0;
+}
+
+.surface :global(figure.media) {
+  margin: 32px 0;
+}

@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { ProductImage, ProductOption, ProductVariant, SpecGroup } from "@/lib/cms/types";
 import { availableValueIds, resolveVariant } from "@/lib/cms/product-variants";
 import { GarminBadge } from "@/components/GarminBadge";
-import overviewStyles from "@/components/product/CmsOverview.module.css";
+import { OverviewContent } from "@/components/product/OverviewContent";
 import { previewSafeHtml } from "@/lib/admin/preview-html";
 import { EditorDialog } from "./EditorDialog";
 import { formatKzt, galleryFor, secondaryButtonClass } from "./shared";
@@ -92,7 +92,7 @@ function PreviewTabs({ product }: { product: PreviewProduct }) {
       <div className="mx-auto max-w-[1080px] py-8" role="tabpanel">
         {tab === "Overview" &&
           (overview ? (
-            <div className={overviewStyles.overview} dangerouslySetInnerHTML={{ __html: overview }} />
+            <OverviewContent html={overview} />
           ) : (
             <p className="text-[14px] text-neutral-500">No overview yet.</p>
           ))}
