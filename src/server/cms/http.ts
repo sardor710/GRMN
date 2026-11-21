@@ -19,6 +19,10 @@ function queries(url:URL,allowed:readonly string[]):Record<string,string>{
   const result:Record<string,string>=Object.create(null);
   for(const [key,value]of url.searchParams){if(!allowed.includes(key)||Object.hasOwn(result,key))return bad();result[key]=value;}return result;
 }
+// Owner 2026-11-21: products with per-variant content (e.g. fēnix 9 Pro, 33 variants, ~2.5 MB) grow
+// about 3x once Russian and Kazakh are added, so product saves and auto-translate accept 16 MiB
+// (both proxies allow 25 MB).
+export const MAX_PRODUCT_BODY_BYTES = 16 * 1024 * 1024;
 export function createCMSHTTP(input:{cms:CMSService;authorize:(headers:Headers,permission:Permission)=>Promise<Principal>;baseURL:string;dimensionSpecs:unknown;defaults:()=>unknown}){
   return{async handle(resource:CMSResource|"homepage",request:Request):Promise<Response>{
     try{
@@ -44,7 +48,7 @@ export function createCMSHTTP(input:{cms:CMSService;authorize:(headers:Headers,p
       // Task 2.5: imports also carry each variant's own specs/overview (a fēnix 9 draft is ~2 MB), so products
       // allow 4 MiB. The body is read only after the catalog:write check and same-origin check above.
       const bulk=resource==="products"&&request.method==="POST"&&url.pathname==="/api/admin/products/bulk";
-      const raw=await readAdminJSON(request,true,resource==="products"?4194304:131072);
+      const raw=await readAdminJSON(request,true,resource==="products"?MAX_PRODUCT_BODY_BYTES:131072);
       if(resource==="homepage"){
         if(request.method==="POST"){const data=parsed(z.object({action:z.literal("reset"),version:z.number().int().nonnegative()}).strict(),raw);const saved=await input.cms.saveHomepage(request.headers,{version:data.version,config:input.defaults()});return adminJSON({success:true,config:saved.config,version:saved.version});}
         if(request.method!=="PUT")return bad();const saved=await input.cms.saveHomepage(request.headers,raw);return adminJSON({success:true,config:saved.config,version:saved.version});

@@ -9,6 +9,7 @@ import { requestURL } from "../auth/request-url.ts";
 import { BANNER_SPEC, BLOG_SPEC, HOMEPAGE_SPEC, PRODUCT_SPEC } from "../../i18n/translate-record.ts";
 import { createHash } from "node:crypto";
 import { getDatabase } from "../db/client.ts";
+import { MAX_PRODUCT_BODY_BYTES } from "../cms/http.ts";
 import { translateRecord, translationModelFromEnv, withTranslationMemory, type MachineLocale, type TranslationModel } from "./machine-translate.ts";
 
 /** The OpenRouter model behind the database translation memory (migration 0020). */
@@ -43,7 +44,8 @@ export async function handleTranslateRequest(request: Request, model: Translatio
     const runtime = getAuthRuntime(), baseURL = new URL(process.env.AUTH_BASE_URL!).origin;
     if (request.method !== "POST") throw new AuthFailure("METHOD_NOT_ALLOWED", 405, "Method not allowed");
     if (requestURL(request, baseURL).origin !== baseURL || request.headers.get("origin") !== baseURL) throw new AuthFailure("FORBIDDEN", 403, "Invalid request origin");
-    const raw = await readAdminJSON(request, false, 1048576);
+    // The editor sends the whole record (with its translations so far): same limit as product saves.
+    const raw = await readAdminJSON(request, false, MAX_PRODUCT_BODY_BYTES);
     const parsed = body.safeParse(raw);
     if (!parsed.success) throw new AuthFailure("INVALID_INPUT", 400, "Send { kind, record }");
     const kind = kinds[parsed.data.kind];
