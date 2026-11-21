@@ -46,7 +46,7 @@ export function createCatalogHTTP(input: { service: CatalogAdminService; baseURL
   return async function handleCatalog(request: Request): Promise<Response> {
     try {
       const url = new URL(request.url);
-      if (url.origin !== baseURL || !url.pathname.startsWith("/api/admin/catalog/")) bad();
+      if (url.origin !== baseURL || !(url.pathname === "/api/admin/catalog" || url.pathname.startsWith("/api/admin/catalog/"))) bad();
       const parts = url.pathname.slice("/api/admin/catalog/".length).split("/").filter(Boolean);
       const method = request.method;
       if (method !== "GET" && method !== "HEAD" && request.headers.get("origin") !== baseURL) throw new AuthFailure("FORBIDDEN", 403, "Invalid request origin");
