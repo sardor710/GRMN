@@ -12,6 +12,11 @@ import * as variantSelection from "../../src/lib/catalog/variant-selection.ts";
 const product = (id, name = id) => ({ id, name, image: `/images/${id}.jpg`, description: "", price: "100.00", activities: [], level: "Unknown", caseSize: "Unknown", family: "" });
 const buttons = (tree) => nodes(tree).filter((n) => n.type === "button");
 const compareButton = (tree) => buttons(tree).find((n) => "aria-pressed" in n.props && /comparison|Added/.test(nodeText(n)));
+/** The text a screen reader reads as the name: everything except aria-hidden subtrees, whitespace collapsed. */
+const spokenRaw = (n) => (typeof n === "string" || typeof n === "number" ? String(n) : n?.props?.["aria-hidden"] ? "" : Array.isArray(n) ? n.map(spokenRaw).join("") : n?.props ? [].concat(n.props.children ?? []).map(spokenRaw).join("") : "");
+const spokenText = (n) => spokenRaw(n).replace(/\s+/g, " ").trim();
+const hiddenSpans = (n) => nodes(n).filter((c) => c.type === "span" && c.props?.["aria-hidden"]);
+const srOnly = (n) => nodes(n).filter((c) => c.type === "span" && /\bsr-only\b/.test(c.props?.className ?? "")).map(spokenRaw);
 
 /** A selection hook backed by a plain array; `update` applies the change like the real store. */
 function fakeSelection(initial = []) {
@@ -38,6 +43,9 @@ test("card: the compare control is a pressed/unpressed button beside the link, a
   assert.equal(control.props.type, "button");
   assert.equal(control.props["aria-pressed"], false);
   assert.match(nodeText(control), /Add to comparison\s*,\s*fēnix 8\s*\+/);
+  assert.equal(spokenText(control), "Add to comparison, fēnix 8");
+  assert.equal(hiddenSpans(control).length, 1, "only the mark box is aria-hidden");
+  assert.deepEqual(srOnly(control), [", fēnix 8"]);
   // The control is not inside the product link (a button in an <a> would navigate and is invalid HTML).
   const link = nodes(tree).find((n) => n.props?.href === "/p/fenix-8");
   assert.ok(link, "the product link is still there");
@@ -50,9 +58,11 @@ test("card: the compare control is a pressed/unpressed button beside the link, a
   tree = fixture.render({ product: product("fenix-8", "fēnix 8"), compare: { ...compare, selected: true } });
   assert.equal(compareButton(tree).props["aria-pressed"], true);
   assert.match(nodeText(compareButton(tree)), /^Added/);
-  // Final review M7: the visible "Added" is aria-hidden; the accessible name stays "Add to comparison, <name>".
-  const spokenText = (n) => (typeof n === "string" ? n : n?.props?.["aria-hidden"] ? "" : Array.isArray(n) ? n.map(spokenText).join("") : n?.props ? [].concat(n.props.children ?? []).map(spokenText).join("") : "");
-  assert.equal(spokenText(compareButton(tree)).replace(/\s+/g, " ").trim(), "Add to comparison, fēnix 8");
+  // WCAG 2.5.3 (label in name): the accessible name is the visible label plus the product, "Added, <name>";
+  // aria-pressed carries the state. Only the decorative +/✓ box is hidden; there is no hidden/sr-only label swap.
+  assert.equal(spokenText(compareButton(tree)), "Added, fēnix 8");
+  assert.equal(hiddenSpans(compareButton(tree)).length, 1, "only the mark box is aria-hidden");
+  assert.deepEqual(srOnly(compareButton(tree)), [", fēnix 8"]);
   assert.ok(nodes(compareButton(tree)).some((n) => n.type?.name === "CheckMark"), "✓ mark when added");
   assert.ok("data-compare-selected" in tree.props);
 });
