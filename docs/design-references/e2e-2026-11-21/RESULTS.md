@@ -22,6 +22,17 @@ Every value below was read from the page DOM or the admin API during the run.
 | 11 | Homepage `/` 200 with content; admin homepage editor loads (after the Part A fix) | PASS | `s11-homepage.png`, `s11-admin-homepage-editor.png`, `s11-admin-homepage-saved.png` | `/` 200, 93,633 bytes, 84 links, 33 images, hero "HOLIDAY SALE / Save big on great holiday gifts". `/admin/homepage` loads: "HERO BANNERS (8)", "CAROUSELS (1)". The save button's `textContent` is "Save All Changes" but `innerText` is "SAVE ALL CHANGES" (computed `text-transform: uppercase`). Clicking Save → "Homepage configuration saved successfully!", API version 1 → 2. |
 | 12 | Admin list API speed: `node scripts/perf/admin-list-bench.mjs` (#14) | PASS | console output, summarized here | Disposable DB with 1,000 products / 5,000 SKUs, 50 runs each, service-level (same SQL as the API, no HTTP). p95: grouped first page 7.2 ms; grouped page 5 8.2 ms; SKU first page 6.5 ms; category + descendants 11.9 ms (grouped) / 9.5 ms (SKU); search 11.8 / 14.2 ms; stock=low 91.0 ms (slowest); status+family 9.8 ms; max page (100 rows) 10.8 ms; editor payload 7.9 ms. Page payloads 17–34 KB. Verdict "p95 < 300 ms and page payload < 100 KB for every list query → PASS". |
 
+## Checks after the fixes
+
+| Check | Result |
+|---|---|
+| `npm run typecheck` | exit 0 |
+| `npm run lint` | 0 errors, 24 warnings |
+| `npm run test:unit` | 333/333 pass |
+| `npm run test:cms-ui` | exit 0; PASS Task09, 10C, 13A, 14A, 16A and "Browser smoke passed" |
+
+The `test:cms-ui` run used a fresh `.next`. Two earlier runs that reused a `.next` left behind by a force-killed dev server returned Next's 404 page for `/api/admin/catalog/[...path]`. Touching the route file restored it, so this was dev-cache state, not code.
+
 ## Bugs found during the run
 
 - **Fixed:** single-SKU products created in the admin showed a "Variant" select with the text `null` on `/p/[id]` (`s2-storefront-pdp.png`).
