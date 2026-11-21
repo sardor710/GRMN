@@ -2,7 +2,7 @@ import "server-only";
 import type { Pool } from "pg";
 import { authErrorResponse } from "../auth/http.ts";
 import { AuthFailure } from "../auth/config.ts";
-import type { PaymentProviders } from "./provider.ts";
+import { acceptsWebhooks, type PaymentProviders } from "./provider.ts";
 import { receiveWebhook } from "./service.ts";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -50,9 +50,9 @@ export function createWebhookHandler(input: { pool: () => Pool; providers: () =>
       if (request.method !== "POST") throw new AuthFailure("METHOD_NOT_ALLOWED", 405, "Method not allowed");
       const name = new URL(request.url).pathname.split("/").filter(Boolean).pop() ?? "";
       const providers = input.providers();
-      // Review I6: unknown and simulated providers are refused before any byte of the body is read.
-      const provider = providers.get(name);
-      if (!provider || provider.simulated) throw new AuthFailure("NOT_FOUND", 404, "Not found");
+      // Review I6: unknown and simulated providers, and adapters without webhooks (the D03a sandbox),
+      // are refused before any byte of the body is read.
+      if (!acceptsWebhooks(providers.get(name))) throw new AuthFailure("NOT_FOUND", 404, "Not found");
       const body = await readCapped(request, MAX_BODY_BYTES);
       const result = await receiveWebhook(input.pool(), providers, name, body, request.headers);
       if (result.status === "rejected") return Response.json({ error: { code: "WEBHOOK_REJECTED", message: "Signature or context is invalid" } }, { status: 401, headers: NO_STORE });
