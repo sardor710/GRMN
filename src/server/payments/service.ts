@@ -7,10 +7,11 @@ import { consumeCouponQuota, releaseCouponQuota } from "../pricing/coupons.ts";
 import { enqueueJob } from "../operations/outbox.ts";
 import { enqueueOrderAlerts } from "../notifications/whatsapp.ts";
 import { PAYMENT_START_KIND } from "../checkout/service.ts";
-import type { PaymentEvent, PaymentProvenance, PaymentProvider, PaymentProviders } from "./provider.ts";
+import { acceptsWebhooks, type PaymentEvent, type PaymentProvenance, type PaymentProvider, type PaymentProviders } from "./provider.ts";
 
 export { createPaymentProviders } from "./provider.ts";
 export { createDemoProvider } from "./demo.ts";
+export { createSandboxProvider } from "./sandbox.ts";
 
 // Task 14B. Payment sessions, the durable inbox of verified provider events, idempotent capture,
 // one active payable attempt per order, reconciliation, and the order-level expiry of unpaid
@@ -26,6 +27,8 @@ export { createDemoProvider } from "./demo.ts";
 // worker and reconciliation racing a webhook apply each charge once.
 // The demo provider is simulated: it never emits events and reconciliation skips it, so a demo
 // order is never paid and no capture fact is written for it (D03, O07).
+// The sandbox provider (D03a, demo purchases) is not simulated: captureSandboxOrder() applies its
+// capture right after checkout through the same applyPaymentEvent path, in the sandbox environment.
 
 /** Worker job: process one verified inbox event. */
 export const PAYMENT_INBOX_KIND = "payments.inbox.process";
@@ -48,6 +51,8 @@ const canonical = (value: unknown): string => Array.isArray(value) ? "[" + value
 const errorCode = (error: unknown) => (error as { code?: unknown } | null)?.code;
 
 export type PaymentOutcome = "paid" | "duplicate" | "exception" | "refund_required" | "failed" | "cancelled" | "authorized" | "ignored" | "mismatch" | "unmatched" | "unreadable";
+/** Where a fact was learned; recorded as the order event source. "checkout" is the D03a sandbox capture inside the checkout request. */
+export type PaymentSource = "webhook" | "reconciliation" | "checkout";
 
 interface OrderRow { id: string; order_number: string; checkout_attempt_id: string | null; order_status: string; payment_status: string; fulfillment_status: string; total_minor: string }
 interface AttemptRow {
@@ -151,7 +156,7 @@ const inContext = (provider: PaymentProvider, event: PaymentEvent) => event.merc
  */
 export async function receiveWebhook(pool: Pool, providers: PaymentProviders, providerName: string, rawBody: Uint8Array, headers: Headers): Promise<{ status: "queued" | "duplicate" | "rejected"; inboxId: string }> {
   const provider = providers.get(providerName);
-  if (!provider || provider.simulated) return notFound();
+  if (!acceptsWebhooks(provider)) return notFound();
   if (rawBody.byteLength > MAX_WEBHOOK_BYTES) fail("PAYLOAD_TOO_LARGE", 413, "The webhook body is too large");
   const body = Buffer.from(rawBody), inboxId = randomUUID();
   await pool.query("INSERT INTO webhook_inbox(id,provider,environment,merchant_account,raw_body,body_sha256) VALUES($1,$2,$3,$4,$5,$6)",
@@ -220,7 +225,7 @@ async function requestRefund(client: PoolClient, provider: PaymentProvider, orde
  * webhooks arrive through the inbox. Events never move an attempt backwards: a failure or
  * authorization after a capture is ignored, and a capture is recorded at most once.
  */
-export async function applyPaymentEvent(client: PoolClient, provider: PaymentProvider, event: PaymentEvent, source: "webhook" | "reconciliation"): Promise<PaymentOutcome> {
+export async function applyPaymentEvent(client: PoolClient, provider: PaymentProvider, event: PaymentEvent, source: PaymentSource): Promise<PaymentOutcome> {
   if (provider.simulated) return "ignored";
   const found = (await client.query<{ id: string; order_id: string }>(
     "SELECT id,order_id FROM payment_attempts WHERE provider=$1 AND environment=$2 AND merchant_account=$3 AND merchant_reference=$4",
@@ -374,6 +379,34 @@ async function capture(client: PoolClient, provider: PaymentProvider, order: Ord
 }
 
 // ---------------------------------------------------------------------------------------------
+// Demo purchases (D03a)
+
+/**
+ * Captures a sandbox (demo purchase) order at once, after its checkout committed: opens the sandbox
+ * session with the attempt's stable key, asks the sandbox adapter for its capture, and applies it
+ * through applyPaymentEvent exactly like a verified provider fact (stock consumed, coupon consumed,
+ * order.paid, a sandbox capture row). Idempotent: the capture is keyed by the attempt, so a retried
+ * checkout or a concurrent call records it once. Not a sandbox order, or nothing left to capture: "skipped".
+ */
+export async function captureSandboxOrder(pool: Pool, providers: PaymentProviders, orderId: string): Promise<{ outcome: PaymentOutcome | "skipped" }> {
+  if (!UUID.test(orderId)) notFound();
+  const provider = providers.get("sandbox");
+  if (!provider || provider.simulated || provider.environment !== "sandbox") unavailable();
+  const latest = async () => (await pool.query<AttemptRow>(
+    `SELECT ${ATTEMPT_COLUMNS} FROM payment_attempts WHERE order_id=$1 AND provider='sandbox' ORDER BY created_at DESC,id DESC LIMIT 1`, [orderId])).rows[0];
+  const first = await latest();
+  if (!first || !PAYABLE.has(first.status)) return { outcome: "skipped" };
+  await startPaymentSession(pool, providers, first.id);
+  const row = await latest();
+  if (!row || row.id !== first.id || !PAYABLE.has(row.status)) return { outcome: "skipped" };
+  const state = await providerFor(providers, row).lookup({ attemptId: row.id, merchantReference: row.merchant_reference, sessionId: row.provider_session_id, idempotencyKey: row.idempotency_key, amountMinor: row.amount_minor });
+  if (state.state !== "event") return { outcome: "skipped" };
+  if (!validEvent(state.event) || !inContext(provider!, state.event) || state.event.merchantReference !== row.merchant_reference)
+    throw new AuthFailure("PAYMENT_PROVIDER_INVALID", 502, "The sandbox provider returned an invalid event");
+  return { outcome: await withInventoryTransaction(pool, client => applyPaymentEvent(client, provider!, state.event, "checkout")) };
+}
+
+// ---------------------------------------------------------------------------------------------
 // Reconciliation, replacement and expiry
 
 /**
@@ -391,7 +424,7 @@ export async function reconcilePayments(pool: Pool, providers: PaymentProviders,
   for (const row of rows) {
     try {
       const provider = providerFor(providers, row);
-      const state = await provider.lookup({ attemptId: row.id, merchantReference: row.merchant_reference, sessionId: row.provider_session_id, idempotencyKey: row.idempotency_key });
+      const state = await provider.lookup({ attemptId: row.id, merchantReference: row.merchant_reference, sessionId: row.provider_session_id, idempotencyKey: row.idempotency_key, amountMinor: row.amount_minor });
       if (state.state !== "event") continue;
       const event = state.event;
       if (!validEvent(event) || !inContext(provider, event) || event.merchantReference !== row.merchant_reference) { failed++; continue; }

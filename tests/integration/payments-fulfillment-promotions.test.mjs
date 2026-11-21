@@ -106,6 +106,21 @@ test("demo cannot record captured cash, KZT is required and financial facts are 
   await reject("INSERT INTO payment_transactions(id,attempt_id,order_id,provider,environment,merchant_account,external_id,kind,amount_minor,dedupe_key) SELECT $1,attempt_id,order_id,provider,environment,merchant_account,external_id,kind,amount_minor,$1::uuid::text FROM payment_transactions WHERE id=$2", [randomUUID(), tx], "23505");
 });
 
+// Migration 0015 (M7/D03a): the sandbox provider records captures only on sandbox orders, only in the
+// sandbox environment; the demo rules above are unchanged.
+test("0015: a sandbox order takes sandbox captures and refunds; sandbox never mixes with demo or live orders", async () => {
+  const s = await fixture("sandbox"), a = await attempt(s, { provider: "sandbox", environment: "sandbox" }), tx = await capture(s, a);
+  assert.equal((await q("SELECT environment FROM payment_transactions WHERE id=$1", [tx])).rows[0].environment, "sandbox");
+  await q("INSERT INTO refunds(id,transaction_id,order_id,provider,environment,merchant_account,amount_minor,idempotency_key,request_hash) VALUES($1,$2,$3,'sandbox','sandbox','synthetic-merchant',40,$1::uuid::text,$4)", [randomUUID(), tx, s.order, hash(tx)]);
+  await reject("UPDATE orders SET payment_mode='live' WHERE id=$1", [s.order]);
+  await assert.rejects(attempt(s, { provider: "sandbox", environment: "live" }), e => e.code === "23514");
+  await assert.rejects(attempt(await fixture("sandbox"), { provider: "kaspi", environment: "sandbox" }), e => e.code === "23514" && /sandbox orders only/.test(e.message));
+  await assert.rejects(attempt(await fixture("live"), { provider: "sandbox", environment: "sandbox" }), e => e.code === "23514" && /sandbox orders only/.test(e.message));
+  await assert.rejects(attempt(await fixture("demo"), { provider: "sandbox", environment: "sandbox" }), e => e.code === "23514");
+  await assert.rejects(attempt(await fixture("sandbox"), { provider: "demo", environment: "demo" }), e => e.code === "23514");
+  await assert.rejects(fixture("unknown_mode"), e => e.code === "23514");
+});
+
 test("concurrent refund reservations include unresolved outcomes and cannot exceed captured cash", async () => {
   const f = await fixture(), a = await attempt(f), tx = await capture(f, a);
   const outcomes = await Promise.allSettled([refund(f, tx), refund(f, tx)]);

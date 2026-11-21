@@ -6,6 +6,7 @@ import { authErrorResponse } from "../auth/http.ts";
 import { requirePrincipal } from "../auth/principal.ts";
 import { cmsBackend } from "../cms/source.ts";
 import { createCartService } from "./service.ts";
+import { paymentProviders } from "../payments/providers.ts";
 import { createCartHandler } from "./http.ts";
 import { enforceRateLimit, trustedClientAddress } from "../operations/rate-limit.ts";
 
@@ -23,7 +24,7 @@ function getCartHandler() {
   if (!handler) {
     const config = parseAuthConfig(process.env);
     const service = createCartService({
-      database: getDatabase(), secret: config.secret,
+      database: getDatabase(), secret: config.secret, payments: paymentProviders(),
       identify: async headers => {
         try { return await requirePrincipal(runtime, headers); }
         catch (error) { if (error instanceof AuthFailure && error.status === 401) return null; throw error; }

@@ -4,11 +4,13 @@ import type { PoolClient } from "pg";
 import { z } from "zod";
 import type { DatabaseHandle } from "../db/client.ts";
 import type { Principal } from "../context.ts";
-import type { Availability, CartDTO, CheckoutQuoteDTO, CheckoutResultDTO, CheckoutStatusDTO, CartLineDTO, CartNoticeCode, Money } from "../../contracts/commerce.ts";
+import type { Availability, CartDTO, CheckoutQuoteDTO, CheckoutResultDTO, CheckoutStatusDTO, CartLineDTO, CartNoticeCode, Money, PaymentMethodCode } from "../../contracts/commerce.ts";
 import { AuthFailure } from "../auth/config.ts";
 import { publicImage } from "../catalog/service.ts";
 import { createQuote, QUOTE_TTL_SECONDS, type DeliverySnapshot } from "../pricing/quote.ts";
 import { placeOrder, readCheckoutStatus } from "../checkout/service.ts";
+import { captureSandboxOrder } from "../payments/service.ts";
+import type { PaymentProviders } from "../payments/provider.ts";
 
 // Server carts (Task 13A). A guest cart is opened only by a random capability held in an HttpOnly
 // cookie; only its HMAC digest is stored. A signed-in shopper always uses the account cart, and the
@@ -84,9 +86,13 @@ export interface CartServiceOptions {
   market?: string;
   /** Quote lifetime (Task 13B); 15 minutes by default. */
   quoteTtlSeconds?: number;
+  /** The registered payment adapters (payments/providers.ts). With the D03a sandbox adapter, checkout is a demo purchase captured at once. */
+  payments?: PaymentProviders;
 }
 
-export function createCartService({ database, secret, identify, market = "default", quoteTtlSeconds = QUOTE_TTL_SECONDS }: CartServiceOptions) {
+export function createCartService({ database, secret, identify, market = "default", quoteTtlSeconds = QUOTE_TTL_SECONDS, payments }: CartServiceOptions) {
+  // D03a: the payment method checkout accepts. The sandbox adapter is registered only when demo purchases are enabled.
+  const paymentMethod: PaymentMethodCode = payments?.get("sandbox") ? "sandbox" : "demo";
   if (!/^[a-f0-9]{64}$/i.test(secret)) throw new Error("Cart services require the validated auth secret");
   const digest = (token: string) => createHmac("sha256", secret).update("grmn-cart-capability:v1:" + token).digest("hex");
 
@@ -293,16 +299,24 @@ export function createCartService({ database, secret, identify, market = "defaul
         const cart = await loadCart(client, who, true);
         if ((cart?.version ?? 0) !== command.cartVersion) conflict();
         if (!cart) throw new AuthFailure("CART_EMPTY", 409, "Your cart is empty");
-        return createQuote(client, { cartId: cart.id, cartVersion: cart.version, userId: who.userId },
+        const quote = await createQuote(client, { cartId: cart.id, cartVersion: cart.version, userId: who.userId },
           { market, displayCurrency: command.displayCurrency, couponCode: command.couponCode ?? null, delivery }, quoteTtlSeconds);
+        return { ...quote, paymentMethod };
       });
     },
 
-    // Task 14A: places one pending demo order for the actor's quoted cart revision. The
-    // idempotency key comes from the Idempotency-Key header; a retried key returns the same order.
+    // Task 14A: places one order for the actor's quoted cart revision. The idempotency key comes
+    // from the Idempotency-Key header; a retried key returns the same order. A demo order stays
+    // unpaid (D03). A sandbox order (D03a demo purchase) is captured right after it committed; if
+    // that step fails, the error is returned and a retry with the same key captures the same order
+    // once (worker reconciliation would also complete it).
     async checkout(headers: Headers, idempotencyKey: string, input: unknown): Promise<CheckoutResultDTO> {
       const who = await actor(headers);
-      return placeOrder(database.pool, secret, { userId: who.userId, guestTokenHash: who.userId ? null : who.tokenHash }, idempotencyKey, input);
+      const placed = await placeOrder(database.pool, secret, { userId: who.userId, guestTokenHash: who.userId ? null : who.tokenHash }, idempotencyKey, input, payments ? { payments } : {});
+      if (placed.paymentMode !== "sandbox" || !payments) return placed;
+      await captureSandboxOrder(database.pool, payments, placed.orderId);
+      const now = (await database.pool.query<{ order_status: CheckoutResultDTO["status"]; payment_status: string }>("SELECT order_status,payment_status FROM orders WHERE id=$1", [placed.orderId])).rows[0];
+      return now ? { ...placed, status: now.order_status, paymentState: now.payment_status === "paid" ? "captured" : placed.paymentState } : placed;
     },
 
     // Task 14A: the polling contract after checkout (owning session, or a guest status token).

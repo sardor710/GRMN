@@ -232,7 +232,8 @@ export interface QuoteLineDTO {
   total: Money;
 }
 
-export interface CheckoutQuoteDTO {
+/** The priced, immutable quote (pricing service). The checkout API returns it as a CheckoutQuoteDTO. */
+export interface PricedQuoteDTO {
   id: string;
   cartId: string;
   cartVersion: number;
@@ -252,12 +253,18 @@ export interface CheckoutQuoteDTO {
   policyVersions: { pricing: string; tax: string; shipping: string; promotion: string | null; markdowns: string[]; exchangeRate: string | null };
 }
 
-export type PaymentMethodCode = "demo" | "kaspi" | "secondary";
+/** POST /api/cart/quote: the quote plus the payment method this server's checkout accepts for it ("sandbox" while demo purchases are enabled, D03a; otherwise "demo"). */
+export interface CheckoutQuoteDTO extends PricedQuoteDTO {
+  paymentMethod: PaymentMethodCode;
+}
+
+/** "sandbox" is the D03a demo-purchase method: it is accepted only while the server enables demo purchases. */
+export type PaymentMethodCode = "demo" | "kaspi" | "secondary" | "sandbox";
 
 /**
  * POST /api/cart/checkout with an `Idempotency-Key` header (16–128 printable ASCII). The contact
  * name and phone and the delivery address come from the quote's delivery snapshot (D06); only an
- * optional email is added here. Only "demo" is accepted until a real provider exists (D03).
+ * optional email is added here. Only "demo" (or "sandbox" while demo purchases are enabled, D03a) is accepted until a real provider exists (D03).
  */
 export interface CheckoutCommand {
   quoteId: string;
@@ -274,8 +281,8 @@ export interface CheckoutResultDTO {
   orderId: string;
   orderNumber: string;
   status: OrderStatus;
-  paymentMode: "demo" | "live";
-  paymentState: "pending" | "redirect_required" | "retry_required" | "simulated";
+  paymentMode: "demo" | "live" | "sandbox";
+  paymentState: "pending" | "redirect_required" | "retry_required" | "simulated" | "captured";
   paymentRedirectUrl: string | null;
   /** Payable amount in KZT. */
   total: Money;
@@ -292,7 +299,7 @@ export interface CheckoutStatusDTO {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   fulfillmentStatus: FulfillmentStatus;
-  paymentMode: "demo" | "live";
+  paymentMode: "demo" | "live" | "sandbox";
   total: Money;
   placedAt: string | null;
 }
@@ -403,7 +410,7 @@ export interface AdminOrderSummaryDTO {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   fulfillmentStatus: FulfillmentStatus;
-  paymentMode: "demo" | "live" | "legacy_unknown";
+  paymentMode: "demo" | "live" | "sandbox" | "legacy_unknown";
   dataQuality: "complete" | "legacy_incomplete";
   total: Money;
   itemsCount: number;

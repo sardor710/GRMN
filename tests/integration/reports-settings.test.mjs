@@ -290,6 +290,10 @@ test("review I5/I6: revenue is split by payment environment, and a refund keeps 
   const sandbox=before.totals.find(t=>t.currency==="KZT"&&t.environment==="sandbox");
   assert.ok(sandbox,"sandbox money is reported under its own environment");
   assert.ok(before.totals.every(t=>["sandbox","live"].includes(t.environment)));
+  // M7/D03a: every series carries an explicit label; sandbox money is "Demo (sandbox)" and never "Live".
+  assert.equal(sandbox.label,"Demo (sandbox)");
+  assert.ok(before.totals.every(t=>t.label===(t.environment==="live"?"Live":"Demo (sandbox)")));
+  assert.ok(before.days.every(d=>d.label===(d.environment==="live"?"Live":"Demo (sandbox)")));
   // Touching updated_at later must not move the refund out of the day it succeeded.
   const client=await database.pool.connect();
   try{await client.query("BEGIN");await client.query("SET LOCAL session_replication_role=replica");await client.query("UPDATE refunds SET updated_at='2020-01-01T00:00:00Z' WHERE id=$1",[refund.id]);await client.query("COMMIT");}catch(error){await client.query("ROLLBACK");throw error;}finally{client.release();}

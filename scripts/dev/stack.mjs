@@ -94,6 +94,7 @@ async function http(url, init = {}, timeoutMs = 300000) {
 
 async function runChecks(base, targets) {
   const rows = [];
+  let quoted = null;
   const row = async (name, fn) => {
     const started = Date.now();
     try { const detail = await fn(); rows.push({ name, ok: true, detail, ms: Date.now() - started }); }
@@ -130,7 +131,20 @@ async function runChecks(base, targets) {
     expect(quote.status === 200, `quote status ${quote.status}: ${quote.body.slice(0, 200)}`);
     const body = JSON.parse(quote.body);
     expect(body.total?.amountMinor, "quote has no total");
+    quoted = { cookie, quote: body };
     return `200, ${targets.stocked.public_key}: total ${(Number(body.total.amountMinor) / 100).toFixed(2)} ${body.total.currency} (shipping ${(Number(body.shipping?.amountMinor ?? 0) / 100).toFixed(2)})`;
+  });
+  // M7/D03a: dev:stack runs with DEMO_PURCHASES=1, so the quoted cart is bought as a demo purchase and must come back paid
+  // (sandbox capture). This places one real demo order in the dev database and consumes one unit of stock per run.
+  await row("POST /api/cart/checkout (demo purchase → paid)", async () => {
+    expect(quoted, "no quote from the previous row");
+    expect(quoted.quote.paymentMethod === "sandbox", `quote payment method is ${quoted.quote.paymentMethod}, expected sandbox (DEMO_PURCHASES=1)`);
+    const headers = { "content-type": "application/json", origin: base, cookie: quoted.cookie, "idempotency-key": `dev-check-${Date.now()}-${Math.random().toString(36).slice(2, 10)}` };
+    const placed = await http(`${base}/api/cart/checkout`, { method: "POST", headers, body: JSON.stringify({ quoteId: quoted.quote.id, cartVersion: quoted.quote.cartVersion, paymentMethod: quoted.quote.paymentMethod }) });
+    expect(placed.status === 200, `checkout status ${placed.status}: ${placed.body.slice(0, 200)}`);
+    const order = JSON.parse(placed.body);
+    expect(order.paymentMode === "sandbox" && order.paymentState === "captured" && order.status === "confirmed", `order ${order.orderNumber}: ${order.status}/${order.paymentMode}/${order.paymentState}`);
+    return `200, ${order.orderNumber} confirmed, paid (sandbox)`;
   });
   await row("GET /admin/login", async () => {
     const res = await http(`${base}/admin/login`);

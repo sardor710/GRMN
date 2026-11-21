@@ -1,7 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import type { PoolClient } from "pg";
-import type { CheckoutQuoteDTO, DeliveryAddress, DisplayCurrency, Money, QuoteLineDTO, UsdEquivalentDTO } from "../../contracts/commerce.ts";
+import type { PricedQuoteDTO, DeliveryAddress, DisplayCurrency, Money, QuoteLineDTO, UsdEquivalentDTO } from "../../contracts/commerce.ts";
 import { AuthFailure } from "../auth/config.ts";
 import { allocate, percentageHalfUp, percentageOf, usdMinorFromKzt } from "./money.ts";
 
@@ -211,7 +211,7 @@ function storedLines(priced: PricedCart): StoredLine[] {
   }));
 }
 
-function toDTO(row: QuoteRow): CheckoutQuoteDTO {
+function toDTO(row: QuoteRow): PricedQuoteDTO {
   const policies = row.policy_versions, usd = row.usd_snapshot;
   const lines: QuoteLineDTO[] = row.lines_snapshot.map(line => ({
     variantId: line.variantId, quantity: line.quantity, baseUnitPrice: kzt(BigInt(line.baseUnitMinor)), unitPrice: kzt(BigInt(line.unitMinor)),
@@ -231,7 +231,7 @@ function toDTO(row: QuoteRow): CheckoutQuoteDTO {
 const QUOTE_COLUMNS = "id,cart_id,cart_version,display_currency,lines_snapshot,policy_versions,usd_snapshot,subtotal_minor::text,discount_minor::text,shipping_minor::text,tax_minor::text,total_minor::text,expires_at";
 
 /** Prices the cart and stores an immutable quote. Runs inside the caller's transaction with the cart row locked. */
-export async function createQuote(client: Queryable, cart: QuoteCart, request: QuoteRequest, ttlSeconds = QUOTE_TTL_SECONDS): Promise<CheckoutQuoteDTO> {
+export async function createQuote(client: Queryable, cart: QuoteCart, request: QuoteRequest, ttlSeconds = QUOTE_TTL_SECONDS): Promise<PricedQuoteDTO> {
   if (!Number.isInteger(ttlSeconds) || ttlSeconds < 1 || ttlSeconds > 24 * 60 * 60) throw new RangeError("Quote lifetime must be 1 second to 1 day");
   const priced = await priceCart(client, cart, request);
   const { market, displayCurrency, couponCode } = request;
@@ -249,7 +249,7 @@ export async function createQuote(client: Queryable, cart: QuoteCart, request: Q
  * fresh pricing of the same cart (prices, markdowns, coupon, tax and shipping). USD is display
  * only, so a rate change does not invalidate the KZT amounts.
  */
-export async function revalidateQuote(client: Queryable, input: { quoteId: string; cartId: string; cartVersion: number; checkoutAttemptId?: string }): Promise<CheckoutQuoteDTO> {
+export async function revalidateQuote(client: Queryable, input: { quoteId: string; cartId: string; cartVersion: number; checkoutAttemptId?: string }): Promise<PricedQuoteDTO> {
   const row = (await client.query<QuoteRow & { expired: boolean }>(`SELECT ${QUOTE_COLUMNS},expires_at<=clock_timestamp() AS expired,delivery_snapshot FROM checkout_quotes WHERE id=$1 AND cart_id=$2 AND cart_version=$3`,
     [input.quoteId, input.cartId, input.cartVersion])).rows[0] as (QuoteRow & { expired: boolean; delivery_snapshot: DeliverySnapshot }) | undefined;
   if (!row) return stale();

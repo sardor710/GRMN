@@ -157,6 +157,9 @@ test("a stale, expired, foreign or unpayable checkout is refused before anything
   const fresh=await api.quote(buyer.headers,{cartVersion:version+1,displayCurrency:"KZT",delivery:KZ});
   await rejectsWith(api.checkout(buyer.headers,key(),body(fresh,{cartVersion:version})),409);
   await rejectsWith(api.checkout(buyer.headers,key(),body(fresh,{paymentMethod:"kaspi"})),409,"PAYMENT_UNAVAILABLE");
+  // M7/D03a: "sandbox" is a known method now, but without the registered sandbox adapter (demo purchases off) it is refused like kaspi.
+  assert.equal(fresh.paymentMethod,"demo","with demo purchases off the quote keeps the demo method");
+  await rejectsWith(api.checkout(buyer.headers,key(),body(fresh,{paymentMethod:"sandbox"})),409,"PAYMENT_UNAVAILABLE");
   for(const forged of [{total:{amountMinor:"1",currency:"KZT"}},{lines:[]},{paymentMethod:"cash"},{contactEmail:"not-an-email"}])await rejectsWith(api.checkout(buyer.headers,key(),body(fresh,forged)),400,"INVALID_INPUT");
   for(const bad of ["short","x".repeat(129),"bad\u0001key-with-control"])await rejectsWith(api.checkout(buyer.headers,bad,body(fresh)),400,"INVALID_INPUT");
   const stranger=await owner();await rejectsWith(api.checkout(stranger.headers,key(),body(fresh)),404,"NOT_FOUND");
