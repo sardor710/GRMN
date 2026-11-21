@@ -1,5 +1,8 @@
 // Mega-menu content captured from https://www.garmin.com/en-US/ (2026-11-17).
-// Links that have a local equivalent in this clone point to the local route.
+// M4.4: every category/subcategory with a taxonomy node (src/server/catalog/taxonomy-seed.ts) links to its local
+// /c/<slug> page; a top-level menu item opens its root node. The holiday sale promo and takeover bar open the
+// local Sale page (/c/promotions). Only the links in EXTERNAL_NAV_LINKS stay on garmin.com (see the reasons
+// there); tests/unit/nav-links.test.mjs enforces both rules.
 
 export interface MegaLink {
   label: string;
@@ -31,7 +34,7 @@ const G = "https://www.garmin.com/en-US";
 const holidayPromo: MegaPromo = {
   title: "HOLIDAY SALE",
   copy: "Save big on great holiday gifts",
-  href: `${G}/c/promotions/holiday-sale-guide-americas/`,
+  href: "/c/promotions",
   image: "/homepage/nav/HOLIDAY-SALE-TOP-NAV.jpg",
 };
 
@@ -52,18 +55,18 @@ export const megaNav: MegaNavItem[] = [
           heading: "Products",
           links: [
             { label: "All Smartwatches", href: "/c/wearables-smartwatches" },
-            { label: "Health & Fitness Tracking", href: `${G}/c/sports-fitness/activity-fitness-trackers/` },
-            { label: "Design Your Own Watch", href: `${G}/your-watch-your-way/` },
-            { label: "Watches for Women", href: `${G}/c/women-wearables/?FILTER_FEATURE_FORWOMEN=true` },
-            { label: "Fashion & Hybrid Smartwatches", href: `${G}/c/sports-fitness/fashion-hybrid-smartwatches/` },
+            { label: "Health & Fitness Tracking", href: "/c/sports-fitness/activity-fitness-trackers" },
+            { label: "Design Your Own Watch", href: "/c/wearables-smartwatches/design-your-own-watch" },
+            { label: "Watches for Women", href: "/c/women-wearables" },
+            { label: "Fashion & Hybrid Smartwatches", href: "/c/sports-fitness/fashion-hybrid-smartwatches" },
             { label: "MARQ Luxury Watch Collection", href: "/minisite/marq" },
             { label: "Running", href: "/c/sports-fitness/running-smartwatches" },
-            { label: "Multisport & Triathlete", href: `${G}/c/sports-fitness/multisport-smartwatches/` },
-            { label: "Adventure", href: `${G}/c/outdoor-recreation/adventure-smartwatches/` },
-            { label: "Swimming", href: `${G}/c/sports-fitness/swimming-smartwatches/` },
-            { label: "Diving", href: `${G}/c/sports-fitness/dive-computers-smartwatches/` },
-            { label: "Golf", href: `${G}/c/sports-fitness/golf-gps-devices-smartwatches/` },
-            { label: "Kids Smartwatches", href: `${G}/c/sports-fitness/kids-wearables-fitness-activity-trackers/` },
+            { label: "Multisport & Triathlete", href: "/c/sports-fitness/multisport-smartwatches" },
+            { label: "Adventure", href: "/c/outdoor-recreation/adventure-smartwatches" },
+            { label: "Swimming", href: "/c/sports-fitness/swimming-smartwatches" },
+            { label: "Diving", href: "/c/sports-fitness/dive-computers-smartwatches" },
+            { label: "Golf", href: "/c/sports-fitness/golf-gps-devices-smartwatches" },
+            { label: "Kids Smartwatches", href: "/c/sports-fitness/kids-wearables-fitness-activity-trackers" },
           ],
         },
       ],
@@ -71,16 +74,16 @@ export const megaNav: MegaNavItem[] = [
         {
           heading: "Maps",
           links: [
-            { label: "Outdoor Maps", href: `${G}/c/wearables-mapping/` },
+            { label: "Outdoor Maps", href: "/c/wearables-mapping" },
             { label: "Golf Course Locator", href: `${G}/golf-courses/` },
           ],
         },
         {
           heading: "Accessories & Plans",
           links: [
-            { label: "Accessories", href: `${G}/c/wearables-smartwatches-accessories/` },
-            { label: "Apps", href: `${G}/c/apps/` },
-            { label: "Service Plans", href: `${G}/c/subscription-plans/` },
+            { label: "Accessories", href: "/c/wearables-smartwatches-accessories" },
+            { label: "Apps", href: "/c/apps" },
+            { label: "Service Plans", href: "/c/subscription-plans" },
           ],
         },
       ],
@@ -106,17 +109,17 @@ export const megaNav: MegaNavItem[] = [
           heading: "Products",
           links: [
             { label: "Running", href: "/c/sports-fitness/running-smartwatches" },
-            { label: "Health & Fitness Tracking", href: `${G}/c/sports-fitness/activity-fitness-trackers/` },
-            { label: "CIRQA™ Smart Band", href: `${G}/p/1989182/` },
-            { label: "Cycling", href: `${G}/c/sports-fitness/cycling-bike-computers-bike-radar-power-meter-headlights/` },
-            { label: "Tacx® Indoor Cycling", href: `${G}/c/sports-fitness/indoor-trainers/` },
-            { label: "Design Your Own Watch", href: `${G}/your-watch-your-way/` },
-            { label: "Golf", href: `${G}/c/sports-fitness/golf-gps-devices-smartwatches/` },
-            { label: "Multisport & Triathlete", href: `${G}/c/sports-fitness/multisport-smartwatches/` },
-            { label: "Swimming", href: `${G}/c/sports-fitness/swimming-smartwatches/` },
-            { label: "Diving", href: `${G}/c/sports-fitness/dive-computers-smartwatches/` },
-            { label: "Scales & Monitors", href: `${G}/c/sports-fitness/scales-monitors/` },
-            { label: "Kids Smartwatches", href: `${G}/c/sports-fitness/kids-wearables-fitness-activity-trackers/` },
+            { label: "Health & Fitness Tracking", href: "/c/sports-fitness/activity-fitness-trackers" },
+            { label: "CIRQA™ Smart Band", href: "/c/sports-fitness/cirqa-smart-band" },
+            { label: "Cycling", href: "/c/sports-fitness/cycling-bike-computers-bike-radar-power-meter-headlights" },
+            { label: "Tacx® Indoor Cycling", href: "/c/sports-fitness/indoor-trainers" },
+            { label: "Design Your Own Watch", href: "/c/wearables-smartwatches/design-your-own-watch" },
+            { label: "Golf", href: "/c/sports-fitness/golf-gps-devices-smartwatches" },
+            { label: "Multisport & Triathlete", href: "/c/sports-fitness/multisport-smartwatches" },
+            { label: "Swimming", href: "/c/sports-fitness/swimming-smartwatches" },
+            { label: "Diving", href: "/c/sports-fitness/dive-computers-smartwatches" },
+            { label: "Scales & Monitors", href: "/c/sports-fitness/scales-monitors" },
+            { label: "Kids Smartwatches", href: "/c/sports-fitness/kids-wearables-fitness-activity-trackers" },
           ],
         },
       ],
@@ -125,18 +128,18 @@ export const megaNav: MegaNavItem[] = [
           heading: "Maps",
           links: [
             { label: "Cycling Maps", href: `${G}/p/730831` },
-            { label: "Outdoor Maps", href: `${G}/c/wearables-mapping/` },
+            { label: "Outdoor Maps", href: "/c/wearables-mapping" },
             { label: "Golf Course Locator", href: `${G}/golf-courses/` },
           ],
         },
         {
           heading: "Accessories & Plans",
           links: [
-            { label: "Smartwatch Accessories", href: `${G}/c/wearables-smartwatches-accessories/` },
-            { label: "Cycling Accessories", href: `${G}/c/sports-fitness/cycling-biking-accessories/` },
-            { label: "Indoor Training Accessories", href: `${G}/c/sports-fitness/indoor-training/accessories/` },
-            { label: "Apps", href: `${G}/c/apps/` },
-            { label: "Service Plans", href: `${G}/c/subscription-plans/` },
+            { label: "Smartwatch Accessories", href: "/c/wearables-smartwatches-accessories" },
+            { label: "Cycling Accessories", href: "/c/sports-fitness/cycling-biking-accessories" },
+            { label: "Indoor Training Accessories", href: "/c/sports-fitness/indoor-training/accessories" },
+            { label: "Apps", href: "/c/apps" },
+            { label: "Service Plans", href: "/c/subscription-plans" },
           ],
         },
       ],
@@ -155,7 +158,7 @@ export const megaNav: MegaNavItem[] = [
           heading: "Communities",
           links: [
             { label: "Garmin Pros", href: `${G}/pros/` },
-            { label: "Student Athletes", href: `${G}/c/student-athlete-smartwatches/` },
+            { label: "Student Athletes", href: "/c/student-athlete-smartwatches" },
           ],
         },
       ],
@@ -172,21 +175,21 @@ export const megaNav: MegaNavItem[] = [
   },
   {
     label: "Outdoor Recreation",
-    href: `${G}/c/outdoor-recreation/handheld-hiking-gps/`,
+    href: "/c/outdoor-recreation",
     columns: [
       [
         {
           heading: "Products",
           links: [
-            { label: "Handhelds", href: `${G}/c/outdoor-recreation/handheld-hiking-gps/` },
-            { label: "Satellite Communicators", href: `${G}/c/outdoor-recreation/satellite-communicators/` },
-            { label: "Off-Road & Motorsports", href: `${G}/c/automotive/motorsports/` },
-            { label: "Adventure Watches", href: `${G}/c/outdoor-recreation/adventure-smartwatches/` },
-            { label: "Design Your Own Watch", href: `${G}/your-watch-your-way/` },
-            { label: "Sportsman & Tactical", href: `${G}/c/outdoor-recreation/sportsman-and-tactical-devices/` },
-            { label: "Dog Tracking & Training", href: `${G}/c/outdoor-recreation/sporting-dog-tracking-training-devices/` },
-            { label: "Optics", href: `${G}/p/798183/` },
-            { label: "Equine", href: `${G}/p/1277934` },
+            { label: "Handhelds", href: "/c/outdoor-recreation/handheld-hiking-gps" },
+            { label: "Satellite Communicators", href: "/c/outdoor-recreation/satellite-communicators" },
+            { label: "Off-Road & Motorsports", href: "/c/automotive/motorsports" },
+            { label: "Adventure Watches", href: "/c/outdoor-recreation/adventure-smartwatches" },
+            { label: "Design Your Own Watch", href: "/c/wearables-smartwatches/design-your-own-watch" },
+            { label: "Sportsman & Tactical", href: "/c/outdoor-recreation/sportsman-and-tactical-devices" },
+            { label: "Dog Tracking & Training", href: "/c/outdoor-recreation/sporting-dog-tracking-training-devices" },
+            { label: "Optics", href: "/c/outdoor-recreation/optics" },
+            { label: "Equine", href: "/c/outdoor-recreation/equine" },
           ],
         },
       ],
@@ -194,15 +197,15 @@ export const megaNav: MegaNavItem[] = [
         {
           heading: "Maps",
           links: [
-            { label: "Outdoor Maps", href: `${G}/c/outdoor-maps/` },
-            { label: "DeLorme Atlas & Gazetteer", href: `${G}/c/delorme-atlas-gazetteer/` },
+            { label: "Outdoor Maps", href: "/c/outdoor-maps" },
+            { label: "DeLorme Atlas & Gazetteer", href: "/c/delorme-atlas-gazetteer" },
           ],
         },
         {
           heading: "Accessories & Plans",
           links: [
-            { label: "Apps", href: `${G}/c/apps/` },
-            { label: "Service Plans", href: `${G}/c/subscription-plans/` },
+            { label: "Apps", href: "/c/apps" },
+            { label: "Service Plans", href: "/c/subscription-plans" },
             { label: "inReach Account", href: "https://inreach.garmin.com/en-US/" },
           ],
         },
@@ -229,18 +232,18 @@ export const megaNav: MegaNavItem[] = [
   },
   {
     label: "Auto & Home",
-    href: `${G}/c/automotive/car-gps-navigation/`,
+    href: "/c/auto-home",
     columns: [
       [
         {
           heading: "Products",
           links: [
-            { label: "Cars, RV & Cameras", href: `${G}/c/automotive/car-gps-navigation/` },
-            { label: "Motorcycles", href: `${G}/c/automotive/motorcycle-gps-navigation/` },
-            { label: "Trucks", href: `${G}/c/automotive/semi-truck-gps-navigation/` },
-            { label: "Off-Road & Motorsports", href: `${G}/c/automotive/motorsports/` },
-            { label: "Car Audio", href: `${G}/c/automotive/jl-audio-car-audio/` },
-            { label: "Home Audio", href: `${G}/c/home-audio-systems/` },
+            { label: "Cars, RV & Cameras", href: "/c/automotive/car-gps-navigation" },
+            { label: "Motorcycles", href: "/c/automotive/motorcycle-gps-navigation" },
+            { label: "Trucks", href: "/c/automotive/semi-truck-gps-navigation" },
+            { label: "Off-Road & Motorsports", href: "/c/automotive/motorsports" },
+            { label: "Car Audio", href: "/c/automotive/jl-audio-car-audio" },
+            { label: "Home Audio", href: "/c/home-audio-systems" },
           ],
         },
       ],
@@ -249,7 +252,7 @@ export const megaNav: MegaNavItem[] = [
           heading: "Maps",
           links: [
             { label: "Map Updates", href: `${G}/maps/updates/automotive/` },
-            { label: "Purchase New Maps", href: `${G}/c/road-maps/` },
+            { label: "Purchase New Maps", href: "/c/road-maps" },
             { label: "In-Dash Maps", href: "https://auto-oem.garmin.com/landing/site" },
             { label: "Off-Road Maps", href: "https://www.garmin.com/off-road-maps/" },
           ],
@@ -257,8 +260,8 @@ export const megaNav: MegaNavItem[] = [
         {
           heading: "Accessories & Plans",
           links: [
-            { label: "Apps", href: `${G}/c/apps/` },
-            { label: "Service Plans", href: `${G}/c/subscription-plans/` },
+            { label: "Apps", href: "/c/apps" },
+            { label: "Service Plans", href: "/c/subscription-plans" },
           ],
         },
       ],
@@ -272,7 +275,7 @@ export const megaNav: MegaNavItem[] = [
         },
         {
           heading: "Discover",
-          links: [{ label: "Stealthbox®", href: `${G}/c/automotive/stealthbox-audio/` }],
+          links: [{ label: "Stealthbox®", href: "/c/automotive/stealthbox-audio" }],
         },
       ],
     ],
@@ -288,24 +291,24 @@ export const megaNav: MegaNavItem[] = [
   },
   {
     label: "Marine",
-    href: `${G}/c/marine/chartplotters/`,
+    href: "/c/marine",
     columns: [
       [
         {
           heading: "Products",
           links: [
-            { label: "Chartplotters & Fishfinders", href: `${G}/c/marine/chartplotters/` },
-            { label: "Live Sonar", href: `${G}/c/marine/live-sonar/` },
-            { label: "Audio", href: `${G}/c/marine/audio/` },
-            { label: "Transducers", href: `${G}/c/marine/boat-sonar-transducers/` },
-            { label: "Trolling Motors", href: `${G}/c/marine/trolling-motors/` },
-            { label: "Ice Fishing Bundles & Kits", href: `${G}/c/marine/ice-fishing-bundles/` },
-            { label: "Radar", href: `${G}/c/marine/boat-radars/` },
-            { label: "Autopilots", href: `${G}/c/marine/boat-autopilots/` },
-            { label: "Lighting", href: `${G}/c/marine/lighting/` },
-            { label: "Handhelds & Smartwatches", href: `${G}/c/marine/handhelds-gps-and-watches/` },
-            { label: "VHF & AIS", href: `${G}/c/marine/vhf-ais-marine-radios/` },
-            { label: "Sonar Black Boxes", href: `${G}/c/marine/sonar-black-boxes/` },
+            { label: "Chartplotters & Fishfinders", href: "/c/marine/chartplotters" },
+            { label: "Live Sonar", href: "/c/marine/live-sonar" },
+            { label: "Audio", href: "/c/marine/audio" },
+            { label: "Transducers", href: "/c/marine/boat-sonar-transducers" },
+            { label: "Trolling Motors", href: "/c/marine/trolling-motors" },
+            { label: "Ice Fishing Bundles & Kits", href: "/c/marine/ice-fishing-bundles" },
+            { label: "Radar", href: "/c/marine/boat-radars" },
+            { label: "Autopilots", href: "/c/marine/boat-autopilots" },
+            { label: "Lighting", href: "/c/marine/lighting" },
+            { label: "Handhelds & Smartwatches", href: "/c/marine/handhelds-gps-and-watches" },
+            { label: "VHF & AIS", href: "/c/marine/vhf-ais-marine-radios" },
+            { label: "Sonar Black Boxes", href: "/c/marine/sonar-black-boxes" },
           ],
         },
       ],
@@ -314,18 +317,18 @@ export const megaNav: MegaNavItem[] = [
           // The live site renders this continuation group with an empty heading.
           heading: "",
           links: [
-            { label: "Antennas & Sensors", href: `${G}/c/marine/boat-sensors-antennas/` },
-            { label: "Cameras", href: `${G}/c/marine/boat-cameras/` },
-            { label: "Sailing", href: `${G}/c/marine/sailing/` },
-            { label: "Digital Switching", href: `${G}/c/marine/digital-switching/` },
-            { label: "Engine Cutoff/MOB", href: `${G}/p/1229049/` },
+            { label: "Antennas & Sensors", href: "/c/marine/boat-sensors-antennas" },
+            { label: "Cameras", href: "/c/marine/boat-cameras" },
+            { label: "Sailing", href: "/c/marine/sailing" },
+            { label: "Digital Switching", href: "/c/marine/digital-switching" },
+            { label: "Engine Cutoff/MOB", href: "/c/marine/engine-cutoff-mob" },
           ],
         },
         {
           heading: "Apps & Plans",
           links: [
-            { label: "Apps", href: `${G}/c/marine/marine-apps/` },
-            { label: "Service Plans", href: `${G}/c/subscription-plans/` },
+            { label: "Apps", href: "/c/marine/marine-apps" },
+            { label: "Service Plans", href: "/c/subscription-plans" },
           ],
         },
       ],
@@ -361,23 +364,23 @@ export const megaNav: MegaNavItem[] = [
   },
   {
     label: "Aviation",
-    href: `${G}/c/aviation/navigation-radios/`,
+    href: "/c/aviation",
     columns: [
       [
         {
           heading: "Products",
           links: [
-            { label: "Navigation & Radios", href: `${G}/c/aviation/navigation-radios/` },
-            { label: "Autopilots", href: `${G}/c/aviation/autopilot-systems/` },
-            { label: "Flight Displays & Instruments", href: `${G}/c/aviation/flight-displays-instruments/` },
-            { label: "Engine Indication Systems", href: `${G}/aviation/eis-buyers-guide/` },
-            { label: "Integrated Flight Decks", href: `${G}/c/aviation/flight-decks/` },
-            { label: "Datalinks & Connectivity", href: `${G}/c/aviation/datalinks-connected-cockpit/` },
-            { label: "Audio Panels", href: `${G}/c/aviation/audio-panels/` },
-            { label: "Weather", href: `${G}/c/aviation/weather-solutions/` },
-            { label: "Traffic", href: `${G}/c/aviation/traffic-surveillance-systems/` },
-            { label: "ADS-B & Transponders", href: `${G}/aviation/adsb-solutions/` },
-            { label: "Portable GPS & Wearables", href: `${G}/c/aviation/gps-wearables-apps/` },
+            { label: "Navigation & Radios", href: "/c/aviation/navigation-radios" },
+            { label: "Autopilots", href: "/c/aviation/autopilot-systems" },
+            { label: "Flight Displays & Instruments", href: "/c/aviation/flight-displays-instruments" },
+            { label: "Engine Indication Systems", href: "/c/aviation/engine-indication-systems" },
+            { label: "Integrated Flight Decks", href: "/c/aviation/flight-decks" },
+            { label: "Datalinks & Connectivity", href: "/c/aviation/datalinks-connected-cockpit" },
+            { label: "Audio Panels", href: "/c/aviation/audio-panels" },
+            { label: "Weather", href: "/c/aviation/weather-solutions" },
+            { label: "Traffic", href: "/c/aviation/traffic-surveillance-systems" },
+            { label: "ADS-B & Transponders", href: "/c/aviation/ads-b-transponders" },
+            { label: "Portable GPS & Wearables", href: "/c/aviation/gps-wearables-apps" },
           ],
         },
       ],
@@ -385,10 +388,10 @@ export const megaNav: MegaNavItem[] = [
         {
           heading: "Markets",
           links: [
-            { label: "General Aviation", href: `${G}/c/aviation/general/` },
-            { label: "Business Aviation", href: `${G}/c/aviation/business/` },
-            { label: "Experimental", href: `${G}/c/aviation/experimental/` },
-            { label: "Helicopters", href: `${G}/c/aviation/helicopters/` },
+            { label: "General Aviation", href: "/c/aviation/general" },
+            { label: "Business Aviation", href: "/c/aviation/business" },
+            { label: "Experimental", href: "/c/aviation/experimental" },
+            { label: "Helicopters", href: "/c/aviation/helicopters" },
             { label: "Government & Defense", href: `${G}/aviation/government-defense/` },
           ],
         },
@@ -432,11 +435,61 @@ export const megaNav: MegaNavItem[] = [
   },
   {
     label: "Sale",
-    href: `${G}/c/promotions/`,
+    href: "/c/promotions",
   },
 ];
 
 export const takeoverBar = {
   label: "HOLIDAY SALE",
-  href: `${G}/c/promotions/holiday-sale-guide-americas/`,
+  href: "/c/promotions",
 };
+
+/**
+ * Mega-menu links that intentionally stay on garmin.com: the store does not sell the item, or the page is
+ * informational (technology, communities, OEM programmes, tools, subscriptions and support hosted by Garmin).
+ */
+export const EXTERNAL_NAV_LINKS: readonly { href: string; reason: string }[] = [
+  // Informational / editorial
+  { href: `${G}/garmin-technology/`, reason: "informational: technology overview" },
+  { href: `${G}/garmin-technology/marine-technology/`, reason: "informational: technology overview" },
+  { href: `${G}/which-watch/`, reason: "informational: Garmin's watch finder tool" },
+  { href: `${G}/garmin-coach/overview/`, reason: "informational: free training plans" },
+  { href: `${G}/garmin-marathon-series/`, reason: "informational: event series" },
+  { href: `${G}/pros/`, reason: "community: sponsored athletes" },
+  { href: `${G}/pros/anglers/`, reason: "community: sponsored anglers" },
+  { href: `${G}/women-of-adventure/`, reason: "community: editorial" },
+  { href: `${G}/marine-integrations/`, reason: "informational: partner integrations" },
+  { href: `${G}/autonomi/`, reason: "informational: aviation technology" },
+  { href: `${G}/planesync/`, reason: "informational: aviation technology" },
+  { href: `${G}/aviation/axis/overview/`, reason: "informational: certified avionics, dealer installed" },
+  { href: `${G}/aviation/government-defense/`, reason: "informational: government programmes" },
+  { href: `${G}/aviation/training/`, reason: "informational: avionics training" },
+  { href: `${G}/promotions/aviation/`, reason: "informational: US aviation dealer promotions" },
+  // Tools, map/chart/software updates and services run by Garmin
+  { href: `${G}/golf-courses/`, reason: "tool: golf course locator" },
+  { href: `${G}/maps/updates/automotive/`, reason: "service: map updates for owned devices" },
+  { href: `${G}/marine/update-now/`, reason: "service: chart updates" },
+  { href: `${G}/support/software/marine/`, reason: "service: software updates" },
+  { href: `${G}/marine-system-builder/`, reason: "tool: marine system configurator" },
+  { href: `${G}/aviation/garminpilot/overview/`, reason: "service: Garmin Pilot subscription" },
+  { href: `${G}/aviation/fltplan/fltplan-sms/`, reason: "service: FltPlan SMS" },
+  { href: `${G}/aviation/fltplan/`, reason: "service: FltPlan" },
+  { href: "https://inreach.garmin.com/en-US/", reason: "service: inReach account" },
+  { href: "https://auto-oem.garmin.com/landing/site", reason: "service: in-dash map updates" },
+  { href: "https://www.garmin.com/off-road-maps/", reason: "service: off-road map subscriptions" },
+  { href: "https://maps.garmin.com/marine/", reason: "service: marine chart store" },
+  { href: "https://www.aerodata.co/en-US/", reason: "service: AeroData (third party)" },
+  { href: "https://fly.garmin.com/", reason: "service: flyGarmin" },
+  { href: "https://fly.garmin.com/fly-garmin/devices/overview", reason: "service: aviation database updates" },
+  { href: "https://support.garmin.com/en-US/aviation/", reason: "service: support" },
+  // OEM programmes (not retail)
+  { href: `${G}/aoem/`, reason: "OEM programme, not retail" },
+  { href: `${G}/rv-oem/overview/`, reason: "OEM programme, not retail" },
+  // Products the store does not sell (no local product page)
+  { href: `${G}/p/730831`, reason: "not sold: Cycling Maps" },
+  { href: `${G}/p/1967830/`, reason: "not sold: Edge 1060 (promo)" },
+  { href: `${G}/p/1944903/`, reason: "not sold: Garmin Drive navigators (promo)" },
+  { href: `${G}/p/802644/pn/010-13177-00`, reason: "not sold: built-in chart updates" },
+  { href: `${G}/p/904463/`, reason: "not sold: Navionics Boating app subscription" },
+  { href: `${G}/p/804601/`, reason: "not sold: ActiveCaptain app" },
+];

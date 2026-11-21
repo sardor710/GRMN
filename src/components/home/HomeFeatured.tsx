@@ -62,7 +62,7 @@ function ArrowIcon({ direction }: { direction: "left" | "right" }) {
 
 function PromoTile({ item, eager }: { item: PromoCarouselItem; eager: boolean }) {
   return (
-    <a className={`${styles.slide} ${styles.promo}`} href={item.href || "#"}>
+    <a className={`${styles.slide} ${styles.promo}`} href={item.href || undefined}>
       <Image
         src={item.image}
         alt={item.imageAlt ?? plainText(item.title)}
@@ -82,7 +82,7 @@ function PromoTile({ item, eager }: { item: PromoCarouselItem; eager: boolean })
 
 function ProductCard({ item, eager }: { item: ProductCarouselItem; eager: boolean }) {
   return (
-    <a className={`${styles.slide} ${styles.product}`} href={item.href || "#"} aria-label={plainText(item.title)}>
+    <a className={`${styles.slide} ${styles.product}`} href={item.href || undefined} aria-label={plainText(item.title)}>
       {item.badge && (
         <div className={styles.badges}>
           <div className={styles.badge}>{item.badge}</div>

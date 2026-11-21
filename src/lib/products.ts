@@ -11,6 +11,8 @@ import { parseSort, SORT_OPTIONS } from "@/lib/catalog-facets";
 import type { CatalogSortKey } from "@/contracts/catalog-browse";
 import { taxonomySeed } from "@/server/catalog/taxonomy-seed";
 import { URL_PRESET_SLUGS } from "@/server/catalog/category-page";
+import { homepageProductCandidates, localizeHomepage } from "@/server/catalog/local-links";
+import type { HomepageConfig } from "@/lib/cms/types";
 
 export { watchFamilies, products, activityFilters, levelFilters, caseSizeFilters } from "./public-products";
 
@@ -140,6 +142,13 @@ export async function getCategoryView(slug: string, query: SearchQuery): Promise
     name: def.title, slug, path: [{ name: def.title, slug }], description: null, hero, items: page.items, facets, sort: sortParam,
     sortOptions: SORT_OPTIONS.filter(o => o.value !== "name-desc"), categoryTotal: page.items.length, total: page.items.length, page: 1, pageCount: 1, hasPreset: false, nextCursor: page.nextCursor,
   };
+}
+
+/** M4.4: homepage CMS links open local categories and published local products where they exist. */
+export async function localizeHomepageLinks(config: HomepageConfig): Promise<HomepageConfig> {
+  const candidates = homepageProductCandidates(config);
+  const published = new Set((candidates.length ? await getProductsByKeys(candidates) : []).map(p => p.id));
+  return localizeHomepage(config, published);
 }
 
 /** Category slugs for the sitemap: Postgres = categories with at least one listed product; legacy = the two catalogues. */

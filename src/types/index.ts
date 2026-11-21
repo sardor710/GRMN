@@ -76,6 +76,8 @@ export interface WatchFamily {
   name: string;
   tagline: string;
   image: string;
+  /** Local series page (a watch-series taxonomy group). */
+  href?: string;
 }
 
 export interface ProductDetail {
