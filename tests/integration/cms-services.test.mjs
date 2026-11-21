@@ -141,10 +141,12 @@ test("a fresh process reads committed data after the writer pool closes",async()
   assert.deepEqual(JSON.parse(child.stdout),[{id:saved.id,price:1234.56}]);
 });
 
-test("unknown input fields, invalid money and inventory writes are rejected before mutation",async()=>{
-  const cms=await service();
-  for(const extra of [{password:"not-allowed"},{price:"1.00000000000000001"},{price:"1e3"},{stock:5}]) await assert.rejects(cms.save("products",admin,product(extra)),error=>[400,501].includes(error.status));
-  assert.equal(Number((await q("SELECT count(*) FROM inventory_balances")).rows[0].count),0);
+test("unknown input fields and invalid money are rejected before mutation",async()=>{
+  // M2 changed this deliberately: `stock` is no longer rejected (501) — the product writer records it as an
+  // inventory-ledger movement (covered by cms-product-write/stock-sync tests). Invalid input still writes nothing.
+  const cms=await service(),before=Number((await q("SELECT count(*) FROM inventory_balances")).rows[0].count);
+  for(const extra of [{password:"not-allowed"},{price:"1.00000000000000001"},{price:"1e3"},{stock:-5},{stock:1.5}]) await assert.rejects(cms.save("products",admin,product(extra)),error=>error.status===400);
+  assert.equal(Number((await q("SELECT count(*) FROM inventory_balances")).rows[0].count),before);
 });
 
 test("database HTTP adapter returns cursor metadata and enforces versioned same-origin mutations",async()=>{

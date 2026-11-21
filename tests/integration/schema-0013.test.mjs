@@ -34,10 +34,13 @@ before(async () => {
   if (!before0013.startsWith(tempRoot + sep)) throw new Error("Invalid prior migration fixture directory");
   await cp("drizzle", before0013, { recursive: true });
   const journal = JSON.parse(await readFile(join(before0013, "meta/_journal.json"), "utf8"));
-  journal.entries = journal.entries.filter((entry) => entry.tag !== MIGRATION);
+  // Drop 0013 and every later migration (0014+ were appended after this test was written).
+  const cut = journal.entries.findIndex((entry) => entry.tag === MIGRATION);
+  const dropped = journal.entries.slice(cut);
+  journal.entries = journal.entries.slice(0, cut);
   assert.equal(journal.entries.at(-1).tag, "0012_collection-publication");
   await writeFile(join(before0013, "meta/_journal.json"), JSON.stringify(journal));
-  await rm(join(before0013, `${MIGRATION}.sql`));
+  for (const entry of dropped) await rm(join(before0013, `${entry.tag}.sql`));
   await migrate(upgraded.db, { migrationsFolder: before0013 });
   // Sentinels written under the 0012 schema.
   await upgraded.pool.query("INSERT INTO users (id,name,email) VALUES ($1,'Upgrade sentinel','upgrade-0013@example.invalid')", [sentinel.user]);

@@ -166,14 +166,23 @@ export default function AdminDashboardPage() {
       const target = data.products.find((p) => p.id === productId);
       if (!target) return;
 
-      const res = await fetch("/api/admin/products", {
+      // PostgreSQL: an audited inventory-ledger receipt (+N). The legacy JSON store (501 here) keeps
+      // its whole-product save.
+      let res = await fetch("/api/admin/catalog/restock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...Object.fromEntries(Object.entries(target).filter(([key]) => key !== "createdAt")),
-          stock: target.stock + addedStock,
-        }),
+        body: JSON.stringify({ productId, quantity: addedStock, idempotencyKey: `restock:${crypto.randomUUID()}` }),
       });
+      if (res.status === 501) {
+        res = await fetch("/api/admin/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...Object.fromEntries(Object.entries(target).filter(([key]) => key !== "createdAt")),
+            stock: target.stock + addedStock,
+          }),
+        });
+      }
 
       if (res.ok) {
         setData((prev) => {

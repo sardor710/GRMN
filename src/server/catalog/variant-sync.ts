@@ -27,8 +27,17 @@ const money = z.union([z.number(), z.string()]).transform((value, ctx) => {
   if (minor > BigInt("100000000000000")) { ctx.addIssue({ code: "custom", message: "Amount exceeds the supported range" }); return z.NEVER; }
   return minor;
 });
-const valueSchema = z.looseObject({ id: trimmed(200), key: trimmed(200), label: trimmed(200) });
-const optionSchema = z.looseObject({ id: trimmed(200), key: trimmed(200), name: trimmed(200), values: z.array(valueSchema).max(200) });
+// Swatch color: #rgb or #rrggbb (any case), stored as lowercase #rrggbb (0014). Blank means none.
+const swatchColor = z.string().trim().max(32).nullish().transform((value, ctx) => {
+  if (!value) return null;
+  const match = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(value);
+  if (!match) { ctx.addIssue({ code: "custom", message: "Swatch colors are hex colors like #1a2b3c" }); return z.NEVER; }
+  const hex = match[1].toLowerCase();
+  return "#" + (hex.length === 3 ? hex.split("").map(c => c + c).join("") : hex);
+});
+const swatchImage = z.string().trim().max(2048).nullish().transform(value => value || null);
+const valueSchema = z.looseObject({ id: trimmed(200), key: trimmed(200), label: trimmed(200), swatchColor, swatchImage });
+const optionSchema = z.looseObject({ id: trimmed(200), key: trimmed(200), name: trimmed(200), display: z.enum(["buttons", "swatch", "dropdown"]).default("buttons"), values: z.array(valueSchema).max(200) });
 const variantSchema = z.looseObject({
   id: trimmed(200), sku: trimmed(100), title: z.string().trim().max(300).nullish(),
   selections: z.record(z.string(), z.string()).default({}),
@@ -126,8 +135,8 @@ function validate(data: Input): string | null {
   return (defaults[0] ?? live.find(variant => variant.status === "active") ?? live[0])?.id ?? null;
 }
 
-interface OptionRow { id: string; key: string; name: string; position: number }
-interface ValueRow { id: string; option_id: string; key: string; label: string; position: number }
+interface OptionRow { id: string; key: string; name: string; position: number; display: string }
+interface ValueRow { id: string; option_id: string; key: string; label: string; position: number; swatch_color: string | null; swatch_image_source: string | null }
 interface VariantRow { id: string; sku: string; name: string | null; status: string; is_default: boolean }
 
 export async function syncProductVariants(client: PoolClient, raw: VariantSyncInput): Promise<VariantSyncResult> {
@@ -143,35 +152,37 @@ export async function syncProductVariants(client: PoolClient, raw: VariantSyncIn
 
   // 1. Options and values. Keys that change (or belong to removed rows) move to a temporary key first,
   //    so swapping two keys never trips the per-product/per-option unique indexes.
-  const existingOptions = (await client.query<OptionRow>("SELECT id,key,name,position FROM product_options WHERE product_id=$1", [productId])).rows;
-  const existingValues = (await client.query<ValueRow>("SELECT id,option_id,key,label,position FROM option_values WHERE product_id=$1", [productId])).rows;
+  const existingOptions = (await client.query<OptionRow>("SELECT id,key,name,position,display FROM product_options WHERE product_id=$1", [productId])).rows;
+  const existingValues = (await client.query<ValueRow>("SELECT id,option_id,key,label,position,swatch_color,swatch_image_source FROM option_values WHERE product_id=$1", [productId])).rows;
   const optionDbId = new Map<string, string>(), valueDbId = new Map<string, string>();
   const keptOptions = new Set<string>(), keptValues = new Set<string>();
   const optionPlan = data.options.map((option, position) => {
     const derived = syncId(productId, "option", option.id), key = optionKey(option.key);
-    const match = existingOptions.find(row => row.id === derived && !keptOptions.has(row.id)) ?? existingOptions.find(row => row.key === key && !keptOptions.has(row.id));
+    // An editor that read this product back sends the stored row ids; imports send their own ids.
+    const match = existingOptions.find(row => (row.id === option.id || row.id === derived) && !keptOptions.has(row.id)) ?? existingOptions.find(row => row.key === key && !keptOptions.has(row.id));
     const id = match?.id ?? derived;
     keptOptions.add(id); optionDbId.set(option.id, id);
     return { option, id, key, position, match };
   });
   for (const row of existingOptions) if (!keptOptions.has(row.id) || optionPlan.some(plan => plan.match?.id === row.id && plan.key !== row.key)) await client.query("UPDATE product_options SET key=$2 WHERE id=$1", [row.id, temporary(row.id)]);
   for (const plan of optionPlan) {
-    if (!plan.match) { await client.query("INSERT INTO product_options(id,product_id,key,name,position) VALUES($1,$2,$3,$4,$5)", [plan.id, productId, plan.key, plan.option.name, plan.position]); result.options.created++; }
-    else if (plan.match.key !== plan.key || plan.match.name !== plan.option.name || plan.match.position !== plan.position) { await client.query("UPDATE product_options SET key=$2,name=$3,position=$4 WHERE id=$1", [plan.id, plan.key, plan.option.name, plan.position]); result.options.updated++; }
+    if (!plan.match) { await client.query("INSERT INTO product_options(id,product_id,key,name,position,display) VALUES($1,$2,$3,$4,$5,$6)", [plan.id, productId, plan.key, plan.option.name, plan.position, plan.option.display]); result.options.created++; }
+    else if (plan.match.key !== plan.key || plan.match.name !== plan.option.name || plan.match.position !== plan.position || plan.match.display !== plan.option.display) { await client.query("UPDATE product_options SET key=$2,name=$3,position=$4,display=$5 WHERE id=$1", [plan.id, plan.key, plan.option.name, plan.position, plan.option.display]); result.options.updated++; }
   }
   for (const plan of optionPlan) {
     const current = existingValues.filter(row => row.option_id === plan.id);
     const valuePlan = plan.option.values.map((value, position) => {
       const derived = syncId(productId, "option-value", plan.option.id, value.id);
-      const match = current.find(row => row.id === derived && !keptValues.has(row.id)) ?? current.find(row => row.key === value.key && !keptValues.has(row.id));
+      const match = current.find(row => (row.id === value.id || row.id === derived) && !keptValues.has(row.id)) ?? current.find(row => row.key === value.key && !keptValues.has(row.id));
       const id = match?.id ?? derived;
       keptValues.add(id); valueDbId.set(`${plan.option.id}\u0000${value.id}`, id);
       return { value, id, position, match };
     });
     for (const row of current) if (!keptValues.has(row.id) || valuePlan.some(item => item.match?.id === row.id && item.value.key !== row.key)) await client.query("UPDATE option_values SET key=$2 WHERE id=$1", [row.id, temporary(row.id)]);
     for (const item of valuePlan) {
-      if (!item.match) { await client.query("INSERT INTO option_values(id,product_id,option_id,key,label,position) VALUES($1,$2,$3,$4,$5,$6)", [item.id, productId, plan.id, item.value.key, item.value.label, item.position]); result.values.created++; }
-      else if (item.match.key !== item.value.key || item.match.label !== item.value.label || item.match.position !== item.position) { await client.query("UPDATE option_values SET key=$2,label=$3,position=$4 WHERE id=$1", [item.id, item.value.key, item.value.label, item.position]); result.values.updated++; }
+      const { swatchColor: color, swatchImage: image } = item.value;
+      if (!item.match) { await client.query("INSERT INTO option_values(id,product_id,option_id,key,label,position,swatch_color,swatch_image_source) VALUES($1,$2,$3,$4,$5,$6,$7,$8)", [item.id, productId, plan.id, item.value.key, item.value.label, item.position, color, image]); result.values.created++; }
+      else if (item.match.key !== item.value.key || item.match.label !== item.value.label || item.match.position !== item.position || item.match.swatch_color !== color || item.match.swatch_image_source !== image) { await client.query("UPDATE option_values SET key=$2,label=$3,position=$4,swatch_color=$5,swatch_image_source=$6 WHERE id=$1", [item.id, item.value.key, item.value.label, item.position, color, image]); result.values.updated++; }
     }
   }
 
@@ -180,7 +191,7 @@ export async function syncProductVariants(client: PoolClient, raw: VariantSyncIn
   const matched = new Set<string>();
   const variantPlan = data.variants.map(variant => {
     const derived = syncId(productId, "variant", variant.id);
-    const match = existingVariants.find(row => row.id === derived && !matched.has(row.id)) ?? existingVariants.find(row => row.sku.toLowerCase() === variant.sku.toLowerCase() && !matched.has(row.id));
+    const match = existingVariants.find(row => (row.id === variant.id || row.id === derived) && !matched.has(row.id)) ?? existingVariants.find(row => row.sku.toLowerCase() === variant.sku.toLowerCase() && !matched.has(row.id));
     const id = match?.id ?? derived;
     matched.add(id); result.variantIds[variant.id] = id;
     return { variant, id, match, isDefault: variant.id === defaultLegacyId };
@@ -195,6 +206,8 @@ export async function syncProductVariants(client: PoolClient, raw: VariantSyncIn
   // 3. Removed variants: delete when unreferenced (savepoint), otherwise archive.
   const wantedSkus = new Set(data.variants.map(variant => variant.sku.toLowerCase()));
   for (const row of existingVariants.filter(row => !matched.has(row.id))) {
+    // A fit fact scoped to a variant that leaves the catalog no longer describes anything (0013 RESTRICT FKs).
+    await client.query("DELETE FROM product_compatibility WHERE device_variant_id=$1 OR accessory_variant_id=$1", [row.id]);
     await client.query("SAVEPOINT variant_sync_remove");
     try {
       await client.query("DELETE FROM variant_option_values WHERE variant_id=$1", [row.id]);
@@ -248,6 +261,8 @@ export async function syncProductVariants(client: PoolClient, raw: VariantSyncIn
   const removedValues = existingValues.filter(row => !keptValues.has(row.id)).map(row => row.id);
   const removedOptions = existingOptions.filter(row => !keptOptions.has(row.id)).map(row => row.id);
   if (removedValues.length) {
+    // Fit facts scoped to a removed option value go with it (product_compatibility RESTRICTs the delete).
+    await client.query("DELETE FROM product_compatibility WHERE device_product_id=$1 AND device_option_value_id=ANY($2::uuid[])", [productId, removedValues]);
     await client.query("DELETE FROM variant_option_values WHERE product_id=$1 AND option_value_id=ANY($2::uuid[])", [productId, removedValues]);
     await client.query("DELETE FROM option_values WHERE id=ANY($1::uuid[])", [removedValues]);
     result.values.removed = removedValues.length;
@@ -325,4 +340,39 @@ async function syncMedia(client: PoolClient, data: Input, variantPlan: { variant
   await client.query("DELETE FROM product_media WHERE product_id=$1", [data.productId]);
   for (const row of wanted) await client.query("INSERT INTO product_media(id,product_id,variant_id,media_id,alt_text,position,is_primary) VALUES($1,$2,$3,$4,$5,$6,$7)",
     [syncId(data.productId, "media", row.variantId ?? "product", row.mediaId), data.productId, row.variantId, row.mediaId, row.alt, row.position, row.primary]);
+}
+
+export interface StoredOptionValue { id: string; key: string; label: string; swatchColor: string | null; swatchImage: string | null }
+export interface StoredOption { id: string; key: string; name: string; display: "buttons" | "swatch" | "dropdown"; values: StoredOptionValue[] }
+export interface StoredVariant {
+  id: string; sku: string; title: string | null; status: "draft" | "active" | "archived"; isDefault: boolean; version: number;
+  /** option id → option value id (stored row ids) */
+  selections: Record<string, string>;
+  /** Active KZT price in minor units for the market, or null when the variant has none. */
+  priceMinor: string | null; compareAtMinor: string | null;
+  /** Ledger balance at the main location; `tracked` is false when no balance row exists yet. */
+  onHand: number; reserved: number; tracked: boolean;
+}
+export interface VariantConfiguration { options: StoredOption[]; variants: StoredVariant[] }
+
+/** Reads one product's normalized options, values (with 0014 display/swatch) and variants with price and stock. */
+export async function readVariantConfiguration(client: Pick<PoolClient, "query">, productId: string, input: { market?: string; includeArchived?: boolean } = {}): Promise<VariantConfiguration> {
+  const options = (await client.query<{ id: string; key: string; name: string; display: StoredOption["display"]; values: StoredOptionValue[] | null }>(
+    `SELECT o.id,o.key,o.name,o.display,(SELECT json_agg(json_build_object('id',v.id,'key',v.key,'label',v.label,'swatchColor',v.swatch_color,'swatchImage',v.swatch_image_source) ORDER BY v.position,v.id) FROM option_values v WHERE v.option_id=o.id) AS values
+     FROM product_options o WHERE o.product_id=$1 ORDER BY o.position,o.id`, [productId])).rows;
+  const variants = (await client.query<{ id: string; sku: string; name: string | null; status: StoredVariant["status"]; is_default: boolean; version: number; selections: Record<string, string> | null; amount: string | null; compare: string | null; on_hand: number | null; reserved: number | null }>(
+    `SELECT v.id,v.sku,v.name,v.status,v.is_default,v.version,
+       (SELECT json_object_agg(s.option_id,s.option_value_id) FROM variant_option_values s WHERE s.variant_id=v.id) AS selections,
+       pr.amount_minor::text AS amount,pr.compare_at_minor::text AS compare,b.on_hand,b.reserved
+     FROM product_variants v
+     LEFT JOIN prices pr ON pr.variant_id=v.id AND pr.is_active AND pr.currency='KZT' AND pr.market=$2
+     LEFT JOIN LATERAL (SELECT ib.on_hand,ib.reserved FROM inventory_balances ib JOIN stock_locations l ON l.id=ib.location_id WHERE ib.variant_id=v.id AND l.key='main') b ON true
+     WHERE v.product_id=$1 AND ($3::boolean OR v.status<>'archived') ORDER BY v.created_at,lower(v.sku),v.id`, [productId, input.market ?? "default", input.includeArchived === true])).rows;
+  return {
+    options: options.map(row => ({ id: row.id, key: row.key, name: row.name, display: row.display, values: row.values ?? [] })),
+    variants: variants.map(row => ({
+      id: row.id, sku: row.sku, title: row.name, status: row.status, isDefault: row.is_default, version: row.version, selections: row.selections ?? {},
+      priceMinor: row.amount, compareAtMinor: row.compare, onHand: row.on_hand ?? 0, reserved: row.reserved ?? 0, tracked: row.on_hand !== null,
+    })),
+  };
 }

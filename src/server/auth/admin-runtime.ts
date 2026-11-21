@@ -62,10 +62,12 @@ async function handlers(request: Request, resource: AdminResource) {
   };
   return createAdminHandlers({ runtime, store, baseURL: new URL(process.env.AUTH_BASE_URL!).origin });
 }
-export async function handleAdminRequest(resource: AdminResource | "order-claims" | "inventory" | "operations" | "content" | "media" | "reports" | "exports", request: Request) {
+export async function handleAdminRequest(resource: AdminResource | "order-claims" | "inventory" | "operations" | "content" | "media" | "reports" | "exports" | "catalog", request: Request) {
   // Legacy-order claim approval exists only in PostgreSQL+auth mode; the account service
   // enforces staff MFA admission and customers:write itself.
   if (resource === "order-claims") return (await import("../account/runtime.ts")).handleClaimApprovalRequest(request);
+  // The admin catalog API (M2) is PostgreSQL-only; the catalog service checks catalog/inventory permissions per action.
+  if (resource === "catalog") return (await import("../cms/catalog-runtime.ts")).handleCatalogRequest(request);
   // Inventory (Task 11A) is PostgreSQL-only; the inventory service checks staff permissions per action.
   if (resource === "inventory") return (await import("../inventory/runtime.ts")).handleInventoryRequest(request);
   // The job queue (Task 12B) is PostgreSQL-only; the operations runtime requires settings:write with fresh MFA.
