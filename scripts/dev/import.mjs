@@ -180,8 +180,38 @@ export async function importDevCatalog(pool, { reimport = false } = {}) {
     delete state.products[id]; report.archived++;
   }
   if (!report.failed.length) state.dataHash = sha256(raw);
+  // 3. Content publication, once per database: the legacy importer stores pages as unpublished
+  //    drafts, so the public homepage would 503. Publish what was live in data.json.
+  if (!state.contentPublished) {
+    report.contentPublished = await publishImportedContent(pool);
+    state.contentPublished = { ...report.contentPublished, at: new Date().toISOString() };
+  }
   await writeFile(STATE_FILE, `${JSON.stringify(state, null, 2)}\n`);
   return report;
+}
+
+// Publishes the latest version of imported pages that were live in data.json: the homepage always,
+// blogs with status "published", banners with active=true. Pages that already have a publication
+// row are left alone. Runs once per dev database (state.contentPublished), so an owner who later
+// unpublishes something in the admin is never overridden by a re-import.
+export async function publishImportedContent(pool) {
+  const client = await pool.connect(), counts = { homepage: 0, blogs: 0, banners: 0 };
+  try {
+    await client.query("BEGIN");
+    const rows = (await client.query(`SELECT p.id,p.kind,pv.id AS version_id,pv.legacy_content
+      FROM pages p JOIN LATERAL (SELECT id,legacy_content FROM page_versions WHERE page_id=p.id ORDER BY version DESC LIMIT 1) pv ON true
+      WHERE NOT EXISTS (SELECT 1 FROM page_publications pub WHERE pub.page_id=p.id)`)).rows;
+    for (const row of rows) {
+      const content = row.legacy_content ?? {};
+      const live = row.kind === "homepage" || (row.kind === "blog" && content.status === "published") || (row.kind === "banner" && content.active === true);
+      if (!live) continue;
+      await client.query("INSERT INTO page_publications(page_id,version_id) VALUES($1,$2) ON CONFLICT(page_id) DO NOTHING", [row.id, row.version_id]);
+      await client.query("UPDATE pages SET status='published' WHERE id=$1", [row.id]);
+      counts[row.kind === "homepage" ? "homepage" : row.kind === "blog" ? "blogs" : "banners"]++;
+    }
+    await client.query("COMMIT");
+    return counts;
+  } catch (error) { await client.query("ROLLBACK").catch(() => {}); throw error; } finally { client.release(); }
 }
 
 export async function catalogCounts(pool) {

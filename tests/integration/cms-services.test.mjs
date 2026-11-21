@@ -202,10 +202,16 @@ test("customer read permissions hide private notes and cannot edit a linked acco
 });
 
 async function editedForm(resource,item){
+  if(resource==="products"){
+    // M3 replaced both product screens with ProductEditor; its pure state helpers build the exact save
+    // payload: what GET returned (`base`) with the edited form laid over it. The id travels in the URL
+    // (PUT /api/admin/catalog/products/:key), so it is added back here for the direct service call.
+    const {formFromPayload,buildCommand}=await import("../../src/components/admin/product-editor/editor-state.ts");
+    return {...buildCommand(item,formFromPayload(item),false),id:item.id};
+  }
   const {componentFixture,nodes}=await import("../helpers/component-fixture.mjs");
-  // The PostgreSQL CMS service pairs with PostgresProductsScreen (the legacy screen is the JSON variants editor).
-  const label=resource==="products"?"PostgresProducts":"Clients",fixture=componentFixture(`src/app/admin/${resource}/_components/${label}Screen.tsx`,{items:[item]});
-  nodes(fixture.render()).find(node=>node.props?.title===`Edit ${resource==="products"?"Product":"Client"}`).props.onClick();
+  const fixture=componentFixture(`src/app/admin/${resource}/_components/ClientsScreen.tsx`,{items:[item]});
+  nodes(fixture.render()).find(node=>node.props?.title==="Edit Client").props.onClick();
   await nodes(fixture.render()).find(node=>node.type==="form").props.onSubmit({preventDefault(){}});
   return fixture.writes[0].body;
 }

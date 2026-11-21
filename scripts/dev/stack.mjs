@@ -61,6 +61,7 @@ async function bootstrap() {
     const report = await importDevCatalog(database.pool, { reimport });
     log(`base import: ${report.base}`);
     log(`catalog sync: ${report.synced} synced, ${report.unchanged} unchanged, ${report.archived} archived, ${report.failed.length} failed`);
+    if (report.contentPublished) log(`content published once: homepage ${report.contentPublished.homepage}, blogs ${report.contentPublished.blogs}, banners ${report.contentPublished.banners}`);
     for (const failure of report.failed) log(`  FAILED ${failure.id}: ${failure.reason}`);
     for (const item of report.uncategorized) log(`  no category for ${item.id}: ${item.labels.join(" / ")}`);
     const counts = await catalogCounts(database.pool);
@@ -99,6 +100,11 @@ async function runChecks(base, targets) {
     catch (error) { rows.push({ name, ok: false, detail: error instanceof Error ? error.message : String(error), ms: Date.now() - started }); }
   };
   const expect = (condition, message) => { if (!condition) throw new Error(message); };
+  await row("GET / (homepage)", async () => {
+    const res = await http(`${base}/`);
+    expect(res.status === 200, `status ${res.status}`);
+    return "200";
+  });
   await row("GET /c/wearables-smartwatches", async () => {
     const res = await http(`${base}/c/wearables-smartwatches`);
     expect(res.status === 200, `status ${res.status}`);
