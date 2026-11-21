@@ -8,6 +8,20 @@ const id = () => uuid("id").primaryKey().$defaultFn(randomUUID);
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 const updatedAt = () => timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date());
 
+/** A box-contents entry: legacy plain text, or a labelled item with an optional image source (0013). */
+export type InTheBoxItem = string | { label: string; image?: string };
+
+/** Listing filters a category applies when opened; keys mirror the public catalog query (0013). */
+export interface CategoryPresetFilters {
+  activities?: string[];
+  levels?: ("Entry" | "Advanced" | "Premium" | "Youth")[];
+  caseSizes?: ("Small" | "Medium" | "Large")[];
+  families?: string[];
+}
+
+export const categoryKinds = ["catalog", "accessory", "group"] as const;
+export type CategoryKind = (typeof categoryKinds)[number];
+
 export const products = pgTable("products", {
   id: id(),
   publicKey: text("public_key").notNull().unique(),
@@ -22,7 +36,8 @@ export const products = pgTable("products", {
   isFeatured: boolean("is_featured").notNull().default(false),
   specs: jsonb("specs").$type<{ label: string; value: string }[]>().notNull().default([]),
   features: jsonb("features").$type<{ title: string; body: string; image?: string }[]>().notNull().default([]),
-  inTheBox: jsonb("in_the_box").$type<string[]>().notNull().default([]),
+  // Item shapes are enforced by the custom check products_in_the_box_items (migration 0013).
+  inTheBox: jsonb("in_the_box").$type<InTheBoxItem[]>().notNull().default([]),
   legacyContent: jsonb("legacy_content").$type<Record<string, unknown>>().notNull().default({}),
   seoTitle: text("seo_title"),
   seoDescription: text("seo_description"),
@@ -87,6 +102,8 @@ export const optionValues = pgTable("option_values", {
 }, (table) => [
   foreignKey({ columns: [table.optionId, table.productId], foreignColumns: [productOptions.id, productOptions.productId] }).onDelete("restrict"),
   unique("option_values_identity_unique").on(table.id, table.productId, table.optionId),
+  // Target for product_compatibility's device ownership FK (0013).
+  unique("option_values_id_product_unique").on(table.id, table.productId),
   uniqueIndex("option_values_key_unique").on(table.optionId, table.key),
   check("option_values_fields_valid", sql`length(btrim(${table.key}))>0 AND length(btrim(${table.label}))>0 AND ${table.position}>=0`),
 ]);
@@ -105,10 +122,18 @@ export const categories = pgTable("categories", {
   id: id(), key: text("key").notNull().unique(), name: text("name").notNull(),
   parentId: uuid("parent_id").references((): AnyPgColumn => categories.id, { onDelete: "restrict" }),
   archived: boolean("archived").notNull().default(false), position: integer("position").notNull().default(0),
+  kind: text("kind", { enum: categoryKinds }).notNull().default("catalog"),
+  slug: text("slug").unique(),
+  presetFilters: jsonb("preset_filters").$type<CategoryPresetFilters>().notNull().default({}),
+  navVisible: boolean("nav_visible").notNull().default(true),
+  description: text("description"),
 }, (table) => [
   index("categories_parent_order_idx").on(table.parentId, table.position, table.id),
   check("categories_fields_valid", sql`length(btrim(${table.key}))>0 AND length(btrim(${table.name}))>0 AND ${table.position}>=0`),
   check("categories_not_self_parent", sql`${table.parentId} IS NULL OR ${table.parentId}<>${table.id}`),
+  check("categories_kind_valid", sql`${table.kind} IN ('catalog','accessory','group')`),
+  check("categories_slug_valid", sql`${table.slug} IS NULL OR ${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*$'`),
+  check("categories_preset_filters_object", sql`jsonb_typeof(${table.presetFilters})='object'`),
 ]);
 
 // Internal serialization row; its only initial record is infrastructure state.
@@ -176,6 +201,37 @@ export const productRelations = pgTable("product_relations", {
   primaryKey({ columns: [table.sourceProductId, table.targetProductId, table.relationType] }),
   index("product_relations_target_idx").on(table.targetProductId),
   check("product_relations_valid", sql`${table.sourceProductId}<>${table.targetProductId} AND ${table.relationType} IN ('related','compatible_accessory','upsell') AND ${table.position}>=0`),
+]);
+
+const noScope = sql.raw("'00000000-0000-0000-0000-000000000000'::uuid");
+
+/**
+ * One stored "accessory fits device" fact (0013). Device scope: neither option value nor variant =
+ * every variant of the device; an option value = every current/future variant carrying it; a variant =
+ * a single-variant exception. Composite FKs pin each optional variant/option value to its own product.
+ */
+export const productCompatibility = pgTable("product_compatibility", {
+  id: id(),
+  accessoryProductId: uuid("accessory_product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
+  accessoryVariantId: uuid("accessory_variant_id"),
+  deviceProductId: uuid("device_product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
+  deviceOptionValueId: uuid("device_option_value_id"),
+  deviceVariantId: uuid("device_variant_id"),
+  position: integer("position").notNull().default(0),
+  createdAt: createdAt(),
+}, (table) => [
+  foreignKey({ name: "product_compatibility_accessory_variant_fk", columns: [table.accessoryVariantId, table.accessoryProductId], foreignColumns: [productVariants.id, productVariants.productId] }).onDelete("restrict"),
+  foreignKey({ name: "product_compatibility_device_option_value_fk", columns: [table.deviceOptionValueId, table.deviceProductId], foreignColumns: [optionValues.id, optionValues.productId] }).onDelete("restrict"),
+  foreignKey({ name: "product_compatibility_device_variant_fk", columns: [table.deviceVariantId, table.deviceProductId], foreignColumns: [productVariants.id, productVariants.productId] }).onDelete("restrict"),
+  uniqueIndex("product_compatibility_link_unique").on(table.accessoryProductId, sql`coalesce(${table.accessoryVariantId},${noScope})`, table.deviceProductId, sql`coalesce(${table.deviceOptionValueId},${noScope})`, sql`coalesce(${table.deviceVariantId},${noScope})`),
+  index("product_compatibility_device_idx").on(table.deviceProductId, table.position),
+  index("product_compatibility_accessory_idx").on(table.accessoryProductId, table.position),
+  index("product_compatibility_accessory_variant_idx").on(table.accessoryVariantId).where(sql`${table.accessoryVariantId} IS NOT NULL`),
+  index("product_compatibility_device_option_value_idx").on(table.deviceOptionValueId).where(sql`${table.deviceOptionValueId} IS NOT NULL`),
+  index("product_compatibility_device_variant_idx").on(table.deviceVariantId).where(sql`${table.deviceVariantId} IS NOT NULL`),
+  check("product_compatibility_not_self", sql`${table.accessoryProductId}<>${table.deviceProductId}`),
+  check("product_compatibility_single_device_scope", sql`${table.deviceOptionValueId} IS NULL OR ${table.deviceVariantId} IS NULL`),
+  check("product_compatibility_position_valid", sql`${table.position}>=0`),
 ]);
 
 export const prices = pgTable("prices", {

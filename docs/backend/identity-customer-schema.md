@@ -55,6 +55,21 @@ All new internal IDs are application UUIDs; direct SQL callers must supply them.
 - MFA/session/provider/verification data are secrets regardless of storage column type. No table is a public response schema. Typed public DTOs, permissions and auth endpoints are implemented later.
 - Profile country/phone normalization and remaining legacy field mapping need the Task 06 source reconciliation; preserve raw originals rather than guess an ISO code, birthday, contact city, money summary or verified identity.
 
+## Saved-address map pin (migration 0013)
+
+`customer_addresses` gains optional `latitude`/`longitude` (`numeric(9,6)`, about 0.11 m resolution) and `geo_precision`:
+- `exact`: a geocoded point
+- `street`: street-level
+- `locality`: city or settlement centroid
+- `manual`: a pin the customer placed
+
+The checks are:
+- `customer_addresses_geo_pair`: both coordinates or neither
+- `customer_addresses_geo_range`: latitude from -90 to 90, longitude from -180 to 180
+- `customer_addresses_geo_precision_valid`: a known value, and only when coordinates exist
+
+Coordinates without a precision are allowed. node-postgres returns the numbers as decimal strings, e.g. `"43.238949"`. Existing rows stay unpinned. The 0006 address guard and primary triggers are unchanged. Each address write still serializes on the owner and requires READ COMMITTED. A pin is customer-entered delivery data: keep it out of logs and public DTOs, like the rest of the address.
+
 ## Migration and recovery
 
 The first migration is additive: 16 new tables, one view and one trigger function/trigger; no original source-data update, role grant, customer import or seed occurs. The custom consent trigger is intentionally appended to reviewed SQL; Drizzle snapshots do not model it, so later changes require explicit custom migration SQL.
