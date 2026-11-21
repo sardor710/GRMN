@@ -77,5 +77,8 @@ Branch `feat/compare-followups` from `beta4` (90024bd). Two parallel tracks in t
 - 2026-11-21: owner chose A (size picker per column).
 
 ## Result
-_(at the end)_
 - 2026-11-21: design approved by owner.
+- 2026-11-21: both tracks merged (a76b33f); full gate green: typecheck, lint, boundaries, unit 391/391, legacy 304/304, integration 466/466, build, full cms-ui smoke.
+- 2026-11-21: whole-branch review: 0 Critical, 3 Important (publish price per variant, compare read concurrency, column dedupe) + minors; one fix wave (5de3ec3), scoped re-review "ready to merge". Gate after the fix wave: unit 398/398, legacy 304/304, integration 470/470, webpack build, full cms-ui smoke (incl. compare block).
+- C4 pixel diff vs garmin.com: /compare 1440 4.45 %, 390 11.53 %; catalogue bar 1440 6.68 %, 390 31.29 % — remaining differences are product content and the status line.
+- Known minors left: card toggle visible "Added" vs accessible name "Add to comparison" (WCAG 2.5.3); metadata + page each run their own 2-read limiter; draft variants of a published product also need a price; legacy JSON backend checks price-to-publish in the form only; stale SKUs in the localStorage selection are not pruned (the compare page rewrites them).
