@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CMSProduct } from "@/lib/cms/types";
 import type { TaxonomyNode } from "@/contracts/admin-catalog";
 import {
@@ -10,6 +10,7 @@ import {
   describeSaveError,
   formFromPayload,
   formSignature,
+  shouldLoadProduct,
   type EditorForm,
   type RawPayload,
   type SaveError,
@@ -31,8 +32,12 @@ export function useProductEditorState(productKey: string | null) {
   const [saveError, setSaveError] = useState<SaveError | null>(null);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [revision, setRevision] = useState(0);
+  // The key a create just adopted from its response (no refetch for it), and a guard against a second
+  // save request while one is in flight (the create API has no idempotency key).
+  const adoptedKey = useRef<string | null>(null);
+  const saveInFlight = useRef(false);
   useEffect(() => {
-    if (!key) return;
+    if (!key || !shouldLoadProduct(key, adoptedKey.current)) { adoptedKey.current = null; return; }
     let active = true;
     setLoad({ status: "loading" });
     fetch(`/api/admin/catalog/products/${encodeURIComponent(key)}`, { cache: "no-store" })
@@ -63,6 +68,8 @@ export function useProductEditorState(productKey: string | null) {
   }, []);
 
   const save = useCallback(async (): Promise<RawPayload | null> => {
+    if (saveInFlight.current) return null; // a double click or second shortcut press while saving
+    saveInFlight.current = true;
     const isNew = !key;
     const command = buildCommand(base, form, isNew);
     setSaving(true);
@@ -83,12 +90,14 @@ export function useProductEditorState(productKey: string | null) {
       setForm(next);
       setSnapshot(formSignature(next));
       setSavedAt(Date.now());
-      if (isNew && typeof body.product.id === "string") setKey(body.product.id);
+      // The response is the stored payload (now the base): adopt its key without refetching it.
+      if (isNew && typeof body.product.id === "string") { adoptedKey.current = body.product.id; setKey(body.product.id); }
       return body.product;
     } catch {
       setSaveError(describeSaveError(0, null));
       return null;
     } finally {
+      saveInFlight.current = false;
       setSaving(false);
     }
   }, [base, form, key]);

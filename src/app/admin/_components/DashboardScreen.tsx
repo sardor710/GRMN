@@ -23,6 +23,7 @@ import { CategoryBreakdown } from "@/components/admin/CategoryBreakdown";
 import { LowStockAlerts } from "@/components/admin/LowStockAlerts";
 import { BestSellersLeaderboard } from "@/components/admin/BestSellersLeaderboard";
 import type { Order, Client, ActivityLog, CMSProduct } from "@/lib/cms/types";
+import { createActionGuard, outcomeOf, type ActionOutcome } from "@/lib/admin/action-guard";
 
 interface DashboardData {
   totalRevenue: number;
@@ -159,20 +160,25 @@ export default function AdminDashboardPage() {
     loadDashboard();
   }, [loadDashboard]);
 
-  // Quick restock action
+  // Quick restock action: one request per product at a time, and one idempotency key per user action
+  // (kept for a retry after an unknown outcome, so a lost response can never restock twice).
+  const [restockGuard] = useState(() => createActionGuard(() => `restock:${crypto.randomUUID()}`));
   const handleRestockProduct = async (productId: string, addedStock: number) => {
     if (!data) return;
+    const target = data.products.find((p) => p.id === productId);
+    if (!target) return;
+    const action = restockGuard.begin(productId, String(addedStock));
+    if (!action) return;
+    let outcome: ActionOutcome = "unknown";
     try {
-      const target = data.products.find((p) => p.id === productId);
-      if (!target) return;
-
       // PostgreSQL: an audited inventory-ledger receipt (+N). The legacy JSON store (501 here) keeps
       // its whole-product save.
       let res = await fetch("/api/admin/catalog/restock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId, quantity: addedStock, idempotencyKey: `restock:${crypto.randomUUID()}` }),
+        body: JSON.stringify({ productId, quantity: addedStock, idempotencyKey: action.idempotencyKey }),
       });
+      outcome = res.status === 501 ? "done" : outcomeOf(res.status);
       if (res.status === 501) {
         res = await fetch("/api/admin/products", {
           method: "POST",
@@ -195,10 +201,14 @@ export default function AdminDashboardPage() {
           };
         });
         showToast(`Restocked ${target.name} (+${addedStock} units)`);
+      } else {
+        showToast(outcome === "unknown" ? `Restock may not have been saved; press +${addedStock} again to retry safely.` : "Error updating stock.");
       }
     } catch (err) {
       console.error("Failed to restock:", err);
-      showToast("Error updating stock.");
+      showToast(`Restock may not have been saved; press +${addedStock} again to retry safely.`);
+    } finally {
+      restockGuard.settle(productId, outcome);
     }
   };
 

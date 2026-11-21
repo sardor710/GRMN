@@ -300,5 +300,11 @@ export function describeSaveError(status: number, body: unknown): SaveError {
   return { kind: "other", conflicts, reloadable: false, message: serverMessage || `Save failed (HTTP ${status}).` };
 }
 
+/**
+ * Whether the editor must (re)load `key`. After a create, the save response already is the stored payload
+ * and becomes the base: the key change it causes must not refetch, or edits typed meanwhile would be wiped.
+ */
+export const shouldLoadProduct = (key: string | null, adoptedKey: string | null): boolean => key !== null && key !== adoptedKey;
+
 /** Stable string for unsaved-change detection. */
 export const formSignature = (form: EditorForm): string => JSON.stringify(form);
