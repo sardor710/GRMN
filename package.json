@@ -33,6 +33,8 @@
     "dev:seed": "node --env-file-if-exists=.env.local --conditions=react-server scripts/dev/seed.mjs",
     "dev:import": "node --env-file-if-exists=.env.local --conditions=react-server scripts/dev/import.mjs",
     "dev:admin": "node --env-file-if-exists=.env.local --conditions=react-server scripts/dev/admin.mjs",
+    "dev:catalog-smoke": "node --env-file-if-exists=.env.local --conditions=react-server scripts/dev/catalog-smoke.mjs",
+    "perf:admin-list": "node scripts/perf/admin-list-bench.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

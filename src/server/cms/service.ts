@@ -58,7 +58,7 @@ export function createCMSService({pool,authorize}:Options) {
   async function tx<T>(action:(client:PoolClient)=>Promise<T>):Promise<T> {
     const client=await pool.connect();let broken=false;
     try{await client.query("BEGIN");const result=await action(client);await client.query("COMMIT");return result;}
-    catch(error){try{await client.query("ROLLBACK");}catch{broken=true;}if((error as {code?:string}).code==="23505")return fail("CONFLICT",409,"Identity or SKU already exists");throw error;}
+    catch(error){try{await client.query("ROLLBACK");}catch{broken=true;}const code=(error as {code?:string}).code;if(code==="23505")return fail("CONFLICT",409,"Identity or SKU already exists");if(code==="40P01"||code==="40001")return fail("CONFLICT",409,"Another save touched the same products; try again");throw error;}
     finally{client.release(broken);}
   }
   async function actor(headers:Headers,resource:CMSResource,write=false){return authorize(headers,permissions[resource][write?1:0]);}
