@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { AdminOrderDetailDTO, AdminOrderSummaryDTO, ShipmentDTO } from "@/contracts/commerce";
 import { Button, Select } from "@/components/admin/ui";
+import { deliveryAddressLines } from "@/lib/account-client";
 
 // Task 16A: PostgreSQL-mode staff fulfillment. Every action sends the version it was based on and
 // an idempotency key; the server decides eligibility (paid, not an exception, not legacy) and
@@ -20,6 +21,16 @@ const formatDate = (value: string | null) => value ? new Date(value).toLocaleStr
 const newKey = () => `ui-${crypto.randomUUID()}`;
 // D03a: sandbox orders are demo purchases (paid without real money); they ship like live orders.
 const DemoBadge = () => <span className="ml-1.5 border border-amber-400 bg-amber-50 px-1.5 py-px align-middle font-sans text-[10px] font-bold uppercase tracking-wider text-amber-900">Demo</span>;
+
+/** The order's delivery snapshot as display lines; a region code shows as its name (M8.5). */
+function deliveryLines(address: AdminOrderDetailDTO["deliveryAddress"]): string[] {
+  if (!address) return [];
+  if (address.kind === "legacy_unstructured") return address.legacy_raw ? [address.legacy_raw] : [];
+  return deliveryAddressLines({ kind: "structured", address: {
+    recipientName: address.recipient_name ?? "", phone: address.phone ?? "", countryCode: address.country_code ?? "", city: address.city ?? "", line1: address.line1 ?? "",
+    line2: address.line2, region: address.region, postalCode: address.postal_code,
+  } });
+}
 
 async function readError(response: Response): Promise<string> {
   try { const body = await response.json() as { error?: { message?: string; code?: string }; message?: string }; return body.error?.message ?? body.message ?? `Request failed (${response.status})`; }
@@ -126,6 +137,13 @@ export default function FulfillmentScreen() {
                   ? <span title="Demo purchase (sandbox): paid without real money; never counted as live revenue" className="border border-amber-400 bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-900">Demo · sandbox</span>
                   : <span className="border px-2 py-0.5 text-[10px] font-bold uppercase">{detail.paymentMode}</span>}
               </div>
+              {deliveryLines(detail.deliveryAddress).length > 0 && (
+                <div className="text-sm">
+                  <h3 className="text-xs font-bold uppercase text-neutral-500">Deliver to</h3>
+                  <div className="mt-1 leading-relaxed">{deliveryLines(detail.deliveryAddress).map((line, index) => <p key={index}>{line}</p>)}</div>
+                  {detail.contact.email && <p className="text-neutral-600">{detail.contact.email}</p>}
+                </div>
+              )}
               {!detail.fulfillable.allowed && detail.fulfillable.reason && <p className="border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900">{REASONS[detail.fulfillable.reason]}</p>}
               {!detail.legacy && detail.status !== "cancelled" && detail.status !== "closed" && (
                 <Button variant="outline" size="sm" type="button" disabled={busy} onClick={() => void cancelOrder()}>Cancel order</Button>
