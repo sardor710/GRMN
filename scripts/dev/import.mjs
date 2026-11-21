@@ -113,10 +113,26 @@ async function variantInput(p, productId, status, hash, context) {
 }
 
 /** Runs the base import (first time) and the per-product catalog sync. */
+async function loadTaxonomy(client) {
+  const rows = (await client.query("SELECT c.id,c.key,c.name,c.kind,p.key AS parent_key FROM categories c LEFT JOIN categories p ON p.id=c.parent_id WHERE NOT c.archived")).rows;
+  return { ids: new Map(rows.map(row => [row.key, row.id])), nodes: rows.map(row => ({ key: row.key, name: row.name, kind: row.kind, parentKey: row.parent_key })) };
+}
+
+// Initial product_categories from the legacy free-text fields. Only for products that have no
+// category rows yet, so assignments made later in the admin are never overwritten by a re-sync.
+async function assignInitialCategories(client, productId, p, taxonomy) {
+  if ((await client.query("SELECT 1 FROM product_categories WHERE product_id=$1 LIMIT 1", [productId])).rowCount) return { unmatched: [] };
+  const { matchLegacyCategories } = await import("../../src/server/catalog/category-match.ts");
+  const match = matchLegacyCategories(taxonomy.nodes, p);
+  for (const key of match.keys)
+    await client.query("INSERT INTO product_categories(product_id,category_id,is_primary) VALUES($1,$2,$3) ON CONFLICT DO NOTHING", [productId, taxonomy.ids.get(key), key === match.primaryKey]);
+  return match;
+}
+
 export async function importDevCatalog(pool, { reimport = false } = {}) {
   const { syncProductVariants, syncId } = await import("../../src/server/catalog/variant-sync.ts");
   const raw = await readFile(DATA_FILE), data = JSON.parse(raw.toString("utf8")), state = await readState();
-  const report = { base: "skipped", synced: 0, unchanged: 0, archived: 0, failed: [], warnings: 0, dataChanged: state.dataHash !== sha256(raw) };
+  const report = { base: "skipped", synced: 0, unchanged: 0, archived: 0, failed: [], uncategorized: [], warnings: 0, dataChanged: state.dataHash !== sha256(raw) };
 
   // 1. Base records through the legacy importer, once per database.
   const run = (await pool.query("SELECT id,status FROM migration_runs WHERE source_namespace=$1", [NAMESPACE])).rows[0];
@@ -136,6 +152,7 @@ export async function importDevCatalog(pool, { reimport = false } = {}) {
   // 2. Per-product catalog sync.
   const context = { uploadRoot: resolve(process.env.UPLOAD_DIR || resolve(ROOT, "storage", "uploads")), files: new Map(), hashes: new Map() };
   const seen = new Set(), products = array(data.products);
+  let taxonomy = null;
   for (const p of products) {
     if (!p || typeof p.id !== "string" || typeof p.sku !== "string" || typeof p.name !== "string") { report.failed.push({ id: String(p?.id), reason: "missing id, sku or name" }); continue; }
     seen.add(p.id);
@@ -147,6 +164,8 @@ export async function importDevCatalog(pool, { reimport = false } = {}) {
       const product = await upsertProduct(client, p, syncId);
       const { input, warnings } = await variantInput(p, product.id, product.status, hash, context);
       const result = await syncProductVariants(client, input);
+      const categories = await assignInitialCategories(client, product.id, p, taxonomy ??= await loadTaxonomy(client));
+      if (categories.unmatched.length) report.uncategorized.push({ id: p.id, labels: categories.unmatched });
       await client.query("COMMIT");
       state.products = { ...state.products, [p.id]: hash };
       report.synced++; report.warnings += warnings.length;
@@ -178,6 +197,8 @@ export async function catalogCounts(pool) {
     (SELECT count(*) FROM stock_movements) AS movements,
     (SELECT COALESCE(sum(on_hand),0) FROM inventory_balances) AS on_hand,
     (SELECT count(*) FROM product_media) AS product_media,
+    (SELECT count(*) FROM categories) AS categories,
+    (SELECT count(*) FROM products p WHERE NOT EXISTS(SELECT 1 FROM product_categories pc WHERE pc.product_id=p.id AND pc.is_primary)) AS uncategorized,
     (SELECT count(*) FROM (SELECT lower(sku) FROM product_variants GROUP BY 1 HAVING count(*)>1) d) AS duplicate_skus`)).rows[0];
   return Object.fromEntries(Object.entries(row).map(([key, value]) => [key, Number(value)]));
 }
@@ -189,6 +210,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
     log(`base: ${report.base}`);
     log(`catalog: ${report.synced} synced, ${report.unchanged} unchanged, ${report.archived} archived, ${report.failed.length} failed, ${report.warnings} amount warning(s)`);
     for (const failure of report.failed) log(`  FAILED ${failure.id}: ${failure.reason}`);
+    for (const item of report.uncategorized) log(`  no category for ${item.id}: ${item.labels.join(" / ")}`);
     log(`totals: ${JSON.stringify(counts)}`);
     if (report.failed.length) process.exitCode = 2;
   } catch (error) {

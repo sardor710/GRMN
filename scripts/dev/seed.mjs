@@ -46,6 +46,7 @@ export async function seedDevDatabase(pool) {
         await client.query("INSERT INTO shipping_rates(id,policy_id,zone_id,key,amount_minor) VALUES($1,$2,$3,'standard',$4)", [syncId("dev-seed", "shipping-rate", policyId), policyId, zone, DEV_SEED.shippingMinor]);
       report.shipping = "created";
     }
+    report.taxonomy = await seedTaxonomy(client, syncId);
     if (!settings) {
       await client.query("INSERT INTO store_settings(id,store_name,maintenance_mode,payment_mode,active_tax_configuration_id,active_shipping_policy_id) VALUES(1,$1,false,'demo',$2,$3)", [DEV_SEED.storeName, taxId, policyId]);
       report.settings = "created";
@@ -58,10 +59,34 @@ export async function seedDevDatabase(pool) {
   } catch (error) { await client.query("ROLLBACK").catch(() => {}); throw error; } finally { client.release(); }
 }
 
+// Category tree from src/server/catalog/taxonomy-seed.ts (migration 0013 columns). Inserts missing
+// nodes only, matched by key, so categories an owner later renames or moves are never overwritten.
+// Nodes are listed parent-first; position = index among siblings in the seed.
+export async function seedTaxonomy(client, syncId) {
+  const { taxonomySeed } = await import("../../src/server/catalog/taxonomy-seed.ts");
+  const ids = new Map((await client.query("SELECT key,id FROM categories")).rows.map(row => [row.key, row.id]));
+  const positions = new Map();
+  let created = 0;
+  for (const node of taxonomySeed) {
+    const siblingKey = node.parentKey ?? "";
+    const position = positions.get(siblingKey) ?? 0;
+    positions.set(siblingKey, position + 1);
+    if (ids.has(node.key)) continue;
+    const parentId = node.parentKey ? ids.get(node.parentKey) : null;
+    if (node.parentKey && !parentId) throw new Error(`taxonomy seed: parent ${node.parentKey} missing for ${node.key}`);
+    const id = syncId("dev-seed", "category", node.key);
+    await client.query("INSERT INTO categories(id,key,name,kind,slug,parent_id,position,preset_filters,nav_visible) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+      [id, node.key, node.name, node.kind, node.slug, parentId, position, JSON.stringify(node.presetFilters ?? {}), node.navVisible]);
+    ids.set(node.key, id);
+    created++;
+  }
+  return created ? `${created} created` : "existing";
+}
+
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   try {
     const report = await withDevDatabase(({ database }) => seedDevDatabase(database.pool));
-    log(`seed: stock location ${report.location}, tax ${report.tax}, shipping ${report.shipping}, store settings ${report.settings}`);
+    log(`seed: stock location ${report.location}, tax ${report.tax}, shipping ${report.shipping}, store settings ${report.settings}, taxonomy ${report.taxonomy}`);
   } catch (error) {
     process.stderr.write(`[dev] seed failed: ${error instanceof Error ? error.message : error}\n`);
     process.exitCode = 1;

@@ -57,11 +57,12 @@ async function bootstrap() {
   const database = createDatabase(parseServerEnv({ DATABASE_URL: url, DATABASE_POOL_MAX: "5", DATABASE_STATEMENT_TIMEOUT_MS: "60000" }));
   try {
     const seed = await seedDevDatabase(database.pool);
-    log(`seed: stock location ${seed.location}, tax ${seed.tax}, shipping ${seed.shipping}, store settings ${seed.settings}`);
+    log(`seed: stock location ${seed.location}, tax ${seed.tax}, shipping ${seed.shipping}, store settings ${seed.settings}, taxonomy ${seed.taxonomy}`);
     const report = await importDevCatalog(database.pool, { reimport });
     log(`base import: ${report.base}`);
     log(`catalog sync: ${report.synced} synced, ${report.unchanged} unchanged, ${report.archived} archived, ${report.failed.length} failed`);
     for (const failure of report.failed) log(`  FAILED ${failure.id}: ${failure.reason}`);
+    for (const item of report.uncategorized) log(`  no category for ${item.id}: ${item.labels.join(" / ")}`);
     const counts = await catalogCounts(database.pool);
     log(`catalog totals: ${counts.products} products (${counts.published} published), ${counts.variants} variants, ${counts.prices} active prices, ${counts.balances} stock balances, ${counts.movements} stock movements`);
     const targets = check ? await checkTargets(database.pool) : null;
@@ -162,7 +163,7 @@ try {
       await new Promise(accept => setTimeout(accept, 2000));
     }
     const rows = await runChecks(base, boot.targets);
-    rows.push({ name: "catalog import", ok: boot.failures === 0 && boot.counts.duplicate_skus === 0, ms: 0, detail: `${boot.counts.products} products, ${boot.counts.variants} variants, ${boot.counts.prices} prices, ${boot.counts.balances} balances, ${boot.counts.movements} movements, ${boot.counts.on_hand} units on hand, ${boot.counts.duplicate_skus} duplicate SKUs, ${boot.failures} failed` });
+    rows.push({ name: "catalog import", ok: boot.failures === 0 && boot.counts.duplicate_skus === 0 && boot.counts.categories > 0 && boot.counts.uncategorized === 0, ms: 0, detail: `${boot.counts.products} products, ${boot.counts.variants} variants, ${boot.counts.prices} prices, ${boot.counts.balances} balances, ${boot.counts.movements} movements, ${boot.counts.on_hand} units on hand, ${boot.counts.duplicate_skus} duplicate SKUs, ${boot.counts.categories} categories, ${boot.counts.uncategorized} uncategorized, ${boot.failures} failed` });
     printTable(rows);
     const failed = rows.filter(r => !r.ok).length;
     log(failed ? `${failed} check(s) failed` : "all checks passed");
