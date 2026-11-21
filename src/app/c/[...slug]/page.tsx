@@ -6,7 +6,7 @@ import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
 import { WearablesHero } from "@/components/WearablesHero";
 import { CatalogueGrid } from "@/components/CatalogueGrid";
-import { catalogues, getCategoryView, type CategoryView } from "@/lib/products";
+import { catalogues, getCategoryName, getCategoryView, type CategoryView } from "@/lib/products";
 import { readOr } from "@/server/public-input";
 import { decodeRouteParam } from "@/lib/route-params";
 
@@ -21,8 +21,8 @@ export function generateStaticParams() {
 const slugOf = (segments: string[]) => segments.map(decodeRouteParam).join("/");
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string[] }> }): Promise<Metadata> {
-  const view = await readOr(getCategoryView(slugOf((await params).slug), {}), () => null);
-  return { title: view ? `${view.name} | Garmin` : "Garmin" };
+  const name = await readOr(getCategoryName(slugOf((await params).slug)), () => null);
+  return { title: name ? `${name} | Garmin` : "Garmin" };
 }
 
 function pageHref(query: SearchParams, page: number) {

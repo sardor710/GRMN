@@ -144,6 +144,12 @@ export async function getCategoryView(slug: string, query: SearchQuery): Promise
   };
 }
 
+/** The category's display name for page metadata (no product queries); null when the slug has no page. */
+export async function getCategoryName(slug: string): Promise<string | null> {
+  if (cmsBackend() === "postgres") return (await getCatalogService().getCategory(slug))?.name ?? null;
+  return getCatalogue(slug)?.title ?? taxonomySeed.find(n => n.slug === slug && (n.kind !== "group" || n.navVisible || n.slug.startsWith("watch-series/")))?.name ?? null;
+}
+
 /** M4.4: homepage CMS links open local categories and published local products where they exist. */
 export async function localizeHomepageLinks(config: HomepageConfig): Promise<HomepageConfig> {
   const candidates = homepageProductCandidates(config);
