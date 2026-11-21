@@ -1,4 +1,6 @@
 import type { CMSProduct, ProductImage, ProductOption, ProductVariant } from "@/lib/cms/types";
+import { buttonClass } from "@/components/admin/ui/Button";
+import { controlRadius } from "@/components/admin/ui/shape";
 
 /** Draft returned by POST /api/admin/import/garmin (CMSProduct-shaped, not saved). */
 export type ProductDraft = Partial<CMSProduct> & Pick<CMSProduct, "name" | "sku" | "price">;
@@ -42,15 +44,11 @@ export function galleryFor(
   return def ? [def, ...images.filter((i) => i.id !== defaultImageId)] : images;
 }
 
-export const labelClass =
-  "block text-[11px] font-heading uppercase tracking-wider font-semibold text-neutral-600";
-export const inputClass =
-  "h-9 w-full border border-neutral-300 bg-white px-3 text-[13px] text-black focus:border-black focus:outline-none rounded-none";
-export const smallInputClass =
-  "h-7 w-full border border-neutral-300 bg-white px-2 text-[12px] text-black focus:border-black focus:outline-none rounded-none";
-export const primaryButtonClass =
-  "inline-flex items-center gap-1.5 bg-black text-white hover:bg-neutral-800 border border-black px-4 py-2 text-[12px] font-medium tracking-[0.06em] uppercase transition-colors rounded-none disabled:opacity-50 disabled:cursor-not-allowed";
-export const secondaryButtonClass =
-  "inline-flex items-center gap-1.5 bg-white text-black hover:border-black border border-neutral-300 px-3 py-1.5 text-[11px] font-heading uppercase tracking-wider font-semibold transition-colors rounded-none disabled:opacity-50 disabled:cursor-not-allowed";
-export const linkButtonClass =
-  "inline-flex items-center gap-1 text-[11px] font-heading uppercase tracking-wider font-bold text-[#007cc3] hover:underline disabled:opacity-50";
+// Class constants for editor sub-components (images, options, variants, import). Buttons come from the
+// shared admin primitive, so the shape switch in src/components/admin/ui/shape.ts reaches them too.
+export const labelClass = "block text-[12px] font-bold text-black";
+export const inputClass = `h-10 w-full border border-[#d9d9d9] bg-white px-3 text-[13px] text-black placeholder:text-[#8c8c8c] hover:border-[#737373] focus:border-black focus:outline-none ${controlRadius}`;
+export const smallInputClass = `h-8 w-full border border-[#d9d9d9] bg-white px-2 text-[12px] text-black hover:border-[#737373] focus:border-black focus:outline-none ${controlRadius}`;
+export const primaryButtonClass = buttonClass({ variant: "primary", size: "sm" });
+export const secondaryButtonClass = buttonClass({ variant: "outline", size: "sm" });
+export const linkButtonClass = buttonClass({ variant: "link", size: "sm", className: "h-auto px-0 text-[12px] font-bold" });

@@ -16,7 +16,7 @@ export interface ParsedSpecs { format: SpecPasteFormat; groups: SpecGroupDraft[]
 export const DEFAULT_GROUP_TITLE = "General";
 
 type DomNode = ReturnType<typeof parseDocument>["children"][number];
-type DomElement = Extract<DomNode, { name: string }>;
+type DomElement = Extract<DomNode, { attribs: Record<string, string> }>;
 
 const clean = (value: string): string => value.replace(/[\s​﻿]+/g, " ").trim();
 const cleanLabel = (value: string): string => clean(value).replace(/\s*[:：]$/, "").trim();

@@ -2,9 +2,11 @@
 
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import type { ProductImage, ProductOption, ProductVariant } from "@/lib/cms/types";
+import type { ProductImage, ProductOption, ProductVariant, SpecGroup } from "@/lib/cms/types";
 import { availableValueIds, resolveVariant } from "@/lib/cms/product-variants";
 import { GarminBadge } from "@/components/GarminBadge";
+import overviewStyles from "@/components/product/CmsOverview.module.css";
+import { previewSafeHtml } from "@/lib/admin/preview-html";
 import { EditorDialog } from "./EditorDialog";
 import { formatKzt, galleryFor, secondaryButtonClass } from "./shared";
 
@@ -23,6 +25,10 @@ export interface PreviewProduct {
   defaultImageId: string;
   options: ProductOption[];
   variants: ProductVariant[];
+  /** Unsaved overview HTML (cleaned for preview; the server sanitizes on save). */
+  overviewHtml?: string;
+  specGroups?: SpecGroup[];
+  inTheBox?: { label: string; image?: string }[];
 }
 
 interface ProductPreviewModalProps {
@@ -48,8 +54,94 @@ export function ProductPreviewModal({ open, onClose, product }: ProductPreviewMo
       }
     >
       {/* Remount on every open so the default variant is re-selected from the latest form state. */}
-      {open && <PreviewBody product={product} />}
+      {open && (
+        <>
+          <PreviewBody product={product} />
+          <PreviewTabs product={product} />
+        </>
+      )}
     </EditorDialog>
+  );
+}
+
+// Overview, Specs and In the box from unsaved state, laid out like the storefront product tabs
+// (src/components/ProductTabs.tsx is reused read-only through its overview stylesheet).
+const PREVIEW_TABS = ["Overview", "Specs", "In the Box"] as const;
+function PreviewTabs({ product }: { product: PreviewProduct }) {
+  const [tab, setTab] = useState<(typeof PREVIEW_TABS)[number]>("Overview");
+  const overview = useMemo(() => previewSafeHtml(product.overviewHtml ?? ""), [product.overviewHtml]);
+  const groups = (product.specGroups ?? []).filter((group) => group.items.some((item) => item.label || item.value));
+  const box = (product.inTheBox ?? []).filter((item) => item.label.trim());
+  return (
+    <section className="mt-10 border-t border-neutral-200">
+      <div className="flex gap-8 overflow-x-auto border-b border-neutral-200 bg-[#f2f2f2] px-4" role="tablist" aria-label="Product page tabs">
+        {PREVIEW_TABS.map((name) => (
+          <button
+            key={name}
+            type="button"
+            role="tab"
+            aria-selected={tab === name}
+            onClick={() => setTab(name)}
+            className={`relative whitespace-nowrap py-4 text-[14px] font-medium uppercase tracking-[0.06em] ${tab === name ? "text-black" : "text-neutral-500 hover:text-black"}`}
+          >
+            {name}
+            {tab === name && <span className="absolute inset-x-0 bottom-0 h-[3px] bg-black" />}
+          </button>
+        ))}
+      </div>
+      <div className="mx-auto max-w-[1080px] py-8" role="tabpanel">
+        {tab === "Overview" &&
+          (overview ? (
+            <div className={overviewStyles.overview} dangerouslySetInnerHTML={{ __html: overview }} />
+          ) : (
+            <p className="text-[14px] text-neutral-500">No overview yet.</p>
+          ))}
+        {tab === "Specs" &&
+          (groups.length ? (
+            <div className="space-y-8">
+              {groups.map((group, index) => (
+                <div key={index}>
+                  {group.title && <h3 className="g-heading mb-3 text-[24px] uppercase text-black">{group.title}</h3>}
+                  <table className="w-full text-left text-[14px]">
+                    <tbody>
+                      {group.items.filter((item) => item.label || item.value).map((item, row) => (
+                        <tr key={row} className="border-b border-neutral-200">
+                          <th scope="row" className="w-1/2 py-3 pr-4 font-medium text-black">{item.label}</th>
+                          <td className="py-3 text-neutral-700">{item.value}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-[14px] text-neutral-500">No specs yet.</p>
+          ))}
+        {tab === "In the Box" &&
+          (box.length ? (
+            box.some((item) => item.image) ? (
+              <ul className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+                {box.map((item, index) => (
+                  <li key={index} className="text-center">
+                    <div className="flex aspect-square items-center justify-center bg-white">
+                      {/* eslint-disable-next-line @next/next/no-img-element -- preview of unsaved upload/import paths */}
+                      {item.image ? <img src={item.image} alt="" className="max-h-full max-w-full object-contain" /> : <span className="text-[12px] text-neutral-400">No photo</span>}
+                    </div>
+                    <p className="mt-2 text-[14px] text-black">{item.label}</p>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <ul className="list-disc space-y-2 pl-5 text-[14px] text-black">
+                {box.map((item, index) => <li key={index}>{item.label}</li>)}
+              </ul>
+            )
+          ) : (
+            <p className="text-[14px] text-neutral-500">Nothing listed in the box.</p>
+          ))}
+      </div>
+    </section>
   );
 }
 
