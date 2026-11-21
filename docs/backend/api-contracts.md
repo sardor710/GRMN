@@ -30,6 +30,25 @@ The seven methods in `CommerceServices` are the integration seam for Tasks 08–
 
 `normalizePageInput` supplies defaults 24 for catalog and 20 for account/admin, and rejects noninteger/out-of-range limits (1–100) or empty/>2048-character cursors. `Page<T>` returns `items` and nullable `nextCursor`. Cursor encoding/decoding arrives with query repositories: bind version, sort tuple and filter scope; use deterministic sort+ID ordering. Cursor contents never authorize data access; customer queries still filter by the session's user ID. Empty lists remain empty.
 
+### Admin catalog API (M2, PostgreSQL only)
+
+Staff only. Reads need `catalog:read`. Writes need `catalog:write`, plus `inventory:write` when they create a product or change stock. Mutations must be same-origin. Query keys outside the allowlist are 400. On the legacy JSON backend every route answers 501. Response types are in `src/contracts/admin-catalog.ts`. Routing is in `src/server/cms/catalog-http.ts`, the service is `src/server/cms/catalog-service.ts`, and the command schema is `src/server/cms/product-command.ts`.
+
+| Route | Request | Response |
+|---|---|---|
+| `GET /api/admin/catalog/products` | `limit` (1–100, default 50), `cursor`, `search` (name, SKU, family), `status` (`draft`/`published`/`archived`/`all`; default: not archived), `category` (key, includes descendants), `family`, `stock` (`in` = available > 0, `low` = 1–5, `out` = ≤ 0) | `{items: ProductListRow[], nextCursor, total, limit}`. Keyset order is `updated_at DESC, id DESC`, and the cursor is bound to the filters |
+| `GET /api/admin/catalog/skus` | same keys | `{items: SkuRow[], …}`: one row per non-archived variant, grouped by product, SKU ascending |
+| `GET /api/admin/catalog/products/:key/variants` | – | `{variants: SkuRow[]}`, which expands a grouped row |
+| `GET /api/admin/catalog/products/:key` | – | `{product}`: the full editor payload. It has the legacy CMSProduct shape with stored ids, plus `categories`, `primaryCategory`, `relations`, `compatibility` {`devices`, `accessories`, `compatibleDevices`, `compatibleAccessories`}, and per-variant `stock`/`stockBaseline`/`stockReserved`/`stockAvailable` |
+| `POST /api/admin/catalog/products` | product command without `id` (body ≤ 4 MB) | 201 `{product}` |
+| `PUT /api/admin/catalog/products/:key` | product command with `version` | `{product}`; 409 `VERSION_CONFLICT` / `STOCK_CONFLICT` / `SKU_CONFLICT` (body also carries `conflicts: string[]`) |
+| `PATCH /api/admin/catalog/variants/:variantId` | `{version (product), price?, originalPrice?, stock?, stockBaseline?, status?, imageIds?}` | `{product: {id, version}, variant: SkuRow}` |
+| `GET /api/admin/catalog/taxonomy` | – | `{categories: TaxonomyNode[], epoch}` with ETag `W/"taxonomy-<epoch>"`, `private, max-age=300`, and 304 on `If-None-Match` |
+| `GET /api/admin/catalog/picker` | `search`, `category`, `exclude`, `status`, `limit` (default 20), `cursor` | `{items: PickerRow[], nextCursor}`, with no total |
+| `POST /api/admin/catalog/restock` | `{productId, variantId?, quantity, idempotencyKey, note?}` | the inventory adjustment result plus `product: {id, version}`; a ledger `receive`, replay-safe per key |
+
+The older `/api/admin/products` keeps its response shapes. Its POST uses the same writer (and returns `{error, code: "SKU_CONFLICT", conflicts}` on a SKU clash). Its PATCH changes only the named SEO fields.
+
 ## Profile, address and wishlist
 
 Quick checkout: name, phone, delivery address; email optional. Full signup/profile completion: name, email, phone. Subsequent phone login proves possession. Do not create a fake customer email or attach old orders based only on a typed phone/email. `CompleteProfileCommand.phone` must match the verified identity; changing it requires a separately verified change flow.

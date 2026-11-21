@@ -12,7 +12,11 @@ npm run dev:db -- start|stop|status|url
 npm run dev:seed                  # store settings, tax, shipping, stock location (idempotent)
 npm run dev:import [-- --reimport]
 npm run dev:admin                 # first owner account (or lists existing staff)
+npm run dev:catalog-smoke -- --base http://localhost:3000   # admin catalog API smoke against a running dev:stack
+npm run perf:admin-list           # admin list benchmark on a disposable DB (1,000 products / 5,000 SKUs)
 ```
+
+`dev:catalog-smoke` drives `/api/admin/catalog/*` over real HTTP as a staff session. Staff sign-in needs TOTP, so it signs a session for a dedicated dev-only account (`catalog-smoke@example.invalid`, role `product_manager`) directly in `storage/devdb`. It creates, links, restocks and then archives one synthetic product. At the end it removes that account's role and sessions, so `npm run dev:admin` sees the database as it was. It refuses `NODE_ENV=production` and needs the roles that `dev:admin` (or any earlier bootstrap) created.
 
 - **Where data lives:** one PostgreSQL 18.6 cluster (the `embedded-postgres` development binaries) under `storage/devdb/` (gitignored): `data/` (cluster), `dev-secrets.json` (random DB password and a 64-hex `AUTH_SECRET`, created once), `import-state.json` (data.json hashes), `postgres.log`, `next-check.log`. It listens on `127.0.0.1:55433` (`DEV_DB_PORT` overrides). Data survives restarts; no script deletes it. `dev:stack` stops PostgreSQL when Next exits (Ctrl+C) if it started it; `dev:db -- start` leaves it running until `dev:db -- stop`.
 - **Next environment:** `dev:stack` runs `next dev` with `CMS_BACKEND=postgres`, `AUTH_ENABLED=1`, `DATABASE_URL`, `DATABASE_POOL_MAX=5`, `AUTH_SECRET`, `AUTH_BASE_URL=http://localhost:3000`, `AUTH_DEV_OTP_CONSOLE=1`, `DEMO_PURCHASES=1`. `.env.local` is loaded and wins, except `CMS_BACKEND`, `AUTH_ENABLED`, `DATABASE_URL`, `DATABASE_MIGRATION_URL`, `AUTH_SECRET` and `AUTH_BASE_URL`, which always come from the dev stack. Variable names: [dev-stack-env.md](dev-stack-env.md).
