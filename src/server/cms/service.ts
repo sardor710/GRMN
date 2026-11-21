@@ -4,8 +4,9 @@ import type { Pool, PoolClient } from "pg";
 import { z } from "zod";
 import type { Permission, Principal } from "../context.ts";
 import { AuthFailure } from "../auth/config.ts";
-import { adminDTO, productInput, blogInput, bannerInput, homepageInput } from "../auth/admin-schemas.ts";
+import { adminDTO, blogInput, bannerInput, homepageInput } from "../auth/admin-schemas.ts";
 import { plainText, sanitizeRichText } from "../content/sanitize.ts";
+import { writeProduct } from "./catalog-write.ts";
 import { CONTENT_INVALIDATE_KIND } from "../content/events.ts";
 import { appendOutboxEvent } from "../operations/outbox.ts";
 
@@ -18,14 +19,6 @@ const json = (value: unknown) => JSON.stringify(value);
 const record = (value: unknown): Record<string, unknown> => value !== null && typeof value === "object" && !Array.isArray(value) ? value as Record<string,unknown> : {};
 const version = z.number().int().min(1).max(2147483646);
 const identity = z.string().trim().min(1).max(128);
-const money = z.union([z.string(),z.number()]).transform((value,ctx) => {
-  const text=String(value), match=/^(0|[1-9][0-9]*)(?:\.([0-9]{1,2}))?$/.exec(text);
-  if(!match){ctx.addIssue({code:"custom",message:"Use exact KZT with at most two decimal places"});return z.NEVER;}
-  const minor=BigInt(match[1])*BigInt(100)+BigInt((match[2]??"").padEnd(2,"0"));
-  if(minor>BigInt("100000000000000")){ctx.addIssue({code:"custom",message:"Amount exceeds the supported range"});return z.NEVER;}
-  return minor.toString();
-});
-const productCommand = productInput.extend({id:identity.optional(),version:version.optional(),price:money,originalPrice:money.nullable().optional(),sku:z.string().trim().min(1).max(128)}).strict();
 const blogCommand = blogInput.extend({id:z.uuid().optional(),version:version.optional(),slug:z.string().trim().max(200).regex(/^[\p{L}\p{N}_-]*$/u).optional(),draft:z.boolean().optional()}).strict();
 // Task 18A: draft:true saves a new version without changing what is live (draft isolation).
 const bannerCommand = bannerInput.extend({id:z.uuid().optional(),version:version.optional(),draft:z.boolean().optional()}).strict();
@@ -139,28 +132,11 @@ export function createCMSService({pool,authorize}:Options) {
       const principal=await actor(headers,resource,true);
       if(resource==="blogs"||resource==="banners")return tx(client=>saveContent(client,principal,resource,raw));
       if(resource==="products"){
-        const data=parse(productCommand,raw);if(data.stock!==undefined&&data.stock!==0)return fail("NOT_IMPLEMENTED",501,"Stock changes require the inventory workflow");
-        if(data.originalPrice!=null&&BigInt(data.originalPrice)<BigInt(data.price))return fail("INVALID_INPUT",400,"Compare-at price cannot be below selling price");
-        if(!data.id)await authorize(headers,"inventory:write");
+        // M2: one transactional writer for the whole catalog shape (variants, prices, media, stock via the
+        // ledger, categories, compatibility, relations); inventory:write is required to create or restock.
         return tx(async client=>{
-          const old=data.id?(await client.query(`${productSelect} WHERE p.public_key=$1 FOR UPDATE OF p`,[data.id])).rows[0]:undefined;
-          if(data.id&&!old)return fail("NOT_FOUND",404,"Product was not found");
-          if(old&&data.version!==old.version)return fail("VERSION_CONFLICT",409,"Product changed; reload before saving");
-          const id=old?.id??randomUUID(),publicKey=old?.public_key??randomUUID(),next=old?Number(old.version)+1:1;
-          const status=data.status??old?.status??"draft";
-          const compareAt=data.originalPrice===undefined?old?.compare_at_minor??null:data.originalPrice;
-          if(compareAt!==null&&BigInt(compareAt)<BigInt(data.price))return fail("INVALID_INPUT",400,"Compare-at price cannot be below selling price");
-          const metadata={...record(old?.legacy_content),...data,price:Number(data.price)/100,originalPrice:compareAt===null?undefined:Number(compareAt)/100};
-          const fields=[data.name,data.description??old?.description??"",data.family??old?.family??null,data.badge??old?.badge??null,data.priceSuffix??old?.price_suffix??null,status,data.isFeatured??old?.is_featured??false,json(data.specs??old?.specs??[]),json(data.features??old?.features??[]),json(data.inTheBox??old?.in_the_box??[]),json(metadata),data.seoTitle??old?.seo_title??null,data.seoDescription??old?.seo_description??null,json(data.focusKeywords??old?.focus_keywords??[]),data.canonicalUrl??old?.canonical_url??null,data.noIndex??old?.no_index??false,data.ogImage??old?.og_image_source??null];
-          if(old)await client.query("UPDATE products SET name=$2,description=$3,family=$4,badge=$5,price_suffix=$6,status=$7,is_featured=$8,specs=$9,features=$10,in_the_box=$11,legacy_content=$12,seo_title=$13,seo_description=$14,focus_keywords=$15,canonical_url=$16,no_index=$17,og_image_source=$18,version=version+1,updated_at=clock_timestamp() WHERE id=$1",[id,...fields]);
-          else await client.query("INSERT INTO products(id,name,description,family,badge,price_suffix,status,is_featured,specs,features,in_the_box,legacy_content,seo_title,seo_description,focus_keywords,canonical_url,no_index,og_image_source,public_key) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)",[id,...fields,publicKey]);
-          const variantId=old?.variant_id??randomUUID();
-          if(old?.variant_id)await client.query("UPDATE product_variants SET sku=$2,status=$3,version=version+1 WHERE id=$1",[variantId,data.sku,status==="archived"?"archived":status==="published"?"active":"draft"]);
-          else await client.query("INSERT INTO product_variants(id,product_id,sku,is_default,status) VALUES($1,$2,$3,true,$4)",[variantId,id,data.sku,status==="archived"?"archived":status==="published"?"active":"draft"]);
-          if(old?.price_id)await client.query("UPDATE prices SET amount_minor=$2,compare_at_minor=$3,version=version+1 WHERE id=$1",[old.price_id,data.price,compareAt]);
-          else await client.query("INSERT INTO prices(id,variant_id,amount_minor,compare_at_minor) VALUES($1,$2,$3,$4)",[randomUUID(),variantId,data.price,compareAt]);
-          await audit(client,principal,"cms.saved",entityTypes.products,id,Object.keys(data),old?Number(old.version):0,next);
-          return productDTO((await client.query(`${productSelect} WHERE p.id=$1`,[id])).rows[0]);
+          const saved=await writeProduct(client,{principal,requireInventory:()=>authorize(headers,"inventory:write")},raw);
+          return productDTO((await client.query(`${productSelect} WHERE p.id=$1`,[saved.productId])).rows[0]);
         });
       }
       const data=parse(clientCommand,raw);

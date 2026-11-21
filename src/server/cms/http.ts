@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { AuthFailure } from "../auth/config.ts";
-import { authErrorResponse } from "../auth/http.ts";
+import { catalogErrorResponse } from "./catalog-http.ts";
 import { adminJSON, readAdminJSON } from "../auth/admin-service.ts";
 import { productInput, blogInput } from "../auth/admin-schemas.ts";
 import type { Permission, Principal } from "../context.ts";
@@ -34,7 +34,7 @@ export function createCMSHTTP(input:{cms:CMSService;authorize:(headers:Headers,p
         if(!query.id||!query.version||!/^\d+$/.test(query.version))return bad();
         return adminJSON(await input.cms.archive(resource,request.headers,query.id,Number(query.version)));
       }
-      queries(url,[]);const raw=await readAdminJSON(request,true);
+      queries(url,[]);const raw=await readAdminJSON(request,true,resource==="products"?4*1024*1024:undefined);
       if(resource==="homepage"){
         if(request.method==="POST"){const data=parsed(z.object({action:z.literal("reset"),version:z.number().int().nonnegative()}).strict(),raw);const saved=await input.cms.saveHomepage(request.headers,{version:data.version,config:input.defaults()});return adminJSON({success:true,config:saved.config,version:saved.version});}
         if(request.method!=="PUT")return bad();const saved=await input.cms.saveHomepage(request.headers,raw);return adminJSON({success:true,config:saved.config,version:saved.version});
@@ -42,11 +42,13 @@ export function createCMSHTTP(input:{cms:CMSService;authorize:(headers:Headers,p
       let command:unknown=raw;
       if(request.method==="PATCH"&&(resource==="products"||resource==="blogs")){
         const patch=parsed(patchSchema,raw),current=await input.cms.get(resource,request.headers,patch.id);
-        const keys=Object.keys(resource==="products"?productInput.shape:blogInput.shape);
-        command={...Object.fromEntries(keys.filter(key=>Object.hasOwn(current,key)).map(key=>[key,current[key]])),...patch};
+        // Products: an SEO patch names only what changes; the product writer keeps every omitted field
+        // (variants, prices and stock included), so a projected list row can never write stale stock back.
+        if(resource==="products")command={name:current.name,...patch};
+        else{const keys=Object.keys(blogInput.shape);command={...Object.fromEntries(keys.filter(key=>Object.hasOwn(current,key)).map(key=>[key,current[key]])),...patch};}
       }else if(request.method!=="POST")return bad();
       const saved=await input.cms.save(resource,request.headers,command);
       return adminJSON({success:true,[resource==="products"?"product":resource==="blogs"?"blog":resource==="banners"?"banner":"client"]:saved});
-    }catch(error){return authErrorResponse(error);}
+    }catch(error){return catalogErrorResponse(error);}
   }};
 }
