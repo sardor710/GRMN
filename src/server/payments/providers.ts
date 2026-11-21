@@ -13,7 +13,8 @@ import { createPaymentProviders, type PaymentProvider, type PaymentProviders } f
 export function configuredPaymentProviders(env: Readonly<Record<string, string | undefined>>): PaymentProvider[] {
   const list: PaymentProvider[] = [createDemoProvider()];
   const gate = demoPurchasesGate(env, list);
-  if (gate.enabled) list.push(createSandboxProvider());
+  // Under the production override only signed-in staff may demo-buy (M9.3): real stock and coupons are consumed.
+  if (gate.enabled) list.push(createSandboxProvider({ staffOnly: gate.production }));
   else if (gate.reason !== "disabled")
     console.warn(`[payments] DEMO_PURCHASES=1 is ignored: ${gate.reason === "production" ? "NODE_ENV=production without DEMO_PURCHASES_ALLOW_PRODUCTION=1" : "a live payment provider is configured"}`);
   return list;

@@ -27,6 +27,6 @@ Defaults that `.env.local` may override:
 
 - `DATABASE_POOL_MAX` (5)
 - `AUTH_DEV_OTP_CONSOLE` (`1`: print phone OTP codes as `[dev-otp] <phone> <code>`; refused when `NODE_ENV=production`)
-- `DEMO_PURCHASES` (`1`: demo purchases, decision D03a. Checkout uses the sandbox auto-capture provider, so orders are paid at once in the `sandbox` environment and show as "Demo" in admin orders, the dashboard and reports. Refused when `NODE_ENV=production` unless `DEMO_PURCHASES_ALLOW_PRODUCTION=1`, and when a live payment provider is configured or `store_settings.payment_mode=live`. Set `DEMO_PURCHASES=0` in `.env.local` to get the unpaid D03 demo checkout instead.)
+- `DEMO_PURCHASES` (`1`: demo purchases, decision D03a. Checkout uses the sandbox auto-capture provider, so orders are paid at once in the `sandbox` environment and show as "Demo" in admin orders, the dashboard and reports. Refused when `NODE_ENV=production` unless `DEMO_PURCHASES_ALLOW_PRODUCTION=1`, and when a live payment provider is configured or `store_settings.payment_mode=live`. With `DEMO_PURCHASES_ALLOW_PRODUCTION=1` under `NODE_ENV=production`, only signed-in staff can demo-buy; guests and customers get 403 `DEMO_PURCHASE_STAFF_ONLY` (no order, no stock or coupon taken). In development and test, guests and customers can still demo-buy. Set `DEMO_PURCHASES=0` in `.env.local` to get the unpaid D03 demo checkout instead.)
 
 Everything else in `.env.local` is passed through unchanged.

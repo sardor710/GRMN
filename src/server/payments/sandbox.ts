@@ -1,4 +1,5 @@
 import "server-only";
+import { AuthFailure } from "../auth/config.ts";
 import type { PaymentEvent, PaymentProvenance, PaymentProvider } from "./provider.ts";
 
 // M7 (decision D03a, owner request 2026-11-21). Demo purchases: an honestly named sandbox adapter
@@ -29,9 +30,20 @@ export function demoPurchasesGate(env: Env, otherProviders: readonly Pick<Paymen
   return { enabled: true, production };
 }
 
-export function createSandboxProvider(): PaymentProvider {
+/**
+ * M9.3: under NODE_ENV=production (the DEMO_PURCHASES_ALLOW_PRODUCTION override) a demo purchase still
+ * consumes real stock and coupons and the order ships like a live one, so only a signed-in staff principal
+ * may place one there (staffOnly). Guests and customers get 403 DEMO_PURCHASE_STAFF_ONLY before anything
+ * is written. Outside production the adapter stays open to every shopper (the owner's local demo buying).
+ */
+export function assertDemoPurchaseActor(provider: Pick<PaymentProvider, "staffOnly">, actor: { userId: string | null; staff?: boolean }): void {
+  if (provider.staffOnly && !(actor.userId && actor.staff === true))
+    throw new AuthFailure("DEMO_PURCHASE_STAFF_ONLY", 403, "Demo purchases on this production store are limited to signed-in staff. No order was placed and nothing was charged.");
+}
+
+export function createSandboxProvider(options: { staffOnly?: boolean } = {}): PaymentProvider {
   return {
-    name: "sandbox", environment: "sandbox", merchantAccount: SANDBOX_MERCHANT, simulated: false, webhooks: false,
+    name: "sandbox", environment: "sandbox", merchantAccount: SANDBOX_MERCHANT, simulated: false, webhooks: false, staffOnly: options.staffOnly === true,
     async startSession(request) { return { sessionId: `sandbox-session:${request.attemptId}`, redirectUrl: null, provenance: { ...PROVENANCE } }; },
     verifySignature() { return false; },
     parseEvent() { return null; },

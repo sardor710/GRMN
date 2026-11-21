@@ -45,6 +45,8 @@ export interface PaymentProvider {
   readonly simulated: boolean;
   /** False for an adapter that never receives webhooks (the sandbox adapter): its webhook path answers 404 before a byte is read. */
   readonly webhooks?: boolean;
+  /** True when only signed-in staff may check out with this adapter (the D03a sandbox under the production override, M9.3). */
+  readonly staffOnly?: boolean;
   startSession(request: SessionRequest): Promise<SessionResult>;
   /** Checks the signature over the exact raw body. */
   verifySignature(rawBody: Uint8Array, headers: Headers): boolean;

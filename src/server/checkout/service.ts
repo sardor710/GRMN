@@ -10,6 +10,7 @@ import { revalidateQuote, type DeliverySnapshot } from "../pricing/quote.ts";
 import { appendOutboxEvent } from "../operations/outbox.ts";
 import { enqueueOrderAlerts } from "../notifications/whatsapp.ts";
 import type { PaymentProvider, PaymentProviders } from "../payments/provider.ts";
+import { assertDemoPurchaseActor } from "../payments/sandbox.ts";
 
 // Task 14A. Idempotent checkout inside the exact plan Section 6 boundary, in ONE short
 // transaction with no network call: claim the idempotency key (checkout_attempts), lock the cart
@@ -45,7 +46,8 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   return result.success ? result.data : invalid();
 }
 
-export interface CheckoutActor { userId: string | null; guestTokenHash: string | null }
+/** `staff`: the signed-in principal holds staff permissions (decides demo purchases under the production override). */
+export interface CheckoutActor { userId: string | null; guestTokenHash: string | null; staff?: boolean }
 interface StoredLine { variantId: string; productId: string; quantity: number; unitMinor: string; discountMinor: string; taxMinor: string; includedTaxMinor: string; totalMinor: string; baseUnitMinor: string; markdownRules: string[] }
 interface QuoteSnapshot {
   delivery_snapshot: DeliverySnapshot; lines_snapshot: StoredLine[]; policy_versions: Record<string, unknown> & { coupon: { code: string; promotionId: string } | null; shippingPolicy: Record<string, unknown> };
@@ -104,6 +106,7 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
   const sandbox = provider?.name === "sandbox";
   if (sandbox && (provider!.environment !== "sandbox" || [...(options.payments?.values() ?? [])].some(other => other.environment === "live")))
     fail("PAYMENT_UNAVAILABLE", 409, "Demo purchases are not available while live payments are configured");
+  if (sandbox) assertDemoPurchaseActor(provider!, actor); // production override: staff only (403 before any write)
   const paymentMode = sandbox ? "sandbox" : provider ? "live" : "demo";
   const payment = provider ? { name: provider.name, environment: provider.environment, merchantAccount: provider.merchantAccount } : { name: "demo", environment: "demo", merchantAccount: "demo" };
   const scope = actorScope(actor) ?? notFound();
