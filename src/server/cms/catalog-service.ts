@@ -5,6 +5,7 @@ import type { Permission, Principal } from "../context.ts";
 import { AuthFailure } from "../auth/config.ts";
 import type { InventoryService } from "../inventory/service.ts";
 import { writeProduct } from "./catalog-write.ts";
+import { assertPurgeable, deleteVariantReferences, purgeVariantStock } from "./catalog-purge.ts";
 import { kztMoney } from "./product-command.ts";
 import { listProducts, listSkus, loadEditorProduct, pickProducts, productIdForKey, productVariantRows, readTaxonomy, type EditorProduct, type SkuRow } from "./catalog-read.ts";
 
@@ -101,6 +102,45 @@ export function createCatalogAdminService({ pool, authorize, inventory }: Option
         const variant = (await productVariantRows(client, current.id)).find(row => row.variantId === variantId)
           ?? (await client.query<{ sku: string }>("SELECT sku FROM product_variants WHERE id=$1", [variantId])).rows.map(row => ({ variantId, sku: row.sku, status: "archived" }))[0] as SkuRow;
         return { product: { id: saved.publicKey, version: saved.version }, variant };
+      });
+    },
+
+    /**
+     * Owner 2026-11-22 (admin bin): delete one SKU for good. Refused when it was ordered or in a checkout, or when it is
+     * the product's last live SKU. Its manual stock history is purged (audited), then the product is saved without it
+     * through writeProduct, so variant sync deletes the row, moves the default and refreshes document and projection.
+     */
+    async deleteVariant(headers: Headers, variantId: string, version: number): Promise<{ product: { id: string; version: number }; deleted: true }> {
+      const principal = await authorize(headers, "catalog:write");
+      parse(z.uuid(), variantId);
+      parse(z.number().int().min(1), version);
+      return tx(async client => {
+        const owner = (await client.query<{ product_id: string; version: number }>("SELECT v.product_id,p.version FROM product_variants v JOIN products p ON p.id=v.product_id WHERE v.id=$1 FOR UPDATE OF p", [variantId])).rows[0];
+        if (!owner) return fail("NOT_FOUND", 404, "Variant was not found");
+        if (owner.version !== version) return fail("VERSION_CONFLICT", 409, "Product changed; reload before deleting");
+        const live = (await client.query<{ n: number }>("SELECT count(*)::int AS n FROM product_variants WHERE product_id=$1 AND status<>'archived'", [owner.product_id])).rows[0].n;
+        if (live <= 1) return fail("CONFLICT", 409, "This is the product's last SKU; delete the whole product instead");
+        const current = await loadEditorProduct(client, owner.product_id, { relations: false });
+        const target = current.variants.find(variant => variant.id === variantId) ?? fail("NOT_FOUND", 404, "Variant is archived or not editable");
+        await assertPurgeable(client, [variantId], "SKU");
+        await deleteVariantReferences(client, [variantId]);
+        await purgeVariantStock(client, principal, { type: "product_variant", id: variantId }, [variantId]);
+
+        const { compatibility, relations, categories, ...rest } = current; void compatibility; void relations; void categories;
+        const remaining = current.variants.filter(variant => variant.id !== variantId);
+        if (target.isDefault) {
+          const next = remaining.find(variant => variant.status === "active") ?? remaining[0];
+          remaining.forEach(variant => { variant.isDefault = variant === next; });
+        }
+        // Option values no remaining SKU selects leave the product (e.g. the only Gray SKU); empty options go too.
+        const used = new Set(remaining.flatMap(variant => Object.entries(variant.selections).map(([option, value]) => `${option}\u0000${value}`)));
+        const options = current.options
+          .map(option => ({ ...option, values: option.values.filter(value => used.has(`${option.id}\u0000${value.id}`)) }))
+          .filter(option => option.values.length > 0);
+        const saved = await writeProduct(client, context(headers, principal), { ...rest, options, variants: remaining });
+        // Sync archives instead of deleting when something still references the row: then nothing may change.
+        if ((await client.query("SELECT 1 FROM product_variants WHERE id=$1", [variantId])).rowCount) return fail("CONFLICT", 409, "This SKU is still referenced; archive it instead");
+        return { product: { id: saved.publicKey, version: saved.version }, deleted: true as const };
       });
     },
 

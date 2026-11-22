@@ -15,6 +15,7 @@ import { SkuConflict } from "./catalog-write.ts";
 //   GET    products/:key/variants   expand a grouped row
 //   GET    skus                SKU list       same query keys
 //   PATCH  variants/:id        quick edit     {version, price?, originalPrice?, stock?, stockBaseline?, status?, imageIds?}
+//   DELETE variants/:id        delete one SKU ?version=<product version> (owner 2026-11-22, admin bin)
 //   GET    taxonomy            category tree  (ETag = taxonomy epoch, private cache)
 //   GET    picker              relations picker ?limit&cursor&search&category&exclude&status
 //   POST   restock             {productId, variantId?, quantity, idempotencyKey, note?}
@@ -81,6 +82,10 @@ export function createCatalogHTTP(input: { service: CatalogAdminService; baseURL
       else if (resource === "variants" && id !== undefined && sub === undefined && method === "PATCH") {
         query(url, []);
         return adminJSON(await service.quickEditVariant(request.headers, segment(id), await readAdminJSON(request, true)));
+      } else if (resource === "variants" && id !== undefined && sub === undefined && method === "DELETE") {
+        const { version } = query(url, ["version"]);
+        if (!version || !/^[1-9][0-9]{0,9}$/.test(version)) bad();
+        return adminJSON(await service.deleteVariant(request.headers, segment(id), Number(version)));
       } else if (resource === "taxonomy" && id === undefined && method === "GET") {
         query(url, []);
         const tree = await service.taxonomy(request.headers);
