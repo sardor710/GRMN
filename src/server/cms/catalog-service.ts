@@ -7,6 +7,7 @@ import type { InventoryService } from "../inventory/service.ts";
 import { writeProduct } from "./catalog-write.ts";
 import { assertPurgeable, deleteVariantReferences, purgeVariantStock } from "./catalog-purge.ts";
 import { kztMoney } from "./product-command.ts";
+import { createCategory, deleteCategory, orderCategories, readCategoryTree, setPlacements, updateCategory, type AdminCategoryTree } from "./category-admin.ts";
 import { listProducts, listSkus, loadEditorProduct, pickProducts, productIdForKey, productVariantRows, readTaxonomy, type EditorProduct, type SkuRow } from "./catalog-read.ts";
 
 // Guarded admin catalog service (M2) behind /api/admin/catalog/*. Reads need catalog:read; saves and
@@ -66,6 +67,13 @@ export function createCatalogAdminService({ pool, authorize, inventory }: Option
     async productVariants(headers: Headers, key: string) { await authorize(headers, "catalog:read"); return productVariantRows(pool, key); },
     async taxonomy(headers: Headers) { await authorize(headers, "catalog:read"); return readTaxonomy(pool); },
     async picker(headers: Headers, query: unknown) { await authorize(headers, "catalog:read"); return pickProducts(pool, query); },
+    // Admin ▸ Categories (owner 2026-11-22). Every write needs the taxonomy epoch it was read with and returns the new tree.
+    async categories(headers: Headers): Promise<AdminCategoryTree> { await authorize(headers, "catalog:read"); return readCategoryTree(pool); },
+    async createCategory(headers: Headers, epoch: string, raw: unknown) { await authorize(headers, "catalog:write"); return tx(async client => { await createCategory(client, epoch, raw); return readCategoryTree(client); }); },
+    async updateCategory(headers: Headers, epoch: string, key: string, raw: unknown) { await authorize(headers, "catalog:write"); return tx(async client => { await updateCategory(client, epoch, key, raw); return readCategoryTree(client); }); },
+    async orderCategories(headers: Headers, epoch: string, raw: unknown) { await authorize(headers, "catalog:write"); return tx(async client => { await orderCategories(client, epoch, raw); return readCategoryTree(client); }); },
+    async setPlacements(headers: Headers, epoch: string, menuKey: string, raw: unknown) { await authorize(headers, "catalog:write"); return tx(async client => { await setPlacements(client, epoch, menuKey, raw); return readCategoryTree(client); }); },
+    async deleteCategory(headers: Headers, epoch: string, key: string) { await authorize(headers, "catalog:write"); return tx(async client => { await deleteCategory(client, epoch, key); return readCategoryTree(client); }); },
 
     /** SKU quick edit (price, compare-at, stock via the ledger, status, photos) through the same save path. */
     async quickEditVariant(headers: Headers, variantId: string, raw: unknown): Promise<{ product: { id: string; version: number }; variant: SkuRow }> {
