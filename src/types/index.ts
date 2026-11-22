@@ -85,6 +85,8 @@ export interface WatchFamily {
   name: string;
   tagline: string;
   image: string;
+  /** Local series page (a watch-series taxonomy group). */
+  href?: string;
 }
 
 export interface AccessoryItem {
@@ -121,12 +123,13 @@ export interface ProductDetail {
   features: { title: string; body: string; image?: string }[];
   specs: { label: string; value: string }[];
   inTheBox: string[];
-  accessories?: AccessoryItem[];
   related: string[]; // product ids
   /** Present when the CMS product defines options/variants: drives the storefront variant pickers. */
   variantModel?: { options: ProductOption[]; variants: ProductVariant[]; images: ProductImage[] };
   /** Sanitized overview HTML (garmin.com import or admin edit). */
   overviewHtml?: string;
   specGroups?: SpecGroup[];
+  /** In-the-box items with photos (shown as tiles); `inTheBox` keeps the plain labels. */
+  inTheBoxItems?: { label: string; image?: string | null }[];
 }
 

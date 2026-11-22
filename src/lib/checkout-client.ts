@@ -84,7 +84,8 @@ export function forgetCheckoutKey(storage: CheckoutStorage): void { storage.remo
  * Task 3.3: a demo order whose demo capture failed comes back still awaiting payment. Its key is kept,
  * because a same-key retry replays the order and captures it once; any other result is final.
  */
-export const needsPaymentRetry = (result: Pick<CheckoutResultDTO, "paymentMode" | "status">) => result.paymentMode === "demo" && result.status === "pending_payment";
+// A demo order (Task 3.2) or a sandbox demo purchase (D03a) whose capture did not complete is retried with the same key.
+export const needsPaymentRetry = (result: Pick<CheckoutResultDTO, "paymentMode" | "status">) => (result.paymentMode === "demo" || result.paymentMode === "sandbox") && result.status === "pending_payment";
 
 /**
  * Forgets the key unless the order still needs a payment retry (needsPaymentRetry). A kept key records

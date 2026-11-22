@@ -90,3 +90,20 @@ The DB enforces quota and basic activation/window rules for new reservations. Pr
 Future runtime grants must permit the guard's narrow epoch/version updates (`payment_transactions.refund_epoch`, `promotions.usage_epoch`, `shipment_items.return_epoch`, allocation versions), plus appropriate reads and domain DML. Those writes execute as the runtime role; table inserts alone are insufficient. Keep DDL on the separate migration role. Do not weaken immutable-fact guards to work around missing grants.
 
 Real-DB tests cover prior-order preservation/replay, one active payment attempt, provider identity deduplication, demo cash rejection, refund contention at read committed/repeatable read, refund ownership, shipment and return quantity races, inspected partial return behavior, quota/legacy usage and separate markdown targets. These tests establish schema behavior, not production throughput or provider readiness. Generic inbox/outbox/audit/settings/import schemas are 04C; route/service integration follows later. Language modeling and the admin-managed USD exchange-rate implementation remain deferred to their planned reviews/tasks.
+
+## Migration 0015 — sandbox demo purchases (decision D03a, 2026-11-21)
+
+Additive; 0000–0014 are untouched. The owner asked for demo purchases that complete as paid so that sales, orders and dashboards can be checked. Rather than registering a fake `kaspi`, 0015 adds an honestly named provider:
+
+| Change | Rule |
+|---|---|
+| `orders.payment_mode` | Adds `sandbox` (`demo`, `live`, `sandbox`, `legacy_unknown`). Still immutable after insert (`commerce_guard_order`). |
+| `payment_attempts_context_valid` | Adds `provider='sandbox' AND environment='sandbox'`; `demo/demo` and `kaspi|secondary` + `sandbox|live` stay as they were. |
+| `payment_transactions_fields_valid`, `refunds_fields_valid` | Provider may be `sandbox`, and a `sandbox` row must be in the `sandbox` environment. |
+| `payments_guard_sandbox_attempt` (new trigger `payment_attempts_sandbox_guard`) | `provider='sandbox'` if and only if the order's `payment_mode='sandbox'`: sandbox captures never land on a live order, and live attempts never land on a sandbox order. |
+
+Not changed: `payments_guard_attempt` (a `demo` attempt still needs a `demo` order and can never reach `captured`/`authorized`; `demo` still cannot write a transaction row), `payments_guard_transaction`, the refund and shipment guards, and `webhook_inbox` (the sandbox adapter has no webhooks, so `/api/payments/webhooks/sandbox` answers 404 before reading the body).
+
+Runtime (`src/server/payments/sandbox.ts`): the adapter is registered only when `DEMO_PURCHASES=1`, never when `NODE_ENV=production` without `DEMO_PURCHASES_ALLOW_PRODUCTION=1`, and never next to a live provider. Checkout also refuses it when `store_settings.payment_mode='live'`. The checkout request then captures the order at once through the normal capture path (`applyPaymentEvent`): stock reservation consumed, coupon consumed, `order.paid`, and one `payment_transactions` capture with `provider='sandbox'`, `environment='sandbox'`. A crash between placing and capturing is repaired by retrying the same idempotency key, or by worker reconciliation (the sandbox lookup reports the capture).
+
+Reporting: revenue reads captures grouped by environment, so sandbox totals are a separate series labelled "Demo (sandbox)" and are never added to live. Order exports exclude `payment_mode='sandbox'` orders unless the request sets `includeSandbox: true`. Fulfillment accepts captured `sandbox` orders as well as `live` ones; `demo` orders still cannot ship.

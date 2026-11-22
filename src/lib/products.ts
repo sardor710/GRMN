@@ -1,7 +1,7 @@
 import "server-only";
-import type { Product, ProductDetail, AccessoryItem } from "@/types";
+import type { AccessoryItem, Product, ProductDetail } from "@/types";
 import { cmsBackend, readLegacyKztPerUsd, readProduct, readProductsPage } from "@/server/cms/source";
-import { isLegacyUsdProduct, legacyAmountsInKzt, withStorefrontPrices } from "@/lib/legacy-prices";
+import { isLegacyUsdProduct, withStorefrontPrices } from "@/lib/legacy-prices";
 import { getCatalogService } from "@/server/catalog/runtime";
 import { catalogCardView } from "@/lib/public-catalog";
 import type { ProductQuery } from "@/contracts/commerce";
@@ -10,6 +10,13 @@ import { usesCmsDetail } from "@/lib/cms/product-variants";
 import type { Locale } from "@/i18n/config";
 import { localizeProduct } from "@/i18n/translate-record";
 import { cardColors } from "@/lib/catalog/card-colors";
+import { activityFilters, caseSizeFilters, levelFilters } from "@/lib/catalog-constants";
+import { parseSort, SORT_OPTIONS } from "@/lib/catalog-facets";
+import type { CatalogSortKey } from "@/contracts/catalog-browse";
+import { taxonomySeed } from "@/server/catalog/taxonomy-seed";
+import { URL_PRESET_SLUGS } from "@/server/catalog/category-page";
+import { homepageProductCandidates, localizeHomepage } from "@/server/catalog/local-links";
+import type { HomepageConfig } from "@/lib/cms/types";
 
 
 export { watchFamilies, products } from "./public-products";
@@ -87,6 +94,105 @@ export async function catalogueProducts(def:CatalogueDef,input:Partial<ProductQu
   const page=await readProductsPage({limit:24,cursor,...filters,...(def.slug.includes("running-smartwatches")?{activitiesAll:["running"]}:{})});return {items:page.items.map(cp=>publicProduct(localized(cp,locale),rate)),nextCursor:page.nextCursor};
 }
 
+// ---- Taxonomy category pages (M4.2/M4.3) ----
+
+/** URL parameters of the facet rail (CatalogueGrid writes them, the /c/ page reads them). */
+export const FACET_PARAMS = ["series", "activities", "levels", "caseSizes", "prices", "availability"] as const;
+/** Present when the shopper cleared every facet on a page with a garmin.com URL preset. */
+export const EXPLICIT_PARAM = "all";
+type SearchQuery = Readonly<Record<string, string | string[] | undefined>>;
+
+export interface GridFacet { key: string; label: string; options: { value: string; label: string; count?: number; checked: boolean }[] }
+export interface CategoryView {
+  /** Category name (PostgreSQL / taxonomy); legacy JSON catalogues carry `headingKey` instead and show its message. */
+  name: string;
+  headingKey?: string;
+  slug: string;
+  path: { name: string; slug: string }[];
+  description: string | null;
+  hero: CatalogueDef["hero"] | "families" | null;
+  items: Product[];
+  facets: GridFacet[];
+  sort: CatalogSortKey;
+  sortOptions: readonly { value: CatalogSortKey; label: string }[];
+  categoryTotal: number;
+  total: number;
+  page: number;
+  pageCount: number;
+  /** The rail must keep the selection explicit (EXPLICIT_PARAM) when it empties: the page has a URL preset. */
+  hasPreset: boolean;
+  /** Legacy JSON storefront only: keyset paging. */
+  nextCursor?: string | null;
+}
+
+const one = (query: SearchQuery, key: string) => typeof query[key] === "string" ? query[key] as string : undefined;
+const many = (query: SearchQuery, key: string) => [query[key] ?? []].flat().filter((v): v is string => typeof v === "string" && v.length > 0).slice(0, 30);
+
+/** The page for a taxonomy slug, or null (404). Postgres: from `categories`; legacy JSON: the two original pages, other taxonomy slugs render empty. */
+export async function getCategoryView(slug: string, query: SearchQuery, locale: Locale = "en"): Promise<CategoryView | null> {
+  const def = getCatalogue(slug);
+  const hero: CategoryView["hero"] = def ? (def.showFamilies ? "families" : def.hero ?? null) : null;
+  const sortParam = parseSort(one(query, "sort"));
+  if (cmsBackend() === "postgres") {
+    const rawPage = Number.parseInt(one(query, "page") ?? "1", 10);
+    const data = await getCatalogService().getCategoryPage(slug, {
+      filters: { series: many(query, "series"), activities: many(query, "activities"), levels: many(query, "levels"), caseSizes: many(query, "caseSizes"), prices: many(query, "prices"), inStock: one(query, "availability") === "in-stock" },
+      explicit: [...FACET_PARAMS, EXPLICIT_PARAM].some(key => query[key] !== undefined),
+      sort: sortParam, page: Number.isSafeInteger(rawPage) && rawPage >= 1 ? Math.min(rawPage, 10000) : 1,
+    });
+    if (!data) return null;
+    return {
+      name: data.category.name, slug: data.category.slug, path: data.category.path, description: data.category.description, hero,
+      items: data.items.map(card => catalogCardView(card)), facets: data.facets, sort: data.sort, sortOptions: SORT_OPTIONS,
+      categoryTotal: data.categoryTotal, total: data.total, page: data.page, pageCount: data.pageCount,
+      hasPreset: data.presetApplied || URL_PRESET_SLUGS.has(data.category.slug),
+    };
+  }
+  // Legacy JSON storefront (frozen): behaves as before for its two catalogues.
+  if (!def) {
+    const node = taxonomySeed.find(n => n.slug === slug && (n.kind !== "group" || n.navVisible || n.slug.startsWith("watch-series/")));
+    if (!node) return null;
+    const path: { name: string; slug: string }[] = [];
+    for (let at: typeof node | undefined = node; at; at = taxonomySeed.find(n => n.key === at!.parentKey)) path.unshift({ name: at.name, slug: at.slug });
+    return { name: node.name, slug, path, description: null, hero: null, items: [], facets: [], sort: "featured", sortOptions: SORT_OPTIONS, categoryTotal: 0, total: 0, page: 1, pageCount: 1, hasPreset: false };
+  }
+  const legacySorts = { featured: "newest", "price-asc": "price_asc", "price-desc": "price_desc", "name-asc": "name_asc", "name-desc": "name_desc" } as const;
+  const activities = many(query, "activities"), levels = many(query, "levels"), caseSizes = many(query, "caseSizes");
+  const page = await catalogueProducts(def, { cursor: one(query, "cursor"), search: one(query, "search"), activities, levels: levels as ProductQuery["levels"], caseSizes: caseSizes as ProductQuery["caseSizes"], sort: legacySorts[sortParam] }, locale);
+  // Option labels are the English data values; CatalogueGrid shows them in the page language.
+  const facets: GridFacet[] = [
+    { key: "activities", label: "Activity", options: activityFilters.map(f => ({ value: f.value, label: f.value, checked: activities.includes(f.value) })) },
+    { key: "levels", label: "Level", options: levelFilters.map(f => ({ value: f.value, label: f.value, checked: levels.includes(f.value) })) },
+    { key: "caseSizes", label: "Case Size", options: caseSizeFilters.map(f => ({ value: f.value, label: f.value, checked: caseSizes.includes(f.value) })) },
+  ];
+  return {
+    name: def.slug, headingKey: def.headingKey, slug, path: [{ name: def.slug, slug }], description: null, hero, items: page.items, facets, sort: sortParam,
+    sortOptions: SORT_OPTIONS, categoryTotal: page.items.length, total: page.items.length, page: 1, pageCount: 1, hasPreset: false, nextCursor: page.nextCursor,
+  };
+}
+
+/**
+ * The category's display name for page metadata (no product queries); null when the slug has no page. Legacy JSON
+ * catalogues are named by their `titleKey` message on the page, so this returns null for them.
+ */
+export async function getCategoryName(slug: string): Promise<string | null> {
+  if (cmsBackend() === "postgres") return (await getCatalogService().getCategory(slug))?.name ?? null;
+  return getCatalogue(slug) ? null : taxonomySeed.find(n => n.slug === slug && (n.kind !== "group" || n.navVisible || n.slug.startsWith("watch-series/")))?.name ?? null;
+}
+
+/** M4.4: homepage CMS links open local categories and published local products where they exist. */
+export async function localizeHomepageLinks(config: HomepageConfig): Promise<HomepageConfig> {
+  const candidates = homepageProductCandidates(config);
+  const published = new Set((candidates.length ? await getProductsByKeys(candidates) : []).map(p => p.id));
+  return localizeHomepage(config, published);
+}
+
+/** Category slugs for the sitemap: Postgres = categories with at least one listed product; legacy = the two catalogues. */
+export async function getSitemapCategorySlugs(): Promise<string[]> {
+  if (cmsBackend() === "postgres") return getCatalogService().listCategorySlugsWithProducts();
+  return catalogues.map(c => c.slug);
+}
+
 // Back-compat: simple metadata lookup keyed by slug.
 export const catalogueMeta: Record<string, { titleKey: string; headingKey: string }> = Object.fromEntries(
   catalogues.map((c) => [c.slug, { titleKey: c.titleKey, headingKey: c.headingKey }]),
@@ -101,6 +207,9 @@ export async function getProduct(id:string,locale:Locale="en"):Promise<Product|u
 }
 
 
+// Legacy static accessory records (USD era). The storefront no longer shows them: PostgreSQL products list their
+// accessories from product_compatibility (Accessories tab). Kept as source data for the legacy migration archive
+// (D02: existing business data is preserved; see docs/backend/source-inventory.json).
 export const fenix8Accessories: AccessoryItem[] = [
   {
     id: "acc-hrm-pro-plus",
@@ -242,7 +351,6 @@ export const fenix8Detail: ProductDetail = {
     "Charging/data cable",
     "Documentation",
   ],
-  accessories: fenix8Accessories,
   related: ["1462801", "1316397", "1828641", "851039"],
 };
 
@@ -254,13 +362,14 @@ async function buildFallbackDetail(p: Product, locale: Locale): Promise<ProductD
     { label: "Case size", value: p.caseSize },
     { label: "Activities", value: p.activities.join(", ") },
   ];
-  let inTheBox = [p.name, "Charging/data cable", "Documentation"];
+  // No in-the-box preset (plan #7): the tab is hidden until the product lists its contents.
+  let inTheBox: string[] = [];
   let gallery = [{ view: "Front", src: p.image }];
 
   const raw=await readProduct(p.id);
   const found=raw?localized(raw,locale):undefined;
   if(found?.specs?.length)specs=found.specs;
-  if(found?.inTheBox?.length)inTheBox=found.inTheBox;
+  if(found?.inTheBox?.length)inTheBox=boxFields(found.inTheBox).inTheBox;
   // Photos uploaded in the admin show on the legacy page too (default photo first).
   if(found?.images?.length){
     const ordered=[...found.images.filter((i)=>i.id===found.defaultImageId),...found.images.filter((i)=>i.id!==found.defaultImageId)];
@@ -301,6 +410,17 @@ async function buildFallbackDetail(p: Product, locale: Locale): Promise<ProductD
   };
 }
 
+/** In-the-box labels, plus the items when any has a photo (stored items are strings or `{label, image?}`). */
+function boxFields(raw: unknown): Pick<ProductDetail, "inTheBox" | "inTheBoxItems"> {
+  const items = (Array.isArray(raw) ? raw : []).flatMap((entry: unknown) => {
+    if (typeof entry === "string") return entry.trim() ? [{ label: entry, image: null }] : [];
+    const record = entry && typeof entry === "object" ? (entry as { label?: unknown; image?: unknown }) : {};
+    const image = typeof record.image === "string" && record.image.startsWith("/") && !record.image.startsWith("//") ? record.image : null;
+    return typeof record.label === "string" && record.label.trim() ? [{ label: record.label, image }] : [];
+  });
+  return { inTheBox: items.map((item) => item.label), ...(items.some((item) => item.image) ? { inTheBoxItems: items } : {}) };
+}
+
 /** Storefront detail for CMS products that use the media/options/variants model. */
 export async function buildDetailFromCms(p: CMSProduct, locale: Locale = "en"): Promise<ProductDetail> {
   const images = p.images || [];
@@ -335,7 +455,7 @@ export async function buildDetailFromCms(p: CMSProduct, locale: Locale = "en"): 
     colors: [],
     features: p.features || [],
     specs: p.specs || [],
-    inTheBox: p.inTheBox || [],
+    ...boxFields(p.inTheBox),
     related: (await getAllProducts(locale))
       .filter((x) => x.id !== p.id && x.family === p.family)
       .slice(0, 4)
@@ -351,12 +471,14 @@ export async function getProductDetail(id: string, locale: Locale = "en"): Promi
   if(cmsBackend()==="postgres"){
     const detail=await getCatalogService().getProductByPublicKey(id,"default","KZT",locale);if(!detail)return undefined;
     const view=catalogCardView(detail),editorial=id==="1228429"?fenix8Detail:undefined;
-    return {id:detail.publicKey,title:detail.name,subtitle:detail.description,partNumber:detail.variants.find(v=>v.id===detail.selectedVariantId)?.sku??detail.variants[0]?.sku??"",price:view.price,priceLabel:view.priceLabel,currency:"KZT",purchasable:false,badge:view.badge,commerce:detail,
-      breadcrumb:editorial?.breadcrumb??[{label:"Smartwatches",href:"/c/wearables-smartwatches"}],
+    return {id:detail.publicKey,title:detail.name,subtitle:detail.description,partNumber:detail.variants.find(v=>v.id===detail.selectedVariantId)?.sku??detail.variants[0]?.sku??"",price:view.price,priceLabel:view.priceLabel,currency:"KZT",purchasable:view.purchasable,badge:view.badge,commerce:detail,
+      // M4.7: the primary category path; products without a primary category keep the editorial or Smartwatches crumb.
+      breadcrumb:detail.breadcrumb?.length?detail.breadcrumb.map(c=>({label:c.name,href:`/c/${c.slug}`})):editorial?.breadcrumb??[{label:"Smartwatches",href:"/c/wearables-smartwatches"}],
       gallery:detail.gallery.map(m=>({view:m.alt||detail.name,src:m.url})),
       caseSizes:[],defaultCaseSize:"",versions:[],defaultVersion:"",colors:[],
       features:detail.features.length?detail.features.map(f=>({title:f.title,body:f.body,image:f.image?.url})):editorial?.features??[],specs:detail.specs.length?detail.specs:editorial?.specs??[],inTheBox:detail.inTheBox.length?detail.inTheBox:editorial?.inTheBox??[],related:detail.relatedProductKeys??[],
-      ...(detail.overviewHtml?{overviewHtml:detail.overviewHtml}:{}),...(detail.specGroups?.length?{specGroups:detail.specGroups}:{})};
+      // M5.6: overview, grouped specs and in-the-box photos from the Postgres catalog.
+      ...(detail.overviewHtml?{overviewHtml:detail.overviewHtml}:{}),...(detail.specGroups?.length?{specGroups:detail.specGroups}:{}),...(detail.inTheBoxItems?.length?{inTheBoxItems:detail.inTheBoxItems}:{})};
   }
   const cms = await getCMSProduct(id, locale);
   // Only products with variants or an overview get the CMS page; legacy products keep their hand-built page
@@ -368,8 +490,6 @@ export async function getProductDetail(id: string, locale: Locale = "en"): Promi
     if (!dynamicProduct) return undefined;
     return {
       ...fenix8Detail,
-      // Static USD accessories are only offered on the legacy (USD-priced) record, converted like its own price.
-      accessories:cms&&isLegacyUsdProduct(cms)?legacyAmountsInKzt(fenix8Detail.accessories??[],await readLegacyKztPerUsd()):undefined,
       title: dynamicProduct.name || fenix8Detail.title,
       subtitle: dynamicProduct.description || fenix8Detail.subtitle,
       currency:dynamicProduct.currency,purchasable:dynamicProduct.purchasable,

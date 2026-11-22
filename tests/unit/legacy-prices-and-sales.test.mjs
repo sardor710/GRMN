@@ -80,7 +80,9 @@ test("legacy reads (cards, product, detail) carry tenge when the rate is set and
   assert.deepEqual([(await withRate.getProduct("1462801")).price, (await withRate.getProductDetail("1462801")).currency], [374995, "KZT"]);
   const fenix = productsApi({ ...source(500), readProduct: async () => ({ ...legacy, id: "1228429" }) });
   const detail = await fenix.getProductDetail("1228429");
-  assert.ok(detail.accessories.length > 0 && detail.accessories.every(a => a.currency === "KZT"), "static USD accessories are converted too");
+  // M4.6: accessories come from product_compatibility (PostgreSQL); the legacy page offers no static USD accessories.
+  assert.equal(detail.accessories, undefined, "no static accessories on the legacy page");
+  assert.equal(detail.currency, "KZT");
 
   const noRate = productsApi(source(undefined));
   const [bare] = await noRate.getAllProducts();

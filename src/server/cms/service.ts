@@ -4,17 +4,15 @@ import type { Pool, PoolClient } from "pg";
 import { z } from "zod";
 import type { Permission, Principal } from "../context.ts";
 import { AuthFailure } from "../auth/config.ts";
-import { adminDTO, productInput, blogInput, bannerInput, homepageInput, exactMoneyVariantInput } from "../auth/admin-schemas.ts";
+import { adminDTO, blogInput, bannerInput, homepageInput } from "../auth/admin-schemas.ts";
 import { plainText, sanitizeRichText } from "../content/sanitize.ts";
+import { writeProduct } from "./catalog-write.ts";
 import { CONTENT_INVALIDATE_KIND } from "../content/events.ts";
 import { appendOutboxEvent } from "../operations/outbox.ts";
-import { mergeTranslationsSafely } from "../../lib/cms/translation-input.ts";
-import { PRODUCT_HTML_FIELDS, sanitizeProductInput } from "../../lib/cms/product-input.ts";
-import { projectProduct, toMinor, type ProductDocument } from "./product-projection.ts";
+import { LOCALES, mergedTranslations } from "./product-translations.ts";
 import { PRICE_TO_PUBLISH, hasSellableOptions } from "../../lib/cms/publish-price.ts";
 import { BLOG_HTML_FIELDS } from "../../lib/cms/content-input.ts";
-import { BANNER_SPEC, BLOG_SPEC, HOMEPAGE_SPEC, PRODUCT_SPEC } from "../../i18n/translate-record.ts";
-import type { FieldSpec } from "../../i18n/translate-record.ts";
+import { BANNER_SPEC, BLOG_SPEC, HOMEPAGE_SPEC } from "../../i18n/translate-record.ts";
 
 export type CMSResource = "products" | "blogs" | "banners" | "clients";
 export interface CMSItem extends Record<string, unknown> { id: string; version: number }
@@ -31,16 +29,9 @@ export type BulkResult = { id: string; ok: true; version?: number } | { id: stri
 const BULK_STATUS: Record<Exclude<BulkAction, "delete">, ProductStatus> = { publish: "published", draft: "draft", archive: "archived" };
 const statusCommand = z.object({ id: identity, version, status: z.enum(["published", "draft", "archived"]) }).strict();
 const bulkCommand = z.object({ action: z.enum(["publish", "draft", "archive", "delete"]), items: z.array(z.object({ id: identity, version }).strict()).min(1).max(100) }).strict();
-const money = z.union([z.string(),z.number()]).transform((value,ctx) => {
-  const text=String(value), match=/^(0|[1-9][0-9]*)(?:\.([0-9]{1,2}))?$/.exec(text);
-  if(!match){ctx.addIssue({code:"custom",message:"Use exact KZT with at most two decimal places"});return z.NEVER;}
-  const minor=BigInt(match[1])*BigInt(100)+BigInt((match[2]??"").padEnd(2,"0"));
-  if(minor>BigInt("100000000000000")){ctx.addIssue({code:"custom",message:"Amount exceeds the supported range"});return z.NEVER;}
-  return minor.toString();
-});
 // Task 24: ru/kk translation overlays (record.translations) are stored in product_translations and
 // page_version_translations (migration 0019), validated and merged per locale like the legacy CMS.
-const productCommand = productInput.extend({variants:z.array(exactMoneyVariantInput).max(500).optional(),id:identity.optional(),version:version.optional(),price:money,originalPrice:money.nullable().optional(),sku:z.string().trim().min(1).max(128)}).strict();
+// Products save through catalog-write.ts (writeProduct), which stores product translations too.
 const blogCommand = blogInput.extend({id:z.uuid().optional(),version:version.optional(),slug:z.string().trim().max(200).regex(/^[\p{L}\p{N}_-]*$/u).optional(),draft:z.boolean().optional()}).strict();
 // Task 18A: draft:true saves a new version without changing what is live (draft isolation).
 const bannerCommand = bannerInput.extend({id:z.uuid().optional(),version:version.optional(),draft:z.boolean().optional()}).strict();
@@ -48,46 +39,6 @@ const clientCommand = z.object({id:z.uuid().optional(),version:version.optional(
 const querySchema = z.object({limit:z.number().int().min(1).max(100).default(20),cursor:z.string().max(2048).optional(),search:z.string().trim().max(200).default(""),status:z.string().max(30).optional(),family:z.string().max(200).optional(),category:z.string().max(200).optional()}).strict();
 // The message names the offending fields (paths only, never values) so staff can fix the form.
 function parse<T>(schema:z.ZodType<T>, value:unknown):T { const result=schema.safeParse(value);if(!result.success){const fields=[...new Set(result.error.issues.map(issue=>issue.path.join(".")||(issue.code==="unrecognized_keys"?(issue as {keys?:string[]}).keys?.join(", "):"")).filter(Boolean))].slice(0,5);return fail("INVALID_INPUT",400,`Invalid or unknown fields${fields.length?": "+fields.join("; "):""}`);}return result.data; }
-const LOCALES=["ru","kk"] as const;
-/** Validates `incoming` and merges it per locale with `stored` (a sent locale replaces, blank removes). */
-function mergedTranslations(stored:unknown,incoming:unknown,spec:FieldSpec,html?:Record<string,(value:string)=>string>):Record<string,unknown>{
-  if(incoming===undefined)return record(stored);
-  if(incoming!==null&&typeof incoming==="object"&&!Array.isArray(incoming)&&Object.keys(incoming).some(key=>!(LOCALES as readonly string[]).includes(key)))return fail("INVALID_INPUT",400,"Invalid translations: only ru and kk can be translated");
-  if(incoming!==null&&typeof incoming==="object"&&Object.values(incoming).some(value=>value===null||typeof value!=="object"||Array.isArray(value)))return fail("INVALID_INPUT",400,"Invalid translations: each locale must be an object");
-  const merged=mergeTranslationsSafely({translations:record(stored)},incoming,spec,html);
-  if(!merged.ok)return fail("INVALID_INPUT",400,`Invalid translations: ${merged.error}`);
-  return merged.translations;
-}
-/**
- * Task 2.2: variant translations (translations.<locale>.variants[<editor variant id>].content) follow the
- * saved document. A locale that was sent without a `variants` key keeps its stored ones (an older form
- * must not wipe them; `variants: {}` clears them). Only blocks the variant owns are kept, for variants
- * that still exist; absent blocks are never invented.
- */
-function variantTranslations(translations:Record<string,unknown>,stored:unknown,incoming:unknown,variants:unknown):Record<string,unknown>{
-  const owned=new Map<string,Record<string,unknown>>();
-  if(Array.isArray(variants))for(const v of variants){const item=record(v);if(typeof item.id==="string"&&item.content!==null&&typeof item.content==="object"&&!Array.isArray(item.content))owned.set(item.id,record(item.content));}
-  const out:Record<string,unknown>={};
-  for(const locale of LOCALES){
-    const overlay=translations[locale];if(overlay===undefined)continue;
-    const sent=record(incoming)[locale]!==undefined,hasKey=sent&&Object.hasOwn(record(record(incoming)[locale]),"variants");
-    const source=sent&&!hasKey?record(record(stored)[locale]).variants:record(overlay).variants;
-    const {variants:_dropped,...rest}=record(overlay);void _dropped;
-    const kept:Record<string,unknown>={};
-    for(const [id,entry] of Object.entries(record(source))){
-      const own=owned.get(id);if(!own)continue;
-      const content=record(record(entry).content),blocks=Object.fromEntries(Object.entries(content).filter(([key])=>Object.hasOwn(own,key)));
-      if(Object.keys(blocks).length)kept[id]={content:blocks};
-    }
-    const next=Object.keys(kept).length?{...rest,variants:kept}:rest;
-    if(Object.keys(next).length)out[locale]=next;
-  }
-  return out;
-}
-/** JSON with object keys sorted, so a jsonb round trip (which reorders keys) compares equal. */
-const sortedJSON=(value:unknown):string=>Array.isArray(value)?"["+value.map(sortedJSON).join(",")+"]"
-  :value!==null&&typeof value==="object"?"{"+Object.keys(value).sort().map(key=>JSON.stringify(key)+":"+sortedJSON((value as Record<string,unknown>)[key])).join(",")+"}"
-  :JSON.stringify(value);
 const translationsColumn=(table:string,key:string,ref:string)=>`(SELECT jsonb_object_agg(t.locale,t.content) FROM ${table} t WHERE t.${key}=${ref}) AS translations`;
 const translationsOf=(row:Record<string,unknown>)=>row.translations&&typeof row.translations==="object"?row.translations as Record<string,unknown>:undefined;
 const entityTypes={products:"product",blogs:"blog",banners:"banner",clients:"customer",homepage:"homepage"} as const;
@@ -130,7 +81,7 @@ export function createCMSService({pool,authorize}:Options) {
   async function tx<T>(action:(client:PoolClient)=>Promise<T>):Promise<T> {
     const client=await pool.connect();let broken=false;
     try{await client.query("BEGIN");const result=await action(client);await client.query("COMMIT");return result;}
-    catch(error){try{await client.query("ROLLBACK");}catch{broken=true;}if((error as {code?:string}).code==="23505")return fail("CONFLICT",409,"Identity or SKU already exists");throw error;}
+    catch(error){try{await client.query("ROLLBACK");}catch{broken=true;}const code=(error as {code?:string}).code;if(code==="23505")return fail("CONFLICT",409,"Identity or SKU already exists");if(code==="40P01"||code==="40001")return fail("CONFLICT",409,"Another save touched the same products; try again");throw error;}
     finally{client.release(broken);}
   }
   async function setStatusIn(client:PoolClient,principal:Principal,data:{id:string;version:number;status:ProductStatus}){
@@ -144,14 +95,11 @@ export function createCMSService({pool,authorize}:Options) {
     // sells (active ones), so a draft default variant at 0 does not block a variant product (I1).
     const hasVariants=hasSellableOptions({options:Array.isArray(meta.options)?meta.options:[],variants:Array.isArray(meta.variants)?meta.variants:[]});
     if(data.status==="published"&&!hasVariants&&BigInt(old.amount_minor)<=BigInt(0))return fail("INVALID_INPUT",400,PRICE_TO_PUBLISH);
-    // The column and the editor document keep the same status, like save.
-    await client.query("UPDATE products SET status=$2,legacy_content=jsonb_set(legacy_content,'{status}',to_jsonb($2::text)),version=version+1,updated_at=clock_timestamp() WHERE id=$1",[old.id,data.status]);
-    // Archiving mirrors archive(): the projection would clear is_default on the only variant and hide the product from every admin read.
-    if(data.status!=="archived")await projectProduct(client,old.id,{status:data.status,sku:old.sku,priceMinor:String(old.amount_minor??"0"),compareMinor:old.compare_at_minor==null?null:String(old.compare_at_minor),
-      options:(Array.isArray(meta.options)?meta.options:[]) as ProductDocument["options"],variants:(Array.isArray(meta.variants)?meta.variants:[]) as ProductDocument["variants"],
-      images:(Array.isArray(meta.images)?meta.images:[]) as ProductDocument["images"],defaultImageId:typeof meta.defaultImageId==="string"?meta.defaultImageId:undefined},(Array.isArray(meta.variants)?meta.variants:[]).map(record));
-    await audit(client,principal,"cms.saved",entityTypes.products,old.id,["status"],Number(old.version),Number(old.version)+1);
-    return{id:data.id,version:Number(old.version)+1,status:data.status};
+    // beta5 merge: the status goes through the catalog writer like any save (variant statuses, legacy_content,
+    // audit), so it never re-projects legacy_content over the relational catalog. No stock is sent, so
+    // inventory:write is never needed here.
+    const saved=await writeProduct(client,{principal,requireInventory:async()=>fail("FORBIDDEN",403,"Changing stock needs inventory permission")},{id:data.id,version:data.version,name:String(old.name),status:data.status});
+    return{id:data.id,version:saved.version,status:data.status};
   }
   async function deleteIn(client:PoolClient,principal:Principal,publicKey:string,expected:number){
       const product=(await client.query("SELECT id,version,name FROM products WHERE public_key=$1 FOR UPDATE",[publicKey])).rows[0]??fail("NOT_FOUND",404,"Product was not found");
@@ -258,51 +206,11 @@ export function createCMSService({pool,authorize}:Options) {
       const principal=await actor(headers,resource,true);
       if(resource==="blogs"||resource==="banners")return tx(client=>saveContent(client,principal,resource,raw));
       if(resource==="products"){
-        const data=parse(productCommand,raw);if(data.stock!==undefined&&data.stock!==0)return fail("NOT_IMPLEMENTED",501,"Stock changes require the inventory workflow");
-        if(data.originalPrice!=null&&BigInt(data.originalPrice)<BigInt(data.price))return fail("INVALID_INPUT",400,"Compare-at price cannot be below selling price");
-        if(!data.id)await authorize(headers,"inventory:write");
+        // M2: one transactional writer for the whole catalog shape (variants, prices, media, stock via the
+        // ledger, categories, compatibility, relations); inventory:write is required to create or restock.
         return tx(async client=>{
-          const old=data.id?(await client.query(`${productSelect} WHERE p.public_key=$1 FOR UPDATE OF p`,[data.id])).rows[0]:undefined;
-          if(data.id&&!old)return fail("NOT_FOUND",404,"Product was not found");
-          if(old&&data.version!==old.version)return fail("VERSION_CONFLICT",409,"Product changed; reload before saving");
-          const id=old?.id??randomUUID(),publicKey=old?.public_key??randomUUID(),next=old?Number(old.version)+1:1;
-          const status=data.status??old?.status??"draft";
-          // Final review I1: "price above 0 to publish" is checked by projectProduct on the projected document
-          // (every non-archived variant, or the product price without options), inside this transaction.
-          const compareAt=data.originalPrice===undefined?old?.compare_at_minor??null:data.originalPrice;
-          if(compareAt!==null&&BigInt(compareAt)<BigInt(data.price))return fail("INVALID_INPUT",400,"Compare-at price cannot be below selling price");
-          const {translations:sentTranslations,...unsafe}=data;
-          // Overview HTML, image URLs and swatch colours are sanitized like the legacy admin route.
-          const clean=sanitizeProductInput(unsafe as Record<string,unknown>,undefined);
-          if(!clean.ok)return fail("INVALID_INPUT",400,clean.error);
-          // Task 2.1: a variant's own overview HTML is sanitized like the product overview.
-          // Variant prices may arrive as exact text (the admin route keeps money lexemes); the editor
-          // document stores them as numbers in KZT major units, like the legacy store.
-          const base={...(clean.product as typeof unsafe),...(Array.isArray(unsafe.variants)?{variants:(clean.product as typeof unsafe).variants!.map(v=>({...v,...(v.content?.overviewHtml===undefined?{}:{content:{...v.content,overviewHtml:PRODUCT_HTML_FIELDS.overviewHtml(v.content.overviewHtml)}}),price:Number(toMinor(v.price,`Price of ${v.sku}`))/100,
-            ...(v.originalPrice===undefined||v.originalPrice===""?{}:{originalPrice:Number(toMinor(v.originalPrice,`Compare-at price of ${v.sku}`))/100})}))}:{})} as typeof unsafe;
-          const merged=mergedTranslations(old?.translations,sentTranslations,PRODUCT_SPEC,PRODUCT_HTML_FIELDS);
-          const metadata={...record(old?.legacy_content),...base,price:Number(data.price)/100,originalPrice:compareAt===null?undefined:Number(compareAt)/100};
-          const translations=variantTranslations(merged,old?.translations,sentTranslations,metadata.variants);
-          const fields=[data.name,data.description??old?.description??"",data.family??old?.family??null,data.badge??old?.badge??null,data.priceSuffix??old?.price_suffix??null,status,data.isFeatured??old?.is_featured??false,json(data.specs??old?.specs??[]),json(data.features??old?.features??[]),json(data.inTheBox??old?.in_the_box??[]),json(metadata),data.seoTitle??old?.seo_title??null,data.seoDescription??old?.seo_description??null,json(data.focusKeywords??old?.focus_keywords??[]),data.canonicalUrl??old?.canonical_url??null,data.noIndex??old?.no_index??false,data.ogImage??old?.og_image_source??null];
-          if(old)await client.query("UPDATE products SET name=$2,description=$3,family=$4,badge=$5,price_suffix=$6,status=$7,is_featured=$8,specs=$9,features=$10,in_the_box=$11,legacy_content=$12,seo_title=$13,seo_description=$14,focus_keywords=$15,canonical_url=$16,no_index=$17,og_image_source=$18,version=version+1,updated_at=clock_timestamp() WHERE id=$1",[id,...fields]);
-          else await client.query("INSERT INTO products(id,name,description,family,badge,price_suffix,status,is_featured,specs,features,in_the_box,legacy_content,seo_title,seo_description,focus_keywords,canonical_url,no_index,og_image_source,public_key) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)",[id,...fields,publicKey]);
-          // The editor document (options, variants, photos) is projected into the commerce tables.
-          const document:ProductDocument={status,sku:data.sku,priceMinor:data.price,compareMinor:compareAt,
-            options:(Array.isArray(metadata.options)?metadata.options:[]) as ProductDocument["options"],variants:(Array.isArray(metadata.variants)?metadata.variants:[]) as ProductDocument["variants"],
-            images:(Array.isArray(metadata.images)?metadata.images:[]) as ProductDocument["images"],defaultImageId:typeof metadata.defaultImageId==="string"?metadata.defaultImageId:undefined};
-          // F-c: the previous document names each editor variant's SKU at the last save, so a renamed SKU keeps its row.
-          const previous=record(old?.legacy_content).variants;
-          await projectProduct(client,id,document,Array.isArray(previous)?previous.map(record):[]);
-          // Final review M8: stale variant translations (a removed variant, a block no longer owned) are pruned on
-          // every save, not only when translations are sent; a locale that did not change is left untouched.
-          const storedTranslations=record(old?.translations);
-          for(const locale of LOCALES){
-            if(sentTranslations===undefined&&sortedJSON(translations[locale]??null)===sortedJSON(storedTranslations[locale]??null))continue;
-            if(translations[locale])await client.query("INSERT INTO product_translations(product_id,locale,content,updated_by) VALUES($1,$2,$3,$4) ON CONFLICT(product_id,locale) DO UPDATE SET content=excluded.content,updated_by=excluded.updated_by,updated_at=clock_timestamp()",[id,locale,json(translations[locale]),principal.userId]);
-            else await client.query("DELETE FROM product_translations WHERE product_id=$1 AND locale=$2",[id,locale]);
-          }
-          await audit(client,principal,"cms.saved",entityTypes.products,id,Object.keys(data),old?Number(old.version):0,next);
-          return productDTO((await client.query(`${productSelect} WHERE p.id=$1`,[id])).rows[0]);
+          const saved=await writeProduct(client,{principal,requireInventory:()=>authorize(headers,"inventory:write"),omittedVariantContent:"inherit"},raw);
+          return productDTO((await client.query(`${productSelect} WHERE p.id=$1`,[saved.productId])).rows[0]);
         });
       }
       const data=parse(clientCommand,raw);

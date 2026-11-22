@@ -8,7 +8,8 @@ import { ProductTop } from "@/components/ProductTop";
 import { ProductTabs } from "@/components/ProductTabs";
 import { RelatedProducts } from "@/components/RelatedProducts";
 import { ProductVariantProvider } from "@/components/product/ProductVariantContext";
-import { resolveInitialVariantId, variantParam } from "@/lib/catalog/variant-selection";
+import { variantParam } from "@/lib/catalog/variant-selection";
+import { initialVariantId as pickInitialVariant } from "@/lib/variant-availability";
 import { getProductDetail, getAllProducts, getCMSProduct, getRawCMSProduct } from "@/lib/products";
 import { ProductJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
@@ -90,10 +91,17 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
   const id = decodeRouteParam((await params).id);
   const detail = await readOr(getProductDetail(id, locale), () => undefined);
   if (!detail) notFound();
-  // Task 2.4: `?variant=<sku>` picks the first variant shown (unknown or archived SKUs fall back to the default).
-  // The canonical URL stays `/p/<id>` (generateMetadata), so variant links are not duplicate pages.
+  // Task 2.4: `?variant=<sku>` picks the first variant shown; `?sku=<sku>` (accessory and compatible-device links,
+  // M4.5) does the same. Without a link (or for an unknown or archived SKU) the page opens on the default variant
+  // when it is in stock, else on the first in-stock one. The canonical URL stays `/p/<id>` (generateMetadata), so
+  // variant links are not duplicate pages.
+  const query = await searchParams;
+  const skuParam = typeof query.sku === "string" && query.sku.length <= 100 ? query.sku : undefined;
   const initialVariantId = detail.commerce
-    ? resolveInitialVariantId(detail.commerce.variants, variantParam(await searchParams), detail.commerce.selectedVariantId)
+    ? pickInitialVariant(detail.commerce.variants, {
+        defaultId: detail.commerce.selectedVariantId ?? detail.commerce.defaultVariantId,
+        sku: variantParam(query) ?? skuParam,
+      }) ?? ""
     : "";
 
   const rawProduct = detail.commerce ? undefined : await getRawCMSProduct(id);
@@ -120,9 +128,13 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
     createdAt: new Date().toISOString(),
   };
 
+  // Structured breadcrumbs follow the visible ones (the primary category path for PostgreSQL products).
+  const trail = detail.breadcrumb.filter((crumb) => crumb.href && crumb.href !== "/");
   const breadcrumbs = [
     { name: "Garmin", url: localizedUrl("/", locale) },
-    { name: "Smartwatches", url: localizedUrl("/c/wearables-smartwatches", locale) },
+    ...(trail.length
+      ? trail.map((crumb) => ({ name: crumb.label, url: localizedUrl(crumb.href, locale) }))
+      : [{ name: "Smartwatches", url: localizedUrl("/c/wearables-smartwatches", locale) }]),
     { name: fullProduct.name, url: localizedUrl(`/p/${fullProduct.id}`, locale) },
   ];
 

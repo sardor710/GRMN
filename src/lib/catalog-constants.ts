@@ -1,11 +1,12 @@
 import type { Product, WatchFamily } from "@/types";
 
+// Family tiles open the watch-series group pages (taxonomy kind "group", linked from the storefront).
 export const watchFamilies: WatchFamily[] = [
-  { name: "fēnix®", tagline: "Push the limits of multisport performance.", image: "/images/families/fenix.png" },
-  { name: "Venu®", tagline: "Style and design meet health and fitness.", image: "/images/families/venu.png" },
-  { name: "Forerunner®", tagline: "For any reason to run.", image: "/images/families/forerunner.png" },
-  { name: "Instinct®", tagline: "Keep it bold, rugged and ready for adventure.", image: "/images/families/instinct.png" },
-  { name: "vívoactive®", tagline: "Stay healthy and active every day.", image: "/images/families/vivoactive.png" },
+  { name: "fēnix®", tagline: "Push the limits of multisport performance.", image: "/images/families/fenix.png", href: "/c/watch-series/fenix" },
+  { name: "Venu®", tagline: "Style and design meet health and fitness.", image: "/images/families/venu.png", href: "/c/watch-series/venu" },
+  { name: "Forerunner®", tagline: "For any reason to run.", image: "/images/families/forerunner.png", href: "/c/watch-series/forerunner" },
+  { name: "Instinct®", tagline: "Keep it bold, rugged and ready for adventure.", image: "/images/families/instinct.png", href: "/c/watch-series/instinct" },
+  { name: "vívoactive®", tagline: "Stay healthy and active every day.", image: "/images/families/vivoactive.png", href: "/c/watch-series/vivoactive" },
 ];
 
 /** Catalogue filter options. `value` matches product data (English); `labelKey` is the displayed message. */

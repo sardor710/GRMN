@@ -15,6 +15,7 @@ import { AuthFailure } from "../auth/config.ts";
 // order is shown (placed_at, else created_at). Status counts include every order, real and demo;
 // best-sellers are net sales of paid orders (paid, partially refunded or refunded, never cancelled, minus
 // refunded line quantities and amounts), real and demo apart, one row per variant and currency.
+// Sandbox captures are the D03a demo purchases: each row carries an explicit "Demo (sandbox)" label.
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const MAX_DAYS = 92;
@@ -30,8 +31,11 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
 const day = (value: string) => { const date = new Date(value + "T00:00:00Z"); return Number.isNaN(date.getTime()) || date.toISOString().slice(0, 10) !== value ? invalid() : date; };
 
 export type ReportEnvironment = "sandbox" | "live" | "demo";
-export interface CurrencyTotalDTO { currency: string; environment: ReportEnvironment; capturedMinor: string; refundedMinor: string; netMinor: string; ordersPaid: number }
-export interface DayTotalDTO { date: string; currency: string; environment: ReportEnvironment; capturedMinor: string; refundedMinor: string; netMinor: string }
+/** D03a: "Live" is real money; "Demo (sandbox)" is demo purchases (sandbox environment); "Demo" is the Task 3.2 demo checkout. They are never added together. */
+export type RevenueSeriesLabel = "Live" | "Demo (sandbox)" | "Demo";
+export const seriesLabel = (environment: string): RevenueSeriesLabel => environment === "live" ? "Live" : environment === "demo" ? "Demo" : "Demo (sandbox)";
+export interface CurrencyTotalDTO { currency: string; environment: ReportEnvironment; label: RevenueSeriesLabel; capturedMinor: string; refundedMinor: string; netMinor: string; ordersPaid: number }
+export interface DayTotalDTO { date: string; currency: string; environment: ReportEnvironment; label: RevenueSeriesLabel; capturedMinor: string; refundedMinor: string; netMinor: string }
 export interface SummaryDTO { from: string; to: string; timeZone: string; totals: CurrencyTotalDTO[]; days: DayTotalDTO[] }
 /**
  * Task 4.2: awaitingShipment counts orders shown in the window that staff should still ship, real and
@@ -84,8 +88,8 @@ export function createReportsService({ pool, authorize }: Options) {
       const net = (captured: string, refunded: string) => (BigInt(captured) - BigInt(refunded)).toString();
       return {
         from: command.from, to: command.to, timeZone: command.timeZone,
-        totals: totals.rows.map(row => ({ currency: row.currency, environment: row.environment, capturedMinor: row.captured, refundedMinor: row.refunded, netMinor: net(row.captured, row.refunded), ordersPaid: row.orders })),
-        days: days.rows.map(row => ({ date: row.day, currency: row.currency, environment: row.environment, capturedMinor: row.captured, refundedMinor: row.refunded, netMinor: net(row.captured, row.refunded) })),
+        totals: totals.rows.map(row => ({ currency: row.currency, environment: row.environment, label: seriesLabel(row.environment), capturedMinor: row.captured, refundedMinor: row.refunded, netMinor: net(row.captured, row.refunded), ordersPaid: row.orders })),
+        days: days.rows.map(row => ({ date: row.day, currency: row.currency, environment: row.environment, label: seriesLabel(row.environment), capturedMinor: row.captured, refundedMinor: row.refunded, netMinor: net(row.captured, row.refunded) })),
       };
     },
 
@@ -93,7 +97,7 @@ export function createReportsService({ pool, authorize }: Options) {
     async statusCounts(headers: Headers, input: unknown): Promise<StatusCountsDTO> {
       const command = await windowed(headers, summaryInput, input);
       const rows = (await pool.query<{ order_status: string; fulfillment_status: string; demo: boolean; n: number; awaiting: number }>(
-        `SELECT o.order_status,o.fulfillment_status,(o.payment_mode='demo') AS demo,count(*)::int AS n,
+        `SELECT o.order_status,o.fulfillment_status,(o.payment_mode IN ('demo','sandbox')) AS demo,count(*)::int AS n,
            (count(*) FILTER (WHERE o.order_status='confirmed' AND o.payment_status IN ('paid','partially_refunded')
              AND o.fulfillment_status IN ('unfulfilled','processing','partially_shipped')))::int AS awaiting
          FROM orders o WHERE ${ordersInWindow} GROUP BY 1,2,3`, [command.from, command.to, command.timeZone])).rows;
@@ -110,7 +114,7 @@ export function createReportsService({ pool, authorize }: Options) {
     async recentOrders(headers: Headers, input: unknown): Promise<{ items: RecentOrderDTO[] }> {
       const command = await windowed(headers, listInput, input);
       const rows = (await pool.query<{ id: string; order_number: string; shown_at: Date; total_minor: string; currency: string; payment_status: string; fulfillment_status: string; demo: boolean }>(
-        `SELECT o.id,o.order_number,COALESCE(o.placed_at,o.created_at) AS shown_at,o.total_minor::text AS total_minor,o.currency,o.payment_status,o.fulfillment_status,(o.payment_mode='demo') AS demo
+        `SELECT o.id,o.order_number,COALESCE(o.placed_at,o.created_at) AS shown_at,o.total_minor::text AS total_minor,o.currency,o.payment_status,o.fulfillment_status,(o.payment_mode IN ('demo','sandbox')) AS demo
          FROM orders o WHERE ${ordersInWindow} ORDER BY COALESCE(o.placed_at,o.created_at) DESC,o.id DESC LIMIT $4`,
         [command.from, command.to, command.timeZone, command.limit ?? 10])).rows;
       return { items: rows.map(row => ({ id: row.id, number: row.order_number, createdAt: row.shown_at.toISOString(), totalMinor: row.total_minor, currency: row.currency, paymentStatus: row.payment_status, fulfillmentStatus: row.fulfillment_status, demo: row.demo })) };
@@ -129,7 +133,7 @@ export function createReportsService({ pool, authorize }: Options) {
       const rows = (await pool.query<{ demo: boolean; currency: string; variant_id: string; sku: string | null; name: string; units: number; revenue: string }>(
         `SELECT demo,currency,variant_id,sku,name,units,revenue FROM (
            SELECT x.*,row_number() OVER (PARTITION BY x.demo ORDER BY x.units DESC,x.revenue_n DESC,x.currency,x.variant_id) AS rank FROM (
-             SELECT (o.payment_mode='demo') AS demo,o.currency,i.variant_id,
+             SELECT (o.payment_mode IN ('demo','sandbox')) AS demo,o.currency,i.variant_id,
                (array_agg(i.sku ORDER BY COALESCE(o.placed_at,o.created_at) DESC,i.id))[1] AS sku,
                (array_agg(i.name ORDER BY COALESCE(o.placed_at,o.created_at) DESC,i.id))[1] AS name,
                sum(i.quantity-COALESCE(r.quantity,0))::int AS units,

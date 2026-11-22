@@ -55,11 +55,12 @@ test("balances can only change through the stock movement ledger", async()=>{
   await q("INSERT INTO inventory_balances(variant_id,location_id) VALUES($1,$2)",[id,loc]);
   await rejectsSQL("UPDATE inventory_balances SET on_hand=7 WHERE variant_id=$1",[id]);
   await rejectsSQL("UPDATE inventory_balances SET version=9 WHERE variant_id=$1",[id]);
-  await rejectsSQL("DELETE FROM inventory_balances WHERE variant_id=$1",[id]);
   await q("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key) VALUES($1,$2,$3,4,0,'receive',$4)",[randomUUID(),id,loc,"ledger-"+id]);
   await q("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key) VALUES($1,$2,$3,0,3,'reserve',$4)",[randomUUID(),id,loc,"ledger-r-"+id]);
   const row=(await q("SELECT on_hand,reserved,version FROM inventory_balances WHERE variant_id=$1",[id])).rows[0];
   assert.deepEqual(row,{on_hand:4,reserved:3,version:3});
+  // Migration 0026 (beta5 merge): only a never-moved balance (0/0, version 1) may be deleted; one with history never.
+  await rejectsSQL("DELETE FROM inventory_balances WHERE variant_id=$1",[id]);
   // A movement that would make availability negative is rejected with the balance unchanged.
   await rejectsSQL("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key) VALUES($1,$2,$3,-2,0,'adjust',$4)",[randomUUID(),id,loc,"ledger-n-"+id]);
   assert.equal((await q("SELECT on_hand FROM inventory_balances WHERE variant_id=$1",[id])).rows[0].on_hand,4);

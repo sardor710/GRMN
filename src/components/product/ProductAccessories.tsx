@@ -3,132 +3,81 @@
 import { useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import type { AccessoryItem } from "@/types";
-import { useCart } from "@/lib/cart";
+import { Link } from "@/i18n/navigation";
+import type { CompatibleAccessoryDTO } from "@/contracts/catalog-browse";
+import { accessoriesForVariant, accessoryTabs, VIEW_ALL_TAB } from "@/lib/catalog-facets";
 import { Price } from "@/components/ui/price";
 import { useAppLocale } from "@/i18n/useAppLocale";
-import { GarminBadge } from "@/components/GarminBadge";
 
-/** Accessory categories (data values) and their `ProductAccessories.categories.*` message keys. */
-const CATEGORY_KEYS: Record<string, string> = {
-  All: "all",
-  "Bands & Straps": "bands",
-  "Heart Rate & Sensors": "sensors",
-  "Cables & Power": "power",
-  "Mounts & Protection": "protection",
-  "Satellite & Navigation": "navigation",
+/** garmin.com accessory tab slugs and their `ProductAccessories.tabs.*` message keys; other groups show their own name. */
+const TAB_KEYS: Record<string, string> = {
+  apps: "apps",
+  "subscription-plans": "servicePlans",
+  bands: "bands",
+  "dive-bands": "diveBands",
+  "marq-straps-bracelets": "marqStraps",
+  "cables-chargers": "cablesChargers",
+  "sports-fitness/cycling-biking-accessories": "cycling",
+  "heart-rate-monitors": "heartRateMonitors",
+  sensors: "sensors",
+  [VIEW_ALL_TAB]: "viewAll",
 };
 
-const CATEGORIES = ["All", "Bands & Straps", "Heart Rate & Sensors", "Cables & Power", "Satellite & Navigation"] as const;
-
-export function ProductAccessories({ accessories = [] }: { accessories?: AccessoryItem[] }) {
+/**
+ * garmin.com PDP "Accessories" tab for PostgreSQL products: a vertical category list (Apps, Service Plans, Bands,
+ * … View All) beside a card grid. Only accessories that fit the currently selected variant are shown; the
+ * per-variant mapping comes with the page data, so switching variants re-filters without a request.
+ */
+export function ProductAccessories({ accessories, variantId }: { accessories: readonly CompatibleAccessoryDTO[]; variantId?: string | null }) {
   const t = useTranslations("ProductAccessories");
-  const badgeText = useTranslations("ProductBadge");
   const locale = useAppLocale();
-  const categoryLabel = (category: string) => (CATEGORY_KEYS[category] ? t(`categories.${CATEGORY_KEYS[category]}`) : category);
-  const [selectedCategory, setSelectedCategory] = useState<string>("All");
-  const [addedId, setAddedId] = useState<string | null>(null);
-  const { add } = useCart();
+  const fitting = accessoriesForVariant(accessories, variantId);
+  const tabs = accessoryTabs(fitting);
+  const [chosen, setChosen] = useState<string | null>(null);
+  const active = tabs.find(tab => tab.slug === chosen) ?? tabs[0];
 
-  const filteredAccessories =
-    selectedCategory === "All"
-      ? accessories
-      : accessories.filter((acc) => acc.category === selectedCategory);
-
-  const handleAddToCart = (acc: AccessoryItem) => {
-    add({
-      id: acc.id,
-      name: acc.name,
-      price: acc.price,
-      image: acc.image,
-      ...(acc.currency === "USD" ? { unconverted: true } : {}),
-    });
-    setAddedId(acc.id);
-    setTimeout(() => setAddedId(null), 2000);
-  };
+  if (fitting.length === 0 || !active) {
+    return (
+      <div className="py-12 text-center">
+        <p className="text-[16px] leading-[24px] text-black">{t("noneForModel")}</p>
+        <p className="mt-1 text-[14px] leading-[21px] text-garmin-text-muted">{t("chooseAnotherModel")}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-10">
-      {/* QuickFit Compatibility Notice */}
-      <div className="bg-muted p-6">
-        <h3 className="g-heading g-h4 m-0 text-black">{t("quickFitHeading")}</h3>
-        <p className="mt-2 text-[16px] leading-[24px] text-black">
-          {t.rich("quickFitBody", { b: (chunks) => <strong>{chunks}</strong> })}
-        </p>
-      </div>
-
-      {/* Category filter: garmin.com option buttons (2px #CCC, black when chosen) */}
-      <div className="flex flex-wrap gap-3">
-        {CATEGORIES.map((cat) => (
-          <button
-            key={cat}
-            type="button"
-            aria-pressed={selectedCategory === cat}
-            onClick={() => setSelectedCategory(cat)}
-            className={`h-[39px] border-2 px-[17.5px] py-[7px] text-[14px] leading-[21px] transition-colors ${
-              selectedCategory === cat
-                ? "border-black bg-black text-white"
-                : "border-garmin-option bg-white text-black hover:border-black"
-            }`}
-          >
-            {categoryLabel(cat)}
-          </button>
-        ))}
-      </div>
-
-      {/* Accessories Grid */}
-      {filteredAccessories.length === 0 ? (
-        <div className="py-12 text-center text-[16px] leading-[24px] text-black">{t("empty")}</div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filteredAccessories.map((acc) => (
-            <div
-              key={acc.id}
-              className="flex flex-col justify-between bg-white px-4 pb-6 pt-4 shadow-garmin-card"
-            >
-              <div>
-                <div className="relative aspect-square w-full overflow-hidden">
-                  <Image
-                    src={acc.image}
-                    alt={acc.name}
-                    fill
-                    sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 25vw"
-                    className="object-contain mix-blend-multiply"
-                  />
-                  {acc.badge && <GarminBadge badge={acc.badge} variant="ribbon" className="left-0 top-0" labels={{ new: badgeText("new"), sale: badgeText("sale") }} />}
-                </div>
-
-                <div className="mt-4">
-                  <span className="text-[14px] leading-[21px] text-garmin-text-muted">
-                    {categoryLabel(acc.category)}
-                  </span>
-                  <h4 className="g-heading g-h4 mt-2 line-clamp-2 text-black">
-                    {acc.name}
-                  </h4>
-                  <p className="mt-2 text-[14px] leading-[21px] text-black">{t("partNumber", { partNumber: acc.partNumber })}</p>
-                  {acc.description && (
-                    <p className="mt-2 line-clamp-2 text-[14px] leading-[21px] text-garmin-card-text">
-                      {acc.description}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-4">
-                <Price size="card" locale={locale} amount={{ major: acc.price }} unconverted={acc.currency === "USD"} />
-
-                <button
-                  type="button"
-                  onClick={() => handleAddToCart(acc)}
-                  className="g-btn g-btn--black mt-4 w-full"
-                >
-                  {addedId === acc.id ? t("added") : t("addToCart")}
-                </button>
-              </div>
-            </div>
+    <div className="flex flex-col gap-8 md:flex-row">
+      <nav aria-label={t("categoriesLabel")} className="w-full shrink-0 md:w-[240px]">
+        <ul className="flex flex-row flex-wrap gap-1 md:flex-col md:gap-0">
+          {tabs.map(tab => (
+            <li key={tab.slug}>
+              <button type="button" aria-pressed={tab.slug === active.slug} onClick={() => setChosen(tab.slug)}
+                className={`w-full px-4 py-3 text-left text-[14px] font-semibold uppercase leading-[21px] tracking-[0.28px] transition-colors ${tab.slug === active.slug ? "bg-black text-white" : "text-black hover:bg-[#f2f2f2]"}`}>
+                {TAB_KEYS[tab.slug] ? t(`tabs.${TAB_KEYS[tab.slug]}`) : tab.label}
+              </button>
+            </li>
           ))}
-        </div>
-      )}
+        </ul>
+      </nav>
+
+      <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {active.items.map(item => {
+          const href = `/p/${encodeURIComponent(item.publicKey)}${item.sku ? `?sku=${encodeURIComponent(item.sku)}` : ""}`;
+          const soldOut = item.availability !== "available";
+          return (
+            <Link key={`${item.publicKey}:${item.sku ?? ""}`} href={href} className="group flex flex-col items-center bg-white px-4 pb-6 pt-4 text-center shadow-garmin-card">
+              <div className="relative h-[130px] w-[130px]">
+                {item.image && <Image src={item.image.url} alt={item.image.alt || item.name} fill sizes="130px" className="object-contain" />}
+              </div>
+              <h3 className="g-heading g-h4 mt-4 line-clamp-2 text-black group-hover:underline">{item.name}</h3>
+              <div className="mt-2">
+                <Price size="card" locale={locale} amount={{ minor: item.price.selling.amountMinor }} compareAt={item.price.compareAt ? { minor: item.price.compareAt.amountMinor } : null} />
+              </div>
+              {soldOut && <p className="mt-1 text-[14px] leading-[21px] text-garmin-text-muted">{t("outOfStock")}</p>}
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 }

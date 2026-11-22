@@ -113,7 +113,7 @@ function fromLegacy(detail: ProductDetail, requestedSku: string | undefined): Co
     variants,
     sku: chosen?.sku ?? detail.partNumber,
     image: ownImage || productImage,
-    price: amountFromMajor(chosen ? chosen.price : detail.price),
+    price: amountFromMajor(chosen?.price ?? detail.price),
     ...(compareAt ? { compareAt } : {}),
     ...(detail.currency === "USD" ? { unconverted: true as const } : {}),
     // Legacy variants have no own content: every size shows the product's specs.

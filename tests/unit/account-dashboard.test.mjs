@@ -5,6 +5,11 @@ import test from "node:test";
 import { readFileSync } from "node:fs";
 import { componentFixture, nodes, nodeText } from "../helpers/component-fixture.mjs";
 import * as accountClient from "../../src/lib/account-client.ts";
+import * as kzRegions from "../../src/lib/kz-regions.ts";
+
+// The shallow fixture does not render child components: the address modal's AddressForm is a stub
+// whose props (value/onChange) the tests drive, like a parent would see them.
+function AddressForm() { return null; }
 
 const root = new URL("../../", import.meta.url);
 const file = new URL("src/components/AccountDashboard.tsx", root);
@@ -35,7 +40,7 @@ async function mount(routes) {
     const [status, body] = (typeof route === "function" ? route(init.body === undefined ? undefined : JSON.parse(init.body)) : route) ?? [404, { error: { code: "NOT_FOUND", message: "Not found" } }];
     return { ok: status >= 200 && status < 300, status, json: async () => body };
   };
-  const fixture = componentFixture(file, { fetcher, modules: { "@/lib/account-client": accountClient } });
+  const fixture = componentFixture(file, { fetcher, modules: { "@/lib/account-client": accountClient, "@/lib/kz-regions": kzRegions, "@/components/address/AddressForm": { AddressForm } } });
   let tree = fixture.render();
   const initial = tree;
   for (const effect of [...fixture.effects]) effect();
@@ -48,7 +53,16 @@ async function mount(routes) {
     rerender() { tree = fixture.render(); return tree; },
     button(label) { return nodes(tree).find(node => node.type === "button" && nodeText(node).includes(label)); },
     async click(label) { const button = view.button(label); assert.ok(button, `missing button ${label}`); assert.ok(!button.props.disabled, `${label} is disabled`); await button.props.onClick?.({ preventDefault() {}, stopPropagation() {} }); await settle(); view.rerender(); },
-    input(name, value) { const node = nodes(tree).find(item => item.props?.name === name); assert.ok(node, `missing input ${name}`); node.props.onChange({ target: { value, checked: value } }); view.rerender(); },
+    input(name, value) {
+      const node = nodes(tree).find(item => item.props?.name === name);
+      if (!node) {
+        const form = nodes(tree).find(item => item.type === AddressForm);
+        assert.ok(form, `missing input ${name}`);
+        form.props.onChange({ ...form.props.value, [name]: value }); view.rerender(); return;
+      }
+      node.props.onChange({ target: { value, checked: value } }); view.rerender();
+    },
+    addressForm() { return nodes(tree).find(item => item.type === AddressForm); },
     async submit(name) { const form = nodes(tree).find(item => item.type === "form" && item.props.name === name); assert.ok(form, `missing form ${name}`); await form.props.onSubmit({ preventDefault() {} }); await settle(); view.rerender(); },
   };
   return view;
@@ -107,10 +121,10 @@ test("profile and address writes go to the API with versions and reload the serv
   await view.click("Edit Details");
   view.input("name", "Renamed Owner");
   await view.submit("profile");
-  assert.deepEqual(view.calls.find(call => call.key === "PUT /api/account/profile").body, { name: "Renamed Owner", email: "owner@example.invalid", phone: "+77000000001", expectedVersion: 2 });
+  assert.deepEqual(view.calls.find(call => call.key === "PUT /api/account/profile").body, { name: "Renamed Owner", email: "owner@example.invalid", phone: "+77000000001", birthDate: null, expectedVersion: 2 });
   assert.match(view.text(), /Renamed Owner/);
   await view.click("Add Address");
-  for (const [name, value] of [["label", "Office"], ["recipientName", "Synthetic Owner"], ["phone", "+77000000001"], ["city", "Astana"], ["line1", "Office street 2"]]) view.input(name, value);
+  for (const [name, value] of [["label", "Office"], ["recipientName", "Synthetic Owner"], ["phone", "+77000000001"], ["region", "astana"], ["city", "Astana"], ["line1", "Office street 2"]]) view.input(name, value);
   view.routes["GET /api/account/addresses"] = [200, { items: [ADDRESS, { ...ADDRESS, id: "a2", label: "Office", isPrimary: false }], nextCursor: null }];
   await view.submit("address");
   const created = view.calls.find(call => call.key === "POST /api/account/addresses").body;
@@ -122,7 +136,7 @@ test("profile and address writes go to the API with versions and reload the serv
 test("a rejected write shows the server error and keeps the form open", async () => {
   const view = await mount(signedIn({ "POST /api/account/addresses": [409, { error: { code: "ADDRESS_LIMIT_REACHED", message: "At most 5 addresses can be saved" } }] }));
   await view.click("Add Address");
-  for (const [name, value] of [["label", "Office"], ["recipientName", "A"], ["phone", "+77000000001"], ["city", "Astana"], ["line1", "Street"]]) view.input(name, value);
+  for (const [name, value] of [["label", "Office"], ["recipientName", "A"], ["phone", "+77000000001"], ["region", "astana"], ["city", "Astana"], ["line1", "Street"]]) view.input(name, value);
   await view.submit("address");
   assert.match(view.text(), /At most 5 addresses can be saved/);
   assert.ok(nodes(view.tree).some(node => node.type === "form" && node.props.name === "address"));
@@ -266,7 +280,7 @@ test("review I2: a saved address is reported saved even when the list refresh fa
   const routes = signedIn({ "POST /api/account/addresses": [200, { ...ADDRESS, id: "a2", label: "Office", isPrimary: false }] });
   const view = await mount(routes);
   await view.click("Add Address");
-  for (const [name, value] of [["label", "Office"], ["recipientName", "A"], ["phone", "+77000000001"], ["city", "Astana"], ["line1", "Street"]]) view.input(name, value);
+  for (const [name, value] of [["label", "Office"], ["recipientName", "A"], ["phone", "+77000000001"], ["region", "astana"], ["city", "Astana"], ["line1", "Street"]]) view.input(name, value);
   routes["GET /api/account/addresses"] = [500, { error: { code: "INTERNAL", message: "boom" } }];
   await view.submit("address");
   assert.ok(!nodes(view.tree).some(node => node.type === "form" && node.props.name === "address"), "modal closes after a successful write");
@@ -323,4 +337,64 @@ test("review I6/I7: a failed claim drops its spent code, and one flow's send res
   assert.ok(view.button("Send claim code"));
   await view.click("Profile");
   assert.ok(!nodes(view.tree).some(node => node.type === "form" && node.props.name === "phone-change"), "claim send consumed the phone-change current code");
+});
+
+test("M8: the address modal uses the Kazakhstan AddressForm and sends region and the map pin", async () => {
+  const view = await mount(signedIn({ "POST /api/account/addresses": [200, { ...ADDRESS, id: "a2", label: "Office", isPrimary: false }] }));
+  await view.click("Add Address");
+  assert.equal(nodes(view.tree).some(node => node.props?.name === "countryCode"), false, "no country select");
+  const form = view.addressForm();
+  assert.ok(form, "AddressForm is rendered in the modal");
+  assert.equal(form.props.value.countryCode, "KZ");
+  form.props.onChange({ ...form.props.value, label: "Office", region: "almaty", city: "Almaty", line1: "Abay Avenue 10", lat: 43.242076, lng: 76.946579, geoPrecision: "exact" });
+  view.rerender();
+  await view.submit("address");
+  const body = view.calls.find(call => call.key === "POST /api/account/addresses").body;
+  assert.deepEqual([body.countryCode, body.region, body.city, body.line1, body.lat, body.lng, body.geoPrecision], ["KZ", "almaty", "Almaty", "Abay Avenue 10", 43.242076, 76.946579, "exact"]);
+});
+
+test("M8: an older non-KZ address still shows, is flagged, and saves as Kazakhstan when edited", async () => {
+  const legacy = { ...ADDRESS, countryCode: "DE", city: "Berlin", region: "Berlin", line1: "Unter den Linden 1" };
+  const view = await mount(signedIn({ "GET /api/account/addresses": [200, { items: [legacy], nextCursor: null }], "PUT /api/account/addresses/a1": [200, { ...legacy, countryCode: "KZ", region: "astana", city: "Astana", version: 2 }] }));
+  assert.match(view.text(), /Germany/); assert.match(view.text(), /Edit to ship in Kazakhstan/);
+  nodes(view.tree).find(node => node.type === "button" && node.props["aria-label"] === "Edit Synthetic Home").props.onClick();
+  view.rerender();
+  const form = view.addressForm();
+  assert.equal(form.props.legacyCountry, "DE"); assert.equal(form.props.value.countryCode, "KZ");
+  form.props.onChange({ ...form.props.value, region: "astana", city: "Astana", line1: "Kabanbay Batyr 53" });
+  view.rerender();
+  await view.submit("address");
+  const body = view.calls.find(call => call.key === "PUT /api/account/addresses/a1").body;
+  assert.deepEqual([body.countryCode, body.region, body.city, body.expectedVersion], ["KZ", "astana", "Astana", 1]);
+});
+
+test("M8: region labels show names, and making an address primary keeps its pin", async () => {
+  const pinned = { ...ADDRESS, id: "a2", label: "Dacha", region: "almaty-region", city: "Konaev", isPrimary: false, lat: 43.854849, lng: 77.061581, geoPrecision: "manual" };
+  const view = await mount(signedIn({ "GET /api/account/addresses": [200, { items: [ADDRESS, pinned], nextCursor: null }], "PUT /api/account/addresses/a2": [200, { ...pinned, isPrimary: true, version: 2 }] }));
+  assert.match(view.text(), /Konaev, Almaty Region/); assert.match(view.text(), /Pinned on the map/);
+  await view.click("Set as Primary");
+  const body = view.calls.find(call => call.key === "PUT /api/account/addresses/a2").body;
+  assert.deepEqual([body.isPrimary, body.lat, body.lng, body.geoPrecision], [true, 43.854849, 77.061581, "manual"]);
+});
+
+test("M8: the profile saves an optional birthday and a validated email with feedback", async () => {
+  let saved = null;
+  const view = await mount(signedIn({ "PUT /api/account/profile": body => { saved = body; return [200, { ...PROFILE, email: body.email, birthDate: body.birthDate, version: 3 }]; } }));
+  assert.match(view.text(), /Birthday\s+Not provided/);
+  await view.click("Edit Details");
+  view.input("email", "not-an-email");
+  await view.submit("profile");
+  assert.match(view.text(), /valid email/); assert.equal(saved, null);
+  view.input("email", "new@example.invalid");
+  view.input("birthDate", "2099-01-01");
+  await view.submit("profile");
+  assert.match(view.text(), /Birthday must be a past date/); assert.equal(saved, null);
+  view.input("birthDate", "1990-05-17");
+  await view.submit("profile");
+  assert.deepEqual(saved, { name: "Synthetic Owner", email: "new@example.invalid", phone: "+77000000001", birthDate: "1990-05-17", expectedVersion: 2 });
+  assert.match(view.text(), /May 17, 1990/); assert.match(view.text(), /Personal details updated/);
+  await view.click("Edit Details");
+  view.input("birthDate", "");
+  await view.submit("profile");
+  assert.equal(saved.birthDate, null, "clearing the date removes the birthday");
 });

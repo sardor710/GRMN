@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { AuthFailure } from "../auth/config.ts";
-import { authErrorResponse } from "../auth/http.ts";
+import { catalogErrorResponse } from "./catalog-http.ts";
 import { adminJSON, readAdminJSON } from "../auth/admin-service.ts";
 import { productInput, blogInput } from "../auth/admin-schemas.ts";
 import type { Permission, Principal } from "../context.ts";
@@ -46,7 +46,7 @@ export function createCMSHTTP(input:{cms:CMSService;authorize:(headers:Headers,p
       queries(url,[]);
       // garmin.com imports (overview, up to 300 photos, all variants) exceed 128 KB, like the legacy route.
       // Task 2.5: imports also carry each variant's own specs/overview (a fēnix 9 draft is ~2 MB), so products
-      // allow 4 MiB. The body is read only after the catalog:write check and same-origin check above.
+      // allow MAX_PRODUCT_BODY_BYTES. The body is read only after the catalog:write check and same-origin check above.
       const bulk=resource==="products"&&request.method==="POST"&&url.pathname==="/api/admin/products/bulk";
       const raw=await readAdminJSON(request,true,resource==="products"?MAX_PRODUCT_BODY_BYTES:131072);
       if(resource==="homepage"){
@@ -61,11 +61,13 @@ export function createCMSHTTP(input:{cms:CMSService;authorize:(headers:Headers,p
         // Status-only patch (list dropdown): no merge with the stored document.
         if(patch.status!==undefined&&Object.keys(patch).length===3)return adminJSON(await input.cms.setProductStatus(request.headers,{id:patch.id,version:patch.version,status:patch.status}));
         const current=await input.cms.get(resource,request.headers,patch.id);
-        const keys=Object.keys(resource==="products"?productInput.shape:blogInput.shape);
-        command={...Object.fromEntries(keys.filter(key=>Object.hasOwn(current,key)).map(key=>[key,current[key]])),...patch};
+        // Products: an SEO patch names only what changes; the product writer keeps every omitted field
+        // (variants, prices and stock included), so a projected list row can never write stale stock back.
+        if(resource==="products")command={name:current.name,...patch};
+        else{const keys=Object.keys(blogInput.shape);command={...Object.fromEntries(keys.filter(key=>Object.hasOwn(current,key)).map(key=>[key,current[key]])),...patch};}
       }else if(request.method!=="POST")return bad();
       const saved=await input.cms.save(resource,request.headers,command);
       return adminJSON({success:true,[resource==="products"?"product":resource==="blogs"?"blog":resource==="banners"?"banner":"client"]:saved});
-    }catch(error){return authErrorResponse(error);}
+    }catch(error){return catalogErrorResponse(error);}
   }};
 }

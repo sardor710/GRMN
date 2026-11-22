@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
     "FusionCMS/**",
     "temp/**", // Private generated fixtures, browser profiles and receipts.
+    ".claude/**", // Agent tooling: local skills (third-party assets) and temporary agent worktrees.
+    "storage/**", // Local dev database and uploads.
   ]),
 ]);
 

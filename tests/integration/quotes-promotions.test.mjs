@@ -123,7 +123,8 @@ test("a quote prices the cart on the server in KZT and rejects client totals and
   await rejectsWith(api.quote(buyer.headers,{...base,displayCurrency:"EUR"}),400,"INVALID_INPUT");
   const kzt=await api.quote(buyer.headers,{...base,paymentCurrency:"KZT"});assert.equal(kzt.total.amountMinor,"26756");
   await rejectsWith(api.quote(buyer.headers,{...base,cartVersion:version-1}),409,"VERSION_CONFLICT");
-  await rejectsWith(api.quote(buyer.headers,{...base,delivery:{kind:"inline",address:{...KZ.address,countryCode:"FR"}}}),409,"SHIPPING_UNAVAILABLE");
+  // M8.5: delivery is Kazakhstan only, so another country is refused (400) before shipping is priced.
+  await rejectsWith(api.quote(buyer.headers,{...base,delivery:{kind:"inline",address:{...KZ.address,countryCode:"FR"}}}),400,"INVALID_INPUT");
   const empty=await owner();await rejectsWith(api.quote(empty.headers,{cartVersion:0,displayCurrency:"KZT",delivery:KZ}),409,"CART_EMPTY");
   await rejectsWith(api.quote(buyer.headers,{...base,delivery:{kind:"saved",addressId:randomUUID(),version:1}}),404,"NOT_FOUND");
   await rejectsWith(guestQuote(a.variant,{...base,delivery:{kind:"saved",addressId:randomUUID(),version:1}}),401);
@@ -316,7 +317,7 @@ test("review: inclusive tax, free-shipping threshold and country-scoped tax are 
   assert.deepEqual({mode:stored.taxPolicy.mode,rateBps:stored.taxPolicy.rateBps,country:stored.taxPolicy.countryCode},{mode:"inclusive",rateBps:1200,country:"KZ"});
   assert.equal(stored.shippingPolicy.freeFromMinor,"10000");assert.equal(stored.shippingPolicy.rateKey,"standard");assert.equal(stored.shippingPolicy.bandMinor,"1500");
   assert.match(stored.taxPolicy.id,/^[0-9a-f-]{36}$/);assert.match(stored.shippingPolicy.rateId,/^[0-9a-f-]{36}$/);
-  await rejectsWith(api.quote(buyer.headers,{cartVersion:version,displayCurrency:"KZT",delivery:{kind:"inline",address:{...KZ.address,countryCode:"UZ"}}}),409,"SHIPPING_UNAVAILABLE");
+  await rejectsWith(api.quote(buyer.headers,{cartVersion:version,displayCurrency:"KZT",delivery:{kind:"inline",address:{...KZ.address,countryCode:"UZ"}}}),400,"INVALID_INPUT");
 });
 
 test("review: revalidating a retried checkout ignores its own coupon hold and keeps the real 409 reason",async()=>{

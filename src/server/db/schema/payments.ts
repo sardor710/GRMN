@@ -26,7 +26,7 @@ export const paymentAttempts = pgTable("payment_attempts", {
   uniqueIndex("payment_attempts_reference_unique").on(t.provider, t.environment, t.merchantAccount, t.merchantReference),
   uniqueIndex("payment_attempts_key_unique").on(t.provider, t.environment, t.merchantAccount, t.idempotencyKey),
   index("payment_attempts_order_idx").on(t.orderId, t.createdAt),
-  check("payment_attempts_context_valid", sql`((${t.provider}='demo' AND ${t.environment}='demo') OR (${t.provider} IN ('kaspi','secondary') AND ${t.environment} IN ('sandbox','live')) OR (${t.provider}='manual' AND ${t.environment}='live' AND ${t.merchantAccount}='manual')) AND length(btrim(${t.merchantAccount}))>0 AND length(btrim(${t.merchantReference}))>0 AND (${t.providerSessionId} IS NULL OR length(btrim(${t.providerSessionId}))>0)`),
+  check("payment_attempts_context_valid", sql`((${t.provider}='demo' AND ${t.environment}='demo') OR (${t.provider} IN ('kaspi','secondary') AND ${t.environment} IN ('sandbox','live')) OR (${t.provider}='manual' AND ${t.environment}='live' AND ${t.merchantAccount}='manual') OR (${t.provider}='sandbox' AND ${t.environment}='sandbox')) AND length(btrim(${t.merchantAccount}))>0 AND length(btrim(${t.merchantReference}))>0 AND (${t.providerSessionId} IS NULL OR length(btrim(${t.providerSessionId}))>0)`),
   check("payment_attempts_fields_valid", sql`${t.currency}='KZT' AND ${t.amountMinor}>=0 AND ${t.version}>0 AND ${t.requestHash} ~ '^[0-9a-f]{64}$' AND ${t.idempotencyKey} ~ '^[ -~]{16,128}$' AND ${t.status} IN ('created','pending','requires_action','authorized','unknown','captured','failed','voided','cancelled','superseded','simulated','late_captured')`),
 ]);
 
@@ -44,7 +44,7 @@ export const paymentTransactions = pgTable("payment_transactions", {
   index("payment_transactions_order_idx").on(t.orderId, t.createdAt), index("payment_transactions_attempt_idx").on(t.attemptId),
   // Task 21A: dashboard revenue windows read captures by time (EXPLAIN: seq scan over all transactions without it).
   index("payment_transactions_capture_time_idx").on(t.createdAt).where(sql`${t.kind}='capture'`),
-  check("payment_transactions_fields_valid", sql`${t.currency}='KZT' AND ${t.amountMinor}>0 AND ((${t.provider} IN ('kaspi','secondary') AND ${t.environment} IN ('sandbox','live')) OR (${t.provider}='manual' AND ${t.environment}='live' AND ${t.merchantAccount}='manual') OR (${t.provider}='demo' AND ${t.environment}='demo' AND ${t.merchantAccount}='demo')) AND ${t.kind} IN ('authorization','capture','void') AND length(btrim(${t.externalId}))>0 AND length(btrim(${t.merchantAccount}))>0 AND length(btrim(${t.dedupeKey}))>0 AND jsonb_typeof(${t.evidence})='object' AND ${t.refundEpoch}>=0`),
+  check("payment_transactions_fields_valid", sql`${t.currency}='KZT' AND ${t.amountMinor}>0 AND ((${t.provider} IN ('kaspi','secondary') AND ${t.environment} IN ('sandbox','live')) OR (${t.provider}='manual' AND ${t.environment}='live' AND ${t.merchantAccount}='manual') OR (${t.provider}='demo' AND ${t.environment}='demo' AND ${t.merchantAccount}='demo') OR (${t.provider}='sandbox' AND ${t.environment}='sandbox')) AND ${t.kind} IN ('authorization','capture','void') AND length(btrim(${t.externalId}))>0 AND length(btrim(${t.merchantAccount}))>0 AND length(btrim(${t.dedupeKey}))>0 AND jsonb_typeof(${t.evidence})='object' AND ${t.refundEpoch}>=0`),
 ]);
 
 export const refunds = pgTable("refunds", {
@@ -60,7 +60,7 @@ export const refunds = pgTable("refunds", {
   uniqueIndex("refunds_key_unique").on(t.orderId, t.idempotencyKey),
   uniqueIndex("refunds_provider_unique").on(t.provider, t.environment, t.merchantAccount, t.providerRefundId).where(sql`${t.providerRefundId} IS NOT NULL`),
   index("refunds_balance_idx").on(t.transactionId, t.status), index("refunds_order_idx").on(t.orderId),
-  check("refunds_fields_valid", sql`${t.currency}='KZT' AND ${t.amountMinor}>0 AND ${t.version}>0 AND ((${t.provider} IN ('kaspi','secondary') AND ${t.environment} IN ('sandbox','live')) OR (${t.provider}='manual' AND ${t.environment}='live' AND ${t.merchantAccount}='manual') OR (${t.provider}='demo' AND ${t.environment}='demo' AND ${t.merchantAccount}='demo')) AND length(btrim(${t.merchantAccount}))>0 AND (${t.providerRefundId} IS NULL OR length(btrim(${t.providerRefundId}))>0) AND ${t.idempotencyKey} ~ '^[ -~]{16,128}$' AND ${t.requestHash} ~ '^[0-9a-f]{64}$' AND ${t.status} IN ('reserved','pending','unknown','succeeded','failed','cancelled')`),
+  check("refunds_fields_valid", sql`${t.currency}='KZT' AND ${t.amountMinor}>0 AND ${t.version}>0 AND ((${t.provider} IN ('kaspi','secondary') AND ${t.environment} IN ('sandbox','live')) OR (${t.provider}='manual' AND ${t.environment}='live' AND ${t.merchantAccount}='manual') OR (${t.provider}='demo' AND ${t.environment}='demo' AND ${t.merchantAccount}='demo') OR (${t.provider}='sandbox' AND ${t.environment}='sandbox')) AND length(btrim(${t.merchantAccount}))>0 AND (${t.providerRefundId} IS NULL OR length(btrim(${t.providerRefundId}))>0) AND ${t.idempotencyKey} ~ '^[ -~]{16,128}$' AND ${t.requestHash} ~ '^[0-9a-f]{64}$' AND ${t.status} IN ('reserved','pending','unknown','succeeded','failed','cancelled')`),
 ]);
 
 export const refundItems = pgTable("refund_items", {

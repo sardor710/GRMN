@@ -137,6 +137,9 @@ test("the demo adapter is explicitly simulated: a demo order is captured once wi
   await payments.reconcilePayments(database.pool,payments.createPaymentProviders([demo]),{olderThanMs:0,limit:50});
   assert.equal(await count("SELECT count(*)::int AS n FROM payment_transactions WHERE order_id=$1",[placed.orderId]),1,"nothing but the checkout capture is ever recorded for a demo order");
   assert.equal((await carts.checkoutStatus(buyer.headers,{orderId:placed.orderId})).paymentStatus,"paid");
+  // M7/D03a: registering the sandbox auto-capture adapter beside it changes nothing for a demo order: reconciliation reads only sandbox attempts.
+  await payments.reconcilePayments(database.pool,payments.createPaymentProviders([demo,payments.createSandboxProvider()]),{olderThanMs:0,limit:50});
+  assert.equal(await count("SELECT count(*)::int AS n FROM payment_transactions WHERE order_id=$1",[placed.orderId]),1,"the sandbox adapter adds nothing to a demo order");
 });
 
 test("an unpaid order whose holds expired is cancelled: attempt cancelled, stock and coupon released, customer event",async()=>{

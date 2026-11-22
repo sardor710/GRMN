@@ -115,7 +115,7 @@ export function GarminImportDialog({ open, onClose, formHasData, onApply }: Garm
   };
 
   const draft = result?.draft;
-  const prices = (draft?.variants || []).map((v) => v.price).filter((p) => p > 0);
+  const prices = (draft?.variants || []).map((v) => v.price).filter((p): p is number => p !== null && p > 0);
   const minPrice = prices.length ? Math.min(...prices) : draft?.price;
   const maxPrice = prices.length ? Math.max(...prices) : draft?.price;
 

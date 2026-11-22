@@ -66,6 +66,8 @@ export function componentFixture(file,{backend="postgres",items=[],fetcher=async
   const output={};const code=ts.transpileModule(fs.readFileSync(file,"utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS,jsx:ts.JsxEmit.ReactJSX,esModuleInterop:true,target:ts.ScriptTarget.ES2022}}).outputText;
   new Function("require","exports","fetch","confirm","setTimeout",code)(name=>{
     if(name in modules)return modules[name];if(name in i18nModules)return i18nModules[name];if(name in primitives)return primitives[name];if(name==="react")return hooks;if(name==="react/jsx-runtime")return jsx;
+    // Shared admin control primitives render as the native element they wrap (shallow fixture).
+    if(name==="@/components/admin/ui")return{Button:"button",Select:"select",StatusSelect:"select",StatusBadge:"span",GarminChevron:"svg",buttonClass:()=>"",statusLabel:value=>String(value),toneForStatus:()=>"neutral",toneDot:{},controlRadius:"",ADMIN_CONTROL_SHAPE:"square"};
     if(name.includes("useAdminCollection"))return{useAdminCollection:(resource,input)=>collectionFactory?collectionFactory(resource,input,collection):collection};
     if(name.includes("admin-collection"))return{writeAdminRecord:async(_fetch,resource,body,method)=>{writes.push({resource,body,method});return{success:true};},archiveAdminRecord:async()=>({success:true})};
     return{};

@@ -16,6 +16,7 @@ import { useAdminCollection } from "@/hooks/useAdminCollection";
 import { AdminPageControls } from "@/components/admin/AdminPageControls";
 import { writeAdminRecord, archiveAdminRecord } from "@/lib/admin-collection";
 import { AdminModal } from "@/components/admin/AdminModal";
+import { Button, Select } from "@/components/admin/ui";
 
 export default function AdminClientsPage() {
   const [search, setSearch] = useState("");
@@ -106,13 +107,12 @@ export default function AdminClientsPage() {
         </div>
 
         <div className="flex items-center gap-2.5">
-          <button
+          <Button variant="primary" size="md"
             type="button"
             disabled={collection.backend!=="postgres"} onClick={handleOpenAdd}
-            className="g-btn g-btn--black gap-2"
           >
             <span>Add New Client</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -329,16 +329,15 @@ export default function AdminClientsPage() {
               <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Status Tier
               </label>
-              <select
+              <Select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as ClientStatus })}
-                className="h-10 w-full border border-border bg-white px-3 text-sm font-semibold text-black focus:border-black focus:outline-none rounded-none"
               >
                 <option value="active">Active</option>
                 <option value="vip">VIP Tier</option>
                 <option value="pending">Pending</option>
                 <option value="suspended">Suspended</option>
-              </select>
+              </Select>
             </div>
           </div>
 
@@ -355,20 +354,18 @@ export default function AdminClientsPage() {
             />
           </div>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <button
+          <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200">
+            <Button variant="outline" size="md"
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="g-btn g-btn--secondary"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button variant="primary" size="md"
               type="submit"
-              className="g-btn g-btn--black"
             >
               {editingClient ? "Save Changes" : "Create Profile"}
-            </button>
+            </Button>
           </div>
         </form>
       </AdminModal>

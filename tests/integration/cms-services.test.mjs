@@ -141,10 +141,12 @@ test("a fresh process reads committed data after the writer pool closes",async()
   assert.deepEqual(JSON.parse(child.stdout),[{id:saved.id,price:1234.56}]);
 });
 
-test("unknown input fields, invalid money and inventory writes are rejected before mutation",async()=>{
-  const cms=await service();
-  for(const extra of [{password:"not-allowed"},{price:"1.00000000000000001"},{price:"1e3"},{stock:5}]) await assert.rejects(cms.save("products",admin,product(extra)),error=>[400,501].includes(error.status));
-  assert.equal(Number((await q("SELECT count(*) FROM inventory_balances")).rows[0].count),0);
+test("unknown input fields and invalid money are rejected before mutation",async()=>{
+  // M2 changed this deliberately: `stock` is no longer rejected (501) — the product writer records it as an
+  // inventory-ledger movement (covered by cms-product-write/stock-sync tests). Invalid input still writes nothing.
+  const cms=await service(),before=Number((await q("SELECT count(*) FROM inventory_balances")).rows[0].count);
+  for(const extra of [{password:"not-allowed"},{price:"1.00000000000000001"},{price:"1e3"},{stock:-5},{stock:1.5}]) await assert.rejects(cms.save("products",admin,product(extra)),error=>error.status===400);
+  assert.equal(Number((await q("SELECT count(*) FROM inventory_balances")).rows[0].count),before);
 });
 
 test("database HTTP adapter returns cursor metadata and enforces versioned same-origin mutations",async()=>{
@@ -200,6 +202,13 @@ test("customer read permissions hide private notes and cannot edit a linked acco
 });
 
 async function editedForm(resource,item){
+  if(resource==="products"){
+    // M3 replaced both product screens with ProductEditor; its pure state helpers build the exact save
+    // payload: what GET returned (`base`) with the edited form laid over it. The id travels in the URL
+    // (PUT /api/admin/catalog/products/:key), so it is added back here for the direct service call.
+    const {formFromPayload,buildCommand}=await import("../../src/components/admin/product-editor/editor-state.ts");
+    return {...buildCommand(item,formFromPayload(item),false),id:item.id};
+  }
   const {componentFixture,nodes}=await import("../helpers/component-fixture.mjs");
   // Products: the one product editor (options/variants/photos/import) for both stores; it posts with fetch.
   const posted=[],fetcher=async(_url,options)=>{if(options?.body)posted.push(JSON.parse(options.body));return{ok:true,status:200,json:async()=>({success:true})};};

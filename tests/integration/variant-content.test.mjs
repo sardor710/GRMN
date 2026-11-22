@@ -52,6 +52,9 @@ function watch(prefix,content51=own51){
     options:[size],variants:[variant(0,"val-47",true),variant(1,"val-51",false,content51)],images:[]};
 }
 const bySku=(detail,sku)=>detail.variants.find(v=>v.sku===sku);
+// beta5 merge: the catalog writer keeps stored variant ids in the editor document, and variant translations are keyed
+// by them (an editor's own ids such as "var-1" are re-keyed by SKU on save).
+const storedId=async(publicKey,sku)=>(await q("SELECT v.id::text AS id FROM product_variants v JOIN products p ON p.id=v.product_id WHERE p.public_key=$1 AND v.sku=$2",[publicKey,sku])).rows[0].id;
 
 test("saving a variant override projects it and the product detail returns per-variant effective content",async()=>{
   const cms=await cmsService(),saved=await cms.save("products",admin,watch("VC-A"));
@@ -63,8 +66,8 @@ test("saving a variant override projects it and the product detail returns per-v
   assert.deepEqual(doc,rows[1].content_overrides);
   // The editor reads its override back.
   const editor=await cms.get("products",admin,saved.id);
-  assert.deepEqual(editor.variants.find(v=>v.id==="var-1").content,rows[1].content_overrides);
-  assert.equal(editor.variants.find(v=>v.id==="var-0").content,undefined);
+  assert.deepEqual(editor.variants.find(v=>v.sku==="VC-A-1").content,rows[1].content_overrides);
+  assert.equal(editor.variants.find(v=>v.sku==="VC-A-0").content,undefined);
 
   const detail=await (await catalog()).getProductByPublicKey(saved.id,"default","KZT");
   assert.deepEqual(bySku(detail,"VC-A-0").content,{specs:[{label:"Screen",value:"AMOLED"}],specGroups:[{title:"General",items:[{label:"Lens",value:"Sapphire"}]}],overviewHtml:"<p>Product overview</p>",inTheBox:["Watch","Charging cable"]});
@@ -90,7 +93,7 @@ test("RU request returns translated override, falls back to the English override
   const saved=await cms.save("products",admin,{...watch("VC-C"),translations:{ru:{name:"Часы",description:"Мультиспорт",overviewHtml:"<p>Обзор товара</p>",inTheBox:["Часы","Кабель"],specGroups:[{title:"Общие",items:[{label:"Линза",value:"Сапфир"}]}]}}});
   // Task 2.2's shape, written directly here: the RU override of var-1 translates In the box only.
   await q("UPDATE product_translations t SET content=jsonb_set(t.content,'{variants}',$2::jsonb) FROM products p WHERE p.id=t.product_id AND p.public_key=$1 AND t.locale='ru'",
-    [saved.id,JSON.stringify({"var-1":{content:{inTheBox:["Часы 51 мм",""],overviewHtml:"<p>Обзор 51</p>"}}})]);
+    [saved.id,JSON.stringify({[await storedId(saved.id,"VC-C-1")]:{content:{inTheBox:["Часы 51 мм",""],overviewHtml:"<p>Обзор 51</p>"}}})]);
   const service=await catalog(),ru=await service.getProductByPublicKey(saved.id,"default","KZT","ru");
   // Inheriting variant: the product's RU content.
   assert.deepEqual(bySku(ru,"VC-C-0").content.inTheBox,["Часы","Кабель"]);
@@ -105,7 +108,7 @@ test("RU request returns translated override, falls back to the English override
   assert.deepEqual(own.specs,[]);
   // Translated override HTML is sanitized on read as well (2.2 sanitizes on write; defense in depth).
   await q("UPDATE product_translations t SET content=jsonb_set(t.content,'{variants}',$2::jsonb) FROM products p WHERE p.id=t.product_id AND p.public_key=$1 AND t.locale='ru'",
-    [saved.id,JSON.stringify({"var-1":{content:{overviewHtml:"<p>Обзор</p><script>x()</script>"}}})]);
+    [saved.id,JSON.stringify({[await storedId(saved.id,"VC-C-1")]:{content:{overviewHtml:"<p>Обзор</p><script>x()</script>"}}})]);
   assert.equal(bySku(await service.getProductByPublicKey(saved.id,"default","KZT","ru"),"VC-C-1").content.overviewHtml,"<p>Обзор</p>");
   // English is untouched by RU overlays.
   const en=await service.getProductByPublicKey(saved.id,"default","KZT","en");
@@ -120,19 +123,19 @@ test("variant translations survive every product save, are sanitized, and only c
     "var-0":{content:{inTheBox:["Не своё"]}},"var-9":{content:{inTheBox:["Нет"]}}};
   const saved=await cms.save("products",admin,{...watch("VC-D",noSpecs),translations:{ru:{name:"Часы",variants:variantTr}}});
   const stored=async()=>(await q("SELECT t.locale,t.content FROM product_translations t JOIN products p ON p.id=t.product_id WHERE p.public_key=$1",[saved.id])).rows;
-  const first=(await stored()).find(r=>r.locale==="ru").content;
-  assert.deepEqual(Object.keys(first.variants),["var-1"]);
+  const first=(await stored()).find(r=>r.locale==="ru").content,v1=await storedId(saved.id,"VC-D-1");
+  assert.deepEqual(Object.keys(first.variants),[v1]);
   // Owned blocks only: this override owns specGroups, overviewHtml and inTheBox, not specs.
-  assert.deepEqual(first.variants["var-1"].content,{overviewHtml:"<p>Обзор 51</p>",inTheBox:["Часы 51 мм","Кабель"],specGroups:[{title:"Физика",items:[{label:"Вес",value:"89 г"}]}]});
+  assert.deepEqual(first.variants[v1].content,{overviewHtml:"<p>Обзор 51</p>",inTheBox:["Часы 51 мм","Кабель"],specGroups:[{title:"Физика",items:[{label:"Вес",value:"89 г"}]}]});
   // Save the product again twice (a version bump, with and without translations): the variant translations stay.
   const second=await cms.save("products",admin,{...watch("VC-D",noSpecs),id:saved.id,version:saved.version,description:"Changed"});
   assert.deepEqual((await stored()).find(r=>r.locale==="ru").content.variants,first.variants);
   const third=await cms.save("products",admin,{...watch("VC-D",noSpecs),id:saved.id,version:second.version,translations:{ru:{name:"Часы 2",variants:first.variants}}});
   assert.deepEqual((await stored()).find(r=>r.locale==="ru").content.variants,first.variants);
-  assert.equal((await cms.get("products",admin,saved.id)).translations.ru.variants["var-1"].content.inTheBox[0],"Часы 51 мм");
+  assert.equal((await cms.get("products",admin,saved.id)).translations.ru.variants[v1].content.inTheBox[0],"Часы 51 мм");
   // A variant that stops owning a block loses the translation of it on the next translated save.
   await cms.save("products",admin,{...watch("VC-D",{inTheBox:["Watch 51 mm"]}),id:saved.id,version:third.version,translations:{ru:{name:"Часы 3",variants:first.variants}}});
-  assert.deepEqual((await stored()).find(r=>r.locale==="ru").content.variants["var-1"].content,{inTheBox:["Часы 51 мм","Кабель"]});
+  assert.deepEqual((await stored()).find(r=>r.locale==="ru").content.variants[v1].content,{inTheBox:["Часы 51 мм","Кабель"]});
 });
 
 // Final review M8: stale variant translations are pruned on every product save, not only on a save that
@@ -142,14 +145,14 @@ test("a product save without translations still prunes stale variant translation
   const variantTr={"var-1":{content:{inTheBox:["Часы 51 мм","Кабель"],overviewHtml:"<p>Обзор 51</p>"}}};
   const saved=await cms.save("products",admin,{...watch("VC-P",{inTheBox:["Watch 51 mm"],overviewHtml:"<p>51</p>"}),translations:{ru:{name:"Часы",variants:variantTr}}});
   const ru=async()=>(await q("SELECT t.content,t.updated_at FROM product_translations t JOIN products p ON p.id=t.product_id WHERE p.public_key=$1 AND t.locale='ru'",[saved.id])).rows[0];
-  const before=await ru();
-  assert.deepEqual(Object.keys(before.content.variants["var-1"].content).sort(),["inTheBox","overviewHtml"]);
+  const before=await ru(),v1=await storedId(saved.id,"VC-P-1");
+  assert.deepEqual(Object.keys(before.content.variants[v1].content).sort(),["inTheBox","overviewHtml"]);
   // A save that changes nothing about translations leaves the row as it was.
   const second=await cms.save("products",admin,{...watch("VC-P",{inTheBox:["Watch 51 mm"],overviewHtml:"<p>51</p>"}),id:saved.id,version:saved.version,description:"Changed"});
   assert.deepEqual((await ru()).updated_at,before.updated_at,"an unchanged locale is not rewritten");
   // var-1 stops owning its overview, with no translations in the request: that block's translation goes.
   const third=await cms.save("products",admin,{...watch("VC-P",{inTheBox:["Watch 51 mm"]}),id:saved.id,version:second.version});
-  assert.deepEqual((await ru()).content.variants["var-1"].content,{inTheBox:["Часы 51 мм","Кабель"]});
+  assert.deepEqual((await ru()).content.variants[v1].content,{inTheBox:["Часы 51 мм","Кабель"]});
   // var-1 owns nothing any more: its translation goes, and the locale keeps its product fields.
   await cms.save("products",admin,{...watch("VC-P",null),id:saved.id,version:third.version});
   const last=(await ru()).content;

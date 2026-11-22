@@ -20,6 +20,7 @@ import {
   generateBlogSEOMeta,
 } from "@/lib/seo/analyzer";
 import type { ProductSpecItem } from "@/lib/cms/types";
+import { Button } from "@/components/admin/ui";
 
 interface SEOEditorProps {
   type: "product" | "blog";
@@ -194,13 +195,12 @@ export function SEOEditor({
           </div>
         </div>
 
-        <button
+        <Button variant="primary" size="md" className="shrink-0"
           type="button"
           onClick={handleAutoGenerate}
-          className="g-btn g-btn--black gap-2 shrink-0"
         >
           <span>Auto-Generate SEO Meta</span>
-        </button>
+        </Button>
       </div>
 
       {/* Main Grid: Inputs vs Live Simulator */}
@@ -288,13 +288,12 @@ export function SEOEditor({
                 placeholder="e.g. Garmin fenix 8, multisport GPS, running watch"
                 className="flex-1 bg-white border border-border focus:border-black rounded-none px-3 py-2 text-xs text-black focus:outline-none"
               />
-              <button
+              <Button variant="primary" size="md"
                 type="button"
                 onClick={handleAddKeyword}
-                className="g-btn g-btn--secondary"
               >
                 <Plus className="h-3.5 w-3.5" /> Add
-              </button>
+              </Button>
             </div>
 
             {/* Keyword Chips */}

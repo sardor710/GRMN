@@ -6,7 +6,8 @@ import { useTranslations } from "next-intl";
 import type { ProductDetail } from "@/types";
 import { ProductOverview } from "@/components/product/ProductOverview";
 import { ProductAccessories } from "@/components/product/ProductAccessories";
-import overviewStyles from "@/components/product/CmsOverview.module.css";
+import { CompatibleDevices } from "@/components/product/CompatibleDevices";
+import { OverviewContent } from "@/components/product/OverviewContent";
 import { useProductVariant } from "@/components/product/ProductVariantContext";
 import { ownsEmptyOverview, variantTabContent } from "@/lib/catalog/variant-selection";
 
@@ -14,22 +15,36 @@ import { ownsEmptyOverview, variantTabContent } from "@/lib/catalog/variant-sele
 const TABS = ["overview", "specs", "inTheBox", "maps", "accessories", "compatible"] as const;
 type Tab = (typeof TABS)[number];
 
-
 /** Tab label type (ProductTabs.spec.md): 14/21, 600, uppercase, .28px tracking. */
 const tabType = "text-[14px] font-semibold uppercase leading-[21px] tracking-[0.28px] text-black";
 
 export function ProductTabs({ product: base }: { product: ProductDetail }) {
   const t = useTranslations("ProductTabs");
-  const [tab, setTab] = useState<Tab>("overview");
+  const [chosenTab, setTab] = useState<Tab>("overview");
   // Below 1024 garmin.com closes the open accordion row when it is tapped again; the desktop bar always shows a tab.
   const [collapsed, setCollapsed] = useState(false);
   const openTab = (id: Tab) => { setTab(id); setCollapsed(false); };
   // Task 2.4: Specs, Overview and In the box follow the selected variant (the open tab stays open on a switch).
+  // The Accessories tab lists what fits that variant (product_compatibility).
   const { selectedVariantId } = useProductVariant();
   const product = useMemo<ProductDetail>(() => {
     const content = variantTabContent(base, selectedVariantId);
     return { ...base, specs: content.specs, inTheBox: content.inTheBox, specGroups: content.specGroups, overviewHtml: content.overviewHtml };
   }, [base, selectedVariantId]);
+
+  // PostgreSQL products: Accessories and Compatible Devices come from product_compatibility and a tab without links
+  // is hidden. Legacy JSON products have no compatibility data: no Accessories tab, and the compatibility text.
+  const commerce = product.commerce;
+  const compatibleAccessories = commerce?.compatibleAccessories ?? [];
+  const devices = commerce?.compatibleDevices ?? [];
+  // No in-the-box list on the product or any variant hides its tab (no preset contents). A variant that owns an empty
+  // list keeps the tab (it shows nothing), so a variant switch never closes the open tab.
+  const hasBox = base.inTheBox.length > 0 || Boolean(base.commerce?.variants.some((v) => v.content?.inTheBox?.length));
+  const tabs = TABS.filter((id) =>
+    (id !== "accessories" || compatibleAccessories.length > 0) &&
+    (id !== "compatible" || !commerce || devices.length > 0) &&
+    (id !== "inTheBox" || hasBox));
+  const tab: Tab = tabs.includes(chosenTab) ? chosenTab : tabs[0];
 
   // Overviews imported with garmin.com's layout blocks (banners, sections) run edge to edge like garmin.com;
   // older imports are plain flowing HTML and keep the narrow reading column.
@@ -45,12 +60,12 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
         product.id === "1228429" && !product.overviewHtml ? (
           <ProductOverview product={product} />
         ) : fullBleedHtml ? (
-          /* overviewHtml is sanitized with an allowlist on import and on every admin save */
-          <div className={overviewStyles.overview} dangerouslySetInnerHTML={{ __html: product.overviewHtml || "" }} />
+          /* overviewHtml is sanitized with an allowlist on import, on every admin save and on read */
+          <OverviewContent html={product.overviewHtml || ""} />
         ) : product.overviewHtml ? (
           <div className="mx-auto max-w-[1080px] py-8">
-            {/* overviewHtml is sanitized with an allowlist on import and on every admin save */}
-            <div className={overviewStyles.overview} dangerouslySetInnerHTML={{ __html: product.overviewHtml }} />
+            {/* overviewHtml is sanitized with an allowlist on import, on every admin save and on read */}
+            <OverviewContent html={product.overviewHtml} />
           </div>
         ) : (
           <div className="mx-auto max-w-[1080px] py-8">
@@ -64,13 +79,13 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
         </div>
       )}
       {tab === "inTheBox" && (
-        <div className="mx-auto max-w-[711px]">
+        <div className={product.inTheBoxItems?.some((item) => item.image) ? "mx-auto max-w-[1080px]" : "mx-auto max-w-[711px]"}>
           <InTheBox product={product} />
         </div>
       )}
       {tab === "accessories" && (
         <div className="mx-auto max-w-[1280px]">
-          <ProductAccessories accessories={product.accessories} />
+          <ProductAccessories accessories={compatibleAccessories} variantId={selectedVariantId || commerce?.selectedVariantId} />
         </div>
       )}
       {tab === "maps" && (
@@ -80,7 +95,7 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
       )}
       {tab === "compatible" && (
         <div className="mx-auto max-w-[1080px]">
-          <Placeholder text={t("compatibleText")} />
+          {commerce && devices.length > 0 ? <CompatibleDevices devices={devices} /> : <Placeholder text={t("compatibleText")} />}
         </div>
       )}
     </>
@@ -91,7 +106,7 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
       {/* Tab bar (≥1024): #E5E5E5, items centred, 4px black underline on the active and hovered tab; not sticky */}
       <nav data-product-tabs aria-label={t("label")} className="hidden bg-garmin-tab lg:block">
         <ul className="m-0 flex list-none justify-center px-14">
-          {TABS.map((id) => (
+          {tabs.map((id) => (
             <li key={id} className="mx-4">
               <button
                 type="button"
@@ -112,7 +127,7 @@ export function ProductTabs({ product: base }: { product: ProductDetail }) {
           Below 1024 every tab is an accordion row (50px, #DCDCDC rule, chevron); from 1024 the rows are hidden and the
           single body, rendered right after the open tab's row (WCAG 2.4.3 focus order), sits under the tab bar. */}
       <div className="border-b border-[#DCDCDC] lg:border-0">
-        {TABS.map((id) => {
+        {tabs.map((id) => {
           const selected = tab === id;
           const open = selected && !collapsed;
           return (
@@ -210,6 +225,31 @@ function Specs({ product }: { product: ProductDetail }) {
 
 function InTheBox({ product }: { product: ProductDetail }) {
   const t = useTranslations("ProductTabs");
+  // Photo tiles when the box contents have photos (garmin.com import or the editor) and the list shown is the
+  // product's own; a variant with its own in-the-box list gets the plain list.
+  const items = product.inTheBoxItems?.filter((item) => item.label.trim()) ?? [];
+  const sameList = items.length === product.inTheBox.length && items.every((item, index) => item.label === product.inTheBox[index]);
+  if (sameList && items.some((item) => item.image)) {
+    return (
+      <div>
+        <h2 className="sr-only">{t("tabs.inTheBox")}</h2>
+        <ul className="m-0 grid list-none grid-cols-2 gap-x-6 gap-y-8 p-0 sm:grid-cols-3 lg:grid-cols-4">
+          {items.map((item, index) => (
+            <li key={`${item.label}-${index}`} className="text-center">
+              <div className="relative flex aspect-square items-center justify-center bg-white">
+                {item.image ? (
+                  <Image src={item.image} alt="" fill sizes="(max-width:640px) 45vw, (max-width:1024px) 30vw, 250px" className="object-contain" />
+                ) : (
+                  <span className="h-1.5 w-1.5 rounded-full bg-black" aria-hidden="true" />
+                )}
+              </div>
+              <p className="mt-3 text-[16px] leading-[24px] text-black">{item.label}</p>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  }
   return (
     <div>
       <h2 className="sr-only">{t("tabs.inTheBox")}</h2>

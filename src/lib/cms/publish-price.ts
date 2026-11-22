@@ -55,7 +55,7 @@ export function legacyPublishRefusal(product: {
   status?: string;
   price?: number | string;
   options?: readonly unknown[];
-  variants?: readonly PublishPriceVariant<number | string>[];
+  variants?: readonly PublishPriceVariant<number | string | null>[];
 }): string | null {
   return js.legacyPublishRefusal(product);
 }

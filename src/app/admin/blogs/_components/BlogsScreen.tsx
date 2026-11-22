@@ -24,6 +24,7 @@ import { BLOG_SPEC } from "@/i18n/translate-record";
 
 /** RU/KK tab is "complete" once title and body are translated (storefront indexing rule). */
 const BLOG_REQUIRED_FIELDS = ["title", "content"] as const;
+import { Button, Select } from "@/components/admin/ui";
 
 export default function AdminBlogsPage() {
   const [search, setSearch] = useState("");
@@ -162,13 +163,12 @@ export default function AdminBlogsPage() {
           </p>
         </div>
 
-        <button
+        <Button variant="primary" size="md"
           type="button"
           onClick={handleOpenAdd}
-          className="g-btn g-btn--black gap-2"
         >
           <span>Write New Article</span>
-        </button>
+        </Button>
       </div>
 
       {/* Filter & Search Bar */}
@@ -186,10 +186,9 @@ export default function AdminBlogsPage() {
 
         <div className="flex items-center gap-2">
           <span className="text-xs font-semibold text-muted-foreground">Category:</span>
-          <select
+          <Select wrapperClassName="inline-flex"
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="h-10 border border-border bg-white px-3 text-sm font-semibold text-black focus:border-black focus:outline-none rounded-none"
           >
             <option value="all">All Categories</option>
             {categories.map((cat) => (
@@ -197,7 +196,7 @@ export default function AdminBlogsPage() {
                 {cat}
               </option>
             ))}
-          </select>
+          </Select>
         </div>
       </div>
 
@@ -475,30 +474,27 @@ export default function AdminBlogsPage() {
 
           <div className="flex justify-between items-center pt-4 border-t border-border">
             <div>
-              <select
+              <Select wrapperClassName="inline-flex"
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as BlogStatus })}
-                className="h-10 border border-border bg-white px-3 text-xs font-semibold text-black focus:border-black focus:outline-none rounded-none"
               >
                 <option value="published">Published</option>
                 <option value="draft">Draft</option>
-              </select>
+              </Select>
             </div>
 
             <div className="flex gap-3">
-              <button
+              <Button variant="outline" size="md"
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="g-btn g-btn--secondary"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="primary" size="md"
                 type="submit"
-                className="g-btn g-btn--black"
               >
                 {editingBlog ? "Save Article" : "Publish Article"}
-              </button>
+              </Button>
             </div>
           </div>
         </form>

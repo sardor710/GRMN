@@ -86,11 +86,26 @@ export interface ProductDetailDTO extends ProductCardDTO {
   seo?: { title: string; description: string; canonicalUrl: string | null; noIndex: boolean; image: string | null };
   /** Option key → display name (e.g. "case-size" → "Case Size"); variant `options` stay keyed by key. */
   optionNames?: Record<string, string>;
-  /** garmin.com-style overview (sanitized HTML) and grouped specifications from the product editor. */
-  overviewHtml?: string;
-  specGroups?: { title: string; items: { label: string; value: string }[] }[];
   /** Task 24: languages with a translated name and description (en always); others are noindex. */
   translatedLocales?: Locale[];
+  // M4 additive fields (types in ./catalog-browse.ts).
+  /** The product's default variant (may be out of stock; selectedVariantId prefers an in-stock one). */
+  defaultVariantId?: string;
+  /** Option definitions in display order; VariantDTO.options maps option key → value label. */
+  options?: import("./catalog-browse.ts").ProductOptionDTO[];
+  /** Primary category path, root first. */
+  breadcrumb?: import("./catalog-browse.ts").CategoryCrumbDTO[];
+  /** Accessories linked through product_compatibility, each with the device variants it fits. */
+  compatibleAccessories?: import("./catalog-browse.ts").CompatibleAccessoryDTO[];
+  /** Devices this accessory fits (accessory pages). */
+  compatibleDevices?: import("./catalog-browse.ts").CompatibleDeviceDTO[];
+  // M5.6 additive fields.
+  /** Sanitized overview HTML (garmin.com import or the admin editor); absent when the product has none. */
+  overviewHtml?: string;
+  /** Grouped specifications (garmin.com-style tables); `specs` stays the flat list. */
+  specGroups?: { title: string; items: { label: string; value: string }[] }[];
+  /** In-the-box items with their local photo; present only when at least one item has a photo. */
+  inTheBoxItems?: { label: string; image: string | null }[];
 }
 
 export interface ProductQuery {
@@ -119,11 +134,18 @@ export interface DeliveryAddress {
   postalCode?: string;
 }
 
+/** How a saved-address map pin was obtained (migration 0013 `geo_precision`). */
+export type GeoPrecision = "exact" | "street" | "locality" | "manual";
+
 export interface SavedAddressDTO extends DeliveryAddress {
   id: string;
   label: string;
   isPrimary: boolean;
   version: number;
+  /** Optional map pin (WGS84, 6 decimals); both coordinates or neither. */
+  lat?: number;
+  lng?: number;
+  geoPrecision?: GeoPrecision;
 }
 
 export type DeliveryAddressSelection =
@@ -140,6 +162,8 @@ export interface CompleteProfileCommand {
   name: string;
   email: string;
   phone: string;
+  /** ISO date (YYYY-MM-DD); null clears it, omitted keeps the stored value. */
+  birthDate?: string | null;
   expectedVersion: number;
 }
 
@@ -152,6 +176,8 @@ export interface CustomerProfileDTO {
   emailVerified: boolean;
   phone: string | null;
   phoneVerified: boolean;
+  /** Optional birthday as an ISO date (YYYY-MM-DD). */
+  birthDate: string | null;
   profileState: "provisional" | "complete";
   version: number;
 }
@@ -205,7 +231,8 @@ export interface CartDTO {
   pendingMerge: boolean;
   notices: { code: CartNoticeCode; variantId: string }[];
   /** The checkout methods offered now: ["demo"] while demo checkout is on, otherwise ["manual"]. */
-  paymentMethods: ("demo" | "manual")[];
+  /** The methods checkout offers now: ["sandbox"] while demo purchases are enabled (D03a), else ["demo"] or ["manual"] (Task 3.1). */
+  paymentMethods: PaymentMethodCode[];
 }
 
 export interface QuoteCommand {
@@ -233,7 +260,8 @@ export interface QuoteLineDTO {
   total: Money;
 }
 
-export interface CheckoutQuoteDTO {
+/** The priced, immutable quote (pricing service). The checkout API returns it as a CheckoutQuoteDTO. */
+export interface PricedQuoteDTO {
   id: string;
   cartId: string;
   cartVersion: number;
@@ -253,14 +281,24 @@ export interface CheckoutQuoteDTO {
   policyVersions: { pricing: string; tax: string; shipping: string; promotion: string | null; markdowns: string[]; exchangeRate: string | null };
 }
 
-/** "manual" (O07): staff confirm the payment by hand. "demo" is for tests and development only. */
-export type PaymentMethodCode = "demo" | "manual" | "kaspi" | "secondary";
+/** POST /api/cart/quote: the quote plus the payment method this server's checkout accepts for it (the first of the cart's paymentMethods). */
+export interface CheckoutQuoteDTO extends PricedQuoteDTO {
+  paymentMethod: PaymentMethodCode;
+}
+
+/**
+ * "sandbox" is the D03a demo purchase: accepted only while the server enables demo purchases, and then it is
+ * the only method offered. Otherwise the "Demo checkout" setting (Task 3.1) offers "demo" while on and
+ * "manual" (O07, staff confirm the payment by hand) while off.
+ */
+export type PaymentMethodCode = "demo" | "manual" | "kaspi" | "secondary" | "sandbox";
 
 /**
  * POST /api/cart/checkout with an `Idempotency-Key` header (16–128 printable ASCII). The contact
  * name and phone and the delivery address come from the quote's delivery snapshot (D06); only an
- * optional email is added here. Real checkout uses "manual" (O07); "demo" is refused in production,
- * and "kaspi"/"secondary" stay 409 until a real provider exists (D03).
+ * optional email is added here. Checkout accepts only the method offered now: "sandbox" while demo purchases
+ * are enabled (D03a), else "demo" or "manual" by the "Demo checkout" setting (Task 3.1, O07);
+ * "kaspi"/"secondary" stay 409 until a real provider exists (D03).
  */
 export interface CheckoutCommand {
   quoteId: string;
@@ -277,8 +315,8 @@ export interface CheckoutResultDTO {
   orderId: string;
   orderNumber: string;
   status: OrderStatus;
-  paymentMode: "demo" | "live";
-  paymentState: "pending" | "redirect_required" | "retry_required" | "simulated";
+  paymentMode: "demo" | "live" | "sandbox";
+  paymentState: "pending" | "redirect_required" | "retry_required" | "simulated" | "captured";
   paymentRedirectUrl: string | null;
   /** Payable amount in KZT. */
   total: Money;
@@ -295,7 +333,7 @@ export interface CheckoutStatusDTO {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   fulfillmentStatus: FulfillmentStatus;
-  paymentMode: "demo" | "live";
+  paymentMode: "demo" | "live" | "sandbox";
   total: Money;
   placedAt: string | null;
   /** How the order is paid: the provider of its latest payment attempt. */
@@ -314,7 +352,7 @@ export interface OrderSummaryDTO {
   paymentStatus: PaymentStatus;
   fulfillmentStatus: FulfillmentStatus;
   /** Task 3.3: "demo" for a demo-checkout order (no money was charged), shown with a DEMO label. */
-  paymentMode: "demo" | "live" | "legacy_unknown";
+  paymentMode: "demo" | "live" | "sandbox" | "legacy_unknown";
   total: Money;
   itemsCount: number;
 }
@@ -414,7 +452,7 @@ export interface AdminOrderSummaryDTO {
   status: OrderStatus;
   paymentStatus: PaymentStatus;
   fulfillmentStatus: FulfillmentStatus;
-  paymentMode: "demo" | "live" | "legacy_unknown";
+  paymentMode: "demo" | "live" | "sandbox" | "legacy_unknown";
   dataQuality: "complete" | "legacy_incomplete";
   total: Money;
   itemsCount: number;

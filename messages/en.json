@@ -263,7 +263,21 @@
       "large": "Large (≥ 50 mm)"
     },
     "nextProducts": "Next Products",
-    "filterAndSort": "Filter and Sort"
+    "filterAndSort": "Filter and Sort",
+    "filters": "Filters",
+    "results": "{count, plural, one {# result} other {# results}}",
+    "facets": {
+      "price": "Price",
+      "availability": "Availability",
+      "inStock": "In stock"
+    },
+    "prices": {
+      "under100k": "Under 100,000 ₸",
+      "from100k": "100,000 – 250,000 ₸",
+      "from250k": "250,000 – 500,000 ₸",
+      "from500k": "500,000 – 750,000 ₸",
+      "over750k": "750,000 ₸ and above"
+    }
   },
   "CataloguePage": {
     "smartwatches": {
@@ -275,7 +289,14 @@
       "heading": "All Running Smartwatches",
       "heroLabel": "Sports & Fitness",
       "heroBlurb": "Running Smartwatches"
-    }
+    },
+    "breadcrumb": "Breadcrumb",
+    "emptyCategory": "There are no products in {name} yet.",
+    "emptyCategoryHint": "New products are added regularly. In the meantime, browse all smartwatches.",
+    "shopAllSmartwatches": "Shop all smartwatches",
+    "pagination": "Pagination",
+    "previousPage": "Previous",
+    "nextPage": "Next"
   },
   "CategoryGrid": {
     "heading": "Shop by Category",
@@ -680,6 +701,22 @@
       "power": "Cables & Power",
       "protection": "Mounts & Protection",
       "navigation": "Satellite & Navigation"
+    },
+    "noneForModel": "No accessories are listed for this model yet.",
+    "chooseAnotherModel": "Choose another size or version to see the accessories that fit it.",
+    "categoriesLabel": "Accessory categories",
+    "outOfStock": "Out of stock",
+    "tabs": {
+      "apps": "Apps",
+      "servicePlans": "Service Plans",
+      "bands": "Bands",
+      "diveBands": "Dive Bands",
+      "marqStraps": "MARQ Straps & Bracelets",
+      "cablesChargers": "Cables & Chargers",
+      "cycling": "Cycling Accessories",
+      "heartRateMonitors": "Heart Rate Monitors",
+      "sensors": "Sensors",
+      "viewAll": "View All"
     }
   },
   "ProductBadge": {
@@ -688,7 +725,8 @@
   },
   "ProductCard": {
     "andUp": "and up",
-    "colors": "Colors: {list}"
+    "colors": "Colors: {list}",
+    "outOfStock": "Out of stock"
   },
   "ProductTabs": {
     "tabs": {
@@ -745,7 +783,7 @@
       "nameEmailRequired": "Name and email are required fields.",
       "profileSaved": "Personal details updated.",
       "profileSavedUnverified": "Personal details updated. Your email is not verified yet.",
-      "addressRequired": "Title, recipient, phone, street and city are required.",
+      "addressRequired": "Title, recipient, phone, region, city and street are required.",
       "addressUpdated": "Shipping address updated.",
       "addressSaved": "New shipping address saved.",
       "confirmRemove": "Remove shipping address \"{label}\"?",
@@ -760,7 +798,9 @@
       "phoneChanged": "Your phone number was changed and every session was signed out. Sign in with your new number.",
       "codesRetry": "{error} Send new codes to try again.",
       "passwordLength": "The new password must be 16 to 128 characters.",
-      "passwordChanged": "Password changed. Every session was signed out; sign in to the staff console again with your new password and MFA."
+      "passwordChanged": "Password changed. Every session was signed out; sign in to the staff console again with your new password and MFA.",
+      "emailInvalid": "Enter a valid email address.",
+      "birthDateRange": "Birthday must be a past date for an age from 10 to 120 years."
     },
     "loading": "Loading your account…",
     "unavailableTitle": "Account access is not available",
@@ -802,7 +842,10 @@
       "profile": "Profile",
       "complete": "Complete",
       "incomplete": "Not completed yet",
-      "verifyToEdit": "Verify a phone number to edit your details."
+      "verifyToEdit": "Verify a phone number to edit your details.",
+      "birthday": "Birthday",
+      "birthdayOptional": "Birthday (optional)",
+      "birthdayHint": "Leave empty if you prefer not to say. Clear the field to remove it."
     },
     "form": {
       "fullName": "Full Name *",
@@ -826,7 +869,9 @@
       "currentPrimary": "Current primary address",
       "setPrimaryTitle": "Set as primary shipping address",
       "primaryAddress": "Primary address",
-      "setPrimary": "Set as Primary"
+      "setPrimary": "Set as Primary",
+      "editToShip": "Edit to ship in Kazakhstan",
+      "pinned": "Pinned on the map"
     },
     "security": {
       "title": "Sign-in & Security",
@@ -989,7 +1034,23 @@
     "paymentNotCompletedBody": "Your order is saved, but the demo payment did not go through.",
     "tryAgain": "Try again",
     "tryAgainFailed": "The payment could not be retried. Reload the page and try again.",
-    "methodChanged": "Checkout options changed (demo checkout was turned off or on). Review your order and try again."
+    "methodChanged": "Checkout options changed (demo checkout was turned off or on). Review your order and try again.",
+    "deliveryLegend": "Delivery in Kazakhstan",
+    "loadingDelivery": "Loading delivery options…",
+    "deliveryAddress": "Delivery address",
+    "primary": "Primary",
+    "editToShip": "Edit in your account to ship in Kazakhstan.",
+    "openAccount": "Open account",
+    "newAddress": "New address",
+    "saveToAddresses": "Save to my addresses",
+    "addressSaveFailed": "The address could not be saved: {error}",
+    "sandboxNoticeTitle": "Demo purchase — no real payment is taken.",
+    "sandboxNoticeBody": "Placing the order marks it paid (Demo) at once, so the store can test orders and dashboards. This total is held until {time}.",
+    "placeDemo": "Place demo order",
+    "paidDemo": "Paid (Demo)",
+    "awaitingDemoPayment": "Awaiting demo payment",
+    "paymentLine": "Payment: {state}",
+    "sandboxReceipt": "Demo purchase — no real payment was taken. The order is paid in the store's sandbox only."
   },
   "Locations": {
     "metaTitle": "Select a Location | Garmin Kazakhstan",

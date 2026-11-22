@@ -6,6 +6,7 @@ import { authErrorResponse } from "../auth/http.ts";
 import { requirePrincipal } from "../auth/principal.ts";
 import { cmsBackend } from "../cms/source.ts";
 import { createCartService } from "./service.ts";
+import { paymentProviders } from "../payments/providers.ts";
 import { createCartHandler } from "./http.ts";
 import { enforceRateLimit, trustedClientAddress } from "../operations/rate-limit.ts";
 
@@ -23,9 +24,10 @@ function getCartHandler() {
   if (!handler) {
     const config = parseAuthConfig(process.env);
     const service = createCartService({
-      database: getDatabase(), secret: config.secret,
+      database: getDatabase(), secret: config.secret, payments: paymentProviders(),
       // Task 3.1: demo or manual is chosen by the "Demo checkout" setting (and DEMO_CHECKOUT_DISABLED),
-      // on every environment, inside placeOrder; NODE_ENV no longer decides it.
+      // on every environment, inside placeOrder; NODE_ENV no longer decides it. While demo purchases are
+      // enabled (D03a) the registered sandbox adapter replaces demo.
       // Hold-abuse limit: unpaid manual orders are also counted per trusted client address.
       clientAddress: headers => trustedClientAddress(headers),
       identify: async headers => {

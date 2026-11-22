@@ -50,6 +50,19 @@ services:
       # Owner 2026-11-19: Russian and Kazakh machine translation in the admin (OpenRouter).
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
       OPENROUTER_MODEL: ${OPENROUTER_MODEL:-nvidia/nemotron-3.5-super-vl:free}
+      # Checkout payment mode (Task 3.1, D03a). DEMO_CHECKOUT_DISABLED=1 forces the admin "Demo checkout" off.
+      # DEMO_PURCHASES=1 (+ DEMO_PURCHASES_ALLOW_PRODUCTION=1 here) makes demo checkout the sandbox
+      # demo purchase, which on production only signed-in staff may place; unset keeps the demo capture for everyone.
+      DEMO_CHECKOUT_DISABLED: ${DEMO_CHECKOUT_DISABLED:-}
+      DEMO_ORDER_LIMIT: ${DEMO_ORDER_LIMIT:-}
+      DEMO_PURCHASES: ${DEMO_PURCHASES:-}
+      DEMO_PURCHASES_ALLOW_PRODUCTION: ${DEMO_PURCHASES_ALLOW_PRODUCTION:-}
+      # Yandex address geocoding on the server (M8); empty = the address form works without the map lookup.
+      YANDEX_GEOCODER_API_KEY: ${YANDEX_GEOCODER_API_KEY:-}
+      # Staff WhatsApp order alerts (optional; all unset = off). Telegram stays the production channel.
+      WHATSAPP_ACCESS_TOKEN: ${WHATSAPP_ACCESS_TOKEN:-}
+      WHATSAPP_PHONE_NUMBER_ID: ${WHATSAPP_PHONE_NUMBER_ID:-}
+      WHATSAPP_NOTIFY_TO: ${WHATSAPP_NOTIFY_TO:-}
       DATABASE_URL: postgresql://grmn_app:${DB_APP_PASSWORD}@db:5432/grmn
       DATABASE_POOL_MAX: ${DATABASE_POOL_MAX:-10}
       MEDIA_STORAGE_DIR: /media

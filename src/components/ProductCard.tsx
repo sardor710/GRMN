@@ -111,6 +111,10 @@ export function ProductCard({ product, compare }: { product: Product; compare?: 
             <p className="text-[16px] font-bold leading-[24px]">{product.priceLabel ?? product.price}</p>
           )}
         </div>
+        {/* PostgreSQL cards only: no active variant has free stock (on hand − reserved). */}
+        {(product.availability === "out_of_stock" || product.availability === "unavailable") && (
+          <p className="mt-1 text-[14px] leading-[21px] text-garmin-text-muted">{t("outOfStock")}</p>
+        )}
       </figcaption>
     </figure>
   );

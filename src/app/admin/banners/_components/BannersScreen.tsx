@@ -19,6 +19,7 @@ import { TranslationField } from "@/components/admin/TranslationField";
 import { translationStatus } from "@/lib/cms/translation-input";
 import { getOverlayString, setOverlayValue } from "@/lib/cms/translation-edit";
 import { BANNER_SPEC } from "@/i18n/translate-record";
+import { Button, Select } from "@/components/admin/ui";
 
 export default function AdminBannersPage() {
   const collection = useAdminCollection<Banner>("banners");
@@ -127,13 +128,12 @@ export default function AdminBannersPage() {
           </p>
         </div>
 
-        <button
+        <Button variant="primary" size="md"
           type="button"
           onClick={handleOpenAdd}
-          className="g-btn g-btn--black gap-2"
         >
           <span>Add New Banner</span>
-        </button>
+        </Button>
       </div>
 
       {/* Grid of Banners */}
@@ -382,15 +382,14 @@ export default function AdminBannersPage() {
               <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Placement Position
               </label>
-              <select
+              <Select
                 value={formData.position}
                 onChange={(e) => setFormData({ ...formData, position: e.target.value as BannerPosition })}
-                className="h-10 w-full border border-border bg-white px-3 text-sm font-semibold text-black focus:border-black focus:outline-none rounded-none"
               >
                 <option value="hero">Hero Rotator Slide</option>
                 <option value="promo_pod">Promo Feature Pod</option>
                 <option value="announcement">Top Notification Bar</option>
-              </select>
+              </Select>
             </div>
 
             <div>
@@ -426,20 +425,18 @@ export default function AdminBannersPage() {
             </p>
           )}
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <button
+          <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200">
+            <Button variant="outline" size="md"
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="g-btn g-btn--secondary"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button variant="primary" size="md"
               type="submit"
-              className="g-btn g-btn--black"
             >
               {editingBanner ? "Save Changes" : "Create Banner"}
-            </button>
+            </Button>
           </div>
         </form>
       </AdminModal>

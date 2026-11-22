@@ -117,7 +117,7 @@ test("ProductTabs: a variant switch swaps the open tab's content and keeps that 
   let selected = "v47";
   const fixture = componentFixture("src/components/ProductTabs.tsx", { modules: {
     "@/components/product/ProductVariantContext": { useProductVariant: () => ({ selectedVariantId: selected, setSelectedVariantId: (id) => { selected = id; } }) },
-    "@/lib/catalog/variant-selection": { variantTabContent, ownsEmptyOverview },
+    "@/lib/catalog/variant-selection": { variantTabContent, ownsEmptyOverview }, "@/components/product/OverviewContent": { OverviewContent },
   } });
   const props = { product: { id: "k", features: [], accessories: [], ...product } };
   const tabButton = (tree, label) => nodes(tree).find((n) => n.type === "button" && nodeText(n).trim() === label);
@@ -143,11 +143,11 @@ test("ProductTabs Overview: an owned empty overview renders nothing; no overview
   const { componentFixture, nodes } = await import("../helpers/component-fixture.mjs");
   const render = (base, selected) => componentFixture("src/components/ProductTabs.tsx", { modules: {
     "@/components/product/ProductVariantContext": { useProductVariant: () => ({ selectedVariantId: selected, setSelectedVariantId() {} }) },
-    "@/lib/catalog/variant-selection": { variantTabContent, ownsEmptyOverview },
+    "@/lib/catalog/variant-selection": { variantTabContent, ownsEmptyOverview }, "@/components/product/OverviewContent": { OverviewContent },
   } }).render({ product: { id: "k", features: [{ title: "Feature", body: "Body" }], accessories: [], ...base } });
   // The open panel is rendered once; the Set only dedupes identical markup.
-  const html = (tree) => [...new Set(nodes(tree).filter((n) => n.props?.dangerouslySetInnerHTML).map((n) => n.props.dangerouslySetInnerHTML.__html))];
-  const fallback = (tree) => nodes(tree).some((n) => typeof n.type === "function" && /Overview$/.test(n.type.name));
+  const html = (tree) => [...new Set(nodes(tree).filter(isOverviewBody).map(overviewHtml))];
+  const fallback = (tree) => nodes(tree).some((n) => typeof n.type === "function" && /Overview$/.test(n.type.name) && n.type.name !== "OverviewContent");
   // 47 mm owns an overview; 51 mm owns an empty one (the product has one): nothing, not the features.
   assert.deepEqual(html(render(product, "v47")), ["<p>47</p>"]);
   const owned = render(product, "v51");
@@ -163,13 +163,18 @@ test("ProductTabs Overview: an owned empty overview renders nothing; no overview
   assert.equal(fallback(ownedEmpty), false);
 });
 
+function OverviewContent() { return null; }
+// The overview body is OverviewContent (click-to-play YouTube, M5.4); the fixture leaves it unexpanded, so its html prop is read.
+const isOverviewBody = (n) => (typeof n.type === "function" && n.type.name === "OverviewContent") || Boolean(n.props?.dangerouslySetInnerHTML);
+const overviewHtml = (n) => n.props.html ?? n.props.dangerouslySetInnerHTML.__html;
+
 // Final review M14 (WCAG 2.4.3) + F-d: one CSS-only layout at every width, one copy of the open tab's body. The desktop
 // nav is hidden below 1024, the accordion rows are hidden from 1024, and the body follows the open row in DOM order.
 const tabsFixture = async (selected = () => "v47") => {
   const { componentFixture, nodes, nodeText } = await import("../helpers/component-fixture.mjs");
   const fixture = componentFixture("src/components/ProductTabs.tsx", { modules: {
     "@/components/product/ProductVariantContext": { useProductVariant: () => ({ selectedVariantId: selected(), setSelectedVariantId() {} }) },
-    "@/lib/catalog/variant-selection": { variantTabContent, ownsEmptyOverview },
+    "@/lib/catalog/variant-selection": { variantTabContent, ownsEmptyOverview }, "@/components/product/OverviewContent": { OverviewContent },
   } });
   const props = { product: { id: "k", features: [], accessories: [], ...product } };
   const panels = tree => nodes(tree).filter(n => n.props?.id === "product-tab-panel");
@@ -184,12 +189,13 @@ test("ProductTabs: one body node, right after the open row; chrome is CSS-only (
   const { fixture, props, nodes, nodeText, panels, row, rows, order, bar } = await tabsFixture();
   let tree = fixture.render(props);
   assert.match(bar(tree).props.className, /\bhidden\b.*\blg:block\b/, "the desktop nav is hidden below 1024");
-  assert.equal(rows(tree).length, 6);
+  // A PostgreSQL product without compatibility links has no Accessories or Compatible Devices tab (M4.6).
+  assert.equal(rows(tree).length, 4);
   for (const r of rows(tree)) assert.match(r.props.className, /\blg:hidden\b/, "accordion rows are hidden from 1024");
   assert.ok(!/lg:hidden/.test(nodes(tree).find(n => /border-b border-\[#DCDCDC\]/.test(n.props?.className ?? "")).props.className), "the accordion wrapper stays visible at every width");
   assert.equal(panels(tree).length, 1, "exactly one panel, id unique");
-  assert.equal(nodes(tree).filter(n => n.props?.dangerouslySetInnerHTML).length, 1, "the body renders once");
-  assert.deepEqual(order(tree), ["product-tab-row-overview", "product-tab-panel", "product-tab-row-specs", "product-tab-row-inTheBox", "product-tab-row-maps", "product-tab-row-accessories", "product-tab-row-compatible"]);
+  assert.equal(nodes(tree).filter(isOverviewBody).length, 1, "the body renders once");
+  assert.deepEqual(order(tree), ["product-tab-row-overview", "product-tab-panel", "product-tab-row-specs", "product-tab-row-inTheBox", "product-tab-row-maps"]);
   const panel = panels(tree)[0];
   assert.equal(panel.props.role, "region");
   assert.equal(panel.props["aria-labelledby"], "product-tab-row-overview");
@@ -220,7 +226,7 @@ test("ProductTabs: tapping the open row collapses the panel on mobile only (hidd
   assert.match(panels(tree)[0].props.className, /\bhidden lg:block\b/);
   assert.equal(row(tree, "overview").props["aria-expanded"], false);
   assert.equal(row(tree, "overview").props["aria-controls"], undefined);
-  assert.equal(nodes(tree).filter(n => n.props?.dangerouslySetInnerHTML).length, 1);
+  assert.equal(nodes(tree).filter(isOverviewBody).length, 1);
   // A desktop tab click opens (and expands) a tab again.
   nodes(bar(tree)).find(n => n.type === "button" && n.props.onClick).props.onClick();
   tree = fixture.render(props);
@@ -231,7 +237,7 @@ test("ProductTabs: tapping the open row collapses the panel on mobile only (hidd
 test("ProductTabs: the variant swap still changes the single body", async () => {
   let selected = "v47";
   const { fixture, props, nodes } = await tabsFixture(() => selected);
-  const html = tree => nodes(tree).filter(n => n.props?.dangerouslySetInnerHTML).map(n => n.props.dangerouslySetInnerHTML.__html);
+  const html = tree => nodes(tree).filter(isOverviewBody).map(overviewHtml);
   assert.deepEqual(html(fixture.render(props)), ["<p>47</p>"]);
   selected = "v51";
   assert.deepEqual(html(fixture.render(props)), [], "51 mm owns an empty overview: nothing renders");

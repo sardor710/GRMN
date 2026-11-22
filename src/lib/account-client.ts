@@ -1,14 +1,16 @@
 // Browser client for the session-owned account API (Task 10C). Identity always comes from the
 // session cookie; no call accepts an email, phone or user ID as a selector.
-import type { CustomerProfileDTO, Money, OrderDetailDTO, OrderSummaryDTO, SavedAddressDTO, WishlistItemDTO } from "../contracts/commerce.ts";
+import type { CustomerProfileDTO, GeoPrecision, Money, OrderDetailDTO, OrderSummaryDTO, SavedAddressDTO, WishlistItemDTO } from "../contracts/commerce.ts";
 import type { Page } from "../contracts/pagination.ts";
 import { formatKzt as formatKztAmount } from "./money.ts";
+import { kzRegionLabel } from "./kz-regions.ts";
 // Sign-in and sign-out in the account page tell the cart to re-sync (and merge a guest cart).
 export { announceSessionChange } from "./cart-client.ts";
 
 export type PhonePurpose = "sign_in" | "phone_change_current" | "phone_change_new" | "order_claim";
 export interface AccountSession { user: { id: string; name: string } | null; staff: boolean }
-export interface AddressFields { label: string; recipientName: string; phone: string; countryCode: string; city: string; line1: string; line2?: string; region?: string; postalCode?: string; isPrimary: boolean }
+/** Saved-address form fields. Country is always KZ for new saves; region is a kz-regions code; the pin is optional. */
+export interface AddressFields { label: string; recipientName: string; phone: string; countryCode: string; city: string; line1: string; line2?: string; region?: string; postalCode?: string; lat?: number | null; lng?: number | null; geoPrecision?: GeoPrecision | null; isPrimary: boolean }
 
 interface FetchResult { ok: boolean; status: number; json(): Promise<unknown> }
 export type AccountFetcher = (url: string, init?: { method?: string; headers?: Record<string, string>; body?: string; cache?: "no-store" }) => Promise<FetchResult>;
@@ -25,6 +27,7 @@ export class AccountRequestError extends Error {
 }
 
 export const ORDER_PAGE_SIZE = 20;
+// New addresses are Kazakhstan only (M8); these names still label older saved addresses and orders.
 export const COUNTRY_OPTIONS: ReadonlyArray<{ code: string; name: string }> = [
   { code: "KZ", name: "Kazakhstan" }, { code: "UZ", name: "Uzbekistan" }, { code: "KG", name: "Kyrgyzstan" },
   { code: "US", name: "United States" }, { code: "GB", name: "United Kingdom" }, { code: "DE", name: "Germany" },
@@ -40,7 +43,7 @@ export function deliveryAddressLines(delivery: OrderDetailDTO["deliveryAddress"]
   if (!delivery) return [];
   if (delivery.kind === "legacy_unstructured") return [delivery.raw];
   const value = delivery.address;
-  return [value.recipientName, value.line1, value.line2, [value.city, value.region, value.postalCode].filter(Boolean).join(" "), value.countryCode ? countryName(value.countryCode) : "", value.phone]
+  return [value.recipientName, value.line1, value.line2, [value.city, kzRegionLabel(value.region), value.postalCode].filter((part, index, parts) => Boolean(part) && parts.indexOf(part) === index).join(" "), value.countryCode ? countryName(value.countryCode) : "", value.phone]
     .filter((line): line is string => Boolean(line && line.trim()));
 }
 
@@ -72,7 +75,7 @@ export function createAccountClient(fetcher: AccountFetcher) {
   return {
     session: () => call<AccountSession>("/api/auth/get-session"),
     profile: () => call<CustomerProfileDTO>("/api/account/profile"),
-    saveProfile: (command: { name: string; email: string; phone: string; expectedVersion: number }) => call<CustomerProfileDTO>("/api/account/profile", "PUT", command),
+    saveProfile: (command: { name: string; email: string; phone: string; birthDate?: string | null; expectedVersion: number }) => call<CustomerProfileDTO>("/api/account/profile", "PUT", command),
     addresses: () => call<Page<SavedAddressDTO>>("/api/account/addresses"),
     saveAddress: (fields: AddressFields, existing?: { id: string; version: number }) => existing
       ? call<SavedAddressDTO>(`/api/account/addresses/${encodeURIComponent(existing.id)}`, "PUT", { ...addressBody(fields), expectedVersion: existing.version })

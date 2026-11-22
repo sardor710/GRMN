@@ -114,7 +114,7 @@ export interface ProductVariant {
   title: string;
   /** optionId → valueId */
   selections: Record<string, string>;
-  price: number;
+  price: number | null;
   originalPrice?: number;
   stock: number;
   status: VariantStatus;

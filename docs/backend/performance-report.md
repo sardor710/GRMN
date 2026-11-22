@@ -367,3 +367,42 @@ A correct version needs two things:
 ## What 21B had to measure
 
 Measured on the VPS on 2026-11-18; see "Task 21B" at the top of this report.
+
+## Admin catalog lists (M2, 2026-11-21)
+
+Owner report: "products list is loading so slow… what will happen with 1000+ SKUs". Before M2 the admin product list returned the full legacy record per row (overview HTML up to 200 KB, every image, every variant) from `legacy_content`, 20 rows per page, and loaded a second full list for cross-sell data.
+
+**Method.** `node scripts/perf/admin-list-bench.mjs` starts a disposable PostgreSQL (`scripts/db/temporary-postgres.mjs`, embedded PostgreSQL 18 on the developer machine, Windows 11, loopback), applies every migration and seeds:
+- the 112-node category taxonomy;
+- 1,000 products (mixed status and 10 families), each with a ≈40 KB `legacy_content` (overview HTML, the shape real imports have);
+- 5,000 SKUs (5 swatch values per product) with KZT prices and ledger stock (a third untracked at zero, the rest low or in stock);
+- 2 categories per product, one primary;
+- a ready primary image for 70 % of products.
+
+It then times the exact functions behind `/api/admin/catalog/*` (`src/server/cms/catalog-read.ts`: page query plus the separate total count; no HTTP or auth). Each query gets 3 warm-up runs and 50 measured runs, and the payload is the JSON size of one page.
+
+| Query | rows | total | p50 ms | p95 ms | max ms | page payload |
+|---|---:|---:|---:|---:|---:|---:|
+| grouped list, first page (50) | 50 | 800 | 6.6 | 7.1 | 7.3 | 17.0 KB |
+| grouped list, page 5 (cursor) | 50 | 800 | 6.6 | 7.3 | 7.9 | 17.2 KB |
+| SKU list, first page (50) | 50 | 4000 | 5.9 | 6.8 | 8.5 | 22.6 KB |
+| grouped, category + descendants | 50 | 195 | 10.2 | 11.2 | 12.0 | 17.7 KB |
+| SKU, category + descendants | 50 | 975 | 7.8 | 9.0 | 11.2 | 22.7 KB |
+| grouped, search name/SKU | 50 | 89 | 11.3 | 11.8 | 13.3 | 17.1 KB |
+| SKU, search | 45 | 45 | 13.2 | 14.7 | 14.9 | 20.4 KB |
+| grouped, stock=low | 50 | 56 | 75.1 | 103.5 | 106.9 | 17.2 KB |
+| grouped, status+family | 50 | 100 | 9.4 | 14.1 | 15.6 | 17.3 KB |
+| grouped, max page (100) | 100 | 800 | 11.0 | 15.7 | 16.1 | 34.1 KB |
+| expand one product | 5 | – | 1.9 | 2.2 | 2.4 | 2.3 KB |
+| taxonomy tree | 112 | – | 0.7 | 0.8 | 0.9 | 18.4 KB |
+| editor payload (one product) | 1 | – | 7.3 | 8.4 | 9.1 | 44.5 KB |
+| before M2: legacy list DTO (20 rows, reference only) | 20 | – | 6.6 | 21.7 | 33.0 | 833.7 KB |
+
+**Result.** Every list query meets both targets (p95 < 300 ms, page < 100 KB). A 50-row page is about 17–23 KB, against 834 KB for 20 legacy rows: 50× smaller per row. The legacy page also scaled with overview size, while the new rows have constant size.
+
+**Why it is fast.**
+- Keyset order `(updated_at DESC, id DESC)` is served by `products_admin_order_idx` (migration 0014). The plan is an index scan with LIMIT 51, 0.2 ms, and the per-row aggregates (variant count, stock sums, min/max price, primary category, thumbnail) are computed only for the page.
+- The thumbnail fallback comes from `products.thumbnail_source`, a stored column generated from `legacy_content->>'image'`. List queries therefore never detoast the 40 KB `legacy_content`.
+- Category filters expand descendants once (recursive CTE) and probe `product_categories` by primary key.
+
+**Watch item.** The stock-state filter (`stock=in|low|out`) must aggregate every candidate product before paging, and its total count does it a second time. That is about 100 ms p95 at 1,000 products and grows linearly. If the catalog grows by an order of magnitude, keep a per-product available-stock summary maintained by the ledger trigger instead of adding indexes. Search uses `ILIKE` scans (about 12 ms at 5,000 SKUs). A `pg_trgm` index is the next step if search passes about 50 ms, but it needs the extension in production. No other index was needed.

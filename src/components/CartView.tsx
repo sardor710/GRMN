@@ -53,7 +53,7 @@ function serverCart(t: Translate, kzt: (money: Parameters<typeof formatKzt>[0]) 
       )}
       {adjusted && <p role="status" className="mt-4 border border-garmin-control bg-muted p-3 text-[14px] leading-[21px] text-black">{t("quantitiesAdjusted")}</p>}
       {unavailable && <p role="status" className="mt-4 border border-garmin-control bg-muted p-3 text-[14px] leading-[21px] text-black">{t("unavailableNote")}</p>}
-      <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_360px]">
+      <div className="mt-8 grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1fr)_420px] xl:grid-cols-[minmax(0,1fr)_460px]">
         <div>
           <div className="hidden grid-cols-[1fr_120px_140px] border-b border-garmin-control pb-3 text-[14px] font-bold text-black sm:grid">
             <span>{t("item")}</span>

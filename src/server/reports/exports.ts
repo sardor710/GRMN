@@ -31,7 +31,8 @@ const invalid = (): never => fail("INVALID_INPUT", 400, "Invalid or unknown fiel
 const notFound = (): never => fail("NOT_FOUND", 404, "Not found");
 const requestInput = z.discriminatedUnion("kind", [
   z.strictObject({ kind: z.literal("catalog") }),
-  z.strictObject({ kind: z.literal("orders"), from: z.string().regex(DATE), to: z.string().regex(DATE), timeZone: z.string().min(1).max(64).optional() }),
+  // D03a: sandbox (demo purchase) orders are left out of accounting exports unless includeSandbox is true.
+  z.strictObject({ kind: z.literal("orders"), from: z.string().regex(DATE), to: z.string().regex(DATE), timeZone: z.string().min(1).max(64).optional(), includeSandbox: z.boolean().optional() }),
 ]);
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
@@ -49,7 +50,9 @@ const major = (minor: string) => { const value = BigInt(minor), sign = value < B
 const exportsDir = (storageDir: string) => path.join(/*turbopackIgnore: true*/ storageDir, "private", "exports");
 
 export interface ExportDTO { id: string; kind: string; status: "pending" | "running" | "completed" | "failed" | "expired"; createdAt: string; completedAt: string | null; expiresAt: string }
-interface JobRow { id: string; requested_by_user_id: string; kind: string; filters: Record<string, string>; status: ExportDTO["status"]; result_media_id: string | null; completed_at: Date | null; expires_at: Date; created_at: Date }
+/** Stored job filters. includeSandbox is present only when true: by default sandbox (D03a demo purchase) orders are excluded. */
+interface ExportFilters { from?: string; to?: string; timeZone?: string; includeSandbox?: boolean }
+interface JobRow { id: string; requested_by_user_id: string; kind: string; filters: ExportFilters; status: ExportDTO["status"]; result_media_id: string | null; completed_at: Date | null; expires_at: Date; created_at: Date }
 const dto = (row: JobRow): ExportDTO => ({ id: row.id, kind: row.kind, status: row.status, createdAt: row.created_at.toISOString(), completedAt: row.completed_at?.toISOString() ?? null, expiresAt: row.expires_at.toISOString() });
 
 interface Options { pool: Pool; authorize: (headers: Headers, permission: Permission) => Promise<Principal>; storageDir: string; ttlMs?: number; maxRows?: number }
@@ -66,8 +69,10 @@ export function createExportService({ pool, authorize, storageDir, ttlMs = 24 * 
         if (!(span >= 0 && span <= 366)) invalid();
         if (command.timeZone && !(await pool.query("SELECT 1 FROM pg_timezone_names WHERE name=$1", [command.timeZone])).rowCount) invalid();
       }
-      const { kind, ...filters } = command;
-      if (await countRows(pool, kind, filters as Record<string, string>) > maxRows) fail("EXPORT_TOO_LARGE", 409, "This export is too large; narrow the date range");
+      const { kind, ...parsed } = command;
+      const filters: ExportFilters = { ...parsed };
+      if (filters.includeSandbox !== true) delete filters.includeSandbox;
+      if (await countRows(pool, kind, filters) > maxRows) fail("EXPORT_TOO_LARGE", 409, "This export is too large; narrow the date range");
       const client = await pool.connect();
       let broken = false;
       try {
@@ -115,11 +120,11 @@ export function createExportService({ pool, authorize, storageDir, ttlMs = 24 * 
 }
 export type ExportService = ReturnType<typeof createExportService>;
 
-async function countRows(db: Pool | PoolClient, kind: string, filters: Record<string, string>): Promise<number> {
+async function countRows(db: Pool | PoolClient, kind: string, filters: ExportFilters): Promise<number> {
   if (kind === "catalog") return (await db.query<{ n: number }>("SELECT count(*)::int AS n FROM products")).rows[0].n;
   return (await db.query<{ n: number }>(
-    "SELECT count(*)::int AS n FROM orders o WHERE COALESCE(o.placed_at,o.created_at)>=(($1::date)::timestamp AT TIME ZONE $3) AND COALESCE(o.placed_at,o.created_at)<((($2::date)+1)::timestamp AT TIME ZONE $3)",
-    [filters.from, filters.to, filters.timeZone ?? "Asia/Almaty"])).rows[0].n;
+    "SELECT count(*)::int AS n FROM orders o WHERE COALESCE(o.placed_at,o.created_at)>=(($1::date)::timestamp AT TIME ZONE $3) AND COALESCE(o.placed_at,o.created_at)<((($2::date)+1)::timestamp AT TIME ZONE $3) AND ($4::boolean OR o.payment_mode<>'sandbox')",
+    [filters.from, filters.to, filters.timeZone ?? "Asia/Almaty", filters.includeSandbox === true])).rows[0].n;
 }
 
 async function rowsFor(client: PoolClient, job: JobRow): Promise<unknown[][]> {
@@ -135,8 +140,8 @@ async function rowsFor(client: PoolClient, job: JobRow): Promise<unknown[][]> {
   const rows = (await client.query<{ order_number: string; placed_at: Date | null; order_status: string; payment_status: string; fulfillment_status: string; payment_mode: string; currency: string; total: string; items: number }>(
     `SELECT o.order_number,o.placed_at,o.order_status,o.payment_status,o.fulfillment_status,o.payment_mode,o.currency,o.total_minor::text AS total,
        (SELECT COALESCE(sum(quantity),0)::int FROM order_items WHERE order_id=o.id) AS items
-     FROM orders o WHERE COALESCE(o.placed_at,o.created_at)>=(($1::date)::timestamp AT TIME ZONE $3) AND COALESCE(o.placed_at,o.created_at)<((($2::date)+1)::timestamp AT TIME ZONE $3)
-     ORDER BY COALESCE(o.placed_at,o.created_at),o.id LIMIT $4`, [filters.from, filters.to, zone, MAX_ROWS])).rows;
+     FROM orders o WHERE COALESCE(o.placed_at,o.created_at)>=(($1::date)::timestamp AT TIME ZONE $3) AND COALESCE(o.placed_at,o.created_at)<((($2::date)+1)::timestamp AT TIME ZONE $3) AND ($5::boolean OR o.payment_mode<>'sandbox')
+     ORDER BY COALESCE(o.placed_at,o.created_at),o.id LIMIT $4`, [filters.from, filters.to, zone, MAX_ROWS, filters.includeSandbox === true])).rows;
   return [["order_number", "placed_at", "order_status", "payment_status", "fulfillment_status", "payment_mode", "currency", "total", "items"],
     ...rows.map(row => [row.order_number, row.placed_at?.toISOString() ?? "", row.order_status, row.payment_status, row.fulfillment_status, row.payment_mode, row.currency, major(row.total), row.items])];
 }

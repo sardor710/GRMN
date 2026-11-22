@@ -123,13 +123,16 @@ export function availableValueIds(variants, selections, optionId) {
   return out;
 }
 
-/** ≤42 mm → Small, 43–46 mm → Medium, ≥47 mm → Large; anything that is not a mm size → undefined. */
+/**
+ * garmin.com Case Size buckets: up to 43 mm → Small (35 to 43), 44–49 mm → Medium, ≥50 mm → Large; anything
+ * that is not a mm size → undefined. Keep in step with caseSizeBucket in src/lib/catalog-facets.ts.
+ */
 export function sizeBucketFromLabel(label) {
   const m = /^\s*(\d+(?:\.\d+)?)\s*mm\b/i.exec(String(label || ''));
   if (!m) return undefined;
   const mm = Number(m[1]);
-  if (mm <= 42) return 'Small';
-  if (mm < 47) return 'Medium';
+  if (mm < 44) return 'Small';
+  if (mm < 50) return 'Medium';
   return 'Large';
 }
 

@@ -17,6 +17,7 @@ import { withVariantParam } from "@/lib/catalog/variant-selection";
 import { isPurchasable, selectValue } from "@/lib/cms/product-variants";
 import { commerceVariantModel } from "@/lib/cms/commerce-variant-model";
 import type { ProductOption, ProductVariant } from "@/lib/cms/types";
+import type { ProductOptionDTO } from "@/contracts/catalog-browse";
 import { Price } from "@/components/ui/price";
 import { badgeClass } from "@/components/ui/badge";
 import { isKztSale, toMinor, type KztAmount } from "@/lib/money";
@@ -27,6 +28,31 @@ import { useCompareSelection } from "@/lib/compare/use-compare-selection";
 
 const COMPARE_LIMIT_ID = "pdp-compare-limit";
 
+type CommerceModel = { options: ProductOption[]; variants: ProductVariant[] };
+
+/**
+ * Applies the product's stored option definitions (display type, order, swatch colour and photo) to the picker
+ * model built from the variants. Options without a definition keep the model's own guess.
+ */
+function withOptionDefinitions(model: CommerceModel | undefined, definitions: readonly ProductOptionDTO[] | undefined): CommerceModel | undefined {
+  if (!model || !definitions?.length) return model;
+  const definitionOf = (option: ProductOption) => definitions.find((d) => d.name === option.name || d.key === option.name);
+  const rank = (option: ProductOption) => {
+    const index = definitions.findIndex((d) => d.name === option.name || d.key === option.name);
+    return index < 0 ? definitions.length : index;
+  };
+  const options = model.options.map((option) => {
+    const definition = definitionOf(option);
+    if (!definition) return option;
+    const values = option.values.map((value) => {
+      const meta = definition.values.find((v) => v.label === value.label);
+      return meta ? { ...value, ...(meta.swatchColor ? { swatchColor: meta.swatchColor } : {}), ...(meta.swatchImage ? { swatchImage: meta.swatchImage } : {}) } : value;
+    });
+    return { ...option, display: definition.display, values };
+  });
+  return { ...model, options: [...options].sort((a, b) => rank(a) - rank(b)) };
+}
+
 export function ProductTop({ product:initial }: { product: ProductDetail }) {
   const t = useTranslations("ProductTop");
   const badgeText = useTranslations("ProductBadge");
@@ -36,8 +62,10 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   const { selectedVariantId: variantId, setSelectedVariantId: setVariantId } = useProductVariant();
   const variant=initial.commerce?.variants.find(v=>v.id===variantId);
   // PostgreSQL products get the same garmin.com pickers as JSON CMS products (no plain dropdown).
+  // Option display (buttons / swatch / dropdown) and swatch colours and photos come from the product's option
+  // definitions (migration 0024) when it has them.
   const commerceModel = useMemo(
-    () => (initial.commerce ? (commerceVariantModel(initial.commerce) as { options: ProductOption[]; variants: ProductVariant[] } | undefined) : undefined),
+    () => (initial.commerce ? withOptionDefinitions(commerceVariantModel(initial.commerce) as CommerceModel | undefined, initial.commerce.options) : undefined),
     [initial.commerce],
   );
   const commerceSelections = commerceModel?.variants.find((v) => v.id === variantId)?.selections;
@@ -95,12 +123,14 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   const inComparison = compareEntryFound !== null;
   const exactInComparison = compareEntryFound?.exact === true;
   const compareBlocked = !inComparison && isSelectionFull(compareItems);
-  const gallery = useMemo(() => {
+  // Plain derivation (the React Compiler memoizes it); a manual useMemo could not be preserved once the
+  // commerce variant helpers receive the product's nested data.
+  const gallery = (() => {
     if (!vm || !cmsVariant) return product.gallery;
     const byId = new Map(vm.images.map((img) => [img.id, img]));
     const own = cmsVariant.imageIds.map((id) => byId.get(id)).filter((img): img is NonNullable<typeof img> => Boolean(img));
     return own.length ? own.map((img, i) => ({ view: `${img.alt || product.title} ${i + 1}`, src: img.src })) : product.gallery;
-  }, [vm, cmsVariant, product.gallery, product.title]);
+  })();
   const safeIdx = Math.max(0, Math.min(mainIdx, gallery.length - 1));
 
   const chooseValue = (optionId: string, valueId: string) => {
@@ -130,7 +160,8 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
   // Server cart (Task 13A): the selected variant's real availability decides; the server prices it.
   // In the browser-only cart a JSON CMS variant must be active and in stock.
   const serverCart = mode === "server" && !!initial.commerce;
-  const sellable = serverCart ? variant?.availability === "available" : product.purchasable !== false && isPurchasable(cmsVariant);
+  // Add to cart is disabled only when the selected variant has no free stock (or the browser-only cart cannot sell it).
+  const sellable = serverCart ? variant?.availability === "available" : !initial.commerce && product.purchasable !== false && isPurchasable(cmsVariant);
   const addLabel = !sellable
     ? (serverCart && variant?.availability === "out_of_stock") || (!serverCart && cmsVariant && !isPurchasable(cmsVariant)) ? t("availabilityOutOfStock") : t("purchasingUnavailable")
     : added ? t("added") : t("addToCart");

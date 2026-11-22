@@ -162,6 +162,34 @@
       "when": 1795107220148,
       "tag": "0022_variant-content",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1795260283555,
+      "tag": "0023_taxonomy-compatibility-geo",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1795262775051,
+      "tag": "0024_catalog-admin-variant-display",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1795277446039,
+      "tag": "0025_demo-purchases-sandbox",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1795337037733,
+      "tag": "0026_untouched-balance-delete",
+      "breakpoints": true
     }
   ]
 }

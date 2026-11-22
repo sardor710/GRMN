@@ -10,6 +10,10 @@ import { publicImage } from "../catalog/service.ts";
 import { createQuote, QUOTE_TTL_SECONDS, type DeliverySnapshot } from "../pricing/quote.ts";
 import { placeOrder, readCheckoutStatus } from "../checkout/service.ts";
 import { availablePaymentMethods } from "../payments/demo-mode.ts";
+import { captureSandboxOrder } from "../payments/service.ts";
+import type { PaymentProviders } from "../payments/provider.ts";
+import { checkKzAddress, DELIVERY_COUNTRY } from "../account/address-rules.ts";
+import { findKzCityAnywhere, resolveKzRegion } from "../../lib/kz-regions.ts";
 
 // Server carts (Task 13A). A guest cart is opened only by a random capability held in an HttpOnly
 // cookie; only its HMAC digest is stored. A signed-in shopper always uses the account cart, and the
@@ -51,6 +55,13 @@ const quoteInput = z.strictObject({
   paymentCurrency: z.string().max(16).optional(),
 });
 
+/** The raw inline delivery address of a quote request, if it has one (checked before the strict schema). */
+function inlineAddressOf(input: unknown): Record<string, unknown> | null {
+  const record = (value: unknown) => value && typeof value === "object" && !Array.isArray(value) ? value as Record<string, unknown> : null;
+  const delivery = record(record(input)?.delivery);
+  return delivery?.kind === "inline" ? record(delivery.address) : null;
+}
+
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
   return result.success ? result.data : invalid();
@@ -59,7 +70,7 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
 export type CartCookie = { token: string } | { clear: true };
 export interface CartResult { cart: CartDTO; cookie?: CartCookie }
 type Notice = { code: CartNoticeCode; variantId: string };
-interface Actor { userId: string | null; token: string | null; tokenHash: string | null }
+interface Actor { userId: string | null; staff?: boolean; token: string | null; tokenHash: string | null }
 interface CartRow { id: string; version: number; expires_at: Date }
 interface Offer { variantId: string; productKey: string; name: string; variantName: string; image: string | null; amount: string | null; availability: Availability; free: number }
 type Queryable = Pick<PoolClient, "query">;
@@ -87,9 +98,14 @@ export interface CartServiceOptions {
   quoteTtlSeconds?: number;
   /** The trusted client address for the unpaid-order limit; null skips the per-address limit (no trusted proxy). */
   clientAddress?: (headers: Headers) => string | null;
+  /** The registered payment adapters (payments/providers.ts). With the D03a sandbox adapter, "Demo checkout" is a demo purchase captured at once. */
+  payments?: PaymentProviders;
 }
 
-export function createCartService({ database, secret, identify, market = "default", quoteTtlSeconds = QUOTE_TTL_SECONDS, clientAddress }: CartServiceOptions) {
+export function createCartService({ database, secret, identify, market = "default", quoteTtlSeconds = QUOTE_TTL_SECONDS, clientAddress, payments }: CartServiceOptions) {
+  // The methods checkout offers now (Task 3.1 setting; sandbox replaces demo while demo purchases are enabled, D03a).
+  const sandboxEnabled = Boolean(payments?.get("sandbox"));
+  const offeredMethods = (db: Parameters<typeof availablePaymentMethods>[0]) => availablePaymentMethods(db, process.env, sandboxEnabled);
   if (!/^[a-f0-9]{64}$/i.test(secret)) throw new Error("Cart services require the validated auth secret");
   const digest = (token: string) => createHmac("sha256", secret).update("grmn-cart-capability:v1:" + token).digest("hex");
 
@@ -102,7 +118,9 @@ export function createCartService({ database, secret, identify, market = "defaul
   }
   async function actor(headers: Headers): Promise<Actor> {
     const principal = await identify(headers), token = readToken(headers);
-    return { userId: principal?.userId ?? null, token, tokenHash: token ? digest(token) : null };
+    // Staff = a signed-in principal holding staff permissions (customers hold none; requirePrincipal already
+    // refuses a staff session without MFA admission).
+    return { userId: principal?.userId ?? null, staff: (principal?.permissions.length ?? 0) > 0, token, tokenHash: token ? digest(token) : null };
   }
 
   async function transaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {
@@ -163,7 +181,7 @@ export function createCartService({ database, secret, identify, market = "defaul
   async function view(db: Queryable, who: Actor, cart: CartRow | null, notices: Notice[] = [], pendingMerge = false): Promise<CartDTO> {
     const owner = who.userId ? "account" : "guest";
     // Task 3.1: the checkout methods offered now (only demo while demo checkout is on, otherwise only manual).
-    const paymentMethods = await availablePaymentMethods(db);
+    const paymentMethods = await offeredMethods(db);
     if (!cart) return { id: null, version: 0, owner, lines: [], subtotal: money("0"), expiresAt: null, pendingMerge, notices, paymentMethods };
     const rows = (await db.query<{ variant_id: string; quantity: number; seen: string | null }>("SELECT variant_id,quantity,seen_unit_price_minor::text AS seen FROM cart_items WHERE cart_id=$1 ORDER BY created_at,variant_id", [cart.id])).rows;
     const current = await offers(db, rows.map(row => row.variant_id)), all = [...notices];
@@ -282,32 +300,49 @@ export function createCartService({ database, secret, identify, market = "defaul
     async quote(headers: Headers, input: unknown): Promise<CheckoutQuoteDTO> {
       const payment = input && typeof input === "object" && !Array.isArray(input) ? (input as Record<string, unknown>).paymentCurrency : undefined;
       if (payment !== undefined && payment !== "KZT") throw new AuthFailure("UNSUPPORTED_CURRENCY", 400, "Payment is accepted in KZT only");
+      // M8.5: delivery is Kazakhstan only. A typed address gets the clear country/region reason
+      // before the strict schema, and its region is stored as a kz-regions code.
+      const inline = inlineAddressOf(input);
+      const kz = inline ? checkKzAddress(inline) : null;
+      if (kz && !kz.ok) invalid(kz.message);
       const command = parse(quoteInput, input), who = await actor(headers);
       let delivery: DeliverySnapshot;
-      if (command.delivery.kind === "inline") delivery = command.delivery.address;
+      if (command.delivery.kind === "inline") delivery = { ...command.delivery.address, countryCode: DELIVERY_COUNTRY, ...(kz?.ok ? { region: kz.value.region } : {}) };
       else {
         if (!who.userId) throw new AuthFailure("UNAUTHENTICATED", 401, "Sign in to use a saved address");
         const saved = (await database.pool.query<{ version: number; recipient_name: string; phone: string; country_code: string; city: string; line1: string; line2: string | null; region: string | null; postal_code: string | null }>(
           "SELECT version,recipient_name,phone,country_code,city,line1,line2,region,postal_code FROM customer_addresses WHERE id=$1 AND user_id=$2", [command.delivery.addressId, who.userId])).rows[0];
         if (!saved) throw new AuthFailure("NOT_FOUND", 404, "Not found");
         if (saved.version !== command.delivery.version) conflict();
-        delivery = { addressId: command.delivery.addressId, addressVersion: saved.version, recipientName: saved.recipient_name, phone: saved.phone, countryCode: saved.country_code, city: saved.city, line1: saved.line1,
-          ...(saved.line2 ? { line2: saved.line2 } : {}), ...(saved.region ? { region: saved.region } : {}), ...(saved.postal_code ? { postalCode: saved.postal_code } : {}) };
+        // Older saved addresses may be outside Kazakhstan: they must be edited in the account first.
+        if (saved.country_code !== DELIVERY_COUNTRY) throw new AuthFailure("ADDRESS_NOT_DELIVERABLE", 400, "We deliver only within Kazakhstan; edit this saved address in your account to ship in Kazakhstan");
+        const region = resolveKzRegion(saved.region)?.code ?? (saved.region || findKzCityAnywhere(saved.city)?.region.code || null);
+        delivery = { addressId: command.delivery.addressId, addressVersion: saved.version, recipientName: saved.recipient_name, phone: saved.phone, countryCode: DELIVERY_COUNTRY, city: saved.city, line1: saved.line1,
+          ...(saved.line2 ? { line2: saved.line2 } : {}), ...(region ? { region } : {}), ...(saved.postal_code ? { postalCode: saved.postal_code } : {}) };
       }
       return transaction(async client => {
         const cart = await loadCart(client, who, true);
         if ((cart?.version ?? 0) !== command.cartVersion) conflict();
         if (!cart) throw new AuthFailure("CART_EMPTY", 409, "Your cart is empty");
-        return createQuote(client, { cartId: cart.id, cartVersion: cart.version, userId: who.userId },
+        const quote = await createQuote(client, { cartId: cart.id, cartVersion: cart.version, userId: who.userId },
           { market, displayCurrency: command.displayCurrency, couponCode: command.couponCode ?? null, delivery }, quoteTtlSeconds);
+        return { ...quote, paymentMethod: (await offeredMethods(client))[0] };
       });
     },
 
-    // Task 14A: places one pending order for the actor's quoted cart revision (demo or manual, Task 3.1).
+    // Task 14A: places one order for the actor's quoted cart revision (demo, sandbox or manual, Task 3.1, D03a).
     // The idempotency key comes from the Idempotency-Key header; a retried key returns the same order.
+    // A sandbox order (D03a demo purchase) is captured right after it committed; if that step fails, the
+    // error is returned and a retry with the same key captures the same order once (worker reconciliation
+    // would also complete it). A demo order is captured inside placeOrder (Task 3.2).
     async checkout(headers: Headers, idempotencyKey: string, input: unknown): Promise<CheckoutResultDTO> {
       const who = await actor(headers);
-      return placeOrder(database.pool, secret, { userId: who.userId, guestTokenHash: who.userId ? null : who.tokenHash }, idempotencyKey, input, { clientAddress: clientAddress?.(headers) ?? null });
+      const placed = await placeOrder(database.pool, secret, { userId: who.userId, guestTokenHash: who.userId ? null : who.tokenHash, staff: who.staff }, idempotencyKey, input,
+        { clientAddress: clientAddress?.(headers) ?? null, ...(payments ? { payments } : {}) });
+      if (placed.paymentMode !== "sandbox" || !payments) return placed;
+      await captureSandboxOrder(database.pool, payments, placed.orderId);
+      const now = (await database.pool.query<{ order_status: CheckoutResultDTO["status"]; payment_status: string }>("SELECT order_status,payment_status FROM orders WHERE id=$1", [placed.orderId])).rows[0];
+      return now ? { ...placed, status: now.order_status, paymentState: now.payment_status === "paid" ? "captured" : placed.paymentState } : placed;
     },
 
     // Task 14A: the polling contract after checkout (owning session, or a guest status token).

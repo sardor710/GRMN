@@ -6,8 +6,9 @@ import type { DatabaseHandle } from "../db/client.ts";
 import type { Permission, Principal } from "../context.ts";
 import { AuthFailure } from "../auth/config.ts";
 import { authDigest, capabilityHash, createPhoneService } from "../auth/phone-service.ts";
-import type { CustomerProfileDTO, DeliveryAddress, Money, OrderDetailDTO, OrderItemDTO, OrderSummaryDTO, SavedAddressDTO } from "../../contracts/commerce.ts";
+import type { CustomerProfileDTO, DeliveryAddress, GeoPrecision, Money, OrderDetailDTO, OrderItemDTO, OrderSummaryDTO, SavedAddressDTO } from "../../contracts/commerce.ts";
 import type { Page } from "../../contracts/pagination.ts";
+import { checkBirthDate, checkKzAddress } from "./address-rules.ts";
 
 // Every operation derives the owner from the verified session principal. No input field,
 // typed email or phone can select another customer's profile, address book or orders.
@@ -28,6 +29,8 @@ const profileInput = z.strictObject({
   name: requiredText(200),
   email: z.string().trim().toLowerCase().max(254).pipe(z.email()),
   phone,
+  // Optional birthday (M8), checked by checkBirthDate; undefined keeps the stored value.
+  birthDate: z.union([z.string().max(10), z.null()]).optional(),
   expectedVersion: z.number().int().min(0),
 });
 const addressInput = z.strictObject({
@@ -36,12 +39,16 @@ const addressInput = z.strictObject({
   label: requiredText(60),
   recipientName: requiredText(200),
   phone,
-  countryCode: z.string().trim().regex(/^[A-Z]{2}$/),
+  // Kazakhstan only (M8): country, region and the optional pin are checked by checkKzAddress first.
+  countryCode: z.string().trim().toUpperCase().pipe(z.literal("KZ")),
   city: requiredText(120),
   line1: requiredText(200),
   line2: optionalText(200),
   region: optionalText(120),
   postalCode: optionalText(20),
+  lat: z.number().nullable().optional(),
+  lng: z.number().nullable().optional(),
+  geoPrecision: z.enum(["exact", "street", "locality", "manual"]).nullable().optional(),
   isPrimary: z.boolean().default(false),
 }).refine(value => (value.id === undefined) === (value.expectedVersion === undefined));
 const pageInput = z.strictObject({ limit: z.number().int().min(1).max(100).optional(), cursor: z.string().min(1).max(2048).optional() });
@@ -57,12 +64,13 @@ function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   return result.success ? result.data : invalid();
 }
 
-interface AddressRow { id: string; label: string; recipient_name: string; phone: string; country_code: string; city: string; line1: string; line2: string | null; region: string | null; postal_code: string | null; is_primary: boolean; version: number }
-const ADDRESS_COLUMNS = "id,label,recipient_name,phone,country_code,city,line1,line2,region,postal_code,is_primary,version";
+interface AddressRow { id: string; label: string; recipient_name: string; phone: string; country_code: string; city: string; line1: string; line2: string | null; region: string | null; postal_code: string | null; latitude: string | null; longitude: string | null; geo_precision: GeoPrecision | null; is_primary: boolean; version: number }
+const ADDRESS_COLUMNS = "id,label,recipient_name,phone,country_code,city,line1,line2,region,postal_code,latitude::text AS latitude,longitude::text AS longitude,geo_precision,is_primary,version";
 function addressDTO(row: AddressRow): SavedAddressDTO {
   return {
     id: row.id, label: row.label, recipientName: row.recipient_name, phone: row.phone, countryCode: row.country_code, city: row.city, line1: row.line1,
     ...(row.line2 ? { line2: row.line2 } : {}), ...(row.region ? { region: row.region } : {}), ...(row.postal_code ? { postalCode: row.postal_code } : {}),
+    ...(row.latitude !== null && row.longitude !== null ? { lat: Number(row.latitude), lng: Number(row.longitude), ...(row.geo_precision ? { geoPrecision: row.geo_precision } : {}) } : {}),
     isPrimary: row.is_primary, version: row.version,
   };
 }
@@ -137,14 +145,14 @@ export function createAccountService({ database, authorize, authorizeFresh, secr
   return {
     async getProfile(headers: Headers): Promise<CustomerProfileDTO> {
       const principal = await authorize(headers);
-      const result = await database.pool.query<{ user_name: string; user_email: string; user_email_verified: boolean; phone_number: string | null; phone_number_verified: boolean; id: string | null; name: string | null; email: string | null; email_verified_at: Date | null; profile_state: "provisional" | "complete" | null; version: number | null }>(
-        "SELECT u.name AS user_name,u.email AS user_email,u.email_verified AS user_email_verified,u.phone_number,u.phone_number_verified,p.id,p.name,p.email,p.email_verified_at,p.profile_state,p.version FROM users u LEFT JOIN customer_profiles p ON p.user_id=u.id WHERE u.id=$1 AND u.status='active'", [principal.userId]);
+      const result = await database.pool.query<{ user_name: string; user_email: string; user_email_verified: boolean; phone_number: string | null; phone_number_verified: boolean; id: string | null; name: string | null; email: string | null; email_verified_at: Date | null; birth_date: string | null; profile_state: "provisional" | "complete" | null; version: number | null }>(
+        "SELECT u.name AS user_name,u.email AS user_email,u.email_verified AS user_email_verified,u.phone_number,u.phone_number_verified,p.id,p.name,p.email,p.email_verified_at,to_char(p.birth_date,'YYYY-MM-DD') AS birth_date,p.profile_state,p.version FROM users u LEFT JOIN customer_profiles p ON p.user_id=u.id WHERE u.id=$1 AND u.status='active'", [principal.userId]);
       const row = result.rows[0] ?? (() => { throw new AuthFailure("UNAUTHENTICATED", 401, "Sign in is required"); })();
       const profileEmail = row.id !== null && row.email !== null;
       return {
         id: row.id, name: row.name ?? row.user_name, email: profileEmail ? row.email : row.user_email,
         emailVerified: profileEmail ? row.email_verified_at !== null : row.user_email_verified,
-        phone: row.phone_number, phoneVerified: Boolean(row.phone_number && row.phone_number_verified),
+        phone: row.phone_number, phoneVerified: Boolean(row.phone_number && row.phone_number_verified), birthDate: row.birth_date,
         profileState: row.profile_state ?? "provisional", version: row.version ?? 0,
       };
     },
@@ -154,16 +162,21 @@ export function createAccountService({ database, authorize, authorizeFresh, secr
     // links orders. The phone must equal the session owner's verified phone (changes are 10B).
     async saveProfile(headers: Headers, input: unknown): Promise<CustomerProfileDTO> {
       const principal = await authorize(headers), command = parse(profileInput, input);
+      const birth = checkBirthDate(command.birthDate);
+      if (!birth.ok) return invalid(birth.message);
+      // undefined keeps the stored birthday; null clears it.
+      const keepBirth = birth.value === undefined, birthDate = birth.value ?? null;
       return transaction(async client => {
         const owner = await lockOwner(client, principal.userId);
         if (!owner.phone_number || !owner.phone_number_verified || owner.phone_number !== command.phone) invalid("Phone must match your verified phone number");
         const values = [principal.userId, command.name, command.email, command.phone];
+        type Saved = { id: string; version: number; email_verified_at: Date | null; birth_date: string | null };
         // A new or changed email is stored unverified; only an unchanged email keeps prior verification.
         const saved = command.expectedVersion === 0
-          ? await client.query<{ id: string; version: number; email_verified_at: Date | null }>("INSERT INTO customer_profiles(id,user_id,name,email,email_verified_at,entered_phone,normalized_phone,profile_state,version) VALUES($5,$1,$2,$3,NULL,$4,$4,'complete',1) ON CONFLICT (user_id) WHERE user_id IS NOT NULL DO NOTHING RETURNING id,version,email_verified_at", [...values, randomUUID()])
-          : await client.query<{ id: string; version: number; email_verified_at: Date | null }>("UPDATE customer_profiles SET name=$2,email_verified_at=CASE WHEN email IS NOT DISTINCT FROM $3 THEN email_verified_at ELSE NULL END,email=$3,entered_phone=$4,normalized_phone=$4,profile_state='complete',version=version+1,updated_at=now() WHERE user_id=$1 AND version=$5 RETURNING id,version,email_verified_at", [...values, command.expectedVersion]);
+          ? await client.query<Saved>("INSERT INTO customer_profiles(id,user_id,name,email,email_verified_at,entered_phone,normalized_phone,birth_date,profile_state,version) VALUES($5,$1,$2,$3,NULL,$4,$4,$6::date,'complete',1) ON CONFLICT (user_id) WHERE user_id IS NOT NULL DO NOTHING RETURNING id,version,email_verified_at,to_char(birth_date,'YYYY-MM-DD') AS birth_date", [...values, randomUUID(), birthDate])
+          : await client.query<Saved>("UPDATE customer_profiles SET name=$2,email_verified_at=CASE WHEN email IS NOT DISTINCT FROM $3 THEN email_verified_at ELSE NULL END,email=$3,entered_phone=$4,normalized_phone=$4,birth_date=CASE WHEN $7::boolean THEN birth_date ELSE $6::date END,profile_state='complete',version=version+1,updated_at=now() WHERE user_id=$1 AND version=$5 RETURNING id,version,email_verified_at,to_char(birth_date,'YYYY-MM-DD') AS birth_date", [...values, command.expectedVersion, birthDate, keepBirth]);
         const row = saved.rows[0] ?? conflict();
-        return { id: row.id, name: command.name, email: command.email, emailVerified: row.email_verified_at !== null, phone: command.phone, phoneVerified: true, profileState: "complete" as const, version: row.version };
+        return { id: row.id, name: command.name, email: command.email, emailVerified: row.email_verified_at !== null, phone: command.phone, phoneVerified: true, birthDate: row.birth_date, profileState: "complete" as const, version: row.version };
       });
     },
 
@@ -176,8 +189,12 @@ export function createAccountService({ database, authorize, authorizeFresh, secr
     // Creates (no id) or edits (id + expectedVersion) a saved address. isPrimary only promotes:
     // the primary moves when another address is selected or the primary is deleted.
     async saveAddress(headers: Headers, input: unknown): Promise<SavedAddressDTO> {
-      const principal = await authorize(headers), command = parse(addressInput, input);
-      const fields = [command.label, command.recipientName, command.phone, command.countryCode, command.city, command.line1, command.line2 ?? null, command.region ?? null, command.postalCode ?? null];
+      const principal = await authorize(headers);
+      // Clear Kazakhstan-specific reasons first (country, region, pin), then the strict schema.
+      const kz = input && typeof input === "object" && !Array.isArray(input) ? checkKzAddress(input as Record<string, unknown>) : { ok: false as const, message: "Invalid or unknown fields" };
+      if (!kz.ok) return invalid(kz.message);
+      const command = parse(addressInput, input);
+      const fields = [command.label, command.recipientName, command.phone, "KZ", command.city, command.line1, command.line2 ?? null, kz.value.region, command.postalCode ?? null, kz.value.lat, kz.value.lng, kz.value.geoPrecision];
       return transaction(async client => {
         await lockOwner(client, principal.userId);
         if (command.id === undefined) {
@@ -185,14 +202,14 @@ export function createAccountService({ database, authorize, authorizeFresh, secr
           if (count >= MAX_SAVED_ADDRESSES) throw new AuthFailure("ADDRESS_LIMIT_REACHED", 409, `At most ${MAX_SAVED_ADDRESSES} addresses can be saved`);
           const primary = command.isPrimary || count === 0;
           if (primary) await client.query("UPDATE customer_addresses SET is_primary=false,version=version+1,updated_at=now() WHERE user_id=$1 AND is_primary", [principal.userId]);
-          const created = await client.query<AddressRow>(`INSERT INTO customer_addresses(id,user_id,label,recipient_name,phone,country_code,city,line1,line2,region,postal_code,is_primary) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING ${ADDRESS_COLUMNS}`, [randomUUID(), principal.userId, ...fields, primary]);
+          const created = await client.query<AddressRow>(`INSERT INTO customer_addresses(id,user_id,label,recipient_name,phone,country_code,city,line1,line2,region,postal_code,latitude,longitude,geo_precision,is_primary) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING ${ADDRESS_COLUMNS}`, [randomUUID(), principal.userId, ...fields, primary]);
           return addressDTO(created.rows[0]);
         }
         const current = (await client.query<{ version: number; is_primary: boolean }>("SELECT version,is_primary FROM customer_addresses WHERE id=$1 AND user_id=$2 FOR UPDATE", [command.id, principal.userId])).rows[0] ?? notFound();
         if (current.version !== command.expectedVersion) conflict();
         const primary = current.is_primary || command.isPrimary;
         if (primary && !current.is_primary) await client.query("UPDATE customer_addresses SET is_primary=false,version=version+1,updated_at=now() WHERE user_id=$1 AND is_primary", [principal.userId]);
-        const updated = await client.query<AddressRow>(`UPDATE customer_addresses SET label=$3,recipient_name=$4,phone=$5,country_code=$6,city=$7,line1=$8,line2=$9,region=$10,postal_code=$11,is_primary=$12,version=version+1,updated_at=now() WHERE id=$1 AND user_id=$2 RETURNING ${ADDRESS_COLUMNS}`, [command.id, principal.userId, ...fields, primary]);
+        const updated = await client.query<AddressRow>(`UPDATE customer_addresses SET label=$3,recipient_name=$4,phone=$5,country_code=$6,city=$7,line1=$8,line2=$9,region=$10,postal_code=$11,latitude=$12,longitude=$13,geo_precision=$14,is_primary=$15,version=version+1,updated_at=now() WHERE id=$1 AND user_id=$2 RETURNING ${ADDRESS_COLUMNS}`, [command.id, principal.userId, ...fields, primary]);
         return addressDTO(updated.rows[0]);
       });
     },

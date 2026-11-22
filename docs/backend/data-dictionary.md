@@ -42,6 +42,14 @@ Task 02, 2026-11-10. This locks cross-module representations; application SQL ta
 
 ## Deliberately not fixed yet
 
+Migration `0013_taxonomy-compatibility-geo.sql` makes these additions:
+- `categories`: `kind` (`catalog`/`accessory`/`group`), unique nullable `slug`, object `preset_filters`, `nav_visible` and `description`
+- `product_compatibility`: one accessory-fits-device row, scoped to all device variants, one option value or one variant; composite-FK ownership; RESTRICT deletes
+- `customer_addresses`: `latitude`/`longitude` as `numeric(9,6)` (wire: decimal string) and `geo_precision`
+- `products.in_the_box`: items may be strings or `{label, image?}` objects
+
+See [catalog-media-schema.md](catalog-media-schema.md) and [identity-customer-schema.md](identity-customer-schema.md).
+
 Task 05A adds [auth-foundation.md](auth-foundation.md), `schema/auth-runtime.ts` and migration `0005_auth-runtime.sql`: HMAC-SHA256 phone challenges with atomic attempts/consumption; session-bound staff TOTP/backup-code admission; and HMAC-keyed shared request budgets isolated from the auth library's cleanup. Signed cookies carry session/completion capabilities; raw codes, passwords and tokens are excluded from public DTOs and logs. Completion creates a new canonical profile after phone proof and required full-profile details; entered contacts never claim old profiles/orders. Task 05B replaces legacy CMS login/guards and integrates staff MFA UI without another migration; see [auth-integration.md](auth-integration.md). Customer data stays closed until Task 10; real OTP/recovery integration remains unconfigured and authentication defaults disabled.
 
 Task 04C adds [content-operations-schema.md](content-operations-schema.md), [schema-source-dispositions.json](schema-source-dispositions.json) and migration `0004_content-operations.sql`: 29 tables covering versioned content, settings/manual FX/shipping/tax, audit/outbox/jobs/inbox/idempotency/private exports/deferred notifications, restricted import evidence and authenticated wishlists. Raw receipt bodies use bytea, rates use numeric(20,8), money uses bigint/string, and internal epochs/leases are not public DTO fields. All original field values remain pending validated import; translation strategy and service/provider activation are unchanged.

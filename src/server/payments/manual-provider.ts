@@ -8,7 +8,7 @@ const PROVENANCE: PaymentProvenance = Object.freeze({ provider: "manual", enviro
 
 export function createManualProvider(): PaymentProvider {
   return {
-    name: "manual", environment: "live", merchantAccount: "manual", simulated: false,
+    name: "manual", environment: "live", merchantAccount: "manual", simulated: false, webhooks: false,
     async startSession(request) { return { sessionId: `manual-session:${request.attemptId}`, redirectUrl: null, provenance: { ...PROVENANCE } }; },
     verifySignature() { return false; },
     parseEvent() { return null; },

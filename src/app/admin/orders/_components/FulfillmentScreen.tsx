@@ -6,6 +6,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { AdminOrderDetailDTO, AdminOrderSummaryDTO, ShipmentDTO } from "@/contracts/commerce";
 import { DemoBadge } from "@/components/DemoBadge";
+import { Button } from "@/components/admin/ui";
+import { deliveryAddressLines } from "@/lib/account-client";
 
 // Task 16A: PostgreSQL-mode staff fulfillment. Every action sends the version it was based on and
 // an idempotency key; the server decides eligibility (paid, not an exception, not legacy) and
@@ -15,7 +17,9 @@ import { DemoBadge } from "@/components/DemoBadge";
 
 const STATUSES = ["", "unfulfilled", "processing", "partially_shipped", "shipped", "delivered", "exception"] as const;
 // Task 3.3: "Demo" finds demo-checkout orders (no money was charged) so stray ones can be cancelled.
-const MODES = [["", "All"], ["demo", "Demo"], ["live", "Live"]] as const;
+const MODES = [["", "All"], ["demo", "Demo"], ["sandbox", "Demo purchase (sandbox)"], ["live", "Live"]] as const;
+/** Demo checkout (Task 3.2) and D03a sandbox demo purchases are both demo money: they carry the DEMO badge. */
+const isDemoMode = (mode: string) => mode === "demo" || mode === "sandbox";
 const REASONS: Record<string, string> = {
   LEGACY_ORDER: "Legacy summary order: item operations are not available.",
   ORDER_NOT_PAID: "Not paid: only captured orders can ship.",
@@ -35,6 +39,16 @@ function minorKzt(value: string): string | null {
   if (!match) return null;
   const minor = BigInt(match[1]) * BigInt(100) + BigInt((match[2] ?? "").padEnd(2, "0") || "0");
   return minor > BigInt(0) ? minor.toString() : null;
+}
+
+/** The order's delivery snapshot as display lines; a region code shows as its name (M8.5). */
+function deliveryLines(address: AdminOrderDetailDTO["deliveryAddress"]): string[] {
+  if (!address) return [];
+  if (address.kind === "legacy_unstructured") return address.legacy_raw ? [address.legacy_raw] : [];
+  return deliveryAddressLines({ kind: "structured", address: {
+    recipientName: address.recipient_name ?? "", phone: address.phone ?? "", countryCode: address.country_code ?? "", city: address.city ?? "", line1: address.line1 ?? "",
+    line2: address.line2, region: address.region, postalCode: address.postal_code,
+  } });
 }
 
 async function readError(response: Response): Promise<string> {
@@ -206,7 +220,7 @@ export default function FulfillmentScreen() {
               {orders.map(order => (
                 <li key={order.id}>
                   <button type="button" onClick={() => selectOrder(order.id)} className={`flex w-full flex-wrap items-center justify-between gap-2 p-3 text-left text-sm hover:bg-muted ${selected === order.id ? "bg-muted shadow-[inset_3.2px_0_0_#000]" : ""}`}>
-                    <span className="flex items-center gap-2"><span className="font-bold tabular-nums">{order.orderNumber}</span>{order.paymentMode === "demo" && <DemoBadge label="DEMO" className="text-[10px]" />}</span>
+                    <span className="flex items-center gap-2"><span className="font-bold tabular-nums">{order.orderNumber}</span>{isDemoMode(order.paymentMode) && <DemoBadge label="DEMO" className="text-[10px]" />}</span>
                     <span>{order.contactName}</span>
                     <span className="text-xs text-muted-foreground">{order.paymentStatus} · {order.fulfillmentStatus}{order.dataQuality !== "complete" ? " · legacy" : ""}</span>
                     <span className="whitespace-nowrap font-bold tabular-nums">{kzt(order.total.amountMinor)}</span>
@@ -225,13 +239,20 @@ export default function FulfillmentScreen() {
                 <span className="rounded-garmin-pill bg-garmin-badge-gray px-3 py-0.5 text-xs capitalize text-black">{detail.status}</span>
                 <span className="rounded-garmin-pill bg-garmin-badge-gray px-3 py-0.5 text-xs capitalize text-black">{detail.paymentStatus}</span>
                 <span className="rounded-garmin-pill bg-garmin-badge-gray px-3 py-0.5 text-xs capitalize text-black">{detail.fulfillmentStatus}</span>
-                {detail.paymentMode === "demo" ? <DemoBadge label="DEMO" className="text-[10px]" /> : <span className="rounded-garmin-pill bg-garmin-badge-gray px-3 py-0.5 text-xs capitalize text-black">{detail.paymentMode}</span>}
+                {isDemoMode(detail.paymentMode) ? <DemoBadge label={detail.paymentMode === "sandbox" ? "DEMO · SANDBOX" : "DEMO"} className="text-[10px]" /> : <span className="rounded-garmin-pill bg-garmin-badge-gray px-3 py-0.5 text-xs capitalize text-black">{detail.paymentMode}</span>}
               </div>
+              {deliveryLines(detail.deliveryAddress).length > 0 && (
+                <div className="text-sm">
+                  <h3 className="text-xs font-bold uppercase text-muted-foreground">Deliver to</h3>
+                  <div className="mt-1 leading-relaxed">{deliveryLines(detail.deliveryAddress).map((line, index) => <p key={index}>{line}</p>)}</div>
+                  {detail.contact.email && <p className="text-muted-foreground">{detail.contact.email}</p>}
+                </div>
+              )}
               {!detail.fulfillable.allowed && detail.fulfillable.reason && <p className="border border-garmin-control bg-muted p-2.5 text-sm text-black">{REASONS[detail.fulfillable.reason]}</p>}
               <div aria-label="Payment" className="border border-garmin-control p-3">
                 <h3 className="font-sans mb-3 border-b border-garmin-rule pb-2.5 text-sm font-medium tracking-[0.64px] text-black">Payment</h3>
                 <p className="text-sm">
-                  {detail.payment.method === "manual" ? "Manual payment" : detail.payment.method === "demo" ? "Demo (no money is taken)" : detail.payment.method ?? "—"}
+                  {detail.payment.method === "manual" ? "Manual payment" : detail.payment.method === "demo" ? "Demo (no money is taken)" : detail.payment.method === "sandbox" ? "Demo purchase (sandbox, no money is taken)" : detail.payment.method ?? "—"}
                   {" · "}{kzt(detail.total.amountMinor)}
                 </p>
                 {detail.payment.confirmation && (
@@ -257,12 +278,12 @@ export default function FulfillmentScreen() {
                     <label className="text-sm font-bold">Note (optional)
                       <input name="paymentNote" maxLength={1000} className="mt-1 w-full h-10 border border-garmin-control bg-white px-3 text-sm text-black focus:border-black focus:outline-none font-normal" value={payNote} onChange={event => setPayNote(event.target.value)} />
                     </label>
-                    <button type="submit" disabled={busy} className="g-btn g-btn--black disabled:opacity-50 sm:col-span-2">Confirm payment</button>
+                    <Button variant="primary" size="md" type="submit" disabled={busy} className="sm:col-span-2">Confirm payment</Button>
                   </form>
                 )}
               </div>
               {!detail.legacy && detail.status !== "cancelled" && detail.status !== "closed" && (
-                <button type="button" disabled={busy} onClick={() => void cancelOrder()} className="g-btn g-btn--secondary g-btn--sm border-garmin-error text-garmin-error">Cancel order</button>
+                <Button variant="outline" size="sm" type="button" disabled={busy} onClick={() => void cancelOrder()} className="border-garmin-error text-garmin-error">Cancel order</Button>
               )}
               <div className="overflow-x-auto"><table className="w-full min-w-[420px] text-sm">
                 <thead><tr className="bg-muted text-left text-xs font-bold uppercase tracking-[-0.2px] text-black [&>th]:px-2 [&>th]:py-2"><th>Item</th><th>Ordered</th><th>Shipped</th><th>Left</th><th>Ship now</th></tr></thead>
@@ -282,7 +303,7 @@ export default function FulfillmentScreen() {
                   <input aria-label="Carrier" placeholder="Carrier (staff only)" className="h-10 border border-garmin-control bg-white px-3 text-sm text-black focus:border-black focus:outline-none" value={carrier} onChange={event => setCarrier(event.target.value)} />
                   <input aria-label="Tracking reference" placeholder="Tracking reference" className="h-10 border border-garmin-control bg-white px-3 text-sm text-black focus:border-black focus:outline-none" value={tracking} onChange={event => setTracking(event.target.value)} />
                   <input aria-label="Internal note" placeholder="Internal note (staff only)" className="h-10 border border-garmin-control bg-white px-3 text-sm text-black focus:border-black focus:outline-none" value={note} onChange={event => setNote(event.target.value)} />
-                  <button type="button" disabled={busy} onClick={() => void createShipment()} className="g-btn g-btn--black disabled:opacity-50 sm:col-span-3">Create shipment</button>
+                  <Button variant="primary" size="md" className="sm:col-span-3" type="button" disabled={busy} onClick={() => void createShipment()}>Create shipment</Button>
                 </div>
               )}
               <div>
@@ -295,9 +316,9 @@ export default function FulfillmentScreen() {
                           <span className="font-bold">{shipment.status}</span>
                           <span className="text-muted-foreground">{shipment.items.map(line => `${line.quantity}× ${detail.items.find(item => item.id === line.orderItemId)?.name ?? "item"}`).join(", ")}</span>
                           <span className="flex gap-1">
-                            {shipment.status === "ready" && <button type="button" disabled={busy || !detail.fulfillable.allowed} onClick={() => void act(shipment, "dispatch")} className="g-btn g-btn--secondary g-btn--sm">Dispatch</button>}
-                            {shipment.status === "ready" && <button type="button" disabled={busy} onClick={() => void act(shipment, "cancel")} className="g-btn g-btn--secondary g-btn--sm">Cancel shipment</button>}
-                            {shipment.status === "dispatched" && <button type="button" disabled={busy} onClick={() => void act(shipment, "deliver")} className="g-btn g-btn--secondary g-btn--sm">Mark delivered</button>}
+                            {shipment.status === "ready" && <Button variant="outline" size="sm" type="button" disabled={busy || !detail.fulfillable.allowed} onClick={() => void act(shipment, "dispatch")}>Dispatch</Button>}
+                            {shipment.status === "ready" && <Button variant="outline" size="sm" type="button" disabled={busy} onClick={() => void act(shipment, "cancel")}>Cancel shipment</Button>}
+                            {shipment.status === "dispatched" && <Button variant="outline" size="sm" type="button" disabled={busy} onClick={() => void act(shipment, "deliver")}>Mark delivered</Button>}
                           </span>
                         </div>
                         <p className="mt-1 text-xs text-muted-foreground">Dispatched {formatDate(shipment.dispatchedAt)} · Delivered {formatDate(shipment.deliveredAt)}{shipment.carrier ? ` · ${shipment.carrier}` : ""}{shipment.trackingReference ? ` · ${shipment.trackingReference}` : ""}</p>

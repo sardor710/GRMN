@@ -10,6 +10,7 @@ import type { Metadata } from "next";
 import { initPageLocale } from "@/i18n/page-locale";
 import { localizedSeo } from "@/i18n/seo";
 import { homepageLocales, localizeHomepage } from "@/i18n/translate-record";
+import { localizeHomepageLinks } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +23,8 @@ export async function generateMetadata({ params }: PageProps<"/[lang]">): Promis
 
 export default async function Home({ params }: PageProps<"/[lang]">) {
   const locale = await initPageLocale(params);
-  const config = localizeHomepage(await readHomepage(), locale);
+  // M4.4: CMS links to garmin.com categories/products open the local page when the store has one.
+  const config = await localizeHomepageLinks(localizeHomepage(await readHomepage(), locale));
 
   return (
     <div className="garmin-home min-h-screen bg-white">

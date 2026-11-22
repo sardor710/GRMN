@@ -1,31 +1,58 @@
 "use client";
 
 import { useState } from "react";
-import {useRouter,usePathname,useSearchParams} from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { Product } from "@/types";
-import { activityFilters, levelFilters, caseSizeFilters } from "@/lib/catalog-constants";
+import { activityFilters, caseSizeFilters, levelFilters, filterLabelKey } from "@/lib/catalog-constants";
+import type { CatalogSortKey } from "@/contracts/catalog-browse";
 import { ProductCard } from "@/components/ProductCard";
 import { CompareBar, type CompareBarSearch } from "@/components/CompareBar";
 import { CATALOGUE_COMPARE_PARAM, CATALOGUE_COMPARE_SEARCH_PARAM } from "@/lib/compare/compare-items";
 import { COMPARE_LIMIT_NOTE_ID, hasProduct, isSelectionFull, toggleProduct } from "@/lib/compare/selection";
 import { useCompareSelection } from "@/lib/compare/use-compare-selection";
 
-type SortKey = "featured" | "price-asc" | "price-desc" | "name" | "name-desc";
+/** A facet of the left rail; `count` is omitted where the source cannot count (legacy JSON storefront). */
+export interface CatalogueFacet {
+  key: string;
+  label: string;
+  options: { value: string; label: string; count?: number; checked: boolean }[];
+}
+
+/** URL parameters owned by the rail; any other parameter (sort, search, compare) is kept when a facet changes. */
+const FACET_KEYS = ["series", "activities", "levels", "caseSizes", "prices", "availability"];
+const RESET_KEYS = ["page", "cursor", "all"];
 
 /**
- * Message keys in the `CatalogueGrid` namespace, in garmin.com's order (SideFilterMenu.spec.md): Featured (our
- * Newest), A to Z, Z to A (task C-d, `name_desc`), then the two price sorts.
+ * Message keys in the `CatalogueGrid` namespace for the server's sort keys, in garmin.com's order
+ * (SideFilterMenu.spec.md): Featured (our Newest), A to Z, Z to A, then the two price sorts.
  */
-const sortLabels: Record<SortKey, string> = {
+const SORT_LABELS: Record<CatalogSortKey, string> = {
   featured: "sort.featured",
-  name: "sort.name",
+  "name-asc": "sort.name",
   "name-desc": "sort.nameDesc",
   "price-asc": "sort.priceAsc",
   "price-desc": "sort.priceDesc",
 };
 
-const collapsedGroups = ["groups.battery", "groups.hardware", "groups.connectivity", "groups.series", "groups.otherDevices"];
+/** Facet titles (`CatalogueGrid.*`); a facet without one shows the server's label. */
+const FACET_TITLES: Record<string, string> = {
+  activities: "activity",
+  levels: "level",
+  caseSizes: "caseSize",
+  series: "groups.series",
+  prices: "facets.price",
+  availability: "facets.availability",
+};
+
+/** Price bucket values (src/lib/catalog-facets.ts PRICE_BUCKETS) and their `CatalogueGrid.prices.*` messages. */
+const PRICE_LABELS: Record<string, string> = {
+  "0-100000": "prices.under100k",
+  "100000-250000": "prices.from100k",
+  "250000-500000": "prices.from250k",
+  "500000-750000": "prices.from500k",
+  "750000-": "prices.over750k",
+};
 
 /** garmin.com filter caret (12x8): points down when collapsed, up when expanded. */
 function Caret({ open }: { open: boolean }) {
@@ -36,42 +63,31 @@ function Caret({ open }: { open: boolean }) {
   );
 }
 
-/** One filter group (SideFilterMenu.spec.md): 53px header row, 14/21 700 title, options on a 38px pitch, 1px #D9D9D9 rule. */
-function FilterAccordion({
-  title,
-  children,
-  defaultOpen = false,
-}: {
-  title: string;
-  children?: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
+/**
+ * One filter group (SideFilterMenu.spec.md): 53px header row, 14/21 700 title, options on a 38px pitch, 1px #D9D9D9
+ * rule. While collapsed only its checked options (`collapsed`) stay visible, as on garmin.com.
+ */
+function FilterAccordion({ id, title, defaultOpen, collapsed, children }: { id: string; title: string; defaultOpen: boolean; collapsed: React.ReactNode[]; children: React.ReactNode[] }) {
   const [open, setOpen] = useState(defaultOpen);
+  const visible = open ? children : collapsed;
   return (
     <div className="border-b border-garmin-control">
       <button
         type="button"
         aria-expanded={open}
+        aria-controls={id}
         onClick={() => setOpen((v) => !v)}
         className="flex w-full cursor-pointer items-center justify-between py-4 text-left text-[14px] font-bold leading-[21px] text-black"
       >
         {title}
         <Caret open={open} />
       </button>
-      {open && children && <div>{children}</div>}
+      {visible.length > 0 && <div id={id} role="group" aria-label={title}>{visible}</div>}
     </div>
   );
 }
 
-function Check({
-  label,
-  checked,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  onChange: () => void;
-}) {
+function Check({ label, count, checked, onChange }: { label: string; count?: number; checked: boolean; onChange: () => void }) {
   return (
     <label className="g-checkbox-label mb-4 min-h-[21.8px] cursor-pointer pt-[0.8px] pr-2 has-[:checked]:font-bold">
       <input
@@ -81,6 +97,7 @@ function Check({
         className="g-checkbox"
       />
       {label}
+      {count !== undefined && <span className="ml-1 font-normal text-garmin-text-muted">({count})</span>}
     </label>
   );
 }
@@ -94,21 +111,68 @@ function CloseMark() {
   );
 }
 
-export function CatalogueGrid({ products, compareSearch = null }: { products: Product[]; compareSearch?: CompareBarSearch | null }) {
+/** Sorts offered when the page passes none, in garmin.com's order. */
+const DEFAULT_SORT_OPTIONS = (Object.keys(SORT_LABELS) as CatalogSortKey[]).map((value) => ({ value, label: value }));
+
+export function CatalogueGrid({
+  products, facets = [], sort = "featured", sortOptions = DEFAULT_SORT_OPTIONS, total, hasPreset = false, compareSearch = null,
+}: {
+  products: Product[];
+  facets?: CatalogueFacet[];
+  sort?: CatalogSortKey;
+  sortOptions?: readonly { value: CatalogSortKey; label: string }[];
+  total?: number;
+  /** The page pre-checks facets from a garmin.com URL preset: an emptied rail must stay explicit. */
+  hasPreset?: boolean;
+  compareSearch?: CompareBarSearch | null;
+}) {
   const t = useTranslations("CatalogueGrid");
   const tk = useTranslations();
-  const router=useRouter(),pathname=usePathname(),params=useSearchParams();
-  const activities=new Set(params.getAll("activities")),levels=new Set(params.getAll("levels")),sizes=new Set(params.getAll("caseSizes"));
-  const sort=(params.get("sort")??"featured") as SortKey;
-  function update(name:string,values:string[]){const next=new URLSearchParams(params.toString());next.delete("cursor");next.delete(name);values.forEach(value=>next.append(name,value));router.push(pathname+"?"+next.toString());}
-  const setActivities=(values:Set<string>)=>update("activities",[...values]);
-  const setLevels=(values:Set<string>)=>update("levels",[...values]);
-  const setSizes=(values:Set<string>)=>update("caseSizes",[...values]);
-  const setSort=(value:SortKey)=>update("sort",[value]);
-  const toggle=(set:Set<string>,value:string,setter:(v:Set<string>)=>void)=>{const next=new Set(set);if(next.has(value))next.delete(value);else next.add(value);setter(next);};
-  const filtered=products;
-  const clearAll=()=>{const next=new URLSearchParams(params.toString());["activities","levels","caseSizes","cursor"].forEach(name=>next.delete(name));router.push(pathname+"?"+next.toString());};
-  const activeCount = activities.size + levels.size + sizes.size;
+  const router = useRouter(), pathname = usePathname(), params = useSearchParams();
+
+  function navigate(next: URLSearchParams) {
+    const text = next.toString();
+    router.push(text ? `${pathname}?${text}` : pathname);
+  }
+  // The rail's checked state comes from the server (it includes presets), so every change rewrites all facets.
+  function toggle(facetKey: string, value: string) {
+    const next = new URLSearchParams(params.toString());
+    for (const key of [...FACET_KEYS, ...RESET_KEYS]) next.delete(key);
+    for (const facet of facets) {
+      const values = new Set(facet.options.filter((o) => o.checked).map((o) => o.value));
+      if (facet.key === facetKey) { if (values.has(value)) values.delete(value); else values.add(value); }
+      for (const v of values) next.append(facet.key, v);
+    }
+    if (hasPreset && !FACET_KEYS.some((key) => next.has(key))) next.set("all", "1");
+    navigate(next);
+  }
+  function clearAll() {
+    const next = new URLSearchParams(params.toString());
+    for (const key of [...FACET_KEYS, ...RESET_KEYS]) next.delete(key);
+    if (hasPreset) next.set("all", "1");
+    navigate(next);
+  }
+  function setSort(value: CatalogSortKey) {
+    const next = new URLSearchParams(params.toString());
+    next.delete("page"); next.delete("cursor");
+    if (value === "featured") next.delete("sort"); else next.set("sort", value);
+    navigate(next);
+  }
+  const activeCount = facets.reduce((sum, facet) => sum + facet.options.filter((o) => o.checked).length, 0);
+  const facetTitle = (facet: CatalogueFacet) => (FACET_TITLES[facet.key] ? t(FACET_TITLES[facet.key]) : facet.label);
+  // Option values are English data (src/lib/catalog-facets.ts); known ones are shown in the page language.
+  const optionLabel = (facet: CatalogueFacet, option: CatalogueFacet["options"][number]) => {
+    const byLabel = (list: typeof activityFilters) => filterLabelKey(list, option.label) ?? filterLabelKey(list, option.value)
+      ?? list.find((f) => f.value.toLowerCase() === option.value.toLowerCase())?.labelKey;
+    const key =
+      facet.key === "activities" ? byLabel(activityFilters)
+      : facet.key === "levels" ? byLabel(levelFilters)
+      : facet.key === "caseSizes" ? (option.value === "Youth" ? filterLabelKey(levelFilters, "Youth") : byLabel(caseSizeFilters))
+      : facet.key === "prices" && PRICE_LABELS[option.value] ? `CatalogueGrid.${PRICE_LABELS[option.value]}`
+      : facet.key === "availability" ? "CatalogueGrid.facets.inStock"
+      : undefined;
+    return key ? tk(key) : option.label;
+  };
   // Task C-c: Garmin's compare mode lives in the URL (`compare=1`); the chosen products live in localStorage.
   const compareMode = params.get(CATALOGUE_COMPARE_PARAM) === "1";
   const { items: compareItems, update: updateCompare } = useCompareSelection();
@@ -138,9 +202,9 @@ export function CatalogueGrid({ products, compareSearch = null }: { products: Pr
   );
   // Below 1024px garmin.com folds the filters and the sort into one "Filter and Sort" bar.
   const [mobileOpen, setMobileOpen] = useState(false);
-  const sortOptions = (Object.keys(sortLabels) as SortKey[]).map((k) => (
-    <option key={k} value={k}>
-      {t(sortLabels[k])}
+  const sortSelectOptions = sortOptions.map((o) => (
+    <option key={o.value} value={o.value}>
+      {SORT_LABELS[o.value] ? t(SORT_LABELS[o.value]) : o.label}
     </option>
   ));
 
@@ -152,6 +216,7 @@ export function CatalogueGrid({ products, compareSearch = null }: { products: Pr
           under the 87px compare bar while that is shown (garmin.com moves it down the same way). */}
       <aside
         data-filter-rail
+        aria-label={t("filters")}
         className={`flex w-full shrink-0 flex-col border-b border-garmin-control text-[14px] leading-[21px] text-black lg:sticky lg:w-[315px] lg:border-r lg:border-b-0 ${barShown ? "lg:top-[87px] lg:h-[calc(100vh-87px)]" : "lg:top-0 lg:h-screen"}`}
       >
         <div className="hidden border-b border-garmin-control lg:block">
@@ -180,10 +245,10 @@ export function CatalogueGrid({ products, compareSearch = null }: { products: Pr
             <select
               id="sort-mobile"
               value={sort}
-              onChange={(e) => setSort(e.target.value as SortKey)}
+              onChange={(e) => setSort(e.target.value as CatalogSortKey)}
               className="g-select"
             >
-              {sortOptions}
+              {sortSelectOptions}
             </select>
           </div>
           {activeCount > 0 && (
@@ -195,65 +260,46 @@ export function CatalogueGrid({ products, compareSearch = null }: { products: Pr
               {t("clearAll", { count: activeCount })}
             </button>
           )}
-          <FilterAccordion title={t("activity")} defaultOpen>
-            {activityFilters.map((a) => (
-              <Check
-                key={a.value}
-                label={tk(a.labelKey)}
-                checked={activities.has(a.value)}
-                onChange={() => toggle(activities, a.value, setActivities)}
-              />
-            ))}
-          </FilterAccordion>
-          <FilterAccordion title={t("level")}>
-            {levelFilters.map((l) => (
-              <Check
-                key={l.value}
-                label={tk(l.labelKey)}
-                checked={levels.has(l.value)}
-                onChange={() => toggle(levels, l.value, setLevels)}
-              />
-            ))}
-          </FilterAccordion>
-          <FilterAccordion title={t("caseSize")}>
-            {caseSizeFilters.map((c) => (
-              <Check
-                key={c.value}
-                label={tk(c.labelKey)}
-                checked={sizes.has(c.value)}
-                onChange={() => toggle(sizes, c.value, setSizes)}
-              />
-            ))}
-          </FilterAccordion>
-          {collapsedGroups.map((g) => (
-            <FilterAccordion key={g} title={t(g)} />
-          ))}
+          {facets.map((facet, index) => {
+            const checks = facet.options.map((option) => (
+              <Check key={option.value} label={optionLabel(facet, option)} count={option.count} checked={option.checked} onChange={() => toggle(facet.key, option.value)} />
+            ));
+            return (
+              <FilterAccordion key={facet.key} id={`facet-${facet.key}`} title={facetTitle(facet)} defaultOpen={index < 2 || facet.options.some((o) => o.checked)}
+                collapsed={checks.filter((_, i) => facet.options[i].checked)}>
+                {checks}
+              </FilterAccordion>
+            );
+          })}
         </div>
       </aside>
       <div className="mx-4 mt-4 lg:hidden">{compareToggle}</div>
 
       {/* Grid */}
       <div className="min-w-0 flex-1">
-        <div className="hidden h-[58px] items-center justify-end px-4 lg:flex">
-          <label htmlFor="sort" className="mr-[14.4px] text-[14.4px] font-bold leading-[21.6px] text-black">
-            {t("sortBy")}
-          </label>
-          <select
-            id="sort"
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortKey)}
-            className="g-select my-[4.8px] w-[270px] leading-[18.4px]"
-          >
-            {sortOptions}
-          </select>
+        <div className="flex min-h-[58px] flex-wrap items-center justify-between gap-3 px-4">
+          <p className="text-[14px] leading-[21px] text-black" aria-live="polite">{total !== undefined ? t("results", { count: total }) : ""}</p>
+          <div className="hidden items-center lg:flex">
+            <label htmlFor="sort" className="mr-[14.4px] text-[14.4px] font-bold leading-[21.6px] text-black">
+              {t("sortBy")}
+            </label>
+            <select
+              id="sort"
+              value={sort}
+              onChange={(e) => setSort(e.target.value as CatalogSortKey)}
+              className="g-select my-[4.8px] w-[270px] leading-[18.4px]"
+            >
+              {sortSelectOptions}
+            </select>
+          </div>
         </div>
 
-        {filtered.length === 0 ? (
+        {products.length === 0 ? (
           <p className="py-16 text-center text-[16px] leading-[24px] text-black">{t("empty")}</p>
         ) : (
           /* ProductCard.spec.md grid: 1 column <480, 2 at calc(50% - .5rem), 3 at calc(33.33% - 1.35em) from 1200; 16px gutters */
           <div className="flex flex-wrap justify-between gap-y-4 px-4 pt-4 min-[1200px]:justify-start min-[1200px]:gap-y-0 min-[1200px]:px-0 min-[1200px]:pt-0">
-            {filtered.map((p) => (
+            {products.map((p) => (
               <div key={p.id} className="w-full min-[480px]:w-[calc(50%-.5rem)] min-[1200px]:mt-4 min-[1200px]:ml-4 min-[1200px]:w-[calc(33.3333%-1.35em)]">
                 <ProductCard
                   product={p}

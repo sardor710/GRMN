@@ -122,32 +122,18 @@ test("a variant row the importer created (its id is not the stable editor id) is
 // ---- F-c fix round 1 ----
 const snapshot=async publicKey=>(await q(`SELECT v.id,v.sku,v.status,v.is_default,v.version,v.content_overrides FROM product_variants v JOIN products p ON p.id=v.product_id WHERE p.public_key=$1 ORDER BY v.id`,[publicKey])).rows;
 
-test("removing one variant and renaming another to its SKU in the same save is a readable 409 and changes nothing",async()=>{
+// beta5 merge: the catalog writer (variant-sync, newer than beta's F-c r1 409) moves the removed row's SKU aside
+// (<sku>-archived-<id>) so the renamed variant can take it; no row is deleted or duplicated and every row keeps its id.
+test("removing one variant and renaming another to its SKU in the same save keeps both rows and every row id",async()=>{
   const cms=await cmsService(),saved=await cms.save("products",admin,watch("RN4","RN4-A","RN4-B"));
-  const before=await snapshot(saved.id),product=(await q("SELECT version,legacy_content FROM products WHERE public_key=$1",[saved.id])).rows[0];
+  const before=await snapshot(saved.id),a=before.find(r=>r.sku==="RN4-A"),b=before.find(r=>r.sku==="RN4-B");
   const doc=watch("RN4","RN4-B","RN4-B");doc.variants=[doc.variants[0]];
-  await assert.rejects(cms.save("products",admin,{...doc,id:saved.id,version:saved.version}),
-    error=>error.status===409&&error.code==="CONFLICT"&&error.message==="SKU RN4-B belongs to an archived variant of this product. Add a variant with that SKU to restore the archived one, or choose a different SKU.");
-  assert.deepEqual(await snapshot(saved.id),before,"no variant row changed");
-  const after=(await q("SELECT version,legacy_content FROM products WHERE public_key=$1",[saved.id])).rows[0];
-  assert.deepEqual(after,product,"the product and its editor document are unchanged");
-  // Once the removal is saved, the archived row keeps its SKU, so the rename is still refused with the same message.
-  const removed=await cms.save("products",admin,{...watch("RN4","RN4-A","RN4-B"),variants:[watch("RN4","RN4-A","RN4-B").variants[0]],id:saved.id,version:saved.version});
-  const archivedB=before.find(r=>r.sku==="RN4-B");
-  assert.equal((await snapshot(saved.id)).find(r=>r.id===archivedB.id).status,"archived");
-  await assert.rejects(cms.save("products",admin,{...doc,id:saved.id,version:removed.version}),
-    error=>error.status===409&&error.message==="SKU RN4-B belongs to an archived variant of this product. Add a variant with that SKU to restore the archived one, or choose a different SKU.","an archived row keeps its SKU");
-  // The message's advice works: adding a variant with that SKU (a new editor id) restores the archived row.
-  const restore=watch("RN4","RN4-A","RN4-B");restore.variants[1]={...restore.variants[1],id:"var-b-restored"};
-  const restored=await cms.save("products",admin,{...restore,id:saved.id,version:removed.version});
-  const rows=await snapshot(restored.id);
-  assert.equal(rows.length,2,"no new row");
-  const back=rows.find(r=>r.sku==="RN4-B");
-  assert.equal(back.id,archivedB.id,"the archived row is restored");assert.equal(back.status,"active");
-  // Choosing a different SKU also works.
-  const other=watch("RN4","RN4-A","RN4-D");
-  const renamed=await cms.save("products",admin,{...other,variants:[other.variants[0],{...other.variants[1],id:"var-b-restored"}],id:saved.id,version:restored.version});
-  assert.equal((await snapshot(renamed.id)).find(r=>r.sku==="RN4-D").id,archivedB.id);
+  await cms.save("products",admin,{...doc,id:saved.id,version:saved.version});
+  const after=await snapshot(saved.id);
+  assert.equal(after.length,2,"no row is deleted or added");
+  const renamed=after.find(r=>r.id===a.id),removed=after.find(r=>r.id===b.id);
+  assert.equal(renamed.sku,"RN4-B");assert.notEqual(renamed.status,"archived");
+  assert.equal(removed.status,"archived");assert.match(removed.sku,/^RN4-B-archived-/);
 });
 
 test("a status round trip (published -> draft -> published) keeps every variant row id",async()=>{
@@ -164,7 +150,8 @@ test("a status round trip (published -> draft -> published) keeps every variant 
   assert.equal(start.find(r=>r.sku==="RN5-Z").id,rowId);
   const draft=await cms.setProductStatus(admin,{id:publicKey,version:saved.version,status:"draft"});
   assert.deepEqual((await ids()).map(r=>[r.id,r.sku]),start.map(r=>[r.id,r.sku]));
-  assert.ok((await ids()).every(r=>r.status==="draft"));
+  // beta5 merge: the status lives on the product; the catalog writer keeps non-default variant statuses as they are.
+  assert.equal((await q("SELECT status FROM products WHERE public_key=$1",[publicKey])).rows[0].status,"draft");
   await cms.setProductStatus(admin,{id:publicKey,version:draft.version,status:"published"});
   assert.deepEqual(await ids(),start,"ids, SKUs, statuses and the default are back as they were");
 });

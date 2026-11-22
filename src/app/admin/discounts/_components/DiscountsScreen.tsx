@@ -19,6 +19,7 @@ import type {
 import {useAdminCollection} from "@/hooks/useAdminCollection";
 import {AdminPageControls} from "@/components/admin/AdminPageControls";
 import { AdminModal } from "@/components/admin/AdminModal";
+import { Button, Select } from "@/components/admin/ui";
 
 const AVAILABLE_CATEGORIES = [
   "Smartwatches & Wearables",
@@ -222,13 +223,12 @@ export default function AdminDiscountsPage() {
           </p>
         </div>
 
-        <button
+        <Button variant="primary" size="md"
           type="button"
           onClick={handleOpenAdd}
-          className="g-btn g-btn--black gap-2"
         >
           <span>Create Promotion</span>
-        </button>
+        </Button>
       </div>
 
       {/* Discounts Table */}
@@ -433,14 +433,13 @@ export default function AdminDiscountsPage() {
               <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Discount Rule
               </label>
-              <select
+              <Select
                 value={formData.type}
                 onChange={(e) => setFormData({ ...formData, type: e.target.value as DiscountType })}
-                className="h-10 w-full border border-border bg-white px-3 text-sm font-semibold text-black focus:border-black focus:outline-none rounded-none"
               >
                 <option value="percentage">Percentage Discount (% Off)</option>
                 <option value="fixed">Fixed amount off</option>
-              </select>
+              </Select>
             </div>
           </div>
 
@@ -650,15 +649,14 @@ export default function AdminDiscountsPage() {
               <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Status
               </label>
-              <select
+              <Select
                 value={formData.status}
                 onChange={(e) => setFormData({ ...formData, status: e.target.value as DiscountStatus })}
-                className="h-10 w-full border border-border bg-white px-3 text-sm font-semibold text-black focus:border-black focus:outline-none rounded-none"
               >
                 <option value="active">Active</option>
                 <option value="disabled">Disabled</option>
                 <option value="expired">Expired</option>
-              </select>
+              </Select>
             </div>
             <div className="flex items-center pt-5">
               <label className="flex items-center gap-2 cursor-pointer text-xs text-neutral-700">
@@ -674,20 +672,18 @@ export default function AdminDiscountsPage() {
           </div>
 
           {/* Submit Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-border">
-            <button
+          <div className="flex justify-end gap-3 pt-4 border-t border-neutral-200">
+            <Button variant="outline" size="md"
               type="button"
               onClick={() => setIsModalOpen(false)}
-              className="g-btn g-btn--secondary"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button variant="primary" size="md"
               type="submit"
-              className="g-btn g-btn--black"
             >
               {editingDiscount ? "Save Promotion" : "Deploy Promotion"}
-            </button>
+            </Button>
           </div>
         </form>
       </AdminModal>

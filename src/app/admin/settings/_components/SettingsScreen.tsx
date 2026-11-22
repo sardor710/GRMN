@@ -11,6 +11,7 @@ import { TranslationField } from "@/components/admin/TranslationField";
 import { translationStatus } from "@/lib/cms/translation-input";
 import { getOverlayString, setOverlayValue } from "@/lib/cms/translation-edit";
 import { SETTINGS_SPEC } from "@/i18n/translate-record";
+import { Button, Select } from "@/components/admin/ui";
 
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<StoreSettings | null>(null);
@@ -83,11 +84,10 @@ export default function AdminSettingsPage() {
           </p>
         </div>
 
-        <button
+        <Button variant="primary" size="md"
           type="button"
           onClick={handleSubmit}
           disabled={saving}
-          className="g-btn g-btn--black gap-2 disabled:opacity-50"
         >
           {saving ? (
             <span>Saving...</span>
@@ -101,7 +101,7 @@ export default function AdminSettingsPage() {
               <span>Save Settings</span>
             </>
           )}
-        </button>
+        </Button>
       </div>
 
       {savedSuccess && (
@@ -182,7 +182,7 @@ export default function AdminSettingsPage() {
               <label className="block text-xs font-semibold text-neutral-700 mb-1">
                 Currency Code
               </label>
-              <select
+              <Select
                 value={settings.currency}
                 onChange={(e) => {
                   const curr = e.target.value;
@@ -190,14 +190,13 @@ export default function AdminSettingsPage() {
                   const sym = curr === "KZT" ? "₸" : curr;
                   setSettings({ ...settings, currency: curr, currencySymbol: sym });
                 }}
-                className="h-10 w-full border border-border bg-white px-3 text-sm font-semibold text-black focus:border-black focus:outline-none rounded-none"
               >
                 <option value="KZT">KZT (Kazakhstani tenge)</option>
                 <option value="SGD">SGD (Singapore Dollar)</option>
                 <option value="USD">USD (US Dollar)</option>
                 <option value="EUR">EUR (Euro)</option>
                 <option value="GBP">GBP (British Pound)</option>
-              </select>
+              </Select>
             </div>
 
             <div>

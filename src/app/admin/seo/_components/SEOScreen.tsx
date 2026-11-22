@@ -31,6 +31,7 @@ import { getOverlayString, setOverlayValue } from "@/lib/cms/translation-edit";
 
 /** The quick editor translates only the SEO pair; the RU/KK dot counts those two fields. */
 const SEO_FIELDS = ["seoTitle", "seoDescription"] as const;
+import { Button } from "@/components/admin/ui";
 
 export default function AdminSEOPage({permissions}: {permissions: readonly string[]}) {
   const productPage=useAdminCollection<CMSProduct>("products");
@@ -142,11 +143,10 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
           </p>
         </div>
 
-        <button
+        <Button variant="primary" size="md"
           type="button"
           onClick={handleBulkOptimize}
           disabled={bulkOptimizing || (!canEditSeo("product",permissions) && !canEditSeo("blog",permissions))}
-          className="g-btn g-btn--black gap-2 disabled:opacity-50"
         >
           {bulkOptimizing ? (
             <RefreshCw className="h-4 w-4 animate-spin" />
@@ -154,7 +154,7 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
             <Sparkles className="h-4 w-4" />
           )}
           <span>Optimize These Results</span>
-        </button>
+        </Button>
       </div>
 
       {/* Toast Notification */}
@@ -446,7 +446,7 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
 
                         {/* Actions */}
                         <td className="py-3.5 px-4 text-right">
-                          <button
+                          <Button variant="outline" size="sm"
                             type="button"
                             disabled={!canEditSeo(page.type==="product"?"product":"blog",permissions)}
                             onClick={() => {
@@ -459,10 +459,9 @@ export default function AdminSEOPage({permissions}: {permissions: readonly strin
                                 if (blog) openSeoEditor({ type: "blog", data: blog });
                               }
                             }}
-                            className="g-btn g-btn--secondary g-btn--sm"
                           >
                             <span>Edit SEO</span>
-                          </button>
+                          </Button>
                         </td>
                       </tr>
                     );
@@ -723,15 +722,14 @@ Sitemap: https://www.garmin.com/sitemap.xml`}
               </p>
             )}
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-              <button
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-neutral-200">
+              <Button variant="outline" size="md"
                 type="button"
                 onClick={() => setEditingItem(null)}
-                className="g-btn g-btn--secondary"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="primary" size="md"
                 type="button"
                 onClick={() =>
                   handleSaveEditedSEO({
@@ -743,10 +741,9 @@ Sitemap: https://www.garmin.com/sitemap.xml`}
                     ogImage: editingItem.data.ogImage,
                   })
                 }
-                className="g-btn g-btn--black"
               >
                 Save SEO Metadata
-              </button>
+              </Button>
             </div>
           </div>
         </AdminModal>

@@ -8,6 +8,7 @@ import * as commerceVariantModel from "../../src/lib/cms/commerce-variant-model.
 import * as productVariants from "../../src/lib/cms/product-variants.js";
 import * as variantSelection from "../../src/lib/catalog/variant-selection.ts";
 import * as compareItems from "../../src/lib/compare/compare-items.ts";
+import * as catalogConstants from "../../src/lib/catalog-constants.ts";
 
 test("client bundles contain no static catalog or article records",()=>{
  for(const file of ["CatalogueGrid","WearablesHero","CompareTool","BlogExplorer"])assert.doesNotMatch(readFileSync(`src/components/${file}.tsx`,"utf8"),/from ["']@\/lib\/(?:public-products|blog)["']/);
@@ -16,10 +17,23 @@ test("client bundles contain no static catalog or article records",()=>{
 test("legacy cursor length and decoded identity are bounded",()=>{
  for(const cursor of ["x".repeat(2049),Buffer.from(JSON.stringify({scope:JSON.stringify(["products","",null,null,null]),last:"x".repeat(501)})).toString("base64url"),""]){assert.throws(()=>legacyAdminPage("products",[],new URLSearchParams({cursor})),e=>e.status===400);}
 });
+// M4.3: the rail renders server-computed facets (with counts) instead of static lists; a change rewrites every
+// facet from the server's checked state (presets included) and resets paging.
 test("server-paged catalog preserves products and sends filter changes to the URL before slicing",()=>{
- const calls=[],params=new URLSearchParams(),fixture=componentFixture("src/components/CatalogueGrid.tsx",{modules:{"@/lib/public-products":{activityFilters:["Running"],levelFilters:[],caseSizeFilters:[]},"@/lib/catalog-constants":{activityFilters:[{value:"Running",labelKey:"CatalogueGrid.activities.running"}],levelFilters:[],caseSizeFilters:[]},"next/navigation":{useRouter:()=>({push:url=>calls.push(url)}),useSearchParams:()=>params,usePathname:()=>"/c/wearables-smartwatches"}}});
- const tree=fixture.render({products:[{id:"one",name:"One",activities:[],level:"Unknown",caseSize:"Unknown",price:"1.00"}]});
- const check=nodes(tree).find(n=>n.props?.label==="Running");assert.ok(check);check.props.onChange();assert.match(calls[0]??"",/activities=Running/);assert.ok(!calls[0].includes("cursor="));
+ const calls=[],params=new URLSearchParams("sort=price-asc&page=3&cursor=x"),fixture=componentFixture("src/components/CatalogueGrid.tsx",{modules:{"@/lib/catalog-constants":catalogConstants,"next/navigation":{useRouter:()=>({push:url=>calls.push(url)}),useSearchParams:()=>params,usePathname:()=>"/c/wearables-smartwatches"}}});
+ const facets=[{key:"activities",label:"Activity",options:[{value:"running",label:"Running",count:4,checked:false},{value:"hiking",label:"Hiking",count:2,checked:true}]},{key:"caseSizes",label:"Case Size",options:[{value:"Large",label:"Large (≥ 50 mm)",count:1,checked:true}]}];
+ const props={products:[{id:"one",name:"One",activities:[],level:"Unknown",caseSize:"Unknown",price:"1.00"}],facets,sort:"price-asc",sortOptions:[{value:"featured",label:"Featured Products"},{value:"price-asc",label:"Price: Low to High"}],total:1};
+ const tree=fixture.render(props);
+ const check=nodes(tree).find(n=>n.props?.label==="Running");assert.ok(check);assert.equal(check.props.count,4);check.props.onChange();
+ const url=new URL("http://x"+calls[0]);assert.deepEqual(url.searchParams.getAll("activities").sort(),["hiking","running"]);assert.deepEqual(url.searchParams.getAll("caseSizes"),["Large"]);
+ assert.equal(url.searchParams.get("sort"),"price-asc");assert.ok(!url.searchParams.has("cursor")&&!url.searchParams.has("page"));
+ // "Clear all filters (n)" counts the checked options and drops every facet (sort kept, paging reset).
+ const clear=nodes(tree).find(n=>n.type==="button"&&/Clear all filters \(2\)/.test(nodeText(n)));assert.ok(clear);clear.props.onClick();
+ const cleared=new URL("http://x"+calls.at(-1));assert.ok(!cleared.searchParams.has("activities")&&!cleared.searchParams.has("caseSizes")&&!cleared.searchParams.has("page"));assert.equal(cleared.searchParams.get("sort"),"price-asc");
+ // Unchecking the last facet of a preset page keeps the selection explicit.
+ const preset=componentFixture("src/components/CatalogueGrid.tsx",{modules:{"@/lib/catalog-constants":catalogConstants,"next/navigation":{useRouter:()=>({push:url=>calls.push(url)}),useSearchParams:()=>new URLSearchParams(),usePathname:()=>"/c/women-wearables"}}});
+ const t2=preset.render({...props,hasPreset:true,facets:[{key:"caseSizes",label:"Case Size",options:[{value:"Small",label:"Small (35 to 43 mm)",count:3,checked:true}]}]});
+ nodes(t2).find(n=>n.props?.label==="Small (35 to 43 mm)").props.onChange();assert.equal(calls.at(-1),"/c/women-wearables?all=1");
 });
 test("compare starts from server-selected published data instead of fixed static IDs",()=>{
  const fixture=componentFixture("src/components/CompareTool.tsx",{modules:{"@/lib/public-products":{products:[{id:"1228429",name:"Forbidden seed",price:1,activities:[]}]},"@/lib/compare/compare-items":compareItems,"next/navigation":{useRouter:()=>({push(){},replace(){},refresh(){}}),usePathname:()=>"/compare",useSearchParams:()=>new URLSearchParams()}}});
@@ -52,6 +66,38 @@ test("Task 13A: in server-cart mode an available variant is added by its exact i
  let tree=fixture.render(props);assert.equal(button(tree).props.disabled,true);assert.match(nodeText(button(tree)),/Out of stock/);
  choose(tree,"Large");tree=fixture.render(props);
  assert.equal(button(tree).props.disabled,false);await button(tree).props.onClick();assert.equal(adds[0].variantId,"b");assert.equal(adds[0].id,"fixture");
+});
+
+test("M4.5: the page opens on an in-stock variant unless a ?variant= or ?sku= link names one",async()=>{
+ const {initialVariantId}=await import("../../src/lib/variant-availability.ts");
+ const variants=[{id:"a",sku:"A",options:{},availability:"out_of_stock"},{id:"b",sku:"B",options:{},availability:"available"}];
+ assert.equal(initialVariantId(variants,{defaultId:"a"}),"b","a sold-out default is replaced by the first in-stock variant");
+ assert.equal(initialVariantId(variants,{defaultId:"a",sku:"a"}),"a","a deep link wins, even when sold out");
+ assert.equal(initialVariantId(variants,{defaultId:"a",sku:"zzz"}),"b","an unknown SKU falls back like no link");
+});
+
+test("M2: stored option definitions set the picker's display, order and swatches on PostgreSQL products",()=>{
+ const v=(id,size,color,availability,amount)=>({id,sku:id.toUpperCase(),name:id,options:{"case-size":size,color},availability,price:{selling:{amountMinor:amount}},gallery:[]});
+ const commerce={selectedVariantId:"s51g",optionNames:{"case-size":"Case Size",color:"Color"},options:[{key:"color",name:"Color",display:"swatch",values:[{label:"Black",swatchColor:"#000000",swatchImage:null},{label:"Gray",swatchColor:"#888888",swatchImage:null}]},{key:"case-size",name:"Case Size",display:"dropdown",values:[{label:"43 mm",swatchColor:null,swatchImage:null},{label:"51 mm",swatchColor:null,swatchImage:null}]}],
+  variants:[v("s43","43 mm","Black","out_of_stock","1000"),v("s51b","51 mm","Black","out_of_stock","3000"),v("s51g","51 mm","Gray","available","3100")]};
+ const fixture=componentFixture("src/components/ProductTop.tsx",{modules:{...variantModules("s51g"),"@/lib/cart":{useCart:()=>({mode:"server",add:async()=>{}})},"@/lib/cart-client":{createCartClient:()=>({}),CartRequestError:Error},"@/lib/public-catalog":{minorToMajor:x=>String(BigInt(x)/100n),catalogPriceLabel:p=>p.selling.amountMinor+" KZT"},"@/lib/cms/commerce-variant-model":commerceVariantModel,"@/lib/cms/product-variants":productVariants}});
+ const props={product:{id:"fixture",title:"Model",price:"10.00",priceLabel:"1000 KZT",currency:"KZT",purchasable:true,breadcrumb:[],gallery:[],caseSizes:[],versions:[],colors:[],commerce}};
+ const picker=nodes(fixture.render(props)).find(n=>typeof n.props?.onSelect==="function"&&Array.isArray(n.props.options));assert.ok(picker);
+ assert.deepEqual(picker.props.options.map(o=>[o.name,o.display]),[["Color","swatch"],["Case Size","dropdown"]]);
+ assert.deepEqual(picker.props.options[0].values.map(x=>[x.label,x.swatchColor]),[["Black","#000000"],["Gray","#888888"]]);
+});
+
+test("M4.6: the Accessories tab lists what fits the selected variant, grouped in garmin.com tab order",async()=>{
+ const facets=await import("../../src/lib/catalog-facets.ts");
+ const item=(publicKey,group,variantIds)=>({publicKey,name:publicKey,image:null,price:{selling:{amountMinor:"100",currency:"KZT"},compareAt:null,usdEquivalent:null},availability:"available",sku:null,group,variantIds});
+ const accessories=[item("band26",{slug:"bands",name:"Bands"},["v51"]),item("hrm",{slug:"heart-rate-monitors",name:"Heart Rate Monitors"},null),item("app",{slug:"apps",name:"Apps"},null),item("cable",null,["v43"])];
+ const fixture=componentFixture("src/components/product/ProductAccessories.tsx",{modules:{"@/lib/catalog-facets":facets}});
+ const tabs=tree=>nodes(tree).filter(n=>n.type==="button").map(n=>nodeText(n).trim());
+ assert.deepEqual(tabs(fixture.render({accessories,variantId:"v43"})),["Apps","Heart Rate Monitors","View All"]);
+ const t51=fixture.render({accessories,variantId:"v51"});assert.deepEqual(tabs(t51),["Apps","Bands","Heart Rate Monitors","View All"]);
+ assert.match(nodeText(fixture.render({accessories:[item("band26",{slug:"bands",name:"Bands"},["v51"])],variantId:"v43"})),/No accessories are listed for this model yet/);
+ assert.doesNotMatch(nodeText(t51),/QuickFit® Watch Band Compatibility|No accessories found/);
+ assert.match(nodeText(t51),/KZT\s1\.00/,"cards show the tenge price");
 });
 
 test("normalized structured offers keep exact KZT money and real availability",()=>{

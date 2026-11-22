@@ -38,6 +38,7 @@ import { LocaleTabs, type ContentLocale } from "@/components/admin/LocaleTabs";
 import { HomepageTranslationPanel } from "@/components/admin/HomepageTranslationPanel";
 import { translationStatus } from "@/lib/cms/translation-input";
 import { HOMEPAGE_SPEC } from "@/i18n/translate-record";
+import { Button, Select, buttonClass } from "@/components/admin/ui";
 
 export default function AdminHomepagePage() {
   const [version,setVersion]=useState<number>();
@@ -345,12 +346,11 @@ export default function AdminHomepagePage() {
         {notification?.type==="error"&&<p role="alert">{notification.message}</p>}
         <p className="font-semibold">{version===0?"No homepage has been published.":"Unable to load homepage configuration."}</p>
         {version===0&&<button className="g-btn g-btn--black mt-3" disabled={saving} onClick={handleReset}>Create from default template</button>}
-        <button
+        <Button variant="danger" size="md" className="mt-3"
           onClick={loadConfig}
-          className="g-btn mt-3 border-garmin-badge-red bg-garmin-badge-red text-white hover:border-garmin-error hover:bg-garmin-error"
         >
           Reload configuration
-        </button>
+        </Button>
       </div>
     );
   }
@@ -397,30 +397,25 @@ export default function AdminHomepagePage() {
           <Link
             href="/"
             target="_blank"
-            className="g-btn g-btn--secondary"
+            className={buttonClass({ variant: "outline", size: "md" })}
           >
             <ExternalLink className="h-3.5 w-3.5" />
             View Storefront
           </Link>
 
-          <button
+          <Button variant="outline" size="md"
             onClick={handleReset}
             disabled={saving}
-            className="g-btn g-btn--secondary"
             title="Reset to default template"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             Reset Defaults
-          </button>
+          </Button>
 
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="g-btn g-btn--black"
-          >
+          <Button variant="primary" size="md" onClick={handleSave} disabled={saving}>
             <Save className="h-3.5 w-3.5" />
             {saving ? "Saving Changes..." : "Save All Changes"}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -550,13 +545,12 @@ export default function AdminHomepagePage() {
                 Rotates across the top of the homepage. Use full-width 1920 × 800 px images.
               </p>
             </div>
-            <button
+            <Button variant="primary" size="sm"
               onClick={handleOpenAddBanner}
-              className="g-btn g-btn--black g-btn--sm"
             >
               <Plus className="h-3.5 w-3.5" />
               Add Hero Slide
-            </button>
+            </Button>
           </div>
 
           <div className="grid gap-3">
@@ -658,20 +652,18 @@ export default function AdminHomepagePage() {
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <button
+              <Button variant="outline" size="sm"
                 onClick={() => handleOpenAddCarousel("product")}
-                className="inline-flex items-center gap-1.5 border border-garmin-blue bg-garmin-blue/10 px-3 py-1.5 text-xs font-semibold text-garmin-blue hover:bg-garmin-blue/20"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Add Type 1 (Product Carousel)
-              </button>
-              <button
+              </Button>
+              <Button variant="outline" size="sm"
                 onClick={() => handleOpenAddCarousel("promo")}
-                className="inline-flex items-center gap-1.5 border border-garmin-control bg-muted px-3 py-1.5 text-xs font-semibold text-garmin-blue hover:bg-muted"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Add Type 2 (Promo Carousel)
-              </button>
+              </Button>
             </div>
           </div>
 
@@ -712,13 +704,12 @@ export default function AdminHomepagePage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <button
+                      <Button variant="primary" size="sm"
                         onClick={() => handleOpenAddCarouselItem(cIndex)}
-                        className="g-btn g-btn--black g-btn--sm"
                       >
                         <Plus className="h-3.5 w-3.5" />
                         Add Card
-                      </button>
+                      </Button>
                       <button
                         onClick={() => handleOpenEditCarousel(cIndex)}
                         className="p-1 text-muted-foreground hover:bg-neutral-100 hover:text-black"
@@ -1139,21 +1130,19 @@ export default function AdminHomepagePage() {
               </label>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-border">
-              <button
+            <div className="flex justify-end gap-2 pt-4 border-t border-neutral-200">
+              <Button variant="outline" size="md"
                 type="button"
                 onClick={() => setBannerModalOpen(false)}
-                className="border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="primary" size="md"
                 type="button"
                 onClick={handleSaveBannerModal}
-                className="bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-garmin-blue-hover"
               >
                 Save Slide
-              </button>
+              </Button>
             </div>
           </div>
         </AdminModal>
@@ -1172,7 +1161,7 @@ export default function AdminHomepagePage() {
               <label className="block text-xs font-bold text-neutral-700">
                 Carousel Type
               </label>
-              <select
+              <Select wrapperClassName="mt-1"
                 value={editingCarousel.data.type}
                 onChange={(e) =>
                   setEditingCarousel({
@@ -1180,11 +1169,10 @@ export default function AdminHomepagePage() {
                     data: { ...editingCarousel.data, type: e.target.value as CarouselType },
                   })
                 }
-                className="mt-1 w-full border border-border bg-white px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
               >
                 <option value="product">Type 1: Product Carousel (Product, Price, NEW/SALE Tag)</option>
                 <option value="promo">Type 2: Promo Carousel (Photo, Hyperlink Button, Title)</option>
-              </select>
+              </Select>
               <p className="mt-1 text-xs text-muted-foreground">
                 {editingCarousel.data.type === "product"
                   ? "Required Image Size: 800 × 800 px (1:1 Square)"
@@ -1269,21 +1257,19 @@ export default function AdminHomepagePage() {
               </label>
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-border">
-              <button
+            <div className="flex justify-end gap-2 pt-4 border-t border-neutral-200">
+              <Button variant="outline" size="md"
                 type="button"
                 onClick={() => setCarouselModalOpen(false)}
-                className="border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="primary" size="md"
                 type="button"
                 onClick={handleSaveCarouselModal}
-                className="bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-garmin-blue-hover"
               >
                 Save Section
-              </button>
+              </Button>
             </div>
           </div>
         </AdminModal>
@@ -1395,7 +1381,7 @@ export default function AdminHomepagePage() {
                   <label className="block text-xs font-bold text-neutral-700">
                     Tag / Badge (e.g. NEW, SALE)
                   </label>
-                  <select
+                  <Select wrapperClassName="mt-1"
                     value={editingCarouselItem.data.badge || ""}
                     onChange={(e) =>
                       setEditingCarouselItem({
@@ -1403,13 +1389,12 @@ export default function AdminHomepagePage() {
                         data: { ...editingCarouselItem.data, badge: e.target.value || undefined },
                       })
                     }
-                    className="mt-1 w-full border border-border bg-white px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
                   >
                     <option value="">No Badge</option>
                     <option value="NEW">NEW (Blue badge)</option>
                     <option value="SALE">SALE (Green badge)</option>
                     <option value="EXCLUSIVE">EXCLUSIVE</option>
-                  </select>
+                  </Select>
                 </div>
               </div>
             )}
@@ -1453,21 +1438,19 @@ export default function AdminHomepagePage() {
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-border">
-              <button
+            <div className="flex justify-end gap-2 pt-4 border-t border-neutral-200">
+              <Button variant="outline" size="md"
                 type="button"
                 onClick={() => setCarouselItemModalOpen(false)}
-                className="border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="primary" size="md"
                 type="button"
                 onClick={handleSaveCarouselItemModal}
-                className="bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-garmin-blue-hover"
               >
                 Save Card
-              </button>
+              </Button>
             </div>
           </div>
         </AdminModal>
@@ -1559,21 +1542,19 @@ export default function AdminHomepagePage() {
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-4 border-t border-border">
-              <button
+            <div className="flex justify-end gap-2 pt-4 border-t border-neutral-200">
+              <Button variant="outline" size="md"
                 type="button"
                 onClick={() => setTileModalOpen(false)}
-                className="border border-border px-4 py-2 text-xs font-semibold text-neutral-700 hover:bg-neutral-50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button variant="primary" size="md"
                 type="button"
                 onClick={handleSaveTileModal}
-                className="bg-garmin-blue px-4 py-2 text-xs font-semibold text-white hover:bg-garmin-blue-hover"
               >
                 Save Tile
-              </button>
+              </Button>
             </div>
           </div>
         </AdminModal>

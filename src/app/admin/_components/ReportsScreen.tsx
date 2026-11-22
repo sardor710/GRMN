@@ -18,6 +18,8 @@ import { DailyRevenueChart } from "./DailyRevenueChart";
 // by status, recent orders linking to the order, best-sellers with Real / Demo tabs and low stock,
 // all for the selected range. Demo money is shown on its own and never added to real money. Every
 // section shows its own loading, empty ("no data yet") and error state; an error is never a zero.
+// D03a (beta5 merge): demo purchases through the sandbox provider are demo money too, so the "Demo revenue"
+// tile adds the demo and sandbox lines per currency; neither is ever added to real (live) revenue.
 
 interface Summary { from: string; to: string; timeZone: string; totals: CurrencyTotal[]; days: DayTotal[] }
 interface StatusCounts { orderStatus: Record<string, number>; fulfillmentStatus: Record<string, number>; demo: number; real: number; awaitingShipment: { real: number; demo: number } }
@@ -80,6 +82,21 @@ function MoneyTile({ name, title, lines, value, demo }: { name: string; title: s
     </Tile>
   );
 }
+/** Demo and sandbox (D03a demo purchase) lines summed per currency (BigInt minor units); never mixed with live. */
+function combineLines(...groups: MoneyLine[][]): MoneyLine[] {
+  const byCurrency = new Map<string, MoneyLine>();
+  for (const line of groups.flat()) {
+    const seen = byCurrency.get(line.currency);
+    byCurrency.set(line.currency, seen ? {
+      currency: line.currency,
+      capturedMinor: (BigInt(seen.capturedMinor) + BigInt(line.capturedMinor)).toString(),
+      refundedMinor: (BigInt(seen.refundedMinor) + BigInt(line.refundedMinor)).toString(),
+      netMinor: (BigInt(seen.netMinor) + BigInt(line.netMinor)).toString(),
+      ordersPaid: seen.ordersPaid + line.ordersPaid,
+    } : line);
+  }
+  return [...byCurrency.values()];
+}
 function CountTile({ name, title, counts, pick, quiet }: { name: string; title: string; counts: Loadable<StatusCounts>; pick: (data: StatusCounts) => { real: number; demo: number }; quiet: string }) {
   if (counts.state !== "ready") return <Tile name={name} title={title}>{counts.state === "loading" ? <Loading /> : <Failure message={counts.message} />}</Tile>;
   const { real, demo } = pick(counts.data);
@@ -102,6 +119,7 @@ export function ReportsScreen() {
   const [bestTab, setBestTab] = useState<"real" | "demo">("real");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [includeDemo, setIncludeDemo] = useState(false);
   // Review I8: a lost response keeps the action, so a retry never adjusts stock twice.
   const pending = useMemo(() => createPendingActions(createStockAdjuster()), []);
   const [adjust, setAdjust] = useState<Record<string, string>>({});
@@ -134,13 +152,14 @@ export function ReportsScreen() {
   useEffect(() => { void load(true); return () => gate.abort(); }, [load, gate]);
 
   const split = summary.state === "ready" ? splitTotals(summary.data.totals) : { real: [], demo: [], sandbox: [] };
+  const demoLines = combineLines(split.demo, split.sandbox);
   const chartCurrency = summary.state === "ready" ? currenciesOf(summary.data.totals, summary.data.days)[0] ?? "KZT" : "KZT";
   const points = summary.state === "ready" ? dailyRevenue(summary.data.days, summary.data.from, summary.data.to, chartCurrency) : [];
 
   async function requestExport(kind: "orders" | "catalog") {
     setBusy(kind); setError(null);
     try {
-      await json(await fetch("/api/admin/exports", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(kind === "orders" ? { kind, from, to, timeZone: ZONE } : { kind }) }));
+      await json(await fetch("/api/admin/exports", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(kind === "orders" ? { kind, from, to, timeZone: ZONE, ...(includeDemo ? { includeSandbox: true } : {}) } : { kind }) }));
       await load();
     } catch (reason) { setError((reason as Error).message); } finally { setBusy(null); }
   }
@@ -174,13 +193,10 @@ export function ReportsScreen() {
 
       <section aria-label="Totals" className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MoneyTile name="revenue" title="Revenue" lines={split.real} value={summary} />
-        <MoneyTile name="demo-revenue" title="Demo revenue" lines={split.demo} value={summary} demo />
+        <MoneyTile name="demo-revenue" title="Demo revenue" lines={demoLines} value={summary} demo />
         <CountTile name="orders" title="Orders" counts={counts} pick={data => data} quiet="Placed in this range" />
         <CountTile name="awaiting-shipment" title="Awaiting shipment" counts={counts} pick={data => data.awaitingShipment} quiet="Paid, not yet shipped" />
       </section>
-      {split.sandbox.length > 0 && (
-        <p className="text-sm text-muted-foreground tabular-nums">Sandbox payments (test provider, not counted): {split.sandbox.map(line => formatMinor(line.netMinor, line.currency)).join(" · ")}</p>
-      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Card title={`Daily revenue · ${chartCurrency}`} name="Daily revenue" className="lg:col-span-2">
@@ -263,7 +279,7 @@ export function ReportsScreen() {
                 <thead><tr className="bg-muted text-left text-xs font-bold uppercase tracking-[-0.2px] text-black [&>th]:px-2 [&>th]:py-2"><th className="py-1 font-bold">Date</th><th className="font-bold">Captured</th><th className="font-bold">Refunded</th><th className="font-bold">Net</th></tr></thead>
                 <tbody>{data.days.map(day => (
                   <tr key={day.date + day.environment + day.currency} className="border-t border-garmin-rule [&>td]:px-2">
-                    <td className="py-1"><span className="flex items-center gap-2 tabular-nums">{day.date}{day.environment === "demo" ? <DemoBadge label="DEMO" className="text-[10px]" /> : day.environment === "sandbox" ? <span className="text-xs text-muted-foreground">sandbox</span> : null}</span></td>
+                    <td className="py-1"><span className="flex items-center gap-2 tabular-nums">{day.date}{day.environment !== "live" ? <DemoBadge label="DEMO" className="text-[10px]" /> : null}</span></td>
                     <td className="tabular-nums">{formatMinor(day.capturedMinor, day.currency)}</td><td className="tabular-nums">{formatMinor(day.refundedMinor, day.currency)}</td><td className="tabular-nums">{formatMinor(day.netMinor, day.currency)}</td>
                   </tr>
                 ))}</tbody>
@@ -290,6 +306,10 @@ export function ReportsScreen() {
           <Card title="Exports">
             {exportsList === null ? <Muted>Exports need the export permission.</Muted> : (
               <>
+                <label className="mb-2 flex items-center gap-2 text-xs text-neutral-700">
+                  <input type="checkbox" checked={includeDemo} onChange={event => setIncludeDemo(event.target.checked)} />
+                  Include demo (sandbox) orders in the orders export
+                </label>
                 <div className="mb-3 flex gap-2">
                   <button type="button" disabled={busy !== null} onClick={() => void requestExport("orders")} className="g-btn g-btn--secondary g-btn--sm">Export orders (period)</button>
                   <button type="button" disabled={busy !== null} onClick={() => void requestExport("catalog")} className="g-btn g-btn--secondary g-btn--sm">Export catalog</button>

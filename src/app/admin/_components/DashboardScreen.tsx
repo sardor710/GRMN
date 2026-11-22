@@ -9,6 +9,7 @@ import { LowStockAlerts } from "@/components/admin/LowStockAlerts";
 import { formatCount, formatRecordAmount } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import type { Order, Client, CMSProduct } from "@/lib/cms/types";
+import { createActionGuard, outcomeOf, type ActionOutcome } from "@/lib/admin/action-guard";
 
 // Legacy JSON mode dashboard. Task 5b.1: it shows only what the store file holds (paid order totals,
 // counts, recent orders, low stock, recent clients) in the same Garmin styling as the PostgreSQL
@@ -124,21 +125,35 @@ export default function AdminDashboardPage() {
     loadDashboard();
   }, [loadDashboard]);
 
-  // Quick restock action
+  // Quick restock action: one request per product at a time, and one idempotency key per user action
+  // (kept for a retry after an unknown outcome, so a lost response can never restock twice).
+  const [restockGuard] = useState(() => createActionGuard(() => `restock:${crypto.randomUUID()}`));
   const handleRestockProduct = async (productId: string, addedStock: number) => {
     if (!data) return;
+    const target = data.products.find((p) => p.id === productId);
+    if (!target) return;
+    const action = restockGuard.begin(productId, String(addedStock));
+    if (!action) return;
+    let outcome: ActionOutcome = "unknown";
     try {
-      const target = data.products.find((p) => p.id === productId);
-      if (!target) return;
-
-      const res = await fetch("/api/admin/products", {
+      // PostgreSQL: an audited inventory-ledger receipt (+N). The legacy JSON store (501 here) keeps
+      // its whole-product save.
+      let res = await fetch("/api/admin/catalog/restock", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...Object.fromEntries(Object.entries(target).filter(([key]) => key !== "createdAt")),
-          stock: target.stock + addedStock,
-        }),
+        body: JSON.stringify({ productId, quantity: addedStock, idempotencyKey: action.idempotencyKey }),
       });
+      outcome = res.status === 501 ? "done" : outcomeOf(res.status);
+      if (res.status === 501) {
+        res = await fetch("/api/admin/products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...Object.fromEntries(Object.entries(target).filter(([key]) => key !== "createdAt")),
+            stock: target.stock + addedStock,
+          }),
+        });
+      }
 
       if (res.ok) {
         setData((prev) => {
@@ -151,10 +166,14 @@ export default function AdminDashboardPage() {
           };
         });
         showToast(`Restocked ${target.name} (+${addedStock} units)`);
+      } else {
+        showToast(outcome === "unknown" ? `Restock may not have been saved; press +${addedStock} again to retry safely.` : "Error updating stock.");
       }
     } catch (err) {
       console.error("Failed to restock:", err);
-      showToast("Error updating stock.");
+      showToast(`Restock may not have been saved; press +${addedStock} again to retry safely.`);
+    } finally {
+      restockGuard.settle(productId, outcome);
     }
   };
 

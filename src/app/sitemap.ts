@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { cmsBackend, readProductsPage, readBlogsPage, readHomepage } from "@/server/cms/source";
-import { catalogues } from "@/lib/products";
+import { getSitemapCategorySlugs } from "@/lib/products";
 import { ROUTE_LOCALES, SITE_URL, buildSitemapEntries, type SitemapRoute } from "@/i18n/seo";
 import { homepageLocales, translatedLocales } from "@/i18n/translate-record";
 
@@ -21,9 +21,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { path: "/blog", indexedLocales: ROUTE_LOCALES.blogIndex, changeFrequency: "daily", priority: 0.8 },
   ].map((r) => ({ ...r, lastModified: now })) as SitemapRoute[];
 
-  // Same source the /c/[...slug] page serves.
-  const categoryRoutes: SitemapRoute[] = catalogues.map((c) => ({
-    path: `/c/${c.slug}`,
+  // Same source the /c/[...slug] page serves: taxonomy pages with at least one listed product (PostgreSQL), or the
+  // legacy catalogues.
+  const categoryRoutes: SitemapRoute[] = (await getSitemapCategorySlugs()).map((slug) => ({
+    path: `/c/${slug}`,
     indexedLocales: ROUTE_LOCALES.category,
     lastModified: now,
     changeFrequency: "weekly",

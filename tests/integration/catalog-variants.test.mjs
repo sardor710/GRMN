@@ -75,7 +75,10 @@ test("options, variants, prices, selections and per-variant photos are projected
   assert.deepEqual(variants.map(v=>[v.sku,v.status,v.is_default,v.amount,v.compare,v.picks]),[["VAR-A-0","active",true,"10000000","12000000",2],["VAR-A-1","active",false,"11000000",null,2],["VAR-A-2","active",false,"10000000",null,2],["VAR-A-3","active",false,"12000000",null,2]]);
   assert.equal(variants[0].name,"Black 47 mm");
   const media=await rows("SELECT m.storage_namespace,m.source_path,pm.variant_id IS NOT NULL AS per_variant FROM product_media pm JOIN media_assets m ON m.id=pm.media_id WHERE pm.product_id=$1",[id]);
-  assert.equal(media.length,8); assert.ok(media.every(m=>m.storage_namespace==="catalog-files"&&m.per_variant&&m.source_path.startsWith("/uploads/products/test/")));
+  // beta5 merge: the catalog writer also links the default photo at product level (the admin list thumbnail).
+  const perVariant=media.filter(m=>m.per_variant);
+  assert.equal(perVariant.length,8); assert.ok(media.every(m=>["catalog-files","site-public"].includes(m.storage_namespace)&&m.source_path.startsWith("/uploads/products/test/")),JSON.stringify(media));
+  assert.deepEqual(media.filter(m=>!m.per_variant).map(m=>m.source_path),["/uploads/products/test/img-0a.jpg"]);
   const detail=await (await catalog()).getProductByPublicKey(saved.id,"default","KZT");
   assert.equal(detail.variants.length,4);
   const white51=detail.variants.find(v=>v.sku==="VAR-A-3");
@@ -159,9 +162,9 @@ test("invalid variant documents are refused before anything is written",async()=
     {...base,variants:base.variants.map((v,i)=>i===1?{...v,sku:"VAR-E-0"}:v)},                                   // duplicate SKU
     {...base,variants:base.variants.map((v,i)=>i===1?{...v,selections:{"opt-color":"val-nope","opt-size":"val-47"}}:v)}, // unknown value
     {...base,variants:base.variants.map((v,i)=>i===2?{...v,originalPrice:50000}:v)},                              // compare-at below price
-    {...base,variants:base.variants.map(v=>({...v,isDefault:false}))},                                             // no default
+    // beta5 merge: a document with no default variant is no longer refused; the catalog writer picks one (variant-sync).
   ];
-  for(const doc of bad)await assert.rejects(cms.save("products",admin,doc),error=>error.status===400||error.status===409,JSON.stringify(doc.variants.map(v=>v.sku)).slice(0,60));
+  for(const [index,doc] of bad.entries())await assert.rejects(cms.save("products",admin,doc),error=>error.status===400||error.status===409,`case ${index}: `+JSON.stringify(doc.variants.map(v=>v.sku)).slice(0,60));
   assert.equal((await rows("SELECT 1 FROM products WHERE name=$1",[base.name])).length,0);
 });
 

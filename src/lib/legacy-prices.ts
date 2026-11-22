@@ -29,7 +29,7 @@ export function withStorefrontPrices(product: CMSProduct, rate: number | undefin
     currency: "KZT",
     price,
     originalPrice: convert(product.originalPrice),
-    ...(product.variants ? { variants: product.variants.map(variant => ({ ...variant, price: convert(variant.price) ?? variant.price, originalPrice: convert(variant.originalPrice) })) } : {}),
+    ...(product.variants ? { variants: product.variants.map(variant => ({ ...variant, price: convert(variant.price ?? undefined) ?? variant.price, originalPrice: convert(variant.originalPrice) })) } : {}),
   };
 }
 

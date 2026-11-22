@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
-import { boolean, check, date, index, integer, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, date, index, integer, numeric, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { user } from "./identity.ts";
 
 const id = () => uuid("id").primaryKey().$defaultFn(randomUUID);
@@ -63,11 +63,18 @@ export const customerAddresses = pgTable("customer_addresses", {
   region: text("region"),
   postalCode: text("postal_code"),
   isPrimary: boolean("is_primary").notNull().default(false),
+  // Optional map pin (0013). numeric(9,6) is ~0.11 m resolution; node-postgres returns decimal strings.
+  latitude: numeric("latitude", { precision: 9, scale: 6 }),
+  longitude: numeric("longitude", { precision: 9, scale: 6 }),
+  geoPrecision: text("geo_precision", { enum: ["exact", "street", "locality", "manual"] }),
   version: integer("version").notNull().default(1),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, (table) => [
   index("customer_addresses_user_idx").on(table.userId),
+  check("customer_addresses_geo_pair", sql`(${table.latitude} IS NULL)=(${table.longitude} IS NULL)`),
+  check("customer_addresses_geo_range", sql`(${table.latitude} IS NULL OR ${table.latitude} BETWEEN -90 AND 90) AND (${table.longitude} IS NULL OR ${table.longitude} BETWEEN -180 AND 180)`),
+  check("customer_addresses_geo_precision_valid", sql`${table.geoPrecision} IS NULL OR (${table.geoPrecision} IN ('exact','street','locality','manual') AND ${table.latitude} IS NOT NULL)`),
   uniqueIndex("customer_addresses_primary_unique").on(table.userId).where(sql`${table.isPrimary} = true`),
   check("customer_addresses_required_fields", sql`length(btrim(${table.label}))>0 AND length(btrim(${table.recipientName}))>0 AND length(btrim(${table.city}))>0 AND length(btrim(${table.line1}))>0`),
   check("customer_addresses_phone_format", sql`${table.phone} ~ '^[+][1-9][0-9]{7,14}$'`),

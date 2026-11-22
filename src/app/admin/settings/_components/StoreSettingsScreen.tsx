@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "@/components/admin/ui";
 
 // Task 18B: typed, versioned store settings and the audited KZT-per-USD rate editor (PostgreSQL mode).
 // Task 3.1: Payments -> "Demo checkout" (the payment mode): on, checkout offers only the demo method;
@@ -72,7 +73,7 @@ export default function StoreSettingsScreen() {
         {field("SEO title", "seoTitle")}{field("SEO description", "seoDescription")}
         <label className="g-checkbox-label"><input className="g-checkbox" type="checkbox" checked={form.usd} onChange={event => setForm(current => ({ ...current, usd: event.target.checked }))} /> Show USD equivalents</label>
         <label className="g-checkbox-label"><input className="g-checkbox" type="checkbox" checked={form.maintenance} onChange={event => setForm(current => ({ ...current, maintenance: event.target.checked }))} /> Maintenance mode</label>
-        <button type="button" disabled={busy} onClick={save} className="g-btn g-btn--black justify-self-start sm:col-span-2">Save settings</button>
+        <Button variant="primary" size="md" className="justify-self-start sm:col-span-2" type="button" disabled={busy} onClick={save}>Save settings</Button>
       </section>
       <section className="space-y-3 border border-garmin-control p-4">
         <h2 className="font-sans mb-3 border-b border-garmin-rule pb-2.5 text-sm font-medium tracking-[0.64px] text-black">Payments</h2>
@@ -93,7 +94,7 @@ export default function StoreSettingsScreen() {
             value={manual.instructions} onChange={event => setManual(current => ({ ...current, instructions: event.target.value }))} /></label>
         <label className="block text-sm"><span className="block font-bold">Hold unpaid orders for (hours)</span>
           <input name="manualPaymentHoldHours" type="number" min={1} max={168} className="mt-1 w-32 h-10 border border-garmin-control bg-white px-3 text-sm text-black focus:border-black focus:outline-none tabular-nums" value={manual.holdHours} onChange={event => setManual(current => ({ ...current, holdHours: event.target.value }))} /></label>
-        <button type="button" disabled={busy} onClick={saveManual} className="g-btn g-btn--secondary">Save payment instructions</button>
+        <Button variant="secondary" size="md" type="button" disabled={busy} onClick={saveManual}>Save payment instructions</Button>
       </section>
       <section className="space-y-3 border border-garmin-control p-4">
         <h2 className="font-sans mb-3 border-b border-garmin-rule pb-2.5 text-sm font-medium tracking-[0.64px] text-black">USD display rate</h2>
@@ -101,7 +102,7 @@ export default function StoreSettingsScreen() {
         <p className="text-sm text-muted-foreground">Display only. Payable amounts stay in KZT, and past quotes, orders and refunds keep the rate they were shown with.</p>
         <div className="flex gap-2">
           <input aria-label="KZT per USD" className="h-10 border border-garmin-control bg-white px-3 text-sm text-black focus:border-black focus:outline-none w-40 tabular-nums" value={rate} placeholder="498.25" onChange={event => setRate(event.target.value)} />
-          <button type="button" disabled={busy || !rate.trim()} onClick={() => void send("POST", { action: "set_exchange_rate", expectedVersion: settings.version, kztPerUsd: rate.trim() }, "Rate saved")} className="g-btn g-btn--secondary">Save rate</button>
+          <Button variant="outline" size="md" type="button" disabled={busy || !rate.trim()} onClick={() => void send("POST", { action: "set_exchange_rate", expectedVersion: settings.version, kztPerUsd: rate.trim() }, "Rate saved")}>Save rate</Button>
         </div>
       </section>
     </div>

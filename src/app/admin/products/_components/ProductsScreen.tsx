@@ -4,6 +4,7 @@ import { formatCount, formatRecordAmount } from "@/lib/money";
 import { AutoTranslateButton } from "@/components/admin/AutoTranslateButton";
 import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import {
   Search,
   Tag,
@@ -52,7 +53,7 @@ import {
   ProductPreviewModal,
   ProductTranslationPanel,
   SpecsBlockEditor,
-  VariantsTable,
+  LegacyVariantsTable,
   formatKzt,
   newId,
   type ProductDraft,
@@ -529,7 +530,7 @@ export default function AdminProductsPage() {
   // own price; with options and variants it sells its active variants (a missing status counts as active), each
   // needs a price above 0, and at least one must be sold. Draft and archived rows may stay at 0.
   const sellsVariants = hasSellableOptions(formData);
-  const unpriced = findUnpricedForPublish(
+  const unpriced = findUnpricedForPublish<number | null, ProductVariant>(
     { published: formData.status === "published", hasVariants: sellsVariants, price: formData.price, variants: formData.variants },
     (price) => Number(price) > 0,
   );
@@ -638,7 +639,8 @@ export default function AdminProductsPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border pb-5">
         <div>
-          <h1 className="g-heading g-h2 text-black">Products</h1>
+          <h1 className="g-heading g-h2 text-black">Product content and translations</h1>
+          <p className="mt-1 text-sm text-muted-foreground">RU/KZ translations, auto-translate and per-variant Specs, Overview and In the box. Categories, compatibility, swatches and quick stock edits are on the <Link href="/admin/products" className="underline">Products</Link> page.</p>
         </div>
 
         <button
@@ -1350,7 +1352,7 @@ export default function AdminProductsPage() {
                 />
               </section>
               <section aria-label="Variants" className="border-t border-border pt-4">
-                <VariantsTable
+                <LegacyVariantsTable
                   options={formData.options}
                   variants={formData.variants}
                   images={formData.images}

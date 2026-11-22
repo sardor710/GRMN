@@ -49,14 +49,23 @@ test("proxy never looks account pages up but still prefixes them",async()=>{
   assert.equal((await proxy(request("/kz/account"))).kind,"rewrite");assert.deepEqual(lookups,[]);
   assert.equal((await proxy(request("/ru/account"))).kind,"next");
 });
+// M4.2: the sitemap lists the category slugs the catalog layer reports (taxonomy pages with >=1 listed product
+// in Postgres, the two legacy catalogues in JSON mode) instead of reading the hardcoded catalogue list itself.
 test("sitemap category URLs come from real catalogue routes",async()=>{
   process.env.NEXT_PUBLIC_SITE_URL="https://example.test";
   const seo=await import("../../src/i18n/seo-core.js?sitemap-test"),translate=await import("../../src/i18n/translate-record.js");
   const emptyHome={heroBanners:[],carousels:[],promoTiles:[],storyTiles:[],categoryTiles:[]};
-  const {default:sitemap}=load("src/app/sitemap.ts",{"cms/source":{cmsBackend:()=>"legacy",readProductsPage:async()=>({items:[],nextCursor:null}),readBlogsPage:async()=>({items:[],nextCursor:null}),readHomepage:async()=>emptyHome},"lib/products":{catalogues:[{slug:"wearables-smartwatches"},{slug:"sports-fitness/running-smartwatches"}]},"i18n/seo":seo,"i18n/translate-record":translate},{NEXT_PUBLIC_SITE_URL:"https://example.test"});
+  const {default:sitemap}=load("src/app/sitemap.ts",{"cms/source":{cmsBackend:()=>"legacy",readProductsPage:async()=>({items:[],nextCursor:null}),readBlogsPage:async()=>({items:[],nextCursor:null}),readHomepage:async()=>emptyHome},"lib/products":{getSitemapCategorySlugs:async()=>["wearables-smartwatches","sports-fitness/running-smartwatches"]},"i18n/seo":seo,"i18n/translate-record":translate},{NEXT_PUBLIC_SITE_URL:"https://example.test"});
   const urls=(await sitemap()).map(e=>e.url).filter(u=>u.includes("/c/"));
   // Category pages are indexable in every language (interface strings), each with its own locale prefix.
   assert.deepEqual(urls,["en","ru","kz"].map(l=>`https://example.test/${l}/c/wearables-smartwatches`).concat(["en","ru","kz"].map(l=>`https://example.test/${l}/c/sports-fitness/running-smartwatches`)));
+});
+test("legacy sitemap category slugs stay the two original catalogues",async()=>{
+  const exports={};const code=ts.transpileModule(fs.readFileSync("src/lib/products.ts","utf8"),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText;
+  new Function("require","exports",code)(name=>name.includes("cms/source")?{cmsBackend:()=>"legacy"}:{},exports);
+  assert.deepEqual(await exports.getSitemapCategorySlugs(),["wearables-smartwatches","sports-fitness/running-smartwatches"]);
+  const pg={};new Function("require","exports",code)(name=>name.includes("cms/source")?{cmsBackend:()=>"postgres"}:name.includes("catalog/runtime")?{getCatalogService:()=>({listCategorySlugsWithProducts:async()=>["bands","watch-series/fenix"]})}:{},pg);
+  assert.deepEqual(await pg.getSitemapCategorySlugs(),["bands","watch-series/fenix"]);
 });
 test("public reads map invalid input/cursor to a not-found fallback and rethrow real failures",async()=>{
   const {readOr,isInvalidPublicInput}=await import("../../src/server/public-input.ts");

@@ -12,6 +12,11 @@ import { effectiveVariantContent, localizeVariantOverride, parseVariantContent, 
 import { PRODUCT_HTML_FIELDS } from "../../lib/cms/product-input.ts";
 import { cardColors } from "../../lib/catalog/card-colors.ts";
 import { stableUuid } from "../cms/product-projection.ts";
+import type { CategoryDTO, CategoryPageDTO, ProductOptionDTO } from "../../contracts/catalog-browse.ts";
+import { initialVariantId } from "../../lib/variant-availability.ts";
+import { categorySlugsWithProducts, loadCategoryPage, resolveCategory, type CategoryPageInput } from "./category-page.ts";
+import { compatibleAccessories, compatibleDevices, primaryCategoryPath } from "./compatibility-public.ts";
+import { sanitizeOverviewHtml } from "../../lib/import/garmin-parse.ts";
 
 const fail = (): never => { throw new AuthFailure("INVALID_INPUT", 400, "Invalid catalog query or cursor"); };
 const text = z.string().trim().min(1).max(200);
@@ -29,12 +34,34 @@ type BaseDetail = Omit<ProductDetailDTO,"variants"> & { variants: VariantDTO[] }
 const key = (v:string) => v.toLowerCase().replace(/[^\p{L}\p{N}]+/gu,"-").replace(/^-|-$/g,"");
 export function publicImage(url:unknown):string|null {
   if(typeof url!=="string"||url.length>2048||/[\u0000-\u0020\\]/.test(url))return null;
-  // Static images, editor/importer uploads (UPLOAD_DIR, served by /uploads) and CMS media (/media).
-  if(/^\/(images|uploads|media)\//.test(url)&&!url.startsWith("//")&&!url.split("/").includes(".."))return url;
+  // Static images and CMS media (/media) by path; admin uploads and imported galleries are served by
+  // /uploads/[...path] from UPLOAD_DIR (M4.8) with the same rules plus no percent-encoded traversal and no query/fragment.
+  if(/^\/(images|media)\//.test(url)&&!url.startsWith("//")&&!url.split("/").includes(".."))return url;
+  if(url.startsWith("/uploads/")&&!/[?#]/.test(url)){let decoded:string;try{decoded=decodeURIComponent(url);}catch{return null;}if(!/[\x00-\x20\\]/.test(decoded)&&!decoded.split("/").some(s=>s===".."||s==="."))return url;}
   return null;
 }
+/** Swatch images may be local media or garmin.com-hosted thumbnails (never downloaded, see migration 0014). */
+export function swatchImage(url:unknown):string|null {
+  const local=publicImage(url);if(local)return local;
+  if(typeof url!=="string"||url.length>2048||/[\x00-\x20\\"'<>]/.test(url))return null;
+  try{const u=new URL(url);return u.protocol==="https:"&&/(^|\.)(garmin\.com|garmincdn\.com)$/.test(u.hostname)?u.toString():null;}catch{return null;}
+}
+/** In-the-box labels (strings and `{label,image}` items alike) plus, when any item has a public photo, the items. */
+function boxContent(value:unknown):Pick<ProductDetailDTO,"inTheBox"|"inTheBoxItems">{
+  const items=array(value).flatMap(entry=>{if(typeof entry==="string")return entry.trim()?[{label:entry,image:null}]:[];const r=obj(entry);return typeof r.label==="string"&&r.label.trim()?[{label:r.label,image:publicImage(r.image)}]:[];});
+  return{inTheBox:items.map(item=>item.label),...(items.some(item=>item.image)?{inTheBoxItems:items}:{})};
+}
+// Overview HTML is sanitized on every write; it is sanitized again on read (defense in depth: rows imported
+// by older code or edited by hand). Sanitizing a 100 KB overview costs milliseconds, so results are cached.
+const overviewCache=new Map<string,string>();
+function overviewForStorefront(html:string):string{
+  const hash=createHash("sha256").update(html).digest("base64url"),hit=overviewCache.get(hash);if(hit!==undefined)return hit;
+  const clean=sanitizeOverviewHtml(html);if(overviewCache.size>=200)overviewCache.delete(overviewCache.keys().next().value as string);overviewCache.set(hash,clean);return clean;
+}
 function media(value:unknown):MediaDTO|null {const v=obj(value),url=publicImage(v.url);return url?{url,alt:typeof v.alt==="string"?v.alt:"",width:typeof v.width==="number"?v.width:null,height:typeof v.height==="number"?v.height:null}:null;}
-const imageSQL = `SELECT jsonb_build_object('url',COALESCE(m.source_path,m.storage_key),'alt',COALESCE(pm.alt_text,m.alt_text,''),'width',m.width,'height',m.height) AS image FROM product_media pm JOIN media_assets m ON m.id=pm.media_id WHERE pm.product_id=p.id AND (pm.variant_id=v.id OR pm.variant_id IS NULL) AND m.status='ready' AND m.visibility='public' AND m.kind='image' ORDER BY (pm.variant_id IS NOT NULL) DESC,pm.is_primary DESC,pm.position,pm.id`;
+const imageSQL = `SELECT jsonb_build_object('url',COALESCE(m.source_path,m.storage_key),'alt',COALESCE(pm.alt_text,m.alt_text,''),'width',m.width,'height',m.height) AS image FROM product_media pm JOIN media_assets m ON m.id=pm.media_id WHERE pm.product_id=p.id AND (pm.variant_id=v.id OR (pm.variant_id IS NULL AND NOT EXISTS(SELECT 1 FROM product_media own WHERE own.product_id=p.id AND own.variant_id IS NOT NULL AND own.media_id=pm.media_id))) AND m.status='ready' AND m.visibility='public' AND m.kind='image' ORDER BY (pm.variant_id IS NOT NULL) DESC,pm.is_primary DESC,pm.position,pm.id`;
+// beta5 merge: the catalog writer also links the default photo at product level (admin thumbnail). A product-level
+// photo that a variant owns belongs to that variant's gallery only, so it is not appended to the other colours.
 // All eligible variants, classification and media are read in one bounded SQL operation.
 // Only projected fields leave this module. Legacy JSON is compatibility input, never a DTO.
 // Task 21A (catalog plans): `eligible` holds only what filtering, sorting and paging need; display
@@ -43,15 +70,15 @@ const imageSQL = `SELECT jsonb_build_object('url',COALESCE(m.source_path,m.stora
 // A variant is eligible when it is active, has an active KZT price in the market and chooses every option.
 // (The database also rejects an incomplete active variant at commit; the option check is defense in depth.
 // A count comparison instead of NOT EXISTS was measured slower: ~1.17 s vs ~0.78 s for a price sort.)
-const eligibleFrom = (stock: boolean) => `FROM product_variants v
+export const eligibleFrom = (stock: boolean) => `FROM product_variants v
  JOIN prices pr ON pr.variant_id=v.id AND pr.is_active AND pr.currency='KZT' AND pr.market=$1${stock ? `
  CROSS JOIN LATERAL (SELECT count(*) AS known,COALESCE(sum(ib.on_hand-ib.reserved),0) AS free FROM inventory_balances ib JOIN stock_locations sl ON sl.id=ib.location_id AND sl.archived_at IS NULL WHERE ib.variant_id=v.id) balance` : ""}
  WHERE v.product_id=p.id AND v.status='active' AND NOT EXISTS(SELECT 1 FROM product_options po WHERE po.product_id=p.id AND NOT EXISTS(SELECT 1 FROM variant_option_values vo WHERE vo.variant_id=v.id AND vo.option_id=po.id))`;
-// The eligible variants with their stock state (built for the selected page only).
-const variantsFrom = eligibleFrom(true);
-const stateSQL = `(CASE WHEN balance.known=0 THEN 'unavailable' WHEN balance.free>0 THEN 'available' ELSE 'out_of_stock' END)`;
+// The same variants with their stock state.
+export const variantsFrom = eligibleFrom(true);
+export const stateSQL = `(CASE WHEN balance.known=0 THEN 'unavailable' WHEN balance.free>0 THEN 'available' ELSE 'out_of_stock' END)`;
 // Classification keys of product `p`; `eligible` computes one only when a filter needs it.
-const keySQL = {
+export const keySQL = {
   category_keys: `CASE WHEN p.legacy_content ? 'category' THEN ARRAY[trim(both '-' from regexp_replace(lower(p.legacy_content->>'category'),'[^[:alnum:]]+','-','g'))] ELSE ARRAY(SELECT c.key FROM product_categories pc JOIN categories c ON c.id=pc.category_id WHERE pc.product_id=p.id AND NOT c.archived) END`,
   activity_keys: `CASE WHEN jsonb_typeof(p.legacy_content->'activities')='array' THEN ARRAY(SELECT trim(both '-' from regexp_replace(lower(a),'[^[:alnum:]]+','-','g')) FROM jsonb_array_elements_text(p.legacy_content->'activities') a) ELSE ARRAY(SELECT a.key FROM product_activities pa JOIN activities a ON a.id=pa.activity_id WHERE pa.product_id=p.id) END`,
   level: `COALESCE(p.legacy_content->>'level',(SELECT ae.label FROM product_attribute_values av JOIN attribute_definitions ad ON ad.id=av.attribute_id JOIN attribute_enum_values ae ON ae.attribute_id=ad.id AND ae.key=av.enum_value WHERE av.product_id=p.id AND ad.key='level'))`,
@@ -84,7 +111,7 @@ const pageColumns = `p.id,p.public_key,p.name,p.description,p.family,p.badge,p.p
  CASE WHEN offers.variants @> '[{"availability":"available"}]' THEN 'available' WHEN offers.variants @> '[{"availability":"unavailable"}]' THEN 'unavailable' ELSE 'out_of_stock' END AS availability`;
 // Built only for the selected rows (`selected`): every eligible variant with options, stock state and gallery, and the chosen offer.
 const offersSQL = `JOIN products p ON p.id=selected.id
- JOIN LATERAL (SELECT jsonb_agg(jsonb_build_object('id',v.id,'sku',v.sku,'name',v.name,'amount',pr.amount_minor::text,'compare',pr.compare_at_minor::text,
+ JOIN LATERAL (SELECT jsonb_agg(jsonb_build_object('id',v.id,'sku',v.sku,'name',v.name,'isDefault',v.is_default,'amount',pr.amount_minor::text,'compare',pr.compare_at_minor::text,
  'options',COALESCE((SELECT jsonb_object_agg(po.key,ov.label) FROM variant_option_values vo JOIN product_options po ON po.id=vo.option_id JOIN option_values ov ON ov.id=vo.option_value_id WHERE vo.variant_id=v.id),'{}'),
  'optionValueIds',COALESCE((SELECT jsonb_agg(vo.option_value_id) FROM variant_option_values vo WHERE vo.variant_id=v.id),'[]'),
  'availability',${stateSQL},
@@ -108,10 +135,11 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
   }
   // Task C-d: the card's colour dots, from the editor's colour option (legacy_content, already on the selected row)
   // and only the colours an eligible variant of this page's offers is in: no extra query per card. An editor value
-  // is matched exactly by the id the projection gave its option_values row (product-projection.ts stableUuid).
+  // is matched exactly by the id the projection gave its option_values row (product-projection.ts stableUuid), or,
+  // for documents the catalog writer saved (beta5 merge), by the stored option value id itself.
   function colors(row:Row):NonNullable<ProductCardDTO["colors"]>{
     const productId=String(row.id),chosen=new Set(array(row.variants).flatMap(v=>strings(obj(v).optionValueIds)));
-    return cardColors(row.editor_options,(option,value)=>option.id!==""&&value.id!==""&&chosen.has(stableUuid(stableUuid(productId,"option",option.id),"value",value.id)));
+    return cardColors(row.editor_options,(option,value)=>option.id!==""&&value.id!==""&&(chosen.has(value.id)||chosen.has(stableUuid(stableUuid(productId,"option",option.id),"value",value.id))));
   }
   function card(row:Row,fx:ExchangeRateSnapshotDTO|null):ProductCardDTO {
     const offer=obj(row.offer),dots=colors(row);return {...(dots.length?{colors:dots}:{}),id:String(row.id),publicKey:String(row.public_key),name:String(row.name),description:String(row.description),noIndex:row.no_index===true,canonicalUrl:row.canonical_url==null?null:String(row.canonical_url),updatedAt:String(row.created_key),family:String(row.family??""),badge:row.badge==null?null:String(row.badge),priceSuffix:row.price_suffix==null?undefined:String(row.price_suffix),activities:strings(row.activity_keys),level:level.safeParse(row.level).success?row.level as ProductCardDTO["level"]:null,caseSize:size.safeParse(row.case_size).success?row.case_size as ProductCardDTO["caseSize"]:null,image:array(offer.gallery).map(media).find(Boolean)??null,price:price(offer,fx),availability:row.availability as Availability};
@@ -149,13 +177,40 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
   async function localizedCards(items:ProductCardDTO[],locale:Locale):Promise<ProductCardDTO[]>{
     if(locale==="en")return items;const map=await translationsFor(items.map(i=>i.id));return items.map(i=>localizedCard(i,map.get(i.id),locale));
   }
+  async function cardsByKeys(keys:string[],market:string,displayCurrency:DisplayCurrency):Promise<ProductCardDTO[]>{
+    const out:ProductCardDTO[]=[];
+    for(let i=0;i<keys.length;i+=100){const result=await select(queryInput({market,displayCurrency,locale:"en"}),{limit:100},keys.slice(i,i+100));out.push(...result.rows.map(row=>card(row,result.fx)));}
+    return out;
+  }
+  /** M5.6: overview HTML and spec groups live in legacy_content; only these two projected fields leave it. */
+  async function productContent(productId:string):Promise<Pick<ProductDetailDTO,"overviewHtml"|"specGroups">>{
+    const row=(await pool.query("SELECT legacy_content->'overviewHtml' AS overview_html,legacy_content->'specGroups' AS spec_groups FROM products WHERE id=$1",[productId])).rows[0]??{};
+    const specGroups=array(row.spec_groups).flatMap(value=>{const g=obj(value),items=array(g.items).flatMap(item=>{const r=obj(item);return typeof r.label==="string"&&typeof r.value==="string"&&(r.label||r.value)?[{label:r.label,value:r.value}]:[];});return items.length?[{title:typeof g.title==="string"?g.title:"",items}]:[];});
+    const overviewHtml=typeof row.overview_html==="string"&&row.overview_html.trim()?overviewForStorefront(row.overview_html):"";
+    return{...(overviewHtml?{overviewHtml}:{}),...(specGroups.length?{specGroups}:{})};
+  }
+  async function productOptions(productId:string):Promise<ProductOptionDTO[]>{
+    const rows=(await pool.query(`SELECT po.key,po.name,po.display,COALESCE(jsonb_agg(jsonb_build_object('label',ov.label,'swatchColor',ov.swatch_color,'swatchImage',ov.swatch_image_source) ORDER BY ov.position,ov.key) FILTER (WHERE ov.id IS NOT NULL),'[]') AS values
+      FROM product_options po LEFT JOIN option_values ov ON ov.option_id=po.id WHERE po.product_id=$1 GROUP BY po.id ORDER BY po.position,po.key`,[productId])).rows;
+    return rows.map(r=>({key:String(r.key),name:String(r.name),display:r.display==="swatch"||r.display==="dropdown"?r.display:"buttons",values:array(r.values).map(value=>{const v=obj(value);return{label:String(v.label),swatchColor:typeof v.swatchColor==="string"?v.swatchColor:null,swatchImage:swatchImage(v.swatchImage)};})}));
+  }
   async function englishDetail(publicKey:string,market:string,displayCurrency:DisplayCurrency):Promise<BaseDetail|null>{
       parse(text,publicKey);const q=queryInput({market,displayCurrency,locale:"en"}),result=await select(q,{limit:1},[publicKey]),row=result.rows[0];if(!row)return null;
       const relations=(await pool.query(`SELECT p.public_key,r.relation_type FROM product_relations r JOIN products p ON p.id=r.target_product_id WHERE r.source_product_id=$1 AND p.status='published' AND EXISTS(SELECT 1 FROM product_variants v JOIN prices pr ON pr.variant_id=v.id AND pr.is_active AND pr.currency='KZT' AND pr.market=$2 WHERE v.product_id=p.id AND v.status='active') ORDER BY r.position,p.id LIMIT 100`,[row.id,market])).rows;
       const variants:VariantDTO[]=array(row.variants).map(value=>{const v=obj(value);return{id:String(v.id),sku:String(v.sku),name:v.name==null?"":String(v.name),options:Object.fromEntries(Object.entries(obj(v.options)).filter((pair):pair is [string,string]=>typeof pair[1]==="string")),price:price(v,result.fx),availability:v.availability as Availability,gallery:array(v.gallery).map(media).filter((x):x is MediaDTO=>x!==null)};});
-      return{...card(row,result.fx),selectedVariantId:String(obj(row.offer).id),variants,gallery:variants.find(v=>v.id===obj(row.offer).id)?.gallery??[],specs:array(row.specs).flatMap(v=>{const r=obj(v);return typeof r.label==="string"&&typeof r.value==="string"?[{label:r.label,value:r.value}]:[];}),features:array(row.features).flatMap(v=>{const r=obj(v);return typeof r.title==="string"&&typeof r.body==="string"?[{title:r.title,body:r.body,image:media({url:r.image,alt:r.title})}]:[];}),inTheBox:strings(row.in_the_box),compatibleProductKeys:relations.filter(r=>r.relation_type==="compatible_accessory").map(r=>r.public_key),relatedProductKeys:relations.filter(r=>r.relation_type==="related"||r.relation_type==="upsell").map(r=>r.public_key),seo:{title:String(row.seo_title??row.name),description:String(row.seo_description??row.description),canonicalUrl:row.canonical_url==null?null:String(row.canonical_url),noIndex:row.no_index===true,image:publicImage(row.og_image_source)}};
+      const defaultVariantId=String(obj(array(row.variants).find(v=>obj(v).isDefault===true)??array(row.variants)[0]).id),selectedVariantId=initialVariantId(variants,{defaultId:defaultVariantId})??String(obj(row.offer).id);
+      const productId=String(row.id),cards=(keys:string[])=>cardsByKeys(keys,market,displayCurrency);
+      const [options,breadcrumb,compatibleAccessoriesList,compatibleDevicesList,content]=await Promise.all([productOptions(productId),primaryCategoryPath(pool,productId),compatibleAccessories(pool,productId,cards),compatibleDevices(pool,productId,cards),productContent(productId)]);
+      return{...card(row,result.fx),selectedVariantId,defaultVariantId,options,breadcrumb,compatibleAccessories:compatibleAccessoriesList,compatibleDevices:compatibleDevicesList,variants,gallery:variants.find(v=>v.id===selectedVariantId)?.gallery??[],specs:array(row.specs).flatMap(v=>{const r=obj(v);return typeof r.label==="string"&&typeof r.value==="string"?[{label:r.label,value:r.value}]:[];}),features:array(row.features).flatMap(v=>{const r=obj(v);return typeof r.title==="string"&&typeof r.body==="string"?[{title:r.title,body:r.body,image:media({url:r.image,alt:r.title})}]:[];}),...boxContent(row.in_the_box),...content,compatibleProductKeys:relations.filter(r=>r.relation_type==="compatible_accessory").map(r=>r.public_key),relatedProductKeys:relations.filter(r=>r.relation_type==="related"||r.relation_type==="upsell").map(r=>r.public_key),seo:{title:String(row.seo_title??row.name),description:String(row.seo_description??row.description),canonicalUrl:row.canonical_url==null?null:String(row.canonical_url),noIndex:row.no_index===true,image:publicImage(row.og_image_source)}};
     }
   return {
+    /** Taxonomy page for any category slug (any depth); null when the slug is unknown or archived. */
+    async getCategoryPage(slug:string,input:Omit<CategoryPageInput,"market">&{market?:string;displayCurrency?:DisplayCurrency}={}):Promise<CategoryPageDTO|null>{
+      const {displayCurrency="KZT",market="default",...rest}=input;if(!publicMarkets.includes(market))fail();
+      return loadCategoryPage(pool,slug,{...rest,market},keys=>cardsByKeys(keys,market,displayCurrency));
+    },
+    async getCategory(slug:string):Promise<CategoryDTO|null>{const found=await resolveCategory(pool,slug);return found?{name:found.name,slug:found.slug,kind:found.kind,description:found.description,path:found.path,presetFilters:found.presetFilters}:null;},
+    async listCategorySlugsWithProducts(market="default"):Promise<string[]>{if(!publicMarkets.includes(market))fail();return categorySlugsWithProducts(pool,market);},
     async getRedirect(sourcePath:string):Promise<{targetPath:string;statusCode:301|302|307|308}|null>{
       const safe=(path:string)=>path.startsWith("/")&&!path.startsWith("//")&&!/[\\\u0000-\u0020]/.test(path)&&path.length<=2048;
       if(!safe(sourcePath))return fail();
@@ -176,15 +231,15 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
     },
     async getProductByPublicKey(publicKey:string,market:string,displayCurrency:DisplayCurrency,locale:Locale="en"):Promise<ProductDetailDTO|null>{
       const found=await englishDetail(publicKey,market,displayCurrency);if(!found)return null;
-      // The editor's overview and grouped specs live in the product document (legacy_content).
-      // Task 2.1: also the editor variants' ids and SKUs (translated overrides are keyed by editor id).
-      const editorial=obj((await pool.query("SELECT jsonb_build_object('overviewHtml',legacy_content->'overviewHtml','specGroups',legacy_content->'specGroups','variants',(SELECT jsonb_agg(jsonb_build_object('id',e->'id','sku',e->'sku')) FROM jsonb_array_elements(CASE WHEN jsonb_typeof(legacy_content->'variants')='array' THEN legacy_content->'variants' ELSE '[]'::jsonb END) e)) AS doc FROM products WHERE id=$1",[found.id])).rows[0]?.doc);
+      // Task 2.1: the editor variants' ids and SKUs (translated overrides are keyed by editor id; after the
+      // beta5 merge the catalog writer stores them by variant id, so both keys are looked up below).
+      const editorial=obj((await pool.query("SELECT jsonb_build_object('variants',(SELECT jsonb_agg(jsonb_build_object('id',e->'id','sku',e->'sku')) FROM jsonb_array_elements(CASE WHEN jsonb_typeof(legacy_content->'variants')='array' THEN legacy_content->'variants' ELSE '[]'::jsonb END) e)) AS doc FROM products WHERE id=$1",[found.id])).rows[0]?.doc);
       const overrideRows=(await pool.query("SELECT id::text AS id,content_overrides FROM product_variants WHERE product_id=$1 AND id=ANY($2::uuid[])",[found.id,found.variants.map(v=>v.id)])).rows;
       const overrides=new Map<string,VariantContent>(overrideRows.map(r=>[String(r.id),parseVariantContent(r.content_overrides)]));
       const editorIds=new Map<string,string>(array(editorial.variants).flatMap(e=>{const v=obj(e);return typeof v.id==="string"&&typeof v.sku==="string"?[[v.sku.trim().toLowerCase(),v.id] as [string,string]]:[];}));
-      const specGroups=array(editorial.specGroups).flatMap(g=>{const group=obj(g);return typeof group.title==="string"?[{title:group.title,items:array(group.items).flatMap(i=>{const item=obj(i);return typeof item.label==="string"&&typeof item.value==="string"?[{label:item.label,value:item.value}]:[];})}]:[];});
       const optionNames=Object.fromEntries((await pool.query("SELECT key,name FROM product_options WHERE product_id=$1 ORDER BY position,key",[found.id])).rows.map(r=>[String(r.key),String(r.name)]));
-      const detail:BaseDetail={...found,...(Object.keys(optionNames).length?{optionNames}:{}),...(typeof editorial.overviewHtml==="string"&&editorial.overviewHtml?{overviewHtml:editorial.overviewHtml}:{}),...(specGroups.length?{specGroups}:{})};
+      // beta5 merge: overview HTML and grouped specs come from productContent() inside englishDetail (sanitized for the storefront).
+      const detail:BaseDetail={...found,...(Object.keys(optionNames).length?{optionNames}:{})};
       const translations=(await translationsFor([detail.id])).get(detail.id);
       const translatedLocales:Locale[]=["en",...(["ru","kk"] as const).filter(l=>translations&&isRecordTranslated({translations},l,["name","description"]))];
       // Task 2.1: each variant's effective content (own blocks replace the product's, absent keys inherit).
@@ -196,7 +251,7 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
       // row; an owned block without one keeps the English override, never the product's translation.
       const localOverlay=obj(obj(translations)[locale]),variantOverlays=obj(localOverlay.variants);
       const variants=withVariants({specs:local.specs,specGroups:local.specGroups,overviewHtml:local.overviewHtml,inTheBox:local.inTheBox},(english,v)=>{
-        const editorId=editorIds.get(v.sku.trim().toLowerCase()),translated=editorId===undefined?undefined:obj(variantOverlays[editorId]).content;
+        const editorId=editorIds.get(v.sku.trim().toLowerCase()),translated=obj(variantOverlays[editorId??v.id]??variantOverlays[v.id]).content;
         const own=localizeVariantOverride(english,translated,locale);
         return own.overviewHtml!==undefined&&own.overviewHtml!==english.overviewHtml?{...own,overviewHtml:PRODUCT_HTML_FIELDS.overviewHtml(own.overviewHtml)}:own;
       });

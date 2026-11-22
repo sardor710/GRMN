@@ -1,5 +1,7 @@
 import { formatKzt as formatSharedKzt } from "@/lib/money";
 import type { CMSProduct, ProductImage, ProductOption, ProductVariant } from "@/lib/cms/types";
+import { buttonClass } from "@/components/admin/ui/Button";
+import { controlRadius } from "@/components/admin/ui/shape";
 
 /** Draft returned by POST /api/admin/import/garmin (CMSProduct-shaped, not saved). */
 export type ProductDraft = Partial<CMSProduct> & Pick<CMSProduct, "name" | "sku" | "price">;
@@ -21,9 +23,9 @@ export const newId = (prefix: string): string =>
 
 const usdFormatter = new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" });
 
-/** Editor prices (tenge, major units) through the shared money formatter: "KZT 1,350,000.00". */
-export const formatKzt = (value: number | undefined): string =>
-  value === undefined || Number.isNaN(value) ? "—" : formatSharedKzt({ major: value }, "en");
+/** Editor prices (tenge, major units) through the shared money formatter: "KZT 1,350,000.00". A null price (not set yet) is "—". */
+export const formatKzt = (value: number | null | undefined): string =>
+  value === undefined || value === null || Number.isNaN(value) ? "—" : formatSharedKzt({ major: value }, "en");
 
 export const formatUsd = (value: number | undefined): string =>
   value === undefined || Number.isNaN(value) ? "—" : usdFormatter.format(value);
@@ -43,15 +45,11 @@ export function galleryFor(
   return def ? [def, ...images.filter((i) => i.id !== defaultImageId)] : images;
 }
 
-export const labelClass =
-  "block text-sm font-bold text-black";
-export const inputClass =
-  "h-10 w-full border border-garmin-control bg-white px-3 text-sm text-black focus:border-black focus:outline-none";
-export const smallInputClass =
-  "h-8 w-full border border-garmin-control bg-white px-2 text-[13px] text-black focus:border-black focus:outline-none";
-export const primaryButtonClass =
-  "g-btn g-btn--black";
-export const secondaryButtonClass =
-  "g-btn g-btn--secondary g-btn--sm";
-export const linkButtonClass =
-  "g-btn g-btn--text-link gap-1 py-0 text-xs disabled:opacity-50";
+// Class constants for editor sub-components (images, options, variants, import). Buttons come from the
+// shared admin primitive, so the shape switch in src/components/admin/ui/shape.ts reaches them too.
+export const labelClass = "block text-[12px] font-bold text-black";
+export const inputClass = `h-10 w-full border border-[#d9d9d9] bg-white px-3 text-[13px] text-black placeholder:text-[#8c8c8c] hover:border-[#737373] focus:border-black focus:outline-none ${controlRadius}`;
+export const smallInputClass = `h-8 w-full border border-[#d9d9d9] bg-white px-2 text-[12px] text-black hover:border-[#737373] focus:border-black focus:outline-none ${controlRadius}`;
+export const primaryButtonClass = buttonClass({ variant: "primary", size: "sm" });
+export const secondaryButtonClass = buttonClass({ variant: "outline", size: "sm" });
+export const linkButtonClass = buttonClass({ variant: "link", size: "sm", className: "h-auto px-0 text-[12px] font-bold" });

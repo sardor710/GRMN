@@ -29,6 +29,9 @@ import {
   filterOrdersByStatuses,
   filterOrdersByDateRange,
 } from "@/lib/cms/order-filters";
+import { Button, StatusSelect } from "@/components/admin/ui";
+
+const FULFILLMENT_STATUSES: FulfillmentStatus[] = ["new", "processing", "shipped", "delivered", "canceled", "returned"];
 
 type DateRangePreset = "all" | "week" | "month" | "ytd" | "custom";
 type ViewMode = "board" | "list";
@@ -715,32 +718,14 @@ Status
 
                         {/* Fulfillment Status Dropdown */}
                         <td className="py-3.5 px-4" onClick={(e) => e.stopPropagation()}>
-                          <select
+                          <StatusSelect
+                            size="sm"
+                            wrapperClassName="inline-block min-w-[140px]"
+                            aria-label={`Fulfillment status of ${ord.orderNumber}`}
                             value={ord.fulfillmentStatus}
-                            onChange={(e) =>
-                              handleUpdateStatus(ord.id, e.target.value as FulfillmentStatus)
-                            }
-                            className={`border px-2.5 py-1 text-xs font-semibold rounded-none focus:outline-none focus:border-black cursor-pointer ${
-                              ord.fulfillmentStatus === "delivered"
-                                ? "bg-garmin-badge-lime/25 border-garmin-badge-lime text-black"
-                                : ord.fulfillmentStatus === "shipped"
-                                ? "bg-muted border-garmin-control text-garmin-blue"
-                                : ord.fulfillmentStatus === "processing"
-                                ? "bg-garmin-badge-gold/20 border-garmin-badge-gold text-black"
-                                : ord.fulfillmentStatus === "new"
-                                ? "bg-neutral-100 border-border text-black"
-                                : ord.fulfillmentStatus === "returned"
-                                ? "bg-muted border-garmin-control text-garmin-blue"
-                                : "bg-white border-garmin-error text-garmin-error"
-                            }`}
-                          >
-                            <option value="new">New</option>
-                            <option value="processing">Processing</option>
-                            <option value="shipped">Shipped</option>
-                            <option value="delivered">Delivered</option>
-                            <option value="canceled">Canceled</option>
-                            <option value="returned">Returned</option>
-                          </select>
+                            options={FULFILLMENT_STATUSES}
+                            onChange={(value) => handleUpdateStatus(ord.id, value as FulfillmentStatus)}
+                          />
                         </td>
 
                         {/* Destination Address */}
@@ -819,20 +804,14 @@ Status
                   <span className="text-xs text-muted-foreground block font-semibold">
                     Current Fulfillment
                   </span>
-                  <select
+                  <StatusSelect
+                    size="sm"
+                    wrapperClassName="mt-0.5 min-w-[160px]"
+                    aria-label="Current fulfillment status"
                     value={selectedOrder.fulfillmentStatus}
-                    onChange={(e) =>
-                      handleUpdateStatus(selectedOrder.id, e.target.value as FulfillmentStatus)
-                    }
-                    className="border border-border bg-white px-2.5 py-1 text-xs font-semibold text-black focus:outline-none focus:border-black rounded-none cursor-pointer mt-0.5"
-                  >
-                    <option value="new">New</option>
-                    <option value="processing">Processing</option>
-                    <option value="shipped">Shipped</option>
-                    <option value="delivered">Delivered</option>
-                    <option value="canceled">Canceled</option>
-                    <option value="returned">Returned</option>
-                  </select>
+                    options={FULFILLMENT_STATUSES}
+                    onChange={(value) => handleUpdateStatus(selectedOrder.id, value as FulfillmentStatus)}
+                  />
                 </div>
               </div>
 
@@ -1082,13 +1061,12 @@ Map
               </div>
 
               <div className="flex items-center gap-2">
-                <button
+                <Button variant="primary" size="md"
                   type="button"
                   onClick={() => setSelectedOrder(null)}
-                  className="g-btn g-btn--black"
                 >
                   Close Window
-                </button>
+                </Button>
               </div>
             </div>
           </div>

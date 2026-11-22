@@ -1,9 +1,12 @@
+export { ProductEditor, type ProductEditorProps } from "./ProductEditor";
 export { ProductImagesEditor } from "./ProductImagesEditor";
 export { OptionsEditor } from "./OptionsEditor";
 export { VariantsTable } from "./VariantsTable";
+export { LegacyVariantsTable } from "./LegacyVariantsTable";
 export { InTheBoxEditor, OverviewHtmlEditor, SpecGroupsEditor, SpecsBlockEditor, SpecsListEditor } from "./ContentBlockEditors";
 export { VariantContentEditor } from "./VariantContentEditor";
 export { GarminImportDialog } from "./GarminImportDialog";
 export { ProductPreviewModal, type PreviewProduct } from "./ProductPreviewModal";
 export { ProductTranslationPanel, type ProductTranslations } from "./ProductTranslationPanel";
 export { formatKzt, newId, type ProductDraft } from "./shared";
+export type { EditorTab } from "./useProductEditorState";
