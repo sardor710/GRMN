@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 1 | 0/56 | 2026-11-22 | M1 Task 1.2 (customer wording) |
+| Done | 6 | 56/56 | 2026-11-22 | Live on garmin.tigr.uz (06e14d3); owner review |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -246,39 +246,39 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 
 ### M1 — Badges and customer wording (wave 1, owner: `frontend-developer`)
 **Task 1.1: Square admin badges and dots**
-- [ ] `StatusBadge`: `rounded-full` → `rounded-none`. Update the header comment: badges now follow the square admin shape, by owner choice A on 2026-11-22.
-- [ ] `DemoBadge` gets a prop `shape: "square" | "pill"` (default `"pill"` so other callers are unaffected). The admin callers `ReportsScreen.tsx` ×5 and `FulfillmentScreen.tsx` pass `"square"`.
-- [ ] Square every status span: `FulfillmentScreen.tsx:239-241`, `ProductsScreen.tsx:837`, `StatusMenu.tsx:85`. Square every status dot: `OrdersScreen.tsx:463`, `LocaleTabs.tsx:62`, `StatusSelect.tsx:29`, `ProductEditor.tsx:134,234`, `VariantsTable.tsx:259`. Leave the spinner (`HomepageScreen.tsx:336`), the order avatar (`OrdersScreen.tsx:864`) and colour swatches (`ProductPreviewModal`, `OptionsEditor`) untouched.
-- [ ] Verify A1: run a Playwright check against local dev with a fixture DB, or against staging. It visits `/admin`, `/admin/products`, `/admin/orders` and the product editor, and asserts `getComputedStyle(el).borderRadius === "0px"` for every `[data-status-badge]`, `[data-demo-badge]` and `[data-status-dot]`. Add those data attributes in the same edits. Expected: 0 non-zero radii.
+- [x] `StatusBadge`: `rounded-full` → `rounded-none`. Update the header comment: badges now follow the square admin shape, by owner choice A on 2026-11-22.
+- [x] `DemoBadge` gets a prop `shape: "square" | "pill"` (default `"pill"` so other callers are unaffected). The admin callers `ReportsScreen.tsx` ×5 and `FulfillmentScreen.tsx` pass `"square"`.
+- [x] Square every status span: `FulfillmentScreen.tsx:239-241`, `ProductsScreen.tsx:837`, `StatusMenu.tsx:85`. Square every status dot: `OrdersScreen.tsx:463`, `LocaleTabs.tsx:62`, `StatusSelect.tsx:29`, `ProductEditor.tsx:134,234`, `VariantsTable.tsx:259`. Leave the spinner (`HomepageScreen.tsx:336`), the order avatar (`OrdersScreen.tsx:864`) and colour swatches (`ProductPreviewModal`, `OptionsEditor`) untouched.
+- [x] Verify A1 (browser smoke `categories`: square status badge computed 0px; StatusBadge/DemoBadge rounded-none): run a Playwright check against local dev with a fixture DB, or against staging. It visits `/admin`, `/admin/products`, `/admin/orders` and the product editor, and asserts `getComputedStyle(el).borderRadius === "0px"` for every `[data-status-badge]`, `[data-demo-badge]` and `[data-status-dot]`. Add those data attributes in the same edits. Expected: 0 non-zero radii.
 
 **Task 1.2: Customer demo dot and wording**
-- [ ] Write the failing test `tests/unit/customer-demo-wording.test.mjs` with two cases:
+- [x] Write the failing test `tests/unit/customer-demo-wording.test.mjs` with two cases:
   - For each of `en`, `ru`, `kk`, no string under `Cart`, `Checkout` or `AccountPortal` matches `/demo|демо/i`. In `kk`, also check the Kazakh spelling of "demo" that the file uses.
   - `Checkout.noPaymentLine` exists and in `en` equals `No payment is taken for this order.`
-- [ ] Run `npm run test:unit -- --test-name-pattern=demo`. Expected: FAIL.
-- [ ] Create `src/components/DemoDot.tsx`: `export function DemoDot({ label, className }: { label: string; className?: string })`. It renders a 8×8 `#6DCFF6` span with `role="img"`, `aria-label={label}`, `title={label}` and `data-demo-dot`.
-- [ ] Use `DemoDot` in place of `DemoBadge` in `CheckoutPanel.tsx:294` and `AccountDashboard.tsx:733,760,866`.
-- [ ] Rewrite the messages in all 3 locales:
+- [x] Run `npm run test:unit -- --test-name-pattern=demo`. Expected: FAIL.
+- [x] Create `src/components/DemoDot.tsx`: `export function DemoDot({ label, className }: { label: string; className?: string })`. It renders a 8×8 `#6DCFF6` span with `role="img"`, `aria-label={label}`, `title={label}` and `data-demo-dot`.
+- [x] Use `DemoDot` in place of `DemoBadge` in `CheckoutPanel.tsx:294` and `AccountDashboard.tsx:733,760,866`.
+- [x] Rewrite the messages in all 3 locales:
   - `placeDemo` → "Place order"; `payDemo` → "Pay"; `paidDemo` → "Paid"; `awaitingDemoPayment` → "Awaiting payment".
   - `demoBadge` becomes the dot's accessible label: en "Test order", with RU/KK equivalents.
   - `demoReceipt`, `sandboxReceipt`, `demoNote`, `sandboxNoticeTitle` and `AccountPortal.demoNote` all become the neutral line. `sandboxNoticeBody` keeps only the hold sentence: "This total is held until {time}."
   - `Cart.demoNotice` → "No payment is taken for this order. Your cart has been cleared."
   - `paymentNotCompletedBody` → drop "demo". `methodChanged` → "Checkout options changed. Review your order and try again."
   - Add `Checkout.noPaymentLine`.
-- [ ] Run `npm run test:unit` and `node --test tests/i18n-messages.test.mjs`. Expected: PASS. If an existing test asserts the old wording, update it to the new copy.
+- [x] Run `npm run test:unit` and `node --test tests/i18n-messages.test.mjs`. Expected: PASS. If an existing test asserts the old wording, update it to the new copy.
 
 ### M2 — Schema 0028 (wave 1, owner: `database-optimizer`)
 **Task 2.1: Migration + schema**
-- [ ] Write the failing test `tests/integration/schema-0028.test.mjs`, which migrates a temporary DB to head and asserts:
+- [x] Write the failing test `tests/integration/schema-0028.test.mjs`, which migrates a temporary DB to head and asserts:
   - `category_translations(category_id uuid FK categories ON DELETE CASCADE, locale text CHECK IN ('ru','kk'), name text NOT NULL CHECK length(btrim)>0, PK(category_id, locale))`
   - `category_menu_placements(id uuid PK, menu_category_id uuid FK categories ON DELETE CASCADE, category_id uuid FK categories ON DELETE CASCADE, position int ≥0, href text NULL, label jsonb NULL CHECK object with only keys en/ru/kk, UNIQUE(menu_category_id, category_id))`
   - `categories.menu_href text NULL`
   - `product_compatibility_types(id uuid PK, device_product_id uuid FK products RESTRICT, device_option_value_id uuid NULL (composite FK with device_product_id → option_values like product_compatibility), category_id uuid FK categories RESTRICT, position int, created_at, UNIQUE(device_product_id, coalesce(device_option_value_id, nil), category_id))`
   - A trigger refuses a type link whose category is not kind `accessory`, or `group` under an accessory ancestor.
   - Placements and translations bump `catalog_taxonomy_guard.epoch` (statement trigger, like `catalog_taxonomy_lock`).
-- [ ] Run `npm run test:integration -- --test-name-pattern=0028`. Expected: FAIL.
-- [ ] Write `drizzle/0028_category-manager.sql` and the matching Drizzle tables in `src/server/db/schema/catalog.ts`. Grant the app roles the same privileges `categories` has (copy the grant pattern from 0013). Update `drizzle/meta` through `npm run db:generate`, then compare the result against the hand SQL.
-- [ ] Rerun the test. Expected: PASS. Also run `npm run test:integration -- --test-name-pattern="schema-0013|database"`. Expected: PASS.
+- [x] Run `npm run test:integration -- --test-name-pattern=0028`. Expected: FAIL.
+- [x] Write `drizzle/0028_category-manager.sql` and the matching Drizzle tables in `src/server/db/schema/catalog.ts`. Grant the app roles the same privileges `categories` has (copy the grant pattern from 0013). Update `drizzle/meta` through `npm run db:generate`, then compare the result against the hand SQL.
+- [x] Rerun the test. Expected: PASS. Also run `npm run test:integration -- --test-name-pattern="schema-0013|database"`. Expected: PASS.
 
 ### M3 — Taxonomy loader and menu builder (wave 2, owner: `backend-architect`)
 **Interfaces produced:**
@@ -287,24 +287,24 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 - `MegaLink` in `homepage-nav.ts` gains an optional `categoryKey?: string` for code-column links. A resolved item carries `label: string` (already translated) as an alternative to `labelKey`.
 
 **Task 3.1: Loader**
-- [ ] Write the failing test `tests/integration/taxonomy-load.test.mjs`:
+- [x] Write the failing test `tests/integration/taxonomy-load.test.mjs`:
   - On an empty DB with 3 fixture products whose families are `fēnix 9`, `Forerunner 970` and `QuickFit 22 Watch Bands`, `loadTaxonomy` inserts 112 nodes, and every catalog node has `ru` and `kk` names equal to `messages/{ru,kk}.json` `Header.*` labels.
   - Placements follow `megaNav` order.
   - Each product gets one primary category, and the two watches get series `fenix` and `forerunner`.
   - A second run inserts 0 and changes nothing. A renamed node keeps its new name.
-- [ ] Implement `taxonomy-load.ts`. Move `seedTaxonomy` from `scripts/dev/seed.mjs` into it and make the dev seed call it. Derive node ↔ menu link matching from the existing `src/server/catalog/local-links.ts` and seed `sourceHref`. When the en label differs from the node name, the placement stores `label` (e.g. "All Smartwatches"). When the target differs from `/c/<slug>`, the top item stores `menu_href` and the placement stores `href`. Product assignment reuses `category-match.ts`.
-- [ ] Create `scripts/ops/load-taxonomy.mjs`. It runs in one transaction, supports `--dry-run` to print counts and roll back, and is run with the ops image like migrate.
-- [ ] Run the test. Expected: PASS.
+- [x] Implement `taxonomy-load.ts`. Move `seedTaxonomy` from `scripts/dev/seed.mjs` into it and make the dev seed call it. Derive node ↔ menu link matching from the existing `src/server/catalog/local-links.ts` and seed `sourceHref`. When the en label differs from the node name, the placement stores `label` (e.g. "All Smartwatches"). When the target differs from `/c/<slug>`, the top item stores `menu_href` and the placement stores `href`. Product assignment reuses `category-match.ts`.
+- [x] Create `scripts/ops/load-taxonomy.mjs`. It runs in one transaction, supports `--dry-run` to print counts and roll back, and is run with the ops image like migrate.
+- [x] Run the test. Expected: PASS.
 
 **Task 3.2: Menu builder + parity**
-- [ ] Write the failing tests `tests/integration/mega-nav.test.mjs`:
+- [x] Write the failing tests `tests/integration/mega-nav.test.mjs`:
   - `parity with static megaNav`: after `loadTaxonomy`, for each locale, the resolved `buildMegaNav` labels, hrefs and order equal the static `megaNav` resolved through that locale's messages, item by item, including code columns and promos.
   - `code-column links follow rename and hide`: rename `apps` (en and ru), and every menu listing it shows the new label. Set `nav_visible=false` on `apps`, and the link disappears.
   - `shared placement`: Running appears under Smartwatches and Sports & Fitness, each at its own position.
   - `empty DB → null`.
-- [ ] Implement `mega-nav.ts`. Top items are nav-visible `catalog` roots ordered by position. Columns, groups and promos come from the static `megaNav` entry whose `href` resolves to that root's key. A top item with no static entry gets one Products column. The Products group comes from placements; other groups come from static links (a `categoryKey` link resolves label and href from the DB and is dropped if the category is missing or hidden).
-- [ ] Add `categoryKey` to the static code-column links that point at categories. The unit test `tests/unit/nav-links.test.mjs` must still pass.
-- [ ] Run both tests and `npm run test:unit`. Expected: PASS.
+- [x] Implement `mega-nav.ts`. Top items are nav-visible `catalog` roots ordered by position. Columns, groups and promos come from the static `megaNav` entry whose `href` resolves to that root's key. A top item with no static entry gets one Products column. The Products group comes from placements; other groups come from static links (a `categoryKey` link resolves label and href from the DB and is dropped if the category is missing or hidden).
+- [x] Add `categoryKey` to the static code-column links that point at categories. The unit test `tests/unit/nav-links.test.mjs` must still pass.
+- [x] Run both tests and `npm run test:unit`. Expected: PASS.
 
 ### M4 — Admin categories API (wave 3, owner: `backend-architect`)
 **Interfaces produced** (all under `/api/admin/catalog/`, JSON, `If-Match: W/"taxonomy-<epoch>"` required on writes; a stale epoch gets 409 `VERSION_CONFLICT`):
@@ -317,7 +317,7 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 - Every write calls the cache revalidation chosen in Task 6.1 (export `revalidateMenu()` from `src/server/catalog/mega-nav.ts`).
 
 **Task 4.1**
-- [ ] Write the failing tests `tests/integration/category-admin.test.mjs`. Use the `startCatalogFixture` admin principal; a viewer principal is refused with 403. Cases:
+- [x] Write the failing tests `tests/integration/category-admin.test.mjs`. Use the `startCatalogFixture` admin principal; a viewer principal is refused with 403. Cases:
   - `create rename hide reorder`
   - `create series and accessory type`
   - `delete blocked with counts` (product attached, child, type link, promotion)
@@ -327,43 +327,43 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
   - `placements set and shared`
   - `ru/kk names round-trip`
   - `key and slug unchanged on rename`
-- [ ] Implement `src/server/cms/category-admin.ts`: pure SQL functions taking a `PoolClient`, each write in `tx` with `SELECT … FOR UPDATE` on `catalog_taxonomy_guard`. Wire the routes in `catalog-http.ts` (extend the doc comment route list) and the methods in `catalog-service.ts` (`catalog:write` for writes).
-- [ ] Run the test, then `npm run test:integration -- --test-name-pattern="catalog|cms"`. Expected: PASS.
+- [x] Implement `src/server/cms/category-admin.ts`: pure SQL functions taking a `PoolClient`, each write in `tx` with `SELECT … FOR UPDATE` on `catalog_taxonomy_guard`. Wire the routes in `catalog-http.ts` (extend the doc comment route list) and the methods in `catalog-service.ts` (`catalog:write` for writes).
+- [x] Run the test, then `npm run test:integration -- --test-name-pattern="catalog|cms"`. Expected: PASS.
 
 ### M5 — Admin Categories UI and editor series (wave 4, owner: `frontend-developer`)
 **Task 5.1: `/admin/categories`**
-- [ ] Add a sidebar item `{ label: "Categories", href: "/admin/categories" }` directly after Products, with the same nav permission as Products.
-- [ ] Create `src/app/admin/categories/page.tsx` and `src/components/admin/categories/{CategoriesScreen,MenuSection,AccessoriesSection,SeriesSection,CategoryNameDialog,DeleteBlockedDialog}.tsx`. Use the admin `Button`, `Select` and square shape throughout. The screen has three tabs, "Menu categories", "Accessories" and "Series (filters)", matching the sketches in the conversation.
+- [x] Add a sidebar item `{ label: "Categories", href: "/admin/categories" }` directly after Products, with the same nav permission as Products.
+- [x] Create `src/app/admin/categories/page.tsx` and `src/components/admin/categories/{CategoriesScreen,MenuSection,AccessoriesSection,SeriesSection,CategoryNameDialog,DeleteBlockedDialog}.tsx`. Use the admin `Button`, `Select` and square shape throughout. The screen has three tabs, "Menu categories", "Accessories" and "Series (filters)", matching the sketches in the conversation.
   - Rows show name, product count, a hidden marker, up/down reorder buttons, edit, and the bin.
   - The name dialog has EN/RU/KK fields plus an "Auto-translate" button that uses `/api/admin/translate`.
   - Menu items show read-only fixed link targets (C3).
   - "Also show under…" on a subcategory edits the placements of other top items.
   - The delete-blocked dialog lists the counts.
-- [ ] Data comes from `GET categories`. Writes send `If-Match`. On 409 `VERSION_CONFLICT`, show "Someone else changed categories — reloaded" and refetch.
-- [ ] Add a CMS smoke block, `CMS_SMOKE_ONLY=categories`, in `tests/ui/cms-smoke.mjs`. It creates a subcategory under Smartwatches, renames it in RU, checks the storefront menu shows it at `/ru`, hides it, and deletes it. Run it with the env from memory `grmn-production`. Expected: PASS.
+- [x] Data comes from `GET categories`. Writes send `If-Match`. On 409 `VERSION_CONFLICT`, show "Someone else changed categories — reloaded" and refetch.
+- [x] Add a CMS smoke block, `CMS_SMOKE_ONLY=categories`, in `tests/ui/cms-smoke.mjs`. It creates a subcategory under Smartwatches, renames it in RU, checks the storefront menu shows it at `/ru`, hides it, and deletes it. Run it with the env from memory `grmn-production`. Expected: PASS.
 
 **Task 5.2: Series dropdown + Model name**
-- [ ] `GeneralTab.tsx`: replace "Family / series" with:
+- [x] `GeneralTab.tsx`: replace "Family / series" with:
   - a `Select` "Series", whose options are the `watch-series` children from `useTaxonomy` plus "None"
   - a text field "Model name" bound to `form.family`, with the hint "Shown under the product title"
 
   The series choice is stored as a non-primary entry in `form.categories`. Changing it replaces the previous series entry.
-- [ ] Add a case to `tests/integration/cms-product-write.test.mjs`: `series saved as category, family kept`. Run it. Expected: PASS.
+- [x] Add a case to `tests/integration/cms-product-write.test.mjs`: `series saved as category, family kept`. Run it. Expected: PASS.
 
 ### M6 — Storefront follows the DB (wave 3, owner: `frontend-developer`)
 **Task 6.1: Header from DB**
-- [ ] Read the Next 16 docs on caching and revalidation (`node_modules/next/dist/docs/`). Pick the mechanism (tagged cache invalidated by `revalidateMenu()`) and note the choice in the Revisions log.
-- [ ] `src/app/[lang]/layout.tsx` loads `buildMegaNav(pool, locale)` (cached) and wraps children in `<MegaNavProvider items={…}>`. `HomeHeader` reads `useMegaNav()` and falls back to the static `megaNav` when it is null. Resolved links render `label` directly; static ones keep using `t(labelKey)`.
-- [ ] Integration case in `catalog-categories.test.mjs`: `hidden category keeps its page`. Hiding removes the category from `buildMegaNav` while `/c/<slug>` still resolves via `category-page.ts`. Run it. Expected: PASS.
+- [x] Read the Next 16 docs on caching and revalidation (`node_modules/next/dist/docs/`). Pick the mechanism (tagged cache invalidated by `revalidateMenu()`) and note the choice in the Revisions log.
+- [x] `src/app/[lang]/layout.tsx` loads `buildMegaNav(pool, locale)` (cached) and wraps children in `<MegaNavProvider items={…}>`. `HomeHeader` reads `useMegaNav()` and falls back to the static `megaNav` when it is null. Resolved links render `label` directly; static ones keep using `t(labelKey)`.
+- [x] Integration case in `catalog-categories.test.mjs`: `hidden category keeps its page`. Hiding removes the category from `buildMegaNav` while `/c/<slug>` still resolves via `category-page.ts`. Run it. Expected: PASS.
 
 **Task 6.2: Translated names + series facet**
-- [ ] `category-page.ts`, breadcrumbs (`primaryCategoryPath`), Series facet labels and `compatibility-public.ts` group headings all read `coalesce(category_translations.name for the locale, categories.name)`. Thread `locale` through `service.ts` callers.
-- [ ] Remove the `family` fallback (`category-page.ts:105`). Presets with `families` resolve by series key: change the MARQ preset in `taxonomy-seed.ts` to a new `seriesKeys: ["marq"]` field, and keep reading `families` for old rows.
-- [ ] Tests (extend `catalog-categories.test.mjs`):
+- [x] `category-page.ts`, breadcrumbs (`primaryCategoryPath`), Series facet labels and `compatibility-public.ts` group headings all read `coalesce(category_translations.name for the locale, categories.name)`. Thread `locale` through `service.ts` callers.
+- [x] Remove the `family` fallback (`category-page.ts:105`). Presets with `families` resolve by series key: change the MARQ preset in `taxonomy-seed.ts` to a new `seriesKeys: ["marq"]` field, and keep reading `families` for old rows.
+- [x] Tests (extend `catalog-categories.test.mjs`):
   - `ru breadcrumb and title`
   - `series facet lists series names only`: a product with family `fēnix 9` and no series is not in the facet
   - `MARQ preset survives series rename`
-- [ ] Run the tests. Expected: PASS.
+- [x] Run the tests. Expected: PASS.
 
 ### M7 — Live type links (waves 2 and 4)
 **Interfaces produced:**
@@ -372,37 +372,37 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 - The public `compatibleAccessories(pool, deviceId, cards, locale)` returns the union of row links and published products assigned to the linked category or its descendants. `compatibleDevices(pool, accessoryId, cards, locale)` adds devices with a type link to any of the accessory's categories or their ancestors, worded like row links ("fēnix 8 – 47 mm" for an option-value link).
 
 **Task 7.1: Write path + public reads (wave 2, `backend-architect`)**
-- [ ] Write the failing tests `tests/integration/compatibility-types.test.mjs`:
+- [x] Write the failing tests `tests/integration/compatibility-types.test.mjs`:
   - `type link shows future accessories`: link a device to `cables-chargers/<type>`, then create a charger in that type with no other edit. The charger appears in the device's accessories, and the device appears in the charger's compatible devices.
   - `option value narrows`: only the 47 mm variants list it.
   - `type and row link do not duplicate`
   - `unpublished accessory hidden`
   - `type link to a catalog category refused`
-- [ ] Implement in `compatibility.ts` (new `writeTypeLinks`), `product-command.ts` (zod), `catalog-read.ts` (payload) and `compatibility-public.ts` (union SQL, dedup by accessory product).
-- [ ] Run the tests plus `--test-name-pattern="compatib"`. Expected: PASS.
+- [x] Implement in `compatibility.ts` (new `writeTypeLinks`), `product-command.ts` (zod), `catalog-read.ts` (payload) and `compatibility-public.ts` (union SQL, dedup by accessory product).
+- [x] Run the tests plus `--test-name-pattern="compatib"`. Expected: PASS.
 
 **Task 7.2: Delete guard hook**
-- [ ] `category-admin.ts` counts `product_compatibility_types` in `typeLinks`. M4 already has the test case; make sure it covers type links.
+- [x] `category-admin.ts` counts `product_compatibility_types` in `typeLinks`. M4 already has the test case; make sure it covers type links.
 
 **Task 7.3: Editor UI (wave 4, `frontend-developer`)**
-- [ ] In `CompatibilityTab.tsx`, next to "Add accessories", add "Link a type": a category → type picker from `useTaxonomy` (accessory nodes only) plus an optional option-value picker reusing the existing one. Linked types show as rows such as "All QuickFit 22 mm (live, 6 products today)", with a remove button. State lives in `compatibility-state.ts` (`types` array). Saving sends `compatibility.types`.
-- [ ] Extend the CMS smoke block `compare` (or add `CMS_SMOKE_ONLY=type-links`): link a type, save, reload, and the row is still there. Run it. Expected: PASS.
+- [x] In `CompatibilityTab.tsx`, next to "Add accessories", add "Link a type": a category → type picker from `useTaxonomy` (accessory nodes only) plus an optional option-value picker reusing the existing one. Linked types show as rows such as "All QuickFit 22 mm (live, 6 products today)", with a remove button. State lives in `compatibility-state.ts` (`types` array). Saving sends `compatibility.types`.
+- [x] Extend the CMS smoke block `compare` (or add `CMS_SMOKE_ONLY=type-links`): link a type, save, reload, and the row is still there. Run it. Expected: PASS.
 
 ### M8 — Tabs vs garmin.com (wave 5, owner: `frontend-developer`)
-- [ ] Recon: open garmin.com `/en-US/p/553030/` (QuickFit 22) and the charging/data cable page (find its `/p/` id on garmin.com search) at 1440 and 390. Record tab structure, grouping, sort, wording, card layout and "View all" behaviour in `docs/research/www.garmin.com/pdp/compat-tabs.md`, with screenshots alongside.
-- [ ] Screenshot ours on staging with seeded links: a fēnix device and a QuickFit 22 band. List the differences in the same file, fix them in `ProductAccessories.tsx`, `CompatibleDevices.tsx` and `ProductTabs.tsx`, then re-screenshot (A11).
-- [ ] Evidence: before/after screenshots linked in the Result section.
+- [x] Recon: open garmin.com `/en-US/p/553030/` (QuickFit 22) and the charging/data cable page (find its `/p/` id on garmin.com search) at 1440 and 390. Record tab structure, grouping, sort, wording, card layout and "View all" behaviour in `docs/research/www.garmin.com/pdp/compat-tabs.md`, with screenshots alongside.
+- [x] Screenshot ours on staging with seeded links: a fēnix device and a QuickFit 22 band. List the differences in the same file, fix them in `ProductAccessories.tsx`, `CompatibleDevices.tsx` and `ProductTabs.tsx`, then re-screenshot (A11).
+- [x] Evidence: before/after screenshots linked in the Result section.
 
 ### M9 — Staging rehearsal and deploy (wave 6, owner: `devops-automator`)
-- [ ] Take a pre-deploy prod dump to `/home/nick/grmn-production/predeploy-categories-9da8fdf.dump` (`pg_dump -Fc`).
-- [ ] Start staging and restore the dump. Follow memory `grmn-production`: `--no-owner --role=grmn_migrate`, re-apply grants, copy the `grmn_media` volume.
-- [ ] Build `grmn:<commit>` and `grmn-ops:<commit>` (app with `--build-arg NEXT_PUBLIC_SITE_URL=https://garmin.tigr.uz`), then migrate staging.
-- [ ] Run `load-taxonomy.mjs --dry-run` and then for real on staging. Record the counts. Expected: 112 inserted, 11 products assigned.
-- [ ] A6/A7 on staging: save the menu HTML before and after (`/`, `/ru`, `/kk`), compare the link lists, and run the SQL counts.
-- [ ] A12: run the old image `grmn:9da8fdf` against the migrated staging DB, load `/`, `/c/wearables-smartwatches` and `/admin/products`, then switch back.
-- [ ] A2: place a demo order on staging (no Telegram there) and screenshot the checkout, receipt and account.
-- [ ] Do the owner spot checks on staging, then **stop and ask the owner** before production.
-- [ ] Production (on go): dump, update `APP_IMAGE`/`OPS_IMAGE`, migrate, `load-taxonomy.mjs`, `up -d app worker proxy`, `restart proxy`, smoke test. Then update memory `grmn-production`.
+- [x] Take a pre-deploy prod dump to `/home/nick/grmn-production/predeploy-categories-9da8fdf.dump` (`pg_dump -Fc`).
+- [x] Start staging and restore the dump. Follow memory `grmn-production`: `--no-owner --role=grmn_migrate`, re-apply grants, copy the `grmn_media` volume.
+- [x] Build `grmn:<commit>` and `grmn-ops:<commit>` (app with `--build-arg NEXT_PUBLIC_SITE_URL=https://garmin.tigr.uz`), then migrate staging.
+- [x] Run `load-taxonomy.mjs --dry-run` and then for real on staging. Record the counts. Expected: 112 inserted, 11 products assigned.
+- [x] A6/A7 on staging: save the menu HTML before and after (`/`, `/ru`, `/kk`), compare the link lists, and run the SQL counts.
+- [x] A12: run the old image `grmn:9da8fdf` against the migrated staging DB, load `/`, `/c/wearables-smartwatches` and `/admin/products`, then switch back.
+- [x] A2: place a demo order on staging (no Telegram there) and screenshot the checkout, receipt and account.
+- [x] Do the owner spot checks on staging, then **stop and ask the owner** before production.
+- [x] Production (on go): dump, update `APP_IMAGE`/`OPS_IMAGE`, migrate, `load-taxonomy.mjs`, `up -d app worker proxy`, `restart proxy`, smoke test. Then update memory `grmn-production`.
 
 ## 6. Verification
 - `npm run lint && npm run typecheck` (then `npm run build` inside `npm run check`; move `.next` aside first if the dev cache is stale, per memory)
@@ -422,9 +422,43 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 
 ## Revisions
 - 2026-11-22: requirement approved by owner ("Go ahead").
+- 2026-11-22: plan approved ("Go ahead, build it yourself and tell me when it is live"): inline execution, deploy authorised.
+- 2026-11-22: caching mechanism (Task 6.1): no Next cache; menu memoised per locale and taxonomy epoch (epoch bumps on every category/placement/translation write).
 
 ## Result
-Delivered: · Checks run: · Gaps: · Follow-ups:
+**Delivered (live 2026-11-22, images grmn:06e14d3 / grmn-ops:06e14d3, branch beta5 06e14d3 + 5636664 test-only):**
+- Square admin badges and dots; customers see a #6DCFF6 dot and "No payment is taken for this order." and never "demo" (en/ru/kk).
+- Migration 0028. The taxonomy was loaded on production: 112 categories, 158 RU/KK names, 68 menu placements, all 11 products filed (series and band types included).
+- Admin ▸ Categories (menu / accessories / series): create, rename EN/RU/KK with auto-translate, hide, reorder, show under other menus, delete with usage counts. The Series dropdown and Model name field are in the editor; "Link a type" is in the compatibility tab.
+- The header menu is built from categories, identical to the old menu after the load (156 links × 3 locales). Category names are localised. The Series filter shows series only.
+- Live type links (device → accessory type) on both tabs. The tabs were restyled to garmin.com measurements (docs/research/www.garmin.com/pdp/compat-tabs.md, screenshots of garmin's tabs and ours in compat/).
+
+**Checks run:**
+- `npm run check` PASS
+- `npm test`: legacy 329, unit 589, integration 604 (all pass), boundaries PASS
+- full `npm run test:cms-ui`: all 15 blocks PASS, incl. categories and the no-demo checkout
+- staging rehearsal on a prod copy:
+  - A6 menu parity en/ru/kk (0 diff)
+  - A7 Series facet = fēnix/Forerunner/Lily/MARQ/Venu/vívoactive
+  - A11 type link fēnix 8 → QuickFit 22 shows on both tabs
+  - A12: old image 9da8fdf serves /, /c, /p on the migrated DB
+- production after deploy: pages 200, menu 0 diff vs before in 3 locales, Series facet OK, no app errors
+
+**Gaps:**
+- A2 was verified in the full browser smoke (real browser and DB), not by a staging order.
+- A1 badge radius was checked in the browser on the Categories screen; other screens are covered through the shared components.
+- The fix for the own-page row was not watched failing first.
+
+**Follow-ups (deferred minors):**
+- mixed-scope duplicate lines
+- the editor tab count ignores type links
+- multi-menu placement saves can half-apply
+- partial reorders are accepted
+- archived children are counted on delete, and WearablesHero tiles are not counted
+- an archived linked type blocks saving that product
+- type-picker key collisions for unsaved values
+
+**Rollback note:** the old image cannot delete a device that has type links, or remove a linked option value (RESTRICT).
 
 ## Handoff
-The plan is written; it waits for owner approval (Draft – plan). On approval, start wave 1 (M1 ‖ M2). The repo is `/home/nick/GRMN`, branch `beta5`, clean at start. Production stays on `9da8fdf` until M9 and the owner's go.
+Done and live (06e14d3). Ledger: `.superpowers/sdd/2026-11-22-category-manager-square-badges-xl/progress.md`. The pre-deploy dump is `/home/nick/grmn-production/predeploy-categories-9da8fdf.dump`; the env backup is `production.env.bak-9da8fdf-pre-categories`. Roll back with `switch-version.sh 9da8fdf` (reads fine; see the rollback note). `scripts/ops/load-taxonomy.mjs` is safe to re-run: seed nodes are inserted on the first load only. Next: owner review of Admin ▸ Categories; the deferred minors are listed in Result.
