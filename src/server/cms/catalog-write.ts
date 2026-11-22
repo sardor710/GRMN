@@ -103,6 +103,37 @@ export async function writeProduct(client: PoolClient, context: WriteContext, ra
   // beta5 merge (beta F-c): an editor that loaded a pre-merge document sends its own variant ids (the legacy projection
   // or the importer made the stored rows). A sent id that is not a stored row id is resolved through the previous
   // document's SKU for that id, so a renamed SKU keeps its row (cart lines, stock, history) instead of a new row.
+  // beta5 merge: a pre-merge editor document keys option values by their label ("Beige, Cream, White") while the
+  // legacy projection stored a slug key and its own id. A sent value that matches no stored value by id, derived id
+  // or key is matched by label within its option, so it keeps the stored row (id and key) instead of a new row,
+  // and the variants' selections follow it.
+  if (old && options.length && current.options.length) {
+    const remap = new Map<string, Map<string, string>>();
+    options = options.map(option => {
+      const stored = current.options.find(row => row.id === option.id || row.id === syncId(productId, "option", option.id)) ?? current.options.find(row => row.key === option.key.trim().toLowerCase());
+      if (!stored) return option;
+      const claimed = new Set<string>();
+      const values = option.values.map(value => {
+        const direct = stored.values.find(row => row.id === value.id || row.id === syncId(productId, "option-value", option.id, value.id) || row.key === value.key);
+        if (direct) { claimed.add(direct.id); return value; }
+        return value;
+      }).map(value => {
+        if (stored.values.some(row => row.id === value.id || row.id === syncId(productId, "option-value", option.id, value.id) || row.key === value.key)) return value;
+        const label = value.label.trim().toLowerCase();
+        const row = stored.values.find(item => item.label.trim().toLowerCase() === label && !claimed.has(item.id));
+        if (!row) return value;
+        claimed.add(row.id);
+        if (!remap.has(option.id)) remap.set(option.id, new Map());
+        remap.get(option.id)!.set(value.id, row.id);
+        return { ...value, id: row.id, key: row.key };
+      });
+      return { ...option, values };
+    });
+    if (remap.size) variants = variants.map(variant => ({
+      ...variant,
+      selections: Object.fromEntries(Object.entries(variant.selections).map(([optionId, valueId]) => [optionId, remap.get(optionId)?.get(valueId) ?? valueId])),
+    }));
+  }
   const sentVariantIds = variants.map(variant => ({ id: variant.id, sku: variant.sku }));
   if (old && current.variants.length) {
     const storedIds = new Set(current.variants.map(row => row.id));

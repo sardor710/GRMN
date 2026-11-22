@@ -84,7 +84,9 @@ const outputs: Record<keyof typeof dtoKeys, OutputShape> = {
 /** Translation overlays: plain JSON with string leaves only (objects and arrays nest; anything else is dropped). */
 function stringTree(value: unknown, depth = 0): unknown {
   if (typeof value === "string") return value;
-  if (depth > 6) return undefined;
+  // Variant overlays nest deepest: translations.<locale>.variants.<id>.content.specGroups[].items[].label is depth 9
+  // (a depth-6 cap returned their items empty, so a save from the editor dropped them). 10 keeps a bound.
+  if (depth > 10) return undefined;
   if (Array.isArray(value)) return value.map(item => stringTree(item, depth + 1)).filter(item => item !== undefined);
   if (!value || typeof value !== "object") return undefined;
   const output: Record<string, unknown> = {};
