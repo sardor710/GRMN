@@ -80,3 +80,11 @@ test("with the production override the sandbox adapter is staff-only; elsewhere 
   assert.doesNotThrow(() => assertDemoPurchaseActor(prod, { userId: "u1", staff: true }));
   for (const actor of [{ userId: null }, { userId: "u1", staff: false }]) assert.doesNotThrow(() => assertDemoPurchaseActor(dev, actor));
 });
+
+test("DEMO_PURCHASES_PUBLIC=1 opens production demo purchases to every shopper (owner 2026-11-22)", () => {
+  const sandboxOf = env => configuredPaymentProviders(env).find(p => p.name === "sandbox");
+  const production = { DEMO_PURCHASES: "1", NODE_ENV: "production", DEMO_PURCHASES_ALLOW_PRODUCTION: "1" };
+  assert.equal(sandboxOf(production).staffOnly, true, "staff only by default");
+  assert.equal(sandboxOf({ ...production, DEMO_PURCHASES_PUBLIC: "1" }).staffOnly, false);
+  assert.equal(sandboxOf({ ...production, DEMO_PURCHASES_PUBLIC: "0" }).staffOnly, true);
+});

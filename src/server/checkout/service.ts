@@ -185,7 +185,7 @@ async function enforceDemoCap(client: PoolClient, userId: string | null, scope: 
   // the same connection out); the actor count needs no such filter, as staff never reach it.
   const count = async (column: "actor_scope" | "client_address_hash", value: string) => (await client.query<{ n: number }>(
     `SELECT count(*)::int AS n FROM (SELECT 1 FROM checkout_attempts c JOIN orders o ON o.checkout_attempt_id=c.id
-       WHERE c.${column}=$1 AND c.operation=$2 AND c.created_at>now()-make_interval(hours=>${DEMO_ORDER_WINDOW_HOURS}) AND o.payment_mode='demo'
+       WHERE c.${column}=$1 AND c.operation=$2 AND c.created_at>now()-make_interval(hours=>${DEMO_ORDER_WINDOW_HOURS}) AND o.payment_mode IN ('demo','sandbox')
        ${column === "client_address_hash" ? "AND NOT EXISTS (SELECT 1 FROM user_roles ur WHERE ur.user_id=o.user_id)" : ""} LIMIT $3) x`,
     [value, OPERATION, limit])).rows[0].n;
   if (await count("actor_scope", scope) >= limit)
@@ -261,7 +261,8 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
     const cart = (await client.query<{ status: string; version: number }>("SELECT status,version FROM carts WHERE id=$1 FOR UPDATE", [owned.cart_id])).rows[0];
     if (!cart || cart.status !== "active" || cart.version !== command.cartVersion) stale();
     if (command.paymentMethod === "manual") await enforceUnpaidLimit(client, actor.userId, addressHash);
-    else if (command.paymentMethod === "demo") await enforceDemoCap(client, actor.userId, scope, addressHash);
+    // Both demo kinds share the daily demo-order cap (staff exempt): the Task 3.2 demo capture and the D03a sandbox purchase.
+    else if (command.paymentMethod === "demo" || sandbox) await enforceDemoCap(client, actor.userId, scope, addressHash);
 
     // 3. Revalidate (ignoring this attempt's own coupon hold), then hold the coupon and the stock.
     await revalidateQuote(client, { quoteId: command.quoteId, cartId: owned.cart_id, cartVersion: command.cartVersion, checkoutAttemptId: attemptId });

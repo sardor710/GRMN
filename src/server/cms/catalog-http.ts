@@ -2,6 +2,7 @@ import "server-only";
 import { AuthFailure } from "../auth/config.ts";
 import { authErrorResponse } from "../auth/http.ts";
 import { adminJSON, readAdminJSON } from "../auth/admin-service.ts";
+import { requestURL } from "../auth/request-url.ts";
 import type { CatalogAdminService } from "./catalog-service.ts";
 import { SkuConflict } from "./catalog-write.ts";
 
@@ -46,7 +47,8 @@ export function createCatalogHTTP(input: { service: CatalogAdminService; baseURL
   const { service, baseURL } = input;
   return async function handleCatalog(request: Request): Promise<Response> {
     try {
-      const url = new URL(request.url);
+      // Behind the reverse proxy request.url carries the internal host; requestURL rebuilds the public URL (beta ffb8aa9).
+      const url = requestURL(request, baseURL);
       if (url.origin !== baseURL || !(url.pathname === "/api/admin/catalog" || url.pathname.startsWith("/api/admin/catalog/"))) bad();
       const parts = url.pathname.slice("/api/admin/catalog/".length).split("/").filter(Boolean);
       const method = request.method;

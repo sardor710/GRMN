@@ -44,11 +44,17 @@ function withOptionDefinitions(model: CommerceModel | undefined, definitions: re
   const options = model.options.map((option) => {
     const definition = definitionOf(option);
     if (!definition) return option;
+    // beta5 (owner 2026-11-22): colours stay photo thumbnails of the watch in that colour, as before the merge. The
+    // variant photo the model picked wins; a stored swatch photo or colour only fills a value that has none.
     const values = option.values.map((value) => {
       const meta = definition.values.find((v) => v.label === value.label);
-      return meta ? { ...value, ...(meta.swatchColor ? { swatchColor: meta.swatchColor } : {}), ...(meta.swatchImage ? { swatchImage: meta.swatchImage } : {}) } : value;
+      if (!meta || value.swatchImage) return value;
+      return { ...value, ...(meta.swatchImage ? { swatchImage: meta.swatchImage } : meta.swatchColor ? { swatchColor: meta.swatchColor } : {}) };
     });
-    return { ...option, display: definition.display, values };
+    // "buttons" is the column default (migration 0024), so it never turns the model's photo swatches back into words;
+    // an explicit "swatch" or "dropdown" from the editor still applies.
+    const display = definition.display === "buttons" ? option.display : definition.display;
+    return { ...option, display, values };
   });
   return { ...model, options: [...options].sort((a, b) => rank(a) - rank(b)) };
 }

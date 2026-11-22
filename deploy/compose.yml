@@ -57,6 +57,8 @@ services:
       DEMO_ORDER_LIMIT: ${DEMO_ORDER_LIMIT:-}
       DEMO_PURCHASES: ${DEMO_PURCHASES:-}
       DEMO_PURCHASES_ALLOW_PRODUCTION: ${DEMO_PURCHASES_ALLOW_PRODUCTION:-}
+      # 1 = every shopper may demo-buy on production (capped by DEMO_ORDER_LIMIT); unset = staff only.
+      DEMO_PURCHASES_PUBLIC: ${DEMO_PURCHASES_PUBLIC:-}
       # Yandex address geocoding on the server (M8); empty = the address form works without the map lookup.
       YANDEX_GEOCODER_API_KEY: ${YANDEX_GEOCODER_API_KEY:-}
       # Staff WhatsApp order alerts (optional; all unset = off). Telegram stays the production channel.

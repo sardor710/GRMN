@@ -19,7 +19,9 @@ export function configuredPaymentProviders(env: Readonly<Record<string, string |
   // The manual adapter is environment 'live' but takes no automated money, so it does not block demo purchases.
   const gate = demoPurchasesGate(env, list.filter(provider => provider.name !== "manual"));
   // Under the production override only signed-in staff may demo-buy (M9.3): real stock and coupons are consumed.
-  if (gate.enabled) list.push(createSandboxProvider({ staffOnly: gate.production }));
+  // beta5 (owner 2026-11-22: "let customers make demo purchases too"): DEMO_PURCHASES_PUBLIC=1 opens them to every
+  // shopper; checkout then applies the daily demo-order cap (DEMO_ORDER_LIMIT per customer and connection, staff exempt).
+  if (gate.enabled) list.push(createSandboxProvider({ staffOnly: gate.production && env.DEMO_PURCHASES_PUBLIC !== "1" }));
   else if (gate.reason !== "disabled")
     console.warn(`[payments] DEMO_PURCHASES=1 is ignored: ${gate.reason === "production" ? "NODE_ENV=production without DEMO_PURCHASES_ALLOW_PRODUCTION=1" : "a live payment provider is configured"}`);
   return list;
