@@ -13,9 +13,10 @@ const sku = { variantId: "6f1c2b9e-0a43-4d1e-9a51-3c2f6b7d8e90", sku: "SYN-51-G"
 let calls, confirms, answers;
 beforeEach(() => { calls = []; confirms = []; answers = []; globalThis.window = { confirm: message => { confirms.push(message); return answers.length ? answers.shift() : true; } }; });
 
-function screen(view, { failWith } = {}) {
+function screen(view, { failWith, fetcher } = {}) {
   const list = items => ({ items, loading: false, error: null, total: items.length, reload() { calls.push(["reload"]); }, hasPrevious: false, hasNext: false, pageNumber: 1, next() {}, previous() {} });
   return componentFixture(SCREEN, {
+    ...(fetcher ? { fetcher } : {}),
     modules: {
       "@/hooks/useCatalogList": { useCatalogList: kind => list(kind === "products" ? [product] : [sku]) },
       "@/components/admin/catalog/usePersistentChoice": { usePersistentChoice: () => [view, () => {}] },
@@ -106,4 +107,23 @@ test("delete helpers send the right requests and surface the server's code and m
   await assert.rejects(deleteCatalogVariant(reply(409, { error: { code: "CONFLICT", message: "This SKU has orders, so it cannot be deleted; archive it instead" } }), { variantId: sku.variantId, productVersion: 3 }),
     error => error instanceof AdminDeleteError && error.code === "CONFLICT" && error.status === 409 && /has orders/.test(error.message));
   await assert.rejects(deleteProductPermanently(reply(500, null), { id: "x", version: 1 }), error => error instanceof AdminDeleteError && error.code === "UNKNOWN" && error.message === "The delete could not be completed. Check your permissions and try again.");
+});
+
+// Final review 2026-11-22: deleting several SKUs in a row must not collapse the expanded product each time, and the
+// remaining rows must carry the new product version (otherwise the next bin reports a false "changed in another window").
+test("a SKU delete keeps the product expanded and reloads its variants with the new version", async () => {
+  const fetched = [];
+  const fresh = { ...sku, variantId: "11111111-2222-4333-8444-555555555555", sku: "SYN-47-B", productVersion: 8 };
+  let reply = [sku, fresh];
+  const fetcher = async url => { fetched.push(url); return { ok: true, status: 200, json: async () => ({ variants: reply }) }; };
+  const fixture = screen("products", { fetcher });
+  let [table] = named(fixture.render(), "GroupedTable");
+  await table.props.onToggle(product);
+  reply = [fresh];
+  [table] = named(fixture.render(), "GroupedTable");
+  await bin(table.type(table.props), "Delete SKU SYN-51-G").props.onClick();
+  await fixture.flush();
+  assert.deepEqual(fetched, ["/api/admin/catalog/products/prod-key-1/variants", "/api/admin/catalog/products/prod-key-1/variants"]);
+  [table] = named(fixture.render(), "GroupedTable");
+  assert.deepEqual(table.props.expanded[product.id], { status: "ready", rows: [fresh] });
 });

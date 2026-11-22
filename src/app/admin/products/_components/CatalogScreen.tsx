@@ -65,20 +65,29 @@ export default function CatalogScreen() {
 
   const reloadAll = () => { setExpanded({}); grouped.reload(); skus.reload(); };
 
+  const loadVariants = async (productId: string) => {
+    try {
+      const response = await fetch(`/api/admin/catalog/products/${encodeURIComponent(productId)}/variants`, { cache: "no-store" });
+      if (!response.ok) throw new Error(`Variants could not be loaded (HTTP ${response.status}).`);
+      const body = (await response.json()) as { variants?: SkuRow[] };
+      setExpanded((previous) => ({ ...previous, [productId]: { status: "ready", rows: body.variants ?? [] } }));
+    } catch (error) {
+      setExpanded((previous) => ({ ...previous, [productId]: { status: "error", message: error instanceof Error ? error.message : "Variants could not be loaded." } }));
+    }
+  };
   const toggleExpand = async (row: ProductListRow) => {
     if (expanded[row.id]) {
       setExpanded((previous) => Object.fromEntries(Object.entries(previous).filter(([key]) => key !== row.id)));
       return;
     }
     setExpanded((previous) => ({ ...previous, [row.id]: { status: "loading" } }));
-    try {
-      const response = await fetch(`/api/admin/catalog/products/${encodeURIComponent(row.id)}/variants`, { cache: "no-store" });
-      if (!response.ok) throw new Error(`Variants could not be loaded (HTTP ${response.status}).`);
-      const body = (await response.json()) as { variants?: SkuRow[] };
-      setExpanded((previous) => ({ ...previous, [row.id]: { status: "ready", rows: body.variants ?? [] } }));
-    } catch (error) {
-      setExpanded((previous) => ({ ...previous, [row.id]: { status: "error", message: error instanceof Error ? error.message : "Variants could not be loaded." } }));
-    }
+    await loadVariants(row.id);
+  };
+  // After a SKU changes or goes, its product stays expanded and every sibling row gets the new product version.
+  const refreshProductRows = async (productId: string) => {
+    grouped.reload();
+    skus.reload();
+    if (expanded[productId]) await loadVariants(productId);
   };
 
   const archiveRow = async (row: ProductListRow) => {
@@ -115,19 +124,13 @@ export default function CatalogScreen() {
   const deleteSku = async (row: SkuRow) => {
     if (!window.confirm(`Delete SKU ${row.sku} permanently? Its price, photo links and stock are removed. This cannot be undone.`)) return;
     setActionError("");
-    try { await deleteCatalogVariant(fetch, { variantId: row.variantId, productVersion: row.productVersion }); reloadAll(); }
+    try { await deleteCatalogVariant(fetch, { variantId: row.variantId, productVersion: row.productVersion }); await refreshProductRows(row.productId); }
     catch (error) { if (!staleDelete(error)) setActionError(error instanceof Error ? error.message : "Delete failed."); }
   };
 
   const onDrawerSaved = (variant: SkuRow) => {
     setDrawer(null);
-    setExpanded((previous) => {
-      const entry = previous[variant.productId];
-      if (!entry || entry.status !== "ready") return previous;
-      return { ...previous, [variant.productId]: { status: "ready", rows: entry.rows.map((row) => (row.variantId === variant.variantId ? variant : row)) } };
-    });
-    grouped.reload();
-    skus.reload();
+    void refreshProductRows(variant.productId);
   };
 
   const countLabel = list.loading ? "Loading…" : view === "products" ? `${list.total.toLocaleString("en-US")} ${list.total === 1 ? "product" : "products"}` : `${list.total.toLocaleString("en-US")} ${list.total === 1 ? "SKU" : "SKUs"}`;
