@@ -24,6 +24,7 @@ const navSections: { title: string; items: NavItem[] }[] = [
     items: [
       { label: "Orders", href: "/admin/orders" },
       { label: "Products", href: "/admin/products" },
+      { label: "Categories", href: "/admin/categories" },
       { label: "Discounts", href: "/admin/discounts" },
     ],
   },
@@ -47,7 +48,7 @@ const navSections: { title: string; items: NavItem[] }[] = [
 ];
 
 const navPermissions: Record<string, string> = {
-  "/admin/products": "catalog:read", "/admin/discounts": "catalog:read",
+  "/admin/products": "catalog:read", "/admin/categories": "catalog:read", "/admin/discounts": "catalog:read",
   "/admin/orders": "orders:read", "/admin/clients": "customers:read",
   "/admin/homepage": "content:write", "/admin/banners": "content:write",
   "/admin/blogs": "content:write", "/admin/seo": "content:write",

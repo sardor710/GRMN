@@ -45,12 +45,17 @@ export interface AccessoryLinkModel {
   accessoryVariantSku: string | null;
 }
 
-export interface CompatibilityForm { devices: DeviceLinkModel[]; accessories: AccessoryLinkModel[] }
+/** 0028 (owner 2026-11-22): a live "fits every accessory of this type" link, owned by the device. */
+export interface TypeLinkModel { categoryKey: string; name: string; parentName: string | null; optionValues: { id: string; label: string }[]; productCount: number }
+
+export interface CompatibilityForm { devices: DeviceLinkModel[]; accessories: AccessoryLinkModel[]; types: TypeLinkModel[] }
 
 export interface DeviceLinkCommand { productKey: string; optionValueKeys: string[]; variantSkus: string[]; accessoryVariantSku?: string }
 export interface AccessoryLinkCommand { productKey: string; accessoryVariantSku?: string }
 
-export const emptyCompatibility = (): CompatibilityForm => ({ devices: [], accessories: [] });
+export interface TypeLinkCommand { categoryKey: string; optionValueKeys: string[] }
+
+export const emptyCompatibility = (): CompatibilityForm => ({ devices: [], accessories: [], types: [] });
 
 const sameLink = (a: { productKey: string; accessoryVariantSku: string | null }, b: { productKey: string; accessoryVariantSku: string | null }) =>
   a.productKey === b.productKey && (a.accessoryVariantSku ?? null) === (b.accessoryVariantSku ?? null);
@@ -96,7 +101,19 @@ export function compatibilityFromPayload(payload: Raw): CompatibilityForm {
       categoryName: strOrNull(view.primaryCategoryName), status: strOrNull(view.status), accessoryVariantSku,
     }];
   });
-  return { devices, accessories };
+  const typeViews = arr(compat.compatibleTypes).filter(isRecord);
+  const types: TypeLinkModel[] = arr(compat.types).filter(isRecord).flatMap((command): TypeLinkModel[] => {
+    const categoryKey = str(command.categoryKey);
+    if (!categoryKey) return [];
+    const view = typeViews.find((item) => str(item.categoryKey) === categoryKey) ?? {};
+    const values = arr(view.optionValues).filter(isRecord);
+    const optionValues = arr(command.optionValueKeys).map(str).filter(Boolean).map((id) => {
+      const found = values.find((value) => str(value.id) === id || str(value.key) === id);
+      return { id, label: found ? str(found.label) || str(found.key) : id };
+    });
+    return [{ categoryKey, name: str(view.name) || categoryKey, parentName: strOrNull(view.parentName), optionValues, productCount: num(view.productCount) }];
+  });
+  return { devices, accessories, types };
 }
 
 /** A link made on the accessory side with a finer scope ("51 mm only"): shown read-only on the device. */
@@ -132,6 +149,10 @@ export function deviceLinksToCommand(links: readonly DeviceLinkModel[]): DeviceL
   }));
 }
 
+export function typeLinksToCommand(links: readonly TypeLinkModel[]): TypeLinkCommand[] {
+  return links.map((link) => ({ categoryKey: link.categoryKey, optionValueKeys: link.optionValues.map((value) => value.id) }));
+}
+
 export function accessoryLinksToCommand(links: readonly AccessoryLinkModel[]): AccessoryLinkCommand[] {
   return links.map((link) => ({ productKey: link.productKey, ...(link.accessoryVariantSku ? { accessoryVariantSku: link.accessoryVariantSku } : {}) }));
 }
@@ -145,10 +166,12 @@ export function compatibilityCommand(base: Raw, form: CompatibilityForm): Raw | 
   const baseCompat = isRecord(base.compatibility) ? base.compatibility : undefined;
   const devices = deviceLinksToCommand(form.devices);
   const accessories = accessoryLinksToCommand(form.accessories);
+  const types = typeLinksToCommand(form.types ?? []);
   const devicesChanged = JSON.stringify(devices) !== JSON.stringify(deviceLinksToCommand(loaded.devices));
   const accessoriesChanged = JSON.stringify(accessories) !== JSON.stringify(accessoryLinksToCommand(loaded.accessories));
-  if (!devicesChanged && !accessoriesChanged) return baseCompat;
-  return { ...(baseCompat ?? {}), ...(devicesChanged ? { devices } : {}), ...(accessoriesChanged ? { accessories } : {}) };
+  const typesChanged = JSON.stringify(types) !== JSON.stringify(typeLinksToCommand(loaded.types));
+  if (!devicesChanged && !accessoriesChanged && !typesChanged) return baseCompat;
+  return { ...(baseCompat ?? {}), ...(devicesChanged ? { devices } : {}), ...(accessoriesChanged ? { accessories } : {}), ...(typesChanged ? { types } : {}) };
 }
 
 // ---------------------------------------------------------------------------------------------------------
@@ -385,3 +408,22 @@ export function suggestForWidth(width: 20 | 22 | 26, device: Pick<DeviceSummary,
 /** Number shown on the tab: links on either side, plus finer accessory-side links shown read-only on a device. */
 export const compatibilityCount = (form: CompatibilityForm, fine: readonly FineAccessoryLink[] = []): number =>
   form.devices.length + form.accessories.length + new Set(fine.filter((link) => !hasWholeAccessory(form.accessories, link.productKey)).map((link) => link.productKey)).size;
+
+// ---------------------------------------------------------------------------------------------------------
+// Device side: live type links (0028)
+
+/** Adds a type link; a link to the same type replaces the earlier one (its sizes are the new choice). */
+export function addTypeLink(links: readonly TypeLinkModel[], link: TypeLinkModel): TypeLinkModel[] {
+  const index = links.findIndex((item) => item.categoryKey === link.categoryKey);
+  if (index < 0) return [...links, link];
+  return links.map((item, at) => (at === index ? link : item));
+}
+export const removeTypeLink = (links: readonly TypeLinkModel[], categoryKey: string): TypeLinkModel[] => links.filter((link) => link.categoryKey !== categoryKey);
+
+/** "Every Bands › QuickFit 22 mm accessory · 47 mm only · live, 6 products today". */
+export function describeTypeLink(link: TypeLinkModel): string {
+  const where = link.parentName ? `${link.parentName} › ${link.name}` : link.name;
+  const sizes = link.optionValues.length ? ` · ${link.optionValues.map((value) => value.label).join(", ")} only` : "";
+  const count = link.productCount ? `${link.productCount} ${link.productCount === 1 ? "product" : "products"} today` : "none filed yet";
+  return `Every ${where} accessory${sizes} · live, ${count}`;
+}

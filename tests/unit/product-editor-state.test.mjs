@@ -159,3 +159,15 @@ test("taxonomy tree: three sections, search keeps ancestors, paths read parent �
   assert.match(categoryPath(index, "sports-fitness/running-smartwatches"), / › /);
   assert.equal(filterTaxonomyTree(tree.group, "fenix").roots.length, 1, "diacritics are ignored (fēnix)");
 });
+
+// Owner 2026-11-22: the General tab picks one Series from Admin ▸ Categories ▸ Series; it is stored as a category
+// under watch-series, and the model name stays in the family field.
+test("withSeries: replaces the previous series, keeps other categories and the primary, and clears with null", async () => {
+  const { withSeries } = await import("../../src/components/admin/product-editor/editor-state.ts");
+  const seriesKeys = ["watch-series/fenix", "watch-series/forerunner"];
+  const start = [{ key: "outdoor-recreation/adventure-smartwatches", primary: true }, { key: "watch-series/fenix", primary: false }];
+  assert.deepEqual(withSeries(start, "watch-series/forerunner", seriesKeys), [{ key: "outdoor-recreation/adventure-smartwatches", primary: true }, { key: "watch-series/forerunner", primary: false }]);
+  assert.deepEqual(withSeries(start, null, seriesKeys), [{ key: "outdoor-recreation/adventure-smartwatches", primary: true }]);
+  assert.deepEqual(withSeries([], "watch-series/fenix", seriesKeys), [{ key: "watch-series/fenix", primary: true }], "the only category is primary");
+  assert.deepEqual(withSeries([{ key: "watch-series/fenix", primary: true }], "watch-series/forerunner", seriesKeys), [{ key: "watch-series/forerunner", primary: true }], "a primary series hands primary to its replacement");
+});

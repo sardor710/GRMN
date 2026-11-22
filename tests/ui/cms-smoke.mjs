@@ -17,7 +17,7 @@ import {bootstrapFirstStaff} from "../../src/server/auth/bootstrap.ts";
 import {requireStaffPrincipal,requirePermission} from "../../src/server/auth/principal.ts";
 import {createCMSService} from "../../src/server/cms/service.ts";
 import {formatMinor} from "../../src/lib/admin/dashboard.ts";
-import {seedTaxonomy} from "../integration/catalog-helpers.mjs";
+import {loadTaxonomy} from "../../src/server/catalog/taxonomy-load.ts";
 
 const execute=promisify(execFile),root=path.resolve("temp"),receipt=path.resolve(process.env.CMS_SMOKE_RECEIPT??"temp/backend-next-three/08");
 const source=path.resolve("src/lib/cms/data.json"),hash=()=>createHash("sha256").update(fs.readFileSync(source)).digest("hex"),before=hash();
@@ -505,7 +505,7 @@ async function compareScenario({cms,headers,send,evaluate,navigate,text,receipt}
 let temporary,database,app,chrome,ws,profile,logFile;
 
 // Task 3.3 demo-order scenario, self-contained (its own product, stock and store setting): with demo
-// checkout on, a customer adds to cart, checks out with "Pay (demo)", and the receipt and the account
+// checkout on, a customer adds to cart, checks out with "Pay", and the receipt and the account
 // history say DEMO; staff find the order with the admin "Demo" filter (badge shown, the live order is
 // not listed), then dispatch and deliver it. Screenshots go to CMS_SMOKE_DEMO_SHOTS (or the receipt).
 async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,setInput,until,customerCookie,staffCookie,customerId,liveOrderNumber,receipt}){
@@ -525,7 +525,7 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
   await setMode("demo");
   await send("Emulation.setDeviceMetricsOverride",{width:1280,height:900,deviceScaleFactor:1,mobile:false});
   try{
-    // Storefront: add to cart, review, Pay (demo).
+    // Storefront: add to cart, review, Pay (customers never read "demo" since 2026-11-22).
     await signOut();await customerCookie();
     await navigate("/p/ui-demo-fixture");await until(async()=>(await text()).includes("UI DEMO FIXTURE"),"Demo fixture product did not render");
     await until(async()=>{try{await click("Add To Cart");return true;}catch{return false;}},"Add To Cart was not clickable");
@@ -534,29 +534,30 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     // The customer's saved primary address (UI Home) is preselected since the Kazakhstan checkout (f0df306).
     await until(()=>evaluate("document.querySelector('input[name=delivery-address]:checked')?.closest('label')?.textContent.includes('UI Home')"),"The saved primary address was not preselected");
     await until(async()=>{try{await click("Review order");return true;}catch{return false;}},"Review order stayed disabled");
-    await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Pay (demo)')"),"The demo pay button did not render").catch(async error=>{await writeFile(path.join(receipt,"demo-checkout-body.txt"),await text());throw error;});
-    assert.ok((await text()).includes("Demo payment — no money is charged."),"one line under the demo pay button");
+    await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Pay')"),"The demo pay button did not render").catch(async error=>{await writeFile(path.join(receipt,"demo-checkout-body.txt"),await text());throw error;});
+    assert.ok((await text()).includes("No payment is taken for this order."),"one neutral line under the pay button");
+    assert.ok(!/demo/i.test(await text()),"no demo wording for customers");
     assert.equal(await evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Place order')"),false,"demo and manual are never offered together");
     assert.ok(!/we confirm your payment by hand/i.test(await text()),"no manual payment notice in demo checkout");
     // The setting flips between review and pay: the server refuses the stale method (409), the panel
     // re-reads the cart and shows its own message and the method offered now, in both directions.
-    const changed="Checkout options changed (demo checkout was turned off or on). Review your order and try again.";
+    const changed="Checkout options changed. Review your order and try again.";
     const offers=(shown,hidden)=>`[...document.querySelectorAll('button')].some(b=>b.textContent.trim()===${JSON.stringify(shown)})&&![...document.querySelectorAll('button')].some(b=>b.textContent.trim()===${JSON.stringify(hidden)})`;
     const ordersBefore=(await pool.query("SELECT count(*)::int AS n FROM orders WHERE user_id=$1",[customerId])).rows[0].n;
     // Since the beta5 merge a quote carries its payment method, so a refused method clears the quote: the panel
     // shows its message and no pay button until the customer reviews again, which offers the method in force now.
-    const noPayButton="![...document.querySelectorAll('button')].some(b=>['Place order','Pay (demo)'].includes(b.textContent.trim()))";
-    await setMode("live");await click("Pay (demo)");
+    const noPayButton="![...document.querySelectorAll('button')].some(b=>['Place order','Pay'].includes(b.textContent.trim()))";
+    await setMode("live");await click("Pay");
     await until(async()=>(await text()).includes(changed)&&await evaluate(noPayButton),"Turning demo off did not show the message and clear the quote").catch(async error=>{await writeFile(path.join(receipt,"demo-409-body.txt"),await text());throw error;});
-    await click("Review order");await until(()=>evaluate(offers("Place order","Pay (demo)")),"Reviewing again did not offer the live method");
+    await click("Review order");await until(()=>evaluate(offers("Place order","Pay")),"Reviewing again did not offer the live method");
     await setMode("demo");await click("Place order");
     await until(async()=>(await text()).includes(changed)&&await evaluate(noPayButton),"Turning demo on did not show the message and clear the quote");
-    await click("Review order");await until(()=>evaluate(offers("Pay (demo)","Place order")),"Reviewing again did not offer the demo method");
+    await click("Review order");await until(()=>evaluate(offers("Pay","Place order")),"Reviewing again did not offer the demo method");
     assert.equal((await pool.query("SELECT count(*)::int AS n FROM orders WHERE user_id=$1",[customerId])).rows[0].n,ordersBefore,"a refused method places nothing");
-    await click("Pay (demo)");
+    await click("Pay");
     await until(async()=>/order grm-\d+ received/i.test(await text()),"The demo receipt did not render").catch(async error=>{await writeFile(path.join(receipt,"demo-receipt-body.txt"),await text());throw error;});
-    await until(()=>evaluate("document.querySelector('[data-demo-badge]')?.textContent.trim()==='DEMO'"),"The receipt shows no DEMO label");
-    await until(async()=>/status: paid/i.test(await text())&&(await text()).includes("Demo payment — no money was charged."),"The demo receipt did not show the paid demo status").catch(async error=>{await writeFile(path.join(receipt,"demo-receipt-body.txt"),await text());throw error;});
+    await until(()=>evaluate("!!document.querySelector('[data-demo-dot]')&&!document.querySelector('[data-demo-badge]')"),"The receipt shows no candy-blue dot");
+    await until(async()=>/status: paid/i.test(await text())&&(await text()).includes("No payment is taken for this order.")&&!/demo/i.test(await text()),"The demo receipt did not show the paid demo status").catch(async error=>{await writeFile(path.join(receipt,"demo-receipt-body.txt"),await text());throw error;});
     assert.ok(!/payment not completed/i.test(await text()));
     const order=(await pool.query("SELECT id,order_number,order_status,payment_status FROM orders WHERE user_id=$1 AND payment_mode='demo'",[customerId])).rows;
     assert.equal(order.length,1,"exactly one demo order");
@@ -564,10 +565,10 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     assert.ok((await text()).toUpperCase().includes(order[0].order_number.toUpperCase()));
     await shoot("demo-confirmation.png");
     const number=JSON.stringify(order[0].order_number.toUpperCase()),live=JSON.stringify(liveOrderNumber.toUpperCase());
-    // Account history: the demo order carries the DEMO label.
+    // Account history: the demo order carries the candy-blue dot (no DEMO text for customers).
     await navigate("/account");await until(async()=>(await text()).toLowerCase().includes("ui account owner"),"Account page did not load");
     await click("Orders");
-    await until(()=>evaluate(`[...document.querySelectorAll('button')].some(b=>b.textContent.toUpperCase().includes(${number})&&!!b.querySelector('[data-demo-badge]'))`),"The account history does not label the demo order");
+    await until(()=>evaluate(`[...document.querySelectorAll('button')].some(b=>b.textContent.toUpperCase().includes(${number})&&!!b.querySelector('[data-demo-dot]'))`),"The account history does not mark the demo order");
     // Admin: the Demo filter lists the demo order with its badge and leaves out the live (manual) order.
     await signOut();await staffCookie();
     await navigate("/admin/orders");
@@ -592,6 +593,47 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     await send("Emulation.clearDeviceMetricsOverride");
     await setMode(previousMode);
   }
+}
+// Owner 2026-11-22 (CMS_SMOKE_ONLY=categories): Admin ▸ Categories. A subcategory created under Smartwatches with a
+// Russian name appears in the /ru header menu, hiding takes it out, the bin deletes it; admin status badges are square.
+async function categoriesScenario({send,evaluate,navigate,text,click,receipt}){
+  const setById=(id,value)=>evaluate(`(()=>{const input=document.getElementById(${JSON.stringify(id)});if(!input)throw Error('Missing input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`);
+  // The mega menu renders its links only while open: open the first top item (Smartwatches) and read them.
+  const menuText=()=>evaluate("(()=>{const nav=document.querySelector('header nav');const button=nav&&[...nav.querySelectorAll('button[aria-expanded]')][0];if(button&&button.getAttribute('aria-expanded')!=='true')button.click();return [...document.querySelectorAll('header a')].map(a=>a.textContent.trim()).join('|');})()");
+  const shot=async name=>{const image=await send("Page.captureScreenshot",{format:"png"});await saveShot(name,image.data);};
+  await send("Emulation.setDeviceMetricsOverride",{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+  try{
+    await navigate("/admin/categories");
+    await until(async()=>/menu categories/i.test(await text())&&/smartwatches/i.test(await text()),"The categories page did not load").catch(async error=>{await writeFile(path.join(receipt,"categories-body.txt"),await text());throw error;});
+    await shot("admin-categories-menu-1440.png");
+    await evaluate(`(()=>{const section=document.querySelector('section[aria-label="Smartwatches"]');[...section.querySelectorAll('button')].find(b=>/add subcategory/i.test(b.textContent)).click();return true;})()`);
+    await until(()=>setById("category-en","UI Trail"),"The name dialog did not open");
+    await setById("category-ru","UI Трейл");
+    await click("Save");
+    await until(()=>evaluate("!!document.querySelector('[data-category=\"wearables-smartwatches/ui-trail\"]')"),"The new subcategory was not listed");
+    await navigate("/ru");
+    await until(async()=>(await menuText()).includes("UI Трейл"),"The /ru header menu does not show the new subcategory").catch(async error=>{await writeFile(path.join(receipt,"categories-ru-menu.txt"),await menuText());throw error;});
+    await navigate("/admin/categories");
+    await until(()=>evaluate("!!document.querySelector('[data-category=\"wearables-smartwatches/ui-trail\"]')"),"The subcategory vanished");
+    await evaluate(`(()=>{document.querySelector('[data-category="wearables-smartwatches/ui-trail"] button[aria-label="Edit UI Trail"]').click();return true;})()`);
+    await until(()=>evaluate("!!document.getElementById('category-en')"),"The edit dialog did not open");
+    await evaluate("(()=>{const box=[...document.querySelectorAll('label')].find(l=>/show in the top menu/i.test(l.textContent)).querySelector('input');box.click();return true;})()");
+    await click("Save");
+    await until(()=>evaluate("[...document.querySelectorAll('[data-category=\"wearables-smartwatches/ui-trail\"]')].some(row=>/hidden/i.test(row.textContent))"),"The subcategory was not marked hidden");
+    const hidden=await evaluate("getComputedStyle(document.querySelector('[data-category=\"wearables-smartwatches/ui-trail\"] [data-status-badge]')).borderRadius");
+    assert.equal(hidden,"0px","admin status badges are square");
+    await navigate("/en");
+    await until(async()=>!(await menuText()).includes("UI Trail")&&(await menuText()).includes("Running"),"Hiding did not take the subcategory out of the menu");
+    await navigate("/admin/categories");
+    await until(()=>evaluate("!!document.querySelector('[data-category=\"wearables-smartwatches/ui-trail\"]')"),"The hidden subcategory is not listed in the admin");
+    await evaluate("window.confirm=()=>true;document.querySelector('[data-category=\"wearables-smartwatches/ui-trail\"] button[aria-label=\"Delete UI Trail\"]').click();true");
+    await until(()=>evaluate("!document.querySelector('[data-category=\"wearables-smartwatches/ui-trail\"]')"),"The bin did not delete the subcategory");
+    await click("Series (filters)");await until(async()=>/fēnix/i.test(await text()),"The series tab did not open");await shot("admin-categories-series-1440.png");
+    await click("Accessories");await until(async()=>/quickfit 22 mm/i.test(await text()),"The accessories tab did not open");await shot("admin-categories-accessories-1440.png");
+    await send("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:1,mobile:true});
+    await click("Menu categories");await shot("admin-categories-menu-390.png");
+    assert.equal(await evaluate("document.documentElement.scrollWidth<=window.innerWidth+1"),true,"no horizontal scroll at 390 px");
+  }finally{await send("Emulation.clearDeviceMetricsOverride");}
 }
 // Task 4.2 dashboard scenario, self-contained (its own customer, product, stock and store setting, so
 // CMS_SMOKE_ONLY=dashboard runs it alone): a customer places one demo order through the real checkout,
@@ -644,8 +686,8 @@ async function dashboardScenario({pool,runtime,secret,origin,send,evaluate,navig
     if(!(await evaluate("!!document.querySelector('input[name=delivery-address]:checked')")))
       for(const [name,value] of [["name","UI Dashboard Buyer"],["phone","+77000000088"],["city","Almaty"],["line1","UI dashboard street 4"]])await until(()=>setInput(name,value),"Could not fill "+name);
     await until(async()=>{try{await click("Review order");return true;}catch{return false;}},"Review order stayed disabled");
-    await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Pay (demo)')"),"The demo pay button did not render").catch(dump("dashboard-checkout-body.txt"));
-    await click("Pay (demo)");
+    await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Pay')"),"The demo pay button did not render").catch(dump("dashboard-checkout-body.txt"));
+    await click("Pay");
     await until(async()=>/order grm-\d+ received/i.test(await text()),"The demo receipt did not render").catch(dump("dashboard-receipt-body.txt"));
     const order=await until(async()=>(await pool.query("SELECT id,order_number FROM orders WHERE user_id=$1 AND payment_mode='demo' AND payment_status='paid'",[customerId])).rows[0],"The demo order was not paid");
     // Real (live) money in the window, from the database: 0 when this block runs alone.
@@ -760,8 +802,9 @@ async function adminShotsScenario({cms,headers,send,evaluate,navigate,text,click
 }
 try{
   temporary=await startTemporaryPostgres();database=createDatabase(parseServerEnv({DATABASE_URL:temporary.url}));const migration=createDatabase(parseServerEnv({DATABASE_URL:temporary.url,DATABASE_POOL_MAX:"1",DATABASE_CONNECT_TIMEOUT_MS:"10000",DATABASE_STATEMENT_TIMEOUT_MS:"60000"}));try{await migrate(migration.db,{migrationsFolder:"drizzle"});}finally{await migration.close();}
-  // Category pages are taxonomy-driven (M4): seed the category tree the way dev:seed does.
-  await seedTaxonomy((sql,values)=>database.pool.query(sql,values));
+  // Category pages and the header menu are taxonomy-driven: load the tree, RU/KK names and menu placements the way
+  // dev:seed and scripts/ops/load-taxonomy.mjs do (owner 2026-11-22).
+  await loadTaxonomy(database.pool,{assignProducts:false});
   const appPort=await port(),origin=`http://localhost:${appPort}`,secret=randomBytes(32).toString("hex");
   const config=parseAuthConfig({AUTH_ENABLED:"1",AUTH_SECRET:secret,AUTH_BASE_URL:origin,NODE_ENV:"test"});
   const runtime=createAuthFoundation({database,config}),staff=await bootstrapFirstStaff(database,{name:"Synthetic browser operator",email:"ui@example.invalid",password:randomBytes(24).toString("base64url")});
@@ -1005,12 +1048,19 @@ try{
     // Task 3.3: demo checkout end to end (an independent block).
     await demoOrderScenario({pool:database.pool,origin,send,evaluate,navigate,text,click,setInput,until,staffCookie,customerId,liveOrderNumber:placedOrders[0].order_number,receipt,
       customerCookie:()=>send("Network.setCookie",{name:"grmn-auth.session_token",value:customerCookie,url:origin,httpOnly:true,sameSite:"Lax"})});
-    console.log("PASS Task3.3 demo checkout: Pay (demo) with one demo note, a setting change between review and pay refetches the method both ways, DEMO receipt and account label, admin Demo filter with badge, dispatched and delivered");
+    console.log("PASS Task3.3 demo checkout: Pay with one neutral no-payment line and no demo wording, a setting change between review and pay refetches the method both ways, candy-blue dot on the receipt and in the account, admin Demo filter with badge, dispatched and delivered");
   };
-  const onlyAdminShots=process.env.CMS_SMOKE_ONLY==="admin-shots",onlyVariantContent=process.env.CMS_SMOKE_ONLY==="variant-content",onlyVariantSwitch=process.env.CMS_SMOKE_ONLY==="variant-switch",onlyDashboard=process.env.CMS_SMOKE_ONLY==="dashboard"||onlyAdminShots,onlyCompare=process.env.CMS_SMOKE_ONLY==="compare";
-  if(!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare)await fullSuite();
+  const onlyAdminShots=process.env.CMS_SMOKE_ONLY==="admin-shots",onlyVariantContent=process.env.CMS_SMOKE_ONLY==="variant-content",onlyVariantSwitch=process.env.CMS_SMOKE_ONLY==="variant-switch",onlyDashboard=process.env.CMS_SMOKE_ONLY==="dashboard"||onlyAdminShots,onlyCompare=process.env.CMS_SMOKE_ONLY==="compare",onlyCategories=process.env.CMS_SMOKE_ONLY==="categories";
+  if(onlyCategories){
+    await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
+    await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
+    await categoriesScenario({send,evaluate,navigate,text,click,receipt});
+    console.log("PASS categories: subcategory created with a Russian name shows in the /ru menu, hidden and gone from the menu, deleted with the bin; square status badge; no horizontal scroll at 390 px");
+    console.log("Browser smoke passed (CMS_SMOKE_ONLY=categories): only the categories block ran.");
+  }
+  if(!onlyCategories&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare)await fullSuite();
 
-  if(!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
+  if(!onlyCategories&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
   // Task 2.3: per-variant content in the product editor (independent blocks; staff session).
   await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
   await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
@@ -1025,24 +1075,31 @@ try{
   }
 
   // Task 2.4: the storefront variant switch (independent block: its own published product).
-  if(!onlyVariantContent&&!onlyDashboard&&!onlyCompare){
+  if(!onlyCategories&&!onlyVariantContent&&!onlyDashboard&&!onlyCompare){
     await variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,text,receipt});
     console.log("PASS Task2.4 variant switch: 47 -> 51 mm swaps Specs, In the box and Overview with no document navigation, ?variant= kept, reload and server render show 51 mm, canonical unchanged, unknown SKU falls back; no hydration warnings on /en/p/<id>?variant=<sku> and /ru/p/<id> (console recorded)");
   }
 
   // Task C-e: the compare flow (an independent block: its own published products; CMS_SMOKE_ONLY=compare runs only this).
-  if(!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard){
+  if(!onlyCategories&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard){
     await compareScenario({cms,headers,send,evaluate,navigate,text,receipt});
     console.log("PASS C-e compare: catalogue compare mode, 2 cards added (aria-pressed, 2 slots, Compare disabled at 1), kept on reload; comparison with grouped specs and an empty cell; 47 -> 51 mm changes specs, price and URL item with no document load; only differences with diff=1 across a reload; group collapse; compact bar on scroll; column removal; PDP adds the 51 mm SKU; /ru/compare Russian headings with no hydration warning; Z to A sort");
   }
 
   // Task 4.2: the PostgreSQL dashboard (an independent block; CMS_SMOKE_ONLY=dashboard runs only this).
-  if(!onlyVariantContent&&!onlyVariantSwitch&&!onlyCompare){await dashboardScenario({pool:database.pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue:cookie,receipt,alone:onlyDashboard});
+  if(!onlyCategories&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyCompare){await dashboardScenario({pool:database.pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue:cookie,receipt,alone:onlyDashboard});
   console.log("PASS Task4.2 dashboard: one demo order via checkout; Demo revenue > 0 and Revenue only real money, the order in Recent orders linking to its detail, its product under Best-sellers > Demo only, empty range says so; screenshot saved");}
+  // Owner 2026-11-22: Admin ▸ Categories (also CMS_SMOKE_ONLY=categories, above).
+  if(!onlyCategories&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
+    await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
+    await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
+    await categoriesScenario({send,evaluate,navigate,text,click,receipt});
+    console.log("PASS categories: subcategory created with a Russian name shows in the /ru menu, hidden and gone from the menu, deleted with the bin; square status badge; no horizontal scroll at 390 px");
+  }
   if(onlyAdminShots){await adminShotsScenario({cms,headers,send,evaluate,navigate,text,click});console.log("Admin screenshots saved (CMS_SMOKE_ONLY=admin-shots).");}
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");
-  console.log(onlyCompare
+  if(!onlyCategories)console.log(onlyCompare
     ?"Browser smoke passed (CMS_SMOKE_ONLY=compare): only the C-e compare block ran; the rest of the suite was skipped."
     :onlyDashboard
     ?"Browser smoke passed (CMS_SMOKE_ONLY=dashboard): only the Task 4.2 dashboard block ran; the rest of the suite was skipped."

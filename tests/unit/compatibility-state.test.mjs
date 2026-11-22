@@ -64,7 +64,7 @@ test("GET → model pairs commands with their views and reads back as garmin.com
   assert.deepEqual(describeDeviceLink({ ...model.devices[1], deviceVariantCount: 14 })[0].text, "Forerunner 970 (all 14 variants)");
   // Junk never throws; unknown value ids fall back to the id.
   assert.deepEqual(compatibilityFromPayload({ compatibility: { devices: [null, { productKey: "" }, { productKey: "x", optionValueKeys: ["zz"] }], compatibleDevices: [{ x: 1 }] } }).devices.map(d => d.optionValues[0].label), ["zz"]);
-  assert.deepEqual(compatibilityFromPayload({}), { devices: [], accessories: [] });
+  assert.deepEqual(compatibilityFromPayload({}), { devices: [], accessories: [], types: [] });
 });
 
 test("save command: an untouched side is GET's exact value; a changed side is replaced, the other kept", () => {
@@ -161,4 +161,22 @@ test("accessory detection and QuickFit hint from ACCESSORY_TAXONOMY.md", () => {
   assert.equal(suggestForWidth(22, { name: "MARQ Adventurer (Gen 3)", options: [] }).whole, true);
   assert.equal(suggestForWidth(26, { name: "Enduro 3", options: [] }).whole, true);
   assert.equal(suggestForWidth(26, { name: "Forerunner 970", options: [] }), null);
+});
+
+// Owner 2026-11-22: live type links ("this watch fits every QuickFit 22 mm band / this charger type").
+test("type links: read from the payload, echoed unchanged, replaced when edited, described as a live link", async () => {
+  const state = await import("../../src/components/admin/product-editor/compatibility-state.ts");
+  const payload = { compatibility: { devices: [], accessories: [], types: [{ categoryKey: "bands/quickfit-22-mm", optionValueKeys: ["v47"] }],
+    compatibleTypes: [{ categoryKey: "bands/quickfit-22-mm", name: "QuickFit 22 mm", parentName: "Bands", optionValues: [{ id: "v47", key: "47 mm", label: "47 mm" }], productCount: 6 }] } };
+  const form = state.compatibilityFromPayload(payload);
+  assert.deepEqual(form.types, [{ categoryKey: "bands/quickfit-22-mm", name: "QuickFit 22 mm", parentName: "Bands", optionValues: [{ id: "v47", label: "47 mm" }], productCount: 6 }]);
+  assert.equal(state.compatibilityCommand(payload, form), payload.compatibility, "untouched: GET's value is sent back");
+  const added = state.addTypeLink(form.types, { categoryKey: "cables-chargers/clip", name: "Charging clip", parentName: "Cables & Chargers", optionValues: [], productCount: 0 });
+  const command = state.compatibilityCommand(payload, { ...form, types: added });
+  assert.deepEqual(command.types, [{ categoryKey: "bands/quickfit-22-mm", optionValueKeys: ["v47"] }, { categoryKey: "cables-chargers/clip", optionValueKeys: [] }]);
+  assert.equal(command.devices, payload.compatibility.devices, "an untouched side keeps GET's exact value");
+  assert.deepEqual(state.addTypeLink(added, { ...added[0], optionValues: [] }).map(link => [link.categoryKey, link.optionValues.length]), [["bands/quickfit-22-mm", 0], ["cables-chargers/clip", 0]], "the same type replaces its earlier link");
+  assert.deepEqual(state.removeTypeLink(added, "bands/quickfit-22-mm").map(link => link.categoryKey), ["cables-chargers/clip"]);
+  assert.equal(state.describeTypeLink(form.types[0]), "Every Bands › QuickFit 22 mm accessory · 47 mm only · live, 6 products today");
+  assert.equal(state.describeTypeLink(added[1]), "Every Cables & Chargers › Charging clip accessory · live, none filed yet");
 });

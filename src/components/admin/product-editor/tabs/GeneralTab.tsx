@@ -6,6 +6,7 @@ import { Button, Select, StatusSelect } from "@/components/admin/ui";
 import { useTaxonomy } from "@/components/admin/catalog/useTaxonomy";
 import { cn } from "@/lib/utils";
 import { CategoryPicker } from "../CategoryPicker";
+import { withSeries } from "../editor-state";
 import { Field, Section } from "../Field";
 import { formatKzt, inputClass } from "../shared";
 import type { EditorTab, ProductEditorState } from "../useProductEditorState";
@@ -19,11 +20,10 @@ const numberOrNull = (raw: string): number | null => (raw.trim() === "" ? null :
 export function GeneralTab({ editor, skuConflicts, onOpenTab }: { editor: ProductEditorState; skuConflicts: string[]; onOpenTab: (tab: EditorTab) => void }) {
   const { form, update, base } = editor;
   const { nodes } = useTaxonomy();
-  const families = useMemo(() => {
-    const seriesRoot = nodes?.find((node) => node.key === "watch-series");
-    const names = (nodes ?? []).filter((node) => seriesRoot && node.parentKey === seriesRoot.key).map((node) => node.name);
-    return [...new Set(names)].sort((a, b) => a.localeCompare(b));
-  }, [nodes]);
+  // Owner 2026-11-22: series come from Admin ▸ Categories ▸ Series, in that order.
+  const series = useMemo(() => (nodes ?? []).filter((node) => node.parentKey === "watch-series").sort((a, b) => a.position - b.position || a.name.localeCompare(b.name)), [nodes]);
+  const seriesKeys = useMemo(() => series.map((node) => node.key), [series]);
+  const currentSeries = form.categories.find((category) => seriesKeys.includes(category.key))?.key ?? "";
   const hasVariants = form.variants.length > 0;
   const skuConflict = skuConflicts.includes(form.sku.trim().toUpperCase());
   const reserved = typeof base.stockReserved === "number" ? base.stockReserved : 0;
@@ -37,11 +37,14 @@ export function GeneralTab({ editor, skuConflicts, onOpenTab }: { editor: Produc
           <Field label="Name" htmlFor="product-name" required className="md:col-span-2">
             <input id="product-name" value={form.name} onChange={(event) => update({ name: event.target.value })} placeholder="e.g. fēnix 8 – 47 mm, AMOLED" className={inputClass} />
           </Field>
-          <Field label="Family / series" htmlFor="product-family" hint="Groups variants of one watch line in lists and filters.">
-            <input id="product-family" list="product-family-options" value={form.family} onChange={(event) => update({ family: event.target.value })} placeholder="e.g. fēnix" className={inputClass} />
-            <datalist id="product-family-options">
-              {families.map((name) => <option key={name} value={name} />)}
-            </datalist>
+          <Field label="Series" htmlFor="product-series" hint="Used by the Series filter on category pages. Manage the list in Categories ▸ Series.">
+            <Select id="product-series" value={currentSeries} onChange={(event) => update({ categories: withSeries(form.categories, event.target.value || null, seriesKeys) })}>
+              <option value="">No series</option>
+              {series.map((node) => <option key={node.key} value={node.key}>{node.name}</option>)}
+            </Select>
+          </Field>
+          <Field label="Model name" htmlFor="product-family" hint="Shown under the product title, e.g. fēnix 8 or Forerunner 970.">
+            <input id="product-family" value={form.family} onChange={(event) => update({ family: event.target.value })} placeholder="e.g. fēnix 8" className={inputClass} />
           </Field>
           <div className="grid grid-cols-2 gap-4">
             <Field label="Status" htmlFor="product-status" hint={form.status === "published" ? "Visible in the store." : form.status === "draft" ? "Hidden until published." : "Hidden and kept for history."}>

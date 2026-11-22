@@ -252,3 +252,14 @@ test("a draft simple product may be created without a price; publishing it needs
   const published = await f.catalog.saveProduct(f.admin, { ...draft, status: "published", price: 2499.5 });
   assert.equal(published.price, 2499.5);
 });
+
+// Owner 2026-11-22: the General tab's Series dropdown stores the series as a category; the model name stays in family.
+test("series saved as category, family kept", async () => {
+  const n = nextSerial();
+  const saved = await f.catalog.saveProduct(f.admin, deviceCommand(n, { family: "fēnix 8", categories: [{ key: "outdoor-recreation/adventure-smartwatches", primary: true }, { key: "watch-series/fenix", primary: false }] }));
+  const read = await f.catalog.getProduct(f.admin, saved.id);
+  assert.equal(read.family, "fēnix 8");
+  assert.deepEqual(read.categories.map(c => c.key).sort(), ["outdoor-recreation/adventure-smartwatches", "watch-series/fenix"]);
+  const swapped = await f.catalog.saveProduct(f.admin, { ...read, categories: [{ key: "outdoor-recreation/adventure-smartwatches", primary: true }, { key: "watch-series/forerunner", primary: false }] });
+  assert.deepEqual(swapped.categories.map(c => c.key).sort(), ["outdoor-recreation/adventure-smartwatches", "watch-series/forerunner"]);
+});

@@ -308,3 +308,16 @@ export const shouldLoadProduct = (key: string | null, adoptedKey: string | null)
 
 /** Stable string for unsaved-change detection. */
 export const formSignature = (form: EditorForm): string => JSON.stringify(form);
+
+/**
+ * Owner 2026-11-22: the General tab's Series dropdown (Admin ▸ Categories ▸ Series). A product has at most one
+ * series, stored as a category under watch-series; picking another replaces it, null removes it. The series is
+ * primary only when it is the product's only category (or replaces a primary series).
+ */
+export function withSeries(categories: CategoryRef[], seriesKey: string | null, seriesKeys: readonly string[]): CategoryRef[] {
+  const previous = categories.find(category => seriesKeys.includes(category.key));
+  const rest = categories.filter(category => !seriesKeys.includes(category.key));
+  if (!seriesKey) return rest;
+  const primary = previous?.primary === true || !rest.some(category => category.primary);
+  return [...rest, { key: seriesKey, primary }];
+}
