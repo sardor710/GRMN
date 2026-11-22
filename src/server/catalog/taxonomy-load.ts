@@ -1,6 +1,6 @@
 // Owner 2026-11-22: production starts from today's menu. Loads the seed taxonomy into an existing database.
 // Idempotent and never overwrites owner edits:
-//   - categories: inserts missing seed nodes only (by key). A node the menu shows is named after its menu label
+//   - categories: inserts the seed tree on the first load only (no categories yet). A node the menu shows is named after its menu label
 //     (menu-source.ts), so the DB-built menu reads exactly like the built-in one; a top item whose link is not its
 //     own /c/<slug> keeps that link in menu_href.
 //   - translations: adds missing RU/KK names from the same menu labels, for nodes whose English name is unchanged.
@@ -53,8 +53,11 @@ export function accessoryTypeKey(text: string, primaryKey: string | null): strin
 export async function loadTaxonomy(client: Query, { assignProducts }: { assignProducts: boolean }): Promise<TaxonomyLoadReport> {
   const report: TaxonomyLoadReport = { inserted: 0, translations: 0, placements: 0, assigned: 0 };
   const existing = new Map((await client.query<{ key: string; id: string; name: string }>("SELECT key,id,name FROM categories")).rows.map(row => [row.key, row]));
+  // Seed nodes are inserted on the first load only: once categories exist they belong to the owner, and a re-run
+  // must never bring back a category that was deleted in Admin ▸ Categories.
+  const firstLoad = existing.size === 0;
   const positions = new Map<string, number>();
-  for (const node of taxonomySeed) {
+  for (const node of firstLoad ? taxonomySeed : []) {
     const siblings = node.parentKey ?? "";
     const position = positions.get(siblings) ?? 0;
     positions.set(siblings, position + 1);

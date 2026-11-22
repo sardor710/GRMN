@@ -141,7 +141,9 @@ export function CheckoutPanel({ cart, disabled, onPlaced, onCartStale }: { cart:
       const next = checkoutRecovery(failure);
       // Task 3.3: demo checkout was switched while this page was open. Re-read the cart so the offered
       // method (and the button) is current; the server message is English, so show ours by its code.
-      if (failure instanceof CartRequestError && failure.code === "PAYMENT_METHOD_UNAVAILABLE") { forgetCheckoutKey(session); setQuote(null); setRetry(false); setError(t("methodChanged")); void onCartStale?.(); }
+      // PAYMENT_UNAVAILABLE (store switched between demo and live) carries English "Demo purchases…" text: customers
+      // never read "demo" (owner 2026-11-22), so it gets the same neutral line.
+      if (failure instanceof CartRequestError && (failure.code === "PAYMENT_METHOD_UNAVAILABLE" || failure.code === "PAYMENT_UNAVAILABLE")) { forgetCheckoutKey(session); setQuote(null); setRetry(false); setError(t("methodChanged")); void onCartStale?.(); }
       else if (next === "retry") { setRetry(true); setError(t("retryNotice")); }
       else if (next === "requote") { forgetCheckoutKey(session); setQuote(null); setRetry(false); setError(t("requote", { error: message(failure, t("failed")) })); }
       else { setRetry(false); setError(message(failure, t("failed"))); }

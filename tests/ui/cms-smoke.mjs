@@ -611,6 +611,11 @@ async function categoriesScenario({send,evaluate,navigate,text,click,receipt}){
     await setById("category-ru","UI Трейл");
     await click("Save");
     await until(()=>evaluate("!!document.querySelector('[data-category=\"wearables-smartwatches/ui-trail\"]')"),"The new subcategory was not listed");
+    // Final review: the top item's own-page row ("All Smartwatches") must not offer hiding the whole top item.
+    await evaluate(`(()=>{const rows=[...document.querySelectorAll('[data-category="wearables-smartwatches"]')];rows[1].querySelector('button[aria-label="Edit Smartwatches"]').click();return true;})()`);
+    await until(()=>evaluate("!!document.getElementById('category-en')"),"The own-page edit dialog did not open");
+    assert.equal(await evaluate("[...document.querySelectorAll('label')].some(l=>/show in the top menu/i.test(l.textContent))"),false,"no visibility box on the top item's own-page row");
+    await click("Cancel");
     await navigate("/ru");
     await until(async()=>(await menuText()).includes("UI Трейл"),"The /ru header menu does not show the new subcategory").catch(async error=>{await writeFile(path.join(receipt,"categories-ru-menu.txt"),await menuText());throw error;});
     await navigate("/admin/categories");

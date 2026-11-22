@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2, Waypoints } from "lucide-react";
 import { Button, StatusBadge } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
+import { invalidateTaxonomy } from "@/components/admin/catalog/useTaxonomy";
 import { categoryApi, CategoryRequestError, moved, type AdminMenuItem, type AdminNode, type CategoryTree, type CategoryUsage, type LocalName } from "./category-api";
 import { CategoryNameDialog, DeleteBlockedDialog, PlacementDialog, type NameValues } from "./CategoryDialogs";
 
@@ -64,7 +65,7 @@ export function CategoriesScreen() {
   const act = useCallback(async (write: (epoch: string) => Promise<CategoryTree>, options: { name?: string; fromDialog?: boolean } = {}): Promise<void> => {
     if (!tree) return;
     setBusy(true); setNotice(null);
-    try { setTree(await write(tree.epoch)); setDialog(null); }
+    try { setTree(await write(tree.epoch)); invalidateTaxonomy(); setDialog(null); }
     catch (error) {
       if (error instanceof CategoryRequestError && error.code === "VERSION_CONFLICT") { await reload(); setDialog(null); setNotice({ tone: "info", text: "Someone else changed categories — the list was reloaded. Try again." }); return; }
       if (error instanceof CategoryRequestError && error.code === "IN_USE" && error.counts) { setDialog({ type: "blocked", name: options.name ?? "This category", counts: error.counts }); return; }
@@ -165,7 +166,8 @@ export function CategoriesScreen() {
                       up: index > 0 ? () => movePlacement(item, index, -1) : undefined,
                       down: index < item.placements.length - 1 ? () => movePlacement(item, index, 1) : undefined,
                       place: placement.key === item.key ? undefined : () => setDialog({ type: "placements", node: placement }),
-                      edit: () => rename(placement, true, placement.href),
+                      // The own-page row is the top item itself: hide it from its header row, not from here.
+                      edit: () => rename(placement, placement.key !== item.key, placement.href),
                       canDelete: placement.key !== item.key,
                     })} />
                 ))}

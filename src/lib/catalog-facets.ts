@@ -195,7 +195,8 @@ export function accessoriesForVariant<T extends AccessoryLike>(accessories: read
  * Empty tabs are hidden; "View All" is always present and lists every accessory grouped in tab order.
  */
 export function accessoryTabs<T extends AccessoryLike>(accessories: readonly T[]): { slug: string; label: string; items: T[] }[] {
-  const known = ACCESSORY_TAB_ORDER.map(tab => ({ ...tab, items: accessories.filter(a => a.group?.slug === tab.slug) }));
+  // A known group keeps garmin.com's position; its label is the category's own (localized, possibly renamed) name.
+  const known = ACCESSORY_TAB_ORDER.map(tab => { const items = accessories.filter(a => a.group?.slug === tab.slug); return { ...tab, label: items[0]?.group?.name ?? tab.label, items }; });
   const otherSlugs = [...new Map(accessories.filter(a => a.group && !ACCESSORY_TAB_ORDER.some(t => t.slug === a.group!.slug)).map(a => [a.group!.slug, a.group!.name])).entries()]
     .sort((a, b) => collator.compare(a[1], b[1]));
   const others = otherSlugs.map(([slug, label]) => ({ slug, label, items: accessories.filter(a => a.group?.slug === slug) }));

@@ -23,6 +23,12 @@ const TAB_KEYS: Record<string, string> = {
   [VIEW_ALL_TAB]: "viewAll",
 };
 
+/** English names the seeded accessory groups start with (taxonomy-seed.ts / menu labels). */
+const SEED_NAMES: Record<string, string> = {
+  apps: "Apps", "subscription-plans": "Service Plans", bands: "Bands", "dive-bands": "Dive Bands", "marq-straps-bracelets": "MARQ Straps & Bracelets",
+  "cables-chargers": "Cables & Chargers", "sports-fitness/cycling-biking-accessories": "Cycling Accessories", "heart-rate-monitors": "Heart Rate Monitors", sensors: "Sensors",
+};
+
 /**
  * garmin.com PDP "Accessories" tab for PostgreSQL products (re-checked on the fēnix 9 page, 2026-11-22): a side list of
  * groups (Apps, Service Plans, Bands, … View All) beside a grid. Until a group is chosen the grid shows one card per
@@ -36,7 +42,10 @@ export function ProductAccessories({ accessories, variantId }: { accessories: re
   const tabs = accessoryTabs(fitting);
   const [chosen, setChosen] = useState<string | null>(null);
   const active = tabs.find(tab => tab.slug === chosen) ?? null;
-  const label = (tab: { slug: string; label: string }) => TAB_KEYS[tab.slug] ? t(`tabs.${TAB_KEYS[tab.slug]}`) : tab.label;
+  // The page's translation of a seeded group while the category keeps its original English name; once it is renamed
+  // (or translated) in Admin ▸ Categories, the server's localized name is shown (owner 2026-11-22, rule C5).
+  const label = (tab: { slug: string; label: string }) =>
+    tab.slug === VIEW_ALL_TAB || (TAB_KEYS[tab.slug] && tab.label === SEED_NAMES[tab.slug]) ? t(`tabs.${TAB_KEYS[tab.slug]}`) : tab.label;
 
   if (fitting.length === 0 || tabs.length === 0) {
     return (

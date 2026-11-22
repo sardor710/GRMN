@@ -85,3 +85,14 @@ test("a second load changes nothing and keeps owner edits", async () => {
   assert.equal((await q("SELECT name FROM categories WHERE key='sports-fitness/running-smartwatches'")).rows[0].name, "Run");
   assert.equal((await categoriesOf(fenix)).length, before, "a product that already has categories is left alone");
 });
+
+test("a re-run never brings back a seed category the owner deleted", async () => {
+  await q("DELETE FROM category_menu_placements WHERE category_id=(SELECT id FROM categories WHERE key='aviation/helicopters')");
+  await q("DELETE FROM category_translations WHERE category_id=(SELECT id FROM categories WHERE key='aviation/helicopters')");
+  await q("DELETE FROM categories WHERE key='aviation/helicopters'");
+  const client = await fx.database.pool.connect();
+  let report;
+  try { report = await loadTaxonomy(client, { assignProducts: true }); } finally { client.release(); }
+  assert.equal(report.inserted, 0);
+  assert.equal((await q("SELECT count(*)::int AS n FROM categories WHERE key='aviation/helicopters'")).rows[0].n, 0);
+});

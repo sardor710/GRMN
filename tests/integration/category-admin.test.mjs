@@ -124,8 +124,9 @@ test("delete succeeds when empty: the category, its translations and placements 
 
 test("stale epoch is refused", async () => {
   const stale = await epoch();
-  await f.catalog.updateCategory(f.admin, stale, "aviation/helicopters", { name: { en: "Helicopters" } });
+  const fresh = await f.catalog.updateCategory(f.admin, stale, "aviation/helicopters", { name: { en: "Helicopters (rotor)" } });
   await rejectsWith(f.catalog.updateCategory(f.admin, stale, "aviation/helicopters", { name: { en: "Rotorcraft" } }), 409, "VERSION_CONFLICT");
+  await f.catalog.updateCategory(f.admin, fresh.epoch, "aviation/helicopters", { name: { en: "Helicopters" } });
 });
 
 test("ru/kk names round-trip and catalog editors without write are refused", async () => {
@@ -142,10 +143,27 @@ test("HTTP: GET carries an ETag; writes need If-Match and send the key as a quer
   assert.equal(get.status, 200);
   const body = await get.json();
   assert.equal(get.headers.get("etag"), `W/"taxonomy-${body.epoch}"`);
-  const write = (ifMatch) => http(new Request(`${config.baseURL}/api/admin/catalog/categories?key=${encodeURIComponent("aviation/helicopters")}`, {
-    method: "PATCH", headers: { cookie, origin: config.baseURL, "content-type": "application/json", ...(ifMatch ? { "if-match": ifMatch } : {}) }, body: JSON.stringify({ name: { en: "Helicopters" } }) }));
-  assert.equal((await write(null)).status, 428);
-  const ok = await write(`W/"taxonomy-${body.epoch}"`);
+  const write = (ifMatch, en) => http(new Request(`${config.baseURL}/api/admin/catalog/categories?key=${encodeURIComponent("aviation/helicopters")}`, {
+    method: "PATCH", headers: { cookie, origin: config.baseURL, "content-type": "application/json", ...(ifMatch ? { "if-match": ifMatch } : {}) }, body: JSON.stringify({ name: { en } }) }));
+  assert.equal((await write(null, "Helicopters HTTP")).status, 428);
+  const ok = await write(`W/"taxonomy-${body.epoch}"`, "Helicopters HTTP");
   assert.equal(ok.status, 200);
-  assert.equal((await write(`W/"taxonomy-${body.epoch}"`)).status, 409);
+  assert.equal((await write(`W/"taxonomy-${body.epoch}"`, "Helicopters")).status, 409);
+});
+
+// Final review (2026-11-22): saving the edit dialog without changing a name keeps the menu's own wording; the
+// series delete guard follows the preset's matching (seriesValue of the families entry), not the current name.
+test("saving unchanged names keeps the menu label override (All Smartwatches)", async () => {
+  let t = await tree();
+  const root = top(t, "wearables-smartwatches"), before = root.placements[0].label;
+  assert.ok(before?.ru, "the RU override exists (an earlier test renamed EN and cleared only that one)");
+  t = await f.catalog.updateCategory(f.admin, t.epoch, root.key, { name: { en: root.name.en, ru: root.name.ru ?? "", kk: root.name.kk ?? "" }, navVisible: true });
+  assert.deepEqual(top(t, "wearables-smartwatches").placements[0].label, before, "an unchanged save keeps every override");
+});
+
+test("series delete guard survives a rename: MARQ renamed is still blocked by the collection preset", async () => {
+  let t = await f.catalog.updateCategory(f.admin, await epoch(), "watch-series/marq", { name: { en: "MARQ Collection" } });
+  await assert.rejects(f.catalog.deleteCategory(f.admin, t.epoch, "watch-series/marq"), error => error.status === 409 && error.counts.presets > 0);
+  t = await tree();
+  await f.catalog.updateCategory(f.admin, t.epoch, "watch-series/marq", { name: { en: "MARQ" } });
 });

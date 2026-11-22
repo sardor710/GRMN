@@ -1,33 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { TaxonomyNode } from "@/contracts/admin-catalog";
 
-// The category tree changes rarely: one request per page load is shared by the list filter, the editor
-// and the quick-edit drawer (the API also sends an ETag and `max-age=300`).
-let cached: TaxonomyNode[] | null = null;
-let inflight: Promise<TaxonomyNode[]> | null = null;
+import { cachedTaxonomy, loadTaxonomy } from "./taxonomy-cache";
 
-export function loadTaxonomy(force = false): Promise<TaxonomyNode[]> {
-  if (cached && !force) return Promise.resolve(cached);
-  if (inflight && !force) return inflight;
-  inflight = fetch("/api/admin/catalog/taxonomy")
-    .then(async (response) => {
-      if (!response.ok) throw new Error(response.status === 501 ? "Categories need the PostgreSQL catalog." : `Categories could not be loaded (HTTP ${response.status}).`);
-      const body = (await response.json()) as { categories?: TaxonomyNode[] };
-      if (!Array.isArray(body.categories)) throw new Error("Invalid category response");
-      cached = body.categories;
-      return cached;
-    })
-    .finally(() => { inflight = null; });
-  return inflight;
-}
+export { invalidateTaxonomy, loadTaxonomy } from "./taxonomy-cache";
 
 export function useTaxonomy() {
-  const [state, setState] = useState<{ nodes: TaxonomyNode[] | null; error: string | null }>({ nodes: cached, error: null });
+  const [state, setState] = useState<{ nodes: ReturnType<typeof cachedTaxonomy>; error: string | null }>({ nodes: cachedTaxonomy(), error: null });
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
-    if (cached && attempt === 0) return;
+    if (cachedTaxonomy() && attempt === 0) return;
     let active = true;
     loadTaxonomy(attempt > 0)
       .then((nodes) => { if (active) setState({ nodes, error: null }); })

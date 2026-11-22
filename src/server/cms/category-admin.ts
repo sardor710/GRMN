@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { PoolClient } from "pg";
 import { z } from "zod";
 import { AuthFailure } from "../auth/config.ts";
+import { seriesValue } from "../../lib/catalog-facets.ts";
 
 // Owner 2026-11-22: Admin ▸ Categories (/api/admin/catalog/categories*). Three sections:
 //   menu        catalog roots = top menu items; each lists its placements (the Products group, in order) and the
@@ -143,12 +144,14 @@ export async function updateCategory(client: PoolClient, epoch: string, key: str
   const input = parse(updateInput, raw);
   await lock(client, epoch);
   const row = await find(client, key);
-  if (input.name?.en !== undefined) await client.query("UPDATE categories SET name=$2 WHERE id=$1", [row.id, input.name.en]);
-  await setTranslation(client, row.id, "ru", input.name?.ru);
-  await setTranslation(client, row.id, "kk", input.name?.kk);
+  // Only a real change counts: saving the dialog with the same names must keep the menu's own wording.
+  const current: Record<"en" | "ru" | "kk", string | null> = { en: row.name, ru: row.ru, kk: row.kk };
+  const changed = (["en", "ru", "kk"] as const).filter(locale => input.name?.[locale] !== undefined && (input.name[locale] || null) !== current[locale]);
+  if (changed.includes("en")) await client.query("UPDATE categories SET name=$2 WHERE id=$1", [row.id, input.name!.en]);
+  if (changed.includes("ru")) await setTranslation(client, row.id, "ru", input.name!.ru);
+  if (changed.includes("kk")) await setTranslation(client, row.id, "kk", input.name!.kk);
   // A rename in a language replaces the menu's own wording for it ("All Smartwatches" → the new name).
-  for (const locale of ["en", "ru", "kk"] as const) {
-    if (input.name?.[locale] === undefined) continue;
+  for (const locale of changed) {
     await client.query(`UPDATE category_menu_placements SET label=CASE WHEN (label - $2::text)='{}'::jsonb THEN NULL ELSE label - $2::text END
       WHERE category_id=$1 AND label ? $2`, [row.id, locale]);
   }
@@ -183,16 +186,23 @@ export async function setPlacements(client: PoolClient, epoch: string, menuKey: 
 }
 
 export async function categoryUsage(client: Pick<PoolClient, "query">, row: Pick<Row, "id" | "key" | "name">): Promise<CategoryUsage> {
-  const counts = (await client.query<CategoryUsage>(`SELECT
+  const counts = (await client.query<Omit<CategoryUsage, "presets">>(`SELECT
       (SELECT count(*)::int FROM product_categories WHERE category_id=$1) AS products,
       (SELECT count(*)::int FROM categories WHERE parent_id=$1) AS children,
       (SELECT count(*)::int FROM product_compatibility_types WHERE category_id=$1) AS "typeLinks",
       (SELECT count(*)::int FROM promotion_categories WHERE category_id=$1) AS promotions,
-      (SELECT count(*)::int FROM price_adjustment_categories WHERE category_id=$1) AS "priceRules",
-      (SELECT count(*)::int FROM categories c WHERE c.id<>$1 AND (coalesce(c.preset_filters->'seriesKeys','[]'::jsonb) ? $2
-         OR ($4 AND coalesce(c.preset_filters->'families','[]'::jsonb) ? $3))) AS presets`,
-    [row.id, row.key, row.name, row.key.startsWith(`${SERIES_ROOT_KEY}/`)])).rows[0];
-  return counts;
+      (SELECT count(*)::int FROM price_adjustment_categories WHERE category_id=$1) AS "priceRules"`, [row.id])).rows[0];
+  // Presets name a series by key (seriesKeys) or, in the seed, by a family label matched through seriesValue against
+  // the series' slug segment (MARQ → marq) — the same rule the category page uses, so a rename never hides a reference.
+  let presets = 0;
+  if (row.key.startsWith(`${SERIES_ROOT_KEY}/`)) {
+    const value = row.key.split("/").pop();
+    const rowsWithPresets = (await client.query<{ series_keys: unknown; families: unknown }>(
+      "SELECT preset_filters->'seriesKeys' AS series_keys,preset_filters->'families' AS families FROM categories WHERE id<>$1 AND (preset_filters ? 'seriesKeys' OR preset_filters ? 'families')", [row.id])).rows;
+    const list = (raw: unknown) => Array.isArray(raw) ? raw.filter((item): item is string => typeof item === "string") : [];
+    presets = rowsWithPresets.filter(entry => list(entry.series_keys).includes(row.key) || list(entry.families).some(family => seriesValue(family) === value)).length;
+  }
+  return { ...counts, presets };
 }
 
 export async function deleteCategory(client: PoolClient, epoch: string, key: string): Promise<void> {

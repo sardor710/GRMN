@@ -110,6 +110,14 @@ test("M4.6: the Accessories tab lists what fits the selected variant, grouped in
  assert.match(nodeText(bands),/KZT\s1\.00/,"accessory cards show the tenge price");
 });
 
+test("final review: an accessory category renamed in the admin shows its new name on the Accessories tab",async()=>{
+ const facets=await import("../../src/lib/catalog-facets.ts");
+ const item=(publicKey,group)=>({publicKey,name:publicKey,image:null,price:{selling:{amountMinor:"100",currency:"KZT"},compareAt:null,usdEquivalent:null},availability:"available",sku:null,group,variantIds:null});
+ const fixture=componentFixture("src/components/product/ProductAccessories.tsx",{modules:{"@/lib/catalog-facets":facets}});
+ const side=tree=>nodes(tree).filter(n=>n.type==="button"&&n.props?.["aria-pressed"]!==undefined).map(n=>nodeText(n).trim());
+ assert.deepEqual(side(fixture.render({accessories:[item("clip",{slug:"cables-chargers",name:"Chargers & Cables"})],variantId:null})),["Chargers & Cables","View All"]);
+});
+
 test("normalized structured offers keep exact KZT money and real availability",()=>{
  const fixture=componentFixture("src/components/seo/JsonLd.tsx",{modules:{"@/lib/json-ld":{serializeJsonLd:JSON.stringify},"@/lib/public-catalog":{minorToMajor:()=>"90071992547409.93"}}});
  const tree=fixture.render({product:{publicKey:"exact",name:"Exact",description:"D",image:null,price:{selling:{amountMinor:"9007199254740993",currency:"KZT"}},variants:[{id:"v",sku:"V",availability:"available",price:{selling:{amountMinor:"9007199254740993",currency:"KZT"}}}]},url:"https://example.invalid/p/exact"});

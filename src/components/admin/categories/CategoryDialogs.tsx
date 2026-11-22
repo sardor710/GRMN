@@ -50,6 +50,7 @@ export function CategoryNameDialog({ title, initial, showVisibility, fixedLink, 
             Show in the top menu
           </label>
         )}
+        {showVisibility && <p className="text-[12px] text-[#595959]">Hiding takes it out of every menu it is in. To remove it from one menu only, use “Show under…”.</p>}
         {fixedLink && <p className="text-[13px] text-[#595959]">Menu link: <code className="bg-[#f2f2f2] px-1">{fixedLink}</code> (fixed)</p>}
         {message && <p role="status" className="text-[13px] text-[#595959]">{message}</p>}
         <div className="flex justify-end gap-2 border-t border-[#d9d9d9] pt-4">

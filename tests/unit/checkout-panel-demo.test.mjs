@@ -12,12 +12,13 @@ import * as kzRegions from "../../src/lib/kz-regions.ts";
 import { createTranslator } from "use-intl/core";
 import * as i18nConfig from "../../src/i18n/config.js";
 
+class CartRequestError extends Error { constructor(message, code) { super(message); this.code = code; } }
 // The panel reads its text through next-intl: render with the real English catalog (ru/kk are covered by the i18n tests).
 const enMessages = JSON.parse(fs.readFileSync(new URL("../../messages/en.json", import.meta.url), "utf8"));
 const i18nModules = {
   "next-intl": { useTranslations: namespace => createTranslator({ locale: "en", messages: enMessages, namespace }), useLocale: () => "en" },
   "@/i18n/navigation": { Link: "a" }, "@/i18n/config": i18nConfig, "@/i18n/useAppLocale": { useAppLocale: () => "en" },
-  "@/components/DemoDot": { DemoDot: "span" }, "@/lib/cart-client": { CartRequestError: class CartRequestError extends Error {} },
+  "@/components/DemoDot": { DemoDot: "span" }, "@/lib/cart-client": { CartRequestError },
 };
 const source = fs.readFileSync(new URL("../../src/components/CheckoutPanel.tsx", import.meta.url), "utf8");
 const kzt = amountMinor => ({ amountMinor, currency: "KZT" });
@@ -29,13 +30,13 @@ const quote = paymentMethod => ({
 });
 
 /** Loads the real module with stubbed hooks and checkout client; `seed` pre-sets useState slots by call order. */
-function load(name, seed = {}) {
+function load(name, seed = {}, { placeOrder } = {}) {
   const state = [], calls = [];
   let index = 0;
   const hooks = { useState(initial) { const key = index++; if (!(key in state)) state[key] = key in seed ? seed[key] : typeof initial === "function" ? initial() : initial; return [state[key], value => { state[key] = typeof value === "function" ? value(state[key]) : value; }]; }, useEffect() {}, useMemo: fn => fn() };
   const checkoutClient = {
     createCheckoutStorage: () => ({ get: () => null, set() {}, remove() {} }),
-    createCheckoutClient: () => ({ placeOrder: async (command, key) => { calls.push({ command, key }); return { orderId: "o1", orderNumber: "GRM-1", statusToken: "t".repeat(43) }; } }),
+    createCheckoutClient: () => ({ placeOrder: placeOrder ?? (async (command, key) => { calls.push({ command, key }); return { orderId: "o1", orderNumber: "GRM-1", statusToken: "t".repeat(43) }; }) }),
     beginCheckout: () => "checkout-key-0000001", checkoutRecovery: () => "fail", forgetCheckoutKey() {}, settleCheckoutKey() {}, retryOrderPayment: async () => null, pollOrderStatus: async () => null, rememberOrder() {}, resumePendingCheckout: async () => null,
   };
   const modules = { react: hooks, "react/jsx-runtime": { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) }, "next/link": "a", ...i18nModules, "@/lib/account-client": accountClient, "@/lib/checkout-client": checkoutClient, "@/lib/checkout-address": checkoutAddress, "@/lib/kz-regions": kzRegions };
@@ -89,4 +90,15 @@ test("the receipt shows Paid only from a paid sandbox server status, with the ne
   assert.doesNotMatch(demo, /Paid/);
   const unknown = nodeText(load("OrderReceived").render({ order }));
   assert.doesNotMatch(unknown, /Paid/, "nothing is shown as paid before the server answers");
+});
+
+// Final review 2026-11-22: the server's English PAYMENT_UNAVAILABLE text says "Demo purchases are not available…";
+// customers must not read it — the panel shows its own neutral "checkout options changed" line instead.
+test("a payment-unavailable refusal never shows the server's demo wording", async () => {
+  const panel = load("CheckoutPanel", { 1: quote("sandbox") }, { placeOrder: async () => { throw new CartRequestError("Demo purchases are not available while the store takes live payments", "PAYMENT_UNAVAILABLE"); } });
+  const tree = panel.render({ cart: CART, disabled: false, onPlaced: () => {} });
+  await nodes(tree).find(node => node.type === "button" && /^Place order$/.test(nodeText(node).trim())).props.onClick();
+  const text = nodeText(panel.render({ cart: CART, disabled: false, onPlaced: () => {} }));
+  assert.match(text, /Checkout options changed\. Review your order and try again\./);
+  assert.doesNotMatch(text, /demo/i);
 });
