@@ -134,6 +134,8 @@ COPY --chown=node:node package.json package-lock.json tsconfig.json drizzle.conf
 COPY --chown=node:node drizzle ./drizzle
 COPY --chown=node:node src ./src
 COPY --chown=node:node scripts ./scripts
+# 2026-11-22: the taxonomy loader reads menu labels (RU/KK category names) from the message files.
+COPY --chown=node:node messages ./messages
 COPY --chown=node:node public ./public
 RUN mkdir -p temp /media/uploads && chown node:node temp && chown -R node:node /media
 USER node

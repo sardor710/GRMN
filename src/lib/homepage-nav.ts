@@ -26,9 +26,35 @@ export interface MegaPromo {
 export interface MegaNavItem {
   labelKey: string;
   href: string;
+  /** Root category this top item stands for (owner 2026-11-22: the menu is built from Admin ▸ Categories). */
+  categoryKey: string;
   /** Up to three link columns, each holding one or more groups. */
   columns?: MegaGroup[][];
   promos?: MegaPromo[];
+}
+
+/**
+ * The menu as the header renders it: every label already in the visitor's language. The server builds it from
+ * Admin ▸ Categories (src/server/catalog/mega-nav.ts); `resolveMegaNav` turns the built-in `megaNav` into the same
+ * shape when there are no categories yet (owner 2026-11-22).
+ */
+export interface NavLink { label: string; href: string }
+export interface NavGroup { heading?: string; links: NavLink[] }
+export interface NavPromo { title: string; copy: string; href: string; image: string }
+export interface NavItem { label: string; href: string; columns?: NavGroup[][]; promos?: NavPromo[] }
+
+export const resolveNavGroup = (group: MegaGroup, t: (key: string) => string): NavGroup =>
+  ({ ...(group.headingKey ? { heading: t(group.headingKey) } : {}), links: group.links.map(link => ({ label: t(link.labelKey), href: link.href })) });
+export const resolveNavPromo = (promo: MegaPromo, t: (key: string) => string): NavPromo =>
+  ({ title: t(promo.titleKey), copy: t(promo.copyKey), href: promo.href, image: promo.image });
+
+/** The built-in menu with its message keys translated. */
+export function resolveMegaNav(items: readonly MegaNavItem[], t: (key: string) => string): NavItem[] {
+  return items.map(item => ({
+    label: t(item.labelKey), href: item.href,
+    ...(item.columns ? { columns: item.columns.map(column => column.map(group => resolveNavGroup(group, t))) } : {}),
+    ...(item.promos ? { promos: item.promos.map(promo => resolveNavPromo(promo, t)) } : {}),
+  }));
 }
 
 const G = "https://www.garmin.com/en-US";
@@ -50,6 +76,7 @@ const fenixPromo: MegaPromo = {
 export const megaNav: MegaNavItem[] = [
   {
     labelKey: "Header.nav.smartwatches",
+    categoryKey: "wearables-smartwatches",
     href: "/c/wearables-smartwatches",
     columns: [
       [
@@ -104,6 +131,7 @@ export const megaNav: MegaNavItem[] = [
   },
   {
     labelKey: "Header.nav.sportsFitness",
+    categoryKey: "sports-fitness",
     href: "/c/sports-fitness/running-smartwatches",
     columns: [
       [
@@ -177,6 +205,7 @@ export const megaNav: MegaNavItem[] = [
   },
   {
     labelKey: "Header.nav.outdoorRecreation",
+    categoryKey: "outdoor-recreation",
     href: "/c/outdoor-recreation",
     columns: [
       [
@@ -234,6 +263,7 @@ export const megaNav: MegaNavItem[] = [
   },
   {
     labelKey: "Header.nav.autoHome",
+    categoryKey: "auto-home",
     href: "/c/auto-home",
     columns: [
       [
@@ -293,6 +323,7 @@ export const megaNav: MegaNavItem[] = [
   },
   {
     labelKey: "Header.nav.marine",
+    categoryKey: "marine",
     href: "/c/marine",
     columns: [
       [
@@ -365,6 +396,7 @@ export const megaNav: MegaNavItem[] = [
   },
   {
     labelKey: "Header.nav.aviation",
+    categoryKey: "aviation",
     href: "/c/aviation",
     columns: [
       [
@@ -436,6 +468,7 @@ export const megaNav: MegaNavItem[] = [
   },
   {
     labelKey: "Header.nav.sale",
+    categoryKey: "promotions",
     href: "/c/promotions",
   },
 ];
