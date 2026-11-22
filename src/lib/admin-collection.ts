@@ -27,3 +27,22 @@ export async function archiveAdminRecord(fetcher:typeof fetch,resource:string,re
   const params=new URLSearchParams({id:record.id});if(record.version!==undefined)params.set("version",String(record.version));
   return acknowledged(await fetcher(`/api/admin/${resource}?${params}`,{method:"DELETE"}));
 }
+// Owner 2026-11-22 (admin bin): permanent deletes keep the server's code and message, so the screen can tell a refusal
+// (CONFLICT: orders or checkout history, last SKU) from a stale list (VERSION_CONFLICT).
+export class AdminDeleteError extends Error{
+  readonly code:string;readonly status:number;
+  constructor(message:string,code:string,status:number){super(message);this.name="AdminDeleteError";this.code=code;this.status=status;}
+}
+async function deleted(response:Response):Promise<void>{
+  const body=await response.json().catch(()=>null) as {deleted?:unknown;error?:{code?:unknown;message?:unknown}}|null;
+  if(response.ok&&body?.deleted===true)return;
+  const code=typeof body?.error?.code==="string"?body.error.code:"UNKNOWN",message=typeof body?.error?.message==="string"?body.error.message:"The delete could not be completed. Check your permissions and try again.";
+  throw new AdminDeleteError(message,code,response.status);
+}
+export async function deleteProductPermanently(fetcher:typeof fetch,record:{id:string;version:number}):Promise<void>{
+  const params=new URLSearchParams({id:record.id,version:String(record.version),permanent:"1"});
+  return deleted(await fetcher(`/api/admin/products?${params}`,{method:"DELETE"}));
+}
+export async function deleteCatalogVariant(fetcher:typeof fetch,input:{variantId:string;productVersion:number}):Promise<void>{
+  return deleted(await fetcher(`/api/admin/catalog/variants/${encodeURIComponent(input.variantId)}?version=${input.productVersion}`,{method:"DELETE"}));
+}

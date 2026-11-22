@@ -2,10 +2,10 @@
 
 import { Fragment, useMemo, useState } from "react";
 import Link from "next/link";
-import { AlertTriangle, ChevronRight, Package, Plus, Search, X } from "lucide-react";
+import { AlertTriangle, ChevronRight, Package, Plus, Search, Trash2, X } from "lucide-react";
 import type { CatalogStockState, ProductListRow, SkuRow } from "@/contracts/admin-catalog";
 import { useCatalogList } from "@/hooks/useCatalogList";
-import { archiveAdminRecord } from "@/lib/admin-collection";
+import { AdminDeleteError, archiveAdminRecord, deleteCatalogVariant, deleteProductPermanently } from "@/lib/admin-collection";
 import { Button, Select, StatusBadge, buttonClass } from "@/components/admin/ui";
 import { controlRadius } from "@/components/admin/ui/shape";
 import { CategoryFilter } from "@/components/admin/catalog/CategoryFilter";
@@ -81,11 +81,42 @@ export default function CatalogScreen() {
     }
   };
 
-  const archive = async (row: ProductListRow) => {
-    if (!window.confirm(`Archive “${row.name}”? It disappears from the store; you can find it again with the Archived status filter.`)) return;
+  const archiveRow = async (row: ProductListRow) => {
     setActionError("");
     try { await archiveAdminRecord(fetch, "products", { id: row.id, version: row.version }); reloadAll(); }
     catch (error) { setActionError(error instanceof Error ? error.message : "Archive failed."); }
+  };
+  const archive = async (row: ProductListRow) => {
+    if (!window.confirm(`Archive “${row.name}”? It disappears from the store; you can find it again with the Archived status filter.`)) return;
+    await archiveRow(row);
+  };
+
+  // Owner 2026-11-22 (admin bin): permanent delete of a never-ordered product or SKU. A stale list reloads; a product
+  // the server refuses (orders or checkout history) can be archived instead.
+  const staleDelete = (error: unknown) => {
+    if (!(error instanceof AdminDeleteError) || error.code !== "VERSION_CONFLICT") return false;
+    setActionError("This product changed in another window. The list has been reloaded; try again.");
+    reloadAll();
+    return true;
+  };
+  const deleteProduct = async (row: ProductListRow) => {
+    if (!window.confirm(`Delete “${row.name}” permanently? All its variants, prices, photos, translations and stock are removed. This cannot be undone.`)) return;
+    setActionError("");
+    try { await deleteProductPermanently(fetch, { id: row.id, version: row.version }); reloadAll(); }
+    catch (error) {
+      if (staleDelete(error)) return;
+      if (error instanceof AdminDeleteError && error.code === "CONFLICT" && error.message.includes("archive it instead") && row.status !== "archived") {
+        if (window.confirm(`${error.message}\n\nArchive “${row.name}” instead?`)) await archiveRow(row);
+        return;
+      }
+      setActionError(error instanceof Error ? error.message : "Delete failed.");
+    }
+  };
+  const deleteSku = async (row: SkuRow) => {
+    if (!window.confirm(`Delete SKU ${row.sku} permanently? Its price, photo links and stock are removed. This cannot be undone.`)) return;
+    setActionError("");
+    try { await deleteCatalogVariant(fetch, { variantId: row.variantId, productVersion: row.productVersion }); reloadAll(); }
+    catch (error) { if (!staleDelete(error)) setActionError(error instanceof Error ? error.message : "Delete failed."); }
   };
 
   const onDrawerSaved = (variant: SkuRow) => {
@@ -193,10 +224,12 @@ export default function CatalogScreen() {
             onToggle={toggleExpand}
             onEdit={(row) => setEditor({ key: row.id })}
             onArchive={archive}
+            onDelete={deleteProduct}
             onSku={setDrawer}
+            onDeleteSku={deleteSku}
           />
         ) : (
-          <SkuTable rows={skus.items} loading={skus.loading} onSku={setDrawer} />
+          <SkuTable rows={skus.items} loading={skus.loading} onSku={setDrawer} onDeleteSku={deleteSku} />
         )}
       </div>
 
@@ -260,13 +293,25 @@ function SkeletonRows({ columns, rows = 8 }: { columns: number; rows?: number })
   );
 }
 
-function GroupedTable({ rows, loading, expanded, onToggle, onEdit, onArchive, onSku }: {
+/** Icon-only delete control; it never lets the click reach a clickable row behind it. */
+function BinButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <Button size="sm" variant="ghost" aria-label={label} title={label} className="px-2 text-[#666] hover:text-[#a30d28]"
+      onClick={(event: { stopPropagation: () => void }) => { event.stopPropagation(); onClick(); }}>
+      <Trash2 className="h-4 w-4" aria-hidden="true" />
+    </Button>
+  );
+}
+
+function GroupedTable({ rows, loading, expanded, onToggle, onEdit, onArchive, onDelete, onSku, onDeleteSku }: {
   rows: ProductListRow[];
   loading: boolean;
   expanded: Record<string, { status: "loading" } | { status: "error"; message: string } | { status: "ready"; rows: SkuRow[] }>;
   onToggle: (row: ProductListRow) => void;
   onEdit: (row: ProductListRow) => void;
   onArchive: (row: ProductListRow) => void;
+  onDelete: (row: ProductListRow) => void;
+  onDeleteSku: (row: SkuRow) => void;
   onSku: (row: SkuRow) => void;
 }) {
   return (
@@ -321,6 +366,7 @@ function GroupedTable({ rows, loading, expanded, onToggle, onEdit, onArchive, on
                   <td className={cn(td, "whitespace-nowrap text-right")}>
                     <Button size="sm" variant="ghost" onClick={() => onEdit(row)}>Edit</Button>
                     {row.status !== "archived" && <Button size="sm" variant="ghost" className="hidden text-[#a30d28] md:inline-flex" onClick={() => onArchive(row)}>Archive</Button>}
+                    <BinButton label={`Delete ${row.name}`} onClick={() => onDelete(row)} />
                   </td>
                 </tr>
                 {entry && (
@@ -336,8 +382,8 @@ function GroupedTable({ rows, loading, expanded, onToggle, onEdit, onArchive, on
                       ) : (
                         <ul className="divide-y divide-[#ececec] border border-[#e5e5e5] bg-white">
                           {entry.rows.map((sku) => (
-                            <li key={sku.variantId}>
-                              <button type="button" onClick={() => onSku(sku)} className="flex w-full flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-left hover:bg-[#f7f7f7] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-black">
+                            <li key={sku.variantId} className="flex items-center">
+                              <button type="button" onClick={() => onSku(sku)} className="flex min-w-0 flex-1 flex-wrap items-center gap-x-4 gap-y-1 px-3 py-2 text-left hover:bg-[#f7f7f7] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-black">
                                 <Thumb src={sku.thumbnail} size="sm" />
                                 <span className="w-36 font-mono text-[12px]">{sku.sku}</span>
                                 <span className="min-w-0 flex-1 truncate text-[#333]">{sku.options.map((option) => option.value).join(" · ") || sku.title || "Default"}</span>
@@ -345,6 +391,7 @@ function GroupedTable({ rows, loading, expanded, onToggle, onEdit, onArchive, on
                                 <span className="w-32"><StockCell available={sku.stock.available} compact /></span>
                                 <StatusBadge status={sku.status} />
                               </button>
+                              <span className="pr-2"><BinButton label={`Delete SKU ${sku.sku}`} onClick={() => onDeleteSku(sku)} /></span>
                             </li>
                           ))}
                         </ul>
@@ -361,7 +408,7 @@ function GroupedTable({ rows, loading, expanded, onToggle, onEdit, onArchive, on
   );
 }
 
-function SkuTable({ rows, loading, onSku }: { rows: SkuRow[]; loading: boolean; onSku: (row: SkuRow) => void }) {
+function SkuTable({ rows, loading, onSku, onDeleteSku }: { rows: SkuRow[]; loading: boolean; onSku: (row: SkuRow) => void; onDeleteSku: (row: SkuRow) => void }) {
   return (
     // `relative` keeps the sr-only (absolute) header labels inside the scroll box, so they cannot widen the page.
     <div className="relative overflow-x-auto">
@@ -374,10 +421,11 @@ function SkuTable({ rows, loading, onSku }: { rows: SkuRow[]; loading: boolean; 
             <th className={cn(th, "hidden sm:table-cell")}>Price</th>
             <th className={th}>Stock</th>
             <th className={cn(th, "hidden sm:table-cell")}>Status</th>
+            <th className={cn(th, "w-12")}><span className="sr-only">Actions</span></th>
           </tr>
         </thead>
         <tbody>
-          {loading ? <SkeletonRows columns={6} /> : rows.map((row) => (
+          {loading ? <SkeletonRows columns={7} /> : rows.map((row) => (
             <tr key={row.variantId} className="cursor-pointer border-t border-[#f0f0f0] hover:bg-[#fafafa]" onClick={() => onSku(row)}>
               <td className={cn(td, "min-w-[200px]")}>
                 <button type="button" onClick={(event) => { event.stopPropagation(); onSku(row); }} className="group flex items-center gap-3 text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black" aria-label={`Quick edit ${row.sku}`}>
@@ -400,6 +448,7 @@ function SkuTable({ rows, loading, onSku }: { rows: SkuRow[]; loading: boolean; 
               </td>
               <td className={td}><StockCell available={row.stock.available} onHand={row.stock.onHand} /></td>
               <td className={cn(td, "hidden sm:table-cell")}><StatusBadge status={row.status} /></td>
+              <td className={cn(td, "text-right")}><BinButton label={`Delete SKU ${row.sku}`} onClick={() => onDeleteSku(row)} /></td>
             </tr>
           ))}
         </tbody>
