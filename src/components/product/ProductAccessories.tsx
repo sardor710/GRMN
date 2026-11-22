@@ -24,9 +24,10 @@ const TAB_KEYS: Record<string, string> = {
 };
 
 /**
- * garmin.com PDP "Accessories" tab for PostgreSQL products: a vertical category list (Apps, Service Plans, Bands,
- * … View All) beside a card grid. Only accessories that fit the currently selected variant are shown; the
- * per-variant mapping comes with the page data, so switching variants re-filters without a request.
+ * garmin.com PDP "Accessories" tab for PostgreSQL products (re-checked on the fēnix 9 page, 2026-11-22): a side list of
+ * groups (Apps, Service Plans, Bands, … View All) beside a grid. Until a group is chosen the grid shows one card per
+ * group (image + name, like garmin.com); choosing a group shows its accessory cards. Only accessories that fit the
+ * currently selected variant are shown; switching variants re-filters without a request.
  */
 export function ProductAccessories({ accessories, variantId }: { accessories: readonly CompatibleAccessoryDTO[]; variantId?: string | null }) {
   const t = useTranslations("ProductAccessories");
@@ -34,9 +35,10 @@ export function ProductAccessories({ accessories, variantId }: { accessories: re
   const fitting = accessoriesForVariant(accessories, variantId);
   const tabs = accessoryTabs(fitting);
   const [chosen, setChosen] = useState<string | null>(null);
-  const active = tabs.find(tab => tab.slug === chosen) ?? tabs[0];
+  const active = tabs.find(tab => tab.slug === chosen) ?? null;
+  const label = (tab: { slug: string; label: string }) => TAB_KEYS[tab.slug] ? t(`tabs.${TAB_KEYS[tab.slug]}`) : tab.label;
 
-  if (fitting.length === 0 || !active) {
+  if (fitting.length === 0 || tabs.length === 0) {
     return (
       <div className="py-12 text-center">
         <p className="text-[16px] leading-[24px] text-black">{t("noneForModel")}</p>
@@ -45,38 +47,52 @@ export function ProductAccessories({ accessories, variantId }: { accessories: re
     );
   }
 
+  // garmin.com card: raised shadow (two layers), 14px padding, 130px image, Oswald 20/25 name.
+  const card = "group flex flex-col items-center bg-white p-[14px] pb-6 text-center shadow-garmin-raised hover:shadow-garmin-raised-hover";
   return (
     <div className="flex flex-col gap-8 md:flex-row">
-      <nav aria-label={t("categoriesLabel")} className="w-full shrink-0 md:w-[240px]">
+      <nav aria-label={t("categoriesLabel")} className="w-full shrink-0 md:w-[286px]">
         <ul className="flex flex-row flex-wrap gap-1 md:flex-col md:gap-0">
           {tabs.map(tab => (
             <li key={tab.slug}>
-              <button type="button" aria-pressed={tab.slug === active.slug} onClick={() => setChosen(tab.slug)}
-                className={`w-full px-4 py-3 text-left text-[14px] font-semibold uppercase leading-[21px] tracking-[0.28px] transition-colors ${tab.slug === active.slug ? "bg-black text-white" : "text-black hover:bg-[#f2f2f2]"}`}>
-                {TAB_KEYS[tab.slug] ? t(`tabs.${TAB_KEYS[tab.slug]}`) : tab.label}
+              <button type="button" aria-pressed={tab.slug === active?.slug} onClick={() => setChosen(tab.slug)}
+                className={`w-full px-4 py-[9.75px] text-left text-[15px] font-medium leading-[22.5px] transition-colors md:pl-[37.5px] ${tab.slug === active?.slug ? "bg-black text-white" : "text-black hover:bg-[#f2f2f2]"}`}>
+                {label(tab)}
               </button>
             </li>
           ))}
         </ul>
       </nav>
 
-      <div className="grid flex-1 grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {active.items.map(item => {
-          const href = `/p/${encodeURIComponent(item.publicKey)}${item.sku ? `?sku=${encodeURIComponent(item.sku)}` : ""}`;
-          const soldOut = item.availability !== "available";
-          return (
-            <Link key={`${item.publicKey}:${item.sku ?? ""}`} href={href} className="group flex flex-col items-center bg-white px-4 pb-6 pt-4 text-center shadow-garmin-card">
-              <div className="relative h-[130px] w-[130px]">
-                {item.image && <Image src={item.image.url} alt={item.image.alt || item.name} fill sizes="130px" className="object-contain" />}
-              </div>
-              <h3 className="g-heading g-h4 mt-4 line-clamp-2 text-black group-hover:underline">{item.name}</h3>
-              <div className="mt-2">
-                <Price size="card" locale={locale} amount={{ minor: item.price.selling.amountMinor }} compareAt={item.price.compareAt ? { minor: item.price.compareAt.amountMinor } : null} />
-              </div>
-              {soldOut && <p className="mt-1 text-[14px] leading-[21px] text-garmin-text-muted">{t("outOfStock")}</p>}
-            </Link>
-          );
-        })}
+      <div className="grid flex-1 grid-cols-1 content-start gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        {active === null
+          ? tabs.filter(tab => tab.slug !== VIEW_ALL_TAB).map(tab => {
+            const image = tab.items.find(item => item.image)?.image ?? null;
+            return (
+              <button key={tab.slug} type="button" data-group-card onClick={() => setChosen(tab.slug)} className={card}>
+                <span className="relative block h-[130px] w-[130px]">
+                  {image && <Image src={image.url} alt="" fill sizes="130px" className="object-contain" />}
+                </span>
+                <span className="g-heading g-h4 mt-4 text-black group-hover:underline">{label(tab)}</span>
+              </button>
+            );
+          })
+          : active.items.map(item => {
+            const href = `/p/${encodeURIComponent(item.publicKey)}${item.sku ? `?sku=${encodeURIComponent(item.sku)}` : ""}`;
+            const soldOut = item.availability !== "available";
+            return (
+              <Link key={`${item.publicKey}:${item.sku ?? ""}`} href={href} className={card}>
+                <div className="relative h-[130px] w-[130px]">
+                  {item.image && <Image src={item.image.url} alt={item.image.alt || item.name} fill sizes="130px" className="object-contain" />}
+                </div>
+                <h3 className="g-heading g-h4 mt-4 line-clamp-3 text-black group-hover:underline">{item.name}</h3>
+                <div className="mt-auto pt-3 text-[14px] leading-[21px] text-black">
+                  <Price size="inline" locale={locale} amount={{ minor: item.price.selling.amountMinor }} compareAt={item.price.compareAt ? { minor: item.price.compareAt.amountMinor } : null} />
+                </div>
+                {soldOut && <p className="mt-1 text-[14px] leading-[21px] text-garmin-text-muted">{t("outOfStock")}</p>}
+              </Link>
+            );
+          })}
       </div>
     </div>
   );

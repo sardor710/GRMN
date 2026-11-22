@@ -92,12 +92,22 @@ test("M4.6: the Accessories tab lists what fits the selected variant, grouped in
  const item=(publicKey,group,variantIds)=>({publicKey,name:publicKey,image:null,price:{selling:{amountMinor:"100",currency:"KZT"},compareAt:null,usdEquivalent:null},availability:"available",sku:null,group,variantIds});
  const accessories=[item("band26",{slug:"bands",name:"Bands"},["v51"]),item("hrm",{slug:"heart-rate-monitors",name:"Heart Rate Monitors"},null),item("app",{slug:"apps",name:"Apps"},null),item("cable",null,["v43"])];
  const fixture=componentFixture("src/components/product/ProductAccessories.tsx",{modules:{"@/lib/catalog-facets":facets}});
- const tabs=tree=>nodes(tree).filter(n=>n.type==="button").map(n=>nodeText(n).trim());
+ // garmin.com (checked 2026-11-22 on the fēnix 9 page): a side list of groups and, until one is chosen, a grid of
+ // group cards (image + name); choosing a group shows its accessory cards with prices.
+ const side=tree=>nodes(tree).filter(n=>n.type==="button"&&n.props?.["aria-pressed"]!==undefined);
+ const tabs=tree=>side(tree).map(n=>nodeText(n).trim());
+ const groupCards=tree=>nodes(tree).filter(n=>n.type==="button"&&n.props?.["data-group-card"]!==undefined).map(n=>nodeText(n).trim());
  assert.deepEqual(tabs(fixture.render({accessories,variantId:"v43"})),["Apps","Heart Rate Monitors","View All"]);
  const t51=fixture.render({accessories,variantId:"v51"});assert.deepEqual(tabs(t51),["Apps","Bands","Heart Rate Monitors","View All"]);
+ assert.deepEqual(side(t51).map(n=>n.props["aria-pressed"]),[false,false,false,false],"no group is chosen at first");
+ assert.deepEqual(groupCards(t51),["Apps","Bands","Heart Rate Monitors"],"group cards, without View All");
+ assert.doesNotMatch(nodeText(t51),/KZT/,"the group overview shows no prices");
  assert.match(nodeText(fixture.render({accessories:[item("band26",{slug:"bands",name:"Bands"},["v51"])],variantId:"v43"})),/No accessories are listed for this model yet/);
  assert.doesNotMatch(nodeText(t51),/QuickFit® Watch Band Compatibility|No accessories found/);
- assert.match(nodeText(t51),/KZT\s1\.00/,"cards show the tenge price");
+ side(t51).find(n=>nodeText(n).trim()==="Bands").props.onClick();
+ const bands=fixture.render({accessories,variantId:"v51"});
+ assert.deepEqual(side(bands).map(n=>n.props["aria-pressed"]),[false,true,false,false]);
+ assert.match(nodeText(bands),/KZT\s1\.00/,"accessory cards show the tenge price");
 });
 
 test("normalized structured offers keep exact KZT money and real availability",()=>{
