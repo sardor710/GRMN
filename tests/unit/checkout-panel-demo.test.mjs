@@ -1,6 +1,6 @@
 // M7 / D03a: the checkout panel takes the payment method from the server quote. With demo purchases
 // on ("sandbox") it says clearly that no real payment is taken, sends "sandbox", and the receipt shows
-// "Paid (Demo)" only when the server status says paid. Without them ("demo") the D03 copy stays.
+// "Paid" only when the server status says paid (no "demo" wording since 2026-11-22). Without them ("demo") the D03 copy stays.
 import assert from "node:assert/strict";
 import test from "node:test";
 import fs from "node:fs";
@@ -17,7 +17,7 @@ const enMessages = JSON.parse(fs.readFileSync(new URL("../../messages/en.json", 
 const i18nModules = {
   "next-intl": { useTranslations: namespace => createTranslator({ locale: "en", messages: enMessages, namespace }), useLocale: () => "en" },
   "@/i18n/navigation": { Link: "a" }, "@/i18n/config": i18nConfig, "@/i18n/useAppLocale": { useAppLocale: () => "en" },
-  "@/components/DemoBadge": { DemoBadge: "span" }, "@/lib/cart-client": { CartRequestError: class CartRequestError extends Error {} },
+  "@/components/DemoDot": { DemoDot: "span" }, "@/lib/cart-client": { CartRequestError: class CartRequestError extends Error {} },
 };
 const source = fs.readFileSync(new URL("../../src/components/CheckoutPanel.tsx", import.meta.url), "utf8");
 const kzt = amountMinor => ({ amountMinor, currency: "KZT" });
@@ -49,10 +49,11 @@ test("demo purchases: the panel shows the no-real-payment notice and sends the s
   const panel = load("CheckoutPanel", { 1: quote("sandbox") });
   const placed = [];
   const tree = panel.render({ cart: CART, disabled: false, onPlaced: order => placed.push(order) }), text = nodeText(tree);
-  assert.match(text, /Demo purchase — no real payment is taken\./);
-  assert.match(text, /marks it paid \(Demo\)/);
-  const button = nodes(tree).find(node => node.type === "button" && /Place demo order/.test(nodeText(node)));
-  assert.ok(button, "the place button says it is a demo order");
+  // Owner 2026-11-22: customers never read "demo"; one neutral line plus the hold time.
+  assert.match(text, /No payment is taken for this order\. This total is held until/);
+  assert.doesNotMatch(text, /demo/i);
+  const button = nodes(tree).find(node => node.type === "button" && /^Place order$/.test(nodeText(node).trim()));
+  assert.ok(button, "the place button reads Place order");
   await button.props.onClick();
   assert.equal(panel.calls.length, 1);
   assert.equal(panel.calls[0].command.paymentMethod, "sandbox", "the method comes from the server quote");
@@ -62,9 +63,9 @@ test("demo purchases: the panel shows the no-real-payment notice and sends the s
 test("without demo purchases the demo-checkout (Task 3.3) and manual (O07) copy and methods stay", async () => {
   const panel = load("CheckoutPanel", { 1: quote("demo") });
   const tree = panel.render({ cart: CART, disabled: false, onPlaced: () => {} }), text = nodeText(tree);
-  assert.match(text, /Demo payment — no money is charged\./);
-  assert.doesNotMatch(text, /Demo purchase/);
-  await nodes(tree).find(node => node.type === "button" && /^Pay \(demo\)$/.test(nodeText(node).trim())).props.onClick();
+  assert.match(text, /No payment is taken for this order\./);
+  assert.doesNotMatch(text, /demo/i);
+  await nodes(tree).find(node => node.type === "button" && /^Pay$/.test(nodeText(node).trim())).props.onClick();
   assert.equal(panel.calls[0].command.paymentMethod, "demo");
   const manual = load("CheckoutPanel", { 1: quote("manual") });
   const manualTree = manual.render({ cart: CART, disabled: false, onPlaced: () => {} });
@@ -73,16 +74,16 @@ test("without demo purchases the demo-checkout (Task 3.3) and manual (O07) copy 
   assert.equal(manual.calls[0].command.paymentMethod, "manual");
 });
 
-test("the receipt shows Paid (Demo) only from a paid sandbox server status", () => {
+test("the receipt shows Paid only from a paid sandbox server status, with the neutral line and no demo wording", () => {
   const order = { orderId: "o1", orderNumber: "GRM-1", statusToken: null };
   const status = (paymentMode, paymentStatus, status = "confirmed") => ({ orderId: "o1", orderNumber: "GRM-1", status, paymentStatus, fulfillmentStatus: "unfulfilled", paymentMode, total: kzt("202000"), placedAt: null });
   const paid = nodeText(load("OrderReceived", { 0: status("sandbox", "paid") }).render({ order }));
-  assert.match(paid, /Paid \(Demo\)/);
-  assert.match(paid, /no real payment was taken/);
-  assert.match(paid, /Status:\s+Paid \(Demo\)/);
+  assert.match(paid, /Status:\s+Paid/);
+  assert.match(paid, /No payment is taken for this order\./);
+  assert.doesNotMatch(paid, /demo/i);
   const pending = nodeText(load("OrderReceived", { 0: status("sandbox", "unpaid", "pending_payment") }).render({ order }));
-  assert.doesNotMatch(pending, /Paid \(Demo\)/);
-  assert.match(pending, /Awaiting demo payment/);
+  assert.doesNotMatch(pending, /Paid/);
+  assert.match(pending, /Awaiting payment/);
   const demo = nodeText(load("OrderReceived", { 0: status("demo", "unpaid", "pending_payment") }).render({ order }));
   assert.match(demo, /Payment not completed/, "a demo order still awaiting payment offers Try again");
   assert.doesNotMatch(demo, /Paid/);

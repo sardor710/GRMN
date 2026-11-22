@@ -460,7 +460,8 @@ Status
                 >
                   <span className="flex items-center gap-1.5 truncate">
                     <span
-                      className={`h-2 w-2 rounded-garmin-pill shrink-0 ${
+                      data-status-dot
+                      className={`h-2 w-2 rounded-none shrink-0 ${
                         isOn ? "bg-black" : "bg-neutral-300"
                       }`}
                     />

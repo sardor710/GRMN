@@ -236,10 +236,10 @@ export default function FulfillmentScreen() {
             <div className="space-y-5">
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="g-heading g-h4 tabular-nums">{detail.orderNumber}</h2>
-                <span className="rounded-garmin-pill bg-garmin-badge-gray px-3 py-0.5 text-xs capitalize text-black">{detail.status}</span>
-                <span className="rounded-garmin-pill bg-garmin-badge-gray px-3 py-0.5 text-xs capitalize text-black">{detail.paymentStatus}</span>
-                <span className="rounded-garmin-pill bg-garmin-badge-gray px-3 py-0.5 text-xs capitalize text-black">{detail.fulfillmentStatus}</span>
-                {isDemoMode(detail.paymentMode) ? <DemoBadge label={detail.paymentMode === "sandbox" ? "DEMO · SANDBOX" : "DEMO"} className="text-[10px]" /> : <span className="rounded-garmin-pill bg-garmin-badge-gray px-3 py-0.5 text-xs capitalize text-black">{detail.paymentMode}</span>}
+                <span data-status-badge className="rounded-none bg-garmin-badge-gray px-3 py-0.5 text-xs capitalize text-black">{detail.status}</span>
+                <span data-status-badge className="rounded-none bg-garmin-badge-gray px-3 py-0.5 text-xs capitalize text-black">{detail.paymentStatus}</span>
+                <span data-status-badge className="rounded-none bg-garmin-badge-gray px-3 py-0.5 text-xs capitalize text-black">{detail.fulfillmentStatus}</span>
+                {isDemoMode(detail.paymentMode) ? <DemoBadge label={detail.paymentMode === "sandbox" ? "DEMO · SANDBOX" : "DEMO"} className="text-[10px]" /> : <span data-status-badge className="rounded-none bg-garmin-badge-gray px-3 py-0.5 text-xs capitalize text-black">{detail.paymentMode}</span>}
               </div>
               {deliveryLines(detail.deliveryAddress).length > 0 && (
                 <div className="text-sm">

@@ -131,7 +131,7 @@ export function ProductEditor({ productKey, initialTab = "general", focusSku = n
             {load.status === "ready" && <StatusBadge status={form.status} className="hidden sm:inline-flex" />}
             {dirty && (
               <span className="hidden items-center gap-1.5 whitespace-nowrap text-[12px] text-[#8a6100] md:inline-flex" role="status">
-                <span className="h-2 w-2 rounded-full bg-[#f0b800]" aria-hidden="true" /> Unsaved changes
+                <span data-status-dot className="h-2 w-2 rounded-none bg-[#f0b800]" aria-hidden="true" /> Unsaved changes
               </span>
             )}
           </div>
@@ -231,7 +231,7 @@ export function ProductEditor({ productKey, initialTab = "general", focusSku = n
                 )}
               </p>
             ) : dirty ? (
-              <p className="flex items-center gap-2 text-[#8a6100]"><span className="h-2 w-2 rounded-full bg-[#f0b800]" aria-hidden="true" /> Unsaved changes</p>
+              <p className="flex items-center gap-2 text-[#8a6100]"><span data-status-dot className="h-2 w-2 rounded-none bg-[#f0b800]" aria-hidden="true" /> Unsaved changes</p>
             ) : editor.savedAt ? (
               <p className="flex items-center gap-2 text-[#4d5900]"><CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Saved{editor.version ? ` · version ${editor.version}` : ""}</p>
             ) : (

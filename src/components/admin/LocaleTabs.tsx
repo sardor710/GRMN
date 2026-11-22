@@ -59,7 +59,7 @@ export function LocaleTabs({ value, onChange, status, className = "" }: LocaleTa
               <span>{tab.code}</span>
               {state && (
                 <>
-                  <span aria-hidden="true" className={`h-2 w-2 rounded-garmin-pill ${DOT_CLASS[state]}`} />
+                  <span aria-hidden="true" data-status-dot className={`h-2 w-2 rounded-none ${DOT_CLASS[state]}`} />
                   <span className="sr-only">({STATUS_TEXT[state]})</span>
                 </>
               )}

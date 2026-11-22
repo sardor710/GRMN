@@ -26,7 +26,8 @@ export function StatusSelect({ value, options, onChange, size = "md", labels, wr
     <div className={cn("relative", wrapperClassName)}>
       <span
         aria-hidden="true"
-        className={cn("pointer-events-none absolute top-1/2 z-10 h-2 w-2 -translate-y-1/2 rounded-full", size === "sm" ? "left-2.5" : "left-3", toneDot[toneForStatus(value)])}
+        data-status-dot
+        className={cn("pointer-events-none absolute top-1/2 z-10 h-2 w-2 -translate-y-1/2 rounded-none", size === "sm" ? "left-2.5" : "left-3", toneDot[toneForStatus(value)])}
       />
       <Select ref={ref} size={size} value={value} onChange={(event) => onChange(event.target.value)} className={size === "sm" ? "pl-6" : "pl-7"} {...rest}>
         {list.map((option) => (

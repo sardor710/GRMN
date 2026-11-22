@@ -834,7 +834,7 @@ export default function AdminProductsPage() {
                           />
                         </div>
                       ) : (
-                        <span className={`inline-flex items-center gap-1 rounded-garmin-pill border px-3 py-1 text-sm leading-[21px] capitalize ${statusPillClass(p.status)}`}>
+                        <span data-status-badge className={`inline-flex items-center gap-1 rounded-none border px-3 py-1 text-sm leading-[21px] capitalize ${statusPillClass(p.status)}`}>
                           {p.status}
                         </span>
                       )}

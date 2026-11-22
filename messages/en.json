@@ -184,7 +184,7 @@
   "Cart": {
     "heading": "Shopping Cart",
     "thankYou": "Thank you for your order.",
-    "demoNotice": "This is a demo checkout — no payment was processed. Your cart has been cleared.",
+    "demoNotice": "No payment is taken for this order. Your cart has been cleared.",
     "continueShoppingButton": "Continue Shopping",
     "emptyHeading": "Your Cart is Empty",
     "item": "Item",
@@ -982,8 +982,8 @@
       "refunded": "refunded",
       "failed": "failed"
     },
-    "demoBadge": "DEMO",
-    "demoNote": "Demo order — no money was charged."
+    "demoBadge": "No payment taken",
+    "demoNote": "No payment is taken for this order."
   },
   "Checkout": {
     "fields": {
@@ -1018,7 +1018,7 @@
     "received": "Order {number} received",
     "statusLine": "Status: {status}",
     "totalLine": "Total {total}",
-    "demoReceipt": "Demo payment — no money was charged.",
+    "demoReceipt": "No payment is taken for this order.",
     "continueShopping": "Continue Shopping",
     "paymentNotice": "No payment is taken online. After you place the order you will see how to pay; we confirm your payment by hand. This total is held until {time}.",
     "paid": "Paid",
@@ -1027,14 +1027,14 @@
     "contactLater": "We will contact you with payment details.",
     "heldUntil": "Your order is held until {time}. If we have not received payment by then, it is cancelled.",
     "notPaidUntilConfirmed": "The order is not paid until we confirm your payment.",
-    "payDemo": "Pay (demo)",
-    "demoNote": "Demo payment — no money is charged.",
-    "demoBadge": "DEMO",
+    "payDemo": "Pay",
+    "demoNote": "No payment is taken for this order.",
+    "demoBadge": "No payment taken",
     "paymentNotCompleted": "Payment not completed",
-    "paymentNotCompletedBody": "Your order is saved, but the demo payment did not go through.",
+    "paymentNotCompletedBody": "Your order is saved, but the payment did not go through.",
     "tryAgain": "Try again",
     "tryAgainFailed": "The payment could not be retried. Reload the page and try again.",
-    "methodChanged": "Checkout options changed (demo checkout was turned off or on). Review your order and try again.",
+    "methodChanged": "Checkout options changed. Review your order and try again.",
     "deliveryLegend": "Delivery in Kazakhstan",
     "loadingDelivery": "Loading delivery options…",
     "deliveryAddress": "Delivery address",
@@ -1044,13 +1044,14 @@
     "newAddress": "New address",
     "saveToAddresses": "Save to my addresses",
     "addressSaveFailed": "The address could not be saved: {error}",
-    "sandboxNoticeTitle": "Demo purchase — no real payment is taken.",
-    "sandboxNoticeBody": "Placing the order marks it paid (Demo) at once, so the store can test orders and dashboards. This total is held until {time}.",
-    "placeDemo": "Place demo order",
-    "paidDemo": "Paid (Demo)",
-    "awaitingDemoPayment": "Awaiting demo payment",
+    "sandboxNoticeTitle": "No payment is taken for this order.",
+    "sandboxNoticeBody": "This total is held until {time}.",
+    "placeDemo": "Place order",
+    "paidDemo": "Paid",
+    "awaitingDemoPayment": "Awaiting payment",
     "paymentLine": "Payment: {state}",
-    "sandboxReceipt": "Demo purchase — no real payment was taken. The order is paid in the store's sandbox only."
+    "sandboxReceipt": "No payment is taken for this order.",
+    "noPaymentLine": "No payment is taken for this order."
   },
   "Locations": {
     "metaTitle": "Select a Location | Garmin Kazakhstan",

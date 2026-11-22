@@ -35,7 +35,7 @@ test("the legacy status pill uses statusPillClass", () => {
   const fixture = componentFixture(FILE, { backend: "legacy", items: [{ ...product, version: undefined, status: "draft" }], modules: { "@/components/admin/products/StatusMenu": statusMenu, "@/components/admin/products/status-pill": { statusPillClass: status => `pill-${status}` } } });
   const pill = nodes(fixture.render()).find(node => node.type === "span" && /pill-draft/.test(node.props?.className ?? ""));
   assert.ok(pill, "the pill carries statusPillClass(status)");
-  assert.match(pill.props.className, /rounded-garmin-pill/);
+  assert.match(pill.props.className, /rounded-none/, "admin badges are square (owner choice A, 2026-11-22)");
 });
 
 // Final review (M9 follow-up): a new product starts with no compare-at (it used to prefill 899.99, a fake sale)

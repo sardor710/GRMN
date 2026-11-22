@@ -82,7 +82,7 @@ export function StatusMenu({ id, version, status, name, onSaved, onError }: Stat
         aria-label={`Status of ${name ?? id}: ${STATUS_LABELS[shown]}. Change status`}
         disabled={pending !== null}
         className={cn(
-          "inline-flex items-center gap-1 rounded-garmin-pill border px-3 py-1 text-sm leading-[21px] capitalize outline-none focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-[#101010] disabled:opacity-60",
+          "inline-flex items-center gap-1 rounded-none border px-3 py-1 text-sm leading-[21px] capitalize outline-none focus-visible:outline-1 focus-visible:outline-offset-1 focus-visible:outline-[#101010] disabled:opacity-60",
           statusPillClass(shown),
         )}
       >

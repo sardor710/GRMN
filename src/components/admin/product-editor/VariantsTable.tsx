@@ -256,7 +256,7 @@ const VariantRow = memo(function VariantRow({ variant, chips, issue, thumbnail, 
               {variant.isDefault ? "Default" : "Make default"}
             </button>
             <span className={cn("inline-flex items-center gap-1.5", ready ? "text-[#4d5900]" : blocker === "draft" || blocker === "archived" ? "text-[#595959]" : "text-[#a30d28]")}>
-              <span aria-hidden="true" className={cn("h-2 w-2 rounded-full", ready ? "bg-[#9aa62a]" : blocker === "draft" || blocker === "archived" ? "border border-[#8c8c8c]" : "bg-[#c20f2f]")} />
+              <span aria-hidden="true" data-status-dot className={cn("h-2 w-2 rounded-none", ready ? "bg-[#9aa62a]" : blocker === "draft" || blocker === "archived" ? "border border-[#8c8c8c]" : "bg-[#c20f2f]")} />
               {ready ? "Ready to sell" : BLOCKER_LABELS[blocker]}
             </span>
           </div>

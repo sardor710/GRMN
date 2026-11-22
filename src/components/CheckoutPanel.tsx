@@ -19,7 +19,7 @@ import {
 } from "@/lib/checkout-address";
 import { kzRegionLabel } from "@/lib/kz-regions";
 import { AddressForm, type AddressFormValue } from "@/components/address/AddressForm";
-import { DemoBadge } from "@/components/DemoBadge";
+import { DemoDot } from "@/components/DemoDot";
 
 // Task 14A checkout. The server prices the quote and places the order; this panel only collects
 // the delivery contact (D06: name, phone, address; email optional), shows the server's KZT quote
@@ -291,7 +291,7 @@ export function OrderReceived({ order }: { order: PlacedOrder }) {
     : t("status.pending_payment");
   return (
     <div className="mx-auto max-w-[640px] px-4 py-24 text-center">
-      {(demo || sandbox) && <DemoBadge label={t("demoBadge")} className="mb-4" />}
+      {(demo || sandbox) && <DemoDot label={t("demoBadge")} className="mb-4 h-2.5 w-2.5" />}
       <h1 className="g-heading g-h2 m-0 text-black">{t("received", { number: order.orderNumber })}</h1>
       <p className="mt-4 text-[16px] leading-[24px] text-black">{t("statusLine", { status: statusText })}{status ? ` · ${t("totalLine", { total: kzt(status.total) })}` : ""}</p>
       {status?.paymentMethod === "manual" && status.status === "pending_payment" && (

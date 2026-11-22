@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-// Status pill from garmin.com `.g__badge` (radius 1.625em, Roboto 400) and its colour variants:
+// Status badge in garmin.com's `.g__badge` colour variants (Roboto 400):
 // candy-blue #6DCFF6, lime #CAD54F, gold #F0B800, red #C20F2F, pink #F7607B, gray #D9D9D9, black.
-// Badges are pills in both admin control shapes, so this file does not read ./shape.
+// Square (radius 0) like the admin's buttons and selects: owner choice A, 2026-11-22. Dots are square too.
 export type StatusTone = "success" | "info" | "warning" | "danger" | "accent" | "neutral" | "muted" | "dark";
 
 const tones: Record<StatusTone, string> = {
@@ -17,7 +17,7 @@ const tones: Record<StatusTone, string> = {
   dark: "bg-black text-white border-black",
 };
 
-/** Dot colour used by StatusSelect and compact legends (same palette). */
+/** Dot colour used by StatusSelect and compact legends (same palette); dots are square. */
 export const toneDot: Record<StatusTone, string> = {
   success: "bg-[#9aa62a]",
   info: "bg-[#0fb0f0]",
@@ -61,8 +61,9 @@ export interface StatusBadgeProps {
 export function StatusBadge({ status = "", tone, size = "sm", className, children }: StatusBadgeProps) {
   return (
     <span
+      data-status-badge
       className={cn(
-        "inline-flex w-fit shrink-0 items-center whitespace-nowrap rounded-full border font-sans font-normal",
+        "inline-flex w-fit shrink-0 items-center whitespace-nowrap rounded-none border font-sans font-normal",
         size === "sm" ? "px-2.5 py-px text-[12px] leading-[18px]" : "px-3.5 py-1 text-[14px] leading-[21px]",
         tones[tone ?? toneForStatus(status)],
         className,
