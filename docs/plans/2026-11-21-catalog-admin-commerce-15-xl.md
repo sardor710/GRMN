@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Done | 5 | 57/57 | 2026-11-21 | Owner review; optional follow-ups below (control shape A/B confirmation pending) |
+| Done | 5 | 57/57 | 2026-11-21 | Owner review; optional follow-ups below |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -331,6 +331,7 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 | ~~M7.3~~ | Resolved 2026-11-21: owner said "Yes, commit them"; WhatsApp alerts committed as 7d0f76f (unit test 5/5) | – | – |
 
 ## Revisions
+- 2026-11-22: owner answered "A" — admin controls stay Garmin square with pill status badges (already implemented; comment updated in shape.ts).
 - 2026-11-21: plan drafted from 3 code-mapping agents and a 3-agent council.
 - 2026-11-21: owner approved the plan as written ("Approve, start Wave 0"): D-R1 Postgres single runtime and D-D1/D03a demo purchases accepted. Q3 (WhatsApp files) and Q4 (key restriction) unanswered; Q3 blocks only M7.3 and is re-asked before Wave 4. Yandex keys written to `.env.local` (gitignored).
 - 2026-11-21: Wave 0 done. M0 merged fe3913e, M1 merged d5bcd10, lead taxonomy/category assignment e65c700. Both worktrees were created from master by the harness; agents reset to 51b72b3 before working. Worktrees and branches removed (junctions removed first; main node_modules intact).
@@ -371,14 +372,14 @@ Foundation: Postgres single runtime with `npm run dev:stack` (persistent embedde
 **Checks run:** see M9.1 (npm test / npm run check / dev:stack --check all green), M9.2 (12/12 browser scenarios + test:cms-ui green), M9.3 (independent review; 6 findings fixed TDD), M2 benchmark.
 
 **Gaps (honest):**
-- Admin control shape implemented as option A (Garmin square, pill badges); owner has not confirmed A vs B — one-line switch in `src/components/admin/ui/shape.ts`.
+- Admin control shape: option A (Garmin square controls, pill status badges), confirmed by the owner 2026-11-22; switch stays in `src/components/admin/ui/shape.ts`.
 - Legacy JSON mode is frozen: new features need `CMS_BACKEND=postgres` (use `npm run dev:stack`).
 - Imported legacy simple products carry small prices (e.g. 249.99 KZT) from data.json — likely USD-era values; needs owner price review.
 - Generated draft SKUs can be very long; Women page preset is empty (no tag data); KZT price facet buckets are my choice.
 - Yandex keys must be restricted by HTTP referrer in the Yandex console; free-tier quota/terms need checking for production.
 - `DEMO_PURCHASES` must be off for the real launch (refused automatically in production unless overridden).
 
-**Follow-ups (owner):** confirm control shape A/B; review imported prices and stock; assign products to categories/accessory groups in the new editor; restrict Yandex keys.
+**Follow-ups (owner):** review imported prices and stock; assign products to categories/accessory groups in the new editor; restrict Yandex keys.
 
 ## Handoff
-All 57 tasks done and merged on `merge/backend-into-cms-variants` (HEAD after bf4a3c7 + plan commit); nothing pushed, no worktrees left. Run locally with `npm run dev:stack` (first run: `npm run dev:admin` for an owner account, enroll TOTP at first login). Only open owner decision: admin control shape A (current) vs B (`src/components/admin/ui/shape.ts`). Evidence: docs/design-references/e2e-2026-11-21/RESULTS.md and outputs/runtime/final-*.log. Next work, if any, should start a new plan.
+All 57 tasks done and merged on `merge/backend-into-cms-variants` (HEAD after bf4a3c7 + plan commit); nothing pushed, no worktrees left. Run locally with `npm run dev:stack` (first run: `npm run dev:admin` for an owner account, enroll TOTP at first login). Owner confirmed admin control shape A on 2026-11-22; no open decisions. Evidence: docs/design-references/e2e-2026-11-21/RESULTS.md and outputs/runtime/final-*.log. Next work, if any, should start a new plan.

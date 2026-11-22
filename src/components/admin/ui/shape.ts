@@ -1,4 +1,4 @@
-// The ONE switch for the admin control shape (owner decision pending, plan item 14).
+// The ONE switch for the admin control shape (plan item 14). Owner chose option A on 2026-11-22.
 //   "square" = option A, garmin.com's real controls: 0 radius buttons/selects (docs/research/www.garmin.com/CONTROLS.md)
 //   "pill"   = option B, fully rounded buttons and dropdowns
 // Badges are pills in both shapes (garmin.com `.g__badge`), so StatusBadge does not read this.
