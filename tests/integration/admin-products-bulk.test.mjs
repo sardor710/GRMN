@@ -69,16 +69,16 @@ test("bulk publish of three items reports two ok and one VERSION_CONFLICT",async
   assert.equal((await cms.get("products",admin,c.id)).status,"published");
 });
 
-test("bulk archive changes status; bulk delete refuses a stocked product and deletes the other",async()=>{
+// Owner 2026-11-22 (admin bin): manual stock history no longer keeps a product; it is purged with the product.
+test("bulk archive changes status; bulk delete removes a stocked, never-ordered product and the other",async()=>{
   const cms=await cmsService(),a=await cms.save("products",admin,product()),b=await cms.save("products",admin,product()),c=await cms.save("products",admin,product());
   const archived=await cms.bulkProducts(admin,{action:"archive",items:[{id:a.id,version:a.version}]});
   assert.equal(archived.results[0].ok,true);assert.equal((await cms.get("products",admin,a.id)).status,"archived");
   await stockedVariant(b.id);
   const out=await cms.bulkProducts(admin,{action:"delete",items:[{id:b.id,version:b.version},{id:c.id,version:c.version}]});
-  assert.equal(out.results[0].ok,false);assert.equal(out.results[0].code,"CONFLICT");
-  assert.equal(out.results[1].ok,true);
+  assert.deepEqual(out.results.map(r=>r.ok),[true,true]);
   assert.equal((await q("SELECT count(*)::int AS n FROM products WHERE public_key=$1",[c.id])).rows[0].n,0);
-  assert.equal((await q("SELECT count(*)::int AS n FROM products WHERE public_key=$1",[b.id])).rows[0].n,1);
+  assert.equal((await q("SELECT count(*)::int AS n FROM products WHERE public_key=$1",[b.id])).rows[0].n,0);
 });
 
 test("bulk rejects more than 100 items with 400",async()=>{
@@ -136,7 +136,7 @@ test("bulk delete refuses an ordered product and deletes the other",async()=>{
     await client.query("COMMIT");
   }catch(error){await client.query("ROLLBACK");throw error;}finally{client.release();}
   const out=await cms.bulkProducts(admin,{action:"delete",items:[{id:a.id,version:a.version},{id:b.id,version:b.version}]});
-  assert.equal(out.results[0].ok,false);assert.equal(out.results[0].code,"CONFLICT");assert.match(out.results[0].message,/orders/);
+  assert.equal(out.results[0].ok,false);assert.equal(out.results[0].code,"CONFLICT");assert.equal(out.results[0].message,"This product has orders, so it cannot be deleted; archive it instead");
   assert.equal(out.results[1].ok,true);
   assert.equal((await q("SELECT count(*)::int AS n FROM products WHERE public_key=$1",[a.id])).rows[0].n,1);
 });

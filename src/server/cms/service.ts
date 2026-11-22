@@ -7,6 +7,7 @@ import { AuthFailure } from "../auth/config.ts";
 import { adminDTO, blogInput, bannerInput, homepageInput } from "../auth/admin-schemas.ts";
 import { plainText, sanitizeRichText } from "../content/sanitize.ts";
 import { writeProduct } from "./catalog-write.ts";
+import { assertPurgeable, deleteVariantReferences, purgeVariantStock } from "./catalog-purge.ts";
 import { CONTENT_INVALIDATE_KIND } from "../content/events.ts";
 import { appendOutboxEvent } from "../operations/outbox.ts";
 import { LOCALES, mergedTranslations } from "./product-translations.ts";
@@ -105,20 +106,19 @@ export function createCMSService({pool,authorize}:Options) {
       const product=(await client.query("SELECT id,version,name FROM products WHERE public_key=$1 FOR UPDATE",[publicKey])).rows[0]??fail("NOT_FOUND",404,"Product was not found");
       if(Number(product.version)!==expected)return fail("VERSION_CONFLICT",409,"Product changed; reload before deleting");
       const id=product.id,variants=(await client.query<{id:string}>("SELECT id FROM product_variants WHERE product_id=$1",[id])).rows.map(r=>r.id);
-      if((await client.query("SELECT 1 FROM order_items WHERE product_id=$1 OR variant_id=ANY($2::uuid[]) LIMIT 1",[id,variants])).rowCount)
-        return fail("CONFLICT",409,"This product has orders, so it cannot be deleted; archive it instead");
-      if((await client.query("SELECT 1 FROM stock_movements WHERE variant_id=ANY($1::uuid[]) LIMIT 1",[variants])).rowCount)
-        return fail("CONFLICT",409,"This product has stock history, so it cannot be deleted; archive it instead");
+      // Owner 2026-11-22 (admin bin): orders or checkout history keep a product; manual stock history is purged.
+      await assertPurgeable(client,variants,"product",id);
       const del=(sql:string,args:unknown[])=>client.query(sql,args);
-      await del("DELETE FROM cart_items WHERE variant_id=ANY($1::uuid[])",[variants]);
+      await deleteVariantReferences(client,variants);
       await del("DELETE FROM wishlist_items WHERE product_id=$1",[id]);
-      await del("DELETE FROM promotion_variants WHERE variant_id=ANY($1::uuid[])",[variants]);
-      await del("DELETE FROM price_adjustment_variants WHERE variant_id=ANY($1::uuid[])",[variants]);
+      // Compatibility links on either side (0023 RESTRICTs); the linked products get a new version.
+      const linked=(await client.query<{a:string;d:string}>("DELETE FROM product_compatibility WHERE accessory_product_id=$1 OR device_product_id=$1 RETURNING accessory_product_id AS a,device_product_id AS d",[id])).rows.flatMap(row=>[row.a,row.d]).filter(other=>other!==id);
+      if(linked.length)await del("UPDATE products SET version=version+1 WHERE id=ANY($1::uuid[])",[[...new Set(linked)]]);
       await del("DELETE FROM collection_products WHERE product_id=$1",[id]);
       await del("DELETE FROM collection_published_products WHERE product_id=$1",[id]);
       await del("DELETE FROM product_relations WHERE source_product_id=$1 OR target_product_id=$1",[id]);
       for(const table of ["product_categories","product_activities","product_attribute_values","product_translations","product_media"])await del(`DELETE FROM ${table} WHERE product_id=$1`,[id]);
-      await del("DELETE FROM inventory_balances WHERE variant_id=ANY($1::uuid[])",[variants]);
+      await purgeVariantStock(client,principal,{type:entityTypes.products,id},variants);
       await del("DELETE FROM variant_option_values WHERE product_id=$1",[id]);
       await del("DELETE FROM prices WHERE variant_id=ANY($1::uuid[])",[variants]);
       await del("DELETE FROM product_variants WHERE product_id=$1",[id]);
@@ -228,9 +228,9 @@ export function createCMSService({pool,authorize}:Options) {
       });
     },
     /**
-     * Owner 2026-11-19: delete a product permanently. Allowed only when it was never ordered and has
-     * no stock history (orders and the stock ledger are immutable); everything that only describes
-     * the product goes with it: variants, prices, options, selections, photo links, translations,
+     * Owner 2026-11-19: delete a product permanently. Allowed only when it was never ordered and never in a
+     * checkout (orders and reservations are immutable); owner 2026-11-22: manual stock history (opening, receive,
+     * adjust) is purged and audited (catalog-purge.ts). Everything that only describes the product goes with it: variants, prices, options, selections, photo links, translations,
      * collection entries, relations, promotion links, and cart and wishlist lines.
      */
     async deleteProduct(headers:Headers,publicKey:string,expected:number):Promise<{deleted:true}>{

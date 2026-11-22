@@ -247,10 +247,18 @@ test("admin editor: editing a saved imported product (Save Changes) is accepted,
   }
 });
 
-// Owner 2026-11-19: staff can delete a product permanently. Only a product that was never ordered
-// and has no stock history can go (orders and the stock ledger are immutable history); its
-// variants, prices, options, photos links, translations and cart/wishlist entries go with it.
-test("a never-sold product is deleted permanently; a product with orders or stock history is refused",async()=>{
+// Owner 2026-11-19: staff can delete a product permanently. Owner 2026-11-22 (admin bin): a product that was never
+// ordered and never in a checkout goes even with manual stock history (opening/receive/adjust), which is purged
+// and audited; its variants, prices, options, photos links, translations, compatibility links and cart/wishlist
+// entries go with it. Orders and checkout history (reservations) keep a product: archive instead.
+async function ledgerFixture(variant,{reserve=false}={}){
+  const location=(await rows("SELECT id FROM stock_locations WHERE key='main-del'"))[0]?.id??(await rows("INSERT INTO stock_locations(id,key,name) VALUES(gen_random_uuid(),'main-del','Main') RETURNING id"))[0].id;
+  await q("INSERT INTO inventory_balances(variant_id,location_id) VALUES($1,$2) ON CONFLICT DO NOTHING",[variant,location]);
+  await q("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key,source_reference) VALUES(gen_random_uuid(),$1,$2,3,0,'opening',$3,'synthetic:del')",[variant,location,"del-"+variant]);
+  if(reserve)await q("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key) VALUES(gen_random_uuid(),$1,$2,0,1,'reserve',$3)",[variant,location,"del-r-"+variant]);
+}
+const defaultVariant=async id=>(await rows("SELECT id FROM product_variants WHERE product_id=$1 AND is_default",[id]))[0].id;
+test("a never-sold product is deleted permanently with everything that describes it",async()=>{
   const cms=await service(),saved=await cms.save("products",admin,variantProduct("DEL-A",{translations:{ru:{name:"Удалить"}}}));
   const id=await idOf(saved.id);
   const result=await cms.deleteProduct(admin,saved.id,saved.version);
@@ -259,13 +267,33 @@ test("a never-sold product is deleted permanently; a product with orders or stoc
     assert.equal((await q(`SELECT count(*)::int AS n FROM ${table} WHERE ${table==="products"?"id":"product_id"}=$1`,[id])).rows[0].n,0,table);
   assert.equal((await rows("SELECT 1 FROM prices pr JOIN product_variants v ON v.id=pr.variant_id WHERE v.product_id=$1",[id])).length,0);
   assert.equal((await (await catalog()).getProductByPublicKey(saved.id,"default","KZT")),null);
-  // Stock history keeps a product: archive instead.
-  const stocked=await cms.save("products",admin,variantProduct("DEL-B")),sid=await idOf(stocked.id);
-  const variant=(await rows("SELECT id FROM product_variants WHERE product_id=$1 AND is_default",[sid]))[0].id;
-  const location=(await rows("SELECT id FROM stock_locations LIMIT 1"))[0]?.id??(await rows("INSERT INTO stock_locations(id,key,name) VALUES(gen_random_uuid(),'main-del','Main') RETURNING id"))[0].id;
-  await q("INSERT INTO inventory_balances(variant_id,location_id) VALUES($1,$2) ON CONFLICT DO NOTHING",[variant,location]);
-  await q("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key,source_reference) VALUES(gen_random_uuid(),$1,$2,3,0,'opening',$3,'synthetic:del')",[variant,location,"del-"+variant]);
-  await assert.rejects(cms.deleteProduct(admin,stocked.id,stocked.version),e=>e.status===409&&/stock history/i.test(e.message));
-  await assert.rejects(cms.deleteProduct(admin,stocked.id,stocked.version+5),e=>e.status===409);
-  await assert.rejects(cms.deleteProduct(new Headers(),stocked.id,stocked.version),e=>e.status===401);
+  await assert.rejects(cms.deleteProduct(new Headers(),saved.id,saved.version),e=>e.status===401);
+});
+test("a product with only manual stock history is deleted and its ledger rows are purged and audited",async()=>{
+  const cms=await service(),stocked=await cms.save("products",admin,variantProduct("DEL-B")),sid=await idOf(stocked.id),variant=await defaultVariant(sid);
+  await ledgerFixture(variant);
+  await assert.rejects(cms.deleteProduct(admin,stocked.id,stocked.version+5),e=>e.status===409&&e.code==="VERSION_CONFLICT");
+  assert.deepEqual(await cms.deleteProduct(admin,stocked.id,stocked.version),{deleted:true});
+  assert.equal((await rows("SELECT 1 FROM stock_movements WHERE variant_id=$1",[variant])).length,0);
+  assert.equal((await rows("SELECT 1 FROM inventory_balances WHERE variant_id=$1",[variant])).length,0);
+  assert.equal((await rows("SELECT 1 FROM products WHERE id=$1",[sid])).length,0);
+  const audit=await rows("SELECT target_type,redacted_changes FROM audit_events WHERE action='catalog.stock_purged' AND target_id=$1",[sid]);
+  assert.deepEqual(audit,[{target_type:"product",redacted_changes:{variants:4,movements:1,units:3}}]);
+});
+test("a product with compatibility links on either side is deleted and the links go",async()=>{
+  const cms=await service(),device=await cms.save("products",admin,variantProduct("DEL-C")),accessory=await cms.save("products",admin,variantProduct("DEL-D"));
+  const did=await idOf(device.id),aid=await idOf(accessory.id),other=await cms.save("products",admin,variantProduct("DEL-E")),oid=await idOf(other.id);
+  await q("INSERT INTO product_compatibility(id,accessory_product_id,device_product_id) VALUES(gen_random_uuid(),$1,$2)",[aid,did]);
+  await q("INSERT INTO product_compatibility(id,accessory_product_id,device_product_id,device_variant_id) VALUES(gen_random_uuid(),$1,$2,$3)",[oid,did,await defaultVariant(did)]);
+  const before=(await rows("SELECT version FROM products WHERE id=$1",[aid]))[0].version;
+  assert.deepEqual(await cms.deleteProduct(admin,device.id,(await cms.get("products",admin,device.id)).version),{deleted:true});
+  assert.equal((await rows("SELECT 1 FROM product_compatibility WHERE device_product_id=$1 OR accessory_product_id=$1",[did])).length,0);
+  assert.ok((await rows("SELECT version FROM products WHERE id=$1",[aid]))[0].version>before,"the linked accessory is bumped");
+});
+test("a product that was in a checkout is refused and nothing is removed",async()=>{
+  const cms=await service(),held=await cms.save("products",admin,variantProduct("DEL-F")),hid=await idOf(held.id),variant=await defaultVariant(hid);
+  await ledgerFixture(variant,{reserve:true});
+  await assert.rejects(cms.deleteProduct(admin,held.id,held.version),e=>e.status===409&&e.code==="CONFLICT"&&e.message==="This product was in a checkout, so it cannot be deleted; archive it instead");
+  assert.equal((await rows("SELECT 1 FROM products WHERE id=$1",[hid])).length,1);
+  assert.equal((await rows("SELECT 1 FROM stock_movements WHERE variant_id=$1",[variant])).length,2);
 });

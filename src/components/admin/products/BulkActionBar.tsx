@@ -26,7 +26,7 @@ const plural = (count: number) => (count === 1 ? "1 product" : `${count} product
 /** Owner-facing reason for one refused bulk item. */
 export function bulkReason(action: BulkProductAction, code: string, message: string) {
   if (code === "VERSION_CONFLICT") return "changed elsewhere; reload and try again";
-  if (code === "CONFLICT" && action === "delete") return "has orders or stock history; archive it instead";
+  if (code === "CONFLICT" && action === "delete") return "has orders or checkout history; archive it instead";
   if (code === "CONFLICT") return "needs a default variant with a price first";
   if (code === "NOT_FOUND") return "no longer exists";
   return message || "could not be updated";
@@ -45,7 +45,7 @@ export function BulkActionBar({ count, onAction, onClear, busy }: BulkActionBarP
   const confirmDelete = () => {
     if (
       window.confirm(
-        `Delete ${plural(count)} permanently? Their variants, prices, photos and translations are removed and this cannot be undone. Products that were ordered or received stock are kept (archive them instead).`,
+        `Delete ${plural(count)} permanently? Their variants, prices, photos and translations are removed and this cannot be undone. Their stock is removed too. Products that were ordered or in a checkout are kept (archive them instead).`,
       )
     ) {
       onAction("delete");
