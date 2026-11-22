@@ -190,6 +190,13 @@
       "when": 1795337037733,
       "tag": "0026_untouched-balance-delete",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1795344011531,
+      "tag": "0027_catalog-stock-purge",
+      "breakpoints": true
     }
   ]
 }
