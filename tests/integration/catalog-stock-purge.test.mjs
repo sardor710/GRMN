@@ -87,8 +87,30 @@ test("updates stay refused even with the purge flag", async () => {
   }), /Immutable commerce history/);
 });
 
-test("the flag is transaction-local", async () => {
+test("the flag is transaction-local on the same pooled connection", async () => {
   const { receive } = await stockedVariant();
-  await inTx(purge);
-  await assert.rejects(q("DELETE FROM stock_movements WHERE id=$1", [receive]), /Immutable commerce history/);
+  const client = await database.pool.connect();
+  try {
+    await client.query("BEGIN");
+    await purge(client);
+    await client.query("COMMIT");
+    await assert.rejects(client.query("DELETE FROM stock_movements WHERE id=$1", [receive]), /Immutable commerce history/);
+  } finally {
+    client.release();
+  }
+});
+
+// Final review 2026-11-22: purgeVariantStock closes the door it opened, so later statements in the same transaction
+// (e.g. another product's manual stock) stay protected.
+test("purgeVariantStock closes the door for the rest of the transaction", async () => {
+  const { purgeVariantStock } = await import("../../src/server/cms/catalog-purge.ts");
+  const user = randomUUID();
+  await q("INSERT INTO users(id,name,email) VALUES($1,'Synthetic purger',$2)", [user, `purger-${user}@example.invalid`]);
+  const a = await stockedVariant(), b = await stockedVariant();
+  await assert.rejects(inTx(async client => {
+    const purged = await purgeVariantStock(client, { userId: user }, { type: "product_variant", id: a.id }, [a.id]);
+    assert.deepEqual(purged, { movements: 3, units: 7 });
+    await client.query("DELETE FROM stock_movements WHERE id=$1", [b.receive]);
+  }), /Immutable commerce history/);
+  assert.equal((await q("SELECT count(*)::int AS n FROM stock_movements WHERE variant_id=$1", [a.id])).rows[0].n, 3, "the failed transaction rolled back");
 });
