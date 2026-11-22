@@ -272,6 +272,7 @@ export async function syncProductVariants(client: PoolClient, raw: VariantSyncIn
     // Fit facts scoped to a removed option value go with it (product_compatibility RESTRICTs the delete).
     const dropped = (await client.query<{ accessory_product_id: string }>("DELETE FROM product_compatibility WHERE device_product_id=$1 AND device_option_value_id=ANY($2::uuid[]) RETURNING accessory_product_id", [productId, removedValues])).rows;
     await bumpProducts(client, dropped.map(row => row.accessory_product_id).filter(id => id !== productId));
+    await client.query("DELETE FROM product_compatibility_types WHERE device_product_id=$1 AND device_option_value_id=ANY($2::uuid[])", [productId, removedValues]); // 0028
     await client.query("DELETE FROM variant_option_values WHERE product_id=$1 AND option_value_id=ANY($2::uuid[])", [productId, removedValues]);
     await client.query("DELETE FROM option_values WHERE id=ANY($1::uuid[])", [removedValues]);
     result.values.removed = removedValues.length;

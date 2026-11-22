@@ -114,6 +114,7 @@ export function createCMSService({pool,authorize}:Options) {
       // Compatibility links on either side (0023 RESTRICTs); the linked products get a new version.
       const linked=(await client.query<{a:string;d:string}>("DELETE FROM product_compatibility WHERE accessory_product_id=$1 OR device_product_id=$1 RETURNING accessory_product_id AS a,device_product_id AS d",[id])).rows.flatMap(row=>[row.a,row.d]).filter(other=>other!==id);
       if(linked.length)await del("UPDATE products SET version=version+1 WHERE id=ANY($1::uuid[])",[[...new Set(linked)]]);
+      await del("DELETE FROM product_compatibility_types WHERE device_product_id=$1",[id]); // 0028 live type links (RESTRICT)
       await del("DELETE FROM collection_products WHERE product_id=$1",[id]);
       await del("DELETE FROM collection_published_products WHERE product_id=$1",[id]);
       await del("DELETE FROM product_relations WHERE source_product_id=$1 OR target_product_id=$1",[id]);

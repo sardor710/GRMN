@@ -23,15 +23,39 @@ const accessoryGroupSQL = `(SELECT jsonb_build_object('slug',g.slug,'name',g.nam
    ) SELECT slug,name FROM up WHERE kind='accessory' AND slug IS NOT NULL AND NOT archived ORDER BY depth DESC LIMIT 1) g
    WHERE pc2.product_id=a.id ORDER BY pc2.is_primary DESC,pc2.category_id LIMIT 1)`;
 
+// 0028 (owner 2026-11-22): live type links count like whole-device (or option-value) rows. A device linked to an
+// accessory category or type fits every product filed under it or below it, now or later; explicit rows sort first.
+const TYPE_POSITION = 1_000_000;
+const deviceLinksSQL = `SELECT accessory_product_id,accessory_variant_id,device_product_id,device_option_value_id,device_variant_id,position
+    FROM product_compatibility WHERE device_product_id=$1
+  UNION ALL
+  SELECT pc.product_id,NULL::uuid,t.device_product_id,t.device_option_value_id,NULL::uuid,${TYPE_POSITION}+t.position
+    FROM product_compatibility_types t
+    CROSS JOIN LATERAL (WITH RECURSIVE down AS (
+      SELECT c.id,0 AS depth FROM categories c WHERE c.id=t.category_id AND NOT c.archived
+      UNION ALL SELECT c.id,down.depth+1 FROM categories c JOIN down ON c.parent_id=down.id WHERE NOT c.archived AND down.depth<20
+    ) SELECT id FROM down) under
+    JOIN product_categories pc ON pc.category_id=under.id
+    WHERE t.device_product_id=$1 AND pc.product_id<>t.device_product_id`;
+const accessoryLinksSQL = `SELECT device_product_id,device_option_value_id,device_variant_id,position
+    FROM product_compatibility WHERE accessory_product_id=$1
+  UNION ALL
+  SELECT t.device_product_id,t.device_option_value_id,NULL::uuid,${TYPE_POSITION}+t.position
+    FROM product_compatibility_types t
+    WHERE t.device_product_id<>$1 AND t.category_id IN (WITH RECURSIVE up AS (
+      SELECT c.id,c.parent_id,0 AS depth FROM product_categories x JOIN categories c ON c.id=x.category_id AND NOT c.archived WHERE x.product_id=$1
+      UNION ALL SELECT c.id,c.parent_id,up.depth+1 FROM categories c JOIN up ON c.id=up.parent_id WHERE NOT c.archived AND up.depth<20
+    ) SELECT id FROM up)`;
+
 export async function compatibleAccessories(pool: Query, deviceProductId: string, cards: Cards): Promise<CompatibleAccessoryDTO[]> {
   const rows = (await pool.query<AccessoryRow>(`SELECT a.public_key,av.sku AS accessory_sku,pc.position,
       grp->>'slug' AS group_slug,grp->>'name' AS group_name,
       CASE WHEN pc.device_option_value_id IS NOT NULL THEN ARRAY(SELECT vo.variant_id::text FROM variant_option_values vo WHERE vo.option_value_id=pc.device_option_value_id ORDER BY vo.variant_id)
            WHEN pc.device_variant_id IS NOT NULL THEN ARRAY[pc.device_variant_id::text] ELSE NULL END AS variant_ids
-    FROM product_compatibility pc JOIN products a ON a.id=pc.accessory_product_id AND a.status='published'
+    FROM (${deviceLinksSQL}) pc JOIN products a ON a.id=pc.accessory_product_id AND a.status='published'
     LEFT JOIN product_variants av ON av.id=pc.accessory_variant_id AND av.status='active'
     CROSS JOIN LATERAL (SELECT ${accessoryGroupSQL} AS grp) groups
-    WHERE pc.device_product_id=$1 AND (pc.accessory_variant_id IS NULL OR av.id IS NOT NULL)
+    WHERE (pc.accessory_variant_id IS NULL OR av.id IS NOT NULL)
     ORDER BY pc.position,a.name,a.public_key`, [deviceProductId])).rows;
   if (!rows.length) return [];
   const byKey = new Map((await cards([...new Set(rows.map(r => r.public_key))])).map(card => [card.publicKey, card]));
@@ -64,10 +88,10 @@ export async function compatibleDevices(pool: Query, accessoryProductId: string,
       CASE WHEN pc.device_variant_id IS NOT NULL THEN ARRAY(SELECT ov2.label FROM variant_option_values vo JOIN option_values ov2 ON ov2.id=vo.option_value_id JOIN product_options po ON po.id=vo.option_id WHERE vo.variant_id=pc.device_variant_id ORDER BY po.position,po.key) END AS variant_labels,
       CASE WHEN pc.device_option_value_id IS NOT NULL THEN (SELECT v.sku FROM variant_option_values vo JOIN product_variants v ON v.id=vo.variant_id AND v.status='active' WHERE vo.option_value_id=pc.device_option_value_id ORDER BY v.is_default DESC,v.sku LIMIT 1)
            WHEN pc.device_variant_id IS NOT NULL THEN dv.sku END AS sku
-    FROM product_compatibility pc JOIN products d ON d.id=pc.device_product_id AND d.status='published'
+    FROM (${accessoryLinksSQL}) pc JOIN products d ON d.id=pc.device_product_id AND d.status='published'
     LEFT JOIN option_values ov ON ov.id=pc.device_option_value_id
     LEFT JOIN product_variants dv ON dv.id=pc.device_variant_id AND dv.status='active'
-    WHERE pc.accessory_product_id=$1 AND (pc.device_variant_id IS NULL OR dv.id IS NOT NULL)
+    WHERE (pc.device_variant_id IS NULL OR dv.id IS NOT NULL)
     ORDER BY pc.position`, [accessoryProductId])).rows;
   if (!rows.length) return [];
   const byKey = new Map((await cards([...new Set(rows.map(r => r.public_key))])).map(card => [card.publicKey, card]));

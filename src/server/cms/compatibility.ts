@@ -22,6 +22,8 @@ import { AuthFailure } from "../auth/config.ts";
 
 export interface DeviceLinkInput { productKey: string; optionValueKeys: string[]; variantSkus: string[]; accessoryVariantSku?: string | null }
 export interface AccessoryLinkInput { productKey: string; accessoryVariantSku?: string | null }
+/** 0028 (owner 2026-11-22): device side, "fits every accessory of this type"; option values narrow it (ids or keys). */
+export interface TypeLinkInput { categoryKey: string; optionValueKeys: string[] }
 
 interface Row { id: string; accessory_product_id: string; accessory_variant_id: string | null; device_product_id: string; device_option_value_id: string | null; device_variant_id: string | null; position: number }
 interface Desired { accessoryProductId: string; accessoryVariantId: string | null; deviceProductId: string; optionValueId: string | null; deviceVariantId: string | null; position: number }
@@ -122,6 +124,45 @@ export async function writeDeviceCompatibility(client: PoolClient, productId: st
   return replaceScope(client, existing, desired, row => row.accessoryProductId);
 }
 
+/**
+ * Device side: replaces this device's live type links (product_compatibility_types). The category must be an
+ * accessory category or a type inside one; accessories filed under it now or later count as compatible.
+ */
+export async function writeTypeLinks(client: PoolClient, productId: string, types: TypeLinkInput[]): Promise<void> {
+  const keys = [...new Set(types.map(item => item.categoryKey))];
+  const categories = keys.length ? (await client.query<{ key: string; id: string; accessory: boolean }>(`SELECT c.key,c.id,EXISTS (WITH RECURSIVE up AS (
+      SELECT x.id,x.parent_id,x.kind,0 AS depth FROM categories x WHERE x.id=c.id
+      UNION ALL SELECT x.id,x.parent_id,x.kind,up.depth+1 FROM categories x JOIN up ON x.id=up.parent_id WHERE up.depth<20
+    ) SELECT 1 FROM up WHERE kind='accessory') AS accessory FROM categories c WHERE c.key=ANY($1::text[]) AND NOT c.archived`, [keys])).rows : [];
+  const byKey = new Map(categories.map(row => [row.key, row]));
+  for (const key of keys) {
+    const row = byKey.get(key) ?? invalid(`Unknown accessory type: ${key}`);
+    if (!row.accessory) invalid(`"${key}" is not an accessory category or type; link an accessory type instead`);
+  }
+  const values = (await client.query<{ id: string; key: string }>("SELECT id,key FROM option_values WHERE product_id=$1", [productId])).rows;
+  const desired: { categoryId: string; optionValueId: string | null; position: number }[] = [];
+  types.forEach((item, position) => {
+    const categoryId = byKey.get(item.categoryKey)!.id;
+    if (!item.optionValueKeys.length) { desired.push({ categoryId, optionValueId: null, position }); return; }
+    // A size removed in this same save (stale editor echo) is dropped; a link whose sizes are all gone is dropped,
+    // never widened to the whole device.
+    for (const reference of item.optionValueKeys) {
+      const byId = values.find(value => value.id === reference), byValueKey = values.filter(value => value.key === reference);
+      if (!byId && byValueKey.length > 1) invalid(`Option value "${reference}" is ambiguous; send its id`);
+      const value = byId ?? byValueKey[0];
+      if (value) desired.push({ categoryId, optionValueId: value.id, position });
+    }
+  });
+  await client.query("DELETE FROM product_compatibility_types WHERE device_product_id=$1", [productId]);
+  const seen = new Set<string>();
+  for (const row of desired) {
+    const unique = `${row.categoryId}|${row.optionValueId ?? ""}`;
+    if (seen.has(unique)) continue;
+    seen.add(unique);
+    await client.query("INSERT INTO product_compatibility_types(id,device_product_id,device_option_value_id,category_id,position) VALUES($1,$2,$3,$4,$5)", [randomUUID(), productId, row.optionValueId, row.categoryId, row.position]);
+  }
+}
+
 /** Deletes rows covered by another row for the same accessory/device pair; returns the products involved. */
 export async function collapseRedundantCompatibility(client: PoolClient, productId: string): Promise<Set<string>> {
   const deleted = (await client.query<{ accessory_product_id: string; device_product_id: string }>(`
@@ -153,11 +194,19 @@ export interface CompatibleAccessoryView {
   /** Device variants (stored ids, non-archived) this link applies to. */
   appliesToVariantIds: string[];
 }
+/** A live type link as the editor shows it: "All QuickFit 22 mm (47 mm) — 6 products today". */
+export interface CompatibleTypeView {
+  categoryKey: string; name: string; parentName: string | null;
+  optionValues: { id: string; key: string; label: string }[];
+  /** Products filed under the type (or below it) right now. */
+  productCount: number;
+}
 export interface CompatibilityRead {
   /** Command-shaped echo: send back unchanged to keep every row. */
-  command: { devices: DeviceLinkInput[]; accessories: AccessoryLinkInput[] };
+  command: { devices: DeviceLinkInput[]; accessories: AccessoryLinkInput[]; types: TypeLinkInput[] };
   compatibleDevices: CompatibleDeviceView[];
   compatibleAccessories: CompatibleAccessoryView[];
+  compatibleTypes: CompatibleTypeView[];
 }
 
 const counterpartSQL = (alias: string) => `${alias}.public_key,${alias}.name,${alias}.status,
@@ -223,5 +272,27 @@ export async function readCompatibility(client: Pick<PoolClient, "query">, produ
       variantSku: row.variant_sku, appliesToVariantIds: row.applies ?? [],
     });
   }
-  return { command: { devices: [...devices.values()].map(entry => entry.command), accessories }, compatibleDevices: [...devices.values()].map(entry => entry.view), compatibleAccessories };
+  const typeRows = (await client.query<{ key: string; name: string; parent_name: string | null; value_id: string | null; value_key: string | null; value_label: string | null; products: number }>(`
+    SELECT c.key,c.name,p.name AS parent_name,ov.id AS value_id,ov.key AS value_key,ov.label AS value_label,
+      (WITH RECURSIVE down AS (SELECT c.id UNION ALL SELECT x.id FROM categories x JOIN down ON x.parent_id=down.id)
+       SELECT count(DISTINCT pc.product_id)::int FROM product_categories pc WHERE pc.category_id IN (SELECT id FROM down)) AS products
+    FROM product_compatibility_types t JOIN categories c ON c.id=t.category_id LEFT JOIN categories p ON p.id=c.parent_id
+    LEFT JOIN option_values ov ON ov.id=t.device_option_value_id
+    WHERE t.device_product_id=$1 ORDER BY t.position,c.key,ov.position,ov.id`, [productId])).rows;
+  const types = new Map<string, { command: TypeLinkInput; view: CompatibleTypeView }>();
+  for (const row of typeRows) {
+    let entry = types.get(row.key);
+    if (!entry) {
+      entry = { command: { categoryKey: row.key, optionValueKeys: [] }, view: { categoryKey: row.key, name: row.name, parentName: row.parent_name, optionValues: [], productCount: row.products } };
+      types.set(row.key, entry);
+    }
+    if (row.value_id) {
+      entry.command.optionValueKeys.push(row.value_id);
+      entry.view.optionValues.push({ id: row.value_id, key: row.value_key!, label: row.value_label! });
+    }
+  }
+  return {
+    command: { devices: [...devices.values()].map(entry => entry.command), accessories, types: [...types.values()].map(entry => entry.command) },
+    compatibleDevices: [...devices.values()].map(entry => entry.view), compatibleAccessories, compatibleTypes: [...types.values()].map(entry => entry.view),
+  };
 }

@@ -6,7 +6,7 @@ import { AuthFailure } from "../auth/config.ts";
 import { sanitizeProductInput, isAllowedImageSrc } from "../../lib/cms/product-input.ts";
 import { readVariantConfiguration, syncId, syncProductVariants, type VariantSyncInput } from "../catalog/variant-sync.ts";
 import { resolveImageFiles } from "../catalog/media-files.ts";
-import { collapseRedundantCompatibility, writeAccessoryCompatibility, writeDeviceCompatibility } from "./compatibility.ts";
+import { collapseRedundantCompatibility, writeAccessoryCompatibility, writeDeviceCompatibility, writeTypeLinks } from "./compatibility.ts";
 import { parseProductCommand, READ_ONLY_KEYS, READ_ONLY_VARIANT_KEYS, type ProductCommand, type ProductCommandVariant } from "./product-command.ts";
 import { loadEditorProduct, type EditorProduct } from "./catalog-read.ts";
 import { PRODUCT_HTML_FIELDS } from "../../lib/cms/product-input.ts";
@@ -228,6 +228,7 @@ export async function writeProduct(client: PoolClient, context: WriteContext, ra
   const counterparts = new Set<string>();
   if (data.compatibility?.devices) for (const id of await writeAccessoryCompatibility(client, productId, data.compatibility.devices)) counterparts.add(id);
   if (data.compatibility?.accessories) for (const id of await writeDeviceCompatibility(client, productId, data.compatibility.accessories)) counterparts.add(id);
+  if (data.compatibility?.types) await writeTypeLinks(client, productId, data.compatibility.types);
   if (data.compatibility || (old && (data.variants !== undefined || data.options !== undefined))) for (const id of await collapseRedundantCompatibility(client, productId)) counterparts.add(id);
   counterparts.delete(productId);
   if (counterparts.size) await client.query("UPDATE products SET version=version+1 WHERE id=ANY($1::uuid[])", [[...counterparts].sort()]);

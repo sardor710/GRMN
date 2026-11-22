@@ -61,6 +61,8 @@ const deviceLink = z.object({
   accessoryVariantSku: z.string().trim().min(1).max(100).nullish(),
 }).strict();
 const accessoryLink = z.object({ productKey: key, accessoryVariantSku: z.string().trim().min(1).max(100).nullish() }).strict();
+/** 0028: device → accessory type (charger type, band size); option values narrow it. */
+const typeLink = z.object({ categoryKey: key, optionValueKeys: z.array(z.string().trim().min(1).max(128)).max(50).default([]) }).strict();
 const readOnly = z.unknown().optional();
 
 export const productCommandSchema = productInput.extend({
@@ -79,7 +81,7 @@ export const productCommandSchema = productInput.extend({
   variants: z.array(variant).max(500).optional(),
   categories: z.array(categoryRef).max(50).optional(),
   // compatibleDevices / compatibleAccessories are the resolved read views (echoed back, ignored).
-  compatibility: z.object({ devices: z.array(deviceLink).max(500).optional(), accessories: z.array(accessoryLink).max(2000).optional(), compatibleDevices: z.unknown().optional(), compatibleAccessories: z.unknown().optional() }).strict().optional(),
+  compatibility: z.object({ devices: z.array(deviceLink).max(500).optional(), accessories: z.array(accessoryLink).max(2000).optional(), types: z.array(typeLink).max(200).optional(), compatibleDevices: z.unknown().optional(), compatibleAccessories: z.unknown().optional(), compatibleTypes: z.unknown().optional() }).strict().optional(),
   relations: z.object({ related: z.array(key).max(200).optional(), upsell: z.array(key).max(200).optional() }).strict().optional(),
   // Read-only fields the read API (and the legacy list DTO) return; accepted and ignored.
   currency: readOnly, stockManaged: readOnly, createdAt: readOnly, updatedAt: readOnly, backend: readOnly,

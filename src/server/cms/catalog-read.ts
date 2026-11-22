@@ -7,7 +7,7 @@ import { readVariantConfiguration } from "../catalog/variant-sync.ts";
 import type { ListPage, PickerRow, ProductListRow, SkuRow, TaxonomyNode } from "../../contracts/admin-catalog.ts";
 import { parseVariantContent, type VariantContent } from "../../lib/catalog/variant-content.ts";
 import { rekeyVariantTranslations } from "./product-translations.ts";
-import { readCompatibility, type AccessoryLinkInput, type CompatibleAccessoryView, type CompatibleDeviceView, type DeviceLinkInput } from "./compatibility.ts";
+import { readCompatibility, type AccessoryLinkInput, type CompatibleAccessoryView, type CompatibleDeviceView, type CompatibleTypeView, type DeviceLinkInput, type TypeLinkInput } from "./compatibility.ts";
 
 // Admin catalog reads for the PostgreSQL CMS (M2). Lists are slim by design (owner: "products list is
 // loading so slow"): no overview, specs, galleries or full variants, one thumbnail per row, aggregates
@@ -42,7 +42,7 @@ export interface EditorProduct extends Record<string, unknown> {
   categories: { key: string; primary: boolean }[]; primaryCategory: { key: string; name: string } | null;
   relations: { related: string[]; upsell: string[] };
   /** Command-shaped links (send back unchanged) plus the resolved views for display. */
-  compatibility: { devices: DeviceLinkInput[]; accessories: AccessoryLinkInput[]; compatibleDevices: CompatibleDeviceView[]; compatibleAccessories: CompatibleAccessoryView[] };
+  compatibility: { devices: DeviceLinkInput[]; accessories: AccessoryLinkInput[]; types: TypeLinkInput[]; compatibleDevices: CompatibleDeviceView[]; compatibleAccessories: CompatibleAccessoryView[]; compatibleTypes: CompatibleTypeView[] };
   currency: "KZT"; createdAt: string; updatedAt: string; thumbnail: string | null;
 }
 
@@ -90,7 +90,7 @@ export async function loadEditorProduct(client: Query, productId: string, input:
   const sum = (pick: (v: EditorVariant) => number) => variants.filter(v => v.status !== "archived").reduce((total, v) => total + pick(v), 0);
   let categories: EditorProduct["categories"] = [], primaryCategory: EditorProduct["primaryCategory"] = null;
   const relations = { related: [] as string[], upsell: [] as string[] };
-  let compatibility: Awaited<ReturnType<typeof readCompatibility>> = { command: { devices: [], accessories: [] }, compatibleDevices: [], compatibleAccessories: [] };
+  let compatibility: Awaited<ReturnType<typeof readCompatibility>> = { command: { devices: [], accessories: [], types: [] }, compatibleDevices: [], compatibleAccessories: [], compatibleTypes: [] };
   if (input.relations !== false) {
     const cats = (await client.query<{ key: string; name: string; is_primary: boolean }>("SELECT c.key,c.name,pc.is_primary FROM product_categories pc JOIN categories c ON c.id=pc.category_id WHERE pc.product_id=$1 ORDER BY pc.is_primary DESC,c.position,c.key", [productId])).rows;
     categories = cats.map(c => ({ key: c.key, primary: c.is_primary }));
@@ -128,7 +128,7 @@ export async function loadEditorProduct(client: Query, productId: string, input:
     images: Array.isArray(legacy.images) ? legacy.images as Record<string, unknown>[] : [],
     options: simple ? [] : options, variants: simple ? [] : variants,
     categories, primaryCategory, relations,
-    compatibility: { ...compatibility.command, compatibleDevices: compatibility.compatibleDevices, compatibleAccessories: compatibility.compatibleAccessories },
+    compatibility: { ...compatibility.command, compatibleDevices: compatibility.compatibleDevices, compatibleAccessories: compatibility.compatibleAccessories, compatibleTypes: compatibility.compatibleTypes },
     currency: "KZT", createdAt: row.created, updatedAt: row.updated, thumbnail: row.thumbnail,
   };
 }
