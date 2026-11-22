@@ -536,7 +536,7 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     await until(async()=>{try{await click("Review order");return true;}catch{return false;}},"Review order stayed disabled");
     await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Pay')"),"The demo pay button did not render").catch(async error=>{await writeFile(path.join(receipt,"demo-checkout-body.txt"),await text());throw error;});
     assert.ok((await text()).includes("No payment is taken for this order."),"one neutral line under the pay button");
-    assert.ok(!/demo/i.test(await text()),"no demo wording for customers");
+    assert.ok(!/demo/i.test((await text()).replaceAll("UI DEMO FIXTURE","")),"no demo wording for customers (the fixture product's own name aside)");
     assert.equal(await evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Place order')"),false,"demo and manual are never offered together");
     assert.ok(!/we confirm your payment by hand/i.test(await text()),"no manual payment notice in demo checkout");
     // The setting flips between review and pay: the server refuses the stale method (409), the panel
@@ -557,7 +557,7 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     await click("Pay");
     await until(async()=>/order grm-\d+ received/i.test(await text()),"The demo receipt did not render").catch(async error=>{await writeFile(path.join(receipt,"demo-receipt-body.txt"),await text());throw error;});
     await until(()=>evaluate("!!document.querySelector('[data-demo-dot]')&&!document.querySelector('[data-demo-badge]')"),"The receipt shows no candy-blue dot");
-    await until(async()=>/status: paid/i.test(await text())&&(await text()).includes("No payment is taken for this order.")&&!/demo/i.test(await text()),"The demo receipt did not show the paid demo status").catch(async error=>{await writeFile(path.join(receipt,"demo-receipt-body.txt"),await text());throw error;});
+    await until(async()=>/status: paid/i.test(await text())&&(await text()).includes("No payment is taken for this order.")&&!/demo/i.test((await text()).replaceAll("UI DEMO FIXTURE","")),"The demo receipt did not show the paid demo status").catch(async error=>{await writeFile(path.join(receipt,"demo-receipt-body.txt"),await text());throw error;});
     assert.ok(!/payment not completed/i.test(await text()));
     const order=(await pool.query("SELECT id,order_number,order_status,payment_status FROM orders WHERE user_id=$1 AND payment_mode='demo'",[customerId])).rows;
     assert.equal(order.length,1,"exactly one demo order");
