@@ -106,12 +106,13 @@ const variantProduct=(sku,name,extra)=>({name,sku,price:"300.00",status:"draft",
 function variantEditor({cms,headers,evaluate,navigate,text,click,receipt},{id,sku,name}){
   const q=JSON.stringify;
   const contentButton=mm=>`document.querySelector('button[aria-label="Content for ${mm} mm"]')`;
-  const panel=mm=>`document.querySelector('[data-variant-content="var-${mm}"]')`;
+  // Variant ids are database ids since the beta5 merge, so a panel is found through its size-labelled block toggles.
+  const panel=mm=>`document.querySelector('[role=group][aria-label="Specs for ${mm} mm"]')?.closest('[data-variant-content]')`;
   const choice=(mm,block,label)=>`[...document.querySelectorAll('[role=group][aria-label="${block} for ${mm} mm"] button')].find(b=>b.textContent.trim()===${q(label)})`;
   const setValue=(element,value)=>evaluate(`(()=>{const input=${element};Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${q(value)});input.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`);
   return {
     contentButton,panel,setValue,
-    stored:async()=>{const p=await cms.get("products",headers,id);return {variants:Object.fromEntries(p.variants.map(v=>[v.title,v.content])),translations:p.translations};},
+    stored:async()=>{const p=await cms.get("products",headers,id);return {variants:Object.fromEntries(p.variants.map(v=>[v.title,v.content])),ids:Object.fromEntries(p.variants.map(v=>[v.title,v.id])),translations:p.translations};},
     pressed:(mm,block,label)=>evaluate(`${choice(mm,block,label)}?.getAttribute('aria-pressed')==='true'`),
     press:(mm,block,label)=>evaluate(`(()=>{${choice(mm,block,label)}.click();return true;})()`),
     openContent:mm=>evaluate(`(()=>{const b=${contentButton(mm)};if(b.getAttribute('aria-expanded')!=='true')b.click();return true;})()`),
@@ -223,7 +224,9 @@ async function singleVariantOverrideScenario(context){
   await send("Emulation.setDeviceMetricsOverride",{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   try{
     const before=await ui.stored();
-    assert.deepEqual(before.translations?.ru?.variants?.["var-47"]?.content,{inTheBox:["Только часы"]},"fixture translation stored");
+    // Variant translations are keyed by the stored variant id since the beta5 merge (sent as "var-47").
+    const id47=before.ids["47 mm"];
+    assert.deepEqual(before.translations?.ru?.variants?.[id47]?.content,{inTheBox:["Только часы"]},"fixture translation stored");
     await ui.open();
     await until(async()=>await ui.contentLabel(47)==="Own: In the box","A single variant with an override has no Content column");
     await ui.openContent(47);await until(()=>ui.pressed(47,"In the box","Own"),"The single variant's own In the box is not shown");
@@ -232,7 +235,7 @@ async function singleVariantOverrideScenario(context){
     await ui.save();
     const after=await ui.stored();
     assert.equal(after.variants["47 mm"],undefined,"the single variant's override is gone");
-    assert.equal(after.translations?.ru?.variants?.["var-47"],undefined,"its translated block is gone too");
+    assert.equal(after.translations?.ru?.variants?.[id47],undefined,"its translated block is gone too");
     assert.equal(after.translations?.ru?.name,"UI ОДИН","other translations are kept");
     await ui.open();
     assert.equal(await ui.contentLabel(47),null,"no Content column once nothing is overridden");
@@ -336,10 +339,12 @@ async function compareScenario({cms,headers,send,evaluate,navigate,text,receipt}
   const ruAlpha47=[{title:"Общие",items:[s("Стекло","Сапфировое"),s("Время работы","До 20 дней")]},{title:"Датчики",items:[s("Пульс","Elevate Gen5")]}];
   const ruBravo=[{title:"Общие",items:[s("Стекло","Сапфировое"),s("Время работы","До 14 дней"),s("Водозащита","5 ATM")]}];
   const ALPHA="UI COMPARE ALPHA",BRAVO="UI COMPARE BRAVO",SKU51="UI-CMPA-51";
-  const alpha=await cms.save("products",headers,variantProduct("UI-CMPA",ALPHA,{status:"published",...content(alpha47),options:[SIZE_OPTION(47,51)],
+  // Taxonomy category pages list assigned products only (M4), so the fixtures are put under Smartwatches.
+  const smartwatches=[{key:"wearables-smartwatches",primary:true}];
+  const alpha=await cms.save("products",headers,variantProduct("UI-CMPA",ALPHA,{status:"published",categories:smartwatches,...content(alpha47),options:[SIZE_OPTION(47,51)],
     variants:[sizeVariant("UI-CMPA",47,true,{content:content(alpha47)}),sizeVariant("UI-CMPA",51,false,{price:"340.00",content:content(alpha51)})],
     translations:{ru:{name:"UI СРАВНЕНИЕ АЛЬФА",...content(ruAlpha47),variants:{"var-47":{content:content(ruAlpha47)},"var-51":{content:content(ruAlpha51)}}}}}));
-  const bravoSaved=await cms.save("products",headers,variantProduct("UI-CMPB",BRAVO,{status:"published",price:"250.00",...content(bravo),translations:{ru:{name:"UI СРАВНЕНИЕ БРАВО",...content(ruBravo)}}}));
+  const bravoSaved=await cms.save("products",headers,variantProduct("UI-CMPB",BRAVO,{status:"published",categories:smartwatches,price:"250.00",...content(bravo),translations:{ru:{name:"UI СРАВНЕНИЕ БРАВО",...content(ruBravo)}}}));
   const catalogue="/en/c/wearables-smartwatches?search=UI%20COMPARE";
   const hydrated=element=>evaluate(`(()=>{const el=${element};return !!el&&Object.keys(el).some(k=>k.startsWith('__reactProps'));})()`);
   const press=element=>evaluate(`(()=>{const el=${element};if(!el)throw Error('Missing element');el.click();return true;})()`);
@@ -483,8 +488,8 @@ async function compareScenario({cms,headers,send,evaluate,navigate,text,receipt}
     await navigate(catalogue);
     await until(()=>hydrated("document.getElementById('sort')"),"The catalogue sort did not hydrate");
     const sortBy=value=>evaluate(`(()=>{const s=document.getElementById('sort');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(s,${q(value)});s.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
-    await sortBy("name");
-    await until(async()=>await evaluate("new URL(location.href).searchParams.get('sort')")==="name"&&JSON.stringify(await cardNames())===q([ALPHA,BRAVO]),"A to Z did not order the fixtures").catch(dump("compare-sort-body.txt"));
+    await sortBy("name-asc");
+    await until(async()=>await evaluate("new URL(location.href).searchParams.get('sort')")==="name-asc"&&JSON.stringify(await cardNames())===q([ALPHA,BRAVO]),"A to Z did not order the fixtures").catch(dump("compare-sort-body.txt"));
     const az=await cardNames();
     await sortBy("name-desc");
     await until(async()=>await evaluate("new URL(location.href).searchParams.get('sort')")==="name-desc"&&(await cardNames())[0]!==az[0],"Z to A did not reorder the catalogue").catch(dump("compare-sort-body.txt"));
@@ -526,7 +531,8 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     await until(async()=>{try{await click("Add To Cart");return true;}catch{return false;}},"Add To Cart was not clickable");
     await until(async()=>(await pool.query("SELECT 1 FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=$1 AND c.status='active' AND ci.variant_id=$2",[customerId,variant])).rowCount===1,"The demo fixture did not reach the account cart");
     await navigate("/cart");await until(async()=>(await text()).includes("UI DEMO FIXTURE")&&/review order/i.test(await text()),"Cart with the demo fixture missing");
-    for(const [name,value] of [["recipientName","UI Demo Buyer"],["phone","+77000000077"],["city","Almaty"],["line1","UI demo street 3"]])await until(()=>setInput(name,value),"Could not fill "+name);
+    // The customer's saved primary address (UI Home) is preselected since the Kazakhstan checkout (f0df306).
+    await until(()=>evaluate("document.querySelector('input[name=delivery-address]:checked')?.closest('label')?.textContent.includes('UI Home')"),"The saved primary address was not preselected");
     await until(async()=>{try{await click("Review order");return true;}catch{return false;}},"Review order stayed disabled");
     await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Pay (demo)')"),"The demo pay button did not render").catch(async error=>{await writeFile(path.join(receipt,"demo-checkout-body.txt"),await text());throw error;});
     assert.ok((await text()).includes("Demo payment — no money is charged."),"one line under the demo pay button");
@@ -537,10 +543,15 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     const changed="Checkout options changed (demo checkout was turned off or on). Review your order and try again.";
     const offers=(shown,hidden)=>`[...document.querySelectorAll('button')].some(b=>b.textContent.trim()===${JSON.stringify(shown)})&&![...document.querySelectorAll('button')].some(b=>b.textContent.trim()===${JSON.stringify(hidden)})`;
     const ordersBefore=(await pool.query("SELECT count(*)::int AS n FROM orders WHERE user_id=$1",[customerId])).rows[0].n;
+    // Since the beta5 merge a quote carries its payment method, so a refused method clears the quote: the panel
+    // shows its message and no pay button until the customer reviews again, which offers the method in force now.
+    const noPayButton="![...document.querySelectorAll('button')].some(b=>['Place order','Pay (demo)'].includes(b.textContent.trim()))";
     await setMode("live");await click("Pay (demo)");
-    await until(async()=>(await text()).includes(changed)&&await evaluate(offers("Place order","Pay (demo)")),"Turning demo off did not refetch the cart and show the message").catch(async error=>{await writeFile(path.join(receipt,"demo-409-body.txt"),await text());throw error;});
+    await until(async()=>(await text()).includes(changed)&&await evaluate(noPayButton),"Turning demo off did not show the message and clear the quote").catch(async error=>{await writeFile(path.join(receipt,"demo-409-body.txt"),await text());throw error;});
+    await click("Review order");await until(()=>evaluate(offers("Place order","Pay (demo)")),"Reviewing again did not offer the live method");
     await setMode("demo");await click("Place order");
-    await until(async()=>(await text()).includes(changed)&&await evaluate(offers("Pay (demo)","Place order")),"Turning demo on did not refetch the cart and show the message");
+    await until(async()=>(await text()).includes(changed)&&await evaluate(noPayButton),"Turning demo on did not show the message and clear the quote");
+    await click("Review order");await until(()=>evaluate(offers("Pay (demo)","Place order")),"Reviewing again did not offer the demo method");
     assert.equal((await pool.query("SELECT count(*)::int AS n FROM orders WHERE user_id=$1",[customerId])).rows[0].n,ordersBefore,"a refused method places nothing");
     await click("Pay (demo)");
     await until(async()=>/order grm-\d+ received/i.test(await text()),"The demo receipt did not render").catch(async error=>{await writeFile(path.join(receipt,"demo-receipt-body.txt"),await text());throw error;});
@@ -627,7 +638,11 @@ async function dashboardScenario({pool,runtime,secret,origin,send,evaluate,navig
     await until(async()=>{try{await click("Add To Cart");return true;}catch{return false;}},"Add To Cart was not clickable");
     await until(async()=>(await pool.query("SELECT 1 FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=$1 AND c.status='active' AND ci.variant_id=$2",[customerId,variant])).rowCount===1,"The dashboard fixture did not reach the account cart");
     await navigate("/cart");await until(async()=>(await text()).includes("UI DASH FIXTURE")&&/review order/i.test(await text()),"Cart with the dashboard fixture missing");
-    for(const [name,value] of [["recipientName","UI Dashboard Buyer"],["phone","+77000000088"],["city","Almaty"],["line1","UI dashboard street 4"]])await until(()=>setInput(name,value),"Could not fill "+name);
+    // Kazakhstan checkout (f0df306): a saved primary address is preselected (full suite); a customer without one
+    // (this block alone) types a new address, whose region follows the city.
+    await until(()=>evaluate("!!document.querySelector('input[name=delivery-address]:checked')||!!document.querySelector('input[name=line1]')"),"Checkout delivery step did not load");
+    if(!(await evaluate("!!document.querySelector('input[name=delivery-address]:checked')")))
+      for(const [name,value] of [["name","UI Dashboard Buyer"],["phone","+77000000088"],["city","Almaty"],["line1","UI dashboard street 4"]])await until(()=>setInput(name,value),"Could not fill "+name);
     await until(async()=>{try{await click("Review order");return true;}catch{return false;}},"Review order stayed disabled");
     await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Pay (demo)')"),"The demo pay button did not render").catch(dump("dashboard-checkout-body.txt"));
     await click("Pay (demo)");
@@ -857,7 +872,7 @@ try{
     await navigate("/account");await until(async()=>(await low()).includes("ui account owner"),"Account page did not load the session profile");
     assert.ok(!(await low()).includes("alex rivera"));assert.ok((await low()).includes("no saved addresses"));
     await click("Add Address");await until(()=>evaluate("!!document.querySelector('form[name=address]')"),"Address form missing");
-    await fill("Address Title","UI Home");await fill("Street Address","UI street 10");await fill("City","Almaty");
+    await fill("Address Title","UI Home");await fill("City or settlement","Almaty");await fill("Street and house","UI street 10");
     await evaluate("document.querySelector('form[name=address]').requestSubmit();true");await until(()=>evaluate("!document.querySelector('form[name=address]')"),"Address save failed");
     const savedAddress=(await database.pool.query("SELECT label,line1,is_primary,phone FROM customer_addresses WHERE user_id=$1",[customerId])).rows;assert.equal(savedAddress.length,1);assert.equal(savedAddress[0].label,"UI Home");assert.equal(savedAddress[0].is_primary,true);assert.equal(savedAddress[0].phone,"+77000000077");
     await navigate("/account");await until(async()=>(await low()).includes("ui street 10"),"Saved address did not persist across reload");
@@ -877,7 +892,9 @@ try{
     await database.pool.query("INSERT INTO inventory_balances(variant_id,location_id) VALUES($1,$2)",[cartVariant,cartLocation]);
     await database.pool.query("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key,source_reference) VALUES($1,$2,$3,10,0,'opening','ui-cart-opening','synthetic:ui-smoke')",[randomUUID(),cartVariant,cartLocation]);
     await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
-    await navigate("/c/wearables-smartwatches");
+    // The stored cart is written from a same-origin page without the cart provider (robots.txt): written on a store
+    // page, that page's own first sync could still pick it up and import it while the next page imports it again.
+    await navigate("/robots.txt");
     await evaluate(`localStorage.setItem("garmin-clone-cart",JSON.stringify([{id:"ui-cart-fixture",name:"Forged name",price:1,qty:2}]));true`);
     // Task 21B: reload and let THIS page import the stored cart before moving on. Navigating away while the
     // first page's sync is still in flight (a slow first dev compile) abandoned its import half-way, and the
@@ -885,13 +902,18 @@ try{
     await navigate("/c/wearables-smartwatches");
     await until(()=>evaluate("localStorage.getItem('garmin-clone-cart')===null"),"The stored local cart was not imported");
     await navigate("/p/ui-cart-fixture");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Cart fixture product did not render");
-    await until(async()=>{try{await click("Add To Cart");return true;}catch{return false;}},"Add To Cart was not clickable");
-    await until(async()=>(await database.pool.query("SELECT ci.quantity FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.status='active' AND c.user_id IS NULL AND ci.variant_id=$1",[cartVariant])).rows[0]?.quantity===3,"Guest server cart did not hold the imported and added quantity");
+    // A click on the server-rendered button before hydration is lost (the cart then stays at 2): wait for React first.
+    await until(()=>evaluate("(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim().includes('Add To Cart'));return !!b&&!b.disabled&&Object.keys(b).some(k=>k.startsWith('__reactProps'));})()"),"Add To Cart did not hydrate");
+    await click("Add To Cart");
+    await until(async()=>(await database.pool.query("SELECT ci.quantity FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.status='active' AND c.user_id IS NULL AND ci.variant_id=$1",[cartVariant])).rows[0]?.quantity===3,"Guest server cart did not hold the imported and added quantity").catch(async error=>{await writeFile(path.join(receipt,"cart-quantity.json"),JSON.stringify((await database.pool.query("SELECT c.id,c.status,c.user_id,c.created_at,ci.quantity,ci.updated_at FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE ci.variant_id=$1 ORDER BY c.created_at",[cartVariant])).rows,null,1));throw error;});
     const guestCookie=(await send("Network.getCookies",{urls:[origin+"/api/cart"]})).cookies.find(c=>c.name==="grmn-cart");assert.ok(guestCookie?.httpOnly,"guest cart capability must be HttpOnly");
     await navigate("/cart");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Cart page did not show the server cart");
     assert.match(await text(),/KZT\s?7[\s ,.]?500[.,]00/);assert.ok(!(await text()).includes("Forged name"));
     await navigate("/cart");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Server cart did not persist across reload");
-    assert.equal(await evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Review order')?.disabled"),true,"the server checkout panel is offered and waits for the delivery contact (Task 14A)");
+    // Since the Kazakhstan checkout (f0df306) "Review order" is enabled and asks for the missing delivery details on click.
+    await until(()=>evaluate("[...document.querySelectorAll('button')].find(b=>b.textContent.trim()==='Review order')?.disabled===false"),"the server checkout panel is offered (Task 14A)");
+    await click("Review order");await until(()=>evaluate("!!document.querySelector('aside [role=alert]')"),"Review without delivery details did not ask for them");
+    assert.ok(!(await text()).includes("Total payable"),"no quote without delivery details");
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:encodeURIComponent(customerSession.token+"."+createHmac("sha256",secret).update(customerSession.token).digest("base64")),url:origin,httpOnly:true,sameSite:"Lax"});
     await navigate("/cart");
     await until(async()=>(await database.pool.query("SELECT ci.quantity FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=$1 AND c.status='active' AND ci.variant_id=$2",[customerId,cartVariant])).rows[0]?.quantity===3,"Sign-in did not merge the guest cart into the account cart");
@@ -928,7 +950,9 @@ try{
     await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:customerCookie,url:origin,httpOnly:true,sameSite:"Lax"});
     await navigate("/cart");await until(async()=>/review order/i.test(await text()),"Checkout panel missing");
-    for(const [name,value] of [["recipientName","UI Checkout Buyer"],["phone","+77000000077"],["city","Almaty"],["line1","UI checkout street 1"]])await until(()=>setInput(name,value),"Could not fill "+name);
+    // Since the Kazakhstan checkout (f0df306) a signed-in customer's saved primary address (UI Home, created on the
+    // account page above) is preselected, so the contact and address fields are not shown.
+    await until(()=>evaluate("document.querySelector('input[name=delivery-address]:checked')?.closest('label')?.textContent.includes('UI Home')"),"The saved primary address was not preselected");
     await until(async()=>{try{await click("Review order");return true;}catch{return false;}},"Review order stayed disabled");
     await until(async()=>/total payable/i.test(await text()),"The server quote did not render");
     assert.match(await text(),/KZT\s?8[\s ,.]?415[.,]00/,"7 500 KZT goods + 12% tax + 15 KZT shipping, all computed on the server");
