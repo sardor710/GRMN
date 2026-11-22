@@ -17,6 +17,8 @@ export interface CategoryPresetFilters {
   levels?: ("Entry" | "Advanced" | "Premium" | "Youth")[];
   caseSizes?: ("Small" | "Medium" | "Large")[];
   families?: string[];
+  /** Series (watch-series children) by stable key; survives a rename (0028, owner 2026-11-22). */
+  seriesKeys?: string[];
 }
 
 export const categoryKinds = ["catalog", "accessory", "group"] as const;
@@ -143,6 +145,8 @@ export const categories = pgTable("categories", {
   presetFilters: jsonb("preset_filters").$type<CategoryPresetFilters>().notNull().default({}),
   navVisible: boolean("nav_visible").notNull().default(true),
   description: text("description"),
+  /** 0028: fixed link of a top menu item when it is not its own /c/<slug> (e.g. Sports & Fitness opens Running). */
+  menuHref: text("menu_href"),
 }, (table) => [
   index("categories_parent_order_idx").on(table.parentId, table.position, table.id),
   check("categories_fields_valid", sql`length(btrim(${table.key}))>0 AND length(btrim(${table.name}))>0 AND ${table.position}>=0`),
@@ -157,6 +161,40 @@ export const catalogTaxonomyGuard = pgTable("catalog_taxonomy_guard", {
   id: integer("id").primaryKey(),
   epoch: bigint("epoch", { mode: "bigint" }).notNull().default(sql`0`),
 }, (table) => [check("catalog_taxonomy_guard_singleton", sql`${table.id}=1 AND ${table.epoch}>=0`)]);
+
+/** 0028: RU/KK names; English stays in categories.name. */
+export const categoryLocales = ["ru", "kk"] as const;
+export const categoryTranslations = pgTable("category_translations", {
+  categoryId: uuid("category_id").notNull().references(() => categories.id, { onDelete: "cascade" }),
+  locale: text("locale", { enum: categoryLocales }).notNull(),
+  name: text("name").notNull(),
+}, (table) => [
+  primaryKey({ columns: [table.categoryId, table.locale] }),
+  check("category_translations_locale_valid", sql`${table.locale} IN ('ru','kk')`),
+  check("category_translations_name_present", sql`length(btrim(${table.name}))>0`),
+]);
+
+/** Optional per-placement label override, keyed by locale (en/ru/kk only). */
+export type MenuPlacementLabel = Partial<Record<"en" | "ru" | "kk", string>>;
+
+/**
+ * 0028: the ordered Products group of a top menu item. One category may be placed under several top items,
+ * each at its own position; href/label override the category's own /c/<slug> and name when the menu differs.
+ */
+export const categoryMenuPlacements = pgTable("category_menu_placements", {
+  id: id(),
+  menuCategoryId: uuid("menu_category_id").notNull().references(() => categories.id, { onDelete: "cascade" }),
+  categoryId: uuid("category_id").notNull().references(() => categories.id, { onDelete: "cascade" }),
+  position: integer("position").notNull().default(0),
+  href: text("href"),
+  label: jsonb("label").$type<MenuPlacementLabel>(),
+}, (table) => [
+  unique("category_menu_placements_unique").on(table.menuCategoryId, table.categoryId),
+  index("category_menu_placements_menu_idx").on(table.menuCategoryId, table.position),
+  index("category_menu_placements_category_idx").on(table.categoryId),
+  check("category_menu_placements_position_valid", sql`${table.position}>=0`),
+  check("category_menu_placements_label_valid", sql`${table.label} IS NULL OR (jsonb_typeof(${table.label})='object' AND (${table.label} - 'en' - 'ru' - 'kk')='{}'::jsonb)`),
+]);
 
 export const productCategories = pgTable("product_categories", {
   productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
@@ -248,6 +286,26 @@ export const productCompatibility = pgTable("product_compatibility", {
   check("product_compatibility_not_self", sql`${table.accessoryProductId}<>${table.deviceProductId}`),
   check("product_compatibility_single_device_scope", sql`${table.deviceOptionValueId} IS NULL OR ${table.deviceVariantId} IS NULL`),
   check("product_compatibility_position_valid", sql`${table.position}>=0`),
+]);
+
+/**
+ * 0028: live "device fits every accessory of this type" links (owner 2026-11-22). The category is an accessory
+ * category or a group under one (band size, charger type); a trigger enforces that. Accessories filed under it
+ * later are compatible without another edit. Optionally narrowed to one device option value (e.g. 47 mm).
+ */
+export const productCompatibilityTypes = pgTable("product_compatibility_types", {
+  id: id(),
+  deviceProductId: uuid("device_product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
+  deviceOptionValueId: uuid("device_option_value_id"),
+  categoryId: uuid("category_id").notNull().references(() => categories.id, { onDelete: "restrict" }),
+  position: integer("position").notNull().default(0),
+  createdAt: createdAt(),
+}, (table) => [
+  foreignKey({ name: "product_compatibility_types_option_value_fk", columns: [table.deviceOptionValueId, table.deviceProductId], foreignColumns: [optionValues.id, optionValues.productId] }).onDelete("restrict"),
+  uniqueIndex("product_compatibility_types_unique").on(table.deviceProductId, sql`coalesce(${table.deviceOptionValueId},${noScope})`, table.categoryId),
+  index("product_compatibility_types_category_idx").on(table.categoryId),
+  index("product_compatibility_types_option_value_idx").on(table.deviceOptionValueId).where(sql`${table.deviceOptionValueId} IS NOT NULL`),
+  check("product_compatibility_types_position_valid", sql`${table.position}>=0`),
 ]);
 
 export const prices = pgTable("prices", {
