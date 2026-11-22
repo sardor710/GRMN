@@ -139,6 +139,8 @@ export async function getCategoryView(slug: string, query: SearchQuery, locale: 
       filters: { series: many(query, "series"), activities: many(query, "activities"), levels: many(query, "levels"), caseSizes: many(query, "caseSizes"), prices: many(query, "prices"), inStock: one(query, "availability") === "in-stock" },
       explicit: [...FACET_PARAMS, EXPLICIT_PARAM].some(key => query[key] !== undefined),
       sort: sortParam, page: Number.isSafeInteger(rawPage) && rawPage >= 1 ? Math.min(rawPage, 10000) : 1,
+      // ?search= narrows taxonomy pages like the product listing below (it was dropped here before 2026-11-22).
+      search: one(query, "search")?.slice(0, 200),
     });
     // beta5 merge: until the taxonomy has this category (none are seeded in production yet), beta's two original
     // catalogues keep serving from the product listing below, as they did before the merge.

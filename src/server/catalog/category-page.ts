@@ -32,6 +32,8 @@ const inputSchema = z.object({
   /** False when the URL carries no facet parameter: URL presets may then pre-check facets. */
   explicit: z.boolean().default(false),
   sort: z.string().max(40).optional(),
+  /** Free-text search over name and description, like the product listing (?search=); blank means none. */
+  search: z.string().max(200).optional(),
   page: z.number().int().min(1).max(10000).default(1),
   pageSize: z.number().int().min(1).max(100).default(CATEGORY_PAGE_SIZE),
 }).strict();
@@ -73,6 +75,7 @@ interface FactRow {
   id: string; public_key: string; name: string; is_featured: boolean; created_key: string; family: string | null;
   activity_keys: string[] | null; level: string | null; case_size: string | null; series: string[] | null;
   variants: { amount: string; available: boolean; sizes: string[] }[];
+  search_match: boolean;
 }
 
 /** One row per eligible published product in the category subtree, with what facets, filters and sorts need. */
@@ -81,6 +84,7 @@ const factsSQL = () => `WITH RECURSIVE tree AS (
    UNION ALL SELECT c.id FROM categories c JOIN tree t ON c.parent_id=t.id WHERE NOT c.archived
  ), members AS (SELECT DISTINCT pc.product_id FROM product_categories pc JOIN tree t ON t.id=pc.category_id)
  SELECT p.id,p.public_key,p.name,p.is_featured,p.family,
+  ($3::text IS NULL OR p.name ILIKE $3 OR p.description ILIKE $3) AS search_match,
   to_char(p.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS created_key,
   ${keySQL.activity_keys} AS activity_keys,${keySQL.level} AS level,${keySQL.case_size} AS case_size,
   ARRAY(SELECT c.slug||'|'||c.name FROM product_categories pc JOIN categories c ON c.id=pc.category_id AND NOT c.archived AND c.slug IS NOT NULL
@@ -109,8 +113,15 @@ export function factFromRow(row: FactRow): FacetProduct {
   };
 }
 
-export async function loadCategoryFacts(pool: Query, market: string, categoryId: string): Promise<FacetProduct[]> {
-  return (await pool.query<FactRow>(factsSQL(), [market, categoryId])).rows.map(factFromRow);
+/** Same escaping as the product listing: the search text is matched literally (% _ and \\ are not wildcards). */
+const likePattern = (search: string) => "%" + search.replace(/[\\%_]/g, match => "\\" + match) + "%";
+
+/** The category's facts; `search` keeps only products whose name or description contains it. */
+export async function loadCategoryFacts(pool: Query, market: string, categoryId: string, search?: string): Promise<{ all: FacetProduct[]; matching: FacetProduct[] }> {
+  const text = search?.trim();
+  const rows = (await pool.query<FactRow>(factsSQL(), [market, categoryId, text ? likePattern(text) : null])).rows;
+  const all = rows.map(factFromRow);
+  return { all, matching: text ? all.filter((_, index) => rows[index].search_match) : all };
 }
 
 /** Every resolvable category slug with at least one listed product (sitemap). */
@@ -138,7 +149,7 @@ export async function loadCategoryPage(
   const input = parsed.data;
   const category = await resolveCategory(pool, slug);
   if (!category) return null;
-  const facts = await loadCategoryFacts(pool, input.market, category.id);
+  const { all, matching: facts } = await loadCategoryFacts(pool, input.market, category.id, input.search);
   const preset = input.explicit ? null : presetSelection(category);
   const selection = preset ?? selectionFrom(input.filters);
   const sort: CatalogSortKey = parseSort(input.sort);
@@ -151,6 +162,6 @@ export async function loadCategoryPage(
   return {
     category: publicCategory, facets: computeFacets(facts, selection),
     items: keys.flatMap(key => cards.get(key) ?? []),
-    categoryTotal: facts.length, total: matches.length, page, pageCount, pageSize: input.pageSize, sort, selection, presetApplied: preset !== null,
+    categoryTotal: all.length, total: matches.length, page, pageCount, pageSize: input.pageSize, sort, selection, presetApplied: preset !== null,
   };
 }

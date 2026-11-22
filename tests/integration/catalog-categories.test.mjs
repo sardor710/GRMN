@@ -123,3 +123,29 @@ test("sitemap: category slugs with at least one listed product, including ancest
   for (const slug of ["sports-fitness/dive-computers-smartwatches", "wearables-smartwatches", "watch-series/descent", "bands"]) assert.ok(slugs.includes(slug), slug);
   for (const slug of ["marine/sailing", "bands/quickfit-26-mm", "watch-series"]) assert.ok(!slugs.includes(slug), slug);
 });
+
+// 2026-11-22: ?search= narrows a taxonomy category page like the product listing does (name or description,
+// case-insensitive, % and _ literal). The category's own count is unchanged, so a search with no match is not an
+// "empty category"; facet counts follow the search.
+test("search narrows a category page by name or description; the category count stays", async () => {
+  const n = nextSerial();
+  const named = await f.catalog.saveProduct(f.admin, simpleCommand(`${n}-s1`, { name: `Searchable Zeta ${n}`, categories: [{ key: "wearables-smartwatches", primary: true }] }));
+  const described = await f.catalog.saveProduct(f.admin, simpleCommand(`${n}-s2`, { name: `Plain band ${n}`, description: `Has the word zeta${n} inside`, categories: [{ key: "wearables-smartwatches", primary: true }] }));
+  const other = await f.catalog.saveProduct(f.admin, simpleCommand(`${n}-s3`, { name: `Unrelated ${n}`, categories: [{ key: "wearables-smartwatches", primary: true }] }));
+  const mine = [named.id, described.id, other.id];
+  const all = await page("wearables-smartwatches");
+  assert.deepEqual(keysOf(all, mine).sort(), [...mine].sort());
+
+  const byName = await page("wearables-smartwatches", { search: `searchable zeta ${n}` });
+  assert.deepEqual(byName.items.map(card => card.publicKey), [named.id]);
+  assert.equal(byName.total, 1);
+  assert.equal(byName.categoryTotal, all.categoryTotal);
+  assert.equal(Object.values(facet(byName, "prices")).reduce((sum, count) => sum + count, 0), 1, "facet counts follow the search");
+
+  assert.deepEqual((await page("wearables-smartwatches", { search: `ZETA${n}` })).items.map(card => card.publicKey), [described.id]);
+  const none = await page("wearables-smartwatches", { search: "no-such-product-%" });
+  assert.equal(none.total, 0);
+  assert.equal(none.categoryTotal, all.categoryTotal, "a search with no match is not an empty category");
+  assert.equal((await page("wearables-smartwatches", { search: "%" })).total, 0, "% is literal, not a wildcard");
+  assert.equal((await page("wearables-smartwatches", { search: "   " })).total, all.total, "a blank search is no search");
+});
