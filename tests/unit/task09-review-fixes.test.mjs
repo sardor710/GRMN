@@ -65,7 +65,8 @@ test("legacy sitemap category slugs stay the two original catalogues",async()=>{
   new Function("require","exports",code)(name=>name.includes("cms/source")?{cmsBackend:()=>"legacy"}:{},exports);
   assert.deepEqual(await exports.getSitemapCategorySlugs(),["wearables-smartwatches","sports-fitness/running-smartwatches"]);
   const pg={};new Function("require","exports",code)(name=>name.includes("cms/source")?{cmsBackend:()=>"postgres"}:name.includes("catalog/runtime")?{getCatalogService:()=>({listCategorySlugsWithProducts:async()=>["bands","watch-series/fenix"]})}:{},pg);
-  assert.deepEqual(await pg.getSitemapCategorySlugs(),["bands","watch-series/fenix"]);
+  // beta5 merge: plus the two original catalogues, served by the fallback until the taxonomy has them.
+  assert.deepEqual(await pg.getSitemapCategorySlugs(),["bands","watch-series/fenix","wearables-smartwatches","sports-fitness/running-smartwatches"]);
 });
 test("public reads map invalid input/cursor to a not-found fallback and rethrow real failures",async()=>{
   const {readOr,isInvalidPublicInput}=await import("../../src/server/public-input.ts");

@@ -140,15 +140,17 @@ export async function getCategoryView(slug: string, query: SearchQuery, locale: 
       explicit: [...FACET_PARAMS, EXPLICIT_PARAM].some(key => query[key] !== undefined),
       sort: sortParam, page: Number.isSafeInteger(rawPage) && rawPage >= 1 ? Math.min(rawPage, 10000) : 1,
     });
-    if (!data) return null;
-    return {
+    // beta5 merge: until the taxonomy has this category (none are seeded in production yet), beta's two original
+    // catalogues keep serving from the product listing below, as they did before the merge.
+    if (!data && !def) return null;
+    if (data) return {
       name: data.category.name, slug: data.category.slug, path: data.category.path, description: data.category.description, hero,
       items: data.items.map(card => catalogCardView(card)), facets: data.facets, sort: data.sort, sortOptions: SORT_OPTIONS,
       categoryTotal: data.categoryTotal, total: data.total, page: data.page, pageCount: data.pageCount,
       hasPreset: data.presetApplied || URL_PRESET_SLUGS.has(data.category.slug),
     };
   }
-  // Legacy JSON storefront (frozen): behaves as before for its two catalogues.
+  // Legacy JSON storefront (frozen): behaves as before for its two catalogues (also the PostgreSQL fallback above).
   if (!def) {
     const node = taxonomySeed.find(n => n.slug === slug && (n.kind !== "group" || n.navVisible || n.slug.startsWith("watch-series/")));
     if (!node) return null;
@@ -189,8 +191,10 @@ export async function localizeHomepageLinks(config: HomepageConfig): Promise<Hom
 
 /** Category slugs for the sitemap: Postgres = categories with at least one listed product; legacy = the two catalogues. */
 export async function getSitemapCategorySlugs(): Promise<string[]> {
-  if (cmsBackend() === "postgres") return getCatalogService().listCategorySlugsWithProducts();
-  return catalogues.map(c => c.slug);
+  if (cmsBackend() !== "postgres") return catalogues.map(c => c.slug);
+  // beta5 merge: taxonomy pages with products, plus beta's two catalogues (served by the fallback until seeded).
+  const slugs = await getCatalogService().listCategorySlugsWithProducts();
+  return [...slugs, ...catalogues.map(c => c.slug).filter(slug => !slugs.includes(slug))];
 }
 
 // Back-compat: simple metadata lookup keyed by slug.
