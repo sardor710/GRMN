@@ -36,6 +36,8 @@ const inputSchema = z.object({
   search: z.string().max(200).optional(),
   page: z.number().int().min(1).max(10000).default(1),
   pageSize: z.number().int().min(1).max(100).default(CATEGORY_PAGE_SIZE),
+  /** Category names in this language (category_translations); English is the base name. */
+  locale: z.enum(["en", "ru", "kk"]).default("en"),
 }).strict();
 export type CategoryPageInput = z.input<typeof inputSchema>;
 
@@ -60,6 +62,14 @@ export async function resolveCategory(pool: Query, slug: string): Promise<(Categ
   return { id: row.id, name: row.name, slug: row.slug, kind: row.kind, description: row.description, path: path.map(({ name, slug: s }) => ({ name, slug: s })), presetFilters };
 }
 
+const SERIES_PREFIX = "watch-series/";
+/** slug → category name in `locale` for every translated category (empty for English). */
+export async function localizedCategoryNames(pool: Query, locale: "en" | "ru" | "kk"): Promise<Map<string, string>> {
+  if (locale === "en") return new Map();
+  const rows = (await pool.query<{ slug: string; name: string }>("SELECT c.slug,t.name FROM category_translations t JOIN categories c ON c.id=t.category_id WHERE t.locale=$1 AND c.slug IS NOT NULL", [locale])).rows;
+  return new Map(rows.map(row => [row.slug, row.name]));
+}
+
 /** The preset as a facet selection, only for URL_PRESET_SLUGS. */
 export function presetSelection(category: Pick<CategoryDTO, "slug" | "presetFilters">): FacetSelection | null {
   if (!URL_PRESET_SLUGS.has(category.slug)) return null;
@@ -67,7 +77,8 @@ export function presetSelection(category: Pick<CategoryDTO, "slug" | "presetFilt
   selection.activities = strings(p.activities).map(activityKey);
   selection.levels = strings(p.levels);
   selection.caseSizes = strings(p.caseSizes);
-  selection.series = strings(p.families).map(seriesValue);
+  // seriesKeys (0028) name a series by its category key (watch-series/marq), so a rename never breaks the preset.
+  selection.series = [...new Set([...strings(p.families).map(seriesValue), ...strings(p.seriesKeys).map(key => key.split("/").pop() ?? key)])];
   return Object.values(selection).some(v => Array.isArray(v) && v.length) ? selection : null;
 }
 
@@ -101,8 +112,8 @@ export function factFromRow(row: FactRow): FacetProduct {
   const youth = row.level === "Youth";
   const productCase = row.case_size && PRODUCT_CASE.has(row.case_size as CaseSizeBucket) ? row.case_size as CaseSizeBucket : null;
   const series = (row.series ?? []).map(entry => { const at = entry.indexOf("|"); return { value: entry.slice(0, at).split("/").pop() ?? entry, label: entry.slice(at + 1) }; });
-  const family = row.family?.replace(/[®™]/g, "").trim();
-  if (!series.length && family) series.push({ value: seriesValue(family), label: family });
+  // Owner 2026-11-22: the Series filter lists the series a product is filed under (Admin ▸ Categories ▸ Series);
+  // the free-text family holds model names (fēnix 9, Forerunner 970) and never becomes a series.
   return {
     key: row.public_key, name: row.name, featured: row.is_featured, createdKey: row.created_key,
     series, activities: row.activity_keys ?? [], level: row.level,
@@ -158,9 +169,12 @@ export async function loadCategoryPage(
   const page = Math.min(input.page, pageCount);
   const keys = matches.slice((page - 1) * input.pageSize, page * input.pageSize).map(p => p.key);
   const cards = new Map((keys.length ? await cardsByKeys(keys) : []).map(card => [card.publicKey, card]));
-  const publicCategory: CategoryDTO = { name: category.name, slug: category.slug, kind: category.kind, description: category.description, path: category.path, presetFilters: category.presetFilters };
+  const names = await localizedCategoryNames(pool, input.locale);
+  const local = (slug: string, name: string) => names.get(slug) ?? name;
+  const publicCategory: CategoryDTO = { name: local(category.slug, category.name), slug: category.slug, kind: category.kind, description: category.description, path: category.path.map(crumb => ({ ...crumb, name: local(crumb.slug, crumb.name) })), presetFilters: category.presetFilters };
+  const facets = computeFacets(facts, selection).map(group => group.key === "series" ? { ...group, options: group.options.map(option => ({ ...option, label: local(`${SERIES_PREFIX}${option.value}`, option.label) })) } : group);
   return {
-    category: publicCategory, facets: computeFacets(facts, selection),
+    category: publicCategory, facets,
     items: keys.flatMap(key => cards.get(key) ?? []),
     categoryTotal: all.length, total: matches.length, page, pageCount, pageSize: input.pageSize, sort, selection, presetApplied: preset !== null,
   };

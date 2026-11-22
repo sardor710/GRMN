@@ -4,7 +4,10 @@ import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import "../globals.css";
 import "../garmin-fonts.css";
+import { connection } from "next/server";
 import { CartProvider } from "@/lib/cart";
+import { MegaNavProvider } from "@/components/home/MegaNavProvider";
+import { getMegaNav } from "@/server/catalog/mega-nav-runtime";
 import { LOCALES } from "@/i18n/config";
 import { SITE_URL } from "@/i18n/seo";
 import { bodyClassName, htmlClassName, siteIcons } from "../fonts";
@@ -55,6 +58,10 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
   if (!hasLocale(LOCALES, lang)) notFound();
   setRequestLocale(lang);
 
+  // Owner 2026-11-22: the top menu comes from Admin ▸ Categories, so every page renders at request time.
+  await connection();
+  const t = await getTranslations({ locale: lang });
+  const menu = await getMegaNav(lang, (key) => t(key as Parameters<typeof t>[0]));
   const messages = await getMessages();
   const clientMessages = Object.fromEntries(
     Object.entries(messages).filter(([namespace]) => CLIENT_NAMESPACES.includes(namespace)),
@@ -64,7 +71,9 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
     <html lang={lang} className={htmlClassName}>
       <body className={bodyClassName}>
         <NextIntlClientProvider locale={lang} messages={clientMessages}>
-          <CartProvider>{children}</CartProvider>
+          <MegaNavProvider items={menu}>
+            <CartProvider>{children}</CartProvider>
+          </MegaNavProvider>
         </NextIntlClientProvider>
       </body>
     </html>

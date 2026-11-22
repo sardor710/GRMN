@@ -3,7 +3,8 @@
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
-import { megaNav, takeoverBar, type MegaNavItem } from "@/lib/homepage-nav";
+import { megaNav, resolveMegaNav, takeoverBar, type NavItem } from "@/lib/homepage-nav";
+import { useMegaNav } from "./MegaNavProvider";
 import { homeFeaturedCards } from "@/lib/homepage-content";
 import { useCart } from "@/lib/cart";
 import { GarminLogo } from "@/components/icons";
@@ -37,19 +38,19 @@ function NavHref({ href, className, children, onClick }: { href: string; classNa
   );
 }
 
-function MegaMenu({ item, onNavigate }: { item: MegaNavItem; onNavigate: () => void }) {
+function MegaMenu({ item, onNavigate }: { item: NavItem; onNavigate: () => void }) {
   const t = useTranslations();
   return (
-    <div className={styles.megaMenu} role="region" aria-label={t("Header.menuLabel", { label: t(item.labelKey) })}>
+    <div className={styles.megaMenu} role="region" aria-label={t("Header.menuLabel", { label: item.label })}>
       {item.columns?.map((column, columnIndex) => (
         <div key={columnIndex} className={styles.megaColumn}>
           {column.map((group, groupIndex) => (
-            <Fragment key={`${group.headingKey ?? ""}-${groupIndex}`}>
-              <span className={styles.megaHeading}>{(group.headingKey && t(group.headingKey)) ||" "}</span>
+            <Fragment key={`${group.heading ?? ""}-${groupIndex}`}>
+              <span className={styles.megaHeading}>{group.heading ||" "}</span>
               <div className={styles.megaLinks}>
                 {group.links.map((link) => (
-                  <NavHref key={link.labelKey} href={link.href} className={styles.megaLink} onClick={onNavigate}>
-                    {t(link.labelKey)}
+                  <NavHref key={`${link.href}-${link.label}`} href={link.href} className={styles.megaLink} onClick={onNavigate}>
+                    {link.label}
                   </NavHref>
                 ))}
               </div>
@@ -60,12 +61,12 @@ function MegaMenu({ item, onNavigate }: { item: MegaNavItem; onNavigate: () => v
       {item.promos && (
         <div className={`${styles.megaColumn} ${styles.promoColumn}`}>
           {item.promos.map((promo) => (
-            <NavHref key={promo.titleKey} href={promo.href} className={styles.promoCard} onClick={onNavigate}>
+            <NavHref key={promo.title} href={promo.href} className={styles.promoCard} onClick={onNavigate}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={promo.image} alt="" className={styles.promoImage} width={600} height={525} />
               <span className={styles.promoGrouping}>
-                <span className={styles.promoHeading}>{t(promo.titleKey)}</span>
-                <span className={styles.promoCopy}>{t(promo.copyKey)}</span>
+                <span className={styles.promoHeading}>{promo.title}</span>
+                <span className={styles.promoCopy}>{promo.copy}</span>
                 <span className={styles.promoCta} />
               </span>
             </NavHref>
@@ -78,6 +79,8 @@ function MegaMenu({ item, onNavigate }: { item: MegaNavItem; onNavigate: () => v
 
 export function HomeHeader() {
   const t = useTranslations();
+  const serverMenu = useMegaNav();
+  const menu = serverMenu ?? resolveMegaNav(megaNav, (key) => t(key as Parameters<typeof t>[0]));
   const localize = useLocalizeHref();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -136,11 +139,11 @@ export function HomeHeader() {
 
         <nav className={styles.nav} aria-label={t("Header.siteNav")} onPointerLeave={(event) => { if (event.pointerType === "mouse") setOpenIndex(null); }}>
           <ul className={styles.categories}>
-            {megaNav.map((item, index) => {
+            {menu.map((item, index) => {
               const active = openIndex === index;
               return (
                 <li
-                  key={item.labelKey}
+                  key={`${item.href}-${index}`}
                   className={`${styles.item} ${active ? styles.itemActive : ""}`}
                   onPointerEnter={(event) => {
                     if (event.pointerType !== "mouse") return;
@@ -159,13 +162,13 @@ export function HomeHeader() {
                           setOpenIndex(active ? null : index);
                         }}
                       >
-                        {t(item.labelKey)}
+                        {item.label}
                       </button>
                       {active && <MegaMenu item={item} onNavigate={closeMenus} />}
                     </>
                   ) : (
                     <NavHref href={item.href} className={styles.itemLink} onClick={closeMenus}>
-                      {t(item.labelKey)}
+                      {item.label}
                     </NavHref>
                   )}
                 </li>
@@ -227,10 +230,10 @@ export function HomeHeader() {
 
       {mobileOpen && (
         <nav className={styles.mobileNav} aria-label={t("Header.mobileNav")}>
-          {megaNav.map((item, index) => {
+          {menu.map((item, index) => {
             const expanded = mobileItem === index;
             return (
-              <div key={item.labelKey} className={styles.mobileItem}>
+              <div key={`${item.href}-${index}`} className={styles.mobileItem}>
                 {item.columns ? (
                   <button
                     type="button"
@@ -241,18 +244,18 @@ export function HomeHeader() {
                       setMobileGroup(null);
                     }}
                   >
-                    {t(item.labelKey)}
+                    {item.label}
                     {expanded ? <GhMinusIcon className={styles.mobileIcon} /> : <GhPlusIcon className={styles.mobileIcon} />}
                   </button>
                 ) : (
                   <NavHref href={item.href} className={styles.mobileItemLink} onClick={closeMenus}>
-                    {t(item.labelKey)}
+                    {item.label}
                   </NavHref>
                 )}
                 {expanded && item.columns && (
                   <div className={styles.mobileMenu}>
-                    {item.columns.flat().filter((group) => group.headingKey).map((group) => {
-                      const groupKey = `${index}-${group.headingKey}`;
+                    {item.columns.flat().filter((group) => group.heading).map((group) => {
+                      const groupKey = `${index}-${group.heading}`;
                       const groupOpen = mobileGroup === groupKey;
                       return (
                         <div key={groupKey}>
@@ -262,14 +265,14 @@ export function HomeHeader() {
                             aria-expanded={groupOpen}
                             onClick={() => setMobileGroup(groupOpen ? null : groupKey)}
                           >
-                            {group.headingKey && t(group.headingKey)}
+                            {group.heading}
                             {groupOpen ? <GhMinusIcon className={styles.mobileIcon} /> : <GhPlusIcon className={styles.mobileIcon} />}
                           </button>
                           {groupOpen && (
                             <div className={styles.mobileLinks}>
                               {group.links.map((link) => (
-                                <NavHref key={link.labelKey} href={link.href} className={styles.mobileLink} onClick={closeMenus}>
-                                  {t(link.labelKey)}
+                                <NavHref key={`${link.href}-${link.label}`} href={link.href} className={styles.mobileLink} onClick={closeMenus}>
+                                  {link.label}
                                 </NavHref>
                               ))}
                             </div>

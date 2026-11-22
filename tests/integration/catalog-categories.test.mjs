@@ -69,7 +69,7 @@ test("facets: counts per option apply the other facets; case size and price are 
   assert.deepEqual(facet(base, "levels"), { Entry: 1, Premium: 1 });
   assert.deepEqual(facet(base, "caseSizes"), { Small: 1, Medium: 1, Large: 1 });
   assert.deepEqual(base.facets.find(x => x.key === "caseSizes").options.map(o => o.label), ["Small (35 to 43 mm)", "Medium (44 to 49 mm)", "Large (≥ 50 mm)"]);
-  assert.deepEqual(base.facets.find(x => x.key === "series").options.map(o => [o.value, o.label, o.count]), [["fenix", "fēnix", 1], ["forerunner", "Forerunner", 1], ["quickfit", "QuickFit", 1]]);
+  assert.deepEqual(base.facets.find(x => x.key === "series").options.map(o => [o.value, o.label, o.count]), [["fenix", "fēnix", 1], ["forerunner", "Forerunner", 1]], "the band's free-text family is not a series (owner 2026-11-22)");
   assert.deepEqual(facet(base, "prices"), { "0-100000": 1, "100000-250000": 1, "250000-500000": 1 });
   assert.deepEqual(facet(base, "availability"), { "in-stock": 2 });
   assert.equal(base.items.find(c => c.publicKey === forerunner.id).availability, "out_of_stock");
@@ -83,7 +83,7 @@ test("facets: counts per option apply the other facets; case size and price are 
   // The same variant must satisfy every variant-level filter: no fēnix variant is under 100,000 KZT.
   assert.equal((await page(golf, { filters: { caseSizes: ["Large"], prices: ["0-100000"] } })).total, 0);
   // OR within a facet, AND across facets.
-  assert.deepEqual((await page(golf, { filters: { series: ["fenix", "quickfit"] } })).items.map(c => c.publicKey).sort(), [fenix.id, band.id].sort());
+  assert.deepEqual((await page(golf, { filters: { series: ["fenix", "forerunner"] } })).items.map(c => c.publicKey).sort(), [fenix.id, forerunner.id].sort(), "several series are OR-ed");
   assert.deepEqual((await page(golf, { filters: { series: ["fenix", "quickfit"], activities: ["Hiking"] } })).items.map(c => c.publicKey), [fenix.id], "labels are accepted for activities");
   assert.deepEqual((await page(golf, { filters: { inStock: true } })).items.map(c => c.publicKey).sort(), [fenix.id, band.id].sort());
 
@@ -148,4 +148,48 @@ test("search narrows a category page by name or description; the category count 
   assert.equal(none.categoryTotal, all.categoryTotal, "a search with no match is not an empty category");
   assert.equal((await page("wearables-smartwatches", { search: "%" })).total, 0, "% is literal, not a wildcard");
   assert.equal((await page("wearables-smartwatches", { search: "   " })).total, all.total, "a blank search is no search");
+});
+
+// Owner 2026-11-22 (Admin ▸ Categories): shoppers read category names in their language; the Series filter shows
+// series only (never model names from the free-text family); presets name series by key; hiding keeps the page.
+test("ru breadcrumb and title: translated category names on the category page and the product page", async () => {
+  const n = nextSerial();
+  await f.q("INSERT INTO category_translations(category_id,locale,name) SELECT id,'ru','Бег' FROM categories WHERE key='sports-fitness/running-smartwatches' ON CONFLICT (category_id,locale) DO UPDATE SET name=excluded.name");
+  await f.q("INSERT INTO category_translations(category_id,locale,name) SELECT id,'ru','Умные часы' FROM categories WHERE key='wearables-smartwatches' ON CONFLICT (category_id,locale) DO UPDATE SET name=excluded.name");
+  const runner = await f.catalog.saveProduct(f.admin, simpleCommand(`${n}-ru`, { name: `Runner ru ${n}`, categories: [{ key: "sports-fitness/running-smartwatches", primary: true }] }));
+  const ru = await page("sports-fitness/running-smartwatches", { locale: "ru" });
+  assert.equal(ru.category.name, "Бег");
+  assert.deepEqual(ru.category.path.map(c => c.name), ["Умные часы", "Бег"]);
+  assert.equal((await page("sports-fitness/running-smartwatches")).category.name, "Running", "English stays the base name");
+  const detail = await api.getProductByPublicKey(runner.id, "default", "KZT", "ru");
+  assert.deepEqual(detail.breadcrumb.map(c => c.name), ["Умные часы", "Бег"]);
+});
+
+test("series facet lists series names only: a product with a model family and no series is not in it", async () => {
+  const n = nextSerial();
+  const series = await f.catalog.saveProduct(f.admin, simpleCommand(`${n}-s`, { name: `Series watch ${n}`, family: "fēnix 9", categories: [{ key: "outdoor-recreation/handheld-hiking-gps", primary: true }, { key: "watch-series/fenix" }] }));
+  const loose = await f.catalog.saveProduct(f.admin, simpleCommand(`${n}-l`, { name: `Loose watch ${n}`, family: "Forerunner 970", categories: [{ key: "outdoor-recreation/handheld-hiking-gps", primary: true }] }));
+  const result = await page("outdoor-recreation/handheld-hiking-gps");
+  const options = facet(result, "series");
+  assert.ok(options.fenix >= 1);
+  assert.equal(options["forerunner-970"], undefined, "model names never become series");
+  assert.equal(options["fenix-9"], undefined);
+  void series; void loose;
+});
+
+test("MARQ preset survives series rename: the collection page keeps filtering by the series key", async () => {
+  const n = nextSerial();
+  const marq = await f.catalog.saveProduct(f.admin, simpleCommand(`${n}-m`, { name: `MARQ ${n}`, family: "MARQ Adventurer", categories: [{ key: "wearables-smartwatches/marq-luxury-watch-collection", primary: true }, { key: "watch-series/marq" }] }));
+  await f.q("UPDATE categories SET name='MARQ Collection' WHERE key='watch-series/marq'");
+  const result = await api.getCategoryPage("wearables-smartwatches/marq-luxury-watch-collection", { pageSize: 100 });
+  assert.equal(result.presetApplied, true);
+  assert.deepEqual(result.selection.series, ["marq"]);
+  assert.ok(result.items.some(card => card.publicKey === marq.id));
+  await f.q("UPDATE categories SET name='MARQ' WHERE key='watch-series/marq'");
+});
+
+test("hidden category keeps its page: hiding only takes it out of the menu", async () => {
+  await f.q("UPDATE categories SET nav_visible=false WHERE key='sports-fitness/scales-monitors'");
+  assert.ok(await page("sports-fitness/scales-monitors"), "the /c/ page still resolves");
+  await f.q("UPDATE categories SET nav_visible=true WHERE key='sports-fitness/scales-monitors'");
 });

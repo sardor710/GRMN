@@ -14,7 +14,7 @@ import { cardColors } from "../../lib/catalog/card-colors.ts";
 import { stableUuid } from "../cms/product-projection.ts";
 import type { CategoryDTO, CategoryPageDTO, ProductOptionDTO } from "../../contracts/catalog-browse.ts";
 import { initialVariantId } from "../../lib/variant-availability.ts";
-import { categorySlugsWithProducts, loadCategoryPage, resolveCategory, type CategoryPageInput } from "./category-page.ts";
+import { categorySlugsWithProducts, localizedCategoryNames, loadCategoryPage, resolveCategory, type CategoryPageInput } from "./category-page.ts";
 import { compatibleAccessories, compatibleDevices, primaryCategoryPath } from "./compatibility-public.ts";
 import { sanitizeOverviewHtml } from "../../lib/import/garmin-parse.ts";
 
@@ -230,7 +230,10 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
       return new Map(productIds.map(id=>{const t=map.get(id);return[id,["en",...(["ru","kk"] as const).filter(l=>t&&isRecordTranslated({translations:t},l,["name","description"]))] as Locale[]];}));
     },
     async getProductByPublicKey(publicKey:string,market:string,displayCurrency:DisplayCurrency,locale:Locale="en"):Promise<ProductDetailDTO|null>{
-      const found=await englishDetail(publicKey,market,displayCurrency);if(!found)return null;
+      const english=await englishDetail(publicKey,market,displayCurrency);if(!english)return null;
+      // Owner 2026-11-22: breadcrumb and Accessories tab headings use the category names of the page's language.
+      const names=await localizedCategoryNames(pool,locale),localCrumb=(crumb:{slug:string;name:string})=>({...crumb,name:names.get(crumb.slug)??crumb.name});
+      const found=names.size?{...english,breadcrumb:english.breadcrumb?.map(localCrumb),compatibleAccessories:english.compatibleAccessories?.map(a=>a.group?{...a,group:localCrumb(a.group)}:a)}:english;
       // Task 2.1: the editor variants' ids and SKUs (translated overrides are keyed by editor id; after the
       // beta5 merge the catalog writer stores them by variant id, so both keys are looked up below).
       const editorial=obj((await pool.query("SELECT jsonb_build_object('variants',(SELECT jsonb_agg(jsonb_build_object('id',e->'id','sku',e->'sku')) FROM jsonb_array_elements(CASE WHEN jsonb_typeof(legacy_content->'variants')='array' THEN legacy_content->'variants' ELSE '[]'::jsonb END) e)) AS doc FROM products WHERE id=$1",[found.id])).rows[0]?.doc);
