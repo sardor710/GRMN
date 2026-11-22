@@ -35,3 +35,14 @@ test("a proxied SKU delete reaches the service with the variant id and product v
   assert.equal((await deleting(request(`/api/admin/catalog/variants/${id}`))).status, 400);
   assert.equal(calls.length, 1);
 });
+
+// Final review 2026-11-22: the route file must export every method the catalog handler serves; DELETE was missing, so
+// Next answered every SKU delete with an empty 405 even though the handler supported it.
+test("the catalog route exports every method the handler serves", async () => {
+  const { readFileSync } = await import("node:fs");
+  const read = path => readFileSync(new URL("../../" + path, import.meta.url), "utf8");
+  const handler = read("src/server/cms/catalog-http.ts"), route = read("src/app/api/admin/catalog/[...path]/route.ts");
+  const served = [...new Set([...handler.matchAll(/method === "([A-Z]+)"/g)].map(match => match[1]).filter(method => method !== "HEAD"))];
+  assert.ok(served.includes("DELETE"));
+  for (const method of served) assert.match(route, new RegExp(`export async function ${method}\\(request: Request\\) \\{\\n  return handleAdminRequest\\("catalog", request\\);`), method);
+});
