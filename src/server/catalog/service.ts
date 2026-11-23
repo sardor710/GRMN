@@ -104,7 +104,7 @@ const base = (byPrice: boolean, keys: ReadonlySet<KeyColumn>) => `WITH eligible 
  WHERE p.status='published'${byPrice ? "" : ` AND ${hasOffer}`}
  )`;
 // Display columns of the selected page (`p` is joined by offersSQL).
-const pageColumns = `p.id,p.public_key,p.name,p.description,p.family,p.badge,p.price_suffix,p.specs,p.features,p.in_the_box,p.seo_title,p.seo_description,p.canonical_url,p.no_index,p.og_image_source,
+const pageColumns = `p.id,p.public_key,p.product_code,p.name,p.description,p.family,p.badge,p.price_suffix,p.specs,p.features,p.in_the_box,p.seo_title,p.seo_description,p.canonical_url,p.no_index,p.og_image_source,
  selected.created_key,selected.amount,${(Object.keys(keySQL) as KeyColumn[]).map(column => `${keySQL[column]} AS ${column}`).join(",")},
  offers.variants,chosen.offer,
  CASE WHEN jsonb_typeof(p.legacy_content->'options')='array' THEN p.legacy_content->'options' END AS editor_options,
@@ -142,7 +142,7 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
     return cardColors(row.editor_options,(option,value)=>option.id!==""&&value.id!==""&&(chosen.has(value.id)||chosen.has(stableUuid(stableUuid(productId,"option",option.id),"value",value.id))));
   }
   function card(row:Row,fx:ExchangeRateSnapshotDTO|null):ProductCardDTO {
-    const offer=obj(row.offer),dots=colors(row);return {...(dots.length?{colors:dots}:{}),id:String(row.id),publicKey:String(row.public_key),name:String(row.name),description:String(row.description),noIndex:row.no_index===true,canonicalUrl:row.canonical_url==null?null:String(row.canonical_url),updatedAt:String(row.created_key),family:String(row.family??""),badge:row.badge==null?null:String(row.badge),priceSuffix:row.price_suffix==null?undefined:String(row.price_suffix),activities:strings(row.activity_keys),level:level.safeParse(row.level).success?row.level as ProductCardDTO["level"]:null,caseSize:size.safeParse(row.case_size).success?row.case_size as ProductCardDTO["caseSize"]:null,image:array(offer.gallery).map(media).find(Boolean)??null,price:price(offer,fx),availability:row.availability as Availability};
+    const offer=obj(row.offer),dots=colors(row);return {...(dots.length?{colors:dots}:{}),id:String(row.id),publicKey:String(row.public_key),productCode:String(row.product_code),name:String(row.name),description:String(row.description),noIndex:row.no_index===true,canonicalUrl:row.canonical_url==null?null:String(row.canonical_url),updatedAt:String(row.created_key),family:String(row.family??""),badge:row.badge==null?null:String(row.badge),priceSuffix:row.price_suffix==null?undefined:String(row.price_suffix),activities:strings(row.activity_keys),level:level.safeParse(row.level).success?row.level as ProductCardDTO["level"]:null,caseSize:size.safeParse(row.case_size).success?row.case_size as ProductCardDTO["caseSize"]:null,image:array(offer.gallery).map(media).find(Boolean)??null,price:price(offer,fx),availability:row.availability as Availability};
   }
   async function select(q:ReturnType<typeof queryInput>,page:PageInput={},keys?:string[]):Promise<{rows:Row[];nextCursor:string|null;fx:ExchangeRateSnapshotDTO|null}>{
     const pg=parse(pages,page),fx=await rate(q.displayCurrency),scope=createHash("sha256").update(JSON.stringify([q,fx?.id??null,keys??null])).digest("hex"),args:unknown[]=[q.market],where:string[]=[];
@@ -203,7 +203,7 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
       const [options,breadcrumb,compatibleAccessoriesList,compatibleDevicesList,content]=await Promise.all([productOptions(productId),primaryCategoryPath(pool,productId),compatibleAccessories(pool,productId,cards),compatibleDevices(pool,productId,cards),productContent(productId)]);
       return{...card(row,result.fx),selectedVariantId,defaultVariantId,options,breadcrumb,compatibleAccessories:compatibleAccessoriesList,compatibleDevices:compatibleDevicesList,variants,gallery:variants.find(v=>v.id===selectedVariantId)?.gallery??[],specs:array(row.specs).flatMap(v=>{const r=obj(v);return typeof r.label==="string"&&typeof r.value==="string"?[{label:r.label,value:r.value}]:[];}),features:array(row.features).flatMap(v=>{const r=obj(v);return typeof r.title==="string"&&typeof r.body==="string"?[{title:r.title,body:r.body,image:media({url:r.image,alt:r.title})}]:[];}),...boxContent(row.in_the_box),...content,compatibleProductKeys:relations.filter(r=>r.relation_type==="compatible_accessory").map(r=>r.public_key),relatedProductKeys:relations.filter(r=>r.relation_type==="related"||r.relation_type==="upsell").map(r=>r.public_key),seo:{title:String(row.seo_title??row.name),description:String(row.seo_description??row.description),canonicalUrl:row.canonical_url==null?null:String(row.canonical_url),noIndex:row.no_index===true,image:publicImage(row.og_image_source)}};
     }
-  return {
+  const api = {
     /** Taxonomy page for any category slug (any depth); null when the slug is unknown or archived. */
     async getCategoryPage(slug:string,input:Omit<CategoryPageInput,"market">&{market?:string;displayCurrency?:DisplayCurrency}={}):Promise<CategoryPageDTO|null>{
       const {displayCurrency="KZT",market="default",...rest}=input;if(!publicMarkets.includes(market))fail();
@@ -228,6 +228,12 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
     async translatedLocales(productIds:string[]):Promise<Map<string,Locale[]>>{
       parse(z.array(z.uuid()).max(500),productIds);const map=await translationsFor(productIds);
       return new Map(productIds.map(id=>{const t=map.get(id);return[id,["en",...(["ru","kk"] as const).filter(l=>t&&isRecordTranslated({translations:t},l,["name","description"]))] as Locale[]];}));
+    },
+    /** Owner 2026-11-23: the product page /p/{code}; null for an unknown code or an unpublished product. */
+    async getProductByCode(code:string,market:string,displayCurrency:DisplayCurrency,locale:Locale="en"):Promise<ProductDetailDTO|null>{
+      if(!/^[0-9]{1,12}$/.test(code))return null;
+      const row=(await pool.query("SELECT public_key FROM products WHERE product_code=$1 AND status='published'",[code])).rows[0];
+      return row?api.getProductByPublicKey(String(row.public_key),market,displayCurrency,locale):null;
     },
     async getProductByPublicKey(publicKey:string,market:string,displayCurrency:DisplayCurrency,locale:Locale="en"):Promise<ProductDetailDTO|null>{
       const english=await englishDetail(publicKey,market,displayCurrency);if(!english)return null;
@@ -264,4 +270,5 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
         ...(detail.seo?{seo:{...detail.seo,title:seoTitle??local.name,description:resolveSeoText({seoDescription:detail.seo.description,description:detail.description,translations} as {translations?:unknown},locale,["seoDescription","description"])??local.description}}:{})};
     },
   };
+  return api;
 }

@@ -16,7 +16,7 @@ export const MAX_WISHLIST_ITEMS = 200;
 const invalid = (): never => { throw new AuthFailure("INVALID_INPUT", 400, "Invalid or unknown fields"); };
 const addInput = z.strictObject({ productKey: z.string().regex(PRODUCT_KEY) });
 
-const LIST_SQL = `SELECT p.public_key,p.name,p.status,to_char(wi.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS added_at,
+const LIST_SQL = `SELECT p.public_key,p.product_code,p.name,p.status,to_char(wi.created_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') AS added_at,
  offer.amount,offer.known,offer.free,
  COALESCE((SELECT COALESCE(m.source_path,m.storage_key) FROM product_media pm JOIN media_assets m ON m.id=pm.media_id WHERE pm.product_id=p.id AND m.status='ready' AND m.visibility='public' AND m.kind='image' ORDER BY pm.is_primary DESC,pm.position,pm.id LIMIT 1),p.legacy_content->>'image') AS image
  FROM wishlists w JOIN wishlist_items wi ON wi.wishlist_id=w.id JOIN products p ON p.id=wi.product_id
@@ -28,11 +28,11 @@ const LIST_SQL = `SELECT p.public_key,p.name,p.status,to_char(wi.created_at AT T
 
 export function createWishlistService({ database, authorize, market = "default" }: { database: Pick<DatabaseHandle, "pool">; authorize: (headers: Headers) => Promise<Principal>; market?: string }) {
   async function list(userId: string): Promise<{ items: WishlistItemDTO[] }> {
-    const rows = (await database.pool.query<{ public_key: string; name: string; status: string; added_at: string; amount: string | null; known: number | null; free: number | null; image: string | null }>(LIST_SQL, [userId, market])).rows;
+    const rows = (await database.pool.query<{ public_key: string; product_code: string; name: string; status: string; added_at: string; amount: string | null; known: number | null; free: number | null; image: string | null }>(LIST_SQL, [userId, market])).rows;
     return { items: rows.map(row => {
       const archived = row.status !== "published", sold = !archived && row.amount !== null;
       const availability: Availability = !sold || !row.known ? "unavailable" : (row.free ?? 0) > 0 ? "available" : "out_of_stock";
-      return { productKey: row.public_key, name: row.name, image: publicImage(row.image), price: sold ? { amountMinor: row.amount as string, currency: "KZT" } : null, availability, archived, addedAt: row.added_at };
+      return { productKey: row.public_key, productCode: row.product_code, name: row.name, image: publicImage(row.image), price: sold ? { amountMinor: row.amount as string, currency: "KZT" } : null, availability, archived, addedAt: row.added_at };
     }) };
   }
   async function transaction(work: (client: PoolClient) => Promise<void>) {

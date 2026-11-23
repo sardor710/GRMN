@@ -59,6 +59,8 @@ export interface FooterColumn {
 }
 
 export interface Product {
+  /** PostgreSQL catalog: public URL key (/p/{productCode}); absent for legacy CMS products, which link by id. */
+  productCode?: string;
   availability?: import("../contracts/commerce").Availability;
   priceLabel?: string;
   /** "KZT" = tenge; "USD" = a legacy number with no conversion rate (shown without a currency sign). */
@@ -103,6 +105,8 @@ export interface AccessoryItem {
 }
 
 export interface ProductDetail {
+  /** PostgreSQL catalog: public URL key (/p/{productCode}[/{sku}]); absent for legacy CMS products. */
+  productCode?: string;
   priceLabel?: string;
   commerce?: import("../contracts/commerce").ProductDetailDTO;
   currency?: "KZT" | "USD";

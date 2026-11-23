@@ -17,7 +17,7 @@ export function catalogPriceLabel(price: PriceDTO, requested: DisplayCurrency, l
 
 export function catalogCardView(card: ProductCardDTO, currency: DisplayCurrency = "KZT", locale = "en-US"): import("../types").Product {
   return {
-    id: card.publicKey, name: card.name, description: card.description,
+    id: card.publicKey, productCode: card.productCode, name: card.name, description: card.description,
     image: card.image?.url ?? "", badge: card.badge ?? undefined,
     price: minorToMajor(card.price.selling.amountMinor), priceLabel: catalogPriceLabel(card.price, currency, locale),
     // Task 5a.2: keep the sale (PriceDTO.compareAt) so the card can show the struck original.

@@ -68,7 +68,7 @@ export async function compatibleAccessories(pool: Query, deviceProductId: string
     const group: CategoryCrumbDTO | null = row.group_slug && row.group_name ? { slug: row.group_slug, name: row.group_name } : null;
     const existing = merged.get(id);
     if (!existing) {
-      merged.set(id, { publicKey: card.publicKey, name: card.name, image: card.image, price: card.price, availability: card.availability, sku: row.accessory_sku, group, variantIds: row.variant_ids ? [...row.variant_ids] : null });
+      merged.set(id, { publicKey: card.publicKey, productCode: card.productCode, name: card.name, image: card.image, price: card.price, availability: card.availability, sku: row.accessory_sku, group, variantIds: row.variant_ids ? [...row.variant_ids] : null });
     } else if (existing.variantIds !== null) {
       existing.variantIds = row.variant_ids === null ? null : [...new Set([...existing.variantIds, ...row.variant_ids])].sort();
     }
@@ -101,7 +101,7 @@ export async function compatibleDevices(pool: Query, accessoryProductId: string,
     if (!card) continue;
     const scope = row.value_label ? [row.value_label] : row.variant_labels ?? [];
     const label = deviceLabel(row.name, scope);
-    if (!seen.has(label)) seen.set(label, { publicKey: row.public_key, label, image: card.image, sku: scope.length ? row.sku : null });
+    if (!seen.has(label)) seen.set(label, { publicKey: row.public_key, productCode: card.productCode, label, image: card.image, sku: scope.length ? row.sku : null });
   }
   const collator = new Intl.Collator("en", { sensitivity: "base", numeric: true });
   return [...seen.values()].sort((a, b) => collator.compare(a.label, b.label));

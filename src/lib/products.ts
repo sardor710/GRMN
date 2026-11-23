@@ -8,6 +8,7 @@ import type { ProductQuery } from "@/contracts/commerce";
 import type { CMSProduct } from "@/lib/cms/types";
 import { usesCmsDetail } from "@/lib/cms/product-variants";
 import type { Locale } from "@/i18n/config";
+import { isProductCode } from "@/lib/catalog/product-url";
 import { localizeProduct } from "@/i18n/translate-record";
 import { cardColors } from "@/lib/catalog/card-colors";
 import { activityFilters, caseSizeFilters, levelFilters } from "@/lib/catalog-constants";
@@ -474,11 +475,12 @@ export async function buildDetailFromCms(p: CMSProduct, locale: Locale = "en"): 
 }
 
 
+/** PostgreSQL: `id` is a product code (/p/{code}) or a public key (internal reads such as compare). */
 export async function getProductDetail(id: string, locale: Locale = "en"): Promise<ProductDetail | undefined> {
   if(cmsBackend()==="postgres"){
-    const detail=await getCatalogService().getProductByPublicKey(id,"default","KZT",locale);if(!detail)return undefined;
+    const catalog=getCatalogService(),detail=(isProductCode(id)?await catalog.getProductByCode(id,"default","KZT",locale):null)??await catalog.getProductByPublicKey(id,"default","KZT",locale);if(!detail)return undefined;
     const view=catalogCardView(detail),editorial=id==="1228429"?fenix8Detail:undefined;
-    return {id:detail.publicKey,title:detail.name,subtitle:detail.description,partNumber:detail.variants.find(v=>v.id===detail.selectedVariantId)?.sku??detail.variants[0]?.sku??"",price:view.price,priceLabel:view.priceLabel,currency:"KZT",purchasable:view.purchasable,badge:view.badge,commerce:detail,
+    return {id:detail.publicKey,productCode:detail.productCode,title:detail.name,subtitle:detail.description,partNumber:detail.variants.find(v=>v.id===detail.selectedVariantId)?.sku??detail.variants[0]?.sku??"",price:view.price,priceLabel:view.priceLabel,currency:"KZT",purchasable:view.purchasable,badge:view.badge,commerce:detail,
       // M4.7: the primary category path; products without a primary category keep the editorial or Smartwatches crumb.
       breadcrumb:detail.breadcrumb?.length?detail.breadcrumb.map(c=>({label:c.name,href:`/c/${c.slug}`})):editorial?.breadcrumb??[{label:"Smartwatches",href:"/c/wearables-smartwatches"}],
       gallery:detail.gallery.map(m=>({view:m.alt||detail.name,src:m.url})),

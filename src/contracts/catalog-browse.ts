@@ -80,6 +80,8 @@ export interface ProductOptionDTO {
 
 export interface CompatibleAccessoryDTO {
   publicKey: string;
+  /** Public URL key: the accessory page is /p/{productCode}[/{sku}]. */
+  productCode: string;
   name: string;
   image: MediaDTO | null;
   price: PriceDTO;
@@ -94,6 +96,8 @@ export interface CompatibleAccessoryDTO {
 
 export interface CompatibleDeviceDTO {
   publicKey: string;
+  /** Public URL key: the device page is /p/{productCode}[/{sku}]. */
+  productCode: string;
   /** garmin.com wording: "<device name> – <option value(s)>" or just the device name. */
   label: string;
   image: MediaDTO | null;

@@ -72,14 +72,14 @@ export interface CartResult { cart: CartDTO; cookie?: CartCookie }
 type Notice = { code: CartNoticeCode; variantId: string };
 interface Actor { userId: string | null; staff?: boolean; token: string | null; tokenHash: string | null }
 interface CartRow { id: string; version: number; expires_at: Date }
-interface Offer { variantId: string; productKey: string; name: string; variantName: string; image: string | null; amount: string | null; availability: Availability; free: number }
+interface Offer { variantId: string; productKey: string; productCode: string; sku: string; name: string; variantName: string; image: string | null; amount: string | null; availability: Availability; free: number }
 type Queryable = Pick<PoolClient, "query">;
 
 const money = (amountMinor: string | bigint): Money => ({ amountMinor: String(amountMinor), currency: "KZT" });
 
 // One bounded read for every variant a cart touches: offer eligibility (published product, active
 // complete variant, active KZT price in the market) and free stock across live locations.
-const OFFER_SQL = `SELECT v.id,v.name AS variant_name,p.public_key,p.name,
+const OFFER_SQL = `SELECT v.id,v.sku,v.name AS variant_name,p.public_key,p.product_code,p.name,
  CASE WHEN p.status='published' AND v.status='active' AND NOT EXISTS(SELECT 1 FROM product_options po WHERE po.product_id=p.id AND NOT EXISTS(SELECT 1 FROM variant_option_values vo WHERE vo.variant_id=v.id AND vo.option_id=po.id)) THEN pr.amount_minor::text END AS amount,
  balance.known,balance.free,
  COALESCE((SELECT COALESCE(m.source_path,m.storage_key) FROM product_media pm JOIN media_assets m ON m.id=pm.media_id WHERE pm.product_id=p.id AND (pm.variant_id=v.id OR pm.variant_id IS NULL) AND m.status='ready' AND m.visibility='public' AND m.kind='image' ORDER BY (pm.variant_id IS NOT NULL) DESC,pm.is_primary DESC,pm.position,pm.id LIMIT 1),p.legacy_content->>'image') AS image
@@ -163,9 +163,9 @@ export function createCartService({ database, secret, identify, market = "defaul
 
   async function offers(db: Queryable, variantIds: readonly string[]): Promise<Map<string, Offer>> {
     if (!variantIds.length) return new Map();
-    const rows = (await db.query<{ id: string; variant_name: string; public_key: string; name: string; amount: string | null; known: number; free: number; image: string | null }>(OFFER_SQL, [variantIds, market])).rows;
+    const rows = (await db.query<{ id: string; sku: string; variant_name: string; public_key: string; product_code: string; name: string; amount: string | null; known: number; free: number; image: string | null }>(OFFER_SQL, [variantIds, market])).rows;
     return new Map(rows.map(row => [row.id, {
-      variantId: row.id, productKey: row.public_key, name: row.name, variantName: row.variant_name, image: publicImage(row.image), amount: row.amount, free: row.free,
+      variantId: row.id, productKey: row.public_key, productCode: row.product_code, sku: row.sku, name: row.name, variantName: row.variant_name, image: publicImage(row.image), amount: row.amount, free: row.free,
       availability: row.amount === null || row.known === 0 ? "unavailable" : row.free > 0 ? "available" : "out_of_stock",
     } satisfies Offer]));
   }
@@ -194,7 +194,7 @@ export function createCartService({ database, secret, identify, market = "defaul
       if (changed) notice("price_changed", row.variant_id);
       if (amount !== null && availability === "available") subtotal += BigInt(amount) * BigInt(row.quantity);
       return {
-        variantId: row.variant_id, productKey: offer?.productKey ?? "", name: offer?.name ?? "Unavailable product", variantName: offer?.variantName ?? "", image: offer?.image ?? null,
+        variantId: row.variant_id, productKey: offer?.productKey ?? "", productCode: offer?.productCode ?? "", sku: offer?.sku ?? "", name: offer?.name ?? "Unavailable product", variantName: offer?.variantName ?? "", image: offer?.image ?? null,
         quantity: row.quantity, unitPrice: amount === null ? null : money(amount), previousUnitPrice: changed ? money(row.seen as string) : null,
         lineTotal: amount === null ? null : money(BigInt(amount) * BigInt(row.quantity)), availability,
       };

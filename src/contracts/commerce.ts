@@ -39,6 +39,8 @@ export interface MediaDTO {
 export interface ProductCardDTO {
   id: string;
   publicKey: string;
+  /** Public URL key: /p/{productCode} and /p/{productCode}/{sku} (owner 2026-11-23, migration 0029). */
+  productCode: string;
   name: string;
   description: string;
   image: MediaDTO | null;
@@ -204,6 +206,9 @@ export interface CartImportCommand {
 export interface CartLineDTO {
   variantId: string;
   productKey: string;
+  /** Public URL key of the product page (empty when the product is gone); the line links to /p/{code}/{sku}. */
+  productCode: string;
+  sku: string;
   name: string;
   variantName: string;
   image: string | null;
@@ -404,6 +409,8 @@ export interface OrderTransitionCommand {
 
 export interface WishlistItemDTO {
   productKey: string;
+  /** Public URL key of the product page: /p/{productCode}. */
+  productCode: string;
   name: string;
   image: string | null;
   /** Lowest active KZT price; null when the product is archived or not sold. */
