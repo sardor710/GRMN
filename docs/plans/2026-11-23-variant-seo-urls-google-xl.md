@@ -305,6 +305,7 @@ Rules: brand "Garmin" once; `®`/`™` removed from title; title ≤ 60 (drop th
 - [ ] Commit.
 
 ### Task 7.2: Review, rehearsal, deploy (M7)
+> … 2026-11-23: `npm run test:integration` 610/610 pass (after compare-items harness fix); `npm run test:unit` 668/668; `npm run lint` 0 errors (28 warnings); tsc clean; check:boundaries pass. Fresh prod dump predeploy-variant-seo-57d08d7.dump restored into grmn-staging (29 migrations, 20 published products, 332 active variants), media copied. Code review running.
 - [ ] `npm run check`, `npm run test:unit`, `npm run test:legacy`, `npm run test:integration`, `npm run check:boundaries`, `npm run test:cms-ui` all pass.
 - [ ] `code-reviewer` agent on the branch diff; fix confirmed findings (one repair per finding, then recheck).
 - [ ] Staging: restore a fresh prod dump into grmn-staging, migrate 0029, run app, `BASE=staging crawl-check` passes; verify `product_code` values (A1); Rich Results Test via pasted HTML for one product + one variant page.
