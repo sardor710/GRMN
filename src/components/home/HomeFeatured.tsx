@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import type { CarouselBlock, CarouselCard, PromoCarouselItem } from "@/lib/cms/types";
 import styles from "./HomeFeatured.module.css";
 import { useLocalizeHref } from "@/i18n/useLocalizeHref";
-import { badgeCode, badgeTone, discountPercent } from "@/lib/cms/carousel-badges";
+import { badgeCode, badgeSize, discountPercent, savingsParts } from "@/lib/cms/carousel-badges";
 
 function plainText(text: string) {
   return text.replace(/[®™]/g, "");
@@ -56,16 +56,28 @@ function ArrowIcon({ direction }: { direction: "left" | "right" }) {
   );
 }
 
-/** Starburst for a known badge (localized label; SALE adds the saving); any other text keeps the plain label. */
+/**
+ * garmin.ae-style starburst for every badge (owner 2026-11-23): a known code shows its localized label (SALE adds
+ * the saving); any other text, e.g. the catalog's "Save 50,000 KZT", goes into the burst as it is.
+ */
 function CardBadge({ text, price, originalPrice }: { text: string; price?: string; originalPrice?: string }) {
   const t = useTranslations("HomeFeatured");
   const code = badgeCode(text);
-  if (!code) return <div className={styles.badge}>{text}</div>;
+  const savings = code ? null : savingsParts(text);
+  if (savings) {
+    return (
+      <div className={`${styles.burst} home-display`} data-badge="CUSTOM" data-size="savings">
+        <span>
+          <span>{savings.word}</span>
+          <span className={styles.burstAmount}>{savings.amount}</span>
+        </span>
+      </div>
+    );
+  }
+  const label = code ? t(`badges.${code}`) : text.trim();
   const percent = code === "SALE" ? discountPercent(price, originalPrice) : null;
-  const label = t(`badges.${code}`);
-  const long = label.split(/[\s-]/).some((word) => word.length > 6);
   return (
-    <div className={styles.burst} data-badge={code} data-tone={badgeTone(code)} data-long={long || undefined}>
+    <div className={`${styles.burst} home-display`} data-badge={code ?? "CUSTOM"} data-size={percent !== null ? "medium" : badgeSize(label)}>
       <span>
         {label}
         {percent !== null && <span className={styles.burstPercent}>{`−${percent}%`}</span>}

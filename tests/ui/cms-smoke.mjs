@@ -696,6 +696,36 @@ async function homepageArchiveScenario({cms,headers,origin,send,evaluate,navigat
   fs.rmSync(path.join("storage","uploads",...uploaded.split("/").slice(2)),{force:true});
 }
 
+// Owner 2026-11-23 (CMS_SMOKE_ONLY=variant-delete): Products ▸ edit ▸ Variants. The bin next to a variant removes it;
+// saving deletes the SKU, and the colour that only that variant used leaves the product's options.
+async function variantDeleteScenario({cms,headers,send,evaluate,navigate,text,click,receipt}){
+  const COLOR={id:"opt-color",key:"color",name:"Color",display:"buttons",values:[{id:"v-black",key:"black",label:"Black"},{id:"v-gray",key:"gray",label:"Gray"}]};
+  const v=(mm,color,isDefault)=>({id:`var-${mm}-${color}`,sku:`UI-VD-${mm}-${color}`,title:`${mm} mm ${color}`,selections:{"opt-size":`v-${mm}`,"opt-color":`v-${color}`},price:"300.00",stock:2,status:"active",isDefault,imageIds:[]});
+  const product=await cms.save("products",headers,variantProduct("UI-VD","UI VARIANT DELETE",{options:[SIZE_OPTION(47,51),COLOR],variants:[v(47,"black",true),v(51,"black",false),v(47,"gray",false)]}));
+  const before=await cms.get("products",headers,product.id);
+  assert.equal(before.variants.length,3);
+  await navigate("/admin/products");
+  await until(async()=>(await evaluate("location.pathname"))==="/admin/products"&&await evaluate("!!document.querySelector(\"input[aria-label='Search products']\")"),"Products list did not load");
+  await until(()=>evaluate(`(()=>{const input=document.querySelector("input[aria-label='Search products']");if(input.value!=="UI-VD"){Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,"UI-VD");input.dispatchEvent(new Event('input',{bubbles:true}));}return document.body.innerText.includes('UI VARIANT DELETE')&&document.querySelectorAll('tbody tr').length<=4;})()`),"Search did not find the fixture");
+  await click("Edit");await until(()=>evaluate("!!document.querySelector('#product-editor-main')"),"Editor did not open");
+  await evaluate("[...document.querySelectorAll('#product-editor-main button, [role=tab]')].find(b=>/^Variants/.test(b.textContent.trim())).click();true");
+  await until(()=>evaluate("document.querySelectorAll('ul[aria-label=Variants] > li').length===3"),"Variants list did not render");
+  assert.equal(await evaluate("document.querySelectorAll('ul[aria-label=Variants] button[aria-label^=\"Delete \"]').length"),3,"every variant row has a bin");
+  await send("Emulation.setDeviceMetricsOverride",{width:1440,height:900,deviceScaleFactor:1,mobile:false});
+  await evaluate("document.querySelector('ul[aria-label=Variants]').scrollIntoView({block:'center'});true");await delay(400);
+  {const image=await send("Page.captureScreenshot",{format:"png"});await saveShot("variant-delete-rows.png",image.data);}
+  await send("Emulation.clearDeviceMetricsOverride");
+  await evaluate("window.confirm=()=>true;window.alert=()=>{};true");
+  await evaluate("document.querySelector('ul[aria-label=Variants] button[aria-label=\"Delete 47 mm / Gray\"]').click();true");
+  await until(()=>evaluate("document.querySelectorAll('ul[aria-label=Variants] > li').length===2"),"The bin did not remove the row");
+  const image=await send("Page.captureScreenshot",{format:"png"});await saveShot("variant-delete-editor.png",image.data);
+  await click("Save changes");await until(async()=>/Saved · version \d/.test(await text()),"Product save failed").catch(async error=>{await writeFile(path.join(receipt,"variant-delete-save.txt"),await text());throw error;});
+  const after=await cms.get("products",headers,product.id);
+  assert.deepEqual(after.variants.map(x=>x.sku).sort(),["UI-VD-47-black","UI-VD-51-black"],"the Gray SKU is deleted");
+  assert.deepEqual(after.options.find(o=>o.name==="Color").values.map(x=>x.label),["Black"],"Gray left the colour choices");
+  assert.ok(after.variants.some(x=>x.isDefault&&x.sku==="UI-VD-47-black"),"the default is unchanged");
+}
+
 // Owner 2026-11-22 (CMS_SMOKE_ONLY=categories): Admin ▸ Categories. A subcategory created under Smartwatches with a
 // Russian name appears in the /ru header menu, hiding takes it out, the bin deletes it; admin status badges are square.
 async function categoriesScenario({send,evaluate,navigate,text,click,receipt}){
@@ -1163,6 +1193,12 @@ try{
   };
   const onlyAdminShots=process.env.CMS_SMOKE_ONLY==="admin-shots",onlyVariantContent=process.env.CMS_SMOKE_ONLY==="variant-content",onlyVariantSwitch=process.env.CMS_SMOKE_ONLY==="variant-switch",onlyDashboard=process.env.CMS_SMOKE_ONLY==="dashboard"||onlyAdminShots,onlyCompare=process.env.CMS_SMOKE_ONLY==="compare",onlyCategories=process.env.CMS_SMOKE_ONLY==="categories";
   const onlyHomepageArchive=process.env.CMS_SMOKE_ONLY==="homepage-archive";
+  const onlyVariantDelete=process.env.CMS_SMOKE_ONLY==="variant-delete";
+  if(onlyVariantDelete){
+    await variantDeleteScenario({cms,headers,send,evaluate,navigate,text,click,receipt});
+    console.log("PASS variant-delete: bin on every variant row, the Gray variant removed and saved, its colour pruned, default kept");
+    console.log("Browser smoke passed (CMS_SMOKE_ONLY=variant-delete): only the variant delete block ran.");
+  }
   if(onlyCategories){
     await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
@@ -1170,9 +1206,9 @@ try{
     console.log("PASS categories: subcategory created with a Russian name shows in the /ru menu, hidden and gone from the menu, deleted with the bin; square status badge; no horizontal scroll at 390 px");
     console.log("Browser smoke passed (CMS_SMOKE_ONLY=categories): only the categories block ran.");
   }
-  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare)await fullSuite();
+  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare)await fullSuite();
 
-  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
+  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
   // Task 2.3: per-variant content in the product editor (independent blocks; staff session).
   await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
   await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
@@ -1187,29 +1223,29 @@ try{
   }
 
   // Task 2.4: the storefront variant switch (independent block: its own published product).
-  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantContent&&!onlyDashboard&&!onlyCompare){
+  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyDashboard&&!onlyCompare){
     await variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,text,receipt});
     console.log("PASS Task2.4 variant switch: 47 -> 51 mm swaps Specs, In the box and Overview with no document navigation, address moves to /p/{code}/{sku}, reload and server render show 51 mm, own canonical, unknown SKU 404");
   }
 
   // Task C-e: the compare flow (an independent block: its own published products; CMS_SMOKE_ONLY=compare runs only this).
-  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard){
+  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard){
     await compareScenario({cms,headers,send,evaluate,navigate,text,receipt});
     console.log("PASS C-e compare: catalogue compare mode, 2 cards added (aria-pressed, 2 slots, Compare disabled at 1), kept on reload; comparison with grouped specs and an empty cell; 47 -> 51 mm changes specs, price and URL item with no document load; only differences with diff=1 across a reload; group collapse; compact bar on scroll; column removal; PDP adds the 51 mm SKU; /ru/compare Russian headings with no hydration warning; Z to A sort");
   }
 
   // Task 4.2: the PostgreSQL dashboard (an independent block; CMS_SMOKE_ONLY=dashboard runs only this).
-  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyCompare){await dashboardScenario({pool:database.pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue:cookie,receipt,alone:onlyDashboard});
+  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyCompare){await dashboardScenario({pool:database.pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue:cookie,receipt,alone:onlyDashboard});
   console.log("PASS Task4.2 dashboard: one demo order via checkout; Demo revenue > 0 and Revenue only real money, the order in Recent orders linking to its detail, its product under Best-sellers > Demo only, empty range says so; screenshot saved");}
   // Owner 2026-11-22: Admin ▸ Categories (also CMS_SMOKE_ONLY=categories, above).
-  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
+  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
     await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
     await categoriesScenario({send,evaluate,navigate,text,click,receipt});
     console.log("PASS categories: subcategory created with a Russian name shows in the /ru menu, hidden and gone from the menu, deleted with the bin; square status badge; no horizontal scroll at 390 px");
   }
   // Owner 2026-11-23: homepage archive / delete / PC upload / merged card (also CMS_SMOKE_ONLY=homepage-archive).
-  if(onlyHomepageArchive||(!onlyCategories&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare&&!onlyAdminShots)){
+  if(onlyHomepageArchive||(!onlyVariantDelete&&!onlyCategories&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare&&!onlyAdminShots)){
     await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
     await homepageArchiveScenario({cms,headers,origin,send,evaluate,navigate,text,click,receipt});
@@ -1219,6 +1255,7 @@ try{
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");
   if(onlyHomepageArchive)console.log("Browser smoke passed (CMS_SMOKE_ONLY=homepage-archive): only the homepage archive block ran.");
+  else if(onlyVariantDelete){}
   else if(!onlyCategories)console.log(onlyCompare
     ?"Browser smoke passed (CMS_SMOKE_ONLY=compare): only the C-e compare block ran; the rest of the suite was skipped."
     :onlyDashboard
