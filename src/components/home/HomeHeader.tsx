@@ -7,7 +7,7 @@ import { megaNav, resolveMegaNav, takeoverBar, type NavItem } from "@/lib/homepa
 import { useMegaNav } from "./MegaNavProvider";
 import { homeFeaturedCards } from "@/lib/homepage-content";
 import { useCart } from "@/lib/cart";
-import { GarminLogo } from "@/components/icons";
+import { GarminDistributorLogo } from "@/components/icons";
 import {
   GhAccountIcon,
   GhCartIcon,
@@ -133,7 +133,7 @@ export function HomeHeader() {
       <div className={styles.content}>
         <div className={styles.logoContainer}>
           <Link href="/" aria-label={t("Header.homeLabel")} className={styles.logo} onClick={closeMenus}>
-            <GarminLogo />
+            <GarminDistributorLogo />
           </Link>
         </div>
 

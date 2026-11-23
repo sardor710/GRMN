@@ -1,7 +1,7 @@
 "use client";
 
 import { AutoTranslateButton } from "@/components/admin/AutoTranslateButton";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useId } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -19,6 +19,8 @@ import {
   ArrowUp,
   ArrowDown,
   Sliders,
+  Archive,
+  ArchiveRestore,
   Image as ImageIcon
 } from "lucide-react";
 import type {
@@ -27,11 +29,13 @@ import type {
   CarouselBlock,
   ProductCarouselItem,
   PromoCarouselItem,
+  CarouselCard,
   HomepageTileBlock,
-  CarouselType,
   ImageDimensionSpec
 } from "@/lib/cms/types";
 import { IMAGE_DIMENSION_SPECS } from "@/lib/cms/homepage-schema";
+import { moveEntry, removeEntry, setEntryArchived, type HomepageEntryRef } from "@/lib/cms/homepage-archive";
+import { HomepageImageField } from "./HomepageImageField";
 import {writeAdminRecord} from "@/lib/admin-collection";
 import { AdminModal } from "@/components/admin/AdminModal";
 import { LocaleTabs, type ContentLocale } from "@/components/admin/LocaleTabs";
@@ -39,6 +43,99 @@ import { HomepageTranslationPanel } from "@/components/admin/HomepageTranslation
 import { translationStatus } from "@/lib/cms/translation-input";
 import { HOMEPAGE_SPEC } from "@/i18n/translate-record";
 import { Button, Select, buttonClass } from "@/components/admin/ui";
+
+type TileSection = "promoTiles" | "storyTiles" | "categoryTiles";
+
+const TILE_SECTIONS: { key: TileSection; heading: string; help: string; grid: string }[] = [
+  {
+    key: "promoTiles",
+    heading: "1. Promotional Feature Pods (3-Column Grid)",
+    help: "Recommended size: 600 × 400 px (3:2 aspect ratio). Highlights key sport/lifestyle categories.",
+    grid: "grid grid-cols-1 sm:grid-cols-3 gap-4",
+  },
+  {
+    key: "storyTiles",
+    heading: "2. Stories & Community Pods (2-Column Grid)",
+    help: "Recommended size: 600 × 400 px (3:2 aspect ratio). Editorial features, health, and ambassador stories.",
+    grid: "grid grid-cols-1 sm:grid-cols-2 gap-4",
+  },
+  {
+    key: "categoryTiles",
+    heading: "3. Category Grid Shortcuts (6-Column Grid)",
+    help: "Recommended size: 600 × 400 px (3:2 aspect ratio). Direct shortcuts to major category hubs.",
+    grid: "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3",
+  },
+];
+
+const live = <T extends { archived?: boolean }>(list: T[]) => list.filter((entry) => entry.archived !== true);
+const archivedOf = <T extends { archived?: boolean }>(list: T[]) => list.filter((entry) => entry.archived === true);
+
+/** Owner 2026-11-23: every banner, carousel, card and tile has Archive and Delete. */
+function EntryActions({ label, onArchive, onDelete, small = false }: { label: string; onArchive: () => void; onDelete: () => void; small?: boolean }) {
+  const icon = small ? "h-3.5 w-3.5" : "h-4 w-4";
+  return (
+    <>
+      <button type="button" onClick={onArchive} className="p-1.5 text-muted-foreground hover:bg-neutral-100 hover:text-black" title={`Archive ${label}`} aria-label={`Archive ${label}`}>
+        <Archive className={icon} />
+      </button>
+      <button type="button" onClick={onDelete} className="p-1.5 text-muted-foreground hover:bg-neutral-100 hover:text-garmin-error" title={`Delete ${label}`} aria-label={`Delete ${label}`}>
+        <Trash2 className={icon} />
+      </button>
+    </>
+  );
+}
+
+interface ArchivedRow { id: string; title: string; image?: string }
+
+/** Archived entries of one list: hidden on the storefront, restorable here until deleted for good. */
+function ArchivedStrip({ label, rows, onRestore, onDelete }: { label: string; rows: ArchivedRow[]; onRestore: (id: string) => void; onDelete: (row: ArchivedRow) => void }) {
+  if (rows.length === 0) return null;
+  return (
+    <details className="border border-dashed border-border bg-neutral-50 p-3" data-archived-strip={label}>
+      <summary className="cursor-pointer text-xs font-bold text-neutral-700">
+        Archived {label} ({rows.length})
+      </summary>
+      <ul className="mt-2 divide-y divide-neutral-200">
+        {rows.map((row) => (
+          <li key={row.id} className="flex flex-wrap items-center gap-3 py-2">
+            <div className="relative h-10 w-14 shrink-0 overflow-hidden border border-border bg-neutral-100">
+              {row.image && <Image src={row.image} alt="" fill className="object-cover" unoptimized />}
+            </div>
+            <span className="min-w-0 flex-1 truncate text-xs font-semibold text-black">{row.title || "(Untitled)"}</span>
+            <Button variant="outline" size="sm" onClick={() => onRestore(row.id)} aria-label={`Restore ${row.title}`}>
+              <ArchiveRestore className="h-3.5 w-3.5" />
+              Restore
+            </Button>
+            <Button variant="ghost" size="sm" className="text-garmin-error" onClick={() => onDelete(row)} aria-label={`Delete ${row.title} forever`}>
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete forever
+            </Button>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}
+
+function TextField({ label, value, onChange, placeholder, help }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; help?: string }) {
+  const id = useId();
+  return (
+    <div>
+      <label htmlFor={id} className="block text-xs font-bold text-neutral-700">
+        {label}
+      </label>
+      <input
+        id={id}
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+        placeholder={placeholder}
+      />
+      {help && <p className="mt-1 text-xs text-muted-foreground">{help}</p>}
+    </div>
+  );
+}
 
 export default function AdminHomepagePage() {
   const [version,setVersion]=useState<number>();
@@ -63,12 +160,11 @@ export default function AdminHomepagePage() {
   const [activeCarouselIndex, setActiveCarouselIndex] = useState<number | null>(null);
   const [editingCarouselItem, setEditingCarouselItem] = useState<{
     itemIndex: number;
-    type: CarouselType;
-    data: Partial<ProductCarouselItem & PromoCarouselItem>;
+    data: Partial<CarouselCard>;
   } | null>(null);
 
   const [tileModalOpen, setTileModalOpen] = useState(false);
-  const [tileCategory, setTileCategory] = useState<"promoTiles" | "storyTiles" | "categoryTiles">("promoTiles");
+  const [tileCategory, setTileCategory] = useState<TileSection>("promoTiles");
   const [editingTile, setEditingTile] = useState<{ index: number; data: HomepageTileBlock } | null>(null);
 
   // Fetch Homepage Config
@@ -138,6 +234,17 @@ export default function AdminHomepagePage() {
     }
   };
 
+  // ---------------- ARCHIVE / RESTORE / DELETE (owner 2026-11-23) ----------------
+  const archiveEntry = (ref: HomepageEntryRef) => {
+    if (config) setConfig(setEntryArchived(config, ref, true));
+  };
+  const restoreEntry = (ref: HomepageEntryRef) => {
+    if (config) setConfig(setEntryArchived(config, ref, false));
+  };
+  const deleteEntry = (ref: HomepageEntryRef, label: string) => {
+    if (config && confirm(`Delete "${label || "this item"}" permanently?`)) setConfig(removeEntry(config, ref));
+  };
+
   // ---------------- BANNERS LOGIC ----------------
   const handleOpenAddBanner = () => {
     setEditingBanner({
@@ -147,7 +254,7 @@ export default function AdminHomepagePage() {
         key: `slide-${(config?.heroBanners.length || 0) + 1}`,
         title: "",
         subtitle: "",
-        image: "/homepage/featured/holiday.jpg",
+        image: "",
         href: "/c/wearables-smartwatches",
         active: true,
         order: (config?.heroBanners.length || 0) + 1,
@@ -178,36 +285,15 @@ export default function AdminHomepagePage() {
     setEditingBanner(null);
   };
 
-  const handleDeleteBanner = (index: number) => {
-    if (!config) return;
-    if (confirm("Remove this hero banner?")) {
-      const newBanners = config.heroBanners.filter((_, i) => i !== index);
-      setConfig({ ...config, heroBanners: newBanners });
-    }
-  };
-
-  const handleMoveBanner = (index: number, direction: "up" | "down") => {
-    if (!config) return;
-    const newBanners = [...config.heroBanners];
-    const targetIndex = direction === "up" ? index - 1 : index + 1;
-    if (targetIndex < 0 || targetIndex >= newBanners.length) return;
-    const temp = newBanners[index];
-    newBanners[index] = newBanners[targetIndex];
-    newBanners[targetIndex] = temp;
-    // update order numbers
-    newBanners.forEach((b, i) => (b.order = i + 1));
-    setConfig({ ...config, heroBanners: newBanners });
-  };
-
-  // ---------------- CAROUSEL LOGIC ----------------
-  const handleOpenAddCarousel = (type: CarouselType) => {
+  // ---------------- CAROUSEL LOGIC (one card type) ----------------
+  const handleOpenAddCarousel = () => {
     setEditingCarousel({
       index: -1,
       data: {
         id: `carousel-${Date.now()}`,
-        title: type === "product" ? "Featured Products" : "Promotions",
+        title: "Featured",
         subtitle: "",
-        type,
+        type: "product",
         active: true,
         order: (config?.carousels.length || 0) + 1,
         items: [],
@@ -238,31 +324,21 @@ export default function AdminHomepagePage() {
     setEditingCarousel(null);
   };
 
-  const handleDeleteCarousel = (index: number) => {
-    if (!config) return;
-    if (confirm("Delete this entire carousel section?")) {
-      const newCarousels = config.carousels.filter((_, i) => i !== index);
-      setConfig({ ...config, carousels: newCarousels });
-    }
-  };
-
-  // Carousel Item Logic
+  // Carousel card logic
   const handleOpenAddCarouselItem = (carouselIndex: number) => {
     if (!config) return;
     const carousel = config.carousels[carouselIndex];
     setActiveCarouselIndex(carouselIndex);
     setEditingCarouselItem({
       itemIndex: -1,
-      type: carousel.type,
       data: {
         id: `item-${Date.now()}`,
         title: "",
         description: "",
-        image: carousel.type === "product" ? "/homepage/featured/fenix9.jpg" : "/homepage/featured/holiday.jpg",
+        image: "",
         href: "/c/wearables-smartwatches",
         price: "",
-        badge: "NEW",
-        ctaText: "Shop",
+        ctaText: "",
         order: carousel.items.length + 1,
       },
     });
@@ -275,7 +351,6 @@ export default function AdminHomepagePage() {
     setActiveCarouselIndex(carouselIndex);
     setEditingCarouselItem({
       itemIndex,
-      type: carousel.type,
       data: { ...carousel.items[itemIndex] },
     });
     setCarouselItemModalOpen(true);
@@ -300,17 +375,18 @@ export default function AdminHomepagePage() {
     setEditingCarouselItem(null);
   };
 
-  const handleDeleteCarouselItem = (carouselIndex: number, itemIndex: number) => {
+  // ---------------- TILES LOGIC ----------------
+  const handleOpenAddTile = (category: TileSection) => {
     if (!config) return;
-    const newCarousels = [...config.carousels];
-    const carousel = { ...newCarousels[carouselIndex] };
-    carousel.items = carousel.items.filter((_, i) => i !== itemIndex);
-    newCarousels[carouselIndex] = carousel;
-    setConfig({ ...config, carousels: newCarousels });
+    setTileCategory(category);
+    setEditingTile({
+      index: -1,
+      data: { id: `tile-${Date.now()}`, title: "", image: "", href: "", cta: "SHOP", order: config[category].length + 1 },
+    });
+    setTileModalOpen(true);
   };
 
-  // ---------------- TILES LOGIC ----------------
-  const handleOpenEditTile = (category: "promoTiles" | "storyTiles" | "categoryTiles", index: number) => {
+  const handleOpenEditTile = (category: TileSection, index: number) => {
     if (!config) return;
     setTileCategory(category);
     setEditingTile({
@@ -323,7 +399,8 @@ export default function AdminHomepagePage() {
   const handleSaveTileModal = () => {
     if (!config || !editingTile) return;
     const newTiles = [...config[tileCategory]];
-    newTiles[editingTile.index] = editingTile.data;
+    if (editingTile.index >= 0) newTiles[editingTile.index] = editingTile.data;
+    else newTiles.push(editingTile.data);
     setConfig({ ...config, [tileCategory]: newTiles });
     setTileModalOpen(false);
     setEditingTile(null);
@@ -354,6 +431,9 @@ export default function AdminHomepagePage() {
       </div>
     );
   }
+
+  const liveBanners = live(config.heroBanners);
+  const liveCarousels = live(config.carousels);
 
   return (
     <div className="space-y-6">
@@ -437,21 +517,16 @@ export default function AdminHomepagePage() {
                 View full specifications guide &rarr;
               </button>
             </div>
-            <div className="mt-2.5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="mt-2.5 grid grid-cols-2 gap-3 sm:grid-cols-3">
               <div className="border border-white/80 bg-white/80 p-2.5">
                 <span className="text-xs font-semibold text-muted-foreground block">Hero Banners</span>
                 <span className="text-xs font-bold text-black tabular-nums">1920 × 800 px</span>
                 <span className="text-xs text-muted-foreground block mt-0.5">Ratio: 2.4:1 / 16:9 (Max 2MB)</span>
               </div>
               <div className="border border-white/80 bg-white/80 p-2.5">
-                <span className="text-xs font-semibold text-muted-foreground block">Product Carousel</span>
+                <span className="text-xs font-semibold text-muted-foreground block">Carousel Cards</span>
                 <span className="text-xs font-bold text-black tabular-nums">800 × 800 px</span>
                 <span className="text-xs text-muted-foreground block mt-0.5">Ratio: 1:1 Square (Max 1MB)</span>
-              </div>
-              <div className="border border-white/80 bg-white/80 p-2.5">
-                <span className="text-xs font-semibold text-muted-foreground block">Promo Card Carousel</span>
-                <span className="text-xs font-bold text-black tabular-nums">1200 × 600 px</span>
-                <span className="text-xs text-muted-foreground block mt-0.5">Ratio: 2:1 Landscape (Max 1.5MB)</span>
               </div>
               <div className="border border-white/80 bg-white/80 p-2.5">
                 <span className="text-xs font-semibold text-muted-foreground block">Containing Pods</span>
@@ -493,7 +568,7 @@ export default function AdminHomepagePage() {
           }`}
         >
           <ImageIcon className="h-4 w-4" />
-          Hero Banners ({config.heroBanners.length})
+          Hero Banners ({liveBanners.length})
         </button>
 
         <button
@@ -505,7 +580,7 @@ export default function AdminHomepagePage() {
           }`}
         >
           <Sliders className="h-4 w-4" />
-          Carousels ({config.carousels.length})
+          Carousels ({liveCarousels.length})
         </button>
 
         <button
@@ -517,7 +592,7 @@ export default function AdminHomepagePage() {
           }`}
         >
           <Layers className="h-4 w-4" />
-          Containing Blocks ({config.promoTiles.length + config.storyTiles.length + config.categoryTiles.length})
+          Containing Blocks ({live(config.promoTiles).length + live(config.storyTiles).length + live(config.categoryTiles).length})
         </button>
 
         <button
@@ -554,7 +629,7 @@ export default function AdminHomepagePage() {
           </div>
 
           <div className="grid gap-3">
-            {config.heroBanners.map((banner, index) => (
+            {liveBanners.map((banner, index) => (
               <div
                 key={banner.id || index}
                 className={`flex flex-col sm:flex-row items-center gap-4 border bg-white p-3.5 shadow-2xs transition-colors ${
@@ -603,7 +678,7 @@ export default function AdminHomepagePage() {
                 {/* Controls */}
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
-                    onClick={() => handleMoveBanner(index, "up")}
+                    onClick={() => setConfig(moveEntry(config, { section: "heroBanners", id: banner.id }, "up"))}
                     disabled={index === 0}
                     className="p-1 text-muted-foreground hover:bg-neutral-100 hover:text-black disabled:opacity-20"
                     title="Move slide up"
@@ -611,349 +686,245 @@ export default function AdminHomepagePage() {
                     <ArrowUp className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleMoveBanner(index, "down")}
-                    disabled={index === config.heroBanners.length - 1}
+                    onClick={() => setConfig(moveEntry(config, { section: "heroBanners", id: banner.id }, "down"))}
+                    disabled={index === liveBanners.length - 1}
                     className="p-1 text-muted-foreground hover:bg-neutral-100 hover:text-black disabled:opacity-20"
                     title="Move slide down"
                   >
                     <ArrowDown className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleOpenEditBanner(index)}
+                    onClick={() => handleOpenEditBanner(config.heroBanners.indexOf(banner))}
                     className="p-1.5 text-neutral-600 hover:bg-neutral-100 hover:text-garmin-blue"
                     title="Edit banner"
                   >
                     <Edit2 className="h-4 w-4" />
                   </button>
-                  <button
-                    onClick={() => handleDeleteBanner(index)}
-                    className="p-1.5 text-muted-foreground hover:bg-neutral-100 hover:text-garmin-error"
-                    title="Delete banner"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <EntryActions
+                    label={`banner ${banner.title}`}
+                    onArchive={() => archiveEntry({ section: "heroBanners", id: banner.id })}
+                    onDelete={() => deleteEntry({ section: "heroBanners", id: banner.id }, banner.title)}
+                  />
                 </div>
               </div>
             ))}
           </div>
+          <ArchivedStrip
+            label="banners"
+            rows={archivedOf(config.heroBanners)}
+            onRestore={(id) => restoreEntry({ section: "heroBanners", id })}
+            onDelete={(row) => deleteEntry({ section: "heroBanners", id: row.id }, row.title)}
+          />
         </div>
       )}
 
-      {/* ================= TAB 2: CAROUSELS (DUAL TYPE) ================= */}
+      {/* ================= TAB 2: CAROUSELS (one card type, owner 2026-11-23) ================= */}
       {activeTab === "carousels" && (
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <h2 className="font-sans text-sm font-bold text-black">
-                Carousels
-              </h2>
+              <h2 className="font-sans text-sm font-bold text-black">Carousels</h2>
               <p className="text-xs text-muted-foreground">
-                Configure both Type 1 (Product Cards with Price & Tags) and Type 2 (Promo Photos & Action Buttons).
+                Every card has an image, title, description and link. Price, badge and button are optional. Card image: 800 × 800 px.
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm"
-                onClick={() => handleOpenAddCarousel("product")}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add Type 1 (Product Carousel)
-              </Button>
-              <Button variant="outline" size="sm"
-                onClick={() => handleOpenAddCarousel("promo")}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Add Type 2 (Promo Carousel)
-              </Button>
-            </div>
+            <Button variant="primary" size="sm" onClick={handleOpenAddCarousel}>
+              <Plus className="h-3.5 w-3.5" />
+              Add Carousel
+            </Button>
           </div>
 
           <div className="space-y-6">
-            {config.carousels.map((carousel, cIndex) => {
-              const isProductType = carousel.type === "product";
+            {liveCarousels.map((carousel) => {
+              const cIndex = config.carousels.indexOf(carousel);
+              const cards = live(carousel.items);
 
               return (
-                <div
-                  key={carousel.id || cIndex}
-                  className="border border-border bg-white p-5"
-                >
+                <div key={carousel.id || cIndex} className="border border-border bg-white p-5" data-carousel={carousel.id}>
                   {/* Carousel Header */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-neutral-100 pb-3">
-                    <div className="flex items-start gap-2.5">
-                      <span
-                        className={` px-2 py-0.5 text-xs font-bold mt-0.5 ${
-                          isProductType
-                            ? "bg-garmin-blue/10 text-garmin-blue border border-garmin-blue/20"
-                            : "bg-muted text-garmin-blue border border-garmin-control"
-                        }`}
-                      >
-                        {isProductType ? "Type 1: Product Carousel" : "Type 2: Promo Photo & Button"}
-                      </span>
-                      <div>
-                        <h3 className="g-heading g-h4 text-black">
-                          {carousel.title}
-                        </h3>
-                        {carousel.subtitle && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{carousel.subtitle}</p>
-                        )}
-                        <span className="inline-block mt-1 text-xs tabular-nums text-muted-foreground">
-                          {isProductType
-                            ? "Image spec: 800 × 800 px (1:1 Square)"
-                            : "Image spec: 1200 × 600 px (2:1 Landscape)"}
-                        </span>
-                      </div>
+                    <div>
+                      <h3 className="g-heading g-h4 text-black">{carousel.title}</h3>
+                      {carousel.subtitle && <p className="text-xs text-muted-foreground mt-0.5">{carousel.subtitle}</p>}
+                      {!carousel.active && (
+                        <span className="mt-1 inline-block bg-neutral-200 px-1.5 py-0.5 text-xs font-bold text-neutral-600">Disabled</span>
+                      )}
                     </div>
 
-                    <div className="flex items-center gap-2">
-                      <Button variant="primary" size="sm"
-                        onClick={() => handleOpenAddCarouselItem(cIndex)}
-                      >
+                    <div className="flex items-center gap-1">
+                      <Button variant="primary" size="sm" onClick={() => handleOpenAddCarouselItem(cIndex)}>
                         <Plus className="h-3.5 w-3.5" />
                         Add Card
                       </Button>
                       <button
                         onClick={() => handleOpenEditCarousel(cIndex)}
-                        className="p-1 text-muted-foreground hover:bg-neutral-100 hover:text-black"
-                        title="Edit Carousel Settings"
+                        className="p-1.5 text-muted-foreground hover:bg-neutral-100 hover:text-black"
+                        title="Edit carousel settings"
                       >
                         <Edit2 className="h-4 w-4" />
                       </button>
-                      <button
-                        onClick={() => handleDeleteCarousel(cIndex)}
-                        className="p-1 text-muted-foreground hover:bg-neutral-100 hover:text-garmin-error"
-                        title="Delete Carousel"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <EntryActions
+                        label={`carousel ${carousel.title}`}
+                        onArchive={() => archiveEntry({ section: "carousels", id: carousel.id })}
+                        onDelete={() => deleteEntry({ section: "carousels", id: carousel.id }, carousel.title)}
+                      />
                     </div>
                   </div>
 
                   {/* Carousel Cards Grid */}
                   <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                    {carousel.items.map((item, iIndex) => {
-                      const prodItem = item as ProductCarouselItem;
-                      const promoItem = item as PromoCarouselItem;
+                    {cards.map((item, cardNumber) => {
+                      const card = item as CarouselCard;
+                      const iIndex = carousel.items.indexOf(item);
+                      const ref: HomepageEntryRef = { section: "carouselItems", carouselId: carousel.id, id: item.id };
 
                       return (
                         <div
                           key={item.id || iIndex}
                           className="group relative flex flex-col overflow-hidden border border-border bg-neutral-50/40 p-3 hover:border-neutral-300 hover:bg-white transition-colors"
                         >
-                          {/* Image preview */}
-                          <div
-                            className={`relative w-full overflow-hidden  bg-neutral-200 mb-2.5 ${
-                              isProductType ? "aspect-square" : "aspect-2/1"
-                            }`}
-                          >
-                            <Image
-                              src={item.image || "/homepage/featured/holiday.jpg"}
-                              alt={item.title || "Item"}
-                              fill
-                              className="object-cover"
-                              unoptimized
-                            />
-                            {/* Badges / Tags */}
-                            {isProductType && prodItem.badge && (
+                          <div className="relative mb-2.5 aspect-square w-full overflow-hidden bg-neutral-200">
+                            {card.image && <Image src={card.image} alt={card.title || "Card"} fill className="object-cover" unoptimized />}
+                            {card.badge && (
                               <span
-                                className={`absolute top-2 left-2  px-1.5 py-0.5 text-xs font-bold ${
-                                  prodItem.badge === "NEW"
-                                    ? "bg-garmin-blue text-white"
-                                    : "bg-garmin-badge-lime text-black"
+                                className={`absolute top-2 left-2 px-1.5 py-0.5 text-xs font-bold ${
+                                  card.badge === "NEW" ? "bg-garmin-blue text-white" : "bg-garmin-badge-lime text-black"
                                 }`}
                               >
-                                {prodItem.badge}
+                                {card.badge}
                               </span>
                             )}
-                            <span className="absolute bottom-1 right-1 bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
-                              {isProductType ? "800x800" : "1200x600"}
-                            </span>
+                            <span className="absolute bottom-1 right-1 bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">800x800</span>
                           </div>
 
-                          {/* Content */}
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-sans truncate text-xs font-bold text-black">
-                              {item.title || "(Untitled Item)"}
-                            </h4>
-                            <p className="line-clamp-2 text-xs text-muted-foreground mt-0.5">
-                              {item.description || "No description"}
-                            </p>
-
-                            {/* Type Specific Fields */}
-                            {isProductType ? (
+                            <h4 className="font-sans truncate text-xs font-bold text-black">{card.title || "(Untitled card)"}</h4>
+                            <p className="line-clamp-2 text-xs text-muted-foreground mt-0.5">{card.description || "No description"}</p>
+                            {card.price && (
                               <div className="mt-2 flex items-center gap-1.5">
-                                <span className="text-xs font-bold text-black tabular-nums">
-                                  {prodItem.price || "—"}
-                                </span>
-                                {prodItem.originalPrice && (
-                                  <span className="text-xs text-muted-foreground line-through tabular-nums">
-                                    {prodItem.originalPrice}
-                                  </span>
+                                <span className="text-xs font-bold text-black tabular-nums">{card.price}</span>
+                                {card.originalPrice && (
+                                  <span className="text-xs text-muted-foreground line-through tabular-nums">{card.originalPrice}</span>
                                 )}
                               </div>
-                            ) : (
-                              <div className="mt-2 flex items-center gap-1.5">
-                                <span className="bg-neutral-200 px-2 py-0.5 text-xs font-bold text-neutral-700">
-                                  CTA: {promoItem.ctaText || "SHOP"}
-                                </span>
+                            )}
+                            {card.ctaText && (
+                              <div className="mt-2">
+                                <span className="bg-neutral-200 px-2 py-0.5 text-xs font-bold text-neutral-700">Button: {card.ctaText}</span>
                               </div>
                             )}
                           </div>
 
-                          {/* Card Action footer */}
                           <div className="mt-3 flex items-center justify-between border-t border-neutral-100 pt-2">
-                            <span className="text-xs tabular-nums text-muted-foreground">Card #{iIndex + 1}</span>
-                            <div className="flex items-center gap-1">
+                            <span className="text-xs tabular-nums text-muted-foreground">Card #{cardNumber + 1}</span>
+                            <div className="flex items-center">
                               <button
                                 onClick={() => handleOpenEditCarouselItem(cIndex, iIndex)}
-                                className="p-1 text-muted-foreground hover:text-black"
-                                title="Edit item"
+                                className="p-1.5 text-muted-foreground hover:text-black"
+                                title={`Edit card ${card.title}`}
                               >
                                 <Edit2 className="h-3.5 w-3.5" />
                               </button>
-                              <button
-                                onClick={() => handleDeleteCarouselItem(cIndex, iIndex)}
-                                className="p-1 text-muted-foreground hover:text-garmin-error"
-                                title="Delete item"
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </button>
+                              <EntryActions
+                                small
+                                label={`card ${card.title}`}
+                                onArchive={() => archiveEntry(ref)}
+                                onDelete={() => deleteEntry(ref, card.title)}
+                              />
                             </div>
                           </div>
                         </div>
                       );
                     })}
 
-                    {carousel.items.length === 0 && (
+                    {cards.length === 0 && (
                       <div className="col-span-full py-8 text-center border-2 border-dashed border-border">
                         <p className="text-xs text-muted-foreground">No cards in this carousel.</p>
                         <button
                           onClick={() => handleOpenAddCarouselItem(cIndex)}
                           className="mt-2 text-xs font-semibold text-garmin-blue hover:underline"
                         >
-                          + Add your first {isProductType ? "product" : "promo"} card
+                          + Add your first card
                         </button>
                       </div>
                     )}
+                  </div>
+                  <div className="mt-3">
+                    <ArchivedStrip
+                      label="cards"
+                      rows={archivedOf(carousel.items)}
+                      onRestore={(id) => restoreEntry({ section: "carouselItems", carouselId: carousel.id, id })}
+                      onDelete={(row) => deleteEntry({ section: "carouselItems", carouselId: carousel.id, id: row.id }, row.title)}
+                    />
                   </div>
                 </div>
               );
             })}
           </div>
+          <ArchivedStrip
+            label="carousels"
+            rows={archivedOf(config.carousels).map((carousel) => ({ id: carousel.id, title: carousel.title, image: carousel.items[0]?.image }))}
+            onRestore={(id) => restoreEntry({ section: "carousels", id })}
+            onDelete={(row) => deleteEntry({ section: "carousels", id: row.id }, row.title)}
+          />
         </div>
       )}
 
       {/* ================= TAB 3: CONTAINING BLOCKS ================= */}
       {activeTab === "blocks" && (
         <div className="space-y-8">
-          {/* Section: Promotional Pods */}
-          <div className="space-y-3">
-            <div className="border-b border-border pb-2">
-              <h2 className="font-sans text-sm font-bold text-black">
-                1. Promotional Feature Pods (3-Column Grid)
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Recommended size: 600 × 400 px (3:2 aspect ratio). Highlights key sport/lifestyle categories.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {config.promoTiles.map((tile, index) => (
-                <div key={tile.id || index} className="border border-border bg-white p-3.5 shadow-2xs">
-                  <div className="relative aspect-3/2 w-full overflow-hidden bg-neutral-100 mb-2.5">
-                    <Image src={tile.image} alt={tile.title} fill className="object-cover" unoptimized />
-                    <span className="absolute bottom-1 right-1 bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
-                      600x400
-                    </span>
-                  </div>
-                  <h3 className="font-sans truncate text-xs font-bold text-black">{tile.title}</h3>
-                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="tabular-nums text-muted-foreground truncate max-w-[120px]">{tile.href}</span>
-                    <span className="font-bold text-black">CTA: {tile.cta}</span>
-                  </div>
-                  <div className="mt-3 border-t border-neutral-100 pt-2 flex justify-end">
-                    <button
-                      onClick={() => handleOpenEditTile("promoTiles", index)}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-garmin-blue hover:underline"
-                    >
-                      <Edit2 className="h-3 w-3" /> Edit Tile
-                    </button>
-                  </div>
+          {TILE_SECTIONS.map((section) => (
+            <div key={section.key} className="space-y-3" data-tile-section={section.key}>
+              <div className="flex flex-col gap-2 border-b border-border pb-2 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <h2 className="font-sans text-sm font-bold text-black">{section.heading}</h2>
+                  <p className="text-xs text-muted-foreground">{section.help}</p>
                 </div>
-              ))}
-            </div>
-          </div>
+                <Button variant="outline" size="sm" onClick={() => handleOpenAddTile(section.key)}>
+                  <Plus className="h-3.5 w-3.5" />
+                  Add tile
+                </Button>
+              </div>
 
-          {/* Section: Stories Pods */}
-          <div className="space-y-3">
-            <div className="border-b border-border pb-2">
-              <h2 className="font-sans text-sm font-bold text-black">
-                2. Stories & Community Pods (2-Column Grid)
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Recommended size: 600 × 400 px (3:2 aspect ratio). Editorial features, health, and ambassador stories.
-              </p>
+              <div className={section.grid}>
+                {live(config[section.key]).map((tile, index) => (
+                  <div key={tile.id || index} className="flex flex-col border border-border bg-white p-3 shadow-2xs">
+                    <div className="relative mb-2 aspect-3/2 w-full overflow-hidden bg-neutral-100">
+                      {tile.image && <Image src={tile.image} alt={tile.title} fill className="object-cover" unoptimized />}
+                      <span className="absolute bottom-1 right-1 bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">600x400</span>
+                    </div>
+                    <h3 className="font-sans truncate text-xs font-bold text-black">{tile.title || "(Untitled tile)"}</h3>
+                    <p className="mt-0.5 truncate text-xs tabular-nums text-muted-foreground">{tile.href}</p>
+                    {section.key !== "categoryTiles" && <p className="mt-0.5 truncate text-xs font-bold text-black">CTA: {tile.cta}</p>}
+                    <div className="mt-auto flex items-center justify-end border-t border-neutral-100 pt-1.5">
+                      <button
+                        onClick={() => handleOpenEditTile(section.key, config[section.key].indexOf(tile))}
+                        className="p-1.5 text-muted-foreground hover:bg-neutral-100 hover:text-garmin-blue"
+                        title={`Edit tile ${tile.title}`}
+                      >
+                        <Edit2 className="h-3.5 w-3.5" />
+                      </button>
+                      <EntryActions
+                        small
+                        label={`tile ${tile.title}`}
+                        onArchive={() => archiveEntry({ section: section.key, id: tile.id })}
+                        onDelete={() => deleteEntry({ section: section.key, id: tile.id }, tile.title)}
+                      />
+                    </div>
+                  </div>
+                ))}
+                {live(config[section.key]).length === 0 && (
+                  <p className="col-span-full border-2 border-dashed border-border py-6 text-center text-xs text-muted-foreground">No tiles in this section.</p>
+                )}
+              </div>
+              <ArchivedStrip
+                label="tiles"
+                rows={archivedOf(config[section.key])}
+                onRestore={(id) => restoreEntry({ section: section.key, id })}
+                onDelete={(row) => deleteEntry({ section: section.key, id: row.id }, row.title)}
+              />
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {config.storyTiles.map((tile, index) => (
-                <div key={tile.id || index} className="border border-border bg-white p-3.5 shadow-2xs">
-                  <div className="relative aspect-3/2 w-full overflow-hidden bg-neutral-100 mb-2.5">
-                    <Image src={tile.image} alt={tile.title} fill className="object-cover" unoptimized />
-                    <span className="absolute bottom-1 right-1 bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
-                      600x400
-                    </span>
-                  </div>
-                  <h3 className="font-sans truncate text-xs font-bold text-black">{tile.title}</h3>
-                  <div className="mt-1 flex items-center justify-between text-xs text-muted-foreground">
-                    <span className="tabular-nums text-muted-foreground truncate max-w-[180px]">{tile.href}</span>
-                    <span className="font-bold text-black">CTA: {tile.cta}</span>
-                  </div>
-                  <div className="mt-3 border-t border-neutral-100 pt-2 flex justify-end">
-                    <button
-                      onClick={() => handleOpenEditTile("storyTiles", index)}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-garmin-blue hover:underline"
-                    >
-                      <Edit2 className="h-3 w-3" /> Edit Tile
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Section: Category Navigation Pods */}
-          <div className="space-y-3">
-            <div className="border-b border-border pb-2">
-              <h2 className="font-sans text-sm font-bold text-black">
-                3. Category Grid Shortcuts (6-Column Grid)
-              </h2>
-              <p className="text-xs text-muted-foreground">
-                Recommended size: 600 × 400 px (3:2 aspect ratio). Direct shortcuts to major category hubs.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              {config.categoryTiles.map((tile, index) => (
-                <div key={tile.id || index} className="border border-border bg-white p-2.5 shadow-2xs">
-                  <div className="relative aspect-3/2 w-full overflow-hidden bg-neutral-100 mb-2">
-                    <Image src={tile.image} alt={tile.title} fill className="object-cover" unoptimized />
-                    <span className="absolute bottom-1 right-1 bg-black/60 px-1 py-0.5 text-[8px] tabular-nums text-white">
-                      600x400
-                    </span>
-                  </div>
-                  <h4 className="font-sans truncate text-xs font-bold text-black">{tile.title}</h4>
-                  <p className="truncate text-xs tabular-nums text-muted-foreground mt-0.5">{tile.href}</p>
-                  <div className="mt-2 border-t border-neutral-100 pt-1.5 flex justify-end">
-                    <button
-                      onClick={() => handleOpenEditTile("categoryTiles", index)}
-                      className="text-xs font-semibold text-garmin-blue hover:underline"
-                    >
-                      Edit
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
         </div>
       )}
 
@@ -1068,31 +1039,17 @@ export default function AdminHomepagePage() {
               />
             </div>
 
-            <div>
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-bold text-neutral-700">
-                  Image Path / URL
-                </label>
-                <span className="text-xs font-bold text-garmin-blue tabular-nums">
-                  Target: 1920 × 800 px
-                </span>
-              </div>
-              <input
-                type="text"
-                value={editingBanner.data.image}
-                onChange={(e) =>
-                  setEditingBanner({
-                    ...editingBanner,
-                    data: { ...editingBanner.data, image: e.target.value },
-                  })
-                }
-                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
-                placeholder="/homepage/featured/holiday.jpg"
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Asset recommendation: 1920 × 800 px WebP/JPG. Keep focus elements vertically centered.
-              </p>
-            </div>
+            <HomepageImageField
+              label="Banner image"
+              value={editingBanner.data.image}
+              onChange={(image) => {
+                // An upload resolves later: merge into the latest state, and only into the banner it was picked for.
+                const id = editingBanner.data.id;
+                setEditingBanner((prev) => (prev && prev.data.id === id ? { ...prev, data: { ...prev.data, image } } : prev));
+              }}
+              target="1920 × 800 px"
+              aspect="banner"
+            />
 
             <div>
               <label className="block text-xs font-bold text-neutral-700">
@@ -1139,6 +1096,8 @@ export default function AdminHomepagePage() {
               </Button>
               <Button variant="primary" size="md"
                 type="button"
+                disabled={!editingBanner.data.image}
+                title={editingBanner.data.image ? undefined : "Add an image first"}
                 onClick={handleSaveBannerModal}
               >
                 Save Slide
@@ -1154,32 +1113,9 @@ export default function AdminHomepagePage() {
           isOpen={carouselModalOpen}
           onClose={() => setCarouselModalOpen(false)}
           title={editingCarousel.index >= 0 ? "Edit Carousel Section" : "Add Carousel Section"}
-          subtitle={editingCarousel.data.type === "product" ? "Product cards with price" : "Promo cards with image and button"}
+          subtitle="Cards show an image, title and link; price, badge and button are optional."
         >
           <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-neutral-700">
-                Carousel Type
-              </label>
-              <Select wrapperClassName="mt-1"
-                value={editingCarousel.data.type}
-                onChange={(e) =>
-                  setEditingCarousel({
-                    ...editingCarousel,
-                    data: { ...editingCarousel.data, type: e.target.value as CarouselType },
-                  })
-                }
-              >
-                <option value="product">Type 1: Product Carousel (Product, Price, NEW/SALE Tag)</option>
-                <option value="promo">Type 2: Promo Carousel (Photo, Hyperlink Button, Title)</option>
-              </Select>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {editingCarousel.data.type === "product"
-                  ? "Required Image Size: 800 × 800 px (1:1 Square)"
-                  : "Required Image Size: 1200 × 600 px (2:1 Landscape)"}
-              </p>
-            </div>
-
             <div>
               <label className="block text-xs font-bold text-neutral-700">
                 Section Title
@@ -1275,184 +1211,74 @@ export default function AdminHomepagePage() {
         </AdminModal>
       )}
 
-      {/* ================= MODAL: CAROUSEL CARD ITEM EDIT ================= */}
+      {/* ================= MODAL: CAROUSEL CARD (one card type, owner 2026-11-23) ================= */}
       {carouselItemModalOpen && editingCarouselItem && (
         <AdminModal
           isOpen={carouselItemModalOpen}
           onClose={() => setCarouselItemModalOpen(false)}
-          title={
-            editingCarouselItem.itemIndex >= 0
-              ? `Edit ${editingCarouselItem.type === "product" ? "Product Card" : "Promo Card"}`
-              : `Add ${editingCarouselItem.type === "product" ? "Product Card" : "Promo Card"}`
-          }
-          subtitle={
-            editingCarouselItem.type === "product"
-              ? "Image Dimension: 800 × 800 px (1:1 Square, Max 1MB)"
-              : "Image Dimension: 1200 × 600 px (2:1 Landscape, Max 1.5MB)"
-          }
+          title={editingCarouselItem.itemIndex >= 0 ? "Edit Card" : "Add Card"}
+          subtitle="Image: 800 × 800 px. Price, badge and button are optional."
         >
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-bold text-neutral-700">
-                Title / Product Name
-              </label>
-              <input
-                type="text"
-                value={editingCarouselItem.data.title || ""}
-                onChange={(e) =>
-                  setEditingCarouselItem({
-                    ...editingCarouselItem,
-                    data: { ...editingCarouselItem.data, title: e.target.value },
-                  })
-                }
-                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
-                placeholder={editingCarouselItem.type === "product" ? "e.g. FĒNIX® 9" : "e.g. HOLIDAY GIFT GUIDE"}
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-neutral-700">
-                Description
-              </label>
-              <textarea
-                rows={2}
-                value={editingCarouselItem.data.description || ""}
-                onChange={(e) =>
-                  setEditingCarouselItem({
-                    ...editingCarouselItem,
-                    data: { ...editingCarouselItem.data, description: e.target.value },
-                  })
-                }
-                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
-                placeholder="Brief summary or marketing callout..."
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-bold text-neutral-700">
-                  Photo / Image Path
-                </label>
-                <span className="text-xs font-bold text-garmin-blue tabular-nums">
-                  {editingCarouselItem.type === "product" ? "Required: 800 × 800 px" : "Required: 1200 × 600 px"}
-                </span>
-              </div>
-              <input
-                type="text"
-                value={editingCarouselItem.data.image || ""}
-                onChange={(e) =>
-                  setEditingCarouselItem({
-                    ...editingCarouselItem,
-                    data: { ...editingCarouselItem.data, image: e.target.value },
-                  })
-                }
-                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
-                placeholder="/homepage/featured/fenix9.jpg"
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                {editingCarouselItem.type === "product"
-                  ? "Square 800 × 800 px product shot. WebP or transparent PNG recommended."
-                  : "Wide 1200 × 600 px lifestyle banner."}
-              </p>
-            </div>
-
-            {/* Type 1 Product specific fields: Price & Tag */}
-            {editingCarouselItem.type === "product" && (
-              <div className="grid grid-cols-2 gap-3">
+          {(() => {
+            const card = editingCarouselItem.data;
+            // Functional and id-guarded: an image upload resolves after later typing, or after another card was opened.
+            const setCard = (patch: Partial<CarouselCard>) =>
+              setEditingCarouselItem((prev) => (prev && prev.data.id === card.id ? { ...prev, data: { ...prev.data, ...patch } } : prev));
+            return (
+              <div className="space-y-4">
+                <HomepageImageField label="Card image" value={card.image || ""} onChange={(image) => setCard({ image })} target="800 × 800 px" aspect="square" />
+                <TextField label="Title" value={card.title || ""} onChange={(title) => setCard({ title })} placeholder="e.g. FĒNIX® 9" />
                 <div>
-                  <label className="block text-xs font-bold text-neutral-700">
-                    Price
+                  <label htmlFor="card-description" className="block text-xs font-bold text-neutral-700">
+                    Description
                   </label>
-                  <input
-                    type="text"
-                    value={editingCarouselItem.data.price || ""}
-                    onChange={(e) =>
-                      setEditingCarouselItem({
-                        ...editingCarouselItem,
-                        data: { ...editingCarouselItem.data, price: e.target.value },
-                      })
-                    }
-                    className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden tabular-nums"
-                    placeholder="KZT 349,995.00"
+                  <textarea
+                    id="card-description"
+                    rows={2}
+                    value={card.description || ""}
+                    onChange={(e) => setCard({ description: e.target.value })}
+                    className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
+                    placeholder="Short marketing line"
                   />
                 </div>
+                <TextField label="Link" value={card.href || ""} onChange={(href) => setCard({ href })} placeholder="/c/wearables-smartwatches or https://…" />
+                <div className="grid grid-cols-2 gap-3">
+                  <TextField label="Price (optional)" value={card.price || ""} onChange={(price) => setCard({ price })} placeholder="₸349 995" />
+                  <TextField label="Old price (optional)" value={card.originalPrice || ""} onChange={(originalPrice) => setCard({ originalPrice })} placeholder="₸399 995" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="card-badge" className="block text-xs font-bold text-neutral-700">
+                      Badge (optional)
+                    </label>
+                    <Select
+                      id="card-badge"
+                      wrapperClassName="mt-1"
+                      value={card.badge || ""}
+                      onChange={(e) => setCard({ badge: e.target.value || undefined })}
+                    >
+                      <option value="">No badge</option>
+                      <option value="NEW">NEW</option>
+                      <option value="SALE">SALE</option>
+                      <option value="EXCLUSIVE">EXCLUSIVE</option>
+                    </Select>
+                  </div>
+                  <TextField label="Button text (optional)" value={card.ctaText || ""} onChange={(ctaText) => setCard({ ctaText })} placeholder="SHOP NOW" help="Leave empty for no button." />
+                </div>
+                <TextField label="Image alt text (optional)" value={card.imageAlt || ""} onChange={(imageAlt) => setCard({ imageAlt: imageAlt || undefined })} />
 
-                <div>
-                  <label className="block text-xs font-bold text-neutral-700">
-                    Tag / Badge (e.g. NEW, SALE)
-                  </label>
-                  <Select wrapperClassName="mt-1"
-                    value={editingCarouselItem.data.badge || ""}
-                    onChange={(e) =>
-                      setEditingCarouselItem({
-                        ...editingCarouselItem,
-                        data: { ...editingCarouselItem.data, badge: e.target.value || undefined },
-                      })
-                    }
-                  >
-                    <option value="">No Badge</option>
-                    <option value="NEW">NEW (Blue badge)</option>
-                    <option value="SALE">SALE (Green badge)</option>
-                    <option value="EXCLUSIVE">EXCLUSIVE</option>
-                  </Select>
+                <div className="flex items-center justify-end gap-2 pt-4 border-t border-neutral-200">
+                  {!card.image && <span className="mr-auto text-xs text-muted-foreground">Add an image to save this card.</span>}
+                  <Button variant="outline" size="md" type="button" onClick={() => setCarouselItemModalOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button variant="primary" size="md" type="button" disabled={!card.image} onClick={handleSaveCarouselItemModal}>
+                    Save Card
+                  </Button>
                 </div>
               </div>
-            )}
-
-            {/* Type 2 Promo specific field: Hyperlink Button CTA */}
-            {editingCarouselItem.type === "promo" && (
-              <div>
-                <label className="block text-xs font-bold text-neutral-700">
-                  Button Text (CTA)
-                </label>
-                <input
-                  type="text"
-                  value={editingCarouselItem.data.ctaText || "SHOP NOW"}
-                  onChange={(e) =>
-                    setEditingCarouselItem({
-                      ...editingCarouselItem,
-                      data: { ...editingCarouselItem.data, ctaText: e.target.value },
-                    })
-                  }
-                  className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
-                  placeholder="e.g. SHOP NOW, LEARN MORE, WATCH VIDEO"
-                />
-              </div>
-            )}
-
-            <div>
-              <label className="block text-xs font-bold text-neutral-700">
-                Destination Link URL
-              </label>
-              <input
-                type="text"
-                value={editingCarouselItem.data.href || ""}
-                onChange={(e) =>
-                  setEditingCarouselItem({
-                    ...editingCarouselItem,
-                    data: { ...editingCarouselItem.data, href: e.target.value },
-                  })
-                }
-                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
-                placeholder="https://www.garmin.com/en-US/p/..."
-              />
-            </div>
-
-            <div className="flex justify-end gap-2 pt-4 border-t border-neutral-200">
-              <Button variant="outline" size="md"
-                type="button"
-                onClick={() => setCarouselItemModalOpen(false)}
-              >
-                Cancel
-              </Button>
-              <Button variant="primary" size="md"
-                type="button"
-                onClick={handleSaveCarouselItemModal}
-              >
-                Save Card
-              </Button>
-            </div>
-          </div>
+            );
+          })()}
         </AdminModal>
       )}
 
@@ -1461,7 +1287,7 @@ export default function AdminHomepagePage() {
         <AdminModal
           isOpen={tileModalOpen}
           onClose={() => setTileModalOpen(false)}
-          title="Edit Containing Block"
+          title={editingTile.index >= 0 ? "Edit Tile" : "Add Tile"}
           subtitle="Image: 600 × 400 px, up to 1 MB."
         >
           <div className="space-y-4">
@@ -1482,30 +1308,16 @@ export default function AdminHomepagePage() {
               />
             </div>
 
-            <div>
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-bold text-neutral-700">
-                  Image Path / URL
-                </label>
-                <span className="text-xs font-bold text-garmin-blue tabular-nums">
-                  Target: 600 × 400 px
-                </span>
-              </div>
-              <input
-                type="text"
-                value={editingTile.data.image}
-                onChange={(e) =>
-                  setEditingTile({
-                    ...editingTile,
-                    data: { ...editingTile.data, image: e.target.value },
-                  })
-                }
-                className="mt-1 w-full border border-border px-3 py-2 text-sm focus:border-garmin-blue focus:outline-hidden"
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                Recommended 600 × 400 px landscape image (3:2 ratio).
-              </p>
-            </div>
+            <HomepageImageField
+              label="Tile image"
+              value={editingTile.data.image}
+              onChange={(image) => {
+                const id = editingTile.data.id;
+                setEditingTile((prev) => (prev && prev.data.id === id ? { ...prev, data: { ...prev.data, image } } : prev));
+              }}
+              target="600 × 400 px"
+              aspect="tile"
+            />
 
             <div>
               <label className="block text-xs font-bold text-neutral-700">
@@ -1551,6 +1363,8 @@ export default function AdminHomepagePage() {
               </Button>
               <Button variant="primary" size="md"
                 type="button"
+                disabled={!editingTile.data.image}
+                title={editingTile.data.image ? undefined : "Add an image first"}
                 onClick={handleSaveTileModal}
               >
                 Save Tile

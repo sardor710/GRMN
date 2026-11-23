@@ -1,16 +1,18 @@
 import { NextResponse } from "next/server";
-import { requireCatalogWriter } from "@/lib/cms/admin-guard";
+import { requireMediaWriter } from "@/lib/cms/admin-guard";
 import { MAX_UPLOAD_BYTES, saveImage, sniffImageType } from "@/lib/media/storage";
 
 export const runtime = "nodejs";
 
 const MAX_FILES = 20;
+/** Storage folders a client may ask for; anything else falls back to "products". */
+const FOLDERS = new Set(["products", "homepage"]);
 /** 20 files × 10 MB plus multipart overhead: refuse bigger bodies before parsing them into memory. */
 const MAX_REQUEST_BYTES = MAX_FILES * MAX_UPLOAD_BYTES + 1024 * 1024;
 
-/** POST multipart `files` (1–20 images) → { images: { src }[] }. Admin only. */
+/** POST multipart `files` (1–20 images), optional `folder` ("products" | "homepage") → { images: { src }[] }. Staff with catalog:write or content:write. */
 export async function POST(request: Request) {
-  const denied = await requireCatalogWriter(request);
+  const denied = await requireMediaWriter(request);
   if (denied) return denied;
 
   const declared = Number(request.headers.get("content-length") || 0);
@@ -43,9 +45,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `${bad.name} is not a JPEG, PNG, WebP or AVIF image` }, { status: 400 });
   }
 
+  const requested = form.get("folder");
+  const folder = typeof requested === "string" && FOLDERS.has(requested) ? requested : "products";
   const images = [];
   for (const buf of buffers) {
-    const { src } = await saveImage(buf, { folder: "products" });
+    const { src } = await saveImage(buf, { folder });
     images.push({ src });
   }
   return NextResponse.json({ images });

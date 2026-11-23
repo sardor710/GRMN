@@ -185,14 +185,14 @@ export const featuredCards: FeaturedCard[] = [
   },
   {
     badge: "SALE",
-    title: "SAVE UP TO $100 ON SELECT MARINE CHARTS",
+    title: "SAVE ON SELECT MARINE CHARTS",
     description: "Standard or premium mapping products for your chartplotter",
     image: "/images/73460-FP.jpg",
     href: "#",
   },
   {
     badge: "SALE",
-    title: "SAVE $40 ON VÍVOFIT® JR. 3",
+    title: "SAVE ON VÍVOFIT® JR. 3",
     description: "Kids fitness tracker with up to 1 year of battery life.",
     image: "/images/90910-Feature-Tile.jpg",
     href: "#",
@@ -200,14 +200,14 @@ export const featuredCards: FeaturedCard[] = [
   },
   {
     badge: "SALE",
-    title: "SAVE $100 ON TREAD® 2",
+    title: "SAVE ON TREAD® 2",
     description: "Rugged 6-inch powersport GPS navigator.",
     image: "/images/65125-26-tread2.jpg",
     href: "#",
   },
   {
     badge: "SALE",
-    title: "SAVE UP TO $200 ON XERO A1i® BOW SIGHTS",
+    title: "SAVE ON XERO A1i® BOW SIGHTS",
     description:
       "Auto-ranging digital bow sight with dual-color LED pins, Laser Locate™ and more customization",
     image: "/images/23647-new-arrivals-image-9afb5a41-9113-4731-a3f3-c4fe8aaceffc.png",
