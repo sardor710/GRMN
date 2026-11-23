@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import type { CarouselBlock, CarouselCard, PromoCarouselItem } from "@/lib/cms/types";
 import styles from "./HomeFeatured.module.css";
 import { useLocalizeHref } from "@/i18n/useLocalizeHref";
+import { badgeCode, badgeTone, discountPercent } from "@/lib/cms/carousel-badges";
 
 function plainText(text: string) {
   return text.replace(/[®™]/g, "");
@@ -55,6 +56,24 @@ function ArrowIcon({ direction }: { direction: "left" | "right" }) {
   );
 }
 
+/** Starburst for a known badge (localized label; SALE adds the saving); any other text keeps the plain label. */
+function CardBadge({ text, price, originalPrice }: { text: string; price?: string; originalPrice?: string }) {
+  const t = useTranslations("HomeFeatured");
+  const code = badgeCode(text);
+  if (!code) return <div className={styles.badge}>{text}</div>;
+  const percent = code === "SALE" ? discountPercent(price, originalPrice) : null;
+  const label = t(`badges.${code}`);
+  const long = label.split(/[\s-]/).some((word) => word.length > 6);
+  return (
+    <div className={styles.burst} data-badge={code} data-tone={badgeTone(code)} data-long={long || undefined}>
+      <span>
+        {label}
+        {percent !== null && <span className={styles.burstPercent}>{`−${percent}%`}</span>}
+      </span>
+    </div>
+  );
+}
+
 /**
  * Owner 2026-11-23: one carousel card for every item. Badge, price/old price and the button appear only
  * when the card has them; legacy promo items (`variant: "promo"`, `ctaText`) render through the same card.
@@ -66,7 +85,7 @@ function CarouselCardView({ item, eager }: { item: CarouselCard | PromoCarouselI
     <a className={`${styles.slide} ${styles.product}`} href={card.href ? localize(card.href) : undefined} aria-label={plainText(card.title)}>
       {card.badge && (
         <div className={styles.badges}>
-          <div className={styles.badge}>{card.badge}</div>
+          <CardBadge text={card.badge} price={card.price} originalPrice={card.originalPrice} />
         </div>
       )}
       <div className={styles.imageContainer}>

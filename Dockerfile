@@ -52,6 +52,11 @@ ENV NODE_ENV=production
 #   docker build --build-arg NEXT_PUBLIC_SITE_URL=https://garmin.tigr.uz ...
 ARG NEXT_PUBLIC_SITE_URL=
 ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
+# Yandex Maps JavaScript API key for the address map (account addresses and checkout); public by design.
+# Build with --build-arg NEXT_PUBLIC_YANDEX_MAPS_API_KEY=<key>; without it the form works without the map.
+# The HTTP geocoder key stays server-only: YANDEX_GEOCODER_API_KEY in the runtime env (deploy/compose.yml).
+ARG NEXT_PUBLIC_YANDEX_MAPS_API_KEY=
+ENV NEXT_PUBLIC_YANDEX_MAPS_API_KEY=${NEXT_PUBLIC_YANDEX_MAPS_API_KEY}
 
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
