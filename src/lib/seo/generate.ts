@@ -230,20 +230,30 @@ function hasBrand(name: string): boolean {
   return /\bgarmin\b/i.test(name);
 }
 
-/** Drops a trailing "(…" left open by shortening, and dangling separators. */
+/** Punctuation, or a connector word that cannot end a shortened text ("… Soft Gold with"). */
+const DANGLING_END =
+  /(?:[\s,;:–—|(/-]+|\s+(?:with|and|or|for|in|of|и|с|со|в|на|для|или|мен|және|бен|пен|үшін|немесе))$/i;
+
+/** Drops a trailing "(…" left open by shortening, then dangling separators and connectors, repeatedly. */
 function tidyEnd(text: string): string {
   let out = text;
   const open = out.lastIndexOf("(");
   if (open > 0 && open > out.lastIndexOf(")")) out = out.slice(0, open);
-  return out.replace(/[\s,;:–—|(/-]+$/, "").trim();
+  for (let previous = ""; previous !== out; ) {
+    previous = out;
+    out = out.replace(DANGLING_END, "").trim();
+  }
+  return out;
 }
 
-/** Cuts on a word boundary so the result is at most `max` characters. */
+/** Cuts on a word boundary (a space, or the slash in "Gray/Dark") so the result is at most `max` characters. */
 function trimWords(text: string, max: number): string {
   if (text.length <= max) return text;
   const cut = text.slice(0, max + 1);
   const space = cut.lastIndexOf(" ");
-  return tidyEnd(space > 0 ? cut.slice(0, space) : text.slice(0, max));
+  const slash = cut.lastIndexOf("/", max - 1);
+  const end = Math.max(space, slash);
+  return tidyEnd(end > 0 ? cut.slice(0, end) : text.slice(0, max));
 }
 
 function sentences(text: string): string[] {
@@ -255,9 +265,70 @@ function sentences(text: string): string[] {
     .map((part) => (/[.!?]$/.test(part) ? part : `${part}.`));
 }
 
-function optionText(variant: SeoVariantSubject | null): { joined: string; values: string[] } {
-  const values = (variant?.optionValues ?? []).map((option) => clean(option.value)).filter(Boolean);
-  return { joined: values.join(", "), values };
+/** Words of a text for comparing names: lowercase, no diacritics, punctuation ignored. */
+function tokens(text: string): string[] {
+  return fold(clean(text)).split(/[^a-z0-9\u0400-\u04ff]+/).filter(Boolean);
+}
+
+/** Whether `part` appears as a run of whole words in `whole`. */
+function containsWords(whole: readonly string[], part: readonly string[]): boolean {
+  if (!part.length || part.length > whole.length) return false;
+  for (let start = 0; start + part.length <= whole.length; start += 1) {
+    if (part.every((token, index) => whole[start + index] === token)) return true;
+  }
+  return false;
+}
+
+const YES = /^(yes|true|да|иә|ия)$/;
+const NO = /^(no|false|нет|жоқ)$/;
+
+/**
+ * Option values as they read in text: a yes-value prints the option name ("inReach: Yes" → "inReach"), a no-value
+ * is left out, a value the product name already says is left out ("Lily 2" on Lily 2 Active), and a leading
+ * product-name prefix is stripped ("fēnix 8 – AMOLED" on fēnix 8 → "AMOLED").
+ */
+function optionValues(name: string, variant: SeoVariantSubject | null): string[] {
+  const nameTokens = tokens(name);
+  const values: string[] = [];
+  for (const option of variant?.optionValues ?? []) {
+    let value = clean(option.value);
+    const flag = value.toLowerCase();
+    if (NO.test(flag)) continue;
+    if (YES.test(flag)) value = clean(option.name);
+    // Strip the product name (or its first two words or more) from the front of the value.
+    const words = value.split(" ");
+    for (let count = words.length; count >= 1; count -= 1) {
+      const head = tokens(words.slice(0, count).join(" "));
+      const isPrefix = head.length > 0 && head.every((token, index) => nameTokens[index] === token);
+      if (isPrefix && (head.length >= 2 || head.length === nameTokens.length)) {
+        value = words.slice(count).join(" ").replace(/^[\s,;:–—|/-]+/, "").trim();
+        break;
+      }
+    }
+    if (!value || containsWords(nameTokens, tokens(value))) continue;
+    values.push(value);
+  }
+  return uniqueCaseInsensitive(values);
+}
+
+/**
+ * The option values that fit in `budget` characters: the last value (the specific one, e.g. Model/Color) first,
+ * then earlier values from the end backwards while they fit, printed in their original order. Null when even the
+ * last value alone does not fit.
+ */
+function fitOptions(values: readonly string[], budget: number): string | null {
+  if (!values.length) return "";
+  const last = values.length - 1;
+  if (values[last].length > budget) return null;
+  const chosen = new Set([last]);
+  let length = values[last].length;
+  for (let index = last - 1; index >= 0; index -= 1) {
+    if (length + 2 + values[index].length <= budget) {
+      chosen.add(index);
+      length += 2 + values[index].length;
+    }
+  }
+  return values.filter((_, index) => chosen.has(index)).join(", ");
 }
 
 function uniqueCaseInsensitive(values: readonly (string | null | undefined)[]): string[] {
@@ -277,26 +348,45 @@ function uniqueCaseInsensitive(values: readonly (string | null | undefined)[]): 
 // Builders
 // ---------------------------------------------------------------------------
 
-function buildTitle(locale: SeoLocale, name: string, noun: Noun | null, options: string): string {
+/** An earlier option value short and specific enough to keep in a hard-trimmed title (a size, a display). */
+const SHORT_OPTION = 12;
+
+function buildTitle(locale: SeoLocale, name: string, noun: Noun | null, values: readonly string[]): string {
   const wording = WORDING[locale];
+  const options = values.join(", ");
   const brand = !hasBrand(name);
   const base: TitleParts = { noun, brand, name, options, suffix: true };
-  const candidates: TitleParts[] = [
+  const stages: TitleParts[] = [
     base,
     { ...base, suffix: false },
     { ...base, suffix: false, noun: null },
     { ...base, suffix: false, noun: null, brand: false },
   ];
-  // Then shorten the name word by word (keeping its first two words), so the option values survive.
+  // Shorter names (keeping the first two words) come last, so the option values survive.
   const words = name.split(" ");
   for (let count = words.length - 1; count >= Math.min(2, words.length); count -= 1) {
-    candidates.push({ noun: null, brand: false, suffix: false, options, name: tidyEnd(words.slice(0, count).join(" ")) });
+    stages.push({ noun: null, brand: false, suffix: false, options, name: tidyEnd(words.slice(0, count).join(" ")) || name });
   }
-  for (const parts of candidates) {
+  const fits = (title: string) => title.length > 0 && title.length <= TITLE_MAX;
+
+  // 1. Every option value, giving up suffix, noun and brand in turn.
+  for (const parts of stages.slice(0, 4)) {
     const title = wording.title(parts);
-    if (title.length <= TITLE_MAX && title) return title;
+    if (fits(title)) return title;
   }
-  return trimWords(wording.title(candidates[candidates.length - 1]), TITLE_MAX) || trimWords(name, TITLE_MAX);
+  // 2. Fewer option values (the specific last one first), giving up suffix, noun, brand, then name words.
+  for (const parts of stages.slice(1)) {
+    const budget = TITLE_MAX - wording.title({ ...parts, options: "x" }).length + 1;
+    const chosen = fitOptions(values, budget);
+    if (chosen === null) continue;
+    const title = wording.title({ ...parts, options: chosen });
+    if (fits(title)) return title;
+  }
+  // 3. Hard trim: the name, short earlier values and the last value, cut on a word boundary.
+  const kept = values.filter((value, index) => index === values.length - 1 || (value.length <= SHORT_OPTION && !value.includes(",")));
+  const last = stages[stages.length - 1];
+  const parts = { ...last, name: name.length <= TITLE_MAX / 2 ? name : last.name, options: kept.join(", ") };
+  return trimWords(wording.title(parts), TITLE_MAX) || trimWords(name, TITLE_MAX);
 }
 
 function buildDescription(locale: SeoLocale, subject: SeoSubject, name: string, noun: Noun | null, options: string): string {
@@ -361,9 +451,10 @@ function generate(subject: SeoSubject, variant: SeoVariantSubject | null, locale
   const noun = key ? NOUNS[key] : null;
   // The English title skips a noun the name already contains ("QuickFit 22 Watch Bands" + "Watch Band").
   const titleNoun = noun && locale === "en" && noun.redundant.test(fold(name)) ? null : noun;
-  const { joined, values } = optionText(variant);
+  const values = optionValues(name, variant);
+  const joined = values.join(", ");
   return {
-    title: buildTitle(locale, name, titleNoun, joined),
+    title: buildTitle(locale, name, titleNoun, values),
     description: buildDescription(locale, subject, name, locale === "en" ? titleNoun : noun, joined),
     keywords: buildKeywords(locale, subject, name, noun, values),
   };

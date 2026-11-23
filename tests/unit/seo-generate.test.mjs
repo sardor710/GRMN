@@ -150,6 +150,81 @@ test("a very long variant still fits and keeps its option values", () => {
   assert.ok(generateVariantSeo(subject, huge, "ru").description.includes("в Казахстане"));
 });
 
+// Real catalog option shapes (staging run over 290 variants).
+const opts = (...pairs) => pairs.map(([name, value]) => ({ name, value }));
+const DANGLING_END = /\b(with|and)$|[,–-]$/;
+
+test("a yes-option prints its name and a no-option is dropped everywhere", () => {
+  const fenix = { name: "fēnix® 9 Pro", family: "fēnix", kind: "device", categoryName: "Smartwatches" };
+  const variant = { sku: "A", optionValues: opts(["Case Size", "43 mm"], ["Edition", "Pro"], ["inReach", "Yes"], ["Model/Color", "Shell Pink"]) };
+  for (const locale of LOCALES) {
+    const seo = generateVariantSeo(fenix, variant, locale);
+    assert.ok(seo.title.includes("inReach"), `${locale}: ${seo.title}`);
+    assert.doesNotMatch(seo.title, /\b(Yes|No)\b/, `${locale}: ${seo.title}`);
+    assert.doesNotMatch(seo.description + seo.keywords.join(" "), /\b(Yes|No)\b/, `${locale}: ${seo.description}`);
+  }
+  const localizedYes = { sku: "B", optionValues: opts(["Solar", "Да"], ["inReach", "Нет"], ["Model/Color", "черный"]) };
+  const ru = generateVariantSeo(fenix, localizedYes, "ru");
+  assert.ok(ru.title.includes("Solar") && !/inReach|Да|Нет/.test(ru.title + ru.description), ru.title);
+  const kkYes = { sku: "C", optionValues: opts(["Solar", "Иә"], ["inReach", "Жоқ"], ["Model/Color", "қара"]) };
+  const kk = generateVariantSeo(fenix, kkYes, "kk");
+  assert.ok(kk.title.includes("Solar") && !/inReach|Иә|Жоқ/.test(kk.title + kk.description), kk.title);
+
+  const forerunner = { name: "Forerunner® 970", family: "Forerunner", kind: "device", categoryName: "Running Smartwatches" };
+  const tested = { sku: "D", optionValues: opts(["Tested", "No"], ["Model/Color", "Carbon Gray DLC Titanium with Black Case and Black/Translucent Whitestone Band"]) };
+  for (const locale of LOCALES) {
+    const seo = generateVariantSeo(forerunner, tested, locale);
+    assert.doesNotMatch(seo.title, /\bNo\b/, `${locale}: ${seo.title}`);
+    assert.ok(seo.title.length <= 60, `${locale}: ${seo.title}`);
+    assert.doesNotMatch(seo.title, DANGLING_END, `${locale}: ${seo.title}`);
+    assertDescription(seo.description, `forerunner/${locale}`);
+  }
+});
+
+test("option values that repeat the product name are dropped or stripped", () => {
+  const lily = { name: "Lily® 2 Active", family: "Lily", kind: "device", categoryName: "Smartwatches" };
+  const lilyVariant = { sku: "E", optionValues: opts(["Model", "Lily 2"], ["Color", "Cream Gold with Coconut Silicone Band"]) };
+  const fenix8 = { name: "fēnix® 8", family: "fēnix", kind: "device", categoryName: "Smartwatches" };
+  const fenix8Variant = {
+    sku: "F",
+    optionValues: opts(["Case Size", "43 mm"], ["Display", "fēnix 8 – AMOLED"], ["Model/Color", "Sapphire, Soft Gold with Fog Gray/Dark Sandstone Silicone Band"]),
+  };
+  for (const locale of LOCALES) {
+    const lilySeo = generateVariantSeo(lily, lilyVariant, locale);
+    assert.equal(lilySeo.title.match(/Lily 2/g)?.length, 1, `${locale}: ${lilySeo.title}`);
+    assert.ok(lilySeo.title.includes("Cream Gold"), `${locale}: ${lilySeo.title}`);
+    assert.equal(lilySeo.description.match(/Lily 2/g)?.length, 1, `${locale}: ${lilySeo.description}`);
+
+    const fenixSeo = generateVariantSeo(fenix8, fenix8Variant, locale);
+    assert.ok(fenixSeo.title.includes("AMOLED"), `${locale}: ${fenixSeo.title}`);
+    assert.ok(!fenixSeo.title.includes("fēnix 8 – AMOLED"), `${locale}: ${fenixSeo.title}`);
+    assert.ok(fenixSeo.title.length <= 60, `${locale}: ${fenixSeo.title}`);
+    assert.doesNotMatch(fenixSeo.title, DANGLING_END, `${locale}: ${fenixSeo.title}`);
+    assert.ok(!fenixSeo.description.includes("fēnix 8 – AMOLED"), `${locale}: ${fenixSeo.description}`);
+  }
+  // A short value that is only part of a word in the name is kept ("S" is not in "Approach S70").
+  const approach = generateVariantSeo({ name: "Approach S70", kind: "device" }, { sku: "G", optionValues: opts(["Size", "S"]) }, "en");
+  assert.match(approach.title, /– S\b/, approach.title);
+});
+
+test("band variants keep their distinguishing colour when the options do not fit", () => {
+  const quickfit = { name: "QuickFit® 22 Watch Bands", kind: "accessory", categoryName: "Watch Bands" };
+  const band = (color) => ({
+    sku: color,
+    optionValues: opts(["Material", "Fabric"], ["Colors", "Blue, Green"], ["Model/Color", `Jacquard-weave Nylon Strap – ${color}`]),
+  });
+  for (const locale of LOCALES) {
+    const indigo = generateVariantSeo(quickfit, band("Indigo"), locale);
+    const mint = generateVariantSeo(quickfit, band("Mint"), locale);
+    assert.notEqual(indigo.title, mint.title, locale);
+    assert.ok(indigo.title.endsWith("Indigo") && mint.title.endsWith("Mint"), `${locale}: ${indigo.title} / ${mint.title}`);
+    for (const title of [indigo.title, mint.title]) {
+      assert.ok(title.length <= 60, `${locale}: ${title}`);
+      assert.doesNotMatch(title, DANGLING_END, `${locale}: ${title}`);
+    }
+  }
+});
+
 test("two variants of the same product get different titles", () => {
   const fenix = fixtures[0];
   for (const locale of LOCALES) {
