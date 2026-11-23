@@ -33,3 +33,11 @@ test("merged carousel card shows price and button only when set",()=>{
   assert.equal(count("LEGACY-DESC"),1,"a legacy promo item renders through the same card (with its description)");
   assert.equal(count('"Shop"'),0,"no default button text when ctaText is empty");
 });
+
+// Owner 2026-11-23: 8 imported garmin.com.tr banners after 8 current slides — every active slide rotates (no 10-slide cap).
+test("hero renders every active banner, beyond ten", () => {
+  const Hero = component("HomeHero");
+  const banners = Array.from({ length: 16 }, (_, i) => ({ id: `b${i}`, key: `b${i}`, title: `HERO-SLIDE-${i}-END`, subtitle: "", image: `/uploads/homepage/2026/${i}.webp`, href: "/", active: true, order: i + 1 }));
+  const json = JSON.stringify(Hero({ banners }));
+  for (let i = 0; i < 16; i++) assert.ok(json.includes(`HERO-SLIDE-${i}-END`), `slide ${i}`);
+});

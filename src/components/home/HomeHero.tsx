@@ -30,8 +30,8 @@ export function HomeHero({ banners }: HomeHeroProps) {
       }))
     : homeHeroSlides.map((s) => ({ ...s, disclaimer: undefined as string | undefined, image: `/homepage/hero/${s.key}-1-D.jpg` }));
 
-  // The track has positioning classes for at most 10 slides (HomeHero.module.css .index0-.index9).
-  const slides = activeSlides.slice(0, 10);
+  // Every active slide rotates (owner 2026-11-23); the track position is the --hero-index CSS variable.
+  const slides = activeSlides;
 
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -87,7 +87,7 @@ export function HomeHero({ banners }: HomeHeroProps) {
       }}
       onTouchCancel={() => { touchStart.current = null; }}
     >
-      <div className={`${styles.track} ${styles[`index${index}`]}`}>
+      <div className={styles.track} style={{ ["--hero-index" as string]: index }}>
         {slides.map((slide, slideIndex) => (
           <div key={slide.key} className={styles.slide} aria-hidden={slideIndex !== index}>
             <picture className={styles.picture}>

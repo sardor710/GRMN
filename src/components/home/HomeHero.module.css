@@ -1,15 +1,5 @@
 .hero { position: relative; width: 100%; aspect-ratio: 3200 / 910; overflow: hidden; background: #111; color: #fff; }
-.track { display: flex; width: 100%; height: 100%; transition: transform .65s ease-in-out; }
-.index0 { transform: translateX(0); }
-.index1 { transform: translateX(-100%); }
-.index2 { transform: translateX(-200%); }
-.index3 { transform: translateX(-300%); }
-.index4 { transform: translateX(-400%); }
-.index5 { transform: translateX(-500%); }
-.index6 { transform: translateX(-600%); }
-.index7 { transform: translateX(-700%); }
-.index8 { transform: translateX(-800%); }
-.index9 { transform: translateX(-900%); }
+.track { display: flex; width: 100%; height: 100%; transform: translateX(calc(var(--hero-index, 0) * -100%)); transition: transform .65s ease-in-out; }
 .slide { position: relative; flex: 0 0 100%; height: 100%; overflow: hidden; }
 .picture { position: absolute; inset: 0; display: block; }
 .image { display: block; object-fit: cover; object-position: center; }
