@@ -305,6 +305,7 @@ Rules: brand "Garmin" once; `®`/`™` removed from title; title ≤ 60 (drop th
 - [ ] Commit.
 
 ### Task 7.2: Review, rehearsal, deploy (M7)
+> … code-reviewer: no blockers; findings 1–6, 8 and small items fixed in aaec8de (pushState(null) router sync; single-variant/canonical-override pages; feed wording; code-vs-key reads; cart links; code race message; legacy compare ?sku; gtin check; SEO tab memo). test:unit 674/674, related integration 18/18. Finding 7 (RU/KK variant pages with English option labels stay indexed) → owner decision (Blockers). Not fixed (low): admin preview classifies the category by primary key only.
 > … 2026-11-23: `npm run test:integration` 610/610 pass (after compare-items harness fix); `npm run test:unit` 668/668; `npm run lint` 0 errors (28 warnings); tsc clean; check:boundaries pass. Fresh prod dump predeploy-variant-seo-57d08d7.dump restored into grmn-staging (29 migrations, 20 published products, 332 active variants), media copied. Code review running.
 - [ ] `npm run check`, `npm run test:unit`, `npm run test:legacy`, `npm run test:integration`, `npm run check:boundaries`, `npm run test:cms-ui` all pass.
 - [ ] `code-reviewer` agent on the branch diff; fix confirmed findings (one repair per finding, then recheck).
@@ -330,6 +331,7 @@ Rules: brand "Garmin" once; `®`/`™` removed from title; title ≤ 60 (drop th
 ## Blockers
 | Task | Reason | Question / needed | Since |
 |---|---|---|---|
+| 7.2 (review #7) | RU/KK variant pages whose option labels have no translation are indexed with English option values (spec review focus 4 said noindex) | Owner: keep them indexed (recommended, real content) or noindex until translated? | 2026-11-23 |
 | 4.3 | Per-variant rows on Admin ▸ SEO not built (editor covers per-variant overrides; generation is automatic) | Owner: is the product-editor SEO tab enough, or also variant rows on the SEO screen? | 2026-11-23 |
 
 ## Revisions
