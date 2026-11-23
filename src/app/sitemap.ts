@@ -3,6 +3,8 @@ import { cmsBackend, readProductsPage, readBlogsPage, readHomepage } from "@/ser
 import { getSitemapCategorySlugs } from "@/lib/products";
 import { ROUTE_LOCALES, SITE_URL, buildSitemapEntries, type SitemapRoute } from "@/i18n/seo";
 import { homepageLocales, translatedLocales } from "@/i18n/translate-record";
+import { productSitemapRoutes } from "@/lib/seo/sitemap-products";
+import { productPath } from "@/lib/catalog/product-url";
 
 export const dynamic = "force-dynamic";
 
@@ -31,17 +33,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
-  // PostgreSQL catalog: each product lists the languages it is translated into (product_translations).
-  // A record-level canonical override is listed as-is, like before, and gets no localized alternates.
+  // PostgreSQL catalog (owner 2026-11-23): each product page /p/{code} and every variant page /p/{code}/{sku}, in the
+  // languages the product is translated into (product_translations). A record-level canonical override is listed
+  // as-is, like before, without localized alternates or variant pages.
   const normalizedRoutes:SitemapRoute[]=[],canonicalEntries:MetadataRoute.Sitemap=[];
-  if(cmsBackend()==="postgres"){const {getCatalogService}=await import("@/server/catalog/runtime");let cursor:string|undefined;do{const page=await getCatalogService().listProducts({market:"default",locale:"en",displayCurrency:"KZT"},{limit:100,cursor});const locales=await getCatalogService().translatedLocales(page.items.map(p=>p.id));for(const p of page.items.filter(p=>!p.noIndex)){const lastModified=p.updatedAt?new Date(p.updatedAt):now;if(p.canonicalUrl)canonicalEntries.push({url:p.canonicalUrl,lastModified,changeFrequency:"daily",priority:0.85});else normalizedRoutes.push({path:`/p/${encodeURIComponent(p.publicKey)}`,indexedLocales:locales.get(p.id)??["en"],lastModified,changeFrequency:"daily",priority:0.85});}cursor=page.nextCursor??undefined;}while(cursor);}
+  if(cmsBackend()==="postgres"){
+    const {getCatalogService}=await import("@/server/catalog/runtime");const catalog=getCatalogService();let cursor:string|undefined;
+    do{
+      const page=await catalog.listProducts({market:"default",locale:"en",displayCurrency:"KZT"},{limit:100,cursor});
+      const ids=page.items.map(p=>p.id),[locales,skus]=await Promise.all([catalog.translatedLocales(ids),catalog.variantSkus(ids)]);
+      const built=productSitemapRoutes(page.items.map(p=>({productCode:p.productCode,noIndex:p.noIndex===true,canonicalUrl:p.canonicalUrl??null,updatedAt:p.updatedAt?new Date(p.updatedAt):now,indexedLocales:locales.get(p.id)??["en"],skus:skus.get(p.id)??[]})));
+      normalizedRoutes.push(...built.routes);canonicalEntries.push(...built.canonical);
+      cursor=page.nextCursor??undefined;
+    }while(cursor);
+  }
   // Legacy CMS products (records carry translations, so ru/kk are listed once translated).
   const products: import("@/lib/cms/types").CMSProduct[] = [];
   let productCursor:string|undefined;if(cmsBackend()==="legacy")do{const page=await readProductsPage({limit:100,cursor:productCursor});products.push(...page.items);productCursor=page.nextCursor??undefined;}while(productCursor);
   const productRoutes: SitemapRoute[] = products
     .filter((p) => !p.noIndex && p.status === "published")
     .map((p) => ({
-      path: `/p/${p.id}`,
+      path: productPath(p.id),
       indexedLocales: translatedLocales(p, ["name", "description"]),
       lastModified: p.createdAt ? new Date(p.createdAt) : now,
       changeFrequency: "daily",

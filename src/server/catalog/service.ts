@@ -233,6 +233,12 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
       parse(z.array(z.uuid()).max(500),productIds);const map=await translationsFor(productIds);
       return new Map(productIds.map(id=>{const t=map.get(id);return[id,["en",...(["ru","kk"] as const).filter(l=>t&&isRecordTranslated({translations:t},l,["name","description"]))] as Locale[]];}));
     },
+    /** Owner 2026-11-23: SKUs of each product's variant pages (the variants its product page lists), for the sitemap. */
+    async variantSkus(productIds:string[],market="default"):Promise<Map<string,string[]>>{
+      if(!publicMarkets.includes(market))fail();if(!productIds.length)return new Map();
+      const rows=(await pool.query(`SELECT p.id::text AS product_id,array_agg(v.sku ORDER BY v.is_default DESC,v.sku) AS skus FROM products p CROSS JOIN LATERAL (SELECT v.sku,v.is_default ${eligibleFrom(false)}) v WHERE p.id=ANY($2::uuid[]) AND p.status='published' GROUP BY p.id`,[market,productIds])).rows;
+      return new Map(rows.map(r=>[String(r.product_id),strings(r.skus)]));
+    },
     /** The given product codes that belong to published products (homepage links to garmin.com ids, 0029). */
     async publishedProductCodes(codes:string[]):Promise<Set<string>>{
       const valid=[...new Set(codes)].filter(code=>/^[0-9]{1,12}$/.test(code)).slice(0,500);if(!valid.length)return new Set();
