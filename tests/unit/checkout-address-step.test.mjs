@@ -9,6 +9,7 @@ import ts from "typescript";
 import { nodes, nodeText } from "../helpers/component-fixture.mjs";
 import * as accountClient from "../../src/lib/account-client.ts";
 import * as kzRegions from "../../src/lib/kz-regions.ts";
+import * as analyticsEvents from "../../src/lib/analytics/events.ts";
 import * as step from "../../src/lib/checkout-address.ts";
 import { createTranslator } from "use-intl/core";
 import * as i18nConfig from "../../src/i18n/config.js";
@@ -77,7 +78,7 @@ test("payload: saved choices send id and version; new ones send a KZ inline addr
 function load(seed = {}) {
   const state = [], quotes = [], requests = [];
   let index = 0;
-  const hooks = { useState(initial) { const key = index++; if (!(key in state)) state[key] = key in seed ? seed[key] : typeof initial === "function" ? initial() : initial; return [state[key], value => { state[key] = typeof value === "function" ? value(state[key]) : value; }]; }, useEffect() {}, useMemo: fn => fn() };
+  const hooks = { useState(initial) { const key = index++; if (!(key in state)) state[key] = key in seed ? seed[key] : typeof initial === "function" ? initial() : initial; return [state[key], value => { state[key] = typeof value === "function" ? value(state[key]) : value; }]; }, useEffect() {}, useMemo: fn => fn(), useRef: value => ({ current: value }) };
   const checkoutClient = {
     createCheckoutStorage: () => ({ get: () => null, set() {}, remove() {} }),
     createCheckoutClient: () => ({ quote: async body => { quotes.push(body); return null; }, placeOrder: async () => ({}) }),
@@ -92,7 +93,7 @@ function load(seed = {}) {
   const AddressForm = function AddressForm() { return null; };
   const modules = {
     react: hooks, "react/jsx-runtime": { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) }, "next/link": "a", ...i18nModules,
-    "@/lib/account-client": accountClient, "@/lib/checkout-client": checkoutClient, "@/lib/checkout-address": step, "@/lib/kz-regions": kzRegions,
+    "@/lib/account-client": accountClient, "@/lib/checkout-client": checkoutClient, "@/lib/checkout-address": step, "@/lib/kz-regions": kzRegions, "@/lib/analytics/events": analyticsEvents,
     "@/components/address/AddressForm": { AddressForm },
   };
   const output = {};

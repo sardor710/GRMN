@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { INTL_LOCALE } from "@/i18n/config";
 import { useAppLocale } from "@/i18n/useAppLocale";
-import type { CartDTO, CheckoutQuoteDTO, CheckoutStatusDTO, DeliveryAddressSelection, SavedAddressDTO } from "@/contracts/commerce";
+import type { CartDTO, CartLineDTO, CheckoutQuoteDTO, CheckoutStatusDTO, DeliveryAddressSelection, SavedAddressDTO } from "@/contracts/commerce";
+import { gaPriceFromMinor, toGaItem, track, trackPurchaseOnce, type GaItem } from "@/lib/analytics/events";
 import { countryName, createAccountClient, formatKzt } from "@/lib/account-client";
 import {
   beginCheckout, checkoutRecovery, createCheckoutClient, createCheckoutStorage, forgetCheckoutKey, pollOrderStatus, rememberOrder, resumePendingCheckout,
@@ -20,6 +21,10 @@ import {
 import { kzRegionLabel } from "@/lib/kz-regions";
 import { AddressForm, type AddressFormValue } from "@/components/address/AddressForm";
 import { DemoDot } from "@/components/DemoDot";
+
+/** Task 5.2: a cart line as a GA4 item at the given KZT minor unit price (item_id = SKU, item_group_id = product code). */
+const gaLineItem = (line: CartLineDTO, unitMinor: string, quantity: number): GaItem =>
+  toGaItem({ productCode: line.productCode || line.productKey, name: line.name, sku: line.sku, variantName: line.variantName, priceMajor: gaPriceFromMinor(unitMinor), quantity });
 
 // Task 14A checkout. The server prices the quote and places the order; this panel only collects
 // the delivery contact (D06: name, phone, address; email optional), shows the server's KZT quote
@@ -103,6 +108,16 @@ export function CheckoutPanel({ cart, disabled, onPlaced, onCartStale }: { cart:
   const choose = (next: DeliveryChoice) => { setChoice(next); setQuote(null); setError(null); };
   const contact = { name: form.name, phone: form.phone, email: form.email };
 
+  // Task 5.2: GA4 begin_checkout, once per visit, when the shopper first works in the checkout form (the panel
+  // sits beside the cart, so showing it is not yet a checkout): the sold cart lines and the cart subtotal.
+  const checkoutStarted = useRef(false);
+  const startCheckout = () => {
+    if (checkoutStarted.current) return;
+    checkoutStarted.current = true;
+    const items = cart.lines.flatMap(line => line.unitPrice ? [gaLineItem(line, line.unitPrice.amountMinor, line.quantity)] : []);
+    track("begin_checkout", { currency: "KZT", value: gaPriceFromMinor(cart.subtotal.amountMinor), items });
+  };
+
   async function review() {
     const problems = checkoutProblems(contact, choice, addresses, address);
     if (problems.length) { setQuote(null); setRetry(false); setError(problems.join(". ") + "."); return; }
@@ -135,6 +150,17 @@ export function CheckoutPanel({ cart, disabled, onPlaced, onCartStale }: { cart:
       settleCheckoutKey(session, result);
       const placed = { orderId: result.orderId, orderNumber: result.orderNumber, statusToken: result.statusToken };
       rememberOrder(session, placed);
+      // Task 5.2: GA4 purchase with the server's quote (prices, totals), once per order number (a retried or
+      // replayed checkout returns the same order and sends nothing more).
+      // The order is placed: nothing here may turn that into a checkout error.
+      try {
+        const cartLine = new Map(cart.lines.map(line => [line.variantId, line]));
+        trackPurchaseOnce(result.orderNumber, {
+          currency: "KZT", value: gaPriceFromMinor(current.total.amountMinor), shipping: gaPriceFromMinor(current.shipping.amountMinor), tax: gaPriceFromMinor(current.tax.amountMinor),
+          ...(current.coupon ? { coupon: current.coupon.code } : {}),
+          items: current.lines.flatMap(quoted => { const line = cartLine.get(quoted.variantId); return line ? [gaLineItem(line, quoted.unitPrice.amountMinor, quoted.quantity)] : []; }),
+        });
+      } catch { /* analytics only */ }
       setRetry(false);
       onPlaced(placed);
     } catch (failure) {
@@ -178,7 +204,7 @@ export function CheckoutPanel({ cart, disabled, onPlaced, onCartStale }: { cart:
       <dl className="mt-4 space-y-3 text-[16px] leading-[24px]">
         <div className="flex justify-between"><dt className="font-medium text-black">{t("subtotal")}</dt><dd className="text-black">{kzt(cart.subtotal)}</dd></div>
       </dl>
-      <form className="mt-4 space-y-5" noValidate onSubmit={event => { event.preventDefault(); void review(); }}>
+      <form className="mt-4 space-y-5" noValidate onFocusCapture={startCheckout} onSubmit={event => { event.preventDefault(); startCheckout(); void review(); }}>
         <fieldset className="min-w-0 space-y-3">
           <legend className={sectionTitle}>{t("deliveryLegend")}</legend>
           {who.status === "loading" ? (

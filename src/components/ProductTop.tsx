@@ -26,8 +26,14 @@ import { useAppLocale } from "@/i18n/useAppLocale";
 import { COMPARE_MAX_ITEMS } from "@/lib/compare/compare-items";
 import { findVariantEntry, isSelectionFull, selectionHref, toggleVariant, type CompareSelectionItem } from "@/lib/compare/selection";
 import { useCompareSelection } from "@/lib/compare/use-compare-selection";
+import { gaPriceFromMinor, toGaItem, track, type GaItem } from "@/lib/analytics/events";
 
 const COMPARE_LIMIT_ID = "pdp-compare-limit";
+
+/** Task 5.2: the GA4 item for a PostgreSQL variant (item_id = SKU, item_group_id = product code, KZT major price). */
+function gaVariantItem(productCode: string, name: string, variant: { sku: string; name: string; price: { selling: { amountMinor: string } } }, category: string | undefined, quantity = 1): GaItem {
+  return toGaItem({ productCode, name, sku: variant.sku, variantName: variant.name, priceMajor: gaPriceFromMinor(variant.price.selling.amountMinor), quantity, category });
+}
 
 type CommerceModel = { options: ProductOption[]; variants: ProductVariant[] };
 
@@ -121,6 +127,14 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
     return () => window.removeEventListener("popstate", onPopState);
   }, [product.commerce, setVariantId]);
 
+  // Task 5.2: GA4 view_item for the variant on screen: the initial one, then every variant change.
+  const gaProductCode = initial.productCode, gaName = initial.title, gaCategory = initial.commerce?.breadcrumb?.at(-1)?.name;
+  useEffect(() => {
+    if (!variant || !gaProductCode) return;
+    const item = gaVariantItem(gaProductCode, gaName, variant, gaCategory);
+    track("view_item", { currency: "KZT", value: item.price, items: [item] });
+  }, [variant, gaProductCode, gaName, gaCategory]);
+
   // Task 5a.2: every price is tenge in the page locale through <Price> (never USD). Backend amounts are exact
   // minor-unit strings, so the sale test compares minor units (isKztSale), never JS numbers.
   // Computed before the memo below so the React Compiler sees no later use of its dependencies.
@@ -201,6 +215,10 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
         ...(unconverted ? { unconverted: true } : {}),
       });
     } catch (error) { setNotice(error instanceof Error ? error.message : t("addFailed")); return; }
+    if (variant && gaProductCode) {
+      const item = gaVariantItem(gaProductCode, gaName, variant, gaCategory, 1);
+      track("add_to_cart", { currency: "KZT", value: item.price * item.quantity, items: [item] });
+    }
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };

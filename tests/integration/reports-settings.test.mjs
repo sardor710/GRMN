@@ -229,8 +229,20 @@ test("settings are typed and versioned; invalid combinations are refused; the US
   await rejectsWith(settingsApi.setExchangeRate(settingsAdmin,{expectedVersion:current.version,kztPerUsd:"500"}),409,"VERSION_CONFLICT");
   const enabled=await settingsApi.update(settingsAdmin,{expectedVersion:rated.version,usdDisplayEnabled:true,storeName:"Garmin KZ",freeShippingThresholdMinor:"5000000"});
   assert.equal(enabled.usdDisplayEnabled,true);assert.equal(enabled.storeName,"Garmin KZ");assert.equal(enabled.freeShippingThresholdMinor,"5000000");
+  // Task 5.1: Google tag ids and verification tokens round-trip through presentation_config.analytics (other keys kept);
+  // a malformed id is a 400 naming the field, and the public reader needs no session.
+  assert.deepEqual(enabled.analytics,{});
+  await q(`UPDATE store_settings SET presentation_config=presentation_config||'{"keep":1}'::jsonb WHERE id=1`);
+  await rejectsWith(settingsApi.update(settingsAdmin,{expectedVersion:enabled.version,analytics:{ga4Id:"UA-123"}}),400,"INVALID_ANALYTICS");
+  await rejectsWith(settingsApi.update(settingsAdmin,{expectedVersion:enabled.version,analytics:{ga4Id:"G-ABC123",extra:"x"}}),400,"INVALID_INPUT");
+  const tagged=await settingsApi.update(settingsAdmin,{expectedVersion:enabled.version,analytics:{ga4Id:" g-abc123 ",gtmId:"",googleVerification:"abcdefghij_-12"}});
+  assert.deepEqual(tagged.analytics,{ga4Id:"G-ABC123",googleVerification:"abcdefghij_-12"});
+  assert.deepEqual((await settingsApi.get(settingsAdmin)).analytics,tagged.analytics);
+  const {readAnalyticsConfig}=await import("../../src/server/settings/service.ts");
+  assert.deepEqual(await readAnalyticsConfig(database.pool),tagged.analytics);
+  assert.equal((await q("SELECT presentation_config->>'keep' AS keep FROM store_settings WHERE id=1")).rows[0].keep,"1");
   // A later rate is a new version; history is kept and audited.
-  const second=await settingsApi.setExchangeRate(settingsAdmin,{expectedVersion:enabled.version,kztPerUsd:"501.5"});
+  const second=await settingsApi.setExchangeRate(settingsAdmin,{expectedVersion:tagged.version,kztPerUsd:"501.5"});
   assert.equal(second.exchangeRate.version,rated.exchangeRate.version+1);
   assert.ok((await q("SELECT count(*)::int AS n FROM audit_events WHERE action='settings.exchange_rate_set'")).rows[0].n>=2);
   await rejectsWith(settingsApi.get(support),403,"FORBIDDEN");

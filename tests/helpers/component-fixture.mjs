@@ -15,6 +15,8 @@ import * as compareSelection from "../../src/lib/compare/selection.ts";
 import * as cardColors from "../../src/lib/catalog/card-colors.ts";
 import * as productUrl from "../../src/lib/catalog/product-url.ts";
 import * as publishPrice from "../../src/lib/cms/publish-price.ts";
+import * as analyticsConfig from "../../src/lib/analytics/config.ts";
+import * as analyticsEvents from "../../src/lib/analytics/events.ts";
 
 // Storefront components read their text through next-intl. Fixtures render with the real English
 // catalog so assertions keep reading the English interface (ru/kk are covered by the i18n tests).
@@ -41,6 +43,9 @@ const i18nModules = {
   "@/lib/catalog/product-url": productUrl,
   // The admin form's price-to-publish rule is the real shared helper.
   "@/lib/cms/publish-price": publishPrice,
+  // Task 5.2: the real analytics helpers; without a window (these fixtures) track() is a no-op.
+  "@/lib/analytics/config": analyticsConfig,
+  "@/lib/analytics/events": analyticsEvents,
 };
 
 // Task 5a.2: shared primitives (Price, Badge) are real, and render inline so fixtures read their text.

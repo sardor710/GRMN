@@ -9,6 +9,7 @@ import { nodes, nodeText } from "../helpers/component-fixture.mjs";
 import * as accountClient from "../../src/lib/account-client.ts";
 import * as checkoutAddress from "../../src/lib/checkout-address.ts";
 import * as kzRegions from "../../src/lib/kz-regions.ts";
+import * as analyticsEvents from "../../src/lib/analytics/events.ts";
 import { createTranslator } from "use-intl/core";
 import * as i18nConfig from "../../src/i18n/config.js";
 
@@ -33,13 +34,13 @@ const quote = paymentMethod => ({
 function load(name, seed = {}, { placeOrder } = {}) {
   const state = [], calls = [];
   let index = 0;
-  const hooks = { useState(initial) { const key = index++; if (!(key in state)) state[key] = key in seed ? seed[key] : typeof initial === "function" ? initial() : initial; return [state[key], value => { state[key] = typeof value === "function" ? value(state[key]) : value; }]; }, useEffect() {}, useMemo: fn => fn() };
+  const hooks = { useState(initial) { const key = index++; if (!(key in state)) state[key] = key in seed ? seed[key] : typeof initial === "function" ? initial() : initial; return [state[key], value => { state[key] = typeof value === "function" ? value(state[key]) : value; }]; }, useEffect() {}, useMemo: fn => fn(), useRef: value => ({ current: value }) };
   const checkoutClient = {
     createCheckoutStorage: () => ({ get: () => null, set() {}, remove() {} }),
     createCheckoutClient: () => ({ placeOrder: placeOrder ?? (async (command, key) => { calls.push({ command, key }); return { orderId: "o1", orderNumber: "GRM-1", statusToken: "t".repeat(43) }; }) }),
     beginCheckout: () => "checkout-key-0000001", checkoutRecovery: () => "fail", forgetCheckoutKey() {}, settleCheckoutKey() {}, retryOrderPayment: async () => null, pollOrderStatus: async () => null, rememberOrder() {}, resumePendingCheckout: async () => null,
   };
-  const modules = { react: hooks, "react/jsx-runtime": { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) }, "next/link": "a", ...i18nModules, "@/lib/account-client": accountClient, "@/lib/checkout-client": checkoutClient, "@/lib/checkout-address": checkoutAddress, "@/lib/kz-regions": kzRegions };
+  const modules = { react: hooks, "react/jsx-runtime": { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) }, "next/link": "a", ...i18nModules, "@/lib/account-client": accountClient, "@/lib/checkout-client": checkoutClient, "@/lib/checkout-address": checkoutAddress, "@/lib/kz-regions": kzRegions, "@/lib/analytics/events": analyticsEvents };
   const output = {};
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true, target: ts.ScriptTarget.ES2022 } }).outputText;
   new Function("require", "exports", "fetch", "sessionStorage", code)(id => modules[id] ?? {}, output, async () => ({}), {});
