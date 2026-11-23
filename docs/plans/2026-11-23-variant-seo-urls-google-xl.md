@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 2 | 8/19 | 2026-11-23 | Task 3.2 JSON-LD (lead) ‖ Task 6.1 feed (agent) |
+| Executing | 2 | 10/19 | 2026-11-23 | Wave 2 merge: feed agent; then Wave 3 (M4 lead ‖ M5 agent) |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -248,15 +248,17 @@ Rules: brand "Garmin" once; `®`/`™` removed from title; title ≤ 60 (drop th
 - [x] FAIL → implement → PASS; commit.
 
 ### Task 3.2: Structured data (M3)
+> ✅ commit above — product-jsonld 3/3, test:unit pass; dev on staging copy: /ru/p/1953727 ProductGroup (33 variants, variesBy size+color), variant page Product isVariantOf 1953727 with color/size/offer 599995.00 KZT InStock, /ru Organization+WebSite. Rich Results Test pending (Task 7.2)
 **Files:** Create `src/lib/seo/product-jsonld.ts`; Modify `src/components/seo/JsonLd.tsx`, product page, `src/app/[lang]/page.tsx` (Organization + WebSite); Test `tests/unit/product-jsonld.test.mjs`.
 **Produces:** `productGroupJsonLd(detail, locale)`; `variantProductJsonLd(detail, variant, locale)`; `organizationJsonLd()`, `websiteJsonLd(locale)`.
-- [ ] Tests: group `@type` `ProductGroup`, `productGroupID` = code, `variesBy` maps option keys (`color`→`https://schema.org/color`, case size→`https://schema.org/size`, other → omitted from variesBy but kept as `additionalProperty`), `hasVariant.length` = active variants, each with `url` = variant URL, `sku`, `mpn`, `gtin` only when barcode; offer `priceCurrency:"KZT"`, out-of-stock → `https://schema.org/OutOfStock`; variant JSON has `isVariantOf.productGroupID`.
-- [ ] FAIL → implement → PASS; manual Rich Results Test deferred to Task 7.2; commit.
+- [x] Tests: group `@type` `ProductGroup`, `productGroupID` = code, `variesBy` maps option keys (`color`→`https://schema.org/color`, case size→`https://schema.org/size`, other → omitted from variesBy but kept as `additionalProperty`), `hasVariant.length` = active variants, each with `url` = variant URL, `sku`, `mpn`, `gtin` only when barcode; offer `priceCurrency:"KZT"`, out-of-stock → `https://schema.org/OutOfStock`; variant JSON has `isVariantOf.productGroupID`.
+- [x] FAIL → implement → PASS; manual Rich Results Test deferred to Task 7.2; commit.
 
 ### Task 3.3: Sitemap with variants (M3)
+> ✅ commit above — sitemap-products 2/2, test:unit pass; staging copy sitemap: 465 product/variant <loc> = SQL expectation (11 products + 290 variants × translated languages), hreflang en/ru/kk/x-default per variant
 **Files:** Modify `src/app/sitemap.ts`; Create helper `src/lib/seo/sitemap-products.ts` (`productSitemapRoutes(products): SitemapRoute[]`); Test `tests/unit/sitemap-products.test.mjs`.
-- [ ] Tests: product with 3 active variants and locales [en,ru] → 4 routes each with indexedLocales [en,ru]; noIndex product → 0; canonical-override product → product URL only.
-- [ ] FAIL → implement (service needs active variant SKUs per product: add `listIndexableVariants()` returning `{productCode, sku, updatedAt}`) → PASS; commit.
+- [x] Tests: product with 3 active variants and locales [en,ru] → 4 routes each with indexedLocales [en,ru]; noIndex product → 0; canonical-override product → product URL only.
+- [x] FAIL → implement (service needs active variant SKUs per product: add `listIndexableVariants()` returning `{productCode, sku, updatedAt}`) → PASS; commit.
 
 ### Task 6.1: Google Merchant feed (M6, agent in worktree)
 **Files:** Create `src/lib/seo/merchant-feed.ts`, `src/app/feeds/google/[file]/route.ts`; Test `tests/unit/merchant-feed.test.mjs`.
