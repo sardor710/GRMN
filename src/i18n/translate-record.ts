@@ -1,4 +1,5 @@
 import * as js from "./translate-record.js";
+import { badgeCode } from "../lib/cms/carousel-badges.ts";
 import type { Locale } from "./config";
 import type {
   Banner,
@@ -58,7 +59,20 @@ export function localizeBanner(record: Banner, locale: Locale): Banner {
 }
 
 export function localizeHomepage(record: HomepageConfig, locale: Locale): HomepageConfig {
-  return localizeRecord(record, locale, HOMEPAGE_SPEC);
+  const localized = localizeRecord(record, locale, HOMEPAGE_SPEC);
+  // Owner 2026-11-23: a badge code picked in admin (NEW, SALE, SOON…) is localized by the storefront itself, so a
+  // stale translated badge text (e.g. an old "Экономия 50 000 KZT") must not replace it.
+  const source = new Map(record.carousels.flatMap((carousel) => carousel.items.map((item) => [`${carousel.id}\u0000${item.id}`, (item as { badge?: string }).badge] as const)));
+  return {
+    ...localized,
+    carousels: localized.carousels.map((carousel) => ({
+      ...carousel,
+      items: carousel.items.map((item) => {
+        const badge = source.get(`${carousel.id}\u0000${item.id}`);
+        return badge && badgeCode(badge) && (item as { badge?: string }).badge !== badge ? { ...item, badge } : item;
+      }),
+    })),
+  };
 }
 
 export function localizeSettings(record: StoreSettings, locale: Locale): StoreSettings {
