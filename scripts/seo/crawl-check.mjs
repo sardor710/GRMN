@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 // Owner 2026-11-23 (plan 2026-11-23-variant-seo-urls-google-xl, Task 7.1): crawls every product and variant page the
 // sitemap lists, as Googlebot, and checks what search engines get. Exits non-zero on any failure.
-//   BASE=https://garmin.tigr.uz node scripts/seo/crawl-check.mjs [--host <Host header>] [--insecure] [--limit N]
+//   BASE=https://garmin.tigr.uz node scripts/seo/crawl-check.mjs [--resolve <ip>] [--host <Host header>] [--insecure] [--limit N]
 // Checks: 200; self canonical; a non-empty <title> unique per language; meta description; og:image; JSON-LD
 // ProductGroup (product page) or Product with isVariantOf (variant page); old /p/<uuid> answers 404; ?variant= is
 // ignored (canonical stays clean); the Merchant feeds parse and list items.
+import http from "node:http";
+import https from "node:https";
+
 const args = process.argv.slice(2);
 const flag = name => { const i = args.indexOf(name); return i >= 0 ? args[i + 1] : undefined; };
 const BASE = (process.env.BASE || "http://127.0.0.1:3123").replace(/\/+$/, "");
@@ -16,7 +19,28 @@ const headers = { "User-Agent": UA, ...(HOST ? { Host: HOST } : {}) };
 
 const failures = [];
 const fail = (url, message) => failures.push(`${url}: ${message}`);
-const get = (path, init = {}) => fetch(BASE + path, { headers, redirect: "manual", ...init });
+// --resolve <ip>: connect to that address for BASE's host (TLS SNI and Host stay BASE's host), like curl --resolve.
+const RESOLVE = flag("--resolve");
+function get(path) {
+  if (!RESOLVE && !HOST) return fetch(BASE + path, { headers, redirect: "manual" });
+  const url = new URL(BASE + path);
+  const client = url.protocol === "https:" ? https : http;
+  return new Promise((resolve, reject) => {
+    const request = client.request(url, {
+      headers, rejectUnauthorized: !args.includes("--insecure"), servername: HOST ?? url.hostname,
+      ...(RESOLVE ? { lookup: (_host, options, callback) => options?.all ? callback(null, [{ address: RESOLVE, family: 4 }]) : callback(null, RESOLVE, 4) } : {}),
+    }, response => {
+      const chunks = [];
+      response.on("data", chunk => chunks.push(chunk));
+      response.on("end", () => {
+        const body = Buffer.concat(chunks).toString("utf8");
+        resolve({ status: response.statusCode, headers: { get: name => response.headers[name.toLowerCase()] ?? null }, text: async () => body });
+      });
+    });
+    request.on("error", reject);
+    request.end();
+  });
+}
 const attr = (html, re) => re.exec(html)?.[1]?.replace(/&amp;/g, "&") ?? null;
 const local = url => url.replace(/^https?:\/\/[^/]+/, "");
 
@@ -37,7 +61,8 @@ await pool(urls, 4, async url => {
   const response = await get(path);
   if (response.status !== 200) return fail(path, `status ${response.status}`);
   const html = await response.text();
-  const head = html;
+  // Icon <svg><title>s are not the page title (Next may stream the head's <title> after the body starts).
+  const head = html.replace(/<svg[\s\S]*?<\/svg>/g, "");
   const canonical = attr(head, /<link rel="canonical" href="([^"]+)"/);
   if (canonical !== url) fail(path, `canonical ${canonical}`);
   const title = attr(head, /<title>([^<]*)<\/title>/);
