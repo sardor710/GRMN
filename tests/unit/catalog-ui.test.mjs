@@ -55,8 +55,9 @@ test("variant selection changes the actual price and media without fabricating o
  const props={product:{id:"fixture",productCode:"1953727",title:"Model",price:"10.00",priceLabel:"1000 KZT",currency:"KZT",purchasable:false,breadcrumb:[],gallery:[{src:"/images/a.jpg",view:"A"}],caseSizes:[],versions:[],colors:[],commerce}};
  urlWrites.length=0;
  let tree=fixture.render(props);choose(tree,"Large");tree=fixture.render(props);assert.match(nodeText(tree),/KZT\s25\.00/);assert.ok(nodes(tree).some(n=>n.props?.src==="/images/b.jpg"));assert.doesNotMatch(nodeText(tree),/1–3 business days/);
- // The pick moves to the variant page (language, other parameters and the router's history state are kept).
- assert.deepEqual(urlWrites,[{state:{kept:true},url:"/en/p/1953727/B?utm=x"}]);
+ // The pick moves to the variant page (language and other parameters kept). The state is null, as Next's docs show,
+ // so Next's router syncs usePathname() to the new address (review fix: passing history.state skipped that sync).
+ assert.deepEqual(urlWrites,[{state:null,url:"/en/p/1953727/B?utm=x"}]);
 });
 
 test("Task 13A: in server-cart mode an available variant is added by its exact id; an out-of-stock one is not offered",async()=>{

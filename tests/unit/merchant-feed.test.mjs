@@ -142,7 +142,7 @@ test("category from the breadcrumb kind; product type is the breadcrumb names", 
 });
 
 test("XML special characters are escaped and control characters stripped; the feed parses", () => {
-  const d = detail({ variants: [variant("C&<1>", "черный", { seo: { title: `Tom & Jerry <b>"x"</b> 'y'\u0007`, description: "a < b & c > d" } })] });
+  const d = detail({ variants: [variant("C&<1>", "черный", { seo: { title: `Tom & Jerry <b>"x"</b> 'y'\u0007`, description: "a < b & c > d" } }), variant("X-2", "белый")] });
   const xml = buildMerchantFeed(merchantItemsFor(d, "ru", SITE), { locale: "ru", siteUrl: SITE, title: "A & B" });
   assert.match(xml, /<g:title>Tom &amp; Jerry &lt;b&gt;&quot;x&quot;&lt;\/b&gt; &apos;y&apos;<\/g:title>/);
   assert.match(xml, /<g:description>a &lt; b &amp; c &gt; d<\/g:description>/);
@@ -165,4 +165,22 @@ test("noIndex products and untranslated locales give no items", () => {
   assert.deepEqual(merchantItemsFor(detail({ seo: { title: "x", description: "y", canonicalUrl: null, noIndex: true, image: null } }), "en", SITE), []);
   assert.deepEqual(merchantItemsFor(detail(), "kk", SITE), []);
   assert.equal(merchantItemsFor(detail({ translatedLocales: undefined }), "en", SITE).length, 2, "en is always included");
+});
+
+test("review fix: titles carry no store call-to-action; descriptions are the product text, not 'Buy …'", () => {
+  for (const locale of ["en", "ru", "kk"]) {
+    for (const item of merchantItemsFor(detail({ translatedLocales: ["en", "ru", "kk"] }), locale, SITE)) {
+      assert.doesNotMatch(item.title, /Buy in Kazakhstan|купить в Казахстане|сатып алу/i);
+      assert.doesNotMatch(item.description, /^(Buy|Купить|Сатып)/i);
+    }
+  }
+  const [item] = merchantItemsFor(detail(), "ru", SITE);
+  assert.match(item.description, /Премиальные мультиспортивные смарт-часы/);
+  assert.match(item.description, /черный/);
+});
+
+test("review fix: a canonical-URL override keeps the product out of the feed; a single variant links to the product page", () => {
+  assert.deepEqual(merchantItemsFor(detail({ seo: { title: "x", description: "y", canonicalUrl: "https://elsewhere.test/x", noIndex: false, image: null } }), "ru", SITE), []);
+  const [only] = merchantItemsFor(detail({ variants: [variant("A-1", "черный")] }), "ru", SITE);
+  assert.equal(only.link, "https://garmin.tigr.uz/ru/p/1953727");
 });

@@ -21,3 +21,7 @@ test("noIndex products are left out; a canonical override lists only that URL an
   assert.deepEqual(routes, []);
   assert.deepEqual(canonical.map(c => c.url), ["https://elsewhere.test/x"]);
 });
+
+test("review fix: a product with a single variant lists only its product page", () => {
+  assert.deepEqual(productSitemapRoutes([product({ skus: ["ONLY-1"] })]).routes.map(r => r.path), ["/p/1953727"]);
+});

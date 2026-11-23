@@ -76,7 +76,7 @@ function serverCart(t: Translate, kzt: (money: Parameters<typeof formatKzt>[0]) 
                     </div>
                     <div>
                       {line.productKey ? (
-                        <Link href={productPath(line.productCode || line.productKey, line.productCode ? line.sku : null)} className="g-heading g-h4 text-black hover:underline">{line.name}</Link>
+                        <Link href={productPath(line.productCode || line.productKey, line.productCode && line.availability !== "unavailable" ? line.sku : null)} className="g-heading g-h4 text-black hover:underline">{line.name}</Link>
                       ) : <span className="g-heading g-h4 text-black">{line.name}</span>}
                       {line.variantName && <p className="text-[14px] leading-[21px] text-black">{line.variantName}</p>}
                       {line.availability === "unavailable" && <p className="text-[14px] leading-[21px] text-garmin-error">{t("lineUnavailable")}</p>}

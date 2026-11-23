@@ -53,3 +53,12 @@ test("legacy cards carry colour dots from swatch data for active variants only, 
   assert.equal(await list(record({variants:[]})),undefined);
   assert.equal(await list(record({options:undefined,variants:undefined})),undefined);
 });
+
+test("review fix: a public-key read never resolves a product code, and a code read never falls back to a public key",async()=>{
+ const calls=[];
+ const api=products({readProduct:async()=>{throw Error("no legacy");}},{getProductByCode:async(id)=>{calls.push(["code",id]);return null;},getProductByPublicKey:async(id)=>{calls.push(["key",id]);return null;}});
+ await api.getProductDetail("1228429");
+ await api.getProductDetail("1228429","en",{byCode:true});
+ await api.getProductDetail("28c9f52f-38ad-45c4-8d5e-9be6f3906cfd","en",{byCode:true});
+ assert.deepEqual(calls,[["key","1228429"],["code","1228429"]]);
+});

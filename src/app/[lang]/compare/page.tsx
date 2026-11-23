@@ -30,7 +30,9 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/compare">)
  * page for a product without variants and for legacy JSON products.
  */
 function shopHref(item: Pick<CompareItem, "productId" | "productCode" | "sku" | "variants">): string {
-  return item.productCode ? productPath(item.productCode, item.variants.length ? item.sku : null) : productPath(item.productId);
+  if (item.productCode) return productPath(item.productCode, item.variants.length ? item.sku : null);
+  // Legacy JSON products keep their ?sku= preselect (the legacy product page reads it).
+  return item.variants.length ? `${productPath(item.productId)}?${new URLSearchParams({ sku: item.sku })}` : productPath(item.productId);
 }
 
 /** A column for the client: the compare read without its spec content (the rows carry it), plus the Shop link. */

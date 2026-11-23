@@ -75,3 +75,16 @@ test("a page language that is not translated keeps English option values (genera
   const d = detail({ translatedLocales: ["en"] });
   assert.deepEqual(productPageSeo({ detail: d, locale: "kk", variant: d.variants[0] }).indexedLocales, ["en"]);
 });
+
+test("review fix: a product sold in one variant has no separate variant page for search (canonical = product page)", () => {
+  const d = detail({ variants: [variant("ONLY-1", "черный")] });
+  const seo = productPageSeo({ detail: d, locale: "ru", variant: d.variants[0] });
+  assert.equal(seo.path, "/p/1953727");
+  assert.equal(seo.title, productPageSeo({ detail: d, locale: "ru" }).title);
+});
+
+test("review fix: a canonical-URL override makes the product's variant pages noindex", () => {
+  const d = detail({ seo: { title: "x", description: "y", canonicalUrl: "https://elsewhere.test/a", noIndex: false, image: null } });
+  assert.equal(productPageSeo({ detail: d, locale: "ru", variant: d.variants[0] }).noIndex, true);
+  assert.equal(productPageSeo({ detail: d, locale: "ru" }).noIndex, false);
+});

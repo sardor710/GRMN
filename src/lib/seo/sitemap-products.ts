@@ -27,7 +27,8 @@ export function productSitemapRoutes(products: readonly SitemapProduct[]): { rou
     }
     const base = { indexedLocales: p.indexedLocales, lastModified: p.updatedAt, changeFrequency: "daily" as const };
     routes.push({ ...base, path: productPath(p.productCode), priority: 0.85 });
-    for (const sku of p.skus) routes.push({ ...base, path: productPath(p.productCode, sku), priority: 0.8 });
+    // A single-variant product's variant page is the product page for search (product-metadata.ts).
+    if (p.skus.length > 1) for (const sku of p.skus) routes.push({ ...base, path: productPath(p.productCode, sku), priority: 0.8 });
   }
   return { routes, canonical };
 }

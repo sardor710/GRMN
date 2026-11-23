@@ -50,7 +50,7 @@ function variantProduct(detail: ProductDetailDTO, variant: ProductDetailVariantD
     url,
     sku: variant.sku,
     mpn: variant.sku,
-    ...(variant.barcode ? { gtin: variant.barcode } : {}),
+    ...(variant.barcode && /^(\d{8}|\d{12,14})$/.test(variant.barcode.trim()) ? { gtin: variant.barcode.trim() } : {}),
     ...(images.length ? { image: images } : {}),
     ...typed,
     ...(additional.length ? { additionalProperty: additional } : {}),

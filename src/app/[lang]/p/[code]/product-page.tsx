@@ -40,7 +40,7 @@ interface PageTarget {
 async function loadTarget(code: string, locale: Locale, sku: string | null): Promise<PageTarget | null> {
   const postgres = cmsBackend() === "postgres";
   if (postgres && !isProductCode(code)) return null;
-  const detail = await readOr(getProductDetail(code, locale), () => undefined);
+  const detail = await readOr(getProductDetail(code, locale, { byCode: true }), () => undefined);
   if (!detail) return null;
   if (sku === null) return { detail, path: productPath(detail.productCode ?? detail.id) };
   const variant = detail.commerce && detail.productCode ? resolvePageVariant(detail.commerce.variants, sku) : null;

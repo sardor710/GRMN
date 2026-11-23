@@ -45,6 +45,8 @@ export function createCatalogAdminService({ pool, authorize, inventory }: Option
     catch (error) {
       try { await client.query("ROLLBACK"); } catch { broken = true; }
       const code = (error as { code?: string } | null)?.code;
+      // Review fix: two saves claiming the same product code at once — the loser gets the editor's product-code message.
+      if (code === "23505" && (error as { constraint?: string }).constraint === "products_product_code_unique") return fail("PRODUCT_CODE_CONFLICT", 409, "This product code is already used by another product");
       if (code === "23505") return fail("CONFLICT", 409, "Identity or SKU already exists");
       if (code === "40P01" || code === "40001") return fail("CONFLICT", 409, "Another save touched the same products; try again");
       throw error;

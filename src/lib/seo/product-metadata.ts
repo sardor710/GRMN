@@ -83,12 +83,15 @@ export function productSeoText(detail: SeoProduct, locale: SeoLocale): SeoText {
 export function productPageSeo({ detail, locale, variant }: { detail: ProductDetailDTO; locale: Locale; variant?: ProductDetailVariantDTO }): ProductPageSeo {
   const noIndex = detail.noIndex === true || detail.seo?.noIndex === true;
   const indexedLocales = detail.translatedLocales ?? ["en"];
-  if (variant) {
+  // Review fix: a product sold in one variant has nothing to tell its variant page apart — that page is the product
+  // page for search (same text, canonical /p/{code}) and the sitemap lists only the product page.
+  if (variant && detail.variants.length > 1) {
     return {
       ...variantSeoText(detail, variant, locale),
       path: productPath(detail.productCode, variant.sku),
       image: variant.gallery?.[0]?.url ?? detail.gallery[0]?.url ?? detail.seo?.image ?? null,
-      noIndex,
+      // Review fix: a product whose canonical points elsewhere keeps its variant pages out of the index too.
+      noIndex: noIndex || Boolean(detail.seo?.canonicalUrl),
       indexedLocales,
     };
   }

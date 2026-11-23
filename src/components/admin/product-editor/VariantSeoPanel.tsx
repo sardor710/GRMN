@@ -21,10 +21,16 @@ export function VariantSeoPanel({ editor }: { editor: ProductEditorState }) {
   const [overwrite, setOverwrite] = useState(false);
   const translations = base.translations;
   const variants = form.variants.filter((variant) => variant.status !== "archived");
-  const previews = useMemo(
-    () => new Map(variants.map((variant) => [variant.id, variantSeoPreview(form, translations, locale, variant.id)])),
-    [form, translations, locale, variants],
-  );
+  // Generated text depends on the product's name, description, options and variants — not on the override fields being
+  // typed — so the preview is recomputed only when those change (review fix: it reran on every keystroke).
+  const { name, description, family, specGroups, categories, options } = form;
+  const generatorVariants = useMemo(() => form.variants.map((v) => ({ ...v, seo: undefined })), [form.variants]);
+  const generatorKey = JSON.stringify(generatorVariants);
+  const previews = useMemo(() => {
+    const product = { name, description, family, specGroups, categories, options, variants: generatorVariants };
+    return new Map(generatorVariants.filter((v) => v.status !== "archived").map((variant) => [variant.id, variantSeoPreview(product, translations, locale, variant.id)]));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- generatorKey stands for generatorVariants' content
+  }, [name, description, family, specGroups, categories, options, generatorKey, translations, locale]);
   if (!variants.length) return null;
   const code = form.productCode.trim();
   const setField = (variantId: string, field: "title" | "description", value: string) =>

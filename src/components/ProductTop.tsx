@@ -187,7 +187,7 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
     setMainIdx(0);
     // Owner 2026-11-23: the address moves to the variant's own page /p/{code}/{sku} (reload or a shared link shows the
     // same variant; Back returns to the previous one); no navigation, no scroll.
-    if (next.sku && product.productCode) window.history.pushState(window.history.state, "", variantHref(window.location.href, product.productCode, next.sku));
+    if (next.sku && product.productCode) window.history.pushState(null, "", variantHref(window.location.href, product.productCode, next.sku));
   };
 
   const price = cmsVariant?.price ?? product.price;

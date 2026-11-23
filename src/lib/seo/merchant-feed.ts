@@ -65,6 +65,11 @@ function optionValue(variant: ProductDetailVariantDTO, pattern: RegExp): string 
   return hit?.value.trim() || undefined;
 }
 
+/** A page title without the store's call-to-action suffix (" | Buy in Kazakhstan", " — купить в Казахстане", …). */
+function feedTitle(title: string): string {
+  return title.replace(/\s*[|—–-]\s*(Buy in Kazakhstan|купить в Казахстане|Қазақстанда сатып алу)\s*$/iu, "").trim();
+}
+
 function isHigher(compareAt: string, selling: string): boolean {
   try {
     return BigInt(compareAt) > BigInt(selling);
@@ -75,7 +80,8 @@ function isHigher(compareAt: string, selling: string): boolean {
 
 /** The feed items of one product, read from its detail in the feed's language. Empty when the product is not indexable there. */
 export function merchantItemsFor(detail: ProductDetailDTO, locale: FeedLocale, siteUrl: string): MerchantItem[] {
-  if (detail.noIndex === true || detail.seo?.noIndex === true) return [];
+  // Review fix: a product whose canonical points elsewhere is not offered either.
+  if (detail.noIndex === true || detail.seo?.noIndex === true || detail.seo?.canonicalUrl) return [];
   if (locale !== "en" && !(detail.translatedLocales ?? ["en"]).includes(locale)) return [];
   const crumbs = detail.breadcrumb ?? [];
   const googleProductCategory = googleCategory(crumbs.map((crumb) => crumb.slug));
@@ -86,7 +92,10 @@ export function merchantItemsFor(detail: ProductDetailDTO, locale: FeedLocale, s
     .map((variant) => {
       const text = variantSeoText(detail, variant, locale);
       // A product sold in one variant only is titled by its name, unless the admin stored a variant title.
-      const title = single && !variant.seo?.title?.trim() ? detail.name : text.title;
+      const title = single && !variant.seo?.title?.trim() ? detail.name : feedTitle(text.title);
+      // Review fix: Shopping text describes the item (no "Buy …" call to action): the variant's values, then the product text.
+      const values = (variant.optionValues ?? []).map((o) => o.value.trim()).filter(Boolean).join(", ");
+      const description = variant.seo?.description?.trim() || [values, detail.description.trim()].filter(Boolean).join(". ") || feedTitle(text.title);
       const images = [...new Set((variant.gallery?.length ? variant.gallery : detail.gallery).map((media) => media.url.trim()).filter(Boolean))].map((url) => absoluteUrl(url, siteUrl));
       const { selling, compareAt } = variant.price;
       const sale = compareAt && isHigher(compareAt.amountMinor, selling.amountMinor);
@@ -97,8 +106,9 @@ export function merchantItemsFor(detail: ProductDetailDTO, locale: FeedLocale, s
         productCode: detail.productCode,
         sku: variant.sku,
         title,
-        description: text.description,
-        link: localizedUrl(productPath(detail.productCode, variant.sku), locale, siteUrl),
+        description: description.slice(0, 5000),
+        // A single-variant product's variant page is the product page for search (canonical /p/{code}).
+        link: localizedUrl(single ? productPath(detail.productCode) : productPath(detail.productCode, variant.sku), locale, siteUrl),
         imageLink: images[0] ?? null,
         additionalImageLinks: images.slice(1, 1 + MAX_ADDITIONAL_IMAGES),
         priceMinor: sale ? compareAt.amountMinor : selling.amountMinor,
