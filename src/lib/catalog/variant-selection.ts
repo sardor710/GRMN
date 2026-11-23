@@ -68,3 +68,12 @@ export function variantTabContent(product: ProductDetail, variantId: string): Va
 
 /** True when the selected variant owns an empty overview (see `variantTabContent`): render nothing. */
 export const ownsEmptyOverview = (content: Pick<VariantTabContent, "overviewHtml">): boolean => content.overviewHtml === "";
+
+/**
+ * Owner 2026-11-23: the variant a `/p/{code}/{sku}` page shows — the variant on sale whose SKU matches
+ * case-insensitively; null for an unknown, draft or archived SKU (that page is a 404, there are no redirects).
+ */
+export function resolvePageVariant<T extends SelectableVariant>(variants: readonly T[], sku: string): T | null {
+  const wanted = sku.trim().toLowerCase();
+  return wanted ? variants.find((v) => v.sku.trim().toLowerCase() === wanted) ?? null : null;
+}
