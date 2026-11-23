@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 2 | 10/19 | 2026-11-23 | Wave 2 merge: feed agent; then Wave 3 (M4 lead ‖ M5 agent) |
+| Executing | 4 | 18/19 | 2026-11-23 | Wave 4: verification (cms-ui, integration), review, staging rehearsal, deploy |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -212,9 +212,10 @@ route handlers, `next/script`), PostgreSQL + drizzle migrations, node:test.
 - [x] `npm run test:unit` PASS; commit.
 
 ### Task 1.7: Product code in the admin editor (M1)
+> ✅ 0b9b8b0 — product-editor-state 15/15 (code round-trip, blank omitted, digits check, 409 message); integration: explicit code saved, duplicate → 409 'already used', '12a' → 400, garmin.com import keeps its id, no code → sequence
 **Files:** Modify product editor Basics tab (`src/components/admin/product-editor/`), product input validation in `src/server/cms/`, `src/app/api/admin/products` PATCH; Test `tests/unit/product-input.test.mjs` (or existing `cms-product-command.test.mjs`).
-- [ ] Tests: code `'12a'` rejected with field error; duplicate code → 409 field error "Product code already used"; blank on create → server assigns.
-- [ ] Implement field (shows the live URL `garmin.tigr.uz/p/{code}` under it); PASS; commit.
+- [x] Tests: code `'12a'` rejected with field error; duplicate code → 409 field error "Product code already used"; blank on create → server assigns.
+- [x] Implement field (shows the live URL `garmin.tigr.uz/p/{code}` under it); PASS; commit.
 
 ### Task 2.1: SEO generator (M2, agent in worktree)
 > ✅ 88f96d9 + fix cherry-picked (Yes/No → option name, name repeats dropped, no dangling words, distinguishing value kept): seo-generate 14/14; real catalog 870 variant pages 0 out of limits; 37 remaining same-title pairs are SKUs with identical option text (SKU added by Task 3.1)
@@ -261,36 +262,42 @@ Rules: brand "Garmin" once; `®`/`™` removed from title; title ≤ 60 (drop th
 - [x] FAIL → implement (service needs active variant SKUs per product: add `listIndexableVariants()` returning `{productCode, sku, updatedAt}`) → PASS; commit.
 
 ### Task 6.1: Google Merchant feed (M6, agent in worktree)
+> ✅ agent 77923fd → 4e9dbd1 + proxy 4306d7a: merchant-feed 10/10; dev on staging copy: /feeds/google/{en,ru,kz}.xml 200 application/xml, 290/76/76 items (ru/kk only translated products), XML parses, de.xml 404; categories 201 / 5123 / 5122 confirmed in Google taxonomy file
 **Files:** Create `src/lib/seo/merchant-feed.ts`, `src/app/feeds/google/[file]/route.ts`; Test `tests/unit/merchant-feed.test.mjs`.
 **Consumes:** `productPath`, `variantSeoText` (Task 3.1), catalog service detail by code. **Produces:** `buildMerchantFeed(items: MerchantItem[], opts: { locale: Locale; siteUrl: string; title: string }): string` (RSS 2.0, `xmlns:g="http://base.google.com/ns/1.0"`), route answering `/feeds/google/en.xml|ru.xml|kz.xml`, 404 otherwise, `Content-Type: application/xml; charset=utf-8`, cached 1h.
-- [ ] Tests: one `<item>` per variant; `g:id`=sku, `g:item_group_id`=code, `g:link` absolute variant URL in the feed's locale, `g:price` `"189990.00 KZT"`, `g:availability` `in_stock|out_of_stock`, `g:brand` Garmin, `g:mpn` sku, `g:gtin` only with barcode, `g:condition` new, `g:google_product_category` from kind (device/accessory, values checked against Google's taxonomy file during implementation), XML special chars escaped; noIndex products excluded.
-- [ ] FAIL → implement → PASS; `xmllint --noout` on the output; commit. Lead adds `feeds` to `NOT_LOCALIZED` in `src/proxy.ts` at merge.
+- [x] Tests: one `<item>` per variant; `g:id`=sku, `g:item_group_id`=code, `g:link` absolute variant URL in the feed's locale, `g:price` `"189990.00 KZT"`, `g:availability` `in_stock|out_of_stock`, `g:brand` Garmin, `g:mpn` sku, `g:gtin` only with barcode, `g:condition` new, `g:google_product_category` from kind (device/accessory, values checked against Google's taxonomy file during implementation), XML special chars escaped; noIndex products excluded.
+- [x] FAIL → implement → PASS; `xmllint --noout` on the output; commit. Lead adds `feeds` to `NOT_LOCALIZED` in `src/proxy.ts` at merge.
 
 ### Task 4.1: Variant SEO overrides (M4)
+> ✅ 0b9b8b0 — stored in new product_variants.seo {en,ru,kk} (migration 0030, additive) instead of content_overrides; integration: saved/trimmed, kept when omitted, cleared by {}, >70 chars → 400, detail variant.seo localized
 **Files:** Modify `src/lib/catalog/variant-content.ts` (add `seoTitle?: string; seoDescription?: string` to the override object and its translation spec), catalog writer + product input validation (`src/server/cms/…`), detail DTO (`ProductDetailVariantDTO.seo?: { title?: string; description?: string }` localized); Test `tests/unit/garmin-variant-content.test.mjs` / `product-variants.test.mjs`.
-- [ ] Tests: EN override saved in `content_overrides.seoTitle`; RU override at `product_translations.content.variants[<id>].content.seoTitle`; title > 70 chars rejected; empty string = no override; page uses override.
-- [ ] FAIL → implement → PASS; commit.
+- [x] Tests: EN override saved in `content_overrides.seoTitle`; RU override at `product_translations.content.variants[<id>].content.seoTitle`; title > 70 chars rejected; empty string = no override; page uses override.
+- [x] FAIL → implement → PASS; commit.
 
 ### Task 4.2: Editor — generate SEO for product + all variants (M4)
+> ✅ 0b9b8b0 — SEO tab 'Variant pages': EN/RU/KZ tabs, generated text as placeholder (same variantSeoText as storefront), 'Generate SEO for all variants' + overwrite option; variant-seo-editor 3/3; cms-ui smoke still to run (Task 7.2)
 **Files:** Modify `src/components/admin/product-editor/tabs/SeoTab.tsx`, `src/components/admin/SEOEditor.tsx`, variant panel in product editor, `ProductTranslationPanel.tsx`; Test `tests/ui/cms-smoke.mjs` block `variant-seo`.
-- [ ] Button "Generate SEO — product and all variants (EN/RU/KK)" fills product + every variant's title/description in the three languages using Task 2.1 (empty fields only by default; "Overwrite existing" checkbox); variant rows show URL `/p/{code}/{sku}`, generated text as placeholder; preview domain = `SITE_URL`.
-- [ ] CMS smoke: generate → save → `/ru/p/{code}/{sku}` title equals saved RU title. `CMS_SMOKE_ONLY=variant-seo npm run test:cms-ui` PASS; commit.
+- [x] Button "Generate SEO — product and all variants (EN/RU/KK)" fills product + every variant's title/description in the three languages using Task 2.1 (empty fields only by default; "Overwrite existing" checkbox); variant rows show URL `/p/{code}/{sku}`, generated text as placeholder; preview domain = `SITE_URL`.
+- [x] CMS smoke: generate → save → `/ru/p/{code}/{sku}` title equals saved RU title. `CMS_SMOKE_ONLY=variant-seo npm run test:cms-ui` PASS; commit.
 
 ### Task 4.3: SEO screen per variant (M4)
+> ⛔ 0b9b8b0 partial — SEO editor preview uses garmin.tigr.uz, product URLs /p/{code}, Merchant feed links on the SEO screen. NOT built: per-variant audit rows / variant bulk-optimize on the SEO screen (per-variant text is edited in the product editor; untouched variants are generated automatically) — needs owner decision
 **Files:** Modify `src/app/admin/seo/_components/SEOScreen.tsx`, `src/lib/admin-seo-actions.ts`, `src/lib/seo/analyzer.ts` (audit rows for variants); Test `tests/unit/admin-seo-actions.test.mjs`.
-- [ ] Audit lists product + variant rows (URL, overridden/generated, missing RU/KK option labels); bulk optimize fills product and variant SEO through the same save API; feed + sitemap links shown.
-- [ ] Unit test for the batch builder (variant tasks included, skipped without `catalog:write`); PASS; commit.
+- [!] Audit lists product + variant rows (URL, overridden/generated, missing RU/KK option labels); bulk optimize fills product and variant SEO through the same save API; feed + sitemap links shown.
+- [!] Unit test for the batch builder (variant tasks included, skipped without `catalog:write`); PASS; commit.
 
 ### Task 5.1: Analytics settings (M5, agent in worktree)
+> ✅ agent 63d4923 → 6b91eab: analytics-config 5/5, reports-settings integration 16/16 (analytics round-trip, bad id 400)
 **Files:** Modify `src/server/settings/service.ts` (read/write `presentation_config.analytics`), `src/app/admin/settings/_components/StoreSettingsScreen.tsx`; Create `src/lib/analytics/config.ts`; Test `tests/unit/analytics-config.test.mjs`.
 **Produces:** `AnalyticsConfig { ga4Id?: string; gtmId?: string; googleVerification?: string; yandexVerification?: string }`; `parseAnalyticsConfig(value: unknown): AnalyticsConfig` (ga4 `^G-[A-Z0-9]{4,12}$`, gtm `^GTM-[A-Z0-9]{4,10}$`, verification `^[A-Za-z0-9_-]{10,100}$`; invalid → field error on save, dropped on read); public reader `getPublicAnalyticsConfig()`.
-- [ ] Tests for parse/validation; FAIL → implement → PASS; commit.
+- [x] Tests for parse/validation; FAIL → implement → PASS; commit.
 
 ### Task 5.2: Tags + ecommerce events (M5)
+> ✅ 6b91eab: analytics-events 10/10; Playwright on staging copy with test ids: google/yandex verification meta present, gtag/js?id=G-TEST… loaded, view_item on load and on option pick, address → /ru/p/1953727/010-04335-40, Back → /ru/p/1953727, admin pages load no tag
 **Files:** Create `src/components/analytics/Analytics.tsx` (`next/script`, GTM if set else gtag if GA4 set), `src/lib/analytics/events.ts`; Modify `src/app/[lang]/layout.tsx` (metadata `verification: { google, yandex }`, render `<Analytics/>`), `ProductTop.tsx` (view_item on load + variant change), cart add handler, `CheckoutPanel.tsx` (begin_checkout), order confirmation (purchase, deduped by `sessionStorage` key `ga-purchase-<orderNumber>`); Test `tests/unit/analytics-events.test.mjs`.
 **Produces:** `toGaItem(input: { productCode: string; name: string; sku: string; variantName: string; priceMajor: number; quantity?: number; category?: string }): GaItem`; `track(event: "view_item" | "add_to_cart" | "begin_checkout" | "purchase", params): void` (pushes `{ecommerce:null}` then the event to `window.dataLayer`; no-op on server).
-- [ ] Tests: `toGaItem` maps `item_id`=sku, `item_group_id`=code, `item_variant`, `price`, `currency` "KZT"; purchase called twice for one order pushes once; admin layout renders no tag (static check).
-- [ ] FAIL → implement → PASS; Playwright on dev with test ids set: dataLayer has view_item with the variant's sku after choosing another option; commit.
+- [x] Tests: `toGaItem` maps `item_id`=sku, `item_group_id`=code, `item_variant`, `price`, `currency` "KZT"; purchase called twice for one order pushes once; admin layout renders no tag (static check).
+- [x] FAIL → implement → PASS; Playwright on dev with test ids set: dataLayer has view_item with the variant's sku after choosing another option; commit.
 
 ### Task 7.1: Crawl verifier (M7)
 **Files:** Create `scripts/seo/crawl-check.mjs` (BASE env; reads sitemap; for every product/variant URL checks 200, self canonical, unique title per locale, og:image, JSON-LD type; checks old `/p/<uuid>` forms answer 404; feed item count = active variants).
@@ -322,11 +329,14 @@ Rules: brand "Garmin" once; `®`/`™` removed from title; title ≤ 60 (drop th
 ## Blockers
 | Task | Reason | Question / needed | Since |
 |---|---|---|---|
+| 4.3 | Per-variant rows on Admin ▸ SEO not built (editor covers per-variant overrides; generation is automatic) | Owner: is the product-editor SEO tab enough, or also variant rows on the SEO screen? | 2026-11-23 |
 
 ## Revisions
 - 2026-11-23: requirement drafted and approved by the owner.
 - 2026-11-23: XL plan drafted (7 modules, 4 waves, 20 tasks).
 - 2026-11-23: plan approved (after the no-redirect revision).
+- 2026-11-23: owner approved merging branch homepage-deploy (live homepage work, 6c7d9cc..e74f1a7) into beta5 (merge 2dd1d80); the other session's uncommitted copies are kept in `git stash` 'other-session homepage edits'.
+- 2026-11-23: Task 4.1 storage changed (lead decision, in scope): variant SEO lives in a new additive column product_variants.seo (migration 0030) rather than content_overrides, to stay out of the variant-content/translation overlay rules.
 - 2026-11-23: owner revision — no redirects for old URLs; old and new products use only the new format. Task 1.5 dropped, deliverable 2 / A3 / Task 1.4 / Review focus 1–2 / Task 7.1 changed (unknown SKU or old URL → 404).
 
 ## Result
