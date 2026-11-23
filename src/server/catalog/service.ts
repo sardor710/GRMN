@@ -229,6 +229,11 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
       parse(z.array(z.uuid()).max(500),productIds);const map=await translationsFor(productIds);
       return new Map(productIds.map(id=>{const t=map.get(id);return[id,["en",...(["ru","kk"] as const).filter(l=>t&&isRecordTranslated({translations:t},l,["name","description"]))] as Locale[]];}));
     },
+    /** The given product codes that belong to published products (homepage links to garmin.com ids, 0029). */
+    async publishedProductCodes(codes:string[]):Promise<Set<string>>{
+      const valid=[...new Set(codes)].filter(code=>/^[0-9]{1,12}$/.test(code)).slice(0,500);if(!valid.length)return new Set();
+      return new Set((await pool.query("SELECT product_code FROM products WHERE product_code=ANY($1::text[]) AND status='published'",[valid])).rows.map(r=>String(r.product_code)));
+    },
     /** Owner 2026-11-23: the product page /p/{code}; null for an unknown code or an unpublished product. */
     async getProductByCode(code:string,market:string,displayCurrency:DisplayCurrency,locale:Locale="en"):Promise<ProductDetailDTO|null>{
       if(!/^[0-9]{1,12}$/.test(code))return null;

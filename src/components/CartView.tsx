@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { productPath } from "@/lib/catalog/product-url";
 import { lineKeyOf, useCart } from "@/lib/cart";
 import { formatKzt } from "@/lib/account-client";
 import { CartIcon } from "@/components/icons";
@@ -75,7 +76,7 @@ function serverCart(t: Translate, kzt: (money: Parameters<typeof formatKzt>[0]) 
                     </div>
                     <div>
                       {line.productKey ? (
-                        <Link href={`/p/${encodeURIComponent(line.productKey)}`} className="g-heading g-h4 text-black hover:underline">{line.name}</Link>
+                        <Link href={productPath(line.productCode || line.productKey, line.productCode ? line.sku : null)} className="g-heading g-h4 text-black hover:underline">{line.name}</Link>
                       ) : <span className="g-heading g-h4 text-black">{line.name}</span>}
                       {line.variantName && <p className="text-[14px] leading-[21px] text-black">{line.variantName}</p>}
                       {line.availability === "unavailable" && <p className="text-[14px] leading-[21px] text-garmin-error">{t("lineUnavailable")}</p>}
@@ -162,7 +163,7 @@ export function CartView({ catalog = {} }: { catalog?: CartCatalog }) {
                   </div>
                   <div>
                     <Link
-                      href={item.sku ? `/p/${item.id}?sku=${encodeURIComponent(item.sku)}` : `/p/${item.id}`}
+                      href={item.sku ? `${productPath(item.id)}?sku=${encodeURIComponent(item.sku)}` : productPath(item.id)}
                       className="g-heading g-h4 text-black hover:underline"
                     >
                       {catalog[item.id]?.name ?? item.name}

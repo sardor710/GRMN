@@ -13,7 +13,8 @@ import { ChevronLeftIcon, ChevronRightIcon } from "@/components/icons";
 import { GarminBadge } from "@/components/GarminBadge";
 import { VariantPicker } from "@/components/product/VariantPicker";
 import { useProductVariant } from "@/components/product/ProductVariantContext";
-import { withVariantParam } from "@/lib/catalog/variant-selection";
+import { resolvePageVariant } from "@/lib/catalog/variant-selection";
+import { parseProductPath, variantHref } from "@/lib/catalog/product-url";
 import { isPurchasable, selectValue } from "@/lib/cms/product-variants";
 import { commerceVariantModel } from "@/lib/cms/commerce-variant-model";
 import type { ProductOption, ProductVariant } from "@/lib/cms/types";
@@ -106,6 +107,20 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
     if (match) setCmsVariantId(match.id);
   }, [vm]);
 
+  // Back/Forward between variant pages (pushState above): show the variant the address names, else the default.
+  useEffect(() => {
+    const variants = product.commerce?.variants;
+    if (!variants) return;
+    const onPopState = () => {
+      const sku = parseProductPath(window.location.pathname)?.sku;
+      const match = sku ? resolvePageVariant(variants, sku) : null;
+      setVariantId(match?.id ?? product.commerce?.selectedVariantId ?? product.commerce?.defaultVariantId ?? variants[0]?.id ?? "");
+      setMainIdx(0);
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [product.commerce, setVariantId]);
+
   // Task 5a.2: every price is tenge in the page locale through <Price> (never USD). Backend amounts are exact
   // minor-unit strings, so the sale test compares minor units (isKztSale), never JS numbers.
   // Computed before the memo below so the React Compiler sees no later use of its dependencies.
@@ -156,8 +171,9 @@ export function ProductTop({ product:initial }: { product: ProductDetail }) {
     if (!next) return;
     setVariantId(next.id);
     setMainIdx(0);
-    // Keep the choice in the URL (reload or a shared link shows the same variant); no navigation, no scroll.
-    if (next.sku) window.history.replaceState(window.history.state, "", withVariantParam(window.location.href, next.sku));
+    // Owner 2026-11-23: the address moves to the variant's own page /p/{code}/{sku} (reload or a shared link shows the
+    // same variant; Back returns to the previous one); no navigation, no scroll.
+    if (next.sku && product.productCode) window.history.pushState(window.history.state, "", variantHref(window.location.href, product.productCode, next.sku));
   };
 
   const price = cmsVariant?.price ?? product.price;

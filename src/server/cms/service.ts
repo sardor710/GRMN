@@ -61,7 +61,8 @@ function productDTO(row:Record<string,unknown>):CMSItem {
     currency:"KZT",price:amount,originalPrice:row.compare_at_minor==null?undefined:Number(row.compare_at_minor)/100,status:String(row.status),isFeatured:row.is_featured===true,
     specs:row.specs,inTheBox:row.in_the_box,features:row.features,stock:Number(row.stock_available??0),stockManaged:Number(row.stock_known??0)>0,version:Number(row.version),createdAt:(row.created_at as Date).toISOString(),
     seoTitle:row.seo_title??"",seoDescription:row.seo_description??"",focusKeywords:row.focus_keywords??[],canonicalUrl:row.canonical_url??"",noIndex:row.no_index===true,ogImage:row.og_image_source??"",translations:translationsOf(row)});
-  return {...defaults,...projected,id:String(row.public_key),version:Number(row.version),currency:"KZT",stockManaged:Number(row.stock_known??0)>0};
+  // productCode (0029): the public URL key of /p/{code}; read-only, set by the catalog writer.
+  return {...defaults,...projected,id:String(row.public_key),...(row.product_code==null?{}:{productCode:String(row.product_code)}),version:Number(row.version),currency:"KZT",stockManaged:Number(row.stock_known??0)>0};
 }
 function contentDTO(row:Record<string,unknown>):CMSItem {
   const extra=record(row.legacy_content),kind=String(row.kind);

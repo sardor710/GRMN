@@ -1,6 +1,7 @@
 // Final review I2, per request: the compare route (generateMetadata + the page, which Next runs for one request)
 // never has more than COMPARE_READ_CONCURRENCY product detail reads in flight. The real page module runs with
 // its imports stubbed; getCompareItems is the real collectCompareItems over a counting reader.
+import * as productUrl from "../../src/lib/catalog/product-url.ts";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import { test } from "node:test";
@@ -24,8 +25,7 @@ function loadPage(read) {
     "@/lib/compare/compare-items": compareItems,
     "@/lib/compare/server": { getCompareItems: (items, locale) => collectCompareResult(items, locale, read) },
     "@/lib/compare/search": { searchCompareProducts: async () => null },
-    "@/lib/catalog/variant-selection": { VARIANT_PARAM: "variant" },
-    "@/server/cms/source": { cmsBackend: () => "json" },
+    "@/lib/catalog/product-url": productUrl,
     "@/i18n/seo": { ROUTE_LOCALES: { compare: ["en"] }, localizedSeo: () => ({}) },
     "@/i18n/page-locale": { initPageLocale: async () => "en", getMetaTranslations: translator },
   };

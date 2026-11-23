@@ -7,8 +7,7 @@ import { catalogues } from "@/lib/products";
 import { COMPARE_MAX_ITEMS, buildCompareRows, parseCompareItems, readCompareSearch, renderedQuery } from "@/lib/compare/compare-items";
 import { getCompareItems, type CompareItem } from "@/lib/compare/server";
 import { searchCompareProducts } from "@/lib/compare/search";
-import { VARIANT_PARAM } from "@/lib/catalog/variant-selection";
-import { cmsBackend } from "@/server/cms/source";
+import { productPath } from "@/lib/catalog/product-url";
 import { ROUTE_LOCALES, localizedSeo } from "@/i18n/seo";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 
@@ -27,18 +26,17 @@ export async function generateMetadata({ params }: PageProps<"/[lang]/compare">)
 }
 
 /**
- * The Shop link for one column: the product page with the compared size selected. PostgreSQL product pages read
- * `?variant=<sku>`; the legacy JSON product page reads `?sku=<sku>`. A product without variants links plainly.
+ * The Shop link for one column: the compared variant's own page /p/{code}/{sku} (owner 2026-11-23), or the product
+ * page for a product without variants and for legacy JSON products.
  */
-function shopHref(item: Pick<CompareItem, "productId" | "sku" | "variants">, skuParam: string): string {
-  const path = `/p/${encodeURIComponent(item.productId)}`;
-  return item.variants.length ? `${path}?${new URLSearchParams({ [skuParam]: item.sku })}` : path;
+function shopHref(item: Pick<CompareItem, "productId" | "productCode" | "sku" | "variants">): string {
+  return item.productCode ? productPath(item.productCode, item.variants.length ? item.sku : null) : productPath(item.productId);
 }
 
 /** A column for the client: the compare read without its spec content (the rows carry it), plus the Shop link. */
-function toColumn(item: CompareItem, skuParam: string): CompareColumn {
+function toColumn(item: CompareItem): CompareColumn {
   const { productId, sku, name, image, price, compareAt, unconverted, variants } = item;
-  return { productId, sku, name, image, price, ...(compareAt ? { compareAt } : {}), ...(unconverted ? { unconverted } : {}), variants, href: shopHref(item, skuParam) };
+  return { productId, sku, name, image, price, ...(compareAt ? { compareAt } : {}), ...(unconverted ? { unconverted } : {}), variants, href: shopHref(item) };
 }
 
 export default async function ComparePage({ params, searchParams }: PageProps<"/[lang]/compare">) {
@@ -49,7 +47,6 @@ export default async function ComparePage({ params, searchParams }: PageProps<"/
   // Products whose read failed are passed on, so the stored selection keeps them (they are not gone).
   const { items, unavailable } = await getCompareItems(parseCompareItems(query), locale);
   const groups = buildCompareRows(items.map((item) => item.content), tc("specs"));
-  const skuParam = cmsBackend() === "postgres" ? VARIANT_PARAM : "sku";
   const searchText = readCompareSearch(query);
   const search = searchText && items.length < COMPARE_MAX_ITEMS ? await searchCompareProducts(searchText, locale) : null;
   return (
@@ -57,7 +54,7 @@ export default async function ComparePage({ params, searchParams }: PageProps<"/
       <SiteHeader />
       <main className="flex-1">
         <CompareTool
-          items={items.map((item) => toColumn(item, skuParam))}
+          items={items.map((item) => toColumn(item))}
           groups={groups}
           search={search}
           catalogueHref={CATALOGUE_HREF}

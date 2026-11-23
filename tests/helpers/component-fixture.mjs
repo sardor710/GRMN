@@ -13,6 +13,7 @@ import * as statusPill from "../../src/components/admin/products/status-pill.ts"
 import * as compareItems from "../../src/lib/compare/compare-items.ts";
 import * as compareSelection from "../../src/lib/compare/selection.ts";
 import * as cardColors from "../../src/lib/catalog/card-colors.ts";
+import * as productUrl from "../../src/lib/catalog/product-url.ts";
 import * as publishPrice from "../../src/lib/cms/publish-price.ts";
 
 // Storefront components read their text through next-intl. Fixtures render with the real English
@@ -36,6 +37,8 @@ const i18nModules = {
   "@/lib/compare/use-compare-selection": { useCompareSelection: () => ({ items: [], update() {} }) },
   // Task C-d: the card's colour dots use the real limit.
   "@/lib/catalog/card-colors": cardColors,
+  // Owner 2026-11-23: every product link is /p/{code}[/{sku}] from the real helper.
+  "@/lib/catalog/product-url": productUrl,
   // The admin form's price-to-publish rule is the real shared helper.
   "@/lib/cms/publish-price": publishPrice,
 };

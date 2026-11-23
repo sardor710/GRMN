@@ -25,3 +25,13 @@ export function parseProductPath(pathname: string): { locale: string | null; key
     return null;
   }
 }
+
+/**
+ * The address after the shopper picks variant `sku` on a product page at `currentHref`: that variant's page in the
+ * same language (`/{locale}/p/{code}/{sku}`), keeping the query and hash. Used with history.pushState (no reload).
+ */
+export function variantHref(currentHref: string, code: string, sku: string): string {
+  const url = new URL(currentHref);
+  const locale = parseProductPath(url.pathname)?.locale;
+  return `${locale ? `/${locale}` : ""}${productPath(code, sku)}${url.search}${url.hash}`;
+}

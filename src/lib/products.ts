@@ -189,7 +189,11 @@ export async function getCategoryName(slug: string): Promise<string | null> {
 /** M4.4: homepage CMS links open local categories and published local products where they exist. */
 export async function localizeHomepageLinks(config: HomepageConfig): Promise<HomepageConfig> {
   const candidates = homepageProductCandidates(config);
-  const published = new Set((candidates.length ? await getProductsByKeys(candidates) : []).map(p => p.id));
+  // PostgreSQL: a garmin.com product link opens /p/{code} when a published product has that code (0029: imported
+  // products keep their garmin.com id as code); legacy CMS: by record id.
+  const published = cmsBackend() === "postgres"
+    ? await getCatalogService().publishedProductCodes(candidates)
+    : new Set((candidates.length ? await getProductsByKeys(candidates) : []).map(p => p.id));
   return localizeHomepage(config, published);
 }
 

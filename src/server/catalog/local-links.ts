@@ -3,6 +3,7 @@
 // published local product with the same id (or the importer's "garmin-<id>" key). Everything else is left as is.
 import type { HomepageConfig } from "../../lib/cms/types";
 import { taxonomySeed } from "./taxonomy-seed.ts";
+import { productPath } from "../../lib/catalog/product-url.ts";
 
 const GARMIN = /^https:\/\/www\.garmin\.com\/en-US(\/[^?#]*)?(\?[^#]*)?(#.*)?$/;
 /** Old local category routes that never existed in the taxonomy. */
@@ -41,7 +42,7 @@ export function localizeHref(href: string, publishedKeys: ReadonlySet<string>): 
   if (category) return category;
   const id = garminProductId(href);
   const key = id ? productKeyCandidates(id).find(candidate => publishedKeys.has(candidate)) : undefined;
-  return key ? `/p/${encodeURIComponent(key)}` : href;
+  return key ? productPath(key) : href;
 }
 
 /** Every product key the homepage could link to locally (for one published-product lookup). */

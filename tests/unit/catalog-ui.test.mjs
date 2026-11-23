@@ -1,3 +1,4 @@
+import * as productUrl from "../../src/lib/catalog/product-url.ts";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import {test} from "node:test";
@@ -41,21 +42,21 @@ test("compare starts from server-selected published data instead of fixed static
 });
 
 // PostgreSQL variants use the garmin.com option pickers: pick a value by its label (Size → "Large").
-// Task 2.4: the selected variant lives in ProductVariantProvider and a pick writes ?variant=<sku> with
-// history.replaceState; the fixture supplies both (state kept across renders, a recording window).
+// Task 2.4: the selected variant lives in ProductVariantProvider; owner 2026-11-23: a pick moves the address to
+// /p/{code}/{sku} with history.pushState; the fixture supplies both (state kept across renders, a recording window).
 const urlWrites=[];
 const choose=(tree,label)=>{const picker=nodes(tree).find(n=>typeof n.props?.onSelect==="function"&&Array.isArray(n.props.options));assert.ok(picker,"variant picker rendered");
- const previous=globalThis.window;globalThis.window={location:{href:"https://shop.test/en/p/fixture?utm=x"},history:{state:{kept:true},replaceState:(state,_title,url)=>urlWrites.push({state,url:String(url)})}};
+ const previous=globalThis.window;globalThis.window={location:{href:"https://shop.test/en/p/1953727?utm=x"},history:{state:{kept:true},pushState:(state,_title,url)=>urlWrites.push({state,url:String(url)})}};
  try{for(const o of picker.props.options){const v=o.values.find(x=>x.label===label);if(v){picker.props.onSelect(o.id,v.id);return;}}}finally{globalThis.window=previous;}assert.fail("no option value "+label);};
-const variantModules=initial=>{let id=initial;return{"@/components/product/ProductVariantContext":{useProductVariant:()=>({selectedVariantId:id,setSelectedVariantId:value=>{id=value;}})},"@/lib/catalog/variant-selection":variantSelection};};
+const variantModules=initial=>{let id=initial;return{"@/components/product/ProductVariantContext":{useProductVariant:()=>({selectedVariantId:id,setSelectedVariantId:value=>{id=value;}})},"@/lib/catalog/variant-selection":variantSelection,"@/lib/catalog/product-url":productUrl};};
 test("variant selection changes the actual price and media without fabricating options or shipping",()=>{
  const commerce={selectedVariantId:"a",variants:[{id:"a",sku:"A",name:"Small",options:{size:"Small"},availability:"out_of_stock",price:{selling:{amountMinor:"1000"}},gallery:[{url:"/images/a.jpg",alt:"A"}]},{id:"b",sku:"B",name:"Large",options:{size:"Large"},availability:"available",price:{selling:{amountMinor:"2500"}},gallery:[{url:"/images/b.jpg",alt:"B"}]}]};
  const fixture=componentFixture("src/components/ProductTop.tsx",{modules:{...variantModules("a"),"@/lib/cart":{useCart:()=>({add(){throw Error("Forbidden old cart");}})},"@/lib/public-catalog":{minorToMajor:v=>String(BigInt(v)/100n),catalogPriceLabel:p=>p.selling.amountMinor+" KZT"},"@/lib/cms/commerce-variant-model":commerceVariantModel,"@/lib/cms/product-variants":productVariants}});
- const props={product:{id:"fixture",title:"Model",price:"10.00",priceLabel:"1000 KZT",currency:"KZT",purchasable:false,breadcrumb:[],gallery:[{src:"/images/a.jpg",view:"A"}],caseSizes:[],versions:[],colors:[],commerce}};
+ const props={product:{id:"fixture",productCode:"1953727",title:"Model",price:"10.00",priceLabel:"1000 KZT",currency:"KZT",purchasable:false,breadcrumb:[],gallery:[{src:"/images/a.jpg",view:"A"}],caseSizes:[],versions:[],colors:[],commerce}};
  urlWrites.length=0;
  let tree=fixture.render(props);choose(tree,"Large");tree=fixture.render(props);assert.match(nodeText(tree),/KZT\s25\.00/);assert.ok(nodes(tree).some(n=>n.props?.src==="/images/b.jpg"));assert.doesNotMatch(nodeText(tree),/1–3 business days/);
- // The pick is kept in the URL (other parameters and the router's history state are preserved).
- assert.deepEqual(urlWrites,[{state:{kept:true},url:"https://shop.test/en/p/fixture?utm=x&variant=B"}]);
+ // The pick moves to the variant page (language, other parameters and the router's history state are kept).
+ assert.deepEqual(urlWrites,[{state:{kept:true},url:"/en/p/1953727/B?utm=x"}]);
 });
 
 test("Task 13A: in server-cart mode an available variant is added by its exact id; an out-of-stock one is not offered",async()=>{

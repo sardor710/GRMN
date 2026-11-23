@@ -78,9 +78,11 @@ test("public reads map invalid input/cursor to a not-found fallback and rethrow 
   assert.equal(isInvalidPublicInput(Error("x")),false);
 });
 test("public dynamic pages decode params and guard reads against invalid input",()=>{
-  const product=fs.readFileSync("src/app/[lang]/p/[id]/page.tsx","utf8");
-  assert.equal((product.match(/decodeRouteParam\(\(await params\)\.id\)/g)??[]).length,2,"both /p/[id] entry points decode the id");
+  // Owner 2026-11-23: /p/[code] and /p/[code]/[sku] decode both params in metadata and page.
+  const product=fs.readFileSync("src/app/[lang]/p/[code]/page.tsx","utf8"),variant=fs.readFileSync("src/app/[lang]/p/[code]/[sku]/page.tsx","utf8");
+  assert.equal((product.match(/decodeRouteParam\(\(await params\)\.code\)/g)??[]).length,2,"both /p/[code] entry points decode the code");
+  assert.equal((variant.match(/decodeRouteParam\((code|sku)\)/g)??[]).length,4,"both /p/[code]/[sku] entry points decode code and sku");
   // The compare page and the catalogue compare bar share one guarded search (src/lib/compare/search.ts, Task C-c).
   assert.match(fs.readFileSync("src/app/[lang]/compare/page.tsx","utf8"),/searchCompareProducts\(/);
-  for(const file of ["src/app/[lang]/p/[id]/page.tsx","src/app/[lang]/c/[...slug]/page.tsx","src/lib/compare/search.ts","src/app/[lang]/blog/page.tsx"])assert.match(fs.readFileSync(file,"utf8"),/readOr\(/,file+" must guard public reads");
+  for(const file of ["src/app/[lang]/p/[code]/product-page.tsx","src/app/[lang]/c/[...slug]/page.tsx","src/lib/compare/search.ts","src/app/[lang]/blog/page.tsx"])assert.match(fs.readFileSync(file,"utf8"),/readOr\(/,file+" must guard public reads");
 });

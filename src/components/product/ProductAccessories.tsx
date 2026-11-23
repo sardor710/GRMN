@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { productPath } from "@/lib/catalog/product-url";
 import type { CompatibleAccessoryDTO } from "@/contracts/catalog-browse";
 import { accessoriesForVariant, accessoryTabs, VIEW_ALL_TAB } from "@/lib/catalog-facets";
 import { Price } from "@/components/ui/price";
@@ -87,7 +88,7 @@ export function ProductAccessories({ accessories, variantId }: { accessories: re
             );
           })
           : active.items.map(item => {
-            const href = `/p/${encodeURIComponent(item.publicKey)}${item.sku ? `?sku=${encodeURIComponent(item.sku)}` : ""}`;
+            const href = productPath(item.productCode, item.sku);
             const soldOut = item.availability !== "available";
             return (
               <Link key={`${item.publicKey}:${item.sku ?? ""}`} href={href} className={card}>

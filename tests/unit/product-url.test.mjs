@@ -26,3 +26,10 @@ test("isProductCode accepts 1-12 digits only", () => {
   assert.equal(isProductCode("1234567890123"), false);
   assert.equal(isProductCode(""), false);
 });
+
+test("variantHref moves the address to the variant page, keeping locale, query and hash", async () => {
+  const { variantHref } = await import("../../src/lib/catalog/product-url.ts");
+  assert.equal(variantHref("https://garmin.tigr.uz/ru/p/1953727", "1953727", "010-04336-00"), "/ru/p/1953727/010-04336-00");
+  assert.equal(variantHref("https://garmin.tigr.uz/ru/p/1953727/010-04336-00?utm_source=x#specs", "1953727", "010-04336-05"), "/ru/p/1953727/010-04336-05?utm_source=x#specs");
+  assert.equal(variantHref("https://garmin.tigr.uz/p/1953727", "1953727", "A/B"), "/p/1953727/A%2FB");
+});

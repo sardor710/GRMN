@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { productPath } from "@/lib/catalog/product-url";
 import type { CompatibleDeviceDTO } from "@/contracts/catalog-browse";
 
 /**
@@ -18,7 +19,7 @@ export function CompatibleDevices({ devices }: { devices: readonly CompatibleDev
       <ul className="m-0 grid list-none grid-cols-1 gap-5 p-0 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {devices.map(device => (
           <li key={device.label}>
-            <Link href={`/p/${encodeURIComponent(device.publicKey)}${device.sku ? `?sku=${encodeURIComponent(device.sku)}` : ""}`}
+            <Link href={productPath(device.productCode, device.sku)}
               className="group flex h-full flex-col items-center bg-white px-7 pb-[18px] pt-4 text-center shadow-garmin-raised hover:shadow-garmin-raised-hover">
               <div className="relative h-[130px] w-[130px]">
                 {device.image && <Image src={device.image.url} alt={device.image.alt || device.label} fill sizes="130px" className="object-contain" />}

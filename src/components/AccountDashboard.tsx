@@ -8,6 +8,7 @@ import { useTranslations } from "next-intl";
 import { AccountIcon } from "@/components/icons";
 import { DemoDot } from "@/components/DemoDot";
 import { Link } from "@/i18n/navigation";
+import { productPath } from "@/lib/catalog/product-url";
 import { INTL_LOCALE } from "@/i18n/config";
 import { formatDate as formatLocaleDate } from "@/i18n/format";
 import { useAppLocale } from "@/i18n/useAppLocale";
@@ -823,7 +824,7 @@ export function AccountDashboard() {
                   {wishlist.map(item => (
                     <li key={item.productKey} className="flex items-center justify-between gap-3 p-3">
                       <div>
-                        {item.archived ? <p className="font-semibold text-black">{item.name}</p> : <Link href={`/p/${encodeURIComponent(item.productKey)}`} className="font-semibold text-black hover:text-garmin-blue">{item.name}</Link>}
+                        {item.archived ? <p className="font-semibold text-black">{item.name}</p> : <Link href={productPath(item.productCode || item.productKey)} className="font-semibold text-black hover:text-garmin-blue">{item.name}</Link>}
                         <p className="text-[12px] text-neutral-500">
                           {item.availability === "available" ? formatKztLocal(item.price) : item.availability === "out_of_stock" ? `${formatKztLocal(item.price)} · ${t("wishlist.outOfStock")}` : t("wishlist.unavailable")}
                         </p>

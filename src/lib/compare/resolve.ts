@@ -15,6 +15,8 @@ export interface CompareVariantOption { sku: string; label: string }
 /** Everything a compare column shows, for the chosen variant (or the product when it has no variants). */
 export interface CompareItem {
   productId: string;
+  /** PostgreSQL catalog: public URL key, so the Shop link opens /p/{code}/{sku}. */
+  productCode?: string;
   /** The SKU actually shown: the requested one when it is on sale, else the default variant's; the part number without variants. */
   sku: string;
   name: string;
@@ -65,7 +67,7 @@ function fromCommerce(detail: ProductDetail, commerce: NonNullable<ProductDetail
   const variants = choosable
     ? commerce.variants.map((v) => ({ sku: v.sku, label: label(v.options, v.name, v.sku) })).sort((a, b) => labelOrder.compare(a.label, b.label))
     : [];
-  const base = { productId: detail.id, name: detail.title, variants };
+  const base = { productId: detail.id, ...(detail.productCode ? { productCode: detail.productCode } : {}), name: detail.title, variants };
   const chosenId = resolveInitialVariantId(commerce.variants, requestedSku, commerce.selectedVariantId);
   const chosen = commerce.variants.find((v) => v.id === chosenId);
   const price = chosen?.price ?? commerce.price;

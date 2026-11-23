@@ -1,11 +1,12 @@
 import type { HomepageConfig, ProductCarouselItem } from "./types";
 import { formatKzt } from "../money.ts";
+import { productPath } from "../catalog/product-url.ts";
 
 /** A published collection as the public read returns it (Task 18A `readCollection`). */
 export interface PublicCollection {
   key: string;
   name: string;
-  /** Public product DTOs; only id, name, description, image, price, originalPrice and badge are read. */
+  /** Public product DTOs; only id, productCode, name, description, image, price, originalPrice and badge are read. */
   products: Record<string, unknown>[];
 }
 
@@ -36,7 +37,7 @@ export async function resolveHomepageCollections(
       const collection = carousel.collectionKey ? found.get(carousel.collectionKey) : undefined;
       if (!collection) return carousel;
       const items: ProductCarouselItem[] = collection.products.map((product, order) => {
-        const id = str(product.id), price = num(product.price), originalPrice = num(product.originalPrice), badge = str(product.badge);
+        const id = str(product.id), code = str(product.productCode), price = num(product.price), originalPrice = num(product.originalPrice), badge = str(product.badge);
         return {
           id: `${collection.key}:${id}`,
           title: str(product.name),
@@ -45,7 +46,7 @@ export async function resolveHomepageCollections(
           ...(originalPrice !== undefined && price !== undefined && originalPrice > price ? { originalPrice: kzt(originalPrice) } : {}),
           ...(badge && badge !== "NONE" ? { badge } : {}),
           image: str(product.image),
-          href: `/p/${encodeURIComponent(id)}`,
+          href: productPath(code || id),
           order,
         };
       });

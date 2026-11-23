@@ -2,6 +2,7 @@ import Image from "next/image";
 import type { MouseEvent } from "react";
 import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
+import { productPath } from "@/lib/catalog/product-url";
 import type { Product } from "@/types";
 import { GarminBadge } from "@/components/GarminBadge";
 import { Price } from "@/components/ui/price";
@@ -122,7 +123,7 @@ export function ProductCard({ product, compare }: { product: Product; compare?: 
   if (!compare) {
     return (
       <Link
-        href={`/p/${product.id}`}
+        href={productPath(product.productCode ?? product.id)}
         data-product-card
         className="relative block h-full text-left text-garmin-card-text shadow-garmin-card transition-colors duration-200 hover:text-garmin-black-hover"
       >
@@ -167,7 +168,7 @@ export function ProductCard({ product, compare }: { product: Product; compare?: 
           </span>
         </button>
       </div>
-      <Link href={`/p/${product.id}`} className="relative flex flex-1 flex-col transition-colors duration-200 hover:text-garmin-black-hover">
+      <Link href={productPath(product.productCode ?? product.id)} className="relative flex flex-1 flex-col transition-colors duration-200 hover:text-garmin-black-hover">
         {body}
       </Link>
     </div>
