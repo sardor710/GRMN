@@ -243,28 +243,29 @@ async function singleVariantOverrideScenario(context){
     await ui.close();
   }finally{await send("Emulation.clearDeviceMetricsOverride");}
 }
-// Task 2.4: the storefront product page swaps Specs, Overview and In the box per variant with no navigation
-// and keeps the variant in ?variant=<sku>; a reload (server render) shows the same variant from the first paint.
+// Task 2.4: the storefront product page swaps Specs, Overview and In the box per variant with no navigation.
+// Owner 2026-11-23: the variant has its own page /p/{code}/{sku}; picking a size moves the address there (no reload),
+// and that page's server render shows the variant from the first paint with its own canonical.
 async function variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,text,receipt}){
   const own=mm=>({specs:[{label:"Case",value:`Case ${mm} mm only`}],overviewHtml:`<p>Overview for the ${mm} mm model</p>`,inTheBox:[`Box item ${mm} mm`,`Strap ${mm} mm`]});
   const saved=await cms.save("products",headers,variantProduct("UI-VS","UI VARIANT SWITCH",{status:"published",specs:[{label:"Case",value:"Product case"}],inTheBox:["Product box"],overviewHtml:"<p>Product overview</p>",
     options:[SIZE_OPTION(47,51)],variants:[sizeVariant("UI-VS",47,true,{content:own(47)}),sizeVariant("UI-VS",51,false,{price:"320.00",content:own(51)})]}));
   // The page's default is the catalog offer (available first, then cheapest): 47 mm here, as it is cheaper.
-  const route=`/en/p/${saved.id}`,q=JSON.stringify;
+  const route=`/en/p/${saved.productCode}`,q=JSON.stringify;
   const tab=label=>evaluate(`(()=>{const b=[...document.querySelectorAll('section [data-product-tabs] button')].find(b=>b.textContent.trim()===${q(label)});if(!b)return false;b.click();return true;})()`);
   const size=mm=>`[...document.querySelectorAll('[role=group][aria-label="Size"] button')].find(b=>b.textContent.trim()==='${mm} mm')`;
   const pressed=mm=>evaluate(`${size(mm)}?.getAttribute('aria-pressed')==='true'`);
   const shows=async(...needles)=>{const body=await text();return needles.every(n=>body.includes(n));};
   await send("Emulation.setDeviceMetricsOverride",{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
   try{
-    // The server render already holds the requested variant (no flash of the default), and the canonical URL
-    // stays the product's; an unknown SKU falls back to the default variant.
+    // The variant page's server render already holds that variant (no flash of the default) and its canonical is
+    // the variant page itself; an unknown SKU is a 404 (owner: no redirects).
     // Markup only: the RSC payload in <script> tags carries every variant's content (needed to switch).
     const html=async query=>(await(await fetch(origin+route+query)).text()).replace(/<script\b[\s\S]*?<\/script>/g,"");
-    const for51=await html("?variant=UI-VS-51");await writeFile(path.join(receipt,"variant-switch-ssr.html"),for51);
-    assert.ok(for51.includes("Overview for the 51 mm model")&&!for51.includes("Overview for the 47 mm model"),"?variant=UI-VS-51 did not server-render the 51 mm overview");
-    const canonical=for51.match(/<link rel="canonical" href="([^"]+)"/)?.[1];assert.ok(canonical&&!canonical.includes("variant"),`canonical carries the variant: ${canonical}`);
-    assert.ok((await html("?variant=NO-SUCH-SKU")).includes("Overview for the 47 mm model"),"an unknown SKU did not fall back to the default variant");
+    const for51=await html("/UI-VS-51");await writeFile(path.join(receipt,"variant-switch-ssr.html"),for51);
+    assert.ok(for51.includes("Overview for the 51 mm model")&&!for51.includes("Overview for the 47 mm model"),"/UI-VS-51 did not server-render the 51 mm overview");
+    const canonical=for51.match(/<link rel="canonical" href="([^"]+)"/)?.[1];assert.ok(canonical?.endsWith(`${route}/UI-VS-51`),`the variant page is not its own canonical: ${canonical}`);
+    assert.equal((await fetch(origin+route+"/NO-SUCH-SKU")).status,404,"an unknown SKU is not a 404");
 
     await navigate(route);
     await until(()=>shows("UI VARIANT SWITCH","Overview for the 47 mm model"),"The 47 mm product page did not render");
@@ -276,8 +277,7 @@ async function variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,
     await until(async()=>await shows("Case 51 mm only")&&!(await shows("Case 47 mm only")),"Specs did not swap to 51 mm (the Specs tab must stay open)");
     assert.equal(await evaluate("window.__variantSwitchMarker"),"kept","the switch reloaded the document");
     assert.equal(await evaluate("performance.getEntriesByType('navigation').length"),1);
-    assert.equal(await evaluate("new URL(location.href).searchParams.get('variant')"),"UI-VS-51","the URL does not keep the variant");
-    assert.equal(await evaluate("location.pathname"),route);
+    assert.equal(await evaluate("location.pathname"),`${route}/UI-VS-51`,"the address did not move to the variant page");
     await tab("In the Box");await until(async()=>await shows("Box item 51 mm","Strap 51 mm")&&!(await shows("Box item 47 mm")),"In the box did not swap to 51 mm");
     await tab("Overview");await until(async()=>await shows("Overview for the 51 mm model")&&!(await shows("Overview for the 47 mm model")),"Overview did not swap to 51 mm");
     await tab("Specs");await until(()=>shows("Case 51 mm only"),"Specs tab did not reopen on 51 mm");
@@ -286,7 +286,7 @@ async function variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,
     // Reload: still 51 mm, from the first paint.
     await send("Page.reload",{ignoreCache:true});await delay(300);
     await until(()=>evaluate("document.readyState==='complete'&&!window.__variantSwitchMarker"),"Reload did not finish");
-    assert.equal(await evaluate("new URL(location.href).searchParams.get('variant')"),"UI-VS-51","the reloaded URL lost ?variant=");
+    assert.equal(await evaluate("location.pathname"),`${route}/UI-VS-51`,"the reload left the variant page");
     await until(()=>shows("Overview for the 51 mm model"),"The reload did not show 51 mm content");
     assert.ok(!(await shows("Overview for the 47 mm model")));
     await until(()=>pressed(51),"51 mm is not selected after the reload");
@@ -294,7 +294,7 @@ async function variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,
 
     // Final review I2: prices are formatted on the server and again in the browser, so the strings must be
     // identical. Every console error is recorded; there must be no hydration warning on either page.
-    for(const [name,page] of [["en-variant",`${route}?variant=UI-VS-51`],["ru",`/ru/p/${saved.id}`]]){
+    for(const [name,page] of [["en-variant",`${route}/UI-VS-51`],["ru",`/ru/p/${saved.productCode}`]]){
       await assertNoHydrationWarnings({send,receipt},name,page,async()=>{
         await navigate(page);
         // Hydrated: React has attached its fiber to the tabs; then give late recoverable errors a moment.
@@ -457,7 +457,7 @@ async function compareScenario({cms,headers,send,evaluate,navigate,text,receipt}
     await until(()=>sameRows([["Lens","Sapphire crystal"],["Battery life","Up to 29 days"],["Heart rate","Elevate Gen5"],["Flashlight","LED"]]),"The rows did not follow the removed column");
     // h. Product page: choose 51 mm, Add to comparison; the comparison then holds that SKU. The shopper starts with BRAVO chosen.
     await evaluate(`(()=>{localStorage.setItem(${q(KEY)},${q(JSON.stringify([{productId:bravoSaved.id,name:BRAVO}]))});return true;})()`);
-    await navigate(`/en/p/${alpha.id}`);
+    await navigate(`/en/p/${alpha.productCode}`);
     const size=mm=>`[...document.querySelectorAll('[role=group][aria-label="Size"] button')].find(b=>b.textContent.trim()==='${mm} mm')`;
     const action="document.querySelector('[data-compare-action] button')";
     await until(async()=>await hydrated(size(51))&&await hydrated(action),"The product page did not hydrate").catch(dump("compare-pdp-body.txt"));
@@ -513,7 +513,8 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
   const shoot=async name=>{const image=await send("Page.captureScreenshot",{format:"png"});await saveShot(name,image.data,shots);};
   const signOut=()=>send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
   const product=randomUUID(),variant=randomUUID();
-  await pool.query("INSERT INTO products(id,public_key,name,status) VALUES($1,'ui-demo-fixture','UI DEMO FIXTURE','published')",[product]);
+  // Owner 2026-11-23: the fixture's page is /p/{product_code}.
+  const demoCode=(await pool.query("INSERT INTO products(id,public_key,name,status) VALUES($1,'ui-demo-fixture','UI DEMO FIXTURE','published') RETURNING product_code",[product])).rows[0].product_code;
   await pool.query("INSERT INTO product_variants(id,product_id,sku,name,is_default,status) VALUES($1,$2,'UI-DEMO-SKU','Base',true,'active')",[variant,product]);
   await pool.query("INSERT INTO prices(id,variant_id,amount_minor) VALUES($1,$2,100000)",[randomUUID(),variant]);
   const main=(await pool.query("SELECT id FROM stock_locations WHERE key='main'")).rows[0].id;
@@ -527,7 +528,7 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
   try{
     // Storefront: add to cart, review, Pay (customers never read "demo" since 2026-11-22).
     await signOut();await customerCookie();
-    await navigate("/p/ui-demo-fixture");await until(async()=>(await text()).includes("UI DEMO FIXTURE"),"Demo fixture product did not render");
+    await navigate("/p/"+demoCode);await until(async()=>(await text()).includes("UI DEMO FIXTURE"),"Demo fixture product did not render");
     await until(async()=>{try{await click("Add To Cart");return true;}catch{return false;}},"Add To Cart was not clickable");
     await until(async()=>(await pool.query("SELECT 1 FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=$1 AND c.status='active' AND ci.variant_id=$2",[customerId,variant])).rowCount===1,"The demo fixture did not reach the account cart");
     await navigate("/cart");await until(async()=>(await text()).includes("UI DEMO FIXTURE")&&/review order/i.test(await text()),"Cart with the demo fixture missing");
@@ -763,7 +764,8 @@ async function dashboardScenario({pool,runtime,secret,origin,send,evaluate,navig
   const customerCookie=encodeURIComponent(customerSession.token+"."+createHmac("sha256",secret).update(customerSession.token).digest("base64"));
   await pool.query("INSERT INTO stock_locations(id,key,name) VALUES($1,'main','Main stock location') ON CONFLICT (key) DO NOTHING",[randomUUID()]);
   const main=(await pool.query("SELECT id FROM stock_locations WHERE key='main'")).rows[0].id;
-  await pool.query("INSERT INTO products(id,public_key,name,status) VALUES($1,'ui-dash-fixture','UI DASH FIXTURE','published')",[product]);
+  // Owner 2026-11-23: the fixture's page is /p/{product_code}.
+  const dashCode=(await pool.query("INSERT INTO products(id,public_key,name,status) VALUES($1,'ui-dash-fixture','UI DASH FIXTURE','published') RETURNING product_code",[product])).rows[0].product_code;
   await pool.query("INSERT INTO product_variants(id,product_id,sku,name,is_default,status) VALUES($1,$2,'UI-DASH-SKU','Base',true,'active')",[variant,product]);
   await pool.query("INSERT INTO prices(id,variant_id,amount_minor) VALUES($1,$2,100000)",[randomUUID(),variant]);
   await pool.query("INSERT INTO inventory_balances(variant_id,location_id) VALUES($1,$2)",[variant,main]);
@@ -782,7 +784,7 @@ async function dashboardScenario({pool,runtime,secret,origin,send,evaluate,navig
   try{
     // 1. One demo order through the real checkout.
     await signOut();await setCookie(customerCookie);
-    await navigate("/p/ui-dash-fixture");await until(async()=>(await text()).includes("UI DASH FIXTURE"),"Dashboard fixture product did not render");
+    await navigate("/p/"+dashCode);await until(async()=>(await text()).includes("UI DASH FIXTURE"),"Dashboard fixture product did not render");
     await until(async()=>{try{await click("Add To Cart");return true;}catch{return false;}},"Add To Cart was not clickable");
     await until(async()=>(await pool.query("SELECT 1 FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=$1 AND c.status='active' AND ci.variant_id=$2",[customerId,variant])).rowCount===1,"The dashboard fixture did not reach the account cart");
     await navigate("/cart");await until(async()=>(await text()).includes("UI DASH FIXTURE")&&/review order/i.test(await text()),"Cart with the dashboard fixture missing");
@@ -973,7 +975,7 @@ try{
     await productsListScenario({cms,headers,send,evaluate,navigate,text});
     await navigate("/");await until(async()=>(await text()).includes("UI HOMEPAGE FIXTURE"),"Persisted homepage did not render");
     const screenshot=await send("Page.captureScreenshot",{format:"png"});await saveShot("ui-homepage.png",screenshot.data);
-    await navigate(`/p/${saved.id}`);await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Saved product did not render");assert.ok((await text()).includes("KZT"));
+    await navigate(`/p/${saved.productCode}`);await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Saved product did not render");assert.ok((await text()).includes("KZT"));
     // Final review 19: .g-btn is uppercase (garmin.com), so innerText reads "SAVE ALL CHANGES"; match the button's
     // textContent (what click() matches) instead of the rendered case.
     await navigate("/admin/homepage");await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Save All Changes'&&!b.disabled)"),"Homepage editor did not load").catch(async error=>{await writeFile(path.join(receipt,"admin-homepage-body.txt"),await text());throw error;});await click("Save All Changes");await until(async()=>(await cms.homepage(headers)).version===2,"Homepage UI save failed");
@@ -995,8 +997,10 @@ try{
     await navigate("/c/wearables-smartwatches");await until(async()=>(await text()).toLowerCase().includes("ui fixture"),"Catalog did not load normalized products").catch(async error=>{await writeFile(path.join(receipt,"catalog-body.txt"),await text());await writeFile(path.join(receipt,"catalog-response.html"),await(await fetch(origin+"/c/wearables-smartwatches")).text());throw error;});assert.equal(await productLinks(),24);
     await navigate("/c/wearables-smartwatches?search=UI%20UPDATED%20PRODUCT");await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Catalog search missed newly added product");assert.equal(await productLinks(),1);
     await navigate("/compare?selected="+saved.id+"&search=UI%20UPDATED%20PRODUCT");await until(async()=>(await text()).includes("UI UPDATED PRODUCT"),"Compare did not read normalized product");assert.match(await text(),/KZT\s?123[.,]45\b|\b123[.,]45\s?₸/);assert.ok(!(await text()).includes("Forbidden seed"));
-    await navigate("/p/"+saved.id);await until(()=>evaluate("!!document.querySelector('script[type=\"application/ld+json\"]')"),"Product metadata missing");const structured=await evaluate("JSON.parse(document.querySelector('script[type=\"application/ld+json\"]').textContent)");assert.match(String(structured.offers[0].price),/^123\.45$/);assert.equal(structured.offers[0].priceCurrency,"KZT");
-    const missing=await fetch(origin+"/p/absent-fixture");assert.equal(missing.status,404);const sitemap=await(await fetch(origin+"/sitemap.xml")).text();assert.ok(sitemap.includes(saved.id));
+    await navigate("/p/"+saved.productCode);await until(()=>evaluate("!!document.querySelector('script[type=\"application/ld+json\"]')"),"Product metadata missing");const structured=await evaluate("JSON.parse(document.querySelector('script[type=\"application/ld+json\"]').textContent)");
+    // Owner 2026-11-23: the product page describes a ProductGroup; each variant (here the only one) carries its offer.
+    assert.equal(structured["@type"],"ProductGroup");assert.equal(structured.productGroupID,saved.productCode);assert.match(String(structured.hasVariant[0].offers.price),/^123\.45$/);assert.equal(structured.hasVariant[0].offers.priceCurrency,"KZT");
+    const missing=await fetch(origin+"/p/absent-fixture");assert.equal(missing.status,404);const sitemap=await(await fetch(origin+"/sitemap.xml")).text();assert.ok(sitemap.includes("/p/"+saved.productCode+"<"),"the sitemap lists /p/{code}");
     const unicode=await cms.save("blogs",headers,{title:"Қазақша UI мақала",slug:"қазақша-ui-мақала",content:"UNICODE PUBLIC BODY",status:"published",category:"Fixture"});await navigate("/blog/"+encodeURIComponent(unicode.slug));await until(async()=>(await text()).includes("UNICODE PUBLIC BODY"),"Unicode URL failed");
     await navigate("/blog?search="+encodeURIComponent("Қазақша")+"&category=Fixture");await until(async()=>(await text()).toLowerCase().includes("қазақша ui мақала"),"Blog server filters failed");assert.ok(!(await text()).includes("UI ARTICLE"));
     for(const route of ["/c/not-a-category","/c/watch-series/not-a-series","/blog?cursor=x","/blog/foo%20bar","/p/"+"x".repeat(250)]){const status=(await fetch(origin+route)).status;assert.equal(status,404,route+" returned "+status);}
@@ -1034,7 +1038,8 @@ try{
     // survives a reload through its HttpOnly capability, sign-in merges it into the account cart, and the
     // wishlist persists for the session owner.
     const cartProduct=randomUUID(),cartVariant=randomUUID(),cartLocation=randomUUID();
-    await database.pool.query("INSERT INTO products(id,public_key,name,status) VALUES($1,'ui-cart-fixture','UI CART FIXTURE','published')",[cartProduct]);
+    // Owner 2026-11-23: the fixture's page is /p/{product_code} (the column default assigns one).
+    const cartCode=(await database.pool.query("INSERT INTO products(id,public_key,name,status) VALUES($1,'ui-cart-fixture','UI CART FIXTURE','published') RETURNING product_code",[cartProduct])).rows[0].product_code;
     await database.pool.query("INSERT INTO product_variants(id,product_id,sku,name,is_default,status) VALUES($1,$2,'UI-CART-SKU','Base',true,'active')",[cartVariant,cartProduct]);
     await database.pool.query("INSERT INTO prices(id,variant_id,amount_minor) VALUES($1,$2,250000)",[randomUUID(),cartVariant]);
     await database.pool.query("INSERT INTO stock_locations(id,key,name) VALUES($1,'ui-cart-stock','UI cart stock')",[cartLocation]);
@@ -1050,7 +1055,7 @@ try{
     // next page imported again into a second guest cart: a test race, not an application path.
     await navigate("/c/wearables-smartwatches");
     await until(()=>evaluate("localStorage.getItem('garmin-clone-cart')===null"),"The stored local cart was not imported");
-    await navigate("/p/ui-cart-fixture");await until(async()=>(await text()).includes("UI CART FIXTURE"),"Cart fixture product did not render");
+    await navigate("/p/"+cartCode);await until(async()=>(await text()).includes("UI CART FIXTURE"),"Cart fixture product did not render");
     // A click on the server-rendered button before hydration is lost (the cart then stays at 2): wait for React first.
     await until(()=>evaluate("(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.textContent.trim().includes('Add To Cart'));return !!b&&!b.disabled&&Object.keys(b).some(k=>k.startsWith('__reactProps'));})()"),"Add To Cart did not hydrate");
     await click("Add To Cart");
@@ -1068,7 +1073,7 @@ try{
     await until(async()=>(await database.pool.query("SELECT ci.quantity FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=$1 AND c.status='active' AND ci.variant_id=$2",[customerId,cartVariant])).rows[0]?.quantity===3,"Sign-in did not merge the guest cart into the account cart");
     assert.equal((await database.pool.query("SELECT count(*)::int AS n FROM carts WHERE user_id IS NULL AND status='active' AND id IN (SELECT cart_id FROM cart_items WHERE variant_id=$1)",[cartVariant])).rows[0].n,0,"the guest cart is retired after the merge");
     await until(async()=>(await text()).includes("UI CART FIXTURE"),"Merged account cart did not render");
-    await navigate("/p/ui-cart-fixture");await until(async()=>{try{await click("Save to Wishlist");return true;}catch{return false;}},"Save to Wishlist missing");
+    await navigate("/p/"+cartCode);await until(async()=>{try{await click("Save to Wishlist");return true;}catch{return false;}},"Save to Wishlist missing");
     await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.includes('Saved to Wishlist'))"),"Wishlist save failed");
     await navigate("/account");await until(async()=>(await low()).includes("ui account owner"),"Account page did not reload");await click("Wishlist");
     await until(async()=>(await text()).includes("UI CART FIXTURE"),"Saved product missing from the wishlist tab");
@@ -1184,7 +1189,7 @@ try{
   // Task 2.4: the storefront variant switch (independent block: its own published product).
   if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantContent&&!onlyDashboard&&!onlyCompare){
     await variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,text,receipt});
-    console.log("PASS Task2.4 variant switch: 47 -> 51 mm swaps Specs, In the box and Overview with no document navigation, ?variant= kept, reload and server render show 51 mm, canonical unchanged, unknown SKU falls back; no hydration warnings on /en/p/<id>?variant=<sku> and /ru/p/<id> (console recorded)");
+    console.log("PASS Task2.4 variant switch: 47 -> 51 mm swaps Specs, In the box and Overview with no document navigation, address moves to /p/{code}/{sku}, reload and server render show 51 mm, own canonical, unknown SKU 404");
   }
 
   // Task C-e: the compare flow (an independent block: its own published products; CMS_SMOKE_ONLY=compare runs only this).
