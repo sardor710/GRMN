@@ -171,3 +171,12 @@ test("withSeries: replaces the previous series, keeps other categories and the p
   assert.deepEqual(withSeries([], "watch-series/fenix", seriesKeys), [{ key: "watch-series/fenix", primary: true }], "the only category is primary");
   assert.deepEqual(withSeries([{ key: "watch-series/fenix", primary: true }], "watch-series/forerunner", seriesKeys), [{ key: "watch-series/forerunner", primary: true }], "a primary series hands primary to its replacement");
 });
+
+test("owner 2026-11-23: the product code round-trips, blank is left out (assigned on save), non-digits are rejected", () => {
+  const form = formFromPayload({ ...simplePayload(), productCode: "1953727" });
+  assert.equal(form.productCode, "1953727");
+  assert.equal(buildCommand({ productCode: "1953727" }, form, false).productCode, "1953727");
+  assert.equal("productCode" in buildCommand({ productCode: "1953727" }, { ...form, productCode: " " }, false), false);
+  assert.match(validateForm({ ...form, productCode: "12a" })?.message ?? "", /1 to 12 digits/);
+  assert.equal(describeSaveError(409, { error: { code: "PRODUCT_CODE_CONFLICT", message: "Product code 1 is already used by another product" } }).reloadable, false);
+});

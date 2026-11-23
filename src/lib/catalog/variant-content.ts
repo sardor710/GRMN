@@ -61,3 +61,18 @@ export function parseVariantContent(value: unknown): VariantContent {
   if (Array.isArray(raw.inTheBox)) out.inTheBox = raw.inTheBox.filter((s): s is string => typeof s === "string");
   return out;
 }
+
+/** Owner 2026-11-23: a variant page's own SEO text per language (product_variants.seo), read defensively. */
+export type VariantSeo = Partial<Record<"en" | "ru" | "kk", { title?: string; description?: string }>>;
+export function parseVariantSeo(value: unknown): VariantSeo {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return {};
+  const out: VariantSeo = {};
+  for (const locale of ["en", "ru", "kk"] as const) {
+    const text = (value as Record<string, unknown>)[locale];
+    if (!text || typeof text !== "object" || Array.isArray(text)) continue;
+    const { title, description } = text as Record<string, unknown>;
+    const entry = { ...(typeof title === "string" && title.trim() ? { title: title.trim() } : {}), ...(typeof description === "string" && description.trim() ? { description: description.trim() } : {}) };
+    if (Object.keys(entry).length) out[locale] = entry;
+  }
+  return out;
+}

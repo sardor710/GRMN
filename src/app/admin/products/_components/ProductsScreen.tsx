@@ -1,5 +1,6 @@
 "use client";
 
+import { productPath } from "@/lib/catalog/product-url";
 import { formatCount, formatRecordAmount } from "@/lib/money";
 import { AutoTranslateButton } from "@/components/admin/AutoTranslateButton";
 import { useState, useEffect, useRef } from "react";
@@ -1468,7 +1469,7 @@ export default function AdminProductsPage() {
                 type="product"
                 nameOrTitle={formData.name}
                 defaultDescription={formData.description}
-                urlPath={editingProduct ? `/p/${editingProduct.id}` : `/p/${formData.sku || "new-product"}`}
+                urlPath={editingProduct ? productPath(editingProduct.productCode ?? editingProduct.id) : productPath(formData.sku || "new-product")}
                 image={formData.image}
                 category={formData.category}
                 specs={formData.specs}

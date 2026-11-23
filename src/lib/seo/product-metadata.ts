@@ -18,8 +18,17 @@ export interface ProductPageSeo extends SeoText {
 
 const MAX_TITLE = 60;
 
+/** What the SEO text needs from a product: the storefront detail DTO, or the admin editor's form (variant preview). */
+export type SeoProduct = Pick<ProductDetailDTO, "name" | "description" | "specs"> & {
+  family?: string | null;
+  breadcrumb?: { slug: string; name: string }[];
+  seoOverride?: ProductDetailDTO["seoOverride"];
+  variants: SeoVariant[];
+};
+export type SeoVariant = Pick<ProductDetailVariantDTO, "id" | "sku" | "options" | "optionValues" | "seo">;
+
 /** The generator's view of a product (localized name and description, category kind). */
-export function productSeoSubject(detail: ProductDetailDTO): SeoSubject {
+export function productSeoSubject(detail: SeoProduct): SeoSubject {
   return {
     name: detail.name,
     family: detail.family ?? null,
@@ -30,7 +39,7 @@ export function productSeoSubject(detail: ProductDetailDTO): SeoSubject {
   };
 }
 
-function generatedVariant(detail: ProductDetailDTO, variant: ProductDetailVariantDTO, locale: SeoLocale): SeoText {
+function generatedVariant(detail: SeoProduct, variant: SeoVariant, locale: SeoLocale): SeoText {
   const optionValues = (variant.optionValues ?? Object.entries(variant.options).map(([key, value]) => ({ key, name: key, value }))).map(({ name, value }) => ({ name, value }));
   return generateVariantSeo(productSeoSubject(detail), { sku: variant.sku, optionValues }, locale);
 }
@@ -48,20 +57,21 @@ function withSku(title: string, sku: string): string {
   return `${base} (${sku})`;
 }
 
-/** A variant's SEO text: its stored override, else generated; a generated title shared with a sibling gets the SKU. */
-export function variantSeoText(detail: ProductDetailDTO, variant: ProductDetailVariantDTO, locale: SeoLocale): SeoText {
+/** A variant's SEO text: its stored override, else generated; a generated title shared with a sibling gets the SKU.
+ * `generatedOnly` ignores the override (the admin editor's placeholder). */
+export function variantSeoText(detail: SeoProduct, variant: SeoVariant, locale: SeoLocale, generatedOnly = false): SeoText {
   const generated = generatedVariant(detail, variant, locale);
-  const own = variant.seo ?? {};
+  const own = generatedOnly ? {} : variant.seo ?? {};
   let title = own.title?.trim() || generated.title;
   if (!own.title?.trim()) {
-    const clash = detail.variants.some((other) => other.id !== variant.id && !other.seo?.title?.trim() && generatedVariant(detail, other, locale).title === generated.title);
+    const clash = detail.variants.some((other) => other.id !== variant.id && (generatedOnly || !other.seo?.title?.trim()) && generatedVariant(detail, other, locale).title === generated.title);
     if (clash) title = withSku(generated.title, variant.sku);
   }
   return { title, description: own.description?.trim() || generated.description, keywords: generated.keywords };
 }
 
 /** The product page's SEO text: the admin's stored text for this language, else generated. */
-export function productSeoText(detail: ProductDetailDTO, locale: SeoLocale): SeoText {
+export function productSeoText(detail: SeoProduct, locale: SeoLocale): SeoText {
   const generated = generateProductSeo(productSeoSubject(detail), locale);
   return {
     title: detail.seoOverride?.title || generated.title,

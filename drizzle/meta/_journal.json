@@ -211,6 +211,13 @@
       "when": 1795419564832,
       "tag": "0029_product-code",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1795450413871,
+      "tag": "0030_variant-seo",
+      "breakpoints": true
     }
   ]
 }

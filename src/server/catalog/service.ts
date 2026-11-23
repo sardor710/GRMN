@@ -8,7 +8,7 @@ import { AuthFailure } from "../auth/config.ts";
 import type { ConcurrencyLimit } from "./limit.ts";
 import { PRODUCT_SPEC, isRecordTranslated, localizeRecord, resolveSeoText } from "../../i18n/translate-record.ts";
 import type { Locale } from "../../i18n/config.ts";
-import { effectiveVariantContent, localizeVariantOverride, parseVariantContent, type ProductContentDTO, type VariantContent } from "../../lib/catalog/variant-content.ts";
+import { effectiveVariantContent, localizeVariantOverride, parseVariantContent, parseVariantSeo, type ProductContentDTO, type VariantContent } from "../../lib/catalog/variant-content.ts";
 import { PRODUCT_HTML_FIELDS } from "../../lib/cms/product-input.ts";
 import { cardColors } from "../../lib/catalog/card-colors.ts";
 import { stableUuid } from "../cms/product-projection.ts";
@@ -260,7 +260,9 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
       const editorial=obj((await pool.query("SELECT jsonb_build_object('variants',(SELECT jsonb_agg(jsonb_build_object('id',e->'id','sku',e->'sku')) FROM jsonb_array_elements(CASE WHEN jsonb_typeof(legacy_content->'variants')='array' THEN legacy_content->'variants' ELSE '[]'::jsonb END) e),'options',CASE WHEN jsonb_typeof(legacy_content->'options')='array' THEN legacy_content->'options' ELSE '[]'::jsonb END) AS doc FROM products WHERE id=$1",[found.id])).rows[0]?.doc);
       // Owner 2026-11-23: editor option/value ids, to read RU/KK option names and values (variant pages' SEO).
       const editorOptions:EditorOption[]=array(editorial.options).flatMap(value=>{const o=obj(value);return typeof o.id==="string"&&typeof o.key==="string"?[{id:o.id,key:o.key,values:array(o.values).flatMap(x=>{const v=obj(x);return typeof v.id==="string"&&typeof v.label==="string"?[{id:v.id,label:v.label}]:[];})}]:[];});
-      const overrideRows=(await pool.query("SELECT id::text AS id,content_overrides FROM product_variants WHERE product_id=$1 AND id=ANY($2::uuid[])",[found.id,found.variants.map(v=>v.id)])).rows;
+      const overrideRows=(await pool.query("SELECT id::text AS id,content_overrides,seo FROM product_variants WHERE product_id=$1 AND id=ANY($2::uuid[])",[found.id,found.variants.map(v=>v.id)])).rows;
+      // Owner 2026-11-23: each variant page's own SEO text in the page language (absent = generated).
+      const variantSeo=new Map<string,{title?:string;description?:string}>(overrideRows.flatMap(r=>{const own=parseVariantSeo(r.seo)[locale];return own?[[String(r.id),own] as [string,{title?:string;description?:string}]]:[];}));
       const overrides=new Map<string,VariantContent>(overrideRows.map(r=>[String(r.id),parseVariantContent(r.content_overrides)]));
       const editorIds=new Map<string,string>(array(editorial.variants).flatMap(e=>{const v=obj(e);return typeof v.id==="string"&&typeof v.sku==="string"?[[v.sku.trim().toLowerCase(),v.id] as [string,string]]:[];}));
       const optionNames=Object.fromEntries((await pool.query("SELECT key,name FROM product_options WHERE product_id=$1 ORDER BY position,key",[found.id])).rows.map(r=>[String(r.key),String(r.name)]));
@@ -274,7 +276,7 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
       const translatedLocales:Locale[]=["en",...(["ru","kk"] as const).filter(l=>translations&&isRecordTranslated({translations},l,["name","description"]))];
       // Task 2.1: each variant's effective content (own blocks replace the product's, absent keys inherit).
       const optionOrder=Object.entries(optionNames).map(([key,name])=>({key,name}));
-      const withVariants=(product:ProductContentDTO,localize?:(english:VariantContent,variant:VariantDTO)=>VariantContent,labels?:OptionLabelOverlay)=>detail.variants.map(v=>{const english=overrides.get(v.id)??{};return{...v,content:effectiveVariantContent(product,{content:localize?localize(english,v):english}),ownsOverview:english.overviewHtml!==undefined,optionValues:variantOptionValues(v.options,optionOrder,labels)};});
+      const withVariants=(product:ProductContentDTO,localize?:(english:VariantContent,variant:VariantDTO)=>VariantContent,labels?:OptionLabelOverlay)=>detail.variants.map(v=>{const english=overrides.get(v.id)??{};return{...v,content:effectiveVariantContent(product,{content:localize?localize(english,v):english}),ownsOverview:english.overviewHtml!==undefined,optionValues:variantOptionValues(v.options,optionOrder,labels),...(variantSeo.has(v.id)?{seo:variantSeo.get(v.id)}:{})};});
       if(locale==="en"||!translations)return{...detail,translatedLocales,variants:withVariants({specs:detail.specs,specGroups:detail.specGroups,overviewHtml:detail.overviewHtml,inTheBox:detail.inTheBox})};
       const local=localizeRecord({name:detail.name,description:detail.description,specs:detail.specs,features:detail.features.map(f=>({title:f.title,body:f.body})),inTheBox:detail.inTheBox,overviewHtml:detail.overviewHtml,specGroups:detail.specGroups,translations},locale,PRODUCT_SPEC);
       const seoTitle=resolveSeoText({seoTitle:detail.seo?.title,name:detail.name,translations} as {translations?:unknown},locale,["seoTitle","name"]);

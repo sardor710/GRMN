@@ -1,3 +1,4 @@
+import { productPath } from "../catalog/product-url.ts";
 import type {
   CMSProduct,
   CMSBlog,
@@ -501,7 +502,7 @@ export function getSiteSEOAudit(
       id: p.id,
       title: p.name,
       type: 'product',
-      url: `/p/${p.id}`,
+      url: productPath(p.productCode ?? p.id),
       seoTitle: p.seoTitle || `${p.name} | Garmin`,
       seoDescription: p.seoDescription || p.description,
       score: report.score,

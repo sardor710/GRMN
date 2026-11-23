@@ -20,6 +20,9 @@ import {
   generateBlogSEOMeta,
 } from "@/lib/seo/analyzer";
 import type { ProductSpecItem } from "@/lib/cms/types";
+
+/** The storefront origin for previews (NEXT_PUBLIC_SITE_URL is inlined at build time). */
+const SITE_ORIGIN = (process.env.NEXT_PUBLIC_SITE_URL || "https://garmin.tigr.uz").replace(/\/+$/, "");
 import { Button } from "@/components/admin/ui";
 
 interface SEOEditorProps {
@@ -99,7 +102,7 @@ export function SEOEditor({
   const displayTitle = (seoTitle || `${nameOrTitle} | Official Garmin Store`).trim();
   const displayDesc = (seoDescription || defaultDescription || "No description yet.").trim();
   const displayImage = ogImage || image || "/images/hero-bg.jpg";
-  const displayUrl = `https://www.garmin.com${urlPath.startsWith("/") ? "" : "/"}${urlPath}`;
+  const displayUrl = `${SITE_ORIGIN}${urlPath.startsWith("/") ? "" : "/"}${urlPath}`;
 
   // Auto Generate Action
   const handleAutoGenerate = () => {
@@ -370,7 +373,7 @@ export function SEOEditor({
                     ogImage,
                   })
                 }
-                placeholder="https://www.garmin.com/p/..."
+                placeholder={`${SITE_ORIGIN}/p/...`}
                 className="w-full bg-white border border-border focus:border-black rounded-none px-3 py-1.5 text-xs text-black focus:outline-none"
               />
             </div>
@@ -503,7 +506,7 @@ export function SEOEditor({
                 />
               </div>
               <div className="p-3 bg-white border-t border-border">
-                <span className="text-xs text-muted-foreground block">garmin.com</span>
+                <span className="text-xs text-muted-foreground block">{SITE_ORIGIN.replace(/^https?:\/\//, "")}</span>
                 <h4 className="text-sm font-bold text-black line-clamp-1 mt-0.5">
                   {displayTitle}
                 </h4>

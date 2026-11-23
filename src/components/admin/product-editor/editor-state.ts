@@ -17,6 +17,8 @@ type CaseSize = CMSProduct["caseSize"];
 
 export interface EditorForm {
   name: string;
+  /** Owner 2026-11-23: public URL key /p/{productCode}; blank on a new product = assigned on save. */
+  productCode: string;
   sku: string;
   /** Simple products only; null = not entered yet. */
   price: number | null;
@@ -66,7 +68,7 @@ export function blankForm(): EditorForm {
     name: "", sku: "", price: null, originalPrice: null, priceSuffix: "", stock: 0, description: "", badge: "NONE", family: "",
     activities: [], level: "Premium", caseSize: "Medium", status: "draft", isFeatured: false, image: "", images: [], defaultImageId: "",
     options: [], variants: [], overviewHtml: "", specGroups: [], inTheBox: [], categories: [], related: [], compatibility: emptyCompatibility(),
-    seoTitle: "", seoDescription: "", focusKeywords: [], canonicalUrl: "", noIndex: false, ogImage: "",
+    productCode: "", seoTitle: "", seoDescription: "", focusKeywords: [], canonicalUrl: "", noIndex: false, ogImage: "",
   };
 }
 
@@ -105,6 +107,7 @@ export function formFromPayload(payload: RawPayload, makeId: (prefix: string) =>
   return {
     ...blank,
     name: str(payload.name),
+    productCode: str(payload.productCode),
     sku: str(payload.sku),
     price: num(payload.price),
     originalPrice: num(payload.originalPrice),
@@ -153,6 +156,7 @@ export function validateForm(form: EditorForm): { tab: "general" | "variants" | 
     if (!form.sku.trim()) return { tab: "general", message: "A product without variants needs a SKU." };
     if (form.price === null || form.price < 0) return { tab: "general", message: "A product without variants needs a price." };
   }
+  if (form.productCode.trim() && !/^[0-9]{1,12}$/.test(form.productCode.trim())) return { tab: "general", message: "The product code is 1 to 12 digits." };
   if (form.variants.some(variant => !variant.sku.trim())) return { tab: "variants", message: "Every variant needs a SKU." };
   // A variant may have no price (null round-trips as null, never 0 KZT); only an active one must have one.
   const unpriced = form.variants.find(variant => variant.status === "active" && variant.price === null);
@@ -213,6 +217,7 @@ export function buildCommand(base: RawPayload, form: EditorForm, isNew: boolean)
     noIndex: form.noIndex,
     ogImage: form.ogImage,
   });
+  if (form.productCode.trim()) command.productCode = form.productCode.trim(); else delete command.productCode;
   const compatibility = compatibilityCommand(base, form.compatibility);
   if (compatibility) command.compatibility = compatibility; else delete command.compatibility;
   if (form.source) command.source = form.source; else delete command.source;
@@ -290,6 +295,8 @@ export function describeSaveError(status: number, body: unknown): SaveError {
     return { kind: "stock", conflicts, reloadable: true, message: "Stock changed while you were editing (an order or a restock). Nothing was saved. Reload to see the current stock, then enter your change again." };
   if (status === 409 && code === "SKU_CONFLICT")
     return { kind: "sku", conflicts, reloadable: false, message: conflicts.length ? `These SKUs already belong to another product: ${conflicts.join(", ")}. Change them and save again.` : serverMessage || "A SKU already belongs to another product." };
+  if (status === 409 && code === "PRODUCT_CODE_CONFLICT")
+    return { kind: "invalid", conflicts, reloadable: false, message: `${serverMessage || "This product code is already used by another product."} Choose another code (General tab) and save again.` };
   if (status === 409)
     return { kind: "version", conflicts, reloadable: true, message: "Someone else saved this product after you opened it. Nothing was saved. Reload to get their version, then redo your change." };
   if (status === 400) return { kind: "invalid", conflicts, reloadable: false, message: serverMessage ? `Check the form: ${serverMessage}` : "Some fields are not valid." };

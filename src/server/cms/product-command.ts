@@ -32,6 +32,9 @@ const optionValue = z.object({ id: key, key: short.trim().min(1), label: short.t
 const option = z.object({ id: key, key: short.trim().min(1), name: short.trim().min(1), display: z.enum(["buttons", "swatch", "dropdown"]).default("buttons"), values: z.array(optionValue).max(200) }).strict();
 const image = z.object({ id: key, src: link.pipe(z.string().min(1)), alt: short.default(""), source: z.enum(["upload", "import", "url"]).default("url"), width: count.optional(), height: count.optional() }).strict();
 const sourcePrice = z.object({ currency: z.literal("USD"), list: z.number().finite().min(0).max(1e12), sale: z.number().finite().min(0).max(1e12).optional(), rateKztPerUsd: z.number().finite().min(0).max(1e12) }).strict();
+/** Owner 2026-11-23: a variant page's own SEO text per language; a blank field means "generate it". */
+const seoText = z.object({ title: z.string().trim().max(70, "SEO title is at most 70 characters").optional(), description: z.string().trim().max(200, "SEO description is at most 200 characters").optional() }).strict();
+export const variantSeoInput = z.object({ en: seoText.optional(), ru: seoText.optional(), kk: seoText.optional() }).strict();
 const variant = z.object({
   id: key, sku: z.string().trim().min(1, "Every variant needs a SKU").max(100), title: short.default(""),
   selections: z.record(key, key).default({}),
@@ -45,6 +48,8 @@ const variant = z.object({
   imageIds: z.array(key).max(200).default([]), sourcePartNumber: short.optional(), sourcePrice: sourcePrice.optional(),
   /** beta5 merge (Task 2.1): this variant's own Specs / Overview / In the box; a present key is "Own". Omitted = keep the stored overrides. */
   content: variantContentInput.optional(),
+  /** Owner 2026-11-23: this variant page's own SEO title/description per language. Omitted = keep the stored text. */
+  seo: variantSeoInput.optional(),
   // Read-only echoes from the read API (ignored).
   stockReserved: z.unknown().optional(), stockAvailable: z.unknown().optional(), stockTracked: z.unknown().optional(), version: z.unknown().optional(), thumbnail: z.unknown().optional(), options: z.unknown().optional(),
 }).strict();
@@ -68,6 +73,8 @@ const readOnly = z.unknown().optional();
 export const productCommandSchema = productInput.extend({
   id: key.optional(),
   version: z.number().int().min(0).max(2147483646).optional(),
+  /** Owner 2026-11-23: public URL key /p/{productCode} (1–12 digits). Omitted on create = assigned automatically. */
+  productCode: z.string().trim().regex(/^[0-9]{1,12}$/, "The product code is 1 to 12 digits").optional(),
   sku: z.string().trim().max(100).optional(),
   /** Simple products: null = no price (allowed while the product is not published). */
   price: kztMoney.nullish(),

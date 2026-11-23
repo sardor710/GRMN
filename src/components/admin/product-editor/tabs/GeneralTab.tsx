@@ -7,6 +7,7 @@ import { useTaxonomy } from "@/components/admin/catalog/useTaxonomy";
 import { cn } from "@/lib/utils";
 import { CategoryPicker } from "../CategoryPicker";
 import { withSeries } from "../editor-state";
+import { productPath } from "@/lib/catalog/product-url";
 import { Field, Section } from "../Field";
 import { formatKzt, inputClass } from "../shared";
 import type { EditorTab, ProductEditorState } from "../useProductEditorState";
@@ -16,6 +17,8 @@ const ACTIVITIES = ["Running", "Cycling", "Swimming", "Triathlon", "Hiking", "Go
 export const PRODUCT_STATUSES: ProductStatus[] = ["draft", "published", "archived"];
 
 const numberOrNull = (raw: string): number | null => (raw.trim() === "" ? null : Number(raw));
+/** Storefront host for the address hint (NEXT_PUBLIC_SITE_URL is inlined at build time). */
+const SITE_HOST = (process.env.NEXT_PUBLIC_SITE_URL || "https://garmin.tigr.uz").replace(/^https?:\/\//, "").replace(/\/+$/, "");
 
 export function GeneralTab({ editor, skuConflicts, onOpenTab }: { editor: ProductEditorState; skuConflicts: string[]; onOpenTab: (tab: EditorTab) => void }) {
   const { form, update, base } = editor;
@@ -36,6 +39,9 @@ export function GeneralTab({ editor, skuConflicts, onOpenTab }: { editor: Produc
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Name" htmlFor="product-name" required className="md:col-span-2">
             <input id="product-name" value={form.name} onChange={(event) => update({ name: event.target.value })} placeholder="e.g. fēnix 8 – 47 mm, AMOLED" className={inputClass} />
+          </Field>
+          <Field label="Product code" htmlFor="product-code" hint={form.productCode.trim() ? `Page address: ${SITE_HOST}${productPath(form.productCode.trim())} — each variant is ${SITE_HOST}${productPath(form.productCode.trim())}/<SKU>.` : "Digits only. Leave empty on a new product to get one automatically (imported products keep their garmin.com number)."}>
+            <input id="product-code" inputMode="numeric" value={form.productCode} onChange={(event) => update({ productCode: event.target.value.replace(/\s+/g, "") })} placeholder="e.g. 1953727" className={inputClass} />
           </Field>
           <Field label="Series" htmlFor="product-series" hint="Used by the Series filter on category pages. Manage the list in Categories ▸ Series.">
             <Select id="product-series" value={currentSeries} onChange={(event) => update({ categories: withSeries(form.categories, event.target.value || null, seriesKeys) })}>

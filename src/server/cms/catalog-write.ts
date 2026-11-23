@@ -212,6 +212,15 @@ export async function writeProduct(client: PoolClient, context: WriteContext, ra
   if (old) await client.query("UPDATE products SET name=$2,description=$3,family=$4,badge=$5,price_suffix=$6,status=$7,is_featured=$8,specs=$9,features=$10,in_the_box=$11,legacy_content=$12,seo_title=$13,seo_description=$14,focus_keywords=$15,canonical_url=$16,no_index=$17,og_image_source=$18,version=version+1,updated_at=clock_timestamp() WHERE id=$1", [productId, ...fields]);
   else await client.query("INSERT INTO products(id,name,description,family,badge,price_suffix,status,is_featured,specs,features,in_the_box,legacy_content,seo_title,seo_description,focus_keywords,canonical_url,no_index,og_image_source,public_key) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)", [productId, ...fields, publicKey]);
 
+  // 4b. Owner 2026-11-23: the public URL key /p/{code}. An explicit code must be free; a new product imported from
+  //     garmin.com keeps that site's product id when it is free; otherwise the column default (product_code_seq) stays.
+  const wantedCode = data.productCode ?? (old ? undefined : garminProductId(content));
+  if (wantedCode !== undefined) {
+    const taken = (await client.query("SELECT 1 FROM products WHERE product_code=$1 AND id<>$2", [wantedCode, productId])).rowCount;
+    if (taken && data.productCode !== undefined) fail("PRODUCT_CODE_CONFLICT", 409, `Product code ${wantedCode} is already used by another product`);
+    if (!taken) await client.query("UPDATE products SET product_code=$2 WHERE id=$1 AND product_code<>$2", [productId, wantedCode]);
+  }
+
   // 5. Options, variants, prices, media and stock (ledger) in one place.
   const images = data.images;
   const files = images ? await resolveImageFiles(client, images.map(image => image.src)) : undefined;
@@ -246,6 +255,13 @@ export async function writeProduct(client: PoolClient, context: WriteContext, ra
       const content = own.overviewHtml === undefined ? own : { ...own, overviewHtml: PRODUCT_HTML_FIELDS.overviewHtml(own.overviewHtml) };
       await client.query("UPDATE product_variants SET content_overrides=$2::jsonb,version=version+1,updated_at=clock_timestamp() WHERE id=$1 AND content_overrides IS DISTINCT FROM $2::jsonb", [id, json(content)]);
     }
+  }
+  // 6c. Owner 2026-11-23: each variant page's own SEO text per language; a variant sent without `seo` keeps it.
+  const storedBySku = new Map(storedRows.map(row => [row.sku.toLowerCase(), row.id]));
+  for (const variant of variants) {
+    const id = storedBySku.get(variant.sku.toLowerCase());
+    if (!id || variant.seo === undefined) continue;
+    await client.query("UPDATE product_variants SET seo=$2::jsonb,version=version+1,updated_at=clock_timestamp() WHERE id=$1 AND seo IS DISTINCT FROM $2::jsonb", [id, json(cleanVariantSeo(variant.seo))]);
   }
 
   // 7. legacy_content = the stored editor shape (stored ids), without the relational extras, for readers
@@ -334,4 +350,22 @@ function carrySwatchSources(legacy: Record<string, unknown>, sources: readonly u
     const found = record(origin.get(`${String(option.key).toLowerCase()}\u0000${String(value.key).toLowerCase()}`));
     if (found.source !== undefined && typeof value.swatchColor === "string" && String(found.hex ?? "").toLowerCase() === value.swatchColor.toLowerCase()) value.swatchColorSource = found.source;
   }
+}
+
+/** garmin.com product id of an imported product (legacy_content.source.productId) when it can be a product code. */
+function garminProductId(content: Record<string, unknown>): string | undefined {
+  const source = content.source;
+  const id = source && typeof source === "object" && !Array.isArray(source) ? (source as Record<string, unknown>).productId : undefined;
+  return typeof id === "string" && /^[0-9]{1,8}$/.test(id) && Number(id) < 90000001 ? id : undefined;
+}
+
+/** Stored form of a variant's SEO text: blank fields and empty languages are dropped (= generated). */
+export function cleanVariantSeo(seo: Partial<Record<"en" | "ru" | "kk", { title?: string; description?: string }>>): Partial<Record<"en" | "ru" | "kk", { title?: string; description?: string }>> {
+  const out: Partial<Record<"en" | "ru" | "kk", { title?: string; description?: string }>> = {};
+  for (const locale of ["en", "ru", "kk"] as const) {
+    const text = seo[locale];
+    const title = text?.title?.trim(), description = text?.description?.trim();
+    if (title || description) out[locale] = { ...(title ? { title } : {}), ...(description ? { description } : {}) };
+  }
+  return out;
 }

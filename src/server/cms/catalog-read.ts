@@ -5,7 +5,7 @@ import { AuthFailure } from "../auth/config.ts";
 import { adminDTO } from "../auth/admin-schemas.ts";
 import { readVariantConfiguration } from "../catalog/variant-sync.ts";
 import type { ListPage, PickerRow, ProductListRow, SkuRow, TaxonomyNode } from "../../contracts/admin-catalog.ts";
-import { parseVariantContent, type VariantContent } from "../../lib/catalog/variant-content.ts";
+import { parseVariantContent, parseVariantSeo, type VariantContent } from "../../lib/catalog/variant-content.ts";
 import { rekeyVariantTranslations } from "./product-translations.ts";
 import { readCompatibility, type AccessoryLinkInput, type CompatibleAccessoryView, type CompatibleDeviceView, type CompatibleTypeView, type DeviceLinkInput, type TypeLinkInput } from "./compatibility.ts";
 
@@ -31,6 +31,8 @@ export interface EditorVariant {
   version: number; thumbnail: string | null;
   /** beta5 merge (Task 2.1): this variant's own content blocks (content_overrides); a present key is "Own". Absent = inherits all. */
   content?: VariantContent;
+  /** Owner 2026-11-23: this variant page's own SEO text per language (product_variants.seo); absent = generated. */
+  seo?: Partial<Record<"en" | "ru" | "kk", { title?: string; description?: string }>>;
 }
 export interface EditorOption { id: string; key: string; name: string; display: "buttons" | "swatch" | "dropdown"; values: { id: string; key: string; label: string; swatchColor?: string; swatchImage?: string }[] }
 export interface EditorProduct extends Record<string, unknown> {
@@ -64,7 +66,9 @@ export async function loadEditorProduct(client: Query, productId: string, input:
     "SELECT DISTINCT ON (pm.variant_id) pm.variant_id,COALESCE(m.source_path,m.storage_key) AS path FROM product_media pm JOIN media_assets m ON m.id=pm.media_id AND m.status='ready' WHERE pm.product_id=$1 AND pm.variant_id IS NOT NULL ORDER BY pm.variant_id,pm.is_primary DESC,pm.position,pm.id", [productId])).rows.map(r => [r.variant_id, r.path]));
   const legacyVariants = Array.isArray(legacy.variants) ? legacy.variants as Record<string, unknown>[] : [];
   // beta5 merge: per-variant content (Task 2.1) and ru/kk overlays (Task 24), variant overlays keyed by stored id.
-  const overrides = new Map((await client.query<{ id: string; content_overrides: unknown }>("SELECT id::text AS id,content_overrides FROM product_variants WHERE product_id=$1", [productId])).rows.map(r => [r.id, parseVariantContent(r.content_overrides)]));
+  const overrideRows = (await client.query<{ id: string; content_overrides: unknown; seo: unknown }>("SELECT id::text AS id,content_overrides,seo FROM product_variants WHERE product_id=$1", [productId])).rows;
+  const overrides = new Map(overrideRows.map(r => [r.id, parseVariantContent(r.content_overrides)]));
+  const variantSeo = new Map(overrideRows.map(r => [r.id, parseVariantSeo(r.seo)]));
   const storedTranslations = (await client.query<{ t: unknown }>("SELECT jsonb_object_agg(locale,content) AS t FROM product_translations WHERE product_id=$1", [productId])).rows[0]?.t;
   const translations = storedTranslations ? rekeyVariantTranslations(storedTranslations, row.legacy_content?.variants, config.variants.map(v => ({ id: v.id, sku: v.sku }))) : undefined;
   const extras = (id: string, sku: string) => legacyVariants.find(v => v.id === id) ?? legacyVariants.find(v => typeof v.sku === "string" && v.sku.toLowerCase() === sku.toLowerCase());
@@ -79,6 +83,7 @@ export async function loadEditorProduct(client: Query, productId: string, input:
       ...(extra?.sourcePrice && typeof extra.sourcePrice === "object" ? { sourcePrice: extra.sourcePrice as Record<string, unknown> } : {}),
       version: variant.version, thumbnail: thumbs.get(variant.id) ?? null,
       ...(Object.keys(overrides.get(variant.id) ?? {}).length ? { content: overrides.get(variant.id) } : {}),
+      ...(Object.keys(variantSeo.get(variant.id) ?? {}).length ? { seo: variantSeo.get(variant.id) } : {}),
     };
   });
   // Keep the editor's variant order (legacy_content order), then any variant it does not know.
@@ -111,6 +116,8 @@ export async function loadEditorProduct(client: Query, productId: string, input:
     ...level, ...caseSize,
     ...(optional(row.badge) ? { badge: row.badge } : {}), ...(optional(row.price_suffix) ? { priceSuffix: row.price_suffix } : {}),
     ...(translations ? { translations } : {}),
+    // Owner 2026-11-23: public URL key /p/{productCode}.
+    productCode: String(row.product_code),
     id: String(row.public_key), version: Number(row.version), name: String(row.name), sku: main?.sku ?? (typeof legacy.sku === "string" ? legacy.sku : ""),
     price: main?.price ?? null, ...(main?.originalPrice !== undefined ? { originalPrice: main.originalPrice } : {}),
     description: String(row.description ?? ""), image: typeof legacy.image === "string" ? legacy.image : row.thumbnail ?? "", family: String(row.family ?? ""),

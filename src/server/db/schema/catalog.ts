@@ -89,6 +89,9 @@ export const productVariants = pgTable("product_variants", {
   widthMm: integer("width_mm"),
   heightMm: integer("height_mm"),
   contentOverrides: jsonb("content_overrides").notNull().default({}),
+  // Owner 2026-11-23 (0030): the variant page's own SEO title/description per language — {en|ru|kk: {title?, description?}};
+  // an absent language or field means the page's text is generated.
+  seo: jsonb("seo").$type<Partial<Record<"en" | "ru" | "kk", { title?: string; description?: string }>>>().notNull().default({}),
   version: integer("version").notNull().default(1),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
@@ -103,6 +106,7 @@ export const productVariants = pgTable("product_variants", {
   check("product_variants_measurements_valid", sql`(${table.weightGrams} IS NULL OR ${table.weightGrams}>0) AND (${table.lengthMm} IS NULL OR ${table.lengthMm}>0) AND (${table.widthMm} IS NULL OR ${table.widthMm}>0) AND (${table.heightMm} IS NULL OR ${table.heightMm}>0)`),
   check("product_variants_version_valid", sql`${table.version}>=1`),
   check("product_variants_content_overrides_object", sql`jsonb_typeof(${table.contentOverrides})='object'`),
+  check("product_variants_seo_object", sql`jsonb_typeof(${table.seo})='object'`),
 ]);
 
 export const productOptions = pgTable("product_options", {

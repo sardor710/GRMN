@@ -2,6 +2,7 @@
 // variant's price, image and effective, localized specs, through the same product-detail read the product
 // page uses (src/lib/products.ts getProductDetail, PostgreSQL mode). Unknown SKU → default variant, unknown
 // or unpublished product → dropped, more than five items → capped. Never throws.
+import * as productUrl from "../../src/lib/catalog/product-url.ts";
 import assert from "node:assert/strict";
 import { before, after, test } from "node:test";
 import fs from "node:fs";
@@ -46,6 +47,7 @@ function productsModule(catalog) {
     "@/lib/cms/product-variants": { usesCmsDetail:()=>false },
     "@/i18n/translate-record": { localizeProduct:(p)=>p },
     "./public-products": { products:[], watchFamilies:[] },
+    "@/lib/catalog/product-url": productUrl,
   };
   new Function("require","exports",code)(name=>modules[name]??{},exports);
   return exports;

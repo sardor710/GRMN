@@ -124,6 +124,8 @@ export interface ProductVariant {
   sourcePrice?: SourcePrice;
   /** Own Specs/Overview/In the box (PostgreSQL only); a missing key inherits the product's block. */
   content?: VariantContent;
+  /** Owner 2026-11-23: this variant page's own SEO title/description per language (PostgreSQL only); blank = generated. */
+  seo?: Partial<Record<"en" | "ru" | "kk", { title?: string; description?: string }>>;
 }
 
 export interface SpecGroup {
@@ -140,6 +142,8 @@ export interface ProductSource {
 }
 
 export interface CMSProduct {
+  /** PostgreSQL catalog (owner 2026-11-23): public URL key /p/{productCode}; absent for legacy JSON records. */
+  productCode?: string;
   currency?: "KZT" | "USD";
   stockManaged?: boolean;
   version?: number;
