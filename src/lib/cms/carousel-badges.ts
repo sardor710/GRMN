@@ -1,6 +1,6 @@
 /**
  * Owner 2026-11-23: homepage carousel cards carry garmin.ae-style starburst badges: a black burst with white
- * condensed uppercase text, for every badge text. A known code shows its localized label (messages
+ * condensed uppercase text, for every badge text; sales (SALE, catalog savings) are Garmin cyan with black text. A known code shows its localized label (messages
  * HomeFeatured.badges.<code>); any other text (e.g. catalog "Save 50,000 KZT") is shown as it is.
  */
 export type CarouselBadgeCode = "NEW" | "SALE" | "SOON" | "HIT" | "LIMITED" | "EXCLUSIVE" | "PREORDER";

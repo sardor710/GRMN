@@ -64,7 +64,8 @@ test("carousel cards show starburst badges", () => {
   }
   assert.ok(json.includes("−18%"), "SALE shows the saving");
   assert.ok(json.includes('"data-badge":"CUSTOM"') && json.includes("GARMIN SIGNATURE"), "any other text is a starburst too");
-  assert.ok(!json.includes('"data-tone"'), "all starbursts are black like garmin.ae (no colour variants)");
+  // Owner 2026-11-23: every badge black, only sale in Garmin cyan (#6DCFF6).
+  assert.equal(json.split('"data-tone":"sale"').length - 1, 1, "only the SALE starburst is cyan");
   // homepage.css gives every span the body font; .home-display keeps the condensed display font (garmin.ae look).
   assert.equal(json.split("home-display").length - 1, 4, "every starburst uses the display font");
 });
@@ -77,5 +78,6 @@ test("savings badges from the catalog render as starbursts", () => {
   const json = JSON.stringify(render(Featured({ carousels: [carousel] })));
   assert.equal(json.split('"data-badge":"CUSTOM"').length - 1, 2, "two starbursts");
   assert.equal(json.split('"data-size":"savings"').length - 1, 2, "savings layout: word line + amount line");
+  assert.equal(json.split('"data-tone":"sale"').length - 1, 2, "savings are sales: Garmin cyan");
   for (const text of ["Save", "50,000 ₸", "Экономия", "125 000 ₸"]) assert.ok(json.includes(`"${text}"`), text);
 });
