@@ -13,24 +13,14 @@ export const IMAGE_DIMENSION_SPECS = {
     description: "Full-width desktop hero rotator. Keep critical subjects and text centered."
   },
   productCarousel: {
-    label: "Product Carousel Item (Type 1)",
+    label: "Carousel Card",
     recommendedWidth: 800,
     recommendedHeight: 800,
     aspectRatio: "1:1",
     maxSizeBytes: 1048576, // 1MB
     maxSizeFormatted: "1 MB",
     supportedFormats: ["image/jpeg", "image/png", "image/webp"],
-    description: "Square product shots with transparent or neutral background."
-  },
-  promoCarousel: {
-    label: "Promo Photo & Button Carousel (Type 2)",
-    recommendedWidth: 1200,
-    recommendedHeight: 600,
-    aspectRatio: "2:1",
-    maxSizeBytes: 1572864, // 1.5MB
-    maxSizeFormatted: "1.5 MB",
-    supportedFormats: ["image/jpeg", "image/png", "image/webp"],
-    description: "Wide horizontal lifestyle banner with hyperlink button."
+    description: "Square image (800 × 800). Price, badge and button are optional."
   },
   tileBlock: {
     label: "Homepage Containing Block / Pod",
@@ -114,7 +104,7 @@ export function createDefaultHomepageConfig() {
             id: "prod-1",
             title: "CIRQA™ SMART BAND",
             description: "Screenless health and fitness tracker. No subscription required.",
-            price: "$199.99",
+            price: "",
             badge: "NEW",
             image: "/homepage/featured/cirqa.jpg",
             href: "https://www.garmin.com/en-US/p/1989182/",
@@ -124,7 +114,7 @@ export function createDefaultHomepageConfig() {
             id: "prod-2",
             title: "Descent™ X10",
             description: "Essential dive computer with large, easy-to-read text.",
-            price: "$799.99",
+            price: "",
             badge: "NEW",
             image: "/homepage/featured/descent.jpg",
             href: "https://www.garmin.com/en-US/p/1999658/",
@@ -134,8 +124,7 @@ export function createDefaultHomepageConfig() {
             id: "prod-3",
             title: "VÍVOACTIVE® 5",
             description: "Health and fitness GPS smartwatch with AMOLED display.",
-            price: "$199.99",
-            originalPrice: "$299.99",
+            price: "",
             badge: "SALE",
             image: "/homepage/featured/vivoactive.jpg",
             href: "https://www.garmin.com/en-US/p/1057989/",
@@ -145,8 +134,7 @@ export function createDefaultHomepageConfig() {
             id: "prod-4",
             title: "TACX® NEO 2T SMART TRAINER",
             description: "Premium direct-drive bike trainer with +/- 1% accuracy.",
-            price: "$1,199.99",
-            originalPrice: "$1,399.99",
+            price: "",
             badge: "SALE",
             image: "/homepage/featured/tacx.jpg",
             href: "https://www.garmin.com/en-US/p/701670/",

@@ -430,6 +430,8 @@ export interface HeroBanner {
   href: string;
   active: boolean;
   order: number;
+  /** Hidden on the storefront, kept in admin (Restore / Delete forever). */
+  archived?: boolean;
 }
 
 export interface ProductCarouselItem {
@@ -442,10 +444,16 @@ export interface ProductCarouselItem {
   image: string;
   href: string;
   order: number;
-  /** Optional per-item render variant; "promo" renders an edge-to-edge image tile with a CTA button. */
+  /** Legacy per-item render variant; the storefront now renders every card the same way. */
   variant?: "product" | "promo";
   imageAlt?: string;
+  /** Optional button text; the card shows a button only when it is set. */
+  ctaText?: string;
+  archived?: boolean;
 }
+
+/** The single homepage carousel card (owner 2026-11-23): price, badge and button are optional. */
+export type CarouselCard = ProductCarouselItem;
 
 export interface PromoCarouselItem {
   id: string;
@@ -455,9 +463,10 @@ export interface PromoCarouselItem {
   href: string;
   ctaText: string;
   order: number;
-  /** Optional per-item render variant; "promo" renders an edge-to-edge image tile with a CTA button. */
+  /** Legacy per-item render variant; the storefront now renders every card the same way. */
   variant?: "product" | "promo";
   imageAlt?: string;
+  archived?: boolean;
 }
 
 export type CarouselType = "product" | "promo";
@@ -472,6 +481,7 @@ export interface CarouselBlock {
   active: boolean;
   order: number;
   items: (ProductCarouselItem | PromoCarouselItem)[];
+  archived?: boolean;
 }
 
 export interface HomepageTileBlock {
@@ -481,6 +491,7 @@ export interface HomepageTileBlock {
   href: string;
   cta: string;
   order: number;
+  archived?: boolean;
 }
 
 export interface HomepageConfig {

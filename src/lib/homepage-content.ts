@@ -39,8 +39,8 @@ export const homeFeaturedCards: HomeFeaturedCard[] = [
   { title: "BOUNCE™ 2", description: "Kids smartwatches with messaging and location tracking features.", image: "/homepage/featured/bounce2.jpg", href: "/p/1815501" },
   { title: "FORERUNNER® 70 & 170", description: "GPS running smartwatches with essential training and recovery features, plus optional music.", image: "/homepage/featured/forerunner.jpg", href: "https://www.garmin.com/en-US/p/1915560/" },
   { title: "APPROACH® J1", description: "The first smartwatch designed specifically for junior golfers with its bright, colorful display and features to learn and improve.", image: "/homepage/featured/approach.jpg", href: "/p/1908217" },
-  { title: "SAVE $100 ON VÍVOACTIVE® 5", description: "Health and fitness GPS smartwatch with an AMOLED display, essential wellness tracking and smart features.", image: "/homepage/featured/vivoactive.jpg", href: "https://www.garmin.com/en-US/p/1057989/", badge: "SALE" },
-  { title: "SAVE $200 ON TACX® NEO 2T SMART TRAINER", description: "Premium direct-drive bike trainer with +/- 1% accuracy and performance metrics.", image: "/homepage/featured/tacx.jpg", href: "https://www.garmin.com/en-US/p/701670/", badge: "SALE" },
+  { title: "SAVE ON VÍVOACTIVE® 5", description: "Health and fitness GPS smartwatch with an AMOLED display, essential wellness tracking and smart features.", image: "/homepage/featured/vivoactive.jpg", href: "https://www.garmin.com/en-US/p/1057989/", badge: "SALE" },
+  { title: "SAVE ON TACX® NEO 2T SMART TRAINER", description: "Premium direct-drive bike trainer with +/- 1% accuracy and performance metrics.", image: "/homepage/featured/tacx.jpg", href: "https://www.garmin.com/en-US/p/701670/", badge: "SALE" },
 ];
 
 export const homePromoTiles: HomeTile[] = [

@@ -3,19 +3,12 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
-import type { CarouselBlock, ProductCarouselItem, PromoCarouselItem } from "@/lib/cms/types";
+import type { CarouselBlock, CarouselCard, PromoCarouselItem } from "@/lib/cms/types";
 import styles from "./HomeFeatured.module.css";
 import { useLocalizeHref } from "@/i18n/useLocalizeHref";
 
-type CarouselItem = ProductCarouselItem | PromoCarouselItem;
-
 function plainText(text: string) {
   return text.replace(/[®™]/g, "");
-}
-
-function isPromo(item: CarouselItem, carousel: CarouselBlock) {
-  if (item.variant) return item.variant === "promo";
-  return carousel.type === "promo";
 }
 
 function ArrowIcon({ direction }: { direction: "left" | "right" }) {
@@ -62,41 +55,24 @@ function ArrowIcon({ direction }: { direction: "left" | "right" }) {
   );
 }
 
-function PromoTile({ item, eager }: { item: PromoCarouselItem; eager: boolean }) {
+/**
+ * Owner 2026-11-23: one carousel card for every item. Badge, price/old price and the button appear only
+ * when the card has them; legacy promo items (`variant: "promo"`, `ctaText`) render through the same card.
+ */
+function CarouselCardView({ item, eager }: { item: CarouselCard | PromoCarouselItem; eager: boolean }) {
   const localize = useLocalizeHref();
-  const t = useTranslations("HomeFeatured");
+  const card = item as CarouselCard;
   return (
-    <a className={`${styles.slide} ${styles.promo}`} href={item.href ? localize(item.href) : undefined}>
-      <Image
-        src={item.image}
-        alt={item.imageAlt ?? plainText(item.title)}
-        fill
-        sizes="(max-width: 640px) 75vw, (max-width: 989px) 40vw, 23vw"
-        className={styles.promoImage}
-        priority={eager}
-        unoptimized
-      />
-      <div className={styles.promoText}>
-        <h3 className={styles.name}>{item.title}</h3>
-        <span className={styles.button}>{item.ctaText || t("shop")}</span>
-      </div>
-    </a>
-  );
-}
-
-function ProductCard({ item, eager }: { item: ProductCarouselItem; eager: boolean }) {
-  const localize = useLocalizeHref();
-  return (
-    <a className={`${styles.slide} ${styles.product}`} href={item.href ? localize(item.href) : undefined} aria-label={plainText(item.title)}>
-      {item.badge && (
+    <a className={`${styles.slide} ${styles.product}`} href={card.href ? localize(card.href) : undefined} aria-label={plainText(card.title)}>
+      {card.badge && (
         <div className={styles.badges}>
-          <div className={styles.badge}>{item.badge}</div>
+          <div className={styles.badge}>{card.badge}</div>
         </div>
       )}
       <div className={styles.imageContainer}>
         <Image
-          src={item.image}
-          alt={item.imageAlt ?? plainText(item.title)}
+          src={card.image}
+          alt={card.imageAlt ?? plainText(card.title)}
           width={600}
           height={600}
           sizes="240px"
@@ -106,8 +82,15 @@ function ProductCard({ item, eager }: { item: ProductCarouselItem; eager: boolea
         />
       </div>
       <div className={styles.text}>
-        <h3 className={styles.name}>{item.title}</h3>
-        {item.description && <p className={styles.copy}>{item.description}</p>}
+        <h3 className={styles.name}>{card.title}</h3>
+        {card.description && <p className={styles.copy}>{card.description}</p>}
+        {card.price && (
+          <p className={styles.prices}>
+            <span className={styles.price}>{card.price}</span>
+            {card.originalPrice && <span className={styles.originalPrice}>{card.originalPrice}</span>}
+          </p>
+        )}
+        {card.ctaText && <span className={styles.button}>{card.ctaText}</span>}
         <div className={styles.footnote} />
       </div>
     </a>
@@ -162,13 +145,9 @@ function FeaturedCarousel({ carousel }: { carousel: CarouselBlock }) {
           className={styles.slides}
           style={{ ["--featured-offset" as string]: `${-offset}px` }}
         >
-          {items.map((item, index) =>
-            isPromo(item, carousel) ? (
-              <PromoTile key={item.id || index} item={item as PromoCarouselItem} eager={index < 4} />
-            ) : (
-              <ProductCard key={item.id || index} item={item as ProductCarouselItem} eager={index < 4} />
-            ),
-          )}
+          {items.map((item, index) => (
+            <CarouselCardView key={item.id || index} item={item} eager={index < 4} />
+          ))}
         </div>
         {offset > 0 && (
           <button type="button" title={t("previous")} className={`${styles.arrow} ${styles.arrowLeft}`} onClick={() => advance(-1)}>

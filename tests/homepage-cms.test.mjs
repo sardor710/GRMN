@@ -1,3 +1,4 @@
+import fs from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
@@ -20,11 +21,9 @@ test('IMAGE_DIMENSION_SPECS defines exact dimensions, aspect ratios and size lim
   assert.equal(IMAGE_DIMENSION_SPECS.productCarousel.aspectRatio, '1:1');
   assert.equal(IMAGE_DIMENSION_SPECS.productCarousel.maxSizeFormatted, '1 MB');
 
-  assert.ok(IMAGE_DIMENSION_SPECS.promoCarousel);
-  assert.equal(IMAGE_DIMENSION_SPECS.promoCarousel.recommendedWidth, 1200);
-  assert.equal(IMAGE_DIMENSION_SPECS.promoCarousel.recommendedHeight, 600);
-  assert.ok(IMAGE_DIMENSION_SPECS.promoCarousel.aspectRatio.includes('2:1'));
-  assert.equal(IMAGE_DIMENSION_SPECS.promoCarousel.maxSizeFormatted, '1.5 MB');
+  // Owner 2026-11-23: one carousel card type; the promo carousel spec is gone.
+  assert.equal(IMAGE_DIMENSION_SPECS.promoCarousel, undefined);
+  assert.equal(IMAGE_DIMENSION_SPECS.productCarousel.label, 'Carousel Card');
 
   assert.ok(IMAGE_DIMENSION_SPECS.tileBlock);
   assert.equal(IMAGE_DIMENSION_SPECS.tileBlock.recommendedWidth, 600);
@@ -104,4 +103,23 @@ test('validateHomepageConfig validates structure and reports errors for malforme
 
   const invalidNull = validateHomepageConfig(null);
   assert.equal(invalidNull.isValid, false);
+});
+
+// Review 2026-11-23 (I2): the merged card shows prices, so the template must not carry US-dollar prices on a tenge store.
+test('default template carousel cards carry no US-dollar prices', () => {
+  for (const carousel of createDefaultHomepageConfig().carousels) {
+    for (const item of carousel.items) {
+      assert.ok(!String(item.price ?? '').includes('$'), `${item.id} price`);
+      assert.ok(!String(item.originalPrice ?? '').includes('$'), `${item.id} originalPrice`);
+    }
+  }
+});
+
+// Owner 2026-11-23: no dollar sign anywhere a customer can see; prices are tenge (₸ / KZT) only.
+test('storefront copy has no dollar amounts', () => {
+  for (const file of ['src/lib/homepage-content.ts', 'src/lib/content.ts', 'src/lib/cms/homepage-schema.js']) {
+    const literals = fs.readFileSync(file, 'utf8').match(/"[^"\n]*"/g) ?? [];
+    const dollars = literals.filter((text) => /\$\s?\d/.test(text));
+    assert.deepEqual(dollars, [], file);
+  }
 });

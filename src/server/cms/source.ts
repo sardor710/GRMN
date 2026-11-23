@@ -78,10 +78,11 @@ export async function readBlogsPage(input:{limit?:number;cursor?:string;search?:
 export async function readBlog(slug:string){return (await read("blogs",{slug})).items[0] as CMSBlog|undefined;}
 export async function readHomepage():Promise<HomepageConfig>{
   // Owner 2026-11-19: never crash; an unpublished or unreadable homepage shows the built-in template.
-  const [{homepageWithFallback},{createDefaultHomepageConfig}]=await Promise.all([import("./homepage-fallback.ts"),import("../../lib/cms/homepage-schema")]);
+  const [{homepageWithFallback},{createDefaultHomepageConfig},{withoutArchived}]=await Promise.all([import("./homepage-fallback.ts"),import("../../lib/cms/homepage-schema"),import("../../lib/cms/homepage-archive.ts")]);
   const postgres=cmsBackend()==="postgres";
   return homepageWithFallback({
-    read:async()=>((await read("homepage")).items[0] as {config:HomepageConfig|null}|undefined)?.config??undefined,
+    // Owner 2026-11-23: archived banners, carousels, cards and tiles stay in admin only.
+    read:async()=>{const config=((await read("homepage")).items[0] as {config:HomepageConfig|null}|undefined)?.config;return config?withoutArchived(config):undefined;},
     template:createDefaultHomepageConfig,
     // 18A ruling I6: carousels bound to a merchandising collection show its published snapshot.
     resolve:postgres?async config=>{

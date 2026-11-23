@@ -594,6 +594,107 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     await setMode(previousMode);
   }
 }
+// Owner 2026-11-23 (CMS_SMOKE_ONLY=homepage-archive): Admin ▸ Homepage. Archive a banner and a category tile, delete a
+// carousel card, upload a banner image from the PC (a non-image is refused with a visible error), save; the storefront
+// hides archived entries and shows the merged card with its price and button; Restore brings the banner back.
+async function homepageArchiveScenario({cms,headers,origin,send,evaluate,navigate,text,click,receipt}){
+  const tile=(id,title)=>({id,title,image:"/homepage/pods/health.jpg",href:"/c/sports-fitness",cta:"SHOP",order:1});
+  const start=await cms.homepage(headers);
+  await cms.saveHomepage(headers,{version:start.version,config:{
+    heroBanners:[{id:"arch-a",key:"a",title:"ARCH-A",subtitle:"Kept banner",href:"/",image:"/homepage/featured/holiday.jpg",active:true,order:1},{id:"arch-b",key:"b",title:"ARCH-B",subtitle:"Archived banner",href:"/",image:"/homepage/featured/fenix9.jpg",active:true,order:2}],
+    carousels:[{id:"arch-c",title:"ARCH CAROUSEL",type:"product",active:true,order:1,items:[
+      {id:"card-1",title:"CARD-1",description:"Merged card",price:"₸99 000",originalPrice:"₸120 000",badge:"NEW",ctaText:"SHOP NOW",image:"/homepage/featured/cirqa.jpg",href:"/",order:1},
+      {id:"card-2",title:"CARD-2",description:"Deleted card",price:"",image:"/homepage/featured/descent.jpg",href:"/",order:2}]}],
+    promoTiles:[tile("promo-t","PROMO-T")],storyTiles:[tile("story-t","STORY-T")],categoryTiles:[tile("cat-t","CAT-T")]}});
+  const seeded=(await cms.homepage(headers)).version;
+  const press=label=>evaluate(`(()=>{const b=[...document.querySelectorAll('button')].find(b=>b.getAttribute('aria-label')===${JSON.stringify(label)});if(!b)throw Error('Missing '+${JSON.stringify(label)});b.click();return true})()`);
+  const setFile=async file=>{
+    const {root}=await send("DOM.getDocument",{depth:-1});
+    const {nodeId}=await send("DOM.querySelector",{nodeId:root.nodeId,selector:"[data-testid=homepage-image-file]"});
+    assert.ok(nodeId,"image file input missing");
+    await send("DOM.setFileInputFiles",{nodeId,files:[path.resolve(file)]});
+  };
+  const preview=()=>evaluate("document.querySelector('img[alt=\"Banner image preview\"]')?.getAttribute('src')??''");
+  const saveAll=async after=>{await click("Save All Changes");await until(async()=>(await cms.homepage(headers)).version>after,"Homepage save failed");return (await cms.homepage(headers)).version;};
+
+  await navigate("/admin/homepage");await until(async()=>(await text()).includes("ARCH-A"),"Homepage admin did not load");
+  await evaluate("window.confirm=()=>true;true");
+  await press("Archive banner ARCH-B");await until(async()=>(await text()).includes("Archived banners (1)"),"Banner archive strip missing");
+  assert.ok(!(await evaluate("[...document.querySelectorAll('h3')].some(h=>h.textContent==='ARCH-B')")),"archived banner left the live list");
+  await click("Carousels (");await until(async()=>(await text()).includes("CARD-2"),"Carousel tab did not open");
+  assert.ok(!/Type 1|Type 2/.test(await text()),"no carousel type picker or type labels");
+  await press("Delete card CARD-2");await until(async()=>!(await text()).includes("CARD-2"),"Card delete failed");
+  await click("Containing Blocks (");await until(async()=>(await text()).includes("CAT-T"),"Blocks tab did not open");
+  assert.equal(await evaluate("document.querySelectorAll('[data-tile-section] button[aria-label^=\"Archive tile\"]').length"),3,"every tile has Archive");
+  assert.equal(await evaluate("document.querySelectorAll('[data-tile-section] button[aria-label^=\"Delete tile\"]').length"),3,"every tile has Delete");
+  await press("Archive tile CAT-T");await until(async()=>(await text()).includes("Archived tiles (1)"),"Tile archive strip missing");
+
+  await click("Hero Banners (");await until(()=>evaluate("!!document.querySelector('button[title=\"Edit banner\"]')"),"Banner tab did not open");
+  await evaluate("document.querySelector('button[title=\"Edit banner\"]').click();true");
+  await until(()=>evaluate("!!document.querySelector('[data-testid=homepage-image-file]')"),"Banner editor has no PC upload");
+  // Review I1: text typed while the upload is still running survives the upload finishing.
+  await evaluate("(()=>{const real=window.fetch;window.__realFetch=real;window.fetch=(...args)=>String(args[0]).includes('/api/admin/uploads')?new Promise(r=>setTimeout(r,2000)).then(()=>real(...args)):real(...args);return true})()");
+  await setFile("tests/fixtures/homepage-upload.jpg");
+  await until(()=>evaluate("!!document.querySelector('button[aria-busy=true]')"),"Upload did not start");
+  await evaluate(`(()=>{const input=[...document.querySelectorAll('label')].find(l=>l.textContent.includes('Banner Headline'))?.parentElement.querySelector('input');if(!input)throw Error('title input missing');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'ARCH-A TYPED');input.dispatchEvent(new Event('input',{bubbles:true}));return true})()`);
+  await until(async()=>(await preview()).startsWith("/uploads/homepage/"),"Uploaded image did not reach the preview");
+  assert.equal(await evaluate("[...document.querySelectorAll('label')].find(l=>l.textContent.includes('Banner Headline')).parentElement.querySelector('input').value"),"ARCH-A TYPED","typing during an upload is kept");
+  await evaluate("window.fetch=window.__realFetch;true");
+  const uploaded=await preview();
+  await setFile("tests/fixtures/not-an-image.jpg");
+  await until(()=>evaluate("/not a JPEG/i.test(document.querySelector('[role=alert]')?.textContent??'')"),"Non-image upload showed no error");
+  assert.equal(await preview(),uploaded,"a refused upload keeps the previous image");
+  const shot=async name=>{const image=await send("Page.captureScreenshot",{format:"png"});await saveShot(name,image.data);};
+  const imagesLoaded=async where=>{await evaluate("window.scrollTo(0,document.documentElement.scrollHeight);true");await delay(300);await evaluate("window.scrollTo(0,0);true");await until(()=>evaluate("[...document.images].every(img=>img.complete&&img.naturalWidth>0)"),`${where}: an image failed to load`);};
+  const fullShot=async name=>{await imagesLoaded(name);const [width,height]=await evaluate("[document.documentElement.clientWidth,Math.min(document.documentElement.scrollHeight,6000)]");const image=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:true,clip:{x:0,y:0,width,height,scale:1}});await saveShot(name,image.data);};
+  await shot("homepage-archive-upload-modal.png");
+  await click("Save Slide");
+  const saved=await saveAll(seeded);
+  const config=(await cms.homepage(headers)).config;
+  const byId=(list,id)=>list.find(entry=>entry.id===id);
+  assert.equal(byId(config.heroBanners,"arch-b").archived,true);
+  assert.equal(byId(config.heroBanners,"arch-a").image,uploaded);
+  assert.equal(byId(config.heroBanners,"arch-a").title,"ARCH-A TYPED");
+  assert.equal(byId(config.categoryTiles,"cat-t").archived,true);
+  assert.deepEqual(config.carousels[0].items.map(item=>item.id),["card-1"]);
+  assert.equal((await fetch(origin+uploaded)).status,200,"uploaded image is served");
+
+  await navigate("/");await until(async()=>(await text()).includes("CARD-1"),"Storefront did not render the homepage");
+  const visible=await text(),source=await evaluate("document.body.textContent");
+  for(const needle of ["ARCH-A","CARD-1","₸99 000","₸120 000","SHOP NOW","PROMO-T","STORY-T"])assert.ok(visible.includes(needle),`storefront shows ${needle}`);
+  for(const needle of ["ARCH-B","CARD-2","CAT-T"])assert.ok(!source.includes(needle),`storefront hides ${needle}`);
+  assert.ok(await evaluate(`[...document.images].some(img=>img.getAttribute('src')===${JSON.stringify(uploaded)})`),"storefront hero uses the uploaded image");
+  await shot("homepage-archive-store.png");
+  await imagesLoaded("storefront");
+  {const [top,width]=await evaluate("[document.querySelector('[data-home-featured]').getBoundingClientRect().top+window.scrollY,document.documentElement.clientWidth]");
+  const image=await send("Page.captureScreenshot",{format:"png",captureBeyondViewport:true,clip:{x:0,y:top,width,height:820,scale:1}});await saveShot("homepage-archive-store-carousel.png",image.data);}
+
+  await navigate("/admin/homepage");await until(async()=>(await text()).includes("Archived banners (1)"),"Admin did not reload");
+  await evaluate("document.querySelectorAll('details[data-archived-strip]').forEach(d=>d.open=true);true");
+  await send("Emulation.setDeviceMetricsOverride",{width:1440,height:900,deviceScaleFactor:1,mobile:false});
+  await fullShot("homepage-archive-admin-banners.png");
+  await click("Carousels (");await until(async()=>(await text()).includes("CARD-1"),"Carousel tab did not open");await fullShot("homepage-archive-admin-carousels.png");
+  await click("Containing Blocks (");await until(async()=>(await text()).includes("PROMO-T"),"Blocks tab did not open");
+  await evaluate("document.querySelectorAll('details[data-archived-strip]').forEach(d=>d.open=true);true");await fullShot("homepage-archive-admin-blocks.png");
+  await click("Hero Banners (");await until(async()=>(await text()).includes("ARCH-A"),"Banner tab did not open");
+  await evaluate("document.querySelectorAll('details[data-archived-strip]').forEach(d=>d.open=true);true");
+  await send("Emulation.clearDeviceMetricsOverride");
+  try{
+    await send("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:2,mobile:true});
+    await delay(300);
+    assert.ok(await evaluate("document.documentElement.scrollWidth<=window.innerWidth+1"),"no horizontal scroll at 390 px");
+    await shot("homepage-archive-admin-390.png");
+  }finally{await send("Emulation.clearDeviceMetricsOverride");}
+  await evaluate("window.confirm=()=>true;true");
+  await press("Restore ARCH-B");await until(async()=>!(await text()).includes("Archived banners ("),"Restore did not move the banner back");
+  await saveAll(saved);
+  assert.equal("archived" in byId((await cms.homepage(headers)).config.heroBanners,"arch-b"),false,"restore removes the flag");
+  await navigate("/");await until(async()=>(await evaluate("document.body.textContent")).includes("ARCH-B"),"Restored banner missing on the storefront");
+  // Remove only the file this block uploaded.
+  assert.ok(uploaded.startsWith("/uploads/homepage/"));
+  fs.rmSync(path.join("storage","uploads",...uploaded.split("/").slice(2)),{force:true});
+}
+
 // Owner 2026-11-22 (CMS_SMOKE_ONLY=categories): Admin ▸ Categories. A subcategory created under Smartwatches with a
 // Russian name appears in the /ru header menu, hiding takes it out, the bin deletes it; admin status badges are square.
 async function categoriesScenario({send,evaluate,navigate,text,click,receipt}){
@@ -1056,6 +1157,7 @@ try{
     console.log("PASS Task3.3 demo checkout: Pay with one neutral no-payment line and no demo wording, a setting change between review and pay refetches the method both ways, candy-blue dot on the receipt and in the account, admin Demo filter with badge, dispatched and delivered");
   };
   const onlyAdminShots=process.env.CMS_SMOKE_ONLY==="admin-shots",onlyVariantContent=process.env.CMS_SMOKE_ONLY==="variant-content",onlyVariantSwitch=process.env.CMS_SMOKE_ONLY==="variant-switch",onlyDashboard=process.env.CMS_SMOKE_ONLY==="dashboard"||onlyAdminShots,onlyCompare=process.env.CMS_SMOKE_ONLY==="compare",onlyCategories=process.env.CMS_SMOKE_ONLY==="categories";
+  const onlyHomepageArchive=process.env.CMS_SMOKE_ONLY==="homepage-archive";
   if(onlyCategories){
     await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
@@ -1063,9 +1165,9 @@ try{
     console.log("PASS categories: subcategory created with a Russian name shows in the /ru menu, hidden and gone from the menu, deleted with the bin; square status badge; no horizontal scroll at 390 px");
     console.log("Browser smoke passed (CMS_SMOKE_ONLY=categories): only the categories block ran.");
   }
-  if(!onlyCategories&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare)await fullSuite();
+  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare)await fullSuite();
 
-  if(!onlyCategories&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
+  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
   // Task 2.3: per-variant content in the product editor (independent blocks; staff session).
   await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
   await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
@@ -1080,31 +1182,39 @@ try{
   }
 
   // Task 2.4: the storefront variant switch (independent block: its own published product).
-  if(!onlyCategories&&!onlyVariantContent&&!onlyDashboard&&!onlyCompare){
+  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantContent&&!onlyDashboard&&!onlyCompare){
     await variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,text,receipt});
     console.log("PASS Task2.4 variant switch: 47 -> 51 mm swaps Specs, In the box and Overview with no document navigation, ?variant= kept, reload and server render show 51 mm, canonical unchanged, unknown SKU falls back; no hydration warnings on /en/p/<id>?variant=<sku> and /ru/p/<id> (console recorded)");
   }
 
   // Task C-e: the compare flow (an independent block: its own published products; CMS_SMOKE_ONLY=compare runs only this).
-  if(!onlyCategories&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard){
+  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard){
     await compareScenario({cms,headers,send,evaluate,navigate,text,receipt});
     console.log("PASS C-e compare: catalogue compare mode, 2 cards added (aria-pressed, 2 slots, Compare disabled at 1), kept on reload; comparison with grouped specs and an empty cell; 47 -> 51 mm changes specs, price and URL item with no document load; only differences with diff=1 across a reload; group collapse; compact bar on scroll; column removal; PDP adds the 51 mm SKU; /ru/compare Russian headings with no hydration warning; Z to A sort");
   }
 
   // Task 4.2: the PostgreSQL dashboard (an independent block; CMS_SMOKE_ONLY=dashboard runs only this).
-  if(!onlyCategories&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyCompare){await dashboardScenario({pool:database.pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue:cookie,receipt,alone:onlyDashboard});
+  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyCompare){await dashboardScenario({pool:database.pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue:cookie,receipt,alone:onlyDashboard});
   console.log("PASS Task4.2 dashboard: one demo order via checkout; Demo revenue > 0 and Revenue only real money, the order in Recent orders linking to its detail, its product under Best-sellers > Demo only, empty range says so; screenshot saved");}
   // Owner 2026-11-22: Admin ▸ Categories (also CMS_SMOKE_ONLY=categories, above).
-  if(!onlyCategories&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
+  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
     await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
     await categoriesScenario({send,evaluate,navigate,text,click,receipt});
     console.log("PASS categories: subcategory created with a Russian name shows in the /ru menu, hidden and gone from the menu, deleted with the bin; square status badge; no horizontal scroll at 390 px");
   }
+  // Owner 2026-11-23: homepage archive / delete / PC upload / merged card (also CMS_SMOKE_ONLY=homepage-archive).
+  if(onlyHomepageArchive||(!onlyCategories&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare&&!onlyAdminShots)){
+    await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
+    await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
+    await homepageArchiveScenario({cms,headers,origin,send,evaluate,navigate,text,click,receipt});
+    console.log("PASS homepage-archive: banner and category tile archived, card deleted, banner image uploaded from the PC (non-image refused with an error), storefront hides archived entries and shows the merged card price and button, Restore brings the banner back; no horizontal scroll at 390 px");
+  }
   if(onlyAdminShots){await adminShotsScenario({cms,headers,send,evaluate,navigate,text,click});console.log("Admin screenshots saved (CMS_SMOKE_ONLY=admin-shots).");}
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");
-  if(!onlyCategories)console.log(onlyCompare
+  if(onlyHomepageArchive)console.log("Browser smoke passed (CMS_SMOKE_ONLY=homepage-archive): only the homepage archive block ran.");
+  else if(!onlyCategories)console.log(onlyCompare
     ?"Browser smoke passed (CMS_SMOKE_ONLY=compare): only the C-e compare block ran; the rest of the suite was skipped."
     :onlyDashboard
     ?"Browser smoke passed (CMS_SMOKE_ONLY=dashboard): only the Task 4.2 dashboard block ran; the rest of the suite was skipped."

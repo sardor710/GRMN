@@ -6,11 +6,12 @@ import { fileURLToPath } from "node:url";
 const root = new URL("../../", import.meta.url);
 const read = path => readFileSync(new URL(path,root),"utf8");
 test("all admin routes bind the guarded runtime and every private page checks server permission before rendering",()=>{
-  // Catalog media helpers of the legacy JSON editor (garmin.com import, photo uploads) use the staff guard
-  // requireCatalogWriter (same-origin + staff session + catalog:write) instead of the shared resource runtime.
-  for(const path of ["import/garmin","uploads"]){
+  // Media helpers outside the shared resource runtime use staff guards (same-origin + staff session):
+  // the garmin.com import needs catalog:write; photo uploads accept catalog:write or content:write
+  // (owner 2026-11-23: homepage editors upload homepage images).
+  for(const [path,guard] of [["import/garmin","requireCatalogWriter"],["uploads","requireMediaWriter"]]){
     const source=read(`src/app/api/admin/${path}/route.ts`);
-    assert.match(source,/const denied = await requireCatalogWriter\(request\);\s+if \(denied\) return denied;/,path);
+    assert.match(source,new RegExp(`const denied = await ${guard}\\(request\\);\\s+if \\(denied\\) return denied;`),path);
     assert.doesNotMatch(source,/getCurrentAdmin/,path);
   }
   for(const entry of readdirSync(new URL("src/app/api/admin/",root),{withFileTypes:true}).filter(entry=>entry.isDirectory()&&!["auth","import","uploads","maintenance-bypass","translate"].includes(entry.name))) {

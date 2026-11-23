@@ -108,30 +108,7 @@
 }
 
 
-/* ---------- Promo tile ---------- */
-
-.promo {
-  justify-content: flex-end;
-  color: #fff;
-}
-
-.promoImage {
-  object-fit: cover;
-  vertical-align: top;
-}
-
-.promoText {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  padding: 0 16px;
-}
-
-.promoText .name {
-  margin-bottom: 24px;
-  color: #fff;
-  text-transform: uppercase;
-}
+/* ---------- Card button (shown only when the card has button text) ---------- */
 
 .button {
   display: inline-block;
@@ -209,6 +186,26 @@
   margin: 8px 0;
   font-size: 14.4px;
   line-height: 20px;
+}
+
+.prices {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin: 4px 0 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.price {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.originalPrice {
+  font-size: 14px;
+  color: rgb(110 110 110);
+  text-decoration: line-through;
 }
 
 .footnote {
