@@ -16,7 +16,7 @@ import { maintenanceGate } from "./server/operations/maintenance-runtime";
 
 // The locale and CMS-redirect logic never runs for these (beta2's original matcher exclusions);
 // the proxy itself also runs for /api and /admin so the maintenance freeze can gate them.
-const NOT_LOCALIZED = /^\/(?:admin|api|uploads|media|fonts|_next|seo|homepage|images|videos)(?:\/|$)|^\/robots[.]txt$|^\/sitemap[.]xml$|[.][^/]+$/;
+const NOT_LOCALIZED = /^\/(?:admin|api|uploads|media|fonts|_next|seo|homepage|images|videos|feeds)(?:\/|$)|^\/robots[.]txt$|^\/sitemap[.]xml$|[.][^/]+$/;
 
 /** next-intl reads the request locale from this header when `setRequestLocale` was not called. */
 const INTL_LOCALE_HEADER = "X-NEXT-INTL-LOCALE";
