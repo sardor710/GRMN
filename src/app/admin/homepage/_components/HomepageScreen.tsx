@@ -38,15 +38,15 @@ import { moveEntry, removeEntry, setEntryArchived, type HomepageEntryRef } from 
 import { HomepageImageField } from "./HomepageImageField";
 import { CAROUSEL_BADGES, badgeCode, type CarouselBadgeCode } from "@/lib/cms/carousel-badges";
 
-/** Admin preview colours matching the storefront starbursts. */
+/** Admin preview chip: black like the storefront's garmin.ae starburst. */
 const BADGE_CHIP: Record<CarouselBadgeCode, string> = {
   NEW: "bg-black text-white",
-  SALE: "bg-[rgb(194_15_47)] text-white",
-  SOON: "bg-[rgb(0_115_230)] text-white",
-  HIT: "bg-[rgb(242_183_5)] text-black",
-  LIMITED: "bg-[rgb(240_100_20)] text-white",
-  EXCLUSIVE: "bg-[rgb(108_52_167)] text-white",
-  PREORDER: "bg-[rgb(0_133_66)] text-white",
+  SALE: "bg-black text-white",
+  SOON: "bg-black text-white",
+  HIT: "bg-black text-white",
+  LIMITED: "bg-black text-white",
+  EXCLUSIVE: "bg-black text-white",
+  PREORDER: "bg-black text-white",
 };
 import {writeAdminRecord} from "@/lib/admin-collection";
 import { AdminModal } from "@/components/admin/AdminModal";

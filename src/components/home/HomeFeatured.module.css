@@ -163,20 +163,21 @@
   text-align: left;
 }
 
-/* Owner 2026-11-23: garmin.ae-style starburst badges (top-left of the card), one colour per badge. */
+/* Owner 2026-11-23: garmin.ae starburst badge (top-left of the card) for every badge text: black, 18 deep
+   spikes, white condensed uppercase text sized by length (data-size), wrapping only between words. */
 .burst {
   display: grid;
   place-items: center;
-  width: 72px;
-  height: 72px;
-  clip-path: polygon(50.0% 0.0%, 56.7% 7.5%, 65.5% 2.4%, 69.5% 11.7%, 79.4% 9.5%, 80.4% 19.6%, 90.5% 20.6%, 88.3% 30.5%, 97.6% 34.5%, 92.5% 43.3%, 100.0% 50.0%, 92.5% 56.7%, 97.6% 65.5%, 88.3% 69.5%, 90.5% 79.4%, 80.4% 80.4%, 79.4% 90.5%, 69.5% 88.3%, 65.5% 97.6%, 56.7% 92.5%, 50.0% 100.0%, 43.3% 92.5%, 34.5% 97.6%, 30.5% 88.3%, 20.6% 90.5%, 19.6% 80.4%, 9.5% 79.4%, 11.7% 69.5%, 2.4% 65.5%, 7.5% 56.7%, 0.0% 50.0%, 7.5% 43.3%, 2.4% 34.5%, 11.7% 30.5%, 9.5% 20.6%, 19.6% 19.6%, 20.6% 9.5%, 30.5% 11.7%, 34.5% 2.4%, 43.3% 7.5%);
+  width: 76px;
+  height: 76px;
+  clip-path: polygon(50.0% 0.0%, 57.1% 9.6%, 67.1% 3.0%, 70.5% 14.5%, 82.1% 11.7%, 81.4% 23.6%, 93.3% 25.0%, 88.5% 36.0%, 99.2% 41.3%, 91.0% 50.0%, 99.2% 58.7%, 88.5% 64.0%, 93.3% 75.0%, 81.4% 76.4%, 82.1% 88.3%, 70.5% 85.5%, 67.1% 97.0%, 57.1% 90.4%, 50.0% 100.0%, 42.9% 90.4%, 32.9% 97.0%, 29.5% 85.5%, 17.9% 88.3%, 18.6% 76.4%, 6.7% 75.0%, 11.5% 64.0%, 0.8% 58.7%, 9.0% 50.0%, 0.8% 41.3%, 11.5% 36.0%, 6.7% 25.0%, 18.6% 23.6%, 17.9% 11.7%, 29.5% 14.5%, 32.9% 3.0%, 42.9% 9.6%);
   background: #000;
   color: #fff;
   font-family: var(--home-display, Oswald, sans-serif);
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 400;
   line-height: 1.05;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.5px;
   text-align: center;
   text-transform: uppercase;
 }
@@ -186,24 +187,33 @@
   max-width: 54px;
 }
 
-/* Words longer than 6 letters (ЭКСКЛЮЗИВ, PRE-ORDER, ЖЕҢІЛДІК) get a smaller size instead of breaking a word. */
-.burst[data-long] {
-  font-size: 9.5px;
+.burst[data-size="medium"] {
+  font-size: 11.5px;
+}
+
+.burst[data-size="small"] {
+  font-size: 10px;
   letter-spacing: 0.2px;
+}
+
+/* Catalog savings: the word, then the amount on its own unbroken line. */
+.burst[data-size="savings"] {
+  font-size: 10px;
+  letter-spacing: 0.2px;
+}
+
+.burstAmount {
+  display: block;
+  margin-top: 1px;
+  font-size: 12px;
+  white-space: nowrap;
 }
 
 .burstPercent {
   display: block;
+  margin-top: 1px;
   font-size: 15px;
-  font-weight: 700;
 }
-
-.burst[data-tone="red"] { background: rgb(194 15 47); }
-.burst[data-tone="blue"] { background: rgb(0 115 230); }
-.burst[data-tone="gold"] { background: rgb(242 183 5); color: #000; }
-.burst[data-tone="orange"] { background: rgb(240 100 20); }
-.burst[data-tone="purple"] { background: rgb(108 52 167); }
-.burst[data-tone="green"] { background: rgb(0 133 66); }
 
 .imageContainer {
   margin-top: 16px;
