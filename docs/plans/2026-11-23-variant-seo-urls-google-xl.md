@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 1 | 0/19 | 2026-11-23 | Wave 1: Task 1.1 (lead), Task 2.1 (agent) |
+| Executing | 2 | 8/19 | 2026-11-23 | Task 3.2 JSON-LD (lead) ‖ Task 6.1 feed (agent) |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -162,35 +162,39 @@ route handlers, `next/script`), PostgreSQL + drizzle migrations, node:test.
 ---
 
 ### Task 1.1: `product_code` column (M1)
+> ✅ 071dd3e — catalog-product-code integration 2/2 pass (backfill 1953727, seq ≥ 90000001, unique + digits checks); catalog-schema unit 3/3
 **Files:** Create `drizzle/0029_product-code.sql` (+ drizzle meta journal entry); Modify `src/server/db/schema/catalog.ts` (products); Test `tests/unit/catalog-schema.test.mjs`, `tests/integration/catalog-product-code.test.mjs`.
 **Produces:** column `products.product_code text NOT NULL UNIQUE DEFAULT nextval('product_code_seq')::text`, check `product_code ~ '^[0-9]{1,12}$'`; drizzle field `productCode`.
-- [ ] Unit test `product code is required, unique and defaulted`: `getTableColumns(products).productCode.notNull === true` and has a default.
-- [ ] Integration test: after migrate, a product with `legacy_content.source.productId='1953727'` has `product_code='1953727'`; a product inserted without a code gets a value ≥ 90000001; inserting a duplicate code fails with unique violation; `'12a'` fails the check.
-- [ ] Run both, expect FAIL.
-- [ ] Write the migration: create sequence (start 90000001), add nullable column, backfill from `legacy_content->'source'->>'productId'` when digits and not already taken (first by created_at wins), else `nextval`, then set NOT NULL, default, unique index, check. Update drizzle schema + journal.
-- [ ] Run `npm run test:unit -- --test-name-pattern="product code"` and the integration test (`npm run test:integration` file), expect PASS.
-- [ ] Commit `feat(catalog): product_code (garmin.com id or sequence) for public URLs`.
+- [x] Unit test `product code is required, unique and defaulted`: `getTableColumns(products).productCode.notNull === true` and has a default.
+- [x] Integration test: after migrate, a product with `legacy_content.source.productId='1953727'` has `product_code='1953727'`; a product inserted without a code gets a value ≥ 90000001; inserting a duplicate code fails with unique violation; `'12a'` fails the check.
+- [x] Run both, expect FAIL.
+- [x] Write the migration: create sequence (start 90000001), add nullable column, backfill from `legacy_content->'source'->>'productId'` when digits and not already taken (first by created_at wins), else `nextval`, then set NOT NULL, default, unique index, check. Update drizzle schema + journal.
+- [x] Run `npm run test:unit -- --test-name-pattern="product code"` and the integration test (`npm run test:integration` file), expect PASS.
+- [x] Commit `feat(catalog): product_code (garmin.com id or sequence) for public URLs`.
 
 ### Task 1.2: URL helpers (M1)
+> ✅ 483dd0c — product-url unit 3/3 pass
 **Files:** Create `src/lib/catalog/product-url.ts`; Test `tests/unit/product-url.test.mjs`.
 **Produces:** `productPath(code: string, sku?: string | null): string`; `parseProductPath(pathname: string): { locale: string | null; key: string; sku: string | null } | null`; `isProductCode(value: string): boolean`.
-- [ ] Tests: `productPath("1953727")==="/p/1953727"`; `productPath("1953727","010-04336-00")==="/p/1953727/010-04336-00"`; `productPath("1","A/B C")==="/p/1/A%2FB%20C"`; `parseProductPath("/ru/p/1953727/010-04336-00")` → `{locale:"ru",key:"1953727",sku:"010-04336-00"}`; `parseProductPath("/p/28c9f52f-38ad-45c4-8d5e-9be6f3906cfd")` → key uuid, sku null; `isProductCode("0123")===true`, `isProductCode("garmin-1")===false`.
-- [ ] Run `node --conditions=react-server --test tests/unit/product-url.test.mjs`, FAIL; implement; PASS.
-- [ ] Commit.
+- [x] Tests: `productPath("1953727")==="/p/1953727"`; `productPath("1953727","010-04336-00")==="/p/1953727/010-04336-00"`; `productPath("1","A/B C")==="/p/1/A%2FB%20C"`; `parseProductPath("/ru/p/1953727/010-04336-00")` → `{locale:"ru",key:"1953727",sku:"010-04336-00"}`; `parseProductPath("/p/28c9f52f-38ad-45c4-8d5e-9be6f3906cfd")` → key uuid, sku null; `isProductCode("0123")===true`, `isProductCode("garmin-1")===false`.
+- [x] Run `node --conditions=react-server --test tests/unit/product-url.test.mjs`, FAIL; implement; PASS.
+- [x] Commit.
 
 ### Task 1.3: Catalog service by code (M1)
+> ✅ c9e0a55 — catalog-product-code-service integration 2/2; cart-wishlist + catalog-availability 11/11; test:unit 593/593; tsc clean
 **Files:** Modify `src/server/catalog/service.ts`, `src/contracts/commerce.ts`, `src/contracts/catalog-browse.ts`, `src/lib/products.ts`; cart/wishlist/compare DTO producers that expose `productKey`; Test `tests/integration/catalog-product-code.test.mjs`.
 **Produces:** `productCode: string` on `ProductCardDTO`, `ProductDetailDTO`, `CompatibleAccessoryDTO`, `CompatibleDeviceDTO`, cart line, wishlist item, compare item; service `getProductByCode(code, market, displayCurrency, locale)` (same result as `getProductByPublicKey`). `getProductDetail(idOrCode, locale)` in `products.ts` accepts a code.
-- [ ] Integration tests: `getProductByCode("1953727")` returns fēnix 9 Pro fixture with `productCode`; `getProductByCode(<uuid>)` → null; draft product → null.
-- [ ] FAIL → implement (select `product_code` in the list/detail SQL; lookup by code) → PASS.
-- [ ] Commit.
+- [x] Integration tests: `getProductByCode("1953727")` returns fēnix 9 Pro fixture with `productCode`; `getProductByCode(<uuid>)` → null; draft product → null.
+- [x] FAIL → implement (select `product_code` in the list/detail SQL; lookup by code) → PASS.
+- [x] Commit.
 
 ### Task 1.4: Product + variant routes (M1)
+> ✅ commit below — product-route unit 2/2; dev on staging copy: /ru/p/1953727 200, /ru/p/1953727/010-04336-00 200 (canonical + hreflang en/ru/kz/x-default = same variant), /ru/p/<uuid> 404, unknown sku 404; tsc clean
 **Files:** Move `src/app/[lang]/p/[id]/page.tsx` → `src/app/[lang]/p/[code]/page.tsx`; Create `src/app/[lang]/p/[code]/[sku]/page.tsx`, `src/app/[lang]/p/[code]/product-page.tsx` (shared `renderProductPage({ params, sku })` and `productMetadata`); Test `tests/unit/product-route.test.mjs` (static checks) + crawl in Task 7.1.
 **Produces:** both routes render the same page; the variant route opens on that SKU (case-insensitive match); an unmatched SKU or a non-code key calls `notFound()`. Legacy backend: `[code]` still accepts a legacy id.
-- [ ] Test that `/p/[code]/[sku]/page.tsx` exports `generateMetadata` and default, the variant page passes `sku` to the shared renderer, and the pure resolver `resolvePageVariant(variants, sku)` returns the variant case-insensitively and null for unknown/archived.
-- [ ] Implement; `npm run typecheck`; dev server: `/ru/p/1953727/010-04336-00` 200 with that variant selected.
-- [ ] Commit.
+- [x] Test that `/p/[code]/[sku]/page.tsx` exports `generateMetadata` and default, the variant page passes `sku` to the shared renderer, and the pure resolver `resolvePageVariant(variants, sku)` returns the variant case-insensitively and null for unknown/archived.
+- [x] Implement; `npm run typecheck`; dev server: `/ru/p/1953727/010-04336-00` 200 with that variant selected.
+- [x] Commit.
 
 ### Task 1.5: 301 redirects in the proxy (M1) — [-] dropped by owner 2026-11-23 (no redirects)
 **Files:** Create `src/lib/catalog/product-redirect.ts`; Modify `src/proxy.ts`; Test `tests/unit/product-redirect.test.mjs`.
@@ -201,10 +205,11 @@ route handlers, `next/script`), PostgreSQL + drizzle migrations, node:test.
 - [-] Commit.
 
 ### Task 1.6: Every link uses the new URLs (M1)
+> ✅ commit after 2ca0414 — test:unit 605/605 + product-links guard; dev on staging copy: category cards link /ru/p/{code}, no ?sku=/?variant= on pages; option pick pushState /en/p/{code}/{sku} (catalog-ui test); Back via popstate
 **Files:** Modify `src/components/ProductCard.tsx`, `CartView.tsx`, `AccountDashboard.tsx`, `product/CompatibleDevices.tsx`, `product/ProductAccessories.tsx`, `ProductTop.tsx` (history: `productPath(code, sku)` instead of `?variant=`), `RelatedProducts.tsx`, `src/app/[lang]/compare/page.tsx`, `src/lib/cms/homepage-collections.ts`, `src/server/catalog/local-links.ts` (garmin.com id → `/p/{code}` directly), order email/Telegram builders, admin "view on site"; Test existing UI unit tests updated + `tests/unit/product-links.test.mjs`.
-- [ ] Test: `rg -n '/p/\$\{' src` lists only `product-url.ts` (static test reads files); ProductTop variant change produces `/p/{code}/{sku}` (unit test of the pure history helper).
-- [ ] Implement; Back button restores previous variant (`popstate` → select variant from path).
-- [ ] `npm run test:unit` PASS; commit.
+- [x] Test: `rg -n '/p/\$\{' src` lists only `product-url.ts` (static test reads files); ProductTop variant change produces `/p/{code}/{sku}` (unit test of the pure history helper).
+- [x] Implement; Back button restores previous variant (`popstate` → select variant from path).
+- [x] `npm run test:unit` PASS; commit.
 
 ### Task 1.7: Product code in the admin editor (M1)
 **Files:** Modify product editor Basics tab (`src/components/admin/product-editor/`), product input validation in `src/server/cms/`, `src/app/api/admin/products` PATCH; Test `tests/unit/product-input.test.mjs` (or existing `cms-product-command.test.mjs`).
@@ -212,6 +217,8 @@ route handlers, `next/script`), PostgreSQL + drizzle migrations, node:test.
 - [ ] Implement field (shows the live URL `garmin.tigr.uz/p/{code}` under it); PASS; commit.
 
 ### Task 2.1: SEO generator (M2, agent in worktree)
+> ✅ 88f96d9 + fix cherry-picked (Yes/No → option name, name repeats dropped, no dangling words, distinguishing value kept): seo-generate 14/14; real catalog 870 variant pages 0 out of limits; 37 remaining same-title pairs are SKUs with identical option text (SKU added by Task 3.1)
+> … 63f86b4 cherry-picked to beta5: seo-generate 11/11, tsc + eslint clean; real-catalog run 870 variant pages 0 out of limits; quality fixes (Yes/No values, repeated name, dangling words, 37 duplicate en titles) sent back to the agent
 **Files:** Create `src/lib/seo/generate.ts`; Test `tests/unit/seo-generate.test.mjs`.
 **Produces:**
 ```ts
@@ -224,19 +231,21 @@ export function generateVariantSeo(subject: SeoSubject, variant: SeoVariantSubje
 export function seoKind(categoryPath: readonly string[]): "device" | "accessory"
 ```
 Rules: brand "Garmin" once; `®`/`™` removed from title; title ≤ 60 (drop the store suffix first, then the category word, then trim on a word boundary); description 120–160 ending on a full word; RU/KK wording uses "купить … в Казахстане" / "Қазақстанда … сатып алу", official warranty; accessories never say smartwatch/смарт-часы; keywords include name, name + each option value, "купить {name}" (RU), max 8, deduped case-insensitively.
-- [ ] Tests (exact values): fēnix 9 Pro, variant `[Case Size: 43 mm, Model/Color: черный]`, ru → title contains `fēnix 9 Pro`, `43 mm` and `черный` (values are used as given), no `®`, length ≤ 60; en product title for "QuickFit® 22 Watch Bands" (accessory) does not match `/smartwatch/i`; every description length in [120,160] for 5 fixtures × 3 locales; two variants of one product give different titles; keywords ≤ 8, unique; kk description contains `Қазақстан`.
-- [ ] FAIL → implement → PASS (`node --conditions=react-server --test tests/unit/seo-generate.test.mjs`).
-- [ ] `seo-specialist` reviews the RU/KK templates for natural wording; commit.
+- [x] Tests (exact values): fēnix 9 Pro, variant `[Case Size: 43 mm, Model/Color: черный]`, ru → title contains `fēnix 9 Pro`, `43 mm` and `черный` (values are used as given), no `®`, length ≤ 60; en product title for "QuickFit® 22 Watch Bands" (accessory) does not match `/smartwatch/i`; every description length in [120,160] for 5 fixtures × 3 locales; two variants of one product give different titles; keywords ≤ 8, unique; kk description contains `Қазақстан`.
+- [x] FAIL → implement → PASS (`node --conditions=react-server --test tests/unit/seo-generate.test.mjs`).
+- [x] `seo-specialist` reviews the RU/KK templates for natural wording; commit.
 
 ### Task 2.2: Old generator delegates (M2)
+> ✅ generateProductSEOMeta wraps generateProductSeo(en) (in 88f96d9); analyzer callers' unit tests pass
 **Files:** Modify `src/lib/seo/analyzer.ts` (`generateProductSEOMeta` → wrapper over `generateProductSeo(…, "en")`, returns same shape).
-- [ ] Existing analyzer tests still pass; commit.
+- [x] Existing analyzer tests still pass; commit.
 
 ### Task 3.1: Product/variant metadata (M3)
+> ✅ 1fb4b7c — product-metadata 6/6, variant-labels 3/3, test:unit 626/626; dev on staging copy: /ru/p/1953727/010-04336-00 title 'Garmin fēnix 9 Pro 47 mm, … Оранжевый осенний', own description, self canonical, variant og:image
 **Files:** Create `src/lib/seo/product-metadata.ts`; Modify `src/app/[lang]/p/[code]/product-page.tsx`; Test `tests/unit/product-metadata.test.mjs`.
 **Consumes:** `generateProductSeo`, `generateVariantSeo`, `productPath`, `localizedSeo`. **Produces:** `buildProductMetadata(input: { detail: ProductDetailDTO; locale: Locale; variant?: ProductDetailVariantDTO; siblings?: ProductDetailVariantDTO[] }): Metadata` and `variantSeoText(detail, variant, locale): SeoText` (override → generated; title disambiguated with SKU when another sibling yields the same title).
-- [ ] Tests: variant metadata canonical = `${SITE_URL}/ru/p/1953727/010-04336-00`; `alternates.languages` has en/ru/kk(as `/kz`)/x-default for the same variant; `openGraph.images[0].url` = variant gallery[0]; stored RU override wins; noIndex product → `robots.index=false` on variant; canonicalUrl override applied to product page only; locale not translated → noindex; duplicate-title siblings → second contains SKU.
-- [ ] FAIL → implement → PASS; commit.
+- [x] Tests: variant metadata canonical = `${SITE_URL}/ru/p/1953727/010-04336-00`; `alternates.languages` has en/ru/kk(as `/kz`)/x-default for the same variant; `openGraph.images[0].url` = variant gallery[0]; stored RU override wins; noIndex product → `robots.index=false` on variant; canonicalUrl override applied to product page only; locale not translated → noindex; duplicate-title siblings → second contains SKU.
+- [x] FAIL → implement → PASS; commit.
 
 ### Task 3.2: Structured data (M3)
 **Files:** Create `src/lib/seo/product-jsonld.ts`; Modify `src/components/seo/JsonLd.tsx`, product page, `src/app/[lang]/page.tsx` (Organization + WebSite); Test `tests/unit/product-jsonld.test.mjs`.
