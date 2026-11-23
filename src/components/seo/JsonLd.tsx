@@ -125,3 +125,8 @@ export function BreadcrumbJsonLd({ items }: BreadcrumbJsonLdProps) {
     />
   );
 }
+
+/** Any structured-data object (built by src/lib/seo/product-jsonld.ts), serialized safely. */
+export function JsonLdScript({ data }: { data: unknown }) {
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd(data) }} />;
+}

@@ -14,9 +14,10 @@ import { resolvePageVariant } from "@/lib/catalog/variant-selection";
 import { isProductCode, productPath } from "@/lib/catalog/product-url";
 import { initialVariantId as pickInitialVariant } from "@/lib/variant-availability";
 import { getProductDetail, getCMSProduct, getRawCMSProduct } from "@/lib/products";
-import { ProductJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
+import { ProductJsonLd, BreadcrumbJsonLd, JsonLdScript } from "@/components/seo/JsonLd";
+import { productGroupJsonLd, variantProductJsonLd } from "@/lib/seo/product-jsonld";
 import { getMetaTranslations } from "@/i18n/page-locale";
-import { localizedSeo, localizedUrl } from "@/i18n/seo";
+import { SITE_URL, localizedSeo, localizedUrl } from "@/i18n/seo";
 import { resolveSeoText, translatedLocales } from "@/i18n/translate-record";
 import type { Locale } from "@/i18n/config";
 import type { ProductDetail } from "@/types";
@@ -149,7 +150,10 @@ export async function ProductPageView({ locale, code, sku }: { locale: Locale; c
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
-      {/* Google Structured Data */}
+      {/* Google Structured Data: PostgreSQL products are a ProductGroup (product page) or one variant's Product. */}
+      {detail.commerce ? (
+        <JsonLdScript data={variant ? variantProductJsonLd(detail.commerce, variant, locale, SITE_URL) : productGroupJsonLd(detail.commerce, locale, SITE_URL)} />
+      ) : (
       <ProductJsonLd
         // Task 5a.2: the offer uses the storefront price (legacy USD already converted to tenge in products.ts);
         // an unconverted legacy price ("USD", no rate) gets no offer price at all rather than a USD claim.
@@ -161,6 +165,7 @@ export async function ProductPageView({ locale, code, sku }: { locale: Locale; c
           (detail.commerce ? undefined : fullProduct.seoDescription || fullProduct.description)
         }
       />
+      )}
       <BreadcrumbJsonLd items={breadcrumbs} />
 
       <SiteHeader />

@@ -11,6 +11,9 @@ import { initPageLocale } from "@/i18n/page-locale";
 import { localizedSeo } from "@/i18n/seo";
 import { homepageLocales, localizeHomepage } from "@/i18n/translate-record";
 import { localizeHomepageLinks } from "@/lib/products";
+import { JsonLdScript } from "@/components/seo/JsonLd";
+import { organizationJsonLd, websiteJsonLd } from "@/lib/seo/product-jsonld";
+import { SITE_URL } from "@/i18n/seo";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +31,8 @@ export default async function Home({ params }: PageProps<"/[lang]">) {
 
   return (
     <div className="garmin-home min-h-screen bg-white">
+      <JsonLdScript data={organizationJsonLd(SITE_URL)} />
+      <JsonLdScript data={websiteJsonLd(locale, SITE_URL)} />
       <HomeHeader />
       <main>
         <HomeHero banners={config.heroBanners} />
