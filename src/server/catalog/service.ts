@@ -17,6 +17,10 @@ import { initialVariantId } from "../../lib/variant-availability.ts";
 import { categorySlugsWithProducts, localizedCategoryNames, loadCategoryPage, resolveCategory, type CategoryPageInput } from "./category-page.ts";
 import { compatibleAccessories, compatibleDevices, primaryCategoryPath } from "./compatibility-public.ts";
 import { sanitizeOverviewHtml } from "../../lib/import/garmin-parse.ts";
+import { variantOptionValues, type EditorOption, type OptionLabelOverlay } from "../../lib/catalog/variant-labels.ts";
+
+/** String-valued entries of a JSON object (translation maps such as optionNames / valueLabels). */
+const stringRecord=(value:unknown):Record<string,string>=>value&&typeof value==="object"&&!Array.isArray(value)?Object.fromEntries(Object.entries(value).filter((e):e is [string,string]=>typeof e[1]==="string")):{};
 
 const fail = (): never => { throw new AuthFailure("INVALID_INPUT", 400, "Invalid catalog query or cursor"); };
 const text = z.string().trim().min(1).max(200);
@@ -247,7 +251,9 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
       const found=names.size?{...english,breadcrumb:english.breadcrumb?.map(localCrumb),compatibleAccessories:english.compatibleAccessories?.map(a=>a.group?{...a,group:localCrumb(a.group)}:a)}:english;
       // Task 2.1: the editor variants' ids and SKUs (translated overrides are keyed by editor id; after the
       // beta5 merge the catalog writer stores them by variant id, so both keys are looked up below).
-      const editorial=obj((await pool.query("SELECT jsonb_build_object('variants',(SELECT jsonb_agg(jsonb_build_object('id',e->'id','sku',e->'sku')) FROM jsonb_array_elements(CASE WHEN jsonb_typeof(legacy_content->'variants')='array' THEN legacy_content->'variants' ELSE '[]'::jsonb END) e)) AS doc FROM products WHERE id=$1",[found.id])).rows[0]?.doc);
+      const editorial=obj((await pool.query("SELECT jsonb_build_object('variants',(SELECT jsonb_agg(jsonb_build_object('id',e->'id','sku',e->'sku')) FROM jsonb_array_elements(CASE WHEN jsonb_typeof(legacy_content->'variants')='array' THEN legacy_content->'variants' ELSE '[]'::jsonb END) e),'options',CASE WHEN jsonb_typeof(legacy_content->'options')='array' THEN legacy_content->'options' ELSE '[]'::jsonb END) AS doc FROM products WHERE id=$1",[found.id])).rows[0]?.doc);
+      // Owner 2026-11-23: editor option/value ids, to read RU/KK option names and values (variant pages' SEO).
+      const editorOptions:EditorOption[]=array(editorial.options).flatMap(value=>{const o=obj(value);return typeof o.id==="string"&&typeof o.key==="string"?[{id:o.id,key:o.key,values:array(o.values).flatMap(x=>{const v=obj(x);return typeof v.id==="string"&&typeof v.label==="string"?[{id:v.id,label:v.label}]:[];})}]:[];});
       const overrideRows=(await pool.query("SELECT id::text AS id,content_overrides FROM product_variants WHERE product_id=$1 AND id=ANY($2::uuid[])",[found.id,found.variants.map(v=>v.id)])).rows;
       const overrides=new Map<string,VariantContent>(overrideRows.map(r=>[String(r.id),parseVariantContent(r.content_overrides)]));
       const editorIds=new Map<string,string>(array(editorial.variants).flatMap(e=>{const v=obj(e);return typeof v.id==="string"&&typeof v.sku==="string"?[[v.sku.trim().toLowerCase(),v.id] as [string,string]]:[];}));
@@ -255,9 +261,14 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
       // beta5 merge: overview HTML and grouped specs come from productContent() inside englishDetail (sanitized for the storefront).
       const detail:BaseDetail={...found,...(Object.keys(optionNames).length?{optionNames}:{})};
       const translations=(await translationsFor([detail.id])).get(detail.id);
+      // Owner 2026-11-23: only what the admin stored for this language (English columns, or the RU/KK overlay).
+      const storedSeo=locale==="en"?obj((await pool.query("SELECT seo_title AS title,seo_description AS description FROM products WHERE id=$1",[detail.id])).rows[0]):obj(obj(translations)[locale]);
+      const pick=(value:unknown)=>typeof value==="string"&&value.trim()?value.trim():undefined,seoOverride={title:pick(locale==="en"?storedSeo.title:storedSeo.seoTitle),description:pick(locale==="en"?storedSeo.description:storedSeo.seoDescription)};
+      Object.assign(detail,{seoOverride:Object.fromEntries(Object.entries(seoOverride).filter(e=>e[1]!==undefined))});
       const translatedLocales:Locale[]=["en",...(["ru","kk"] as const).filter(l=>translations&&isRecordTranslated({translations},l,["name","description"]))];
       // Task 2.1: each variant's effective content (own blocks replace the product's, absent keys inherit).
-      const withVariants=(product:ProductContentDTO,localize?:(english:VariantContent,variant:VariantDTO)=>VariantContent)=>detail.variants.map(v=>{const english=overrides.get(v.id)??{};return{...v,content:effectiveVariantContent(product,{content:localize?localize(english,v):english}),ownsOverview:english.overviewHtml!==undefined};});
+      const optionOrder=Object.entries(optionNames).map(([key,name])=>({key,name}));
+      const withVariants=(product:ProductContentDTO,localize?:(english:VariantContent,variant:VariantDTO)=>VariantContent,labels?:OptionLabelOverlay)=>detail.variants.map(v=>{const english=overrides.get(v.id)??{};return{...v,content:effectiveVariantContent(product,{content:localize?localize(english,v):english}),ownsOverview:english.overviewHtml!==undefined,optionValues:variantOptionValues(v.options,optionOrder,labels)};});
       if(locale==="en"||!translations)return{...detail,translatedLocales,variants:withVariants({specs:detail.specs,specGroups:detail.specGroups,overviewHtml:detail.overviewHtml,inTheBox:detail.inTheBox})};
       const local=localizeRecord({name:detail.name,description:detail.description,specs:detail.specs,features:detail.features.map(f=>({title:f.title,body:f.body})),inTheBox:detail.inTheBox,overviewHtml:detail.overviewHtml,specGroups:detail.specGroups,translations},locale,PRODUCT_SPEC);
       const seoTitle=resolveSeoText({seoTitle:detail.seo?.title,name:detail.name,translations} as {translations?:unknown},locale,["seoTitle","name"]);
@@ -268,7 +279,7 @@ export function createCatalogService({pool,publicMarkets=["default"],listingLimi
         const editorId=editorIds.get(v.sku.trim().toLowerCase()),translated=obj(variantOverlays[editorId??v.id]??variantOverlays[v.id]).content;
         const own=localizeVariantOverride(english,translated,locale);
         return own.overviewHtml!==undefined&&own.overviewHtml!==english.overviewHtml?{...own,overviewHtml:PRODUCT_HTML_FIELDS.overviewHtml(own.overviewHtml)}:own;
-      });
+      },{editorOptions,optionNames:stringRecord(localOverlay.optionNames),valueLabels:stringRecord(localOverlay.valueLabels)});
       return{...detail,variants,translatedLocales,name:local.name,description:local.description,specs:local.specs,inTheBox:local.inTheBox,
         ...(local.overviewHtml?{overviewHtml:local.overviewHtml}:{}),...(local.specGroups?{specGroups:local.specGroups}:{}),
         features:detail.features.map((f,i)=>({...f,title:local.features[i]?.title??f.title,body:local.features[i]?.body??f.body})),

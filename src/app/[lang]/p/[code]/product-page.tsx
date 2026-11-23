@@ -21,6 +21,8 @@ import { resolveSeoText, translatedLocales } from "@/i18n/translate-record";
 import type { Locale } from "@/i18n/config";
 import type { ProductDetail } from "@/types";
 import type { ProductDetailVariantDTO } from "@/contracts/commerce";
+import { productPageSeo } from "@/lib/seo/product-metadata";
+import { absoluteUrl } from "@/i18n/seo";
 
 interface PageTarget {
   detail: ProductDetail;
@@ -54,24 +56,40 @@ export async function productPageMetadata(params: Promise<{ lang: string }>, loc
   const cmsProduct = detail && !detail.commerce ? await getCMSProduct(detail.id, locale) : undefined;
   if (!target || !detail) return { title: t("productFallbackTitle") };
 
-  const commerceSeo = detail.commerce?.seo;
+  // PostgreSQL catalog (owner 2026-11-23): every product and variant page has its own title, description, image and
+  // self canonical; stored admin text wins, otherwise it is generated in the page language.
+  if (detail.commerce) {
+    const page = productPageSeo({ detail: detail.commerce, locale, variant: target.variant });
+    const seo = localizedSeo({ path: page.path, locale, indexedLocales: page.indexedLocales, canonicalOverride: page.canonicalOverride, noIndex: page.noIndex });
+    const image = absoluteUrl(page.image ?? "/images/products/1228429.jpg");
+    return {
+      title: { absolute: page.title },
+      description: page.description,
+      keywords: page.keywords.join(", "),
+      alternates: seo.alternates,
+      robots: seo.robots,
+      openGraph: { title: page.title, description: page.description, ...seo.openGraph, siteName: "Garmin", type: "website", images: [{ url: image, alt: page.title }] },
+      twitter: { card: "summary_large_image", title: page.title, description: page.description, images: [image] },
+    };
+  }
+
+  // Legacy JSON CMS records (no variant pages).
   const name = cmsProduct?.name || detail.title || t("productFallbackName");
-  const title = commerceSeo?.title || resolveSeoText(rawProduct, locale, ["seoTitle", "name"]) || t("productTitle", { name });
+  const title = resolveSeoText(rawProduct, locale, ["seoTitle", "name"]) || t("productTitle", { name });
   const description =
-    commerceSeo?.description ||
     resolveSeoText(rawProduct, locale, ["seoDescription", "description"]) ||
     cmsProduct?.description ||
     detail.subtitle ||
     t("productDescription", { name });
   const image =
-    target.variant?.gallery?.[0]?.url || commerceSeo?.image || cmsProduct?.ogImage || cmsProduct?.image || detail.gallery[0]?.src || "/images/products/1228429.jpg";
+    cmsProduct?.ogImage || cmsProduct?.image || detail.gallery[0]?.src || "/images/products/1228429.jpg";
   const seo = localizedSeo({
     path: target.path,
     locale,
     // Same record the page renders: a language is indexed once its name and description are translated.
-    indexedLocales: detail.commerce?.translatedLocales ?? translatedLocales(rawProduct ?? {}, ["name", "description"]),
-    canonicalOverride: target.variant ? undefined : commerceSeo?.canonicalUrl || cmsProduct?.canonicalUrl || undefined,
-    noIndex: commerceSeo?.noIndex || cmsProduct?.noIndex,
+    indexedLocales: translatedLocales(rawProduct ?? {}, ["name", "description"]),
+    canonicalOverride: cmsProduct?.canonicalUrl || undefined,
+    noIndex: cmsProduct?.noIndex,
   });
 
   return {

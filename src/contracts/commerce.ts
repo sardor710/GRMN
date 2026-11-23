@@ -74,6 +74,10 @@ export interface ProductDetailVariantDTO extends VariantDTO {
   content: Required<VariantContent>;
   /** Task 2.4: the variant owns its overview (even an empty one, which then shows nothing on the page). */
   ownsOverview: boolean;
+  /** Owner 2026-11-23: option names and values in the page language and option order (variant page SEO). */
+  optionValues?: import("../lib/catalog/variant-labels.ts").VariantOptionValue[];
+  /** Owner 2026-11-23: the variant's own SEO title/description for this language (admin override); absent = generated. */
+  seo?: { title?: string; description?: string };
 }
 
 export interface ProductDetailDTO extends ProductCardDTO {
@@ -86,6 +90,8 @@ export interface ProductDetailDTO extends ProductCardDTO {
   relatedProductKeys?: string[];
   selectedVariantId?: string;
   seo?: { title: string; description: string; canonicalUrl: string | null; noIndex: boolean; image: string | null };
+  /** Owner 2026-11-23: SEO title/description the admin stored for this language (no fallback); absent = generated. */
+  seoOverride?: { title?: string; description?: string };
   /** Option key → display name (e.g. "case-size" → "Case Size"); variant `options` stay keyed by key. */
   optionNames?: Record<string, string>;
   /** Task 24: languages with a translated name and description (en always); others are noindex. */
