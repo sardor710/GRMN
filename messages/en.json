@@ -575,7 +575,16 @@
     "featured": "FEATURED",
     "shop": "Shop",
     "previous": "Previous",
-    "next": "Next"
+    "next": "Next",
+    "badges": {
+      "NEW": "New",
+      "SALE": "Sale",
+      "SOON": "Soon",
+      "HIT": "Hit",
+      "LIMITED": "Limited",
+      "EXCLUSIVE": "Exclusive",
+      "PREORDER": "Pre-order"
+    }
   },
   "HomeHero": {
     "label": "Featured Garmin products",

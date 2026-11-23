@@ -575,7 +575,16 @@
     "featured": "РЕКОМЕНДУЕМ",
     "shop": "Купить",
     "previous": "Назад",
-    "next": "Вперёд"
+    "next": "Вперёд",
+    "badges": {
+      "NEW": "Новинка",
+      "SALE": "Скидка",
+      "SOON": "Скоро",
+      "HIT": "Хит",
+      "LIMITED": "Лимит",
+      "EXCLUSIVE": "Эксклюзив",
+      "PREORDER": "Предзаказ"
+    }
   },
   "HomeHero": {
     "label": "Избранные продукты Garmin",

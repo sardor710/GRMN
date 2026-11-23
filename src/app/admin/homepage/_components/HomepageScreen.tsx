@@ -36,6 +36,18 @@ import type {
 import { IMAGE_DIMENSION_SPECS } from "@/lib/cms/homepage-schema";
 import { moveEntry, removeEntry, setEntryArchived, type HomepageEntryRef } from "@/lib/cms/homepage-archive";
 import { HomepageImageField } from "./HomepageImageField";
+import { CAROUSEL_BADGES, badgeCode, type CarouselBadgeCode } from "@/lib/cms/carousel-badges";
+
+/** Admin preview colours matching the storefront starbursts. */
+const BADGE_CHIP: Record<CarouselBadgeCode, string> = {
+  NEW: "bg-black text-white",
+  SALE: "bg-[rgb(194_15_47)] text-white",
+  SOON: "bg-[rgb(0_115_230)] text-white",
+  HIT: "bg-[rgb(242_183_5)] text-black",
+  LIMITED: "bg-[rgb(240_100_20)] text-white",
+  EXCLUSIVE: "bg-[rgb(108_52_167)] text-white",
+  PREORDER: "bg-[rgb(0_133_66)] text-white",
+};
 import {writeAdminRecord} from "@/lib/admin-collection";
 import { AdminModal } from "@/components/admin/AdminModal";
 import { LocaleTabs, type ContentLocale } from "@/components/admin/LocaleTabs";
@@ -787,9 +799,7 @@ export default function AdminHomepagePage() {
                             {card.image && <Image src={card.image} alt={card.title || "Card"} fill className="object-cover" unoptimized />}
                             {card.badge && (
                               <span
-                                className={`absolute top-2 left-2 px-1.5 py-0.5 text-xs font-bold ${
-                                  card.badge === "NEW" ? "bg-garmin-blue text-white" : "bg-garmin-badge-lime text-black"
-                                }`}
+                                className={`absolute top-2 left-2 px-1.5 py-0.5 text-xs font-bold ${BADGE_CHIP[badgeCode(card.badge) ?? "NEW"]}`}
                               >
                                 {card.badge}
                               </span>
@@ -1258,9 +1268,14 @@ export default function AdminHomepagePage() {
                       onChange={(e) => setCard({ badge: e.target.value || undefined })}
                     >
                       <option value="">No badge</option>
-                      <option value="NEW">NEW</option>
-                      <option value="SALE">SALE</option>
-                      <option value="EXCLUSIVE">EXCLUSIVE</option>
+                      {CAROUSEL_BADGES.map((badge) => (
+                        <option key={badge.code} value={badge.code}>
+                          {badge.adminLabel}
+                        </option>
+                      ))}
+                      {card.badge && !CAROUSEL_BADGES.some((badge) => badge.code === card.badge) && (
+                        <option value={card.badge}>{card.badge}</option>
+                      )}
                     </Select>
                   </div>
                   <TextField label="Button text (optional)" value={card.ctaText || ""} onChange={(ctaText) => setCard({ ctaText })} placeholder="SHOP NOW" help="Leave empty for no button." />

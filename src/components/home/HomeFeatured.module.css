@@ -163,6 +163,48 @@
   text-align: left;
 }
 
+/* Owner 2026-11-23: garmin.ae-style starburst badges (top-left of the card), one colour per badge. */
+.burst {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  clip-path: polygon(50.0% 0.0%, 56.7% 7.5%, 65.5% 2.4%, 69.5% 11.7%, 79.4% 9.5%, 80.4% 19.6%, 90.5% 20.6%, 88.3% 30.5%, 97.6% 34.5%, 92.5% 43.3%, 100.0% 50.0%, 92.5% 56.7%, 97.6% 65.5%, 88.3% 69.5%, 90.5% 79.4%, 80.4% 80.4%, 79.4% 90.5%, 69.5% 88.3%, 65.5% 97.6%, 56.7% 92.5%, 50.0% 100.0%, 43.3% 92.5%, 34.5% 97.6%, 30.5% 88.3%, 20.6% 90.5%, 19.6% 80.4%, 9.5% 79.4%, 11.7% 69.5%, 2.4% 65.5%, 7.5% 56.7%, 0.0% 50.0%, 7.5% 43.3%, 2.4% 34.5%, 11.7% 30.5%, 9.5% 20.6%, 19.6% 19.6%, 20.6% 9.5%, 30.5% 11.7%, 34.5% 2.4%, 43.3% 7.5%);
+  background: #000;
+  color: #fff;
+  font-family: var(--home-display, Oswald, sans-serif);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: 0.4px;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.burst > span {
+  display: block;
+  max-width: 54px;
+}
+
+/* Words longer than 6 letters (ЭКСКЛЮЗИВ, PRE-ORDER, ЖЕҢІЛДІК) get a smaller size instead of breaking a word. */
+.burst[data-long] {
+  font-size: 9.5px;
+  letter-spacing: 0.2px;
+}
+
+.burstPercent {
+  display: block;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.burst[data-tone="red"] { background: rgb(194 15 47); }
+.burst[data-tone="blue"] { background: rgb(0 115 230); }
+.burst[data-tone="gold"] { background: rgb(242 183 5); color: #000; }
+.burst[data-tone="orange"] { background: rgb(240 100 20); }
+.burst[data-tone="purple"] { background: rgb(108 52 167); }
+.burst[data-tone="green"] { background: rgb(0 133 66); }
+
 .imageContainer {
   margin-top: 16px;
 }

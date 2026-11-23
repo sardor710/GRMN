@@ -575,7 +575,16 @@
     "featured": "ҰСЫНАМЫЗ",
     "shop": "Сатып алу",
     "previous": "Артқа",
-    "next": "Алға"
+    "next": "Алға",
+    "badges": {
+      "NEW": "Жаңа",
+      "SALE": "Жеңілдік",
+      "SOON": "Жақында",
+      "HIT": "Хит",
+      "LIMITED": "Шектеулі",
+      "EXCLUSIVE": "Эксклюзив",
+      "PREORDER": "Алдын ала"
+    }
   },
   "HomeHero": {
     "label": "Garmin-нің таңдаулы өнімдері",
