@@ -62,6 +62,8 @@ export interface ProductCardDTO {
 export interface VariantDTO {
   id: string;
   sku: string;
+  /** GTIN/EAN/UPC when the variant has one (structured data and the Merchant feed, owner 2026-11-23). */
+  barcode?: string;
   name: string;
   options: Readonly<Record<string, string>>;
   price: PriceDTO;
