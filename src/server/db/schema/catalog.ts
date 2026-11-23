@@ -1,7 +1,7 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
-import { bigint, boolean, check, foreignKey, index, integer, jsonb, numeric, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { bigint, boolean, check, foreignKey, index, integer, jsonb, numeric, pgSequence, pgTable, primaryKey, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import type { AnyPgColumn } from "drizzle-orm/pg-core";
 
 const id = () => uuid("id").primaryKey().$defaultFn(randomUUID);
@@ -27,9 +27,14 @@ export const optionDisplays = ["buttons", "swatch", "dropdown"] as const;
 export type OptionDisplay = (typeof optionDisplays)[number];
 export type CategoryKind = (typeof categoryKinds)[number];
 
+/** New product codes start above every garmin.com product id (0029, owner 2026-11-23). */
+export const productCodeSeq = pgSequence("product_code_seq", { startWith: 90000001 });
+
 export const products = pgTable("products", {
   id: id(),
   publicKey: text("public_key").notNull().unique(),
+  // Public URL key: /p/{code} and /p/{code}/{sku} (0029). Imported products carry their garmin.com id.
+  productCode: text("product_code").notNull().default(sql`(nextval('product_code_seq'))::text`),
   slug: text("slug").unique(),
   name: text("name").notNull(),
   description: text("description").notNull().default(""),
@@ -60,6 +65,8 @@ export const products = pgTable("products", {
   index("products_published_order_idx").on(table.status, table.createdAt, table.id),
   // Admin product/SKU lists: keyset order updated_at DESC, id DESC (0014).
   index("products_admin_order_idx").on(table.updatedAt.desc().nullsFirst(), table.id.desc().nullsFirst()),
+  uniqueIndex("products_product_code_unique").on(table.productCode),
+  check("products_product_code_valid", sql`${table.productCode} ~ '^[0-9]{1,12}$'`),
   check("products_public_key_present", sql`length(btrim(${table.publicKey}))>0 AND ${table.publicKey}=btrim(${table.publicKey})`),
   check("products_slug_valid", sql`${table.slug} IS NULL OR (length(btrim(${table.slug}))>0 AND ${table.slug}=btrim(${table.slug}))`),
   check("products_name_present", sql`length(btrim(${table.name}))>0`),

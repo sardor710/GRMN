@@ -19,3 +19,10 @@ test("money and media sizes use bigint and keep new storage private by default",
   assert.equal(getTableColumns(mediaAssets).visibility.default, "private");
   assert.equal(getTableColumns(mediaAssets).status.default, "pending");
 });
+
+test("product code is required, unique and defaulted (public URL /p/{code}, 0029)", () => {
+  const product = getTableColumns(products);
+  assert.equal(product.productCode.notNull, true);
+  assert.equal(product.productCode.hasDefault, true);
+  assert.equal(product.productCode.name, "product_code");
+});
