@@ -5,6 +5,7 @@ import type {
   SEOScoreReport,
   PageSEOAudit,
 } from "@/lib/cms/types";
+import { generateProductSeo, seoKind } from "./generate.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -417,48 +418,19 @@ export function generateProductSEOMeta(product: Partial<CMSProduct>): {
   seoDescription: string;
   focusKeywords: string[];
 } {
-  const name = product.name || 'Garmin Smartwatch';
-  const family = product.family || 'Multisport';
-  const category = product.category || 'Smartwatches & Wearables';
-
-  // Extract key features from specs
-  const topSpecs = (product.specs || [])
-    .slice(0, 2)
-    .map((s) => `${s.label}: ${s.value}`)
-    .join(', ');
-
-  const title = `${name} | Official Garmin ${family} GPS Smartwatch`;
-
-  let description = `${product.description || `Discover the ${name} with high-precision GPS, advanced performance tracking, and rugged durability.`}`;
-  if (topSpecs && description.length < 110) {
-    description += ` Featuring ${topSpecs}.`;
-  }
-  if (!description.toLowerCase().includes('garmin')) {
-    description = `Explore the Garmin ${description}`;
-  }
-  if (description.length < 130) {
-    description += ' Buy now with free shipping and official warranty.';
-  }
-  if (description.length > 160) {
-    description = description.slice(0, 155).trim() + '...';
-  }
-
-  const cleanKeywords = Array.from(
-    new Set([
-      `Garmin ${name}`,
-      `${name} GPS watch`,
-      `${name} specs`,
-      `buy ${name}`,
-      `Garmin ${family}`,
-      category.toLowerCase(),
-    ])
-  ).slice(0, 5);
-
-  return {
-    seoTitle: title.slice(0, 65),
-    seoDescription: description,
-    focusKeywords: cleanKeywords,
-  };
+  const categoryPath = [product.category, product.subCategory].filter((value): value is string => Boolean(value));
+  const seo = generateProductSeo(
+    {
+      name: product.name || 'Garmin',
+      family: product.family,
+      kind: seoKind(categoryPath),
+      categoryName: product.subCategory || product.category,
+      description: product.description,
+      specs: product.specs,
+    },
+    'en',
+  );
+  return { seoTitle: seo.title, seoDescription: seo.description, focusKeywords: seo.keywords };
 }
 
 export function generateBlogSEOMeta(blog: Partial<CMSBlog>): {
