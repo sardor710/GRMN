@@ -200,6 +200,41 @@ export function patchVariant(variants: readonly ProductVariant[], id: string, ch
   return change.status ? ensureSingleDefault(next) : next;
 }
 
+/**
+ * Owner 2026-11-23: remove variants the store does not sell (bin per row, "Delete selected"). Saving the product
+ * deletes them on the server (archived instead when orders reference them). The last variant is never removed;
+ * a removed default hands over to the first remaining active variant.
+ */
+export function removeVariants(variants: readonly ProductVariant[], ids: ReadonlySet<string>): ProductVariant[] {
+  const next = variants.filter((variant) => !ids.has(variant.id));
+  if (next.length === variants.length || next.length === 0) return variants as ProductVariant[];
+  if (next.some((variant) => variant.isDefault && variant.status !== "archived")) return next;
+  const active = next.findIndex((variant) => variant.status === "active");
+  return active < 0 ? ensureSingleDefault(next) : next.map((variant, index) => ({ ...variant, isDefault: index === active }));
+}
+
+/**
+ * After variants are deleted: drop option values that only the deleted variants used (the storefront picker lists
+ * every value, so an orphan would be a dead choice) and options left with no values. Values that were already
+ * unused before the deletion stay (e.g. one just added). Returns the same array when nothing changes.
+ */
+export function pruneOrphanedValues(options: readonly ProductOption[], before: readonly ProductVariant[], after: readonly ProductVariant[]): ProductOption[] {
+  const used = (list: readonly ProductVariant[]) => new Set(list.flatMap((variant) => Object.entries(variant.selections).map(([option, value]) => `${option}\u0000${value}`)));
+  const wasUsed = used(before), stillUsed = used(after);
+  let changed = false;
+  const next = options.flatMap((option) => {
+    const values = option.values.filter((value) => {
+      const key = `${option.id}\u0000${value.id}`;
+      const keep = !wasUsed.has(key) || stillUsed.has(key);
+      if (!keep) changed = true;
+      return keep;
+    });
+    if (values.length === option.values.length) return [option];
+    return values.length ? [{ ...option, values }] : [];
+  });
+  return changed ? next : (options as ProductOption[]);
+}
+
 export const setDefaultVariant = (variants: readonly ProductVariant[], id: string): ProductVariant[] =>
   variants.map((variant) => ({ ...variant, isDefault: variant.id === id }));
 

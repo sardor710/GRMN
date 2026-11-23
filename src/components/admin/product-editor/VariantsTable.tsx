@@ -1,12 +1,12 @@
 "use client";
 
 import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { ChevronDown, Images, Star, X } from "lucide-react";
+import { ChevronDown, Images, Star, Trash2, X } from "lucide-react";
 import type { ProductImage, ProductOption, ProductVariant, VariantStatus } from "@/lib/cms/types";
 import { Button, Select, StatusSelect } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import {
-  BLOCKER_LABELS, applyBulk, filterVariants, parseAmount, patchVariant, selectByRule, setDefaultVariant, skuIssues, variantChips, variantReadiness,
+  BLOCKER_LABELS, applyBulk, filterVariants, parseAmount, patchVariant, pruneOrphanedValues, removeVariants, selectByRule, setDefaultVariant, skuIssues, variantChips, variantReadiness,
   type SelectionRule,
 } from "./variants-state";
 import { formatUsd, smallInputClass } from "./shared";
@@ -25,14 +25,16 @@ interface VariantsTableProps {
   /** Scroll to and highlight this SKU (from the SKU drawer). */
   focusSku?: string | null;
   onChange: (updater: VariantsUpdater) => void;
+  /** Receives the options without values that deleted variants were the last to use. */
+  onOptions?: (options: ProductOption[]) => void;
 }
 
 const STATUSES: VariantStatus[] = ["active", "draft", "archived"];
 const STATUS_LABELS: Record<string, string> = { active: "Active", draft: "Draft", archived: "Archived" };
 const PAGE = 100;
-const ROW_GRID = "lg:grid-cols-[20px_44px_minmax(0,1.45fr)_minmax(0,1.15fr)_minmax(92px,0.75fr)_72px_minmax(116px,0.8fr)_36px]";
+const ROW_GRID = "lg:grid-cols-[20px_44px_minmax(0,1.45fr)_minmax(0,1.15fr)_minmax(92px,0.75fr)_72px_minmax(116px,0.8fr)_72px]";
 
-export function VariantsTable({ options, variants, images, conflicts, focusSku, onChange }: VariantsTableProps) {
+export function VariantsTable({ options, variants, images, conflicts, focusSku, onChange, onOptions }: VariantsTableProps) {
   const [selected, setSelected] = useState<ReadonlySet<string>>(new Set());
   const [filters, setFilters] = useState<Record<string, string>>({});
   const [notReadyOnly, setNotReadyOnly] = useState(false);
@@ -78,6 +80,19 @@ export function VariantsTable({ options, variants, images, conflicts, focusSku, 
 
   const patch = useCallback((id: string, change: Partial<ProductVariant>) => onChange((previous) => patchVariant(previous, id, change)), [onChange]);
   const makeDefault = useCallback((id: string) => onChange((previous) => setDefaultVariant(previous, id)), [onChange]);
+  // Owner 2026-11-23: delete variants the store does not sell. They leave the list now and are deleted on Save
+  // (archived instead when an order references them). A product keeps at least one variant.
+  const removeIds = useCallback((ids: ReadonlySet<string>, label: string) => {
+    if (ids.size >= variants.length) { window.alert("A product needs at least one variant. To remove everything, delete the product in Admin ▸ Products."); return; }
+    if (!window.confirm(`Delete ${label}? It is removed when you save the product. A variant that already has orders is archived instead.`)) return;
+    const next = removeVariants(variants, ids);
+    if (next === variants) return;
+    onChange(() => next);
+    const pruned = pruneOrphanedValues(options, variants, next);
+    if (pruned !== options) onOptions?.(pruned);
+    setSelected((previous) => new Set([...previous].filter((id) => !ids.has(id))));
+  }, [onChange, onOptions, options, variants]);
+  const removeOne = useCallback((id: string, name: string) => removeIds(new Set([id]), `variant ${name}`), [removeIds]);
   const toggleSelected = useCallback((id: string) => setSelected((previous) => {
     const next = new Set(previous);
     if (next.has(id)) next.delete(id); else next.add(id);
@@ -176,6 +191,7 @@ export function VariantsTable({ options, variants, images, conflicts, focusSku, 
               onToggleExpanded={toggleExpanded}
               onPatch={patch}
               onMakeDefault={makeDefault}
+              onDelete={removeOne}
             />
           ))}
         </ul>
@@ -193,6 +209,7 @@ export function VariantsTable({ options, variants, images, conflicts, focusSku, 
         <BulkBar
           count={selectedIds.size}
           onApply={(patchValue) => onChange((previous) => applyBulk(previous, selectedIds, patchValue))}
+          onDelete={() => removeIds(selectedIds, `${selectedIds.size} selected variant${selectedIds.size === 1 ? "" : "s"}`)}
           onClear={() => setSelected(new Set())}
         />
       )}
@@ -200,7 +217,7 @@ export function VariantsTable({ options, variants, images, conflicts, focusSku, 
   );
 }
 
-const VariantRow = memo(function VariantRow({ variant, chips, issue, thumbnail, images, selected, expanded, highlighted, onToggleSelected, onToggleExpanded, onPatch, onMakeDefault }: {
+const VariantRow = memo(function VariantRow({ variant, chips, issue, thumbnail, images, selected, expanded, highlighted, onToggleSelected, onToggleExpanded, onPatch, onMakeDefault, onDelete }: {
   variant: ProductVariant;
   chips: { optionName: string; label: string }[];
   issue: string;
@@ -213,6 +230,7 @@ const VariantRow = memo(function VariantRow({ variant, chips, issue, thumbnail, 
   onToggleExpanded: (id: string) => void;
   onPatch: (id: string, change: Partial<ProductVariant>) => void;
   onMakeDefault: (id: string) => void;
+  onDelete: (id: string, name: string) => void;
 }) {
   const id = useId();
   const name = chips.map((chip) => chip.label).join(" / ") || variant.title || variant.sku || "variant";
@@ -222,7 +240,7 @@ const VariantRow = memo(function VariantRow({ variant, chips, issue, thumbnail, 
   const numberValue = (raw: string) => (raw.trim() === "" ? 0 : Math.max(0, Number(raw)));
   return (
     <li data-variant-id={variant.id} className={cn("transition-colors duration-500", selected && "bg-[#f5f5f5]", highlighted && "bg-[#fff8db]")}>
-      <div className={cn("grid grid-cols-[20px_44px_minmax(0,1fr)_36px] items-start gap-x-3 gap-y-3 px-3 py-3 lg:items-center", ROW_GRID)}>
+      <div className={cn("grid grid-cols-[20px_44px_minmax(0,1fr)_72px] items-start gap-x-3 gap-y-3 px-3 py-3 lg:items-center", ROW_GRID)}>
         <input type="checkbox" checked={selected} onChange={() => onToggleSelected(variant.id)} aria-label={`Select ${name}`} className="mt-3 h-4 w-4 accent-black lg:mt-0" />
         <button
           type="button"
@@ -261,17 +279,21 @@ const VariantRow = memo(function VariantRow({ variant, chips, issue, thumbnail, 
             </span>
           </div>
         </div>
-        <Button
-          size="icon-sm"
-          variant="ghost"
-          onClick={() => onToggleExpanded(variant.id)}
-          aria-expanded={expanded}
-          aria-controls={`${id}-more`}
-          aria-label={`${expanded ? "Hide" : "More"} details for ${name}`}
-          className="lg:order-last"
-        >
-          <ChevronDown className={cn("h-4 w-4 transition-transform", expanded && "rotate-180")} aria-hidden="true" />
-        </Button>
+        <div className="flex items-center justify-end lg:order-last">
+          <Button size="icon-sm" variant="ghost" onClick={() => onDelete(variant.id, name)} aria-label={`Delete ${name}`} title="Delete variant" className="text-[#8c8c8c] hover:text-[#c20f2f]">
+            <Trash2 className="h-4 w-4" aria-hidden="true" />
+          </Button>
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            onClick={() => onToggleExpanded(variant.id)}
+            aria-expanded={expanded}
+            aria-controls={`${id}-more`}
+            aria-label={`${expanded ? "Hide" : "More"} details for ${name}`}
+          >
+            <ChevronDown className={cn("h-4 w-4 transition-transform", expanded && "rotate-180")} aria-hidden="true" />
+          </Button>
+        </div>
         <div className="col-span-full grid grid-cols-3 gap-x-2 gap-y-2 lg:contents">
           <div className="col-span-3 lg:col-span-1">
             <span aria-hidden="true" className="mb-0.5 block text-[11px] font-semibold uppercase tracking-[0.06em] text-[#595959] lg:hidden">SKU</span>
@@ -381,7 +403,7 @@ function MorePanel({ id, variant, name, images, onPatch }: { id: string; variant
 }
 
 /** Step 3: appears only with a selection; sticky above the save bar. Blank fields are left unchanged. */
-function BulkBar({ count, onApply, onClear }: { count: number; onApply: (patch: { price?: number; originalPrice?: number | null; stock?: number; status?: VariantStatus }) => void; onClear: () => void }) {
+function BulkBar({ count, onApply, onDelete, onClear }: { count: number; onDelete: () => void; onApply: (patch: { price?: number; originalPrice?: number | null; stock?: number; status?: VariantStatus }) => void; onClear: () => void }) {
   const [fields, setFields] = useState({ price: "", originalPrice: "", stock: "", status: "" });
   const [message, setMessage] = useState<{ tone: "error" | "ok"; text: string } | null>(null);
   const id = useId();
@@ -427,6 +449,9 @@ function BulkBar({ count, onApply, onClear }: { count: number; onApply: (patch: 
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="secondary" onClick={apply} disabled={empty} className="border-white focus-visible:outline-white">Apply to {count}</Button>
+          <Button size="sm" variant="ghost" onClick={onDelete} className="text-white focus-visible:outline-white">
+            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" /> Delete {count}
+          </Button>
           <Button size="sm" variant="ghost" onClick={onClear} className="text-white focus-visible:outline-white">
             <X className="h-3.5 w-3.5" aria-hidden="true" /> Clear
           </Button>

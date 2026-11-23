@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import {
   addOptionValues, applyBulk, filterVariants, moveItem, newOption, parseAmount, parseValueInput, patchVariant, presetsAvailable,
   previewGenerate, renameOption, renameOptionValue, selectByRule, setDefaultVariant, skuIssues, summarizeVariants, summaryLine,
-  variantChips, variantReadiness, variantsOutOfDate,
+  variantChips, variantReadiness, variantsOutOfDate, removeVariants, pruneOrphanedValues,
 } from "../../src/components/admin/product-editor/variants-state.ts";
 
 let counter = 0;
@@ -127,4 +127,36 @@ test("an unpriced variant is not ready, and edits that do not touch the price ke
   assert.deepEqual([bulk.price, bulk.stock, bulk.status], [null, 5, "active"]);
   assert.equal(patchVariant([unpriced], "u", { title: "Renamed" })[0].price, null);
   assert.equal(applyBulk([unpriced], new Set(["u"]), { price: 1500 })[0].price, 1500);
+});
+
+// Owner 2026-11-23: delete imported variants the store does not sell (bin per row, "Delete selected").
+test("removeVariants drops the chosen variants and keeps the rest in order", () => {
+  const list = [variant("a", {}), variant("b", {}, { isDefault: true }), variant("c", {})];
+  assert.deepEqual(removeVariants(list, new Set(["a"])).map(v => v.id), ["b", "c"]);
+  assert.equal(removeVariants(list, new Set(["a"]))[0].isDefault, true, "the default stays the default");
+});
+
+test("removing the default makes the first remaining active variant the default", () => {
+  const list = [variant("a", {}, { isDefault: true }), variant("b", {}, { status: "draft" }), variant("c", {})];
+  const next = removeVariants(list, new Set(["a"]));
+  assert.deepEqual(next.map(v => [v.id, v.isDefault]), [["b", false], ["c", true]]);
+});
+
+test("removeVariants never removes the last variant", () => {
+  const list = [variant("a", {}, { isDefault: true }), variant("b", {})];
+  assert.equal(removeVariants(list, new Set(["a", "b"])), list, "everything selected: nothing changes");
+  assert.equal(removeVariants(list, new Set(["zzz"])), list, "unknown id: nothing changes");
+});
+
+test("pruneOrphanedValues drops only the option values the deleted variants were the last to use", () => {
+  const before = [variant("a", { size: "s43", color: "black" }), variant("b", { size: "s47", color: "gray" }), variant("c", { size: "s47", color: "black" })];
+  const after = before.filter(v => v.id !== "b");
+  const options = pruneOrphanedValues([size, color], before, after);
+  assert.deepEqual(options.find(o => o.id === "color").values.map(v => v.id), ["black"], "Gray had only variant b");
+  assert.deepEqual(options.find(o => o.id === "size").values.map(v => v.id), ["s43", "s47", "s51"], "47 mm is still used; 51 mm was never used and stays");
+  const grayOnly = { ...color, values: [{ id: "gray", key: "gray", label: "Gray" }] };
+  const onlyGray = pruneOrphanedValues([grayOnly], [variant("g", { color: "gray" })], []);
+  assert.deepEqual(onlyGray, [], "an option left without values goes");
+  const same = [size, color];
+  assert.equal(pruneOrphanedValues(same, before, before), same, "nothing orphaned: same array");
 });

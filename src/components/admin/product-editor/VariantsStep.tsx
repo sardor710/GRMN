@@ -63,7 +63,7 @@ export function VariantsStep({ options, variants, images, base, conflicts, focus
             No variants: this product is sold as one item. Its SKU, price and stock are on the General tab.
           </p>
         ) : (
-          <VariantsTable options={options} variants={variants} images={images} conflicts={conflicts} focusSku={focusSku} onChange={onVariants} />
+          <VariantsTable options={options} variants={variants} images={images} conflicts={conflicts} focusSku={focusSku} onChange={onVariants} onOptions={onOptions} />
         )}
       </section>
     </div>
