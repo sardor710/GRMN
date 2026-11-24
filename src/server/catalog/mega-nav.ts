@@ -92,7 +92,8 @@ export async function buildMegaNav(client: Query, locale: MenuLocale, t: Transla
       let next = 0;
       const built: NavGroup[][] = builtIn.columns.map(() => []);
       groups.forEach(entry => {
-        const hidden = own?.groups?.[entry.id]?.hidden === true;
+        // Hiding Products hides every Products column of the item (Marine continues it in a headless column).
+        const hidden = own?.groups?.[entry.products ? productGroups[0].id : entry.id]?.hidden === true;
         if (entry.products) {
           const last = entry === productGroups.at(-1);
           const take = last ? products.length - next : Math.min(entry.group.links.length, products.length - next);

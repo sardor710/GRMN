@@ -786,6 +786,18 @@ async function categoriesScenario({pool,send,evaluate,navigate,text,click,receip
     await until(async()=>(await menuText()).includes("Golf Course Locator"),"Showing did not bring the link back");
     await navigate("/admin/categories");
     await until(async()=>/menu categories/i.test(await text()),"The categories page did not reload");
+    // Renaming a heading marks it Renamed and shows in the /en menu; Reset brings back the original.
+    const discover='section[aria-label="Smartwatches"] [data-menu-group="discover"]';
+    await evaluate(`document.querySelector('${discover} button[aria-label="Rename this heading"]').click();true`);
+    await until(()=>setById("category-en","UI Explore"),"The heading rename dialog did not open");
+    await click("Save");
+    await until(()=>evaluate(`/UI Explore/.test(document.querySelector('${discover}').textContent)&&/renamed/i.test(document.querySelector('${discover}').textContent)`),"The heading was not renamed");
+    await navigate("/en");
+    await until(()=>evaluate("(()=>{const nav=document.querySelector('header nav');const button=nav&&[...nav.querySelectorAll('button[aria-expanded]')][0];if(button&&button.getAttribute('aria-expanded')!=='true')button.click();return /UI Explore/.test(document.querySelector('header').textContent);})()"),"The renamed heading is not in the /en menu");
+    await navigate("/admin/categories");
+    await until(()=>evaluate(`!!document.querySelector('${discover} button[aria-label="Reset this heading to its original text"]')`),"No reset button on the renamed heading");
+    await evaluate(`document.querySelector('${discover} button[aria-label="Reset this heading to its original text"]').click();true`);
+    await until(()=>evaluate(`/Discover/.test(document.querySelector('${discover}').textContent)&&!/renamed/i.test(document.querySelector('${discover}').textContent)`),"Reset did not bring back the original heading");
     await click("Series (filters)");await until(async()=>/fēnix/i.test(await text()),"The series tab did not open");await shot("admin-categories-series-1440.png");
     await click("Accessories");await until(async()=>/quickfit 22 mm/i.test(await text()),"The accessories tab did not open");await shot("admin-categories-accessories-1440.png");
     await send("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:1,mobile:true});
