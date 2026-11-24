@@ -318,9 +318,9 @@ export function CategoriesScreen() {
               </ul>
               {item.others.length > 0 && (
                 <div className="border-t border-[#d9d9d9]">
-                  <p className="px-3 pt-3 text-[12px] font-medium uppercase tracking-[0.06em] text-black sm:px-6">Not in this menu ({item.others.length})</p>
-                  <p className="px-3 pb-1 text-[12px] text-[#595959] sm:px-6">Categories under {item.name.en} that no heading links to. Use “Show under…” to add one to a Products list.</p>
-                  <ul>{item.others.map(node => <Row key={node.key} node={node} depth={1} actions={actions(node, { edit: () => rename(node, true), place: () => setDialog({ type: "placements", node }) })} />)}</ul>
+                  <p className="px-3 pt-3 text-[12px] font-medium uppercase tracking-[0.06em] text-black sm:px-6">More categories under {item.name.en} ({item.others.length})</p>
+                  <p className="px-3 pb-1 text-[12px] text-[#595959] sm:px-6">Not in its Products list (some are linked from a heading above). Rename, hide or delete them here; “Show under…” adds one to a Products list.</p>
+                  <ul>{item.others.map(node => <Row key={node.key} node={node} depth={1} actions={actions(node, { edit: () => rename(node, true), place: () => setDialog({ type: "placements", node }) })} extra={item.groups.some(group => group.links.some(link => link.category?.key === node.key)) ? <span className="text-[12px] text-[#595959]">linked from a heading</span> : null} />)}</ul>
                 </div>
               )}
             </section>

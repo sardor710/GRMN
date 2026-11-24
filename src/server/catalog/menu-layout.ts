@@ -26,7 +26,7 @@ export interface ItemLayout { groups: LayoutGroup[] }
 export interface MenuConfig { items: Record<string, ItemLayout> }
 
 /** A storefront link target: a local path (not protocol-relative) or an http(s) address. */
-export const MENU_HREF = /^(\/(?!\/)[^\s<>"]*|https?:\/\/[^\s<>"/]+[^\s<>"]*)$/;
+export const MENU_HREF = /^(\/(?![/\\])[^\s<>"\\]*|https?:\/\/[^\s<>"/\\]+[^\s<>"\\]*)$/;
 
 const text = z.object({ en: z.string().trim().max(200).optional(), ru: z.string().trim().max(200).optional(), kk: z.string().trim().max(200).optional() }).strict()
   .transform((value): MenuText | undefined => {

@@ -11,7 +11,7 @@ const input = "h-10 w-full border border-[#d9d9d9] bg-white px-3 text-[14px] tex
 const label = "block text-[12px] font-medium uppercase tracking-[0.04em] text-[#595959]";
 const COLUMNS = [0, 1, 2];
 /** Same rule as the server: a path on this site or an http(s) address. */
-const HREF = /^(\/(?!\/)[^\s<>"]*|https?:\/\/[^\s<>"/]+[^\s<>"]*)$/;
+const HREF = /^(\/(?![/\\])[^\s<>"\\]*|https?:\/\/[^\s<>"/\\]+[^\s<>"\\]*)$/;
 
 const clean = (values: { en: string; ru: string; kk: string }): MenuText => {
   const out: MenuText = {};

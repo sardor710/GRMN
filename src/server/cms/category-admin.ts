@@ -107,7 +107,9 @@ export async function readCategoryTree(client: Pick<PoolClient, "query">): Promi
     const placed = placements.filter(row => row.menu_category_id === root.id).flatMap(row => { const target = byId.get(row.category_id); return target ? [{ ...node(target), href: row.href, label: row.label }] : []; });
     const layout = effectiveLayout(root.key, config, context);
     const groups = adminGroups(layout, context);
-    const shownKeys = new Set([...placed.map(row => row.key), ...groups.flatMap(group => group.links.flatMap(link => link.category?.key ? [link.category.key] : []))]);
+    // Every category under the item that is not in Products keeps its own row (rename, hide, delete, "Show under"),
+    // also when a heading links to it: a link row only edits the link.
+    const shownKeys = new Set(placed.map(row => row.key));
     return { ...node(root), menuHref: root.menu_href, placements: placed, layout, customized: root.key in config.items, groups, others: descendants(root.id).filter(row => row.kind === "catalog" && !shownKeys.has(row.key)).map(node) };
   });
   const accessories = all.filter(row => row.kind === "accessory" && row.parent_id === null).map((root): AdminAccessory => ({ ...node(root), children: descendants(root.id).map(node) }));
