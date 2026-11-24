@@ -9,11 +9,12 @@
 //     until the category is renamed in that language, then it is the category's name.
 //   - Owner 2026-11-24: once Admin ▸ Categories saves a top item's columns (menu-layout.ts, stored in
 //     store_settings.presentation_config.megaMenu), that layout replaces the built-in columns for the item; the
-//     Products group still lists the placements. Items without a stored layout are exactly as above.
+//     Products group still lists the placements, and the layout's promo pictures (when it has them) replace the
+//     built-in ones. Items without a stored layout are exactly as above.
 // Returns null while there are no catalog roots, so callers keep the built-in menu.
 import { megaNav, resolveNavPromo, type NavGroup, type NavItem, type NavLink } from "../../lib/homepage-nav.ts";
 import { PRODUCTS_HEADING } from "./menu-source.ts";
-import { MENU_CONFIG_KEY, menuGroups, parseMenuConfig, renderLayout, type MenuConfig, type MenuLocale } from "./menu-layout.ts";
+import { MENU_CONFIG_KEY, menuGroups, parseMenuConfig, renderLayout, renderPromos, type MenuConfig, type MenuLocale } from "./menu-layout.ts";
 import { menuSourceKey } from "./taxonomy-load.ts";
 import { taxonomySeed } from "./taxonomy-seed.ts";
 
@@ -114,7 +115,11 @@ export async function buildMegaNav(client: Query, locale: MenuLocale, t: Transla
       label: name(root),
       href: root.menu_href ?? `/c/${root.slug}`,
       ...(columns ? { columns } : {}),
-      ...(builtIn?.promos ? { promos: builtIn.promos.map(promo => resolveNavPromo(promo, t)) } : {}),
+      ...((): { promos?: NavItem["promos"] } => {
+        const stored = layout ? renderPromos(layout, locale) : undefined;
+        if (stored) return stored.length ? { promos: stored } : {};
+        return builtIn?.promos ? { promos: builtIn.promos.map(promo => resolveNavPromo(promo, t)) } : {};
+      })(),
     };
   });
 }

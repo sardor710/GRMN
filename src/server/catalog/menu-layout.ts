@@ -11,7 +11,7 @@
 // it unless `label` says otherwise) or a web address (`href` + `label`). The Products group lists the item's
 // placements and is the only group that cannot be deleted.
 import { z } from "zod";
-import type { MegaGroup, MegaNavItem, NavGroup, NavLink } from "../../lib/homepage-nav.ts";
+import type { MegaGroup, MegaNavItem, NavGroup, NavLink, NavPromo } from "../../lib/homepage-nav.ts";
 import { itemGroups, PRODUCTS_HEADING } from "./menu-source.ts";
 
 export type MenuLocale = "en" | "ru" | "kk";
@@ -22,7 +22,11 @@ export const MENU_COLUMNS = 3;
 
 export interface LayoutLink { id: string; category?: string; href?: string; label?: MenuText; hidden?: boolean }
 export interface LayoutGroup { id: string; column: number; products?: boolean; heading?: MenuText; hidden?: boolean; links: LayoutLink[] }
-export interface ItemLayout { groups: LayoutGroup[] }
+/** A promo picture card at the right of the open menu (owner 2026-11-24). */
+export interface LayoutPromo { id: string; title: MenuText; copy?: MenuText; href: string; image: string; hidden?: boolean }
+/** `promos` absent = the item's built-in promo pictures. */
+export interface ItemLayout { groups: LayoutGroup[]; promos?: LayoutPromo[] }
+export const MENU_PROMOS = 4;
 export interface MenuConfig { items: Record<string, ItemLayout> }
 
 /** A storefront link target: a local path (not protocol-relative) or an http(s) address. */
@@ -49,9 +53,15 @@ const group = z.object({
   if (value.products && value.links.length) ctx.addIssue({ code: "custom", message: "The Products heading lists the menu's subcategories; add links to another heading" });
   if (!value.products && !value.heading?.en && !value.links.length) ctx.addIssue({ code: "custom", message: "A heading needs an English text or at least one link" });
 });
-export const itemLayoutSchema = z.object({ groups: z.array(group).max(40) }).strict().superRefine((value, ctx) => {
+const promo = z.object({
+  id, title: text, copy: text.optional(),
+  href: z.string().trim().max(500).regex(MENU_HREF, "A promo link must start with / or https://"),
+  image: z.string().trim().max(1000).regex(MENU_HREF, "A promo picture must be an uploaded image (/uploads/…) or an https:// address"),
+  hidden: z.boolean().optional(),
+}).strict().superRefine((value, ctx) => { if (!value.title?.en) ctx.addIssue({ code: "custom", message: "A promo picture needs an English title" }); });
+export const itemLayoutSchema = z.object({ groups: z.array(group).max(40), promos: z.array(promo).max(MENU_PROMOS, `At most ${MENU_PROMOS} promo pictures per menu`).optional() }).strict().superRefine((value, ctx) => {
   if (value.groups.filter(entry => entry.products).length !== 1) ctx.addIssue({ code: "custom", message: "The menu must keep its Products heading (hide it instead)" });
-  const ids = [...value.groups.map(entry => entry.id), ...value.groups.flatMap(entry => entry.links.map(item => item.id))];
+  const ids = [...value.groups.map(entry => entry.id), ...value.groups.flatMap(entry => entry.links.map(item => item.id)), ...(value.promos ?? []).map(entry => entry.id)];
   if (new Set(ids).size !== ids.length) ctx.addIssue({ code: "custom", message: "Two headings or links share an id" });
 });
 
@@ -85,7 +95,7 @@ export type Translator = Record<MenuLocale, (key: string) => string>;
  * built-in menu shows something other than the category's own name, so storing it unchanged renders the same menu.
  * `resolve` is the built-in rule for a column link in one language (its text, or null when the menu drops it).
  */
-export function builtInLayout(item: Pick<MegaNavItem, "columns"> | undefined, categories: { bySlug: Map<string, LayoutCategory>; seedKeyBySlug: Map<string, string> }, t: Translator,
+export function builtInLayout(item: Pick<MegaNavItem, "columns" | "promos"> | undefined, categories: { bySlug: Map<string, LayoutCategory>; seedKeyBySlug: Map<string, string> }, t: Translator,
   resolve: (locale: MenuLocale, link: { labelKey: string; href: string }) => string | null): ItemLayout {
   const all = (key: string): MenuText => ({ en: t.en(key), ru: t.ru(key), kk: t.kk(key) });
   const groups: LayoutGroup[] = [];
@@ -110,7 +120,8 @@ export function builtInLayout(item: Pick<MegaNavItem, "columns"> | undefined, ca
     });
     groups.push({ id: entry.id, column: entry.column, ...(entry.group.headingKey ? { heading: all(entry.group.headingKey) } : {}), links });
   }
-  return { groups };
+  const promos = (item?.promos ?? []).map((source, index): LayoutPromo => ({ id: `promo-${index + 1}`, title: all(source.titleKey), copy: all(source.copyKey), href: source.href, image: source.image }));
+  return { groups, promos };
 }
 
 /** The storefront columns of a stored layout in one language. `products` are the item's placement links. */
@@ -133,4 +144,10 @@ export function renderLayout(layout: ItemLayout, locale: MenuLocale, products: N
   }
   const used = columns.filter(column => column.length);
   return used.length ? used : undefined;
+}
+
+/** The storefront promo pictures of a stored layout in one language; undefined keeps the built-in ones. */
+export function renderPromos(layout: ItemLayout, locale: MenuLocale): NavPromo[] | undefined {
+  if (!layout.promos) return undefined;
+  return layout.promos.filter(entry => !entry.hidden).map(entry => ({ title: entry.title[locale] ?? entry.title.en ?? "", copy: entry.copy?.[locale] ?? entry.copy?.en ?? "", href: entry.href, image: entry.image }));
 }

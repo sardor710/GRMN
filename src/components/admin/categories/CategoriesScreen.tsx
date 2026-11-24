@@ -2,11 +2,11 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, ExternalLink, Eye, EyeOff, Pencil, Plus, RotateCcw, Trash2, Waypoints } from "lucide-react";
-import { HeadingDialog, LinkDialog, type HeadingValues, type LinkValues } from "./MenuDialogs";
+import { HeadingDialog, LinkDialog, PromoDialog, type HeadingValues, type LinkValues, type PromoValues } from "./MenuDialogs";
 import { Button, StatusBadge } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import { invalidateTaxonomy } from "@/components/admin/catalog/useTaxonomy";
-import { categoryApi, CategoryRequestError, moved, type AdminMenuGroup, type AdminMenuItem, type AdminMenuLink, type AdminNode, type CategoryTree, type CategoryUsage, type ItemLayout, type LayoutLink, type LocalName, type LocalText, type MenuText } from "./category-api";
+import { categoryApi, CategoryRequestError, moved, type AdminMenuGroup, type AdminMenuItem, type AdminMenuLink, type AdminNode, type CategoryTree, type CategoryUsage, type ItemLayout, type LayoutLink, type LayoutPromo, type LocalName, type LocalText, type MenuText } from "./category-api";
 import { CategoryNameDialog, DeleteBlockedDialog, PlacementDialog, type NameValues } from "./CategoryDialogs";
 
 // Owner 2026-11-22: Admin ▸ Categories. "Menu categories" is the storefront top menu (top items and the
@@ -23,6 +23,7 @@ type Dialog =
   | { type: "blocked"; name: string; counts: CategoryUsage }
   | { type: "placements"; node: AdminNode }
   | { type: "heading"; title: string; initial?: { heading?: MenuText; column: number }; products?: boolean; save: (values: HeadingValues) => Promise<void> }
+  | { type: "promo"; title: string; initial?: LayoutPromo; save: (values: PromoValues) => Promise<void> }
   | { type: "link"; title: string; initial: { category?: string; href?: string; label?: MenuText; groupId: string }; headings: { id: string; name: string }[]; save: (values: LinkValues) => Promise<void> };
 
 const TABS: { id: Tab; label: string; hint: string }[] = [
@@ -141,7 +142,8 @@ export function CategoriesScreen() {
   // ── Menu columns: every change sends the item's whole layout. ──
   const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
   const saveLayout = (item: AdminMenuItem, change: (layout: ItemLayout) => ItemLayout, fromDialog = false) =>
-    act(epoch => categoryApi.menu(epoch, item.key, change(structuredClone(item.layout))), { fromDialog });
+    // A change returns the parts it edits (groups or promos); the rest of the layout is kept.
+    act(epoch => { const base = structuredClone(item.layout); return categoryApi.menu(epoch, item.key, { ...base, ...change(base) }); }, { fromDialog });
   const headingName = (heading: MenuText | undefined, products?: boolean) => heading?.en || (products ? "Products" : "(no heading)");
   const headingDialog = (item: AdminMenuItem, groupId?: string) => {
     const group = groupId ? item.layout.groups.find(entry => entry.id === groupId) : undefined;
@@ -192,6 +194,17 @@ export function CategoriesScreen() {
     void act(epoch => categoryApi.menu(epoch, item.key, null));
   };
   const toggle = (hidden: boolean | undefined) => (hidden ? undefined : true);
+  const promoDialog = (item: AdminMenuItem, promoId?: string) => {
+    const current = promoId ? item.layout.promos?.find(entry => entry.id === promoId) : undefined;
+    setDialog({
+      type: "promo", initial: current, title: current ? `Edit promo picture “${current.title.en ?? ""}” in ${item.name.en}` : `New promo picture in ${item.name.en}`,
+      save: (values) => saveLayout(item, layout => {
+        const promos = layout.promos ?? [];
+        return { ...layout, promos: current ? promos.map(entry => entry.id === current.id ? { ...values, id: current.id, ...(current.hidden ? { hidden: true } : {}) } : entry) : [...promos, { ...values, id: newId("p") }] };
+      }, true),
+    });
+  };
+  const updatePromos = (item: AdminMenuItem, change: (promos: LayoutPromo[]) => LayoutPromo[]) => void saveLayout(item, layout => ({ ...layout, promos: change(layout.promos ?? []) }));
   const savePlacements = (node: AdminNode, menuKeys: string[]) => act(async (epoch) => {
     if (!tree) throw new Error("Categories are not loaded");
     let current = epoch, latest: CategoryTree = tree;
@@ -311,6 +324,37 @@ export function CategoriesScreen() {
                     </li>
                   );
                 })}
+                <li data-menu-promos className="border-b border-[#e5e5e5]">
+                  <p className="flex flex-wrap items-center gap-2 bg-[#f7f7f7] py-2 pl-3 text-[12px] font-medium uppercase tracking-[0.06em] text-black sm:pl-6">
+                    Promo pictures <span className="font-normal normal-case tracking-normal text-[#595959]">right of the open menu · 600 × 525 px · up to 4</span>
+                  </p>
+                  <ul>
+                    {(item.layout.promos ?? []).map((promo, index, promos) => (
+                      <li key={promo.id} data-menu-promo={promo.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-[#e5e5e5] py-2 pl-6 pr-1 sm:pl-10">
+                        {/* eslint-disable-next-line @next/next/no-img-element -- admin thumbnail of an uploaded or linked picture */}
+                        <img src={promo.image} alt="" className={cn("h-12 w-14 border border-[#e5e5e5] object-cover", promo.hidden && "opacity-40")} />
+                        <div className="min-w-[12rem] flex-1">
+                          <p className="flex flex-wrap items-center gap-2 text-[14px] text-black">
+                            <span className={promo.hidden ? "text-[#8c8c8c]" : ""}>{promo.title.en}</span>
+                            {promo.hidden && <StatusBadge tone="muted">Hidden</StatusBadge>}
+                            <span className="text-[12px] text-[#595959]">opens {promo.href}</span>
+                          </p>
+                          {promo.copy?.en && <p className="truncate text-[12px] text-[#595959]">{promo.copy.en}</p>}
+                        </div>
+                        <div className="ml-auto flex items-center gap-1">
+                          {index > 0 && <IconButton label="Move promo picture up" onClick={() => updatePromos(item, list => moved(list, index, -1))} disabled={busy}><ArrowUp className="h-4 w-4" /></IconButton>}
+                          {index < promos.length - 1 && <IconButton label="Move promo picture down" onClick={() => updatePromos(item, list => moved(list, index, 1))} disabled={busy}><ArrowDown className="h-4 w-4" /></IconButton>}
+                          <IconButton label={promo.hidden ? "Show this promo picture" : "Hide this promo picture"} onClick={() => updatePromos(item, list => list.map((entry, i) => i === index ? { ...entry, hidden: toggle(entry.hidden) } : entry))} disabled={busy}>
+                            {promo.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </IconButton>
+                          <IconButton label="Edit this promo picture" onClick={() => promoDialog(item, promo.id)} disabled={busy}><Pencil className="h-4 w-4" /></IconButton>
+                          <IconButton label="Delete this promo picture" onClick={() => { if (window.confirm(`Delete the promo picture “${promo.title.en ?? ""}” from the ${item.name.en} menu?`)) updatePromos(item, list => list.filter((_, i) => i !== index)); }} disabled={busy}><Trash2 className="h-4 w-4 text-[#c20f2f]" /></IconButton>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                  {(item.layout.promos ?? []).length < 4 && <div className="border-t border-[#e5e5e5] py-2 pl-6 sm:pl-10"><Button variant="link" size="sm" onClick={() => promoDialog(item)} disabled={busy}><Plus className="h-4 w-4" />Add promo picture</Button></div>}
+                </li>
                 <li className="flex flex-wrap items-center gap-3 py-2 pl-3 sm:pl-6">
                   <Button variant="link" size="sm" onClick={() => headingDialog(item)} disabled={busy}><Plus className="h-4 w-4" />Add heading</Button>
                   {item.customized && <Button variant="link" size="sm" onClick={() => restoreMenu(item)} disabled={busy}><RotateCcw className="h-4 w-4" />Restore original menu</Button>}
@@ -367,6 +411,7 @@ export function CategoriesScreen() {
       {dialog?.type === "name" && <CategoryNameDialog title={dialog.title} initial={dialog.initial} showVisibility={dialog.showVisibility} fixedLink={dialog.fixedLink} emptyHint={dialog.emptyHint} note={dialog.note} onSave={dialog.save} onClose={() => setDialog(null)} />}
       {dialog?.type === "blocked" && <DeleteBlockedDialog name={dialog.name} counts={dialog.counts} onClose={() => setDialog(null)} />}
       {dialog?.type === "heading" && <HeadingDialog title={dialog.title} initial={dialog.initial} products={dialog.products} onSave={dialog.save} onClose={() => setDialog(null)} />}
+      {dialog?.type === "promo" && <PromoDialog title={dialog.title} initial={dialog.initial} onSave={dialog.save} onClose={() => setDialog(null)} />}
       {dialog?.type === "link" && <LinkDialog title={dialog.title} initial={dialog.initial} targets={tree.targets} headings={dialog.headings} onSave={dialog.save} onClose={() => setDialog(null)} />}
       {dialog?.type === "placements" && <PlacementDialog name={dialog.node.name.en} categoryKey={dialog.node.key} menu={tree.menu} onSave={(keys) => savePlacements(dialog.node, keys)} onClose={() => setDialog(null)} />}
     </div>

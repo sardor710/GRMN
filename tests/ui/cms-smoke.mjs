@@ -813,6 +813,21 @@ async function categoriesScenario({pool,send,evaluate,navigate,text,click,receip
     assert.ok(menu.includes("UI Picks")&&menu.includes("UI Example 2")&&menu.includes("UI Run"),"The new heading and links are in the /en menu");
     assert.ok(!menu.includes("Golf Course Locator")&&!menu.includes("Watch Finder"),"The hidden link and the deleted heading are gone from the /en menu");
     assert.match(await evaluate("[...document.querySelectorAll('header a')].find(a=>a.textContent.trim()==='UI Run')?.getAttribute('href')"),/^(\/en)?\/c\/sports-fitness\/running-smartwatches$/);
+    // Promo pictures: the first one gets a picture uploaded from the PC and a new title; it shows in the /en menu.
+    await adminPage();
+    const promo=`document.querySelector('${sw} [data-menu-promo]')`;
+    await until(()=>evaluate(`!!${promo}`),"The promo pictures are not listed");
+    await press(promo,"Edit this promo picture");
+    await until(()=>setById("promo-title-en","UI Promo"),"The promo dialog did not open");
+    {const {root}=await send("DOM.getDocument",{depth:-1});const {nodeId}=await send("DOM.querySelector",{nodeId:root.nodeId,selector:"[data-testid=homepage-image-file]"});assert.ok(nodeId,"promo picture upload missing");
+     await send("DOM.setFileInputFiles",{nodeId,files:[path.resolve("public/homepage/nav/HOLIDAY-SALE-TOP-NAV.jpg")]});}
+    await until(()=>evaluate("/^\\/uploads\\/homepage\\//.test(document.querySelector('img[alt=\"Picture preview\"]')?.getAttribute('src')??'')"),"The promo picture did not upload");
+    await shot("admin-categories-promo-dialog-1440.png");
+    await click("Save");
+    await until(()=>evaluate(`/UI Promo/.test(${promo}.textContent)`),"The promo was not saved");
+    await storeMenu();
+    assert.ok(await evaluate("[...document.querySelectorAll('header img')].some(img=>/^\\/uploads\\/homepage\\//.test(img.getAttribute('src')))&&/UI Promo/.test(document.querySelector('header').innerText)"),"The uploaded promo picture and title are in the /en menu");
+    await adminPage();
     // Restore the original columns.
     await adminPage();
     await addButton("Restore original menu",`document.querySelector('${sw}')`);

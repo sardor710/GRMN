@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { AdminModal } from "@/components/admin/AdminModal";
 import { Button } from "@/components/admin/ui";
-import { translateName, type MenuTarget, type MenuText } from "./category-api";
+import { HomepageImageField } from "@/app/admin/homepage/_components/HomepageImageField";
+import { translateName, type LayoutPromo, type MenuTarget, type MenuText } from "./category-api";
 
 // Owner 2026-11-24: add and edit the headings and links of a top item's menu columns.
 
@@ -19,7 +20,7 @@ const clean = (values: { en: string; ru: string; kk: string }): MenuText => {
   return out;
 };
 
-function Texts({ values, onChange, enPlaceholder, otherPlaceholder }: { values: { en: string; ru: string; kk: string }; onChange: (next: { en: string; ru: string; kk: string }) => void; enPlaceholder?: string; otherPlaceholder: string }) {
+function Texts({ values, onChange, enPlaceholder, otherPlaceholder, prefix = "menu", caption }: { values: { en: string; ru: string; kk: string }; onChange: (next: { en: string; ru: string; kk: string }) => void; enPlaceholder?: string; otherPlaceholder: string; prefix?: string; caption?: string }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const translate = async () => {
@@ -32,9 +33,10 @@ function Texts({ values, onChange, enPlaceholder, otherPlaceholder }: { values: 
   };
   return (
     <>
-      <div><label className={label} htmlFor="menu-en">English</label><input id="menu-en" className={input} value={values.en} placeholder={enPlaceholder} onChange={(e) => onChange({ ...values, en: e.target.value })} /></div>
-      <div><label className={label} htmlFor="menu-ru">Russian</label><input id="menu-ru" className={input} value={values.ru} placeholder={otherPlaceholder} onChange={(e) => onChange({ ...values, ru: e.target.value })} /></div>
-      <div><label className={label} htmlFor="menu-kk">Kazakh</label><input id="menu-kk" className={input} value={values.kk} placeholder={otherPlaceholder} onChange={(e) => onChange({ ...values, kk: e.target.value })} /></div>
+      {caption && <p className="text-[13px] font-medium text-black">{caption}</p>}
+      <div><label className={label} htmlFor={`${prefix}-en`}>English</label><input id={`${prefix}-en`} className={input} value={values.en} placeholder={enPlaceholder} onChange={(e) => onChange({ ...values, en: e.target.value })} /></div>
+      <div><label className={label} htmlFor={`${prefix}-ru`}>Russian</label><input id={`${prefix}-ru`} className={input} value={values.ru} placeholder={otherPlaceholder} onChange={(e) => onChange({ ...values, ru: e.target.value })} /></div>
+      <div><label className={label} htmlFor={`${prefix}-kk`}>Kazakh</label><input id={`${prefix}-kk`} className={input} value={values.kk} placeholder={otherPlaceholder} onChange={(e) => onChange({ ...values, kk: e.target.value })} /></div>
       <Button type="button" variant="outline" size="sm" onClick={() => { void translate(); }} disabled={busy || !values.en.trim()} loading={busy}>Auto-translate RU &amp; KZ</Button>
       {message && <p role="status" className="text-[13px] text-[#595959]">{message}</p>}
     </>
@@ -142,6 +144,45 @@ export function LinkDialog({ title, initial, targets, headings, onSave, onClose 
           <select id="menu-heading" className={input} value={groupId} onChange={(e) => setGroupId(e.target.value)}>
             {headings.map(heading => <option key={heading.id} value={heading.id}>{heading.name}</option>)}
           </select>
+        </div>
+        {error && <p role="alert" className="text-[13px] text-[#c20f2f]">{error}</p>}
+        <Footer busy={busy} onClose={onClose} />
+      </form>
+    </AdminModal>
+  );
+}
+
+export type PromoValues = Omit<LayoutPromo, "id" | "hidden">;
+
+/** A promo picture of the open menu: picture (upload from PC or a link), title, short text and where it opens. */
+export function PromoDialog({ title, initial, onSave, onClose }: {
+  title: string; initial?: LayoutPromo;
+  onSave: (values: PromoValues) => Promise<void>; onClose: () => void;
+}) {
+  const [image, setImage] = useState(initial?.image ?? "");
+  const [heading, setHeading] = useState({ en: initial?.title.en ?? "", ru: initial?.title.ru ?? "", kk: initial?.title.kk ?? "" });
+  const [copy, setCopy] = useState({ en: initial?.copy?.en ?? "", ru: initial?.copy?.ru ?? "", kk: initial?.copy?.kk ?? "" });
+  const [href, setHref] = useState(initial?.href ?? "");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const save = async () => {
+    if (!HREF.test(image.trim())) { setError("Upload a picture or paste a link that starts with / or https://"); return; }
+    if (!heading.en.trim()) { setError("An English title is required."); return; }
+    if (!HREF.test(href.trim())) { setError("The link must start with / (a page of this store) or https://"); return; }
+    setBusy(true); setError("");
+    const text = clean(copy);
+    try { await onSave({ image: image.trim(), title: clean(heading), ...(Object.keys(text).length ? { copy: text } : {}), href: href.trim() }); }
+    catch (failure) { setError(failure instanceof Error ? failure.message : "Could not save."); setBusy(false); }
+  };
+  return (
+    <AdminModal isOpen onClose={onClose} title={title} maxWidth="lg">
+      <form className="space-y-4 font-sans" onSubmit={(event) => { event.preventDefault(); void save(); }}>
+        <HomepageImageField label="Picture" value={image} onChange={setImage} target="600 × 525 px" aspect="promo" />
+        <Texts prefix="promo-title" caption="Title" values={heading} onChange={setHeading} otherPlaceholder="Uses the English title when empty" />
+        <Texts prefix="promo-copy" caption="Short text (optional)" values={copy} onChange={setCopy} otherPlaceholder="Uses the English text when empty" />
+        <div>
+          <label className={label} htmlFor="promo-href">Opens</label>
+          <input id="promo-href" className={input} value={href} placeholder="/c/promotions, /p/… or https://…" onChange={(e) => setHref(e.target.value)} />
         </div>
         {error && <p role="alert" className="text-[13px] text-[#c20f2f]">{error}</p>}
         <Footer busy={busy} onClose={onClose} />

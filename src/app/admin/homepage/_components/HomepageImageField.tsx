@@ -6,7 +6,7 @@ import { Upload, ImageOff } from "lucide-react";
 import { Button } from "@/components/admin/ui";
 import { ACCEPTED_IMAGE_TYPES, uploadImageFile } from "@/components/admin/product-editor/upload";
 
-const ASPECT = { banner: "aspect-12/5", square: "aspect-square", tile: "aspect-3/2" } as const;
+const ASPECT = { banner: "aspect-12/5", square: "aspect-square", tile: "aspect-3/2", promo: "aspect-8/7" } as const;
 
 interface HomepageImageFieldProps {
   label: string;

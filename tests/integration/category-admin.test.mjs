@@ -177,6 +177,8 @@ test("menu layout: built-in columns are shown until the first save; add/delete/r
   assert.deepEqual(smart.layout.groups.map(group => group.id), ["products", "maps", "accessoriesPlans", "discover"]);
   assert.ok(smart.groups.find(group => group.id === "maps").links.some(link => link.external && /golf-courses/.test(link.href)));
   assert.ok(t.targets.some(target => target.key === "apps" && target.kind === "accessory"), "accessory categories can be link targets");
+  assert.deepEqual(smart.layout.promos.map(promo => promo.image), ["/homepage/nav/HOLIDAY-SALE-TOP-NAV.jpg", "/homepage/nav/87582-TN-NEW.jpg"], "built-in promo pictures are editable");
+  await rejectsWith(f.catalog.setMenuLayout(f.admin, t.epoch, "wearables-smartwatches", { layout: { ...smart.layout, promos: [{ id: "p", title: { en: "X" }, href: "/", image: "javascript:x" }] } }), 400, "INVALID_INPUT");
   const layout = structuredClone(smart.layout);
   layout.groups = layout.groups.filter(group => group.id !== "maps");
   layout.groups.push({ id: "it-h", column: 2, heading: { en: "IT picks" }, links: [{ id: "it-u", href: "/minisite/fenix-8", label: { en: "fēnix" } }, { id: "it-c", category: "sports-fitness/running-smartwatches" }] });
