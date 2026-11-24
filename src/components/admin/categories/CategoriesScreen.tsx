@@ -1,25 +1,27 @@
 "use client";
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { ArrowDown, ArrowUp, Pencil, Plus, Trash2, Waypoints } from "lucide-react";
+import { ArrowDown, ArrowUp, ExternalLink, Eye, EyeOff, Pencil, Plus, RotateCcw, Trash2, Waypoints } from "lucide-react";
 import { Button, StatusBadge } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import { invalidateTaxonomy } from "@/components/admin/catalog/useTaxonomy";
-import { categoryApi, CategoryRequestError, moved, type AdminMenuItem, type AdminNode, type CategoryTree, type CategoryUsage, type LocalName } from "./category-api";
+import { categoryApi, CategoryRequestError, moved, type AdminMenuGroup, type AdminMenuItem, type AdminMenuLink, type AdminNode, type CategoryTree, type CategoryUsage, type LocalName, type LocalText, type MenuText } from "./category-api";
 import { CategoryNameDialog, DeleteBlockedDialog, PlacementDialog, type NameValues } from "./CategoryDialogs";
 
 // Owner 2026-11-22: Admin ▸ Categories. "Menu categories" is the storefront top menu (top items and the
 // subcategories in their Products column); "Accessories" holds accessory categories and their types (band sizes,
 // charger types) used for compatibility; "Series" feeds the Series filter. Square Garmin controls throughout.
+// Owner 2026-11-24: each top item shows every heading of its menu (Products, Maps, Accessories & Plans, Discover…)
+// with every link under it, as the storefront shows them; each heading and link can be hidden or renamed there.
 
 type Tab = "menu" | "accessories" | "series";
 type Dialog =
-  | { type: "name"; title: string; initial?: { name: LocalName; navVisible: boolean }; showVisibility: boolean; fixedLink?: string | null; save: (values: NameValues) => Promise<void> }
+  | { type: "name"; title: string; initial?: { name: LocalName; navVisible: boolean }; showVisibility: boolean; fixedLink?: string | null; emptyHint?: string; note?: string; save: (values: NameValues) => Promise<void> }
   | { type: "blocked"; name: string; counts: CategoryUsage }
   | { type: "placements"; node: AdminNode };
 
 const TABS: { id: Tab; label: string; hint: string }[] = [
-  { id: "menu", label: "Menu categories", hint: "The storefront top menu: top items and the subcategories in their Products column." },
+  { id: "menu", label: "Menu categories", hint: "The storefront top menu exactly as visitors see it: each top item with every heading (Products, Maps, Accessories…) and every link under it. Hide or rename any heading or link here." },
   { id: "accessories", label: "Accessories", hint: "Accessory categories and their types (band sizes, charger types). Watches link to a type in the product editor's Accessories & compatibility tab." },
   { id: "series", label: "Series (filters)", hint: "Watch series for the Series filter on category pages (fēnix, Forerunner, MARQ…). Not shown in the menu." },
 ];
@@ -41,6 +43,50 @@ function Row({ node, depth = 0, extra, actions }: { node: AdminNode; depth?: num
         <span className="text-right text-[12px] tabular-nums text-[#595959] sm:w-24">{node.productCount} {node.productCount === 1 ? "product" : "products"}</span>
         <div className="flex items-center gap-1">{actions}</div>
       </div>
+    </li>
+  );
+}
+
+const otherTexts = (text: LocalText) => [text.ru && text.ru !== text.en && `RU ${text.ru}`, text.kk && text.kk !== text.en && `KZ ${text.kk}`].filter(Boolean).join(" · ");
+const shortHref = (href: string) => href.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "");
+
+/** A heading of a top item's menu (Products, Maps, Discover…). */
+function GroupRow({ group, label, actions }: { group: AdminMenuGroup; label: string; actions: ReactNode }) {
+  return (
+    <li data-menu-group={group.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-[#e5e5e5] bg-[#f7f7f7] py-2 pl-3 pr-1 sm:pl-6">
+      <div className="min-w-[14rem] flex-1">
+        <p className="flex flex-wrap items-center gap-2 text-[12px] font-medium uppercase tracking-[0.06em] text-black">
+          <span className={group.hidden ? "text-[#8c8c8c] line-through" : ""}>{label}</span>
+          <span className="font-normal normal-case tracking-normal text-[#595959]">column {group.column + 1}</span>
+          {group.hidden && <StatusBadge tone="muted">Hidden</StatusBadge>}
+          {group.override && <StatusBadge tone="muted">Renamed</StatusBadge>}
+        </p>
+        {group.heading && otherTexts(group.heading) && <p className="truncate text-[12px] text-[#595959]">{otherTexts(group.heading)}</p>}
+      </div>
+      <div className="ml-auto flex items-center gap-1">{actions}</div>
+    </li>
+  );
+}
+
+/** A link under a heading: a category page, a page of this store, or an external site. */
+function LinkRow({ link, groupHidden, actions }: { link: AdminMenuLink; groupHidden: boolean; actions: ReactNode }) {
+  const off = link.hidden || groupHidden || (link.category !== null && link.category.state !== "shown");
+  return (
+    <li data-menu-link={link.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-[#e5e5e5] py-2.5 pl-6 pr-1 sm:pl-10">
+      <div className="min-w-[14rem] flex-1">
+        <p className="flex flex-wrap items-center gap-2 text-[14px] text-black">
+          <span className={off ? "text-[#8c8c8c]" : ""}>{link.label.en}</span>
+          {link.hidden && <StatusBadge tone="muted">Hidden</StatusBadge>}
+          {link.category?.state === "hidden" && <StatusBadge tone="muted">Category hidden</StatusBadge>}
+          {link.category?.state === "removed" && <StatusBadge tone="muted">Category deleted</StatusBadge>}
+          {link.override && <StatusBadge tone="muted">Renamed</StatusBadge>}
+          <span className="inline-flex items-center gap-1 text-[12px] text-[#595959]">
+            {link.external ? <><ExternalLink className="h-3 w-3" aria-hidden />{shortHref(link.href)}</> : <>opens {link.href}</>}
+          </span>
+        </p>
+        {otherTexts(link.label) && <p className="truncate text-[12px] text-[#595959]">{otherTexts(link.label)}</p>}
+      </div>
+      <div className="ml-auto flex items-center gap-1">{actions}</div>
     </li>
   );
 }
@@ -88,6 +134,23 @@ export function CategoriesScreen() {
   };
   const reorder = (parentKey: string | null, keys: string[], index: number, delta: -1 | 1) => { void act(epoch => categoryApi.order(epoch, parentKey, moved(keys, index, delta))); };
   const movePlacement = (item: AdminMenuItem, index: number, delta: -1 | 1) => { void act(epoch => categoryApi.placements(epoch, item.key, moved(item.placements.map(p => p.key), index, delta))); };
+  const menuWrite = (item: AdminMenuItem, target: { group: string } | { link: string }, change: { hidden?: boolean; text?: MenuText | null }, fromDialog = false) =>
+    act(epoch => categoryApi.menu(epoch, item.key, { ...target, ...change }), { fromDialog });
+  const renameMenuText = (item: AdminMenuItem, target: { group: string } | { link: string }, kind: "heading" | "link", current: LocalText) => setDialog({
+    type: "name", title: `Rename ${kind} “${current.en}” in ${item.name.en}`, showVisibility: false, initial: { name: { en: current.en, ru: current.ru, kk: current.kk }, navVisible: true },
+    emptyHint: "Uses the original text when empty",
+    note: `Changes this ${kind} in the ${item.name.en} menu only. Saving the original text again (or Reset) brings back the default.`,
+    save: (values) => menuWrite(item, target, { text: { en: values.en, ru: values.ru, kk: values.kk } }, true),
+  });
+  const menuActions = (item: AdminMenuItem, target: { group: string } | { link: string }, entry: { hidden: boolean; override: MenuText | null }, kind: "heading" | "link", text: LocalText | null) => (
+    <>
+      <IconButton label={entry.hidden ? `Show this ${kind}` : `Hide this ${kind}`} onClick={() => { void menuWrite(item, target, { hidden: !entry.hidden }); }} disabled={busy}>
+        {entry.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </IconButton>
+      {text && <IconButton label={`Rename this ${kind}`} onClick={() => renameMenuText(item, target, kind, text)} disabled={busy}><Pencil className="h-4 w-4" /></IconButton>}
+      {entry.override && <IconButton label={`Reset this ${kind} to its original text`} onClick={() => { void menuWrite(item, target, { text: null }); }} disabled={busy}><RotateCcw className="h-4 w-4" /></IconButton>}
+    </>
+  );
   const savePlacements = (node: AdminNode, menuKeys: string[]) => act(async (epoch) => {
     if (!tree) throw new Error("Categories are not loaded");
     let current = epoch, latest: CategoryTree = tree;
@@ -155,29 +218,49 @@ export function CategoriesScreen() {
               <ul>
                 <Row node={item} extra={item.menuHref ? <span className="text-[12px] text-[#595959]">opens {item.menuHref}</span> : null}
                   actions={actions(item, { up: itemIndex > 0 ? () => reorder(null, menuKeys, itemIndex, -1) : undefined, down: itemIndex < menuKeys.length - 1 ? () => reorder(null, menuKeys, itemIndex, 1) : undefined, edit: () => rename(item, true, item.menuHref) })} />
-                {item.placements.map((placement, index) => (
-                  <Row key={`${item.key}-${placement.key}`} node={placement} depth={1}
-                    extra={<>
-                      {placement.key === item.key && <span className="text-[12px] text-[#595959]">this item&apos;s own page</span>}
-                      {placement.label?.en && placement.label.en !== placement.name.en && <span className="text-[12px] text-[#595959]">shown as “{placement.label.en}”</span>}
-                      {placement.href && <span className="text-[12px] text-[#595959]">opens {placement.href}</span>}
-                    </>}
-                    actions={actions(placement, {
-                      up: index > 0 ? () => movePlacement(item, index, -1) : undefined,
-                      down: index < item.placements.length - 1 ? () => movePlacement(item, index, 1) : undefined,
-                      place: placement.key === item.key ? undefined : () => setDialog({ type: "placements", node: placement }),
-                      // The own-page row is the top item itself: hide it from its header row, not from here.
-                      edit: () => rename(placement, placement.key !== item.key, placement.href),
-                      canDelete: placement.key !== item.key,
-                    })} />
-                ))}
-                <li className="py-2 pl-6 sm:pl-10"><Button variant="link" size="sm" onClick={() => create(`New subcategory in ${item.name.en}`, "menu-child", item.key, true)} disabled={busy}><Plus className="h-4 w-4" />Add subcategory</Button></li>
+                {item.groups.map((group, groupIndex) => {
+                  const firstProducts = group.products && item.groups.findIndex(entry => entry.products) === groupIndex;
+                  if (group.products && !firstProducts) {
+                    return <li key={group.id} className="border-b border-[#e5e5e5] py-2 pl-6 text-[12px] text-[#595959] sm:pl-10">Products continue in column {group.column + 1} when the list is long.</li>;
+                  }
+                  const label = group.heading?.en || (group.products ? "Products" : `Column ${group.column + 1}`);
+                  return (
+                    <li key={group.id}>
+                      <ul>
+                        <GroupRow group={group} label={label} actions={menuActions(item, { group: group.id }, group, "heading", group.heading)} />
+                        {group.products && <>
+                          {item.placements.map((placement, index) => (
+                            <Row key={`${item.key}-${placement.key}`} node={placement} depth={1}
+                              extra={<>
+                                {placement.key === item.key && <span className="text-[12px] text-[#595959]">this item&apos;s own page</span>}
+                                {placement.label?.en && placement.label.en !== placement.name.en && <span className="text-[12px] text-[#595959]">shown as “{placement.label.en}”</span>}
+                                {placement.href && <span className="text-[12px] text-[#595959]">opens {placement.href}</span>}
+                              </>}
+                              actions={actions(placement, {
+                                up: index > 0 ? () => movePlacement(item, index, -1) : undefined,
+                                down: index < item.placements.length - 1 ? () => movePlacement(item, index, 1) : undefined,
+                                place: placement.key === item.key ? undefined : () => setDialog({ type: "placements", node: placement }),
+                                // The own-page row is the top item itself: hide it from its header row, not from here.
+                                edit: () => rename(placement, placement.key !== item.key, placement.href),
+                                canDelete: placement.key !== item.key,
+                              })} />
+                          ))}
+                          <li className="border-b border-[#e5e5e5] py-2 pl-6 sm:pl-10"><Button variant="link" size="sm" onClick={() => create(`New subcategory in ${item.name.en}`, "menu-child", item.key, true)} disabled={busy}><Plus className="h-4 w-4" />Add subcategory</Button></li>
+                        </>}
+                        {group.links.map(link => (
+                          <LinkRow key={link.id} link={link} groupHidden={group.hidden} actions={menuActions(item, { link: link.id }, link, "link", link.label)} />
+                        ))}
+                      </ul>
+                    </li>
+                  );
+                })}
               </ul>
               {item.others.length > 0 && (
-                <details className="border-t border-[#d9d9d9] px-1">
-                  <summary className="cursor-pointer py-2.5 pl-1 text-[13px] text-[#595959]">Other links in this menu ({item.others.length}) — fixed columns such as Maps or Accessories</summary>
+                <div className="border-t border-[#d9d9d9]">
+                  <p className="px-3 pt-3 text-[12px] font-medium uppercase tracking-[0.06em] text-black sm:px-6">Not in this menu ({item.others.length})</p>
+                  <p className="px-3 pb-1 text-[12px] text-[#595959] sm:px-6">Categories under {item.name.en} that no heading links to. Use “Show under…” to add one to a Products list.</p>
                   <ul>{item.others.map(node => <Row key={node.key} node={node} depth={1} actions={actions(node, { edit: () => rename(node, true), place: () => setDialog({ type: "placements", node }) })} />)}</ul>
-                </details>
+                </div>
               )}
             </section>
           ))}
@@ -220,7 +303,7 @@ export function CategoriesScreen() {
         </section>
       )}
 
-      {dialog?.type === "name" && <CategoryNameDialog title={dialog.title} initial={dialog.initial} showVisibility={dialog.showVisibility} fixedLink={dialog.fixedLink} onSave={dialog.save} onClose={() => setDialog(null)} />}
+      {dialog?.type === "name" && <CategoryNameDialog title={dialog.title} initial={dialog.initial} showVisibility={dialog.showVisibility} fixedLink={dialog.fixedLink} emptyHint={dialog.emptyHint} note={dialog.note} onSave={dialog.save} onClose={() => setDialog(null)} />}
       {dialog?.type === "blocked" && <DeleteBlockedDialog name={dialog.name} counts={dialog.counts} onClose={() => setDialog(null)} />}
       {dialog?.type === "placements" && <PlacementDialog name={dialog.node.name.en} categoryKey={dialog.node.key} menu={tree.menu} onSave={(keys) => savePlacements(dialog.node, keys)} onClose={() => setDialog(null)} />}
     </div>

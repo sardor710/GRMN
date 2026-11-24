@@ -727,7 +727,7 @@ async function variantDeleteScenario({cms,headers,send,evaluate,navigate,text,cl
 
 // Owner 2026-11-22 (CMS_SMOKE_ONLY=categories): Admin ▸ Categories. A subcategory created under Smartwatches with a
 // Russian name appears in the /ru header menu, hiding takes it out, the bin deletes it; admin status badges are square.
-async function categoriesScenario({send,evaluate,navigate,text,click,receipt}){
+async function categoriesScenario({pool,send,evaluate,navigate,text,click,receipt}){
   const setById=(id,value)=>evaluate(`(()=>{const input=document.getElementById(${JSON.stringify(id)});if(!input)throw Error('Missing input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`);
   // The mega menu renders its links only while open: open the first top item (Smartwatches) and read them.
   const menuText=()=>evaluate("(()=>{const nav=document.querySelector('header nav');const button=nav&&[...nav.querySelectorAll('button[aria-expanded]')][0];if(button&&button.getAttribute('aria-expanded')!=='true')button.click();return [...document.querySelectorAll('header a')].map(a=>a.textContent.trim()).join('|');})()");
@@ -764,6 +764,28 @@ async function categoriesScenario({send,evaluate,navigate,text,click,receipt}){
     await until(()=>evaluate("!!document.querySelector('[data-category=\"wearables-smartwatches/ui-trail\"]')"),"The hidden subcategory is not listed in the admin");
     await evaluate("window.confirm=()=>true;document.querySelector('[data-category=\"wearables-smartwatches/ui-trail\"] button[aria-label=\"Delete UI Trail\"]').click();true");
     await until(()=>evaluate("!document.querySelector('[data-category=\"wearables-smartwatches/ui-trail\"]')"),"The bin did not delete the subcategory");
+    // Owner 2026-11-24: every heading and link of the menu is listed under its top item; hiding one link under
+    // Smartwatches takes it out of that menu, showing it brings it back.
+    // Menu overrides live in the store settings row; a fresh database has none (production does).
+    await pool.query("INSERT INTO store_settings(id,maintenance_mode) VALUES(1,false) ON CONFLICT (id) DO NOTHING");
+    await navigate("/admin/categories");
+    await until(async()=>/menu categories/i.test(await text()),"The categories page did not reload");
+    const golf='section[aria-label="Smartwatches"] [data-menu-link="maps|https://www.garmin.com/en-US/golf-courses/"]';
+    await until(()=>evaluate(`!!document.querySelector('${golf}')&&!!document.querySelector('section[aria-label="Smartwatches"] [data-menu-group="discover"]')`),"The Maps and Discover columns are not listed");
+    await evaluate(`document.querySelector('${golf} button[aria-label="Hide this link"]').click();true`);
+    await until(()=>evaluate(`/hidden/i.test(document.querySelector('${golf}').textContent)`),"The link was not marked hidden");
+    await evaluate(`document.querySelector('section[aria-label="Smartwatches"] [data-menu-group="maps"]').scrollIntoView({block:"start"});true`);
+    await shot("admin-categories-menu-columns-1440.png");
+    await navigate("/en");
+    await until(async()=>!(await menuText()).includes("Golf Course Locator")&&(await menuText()).includes("Running"),"Hiding did not take the link out of the menu");
+    await navigate("/admin/categories");
+    await until(()=>evaluate(`!!document.querySelector('${golf} button[aria-label="Show this link"]')`),"The hidden link is not listed");
+    await evaluate(`document.querySelector('${golf} button[aria-label="Show this link"]').click();true`);
+    await until(()=>evaluate(`!!document.querySelector('${golf} button[aria-label="Hide this link"]')`),"The link was not shown again");
+    await navigate("/en");
+    await until(async()=>(await menuText()).includes("Golf Course Locator"),"Showing did not bring the link back");
+    await navigate("/admin/categories");
+    await until(async()=>/menu categories/i.test(await text()),"The categories page did not reload");
     await click("Series (filters)");await until(async()=>/fēnix/i.test(await text()),"The series tab did not open");await shot("admin-categories-series-1440.png");
     await click("Accessories");await until(async()=>/quickfit 22 mm/i.test(await text()),"The accessories tab did not open");await shot("admin-categories-accessories-1440.png");
     await send("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:1,mobile:true});
@@ -1197,7 +1219,7 @@ try{
   if(onlyCategories){
     await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
-    await categoriesScenario({send,evaluate,navigate,text,click,receipt});
+    await categoriesScenario({pool:database.pool,send,evaluate,navigate,text,click,receipt});
     console.log("PASS categories: subcategory created with a Russian name shows in the /ru menu, hidden and gone from the menu, deleted with the bin; square status badge; no horizontal scroll at 390 px");
     console.log("Browser smoke passed (CMS_SMOKE_ONLY=categories): only the categories block ran.");
   }
@@ -1236,7 +1258,7 @@ try{
   if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
     await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
-    await categoriesScenario({send,evaluate,navigate,text,click,receipt});
+    await categoriesScenario({pool:database.pool,send,evaluate,navigate,text,click,receipt});
     console.log("PASS categories: subcategory created with a Russian name shows in the /ru menu, hidden and gone from the menu, deleted with the bin; square status badge; no horizontal scroll at 390 px");
   }
   // Owner 2026-11-23: homepage archive / delete / PC upload / merged card (also CMS_SMOKE_ONLY=homepage-archive).
