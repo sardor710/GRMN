@@ -2,26 +2,31 @@
 
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, ExternalLink, Eye, EyeOff, Pencil, Plus, RotateCcw, Trash2, Waypoints } from "lucide-react";
+import { HeadingDialog, LinkDialog, type HeadingValues, type LinkValues } from "./MenuDialogs";
 import { Button, StatusBadge } from "@/components/admin/ui";
 import { cn } from "@/lib/utils";
 import { invalidateTaxonomy } from "@/components/admin/catalog/useTaxonomy";
-import { categoryApi, CategoryRequestError, moved, type AdminMenuGroup, type AdminMenuItem, type AdminMenuLink, type AdminNode, type CategoryTree, type CategoryUsage, type LocalName, type LocalText, type MenuText } from "./category-api";
+import { categoryApi, CategoryRequestError, moved, type AdminMenuGroup, type AdminMenuItem, type AdminMenuLink, type AdminNode, type CategoryTree, type CategoryUsage, type ItemLayout, type LayoutLink, type LocalName, type LocalText, type MenuText } from "./category-api";
 import { CategoryNameDialog, DeleteBlockedDialog, PlacementDialog, type NameValues } from "./CategoryDialogs";
 
 // Owner 2026-11-22: Admin ▸ Categories. "Menu categories" is the storefront top menu (top items and the
 // subcategories in their Products column); "Accessories" holds accessory categories and their types (band sizes,
 // charger types) used for compatibility; "Series" feeds the Series filter. Square Garmin controls throughout.
 // Owner 2026-11-24: each top item shows every heading of its menu (Products, Maps, Accessories & Plans, Discover…)
-// with every link under it, as the storefront shows them; each heading and link can be hidden or renamed there.
+// with every link under it, as the storefront shows them. Headings and links can be added, edited (text and what
+// they open), moved, hidden and deleted; the first change stores the item's whole layout, "Restore original menu"
+// drops it again.
 
 type Tab = "menu" | "accessories" | "series";
 type Dialog =
   | { type: "name"; title: string; initial?: { name: LocalName; navVisible: boolean }; showVisibility: boolean; fixedLink?: string | null; emptyHint?: string; note?: string; save: (values: NameValues) => Promise<void> }
   | { type: "blocked"; name: string; counts: CategoryUsage }
-  | { type: "placements"; node: AdminNode };
+  | { type: "placements"; node: AdminNode }
+  | { type: "heading"; title: string; initial?: { heading?: MenuText; column: number }; products?: boolean; save: (values: HeadingValues) => Promise<void> }
+  | { type: "link"; title: string; initial: { category?: string; href?: string; label?: MenuText; groupId: string }; headings: { id: string; name: string }[]; save: (values: LinkValues) => Promise<void> };
 
 const TABS: { id: Tab; label: string; hint: string }[] = [
-  { id: "menu", label: "Menu categories", hint: "The storefront top menu exactly as visitors see it: each top item with every heading (Products, Maps, Accessories…) and every link under it. Hide or rename any heading or link here." },
+  { id: "menu", label: "Menu categories", hint: "The storefront top menu exactly as visitors see it: each top item with every heading (Products, Maps, Accessories…) and every link under it. Add, edit, move, hide or delete any heading or link here." },
   { id: "accessories", label: "Accessories", hint: "Accessory categories and their types (band sizes, charger types). Watches link to a type in the product editor's Accessories & compatibility tab." },
   { id: "series", label: "Series (filters)", hint: "Watch series for the Series filter on category pages (fēnix, Forerunner, MARQ…). Not shown in the menu." },
 ];
@@ -59,7 +64,6 @@ function GroupRow({ group, label, actions }: { group: AdminMenuGroup; label: str
           <span className={group.hidden ? "text-[#8c8c8c] line-through" : ""}>{label}</span>
           <span className="font-normal normal-case tracking-normal text-[#595959]">column {group.column + 1}</span>
           {group.hidden && <StatusBadge tone="muted">Hidden</StatusBadge>}
-          {group.override && <StatusBadge tone="muted">Renamed</StatusBadge>}
         </p>
         {group.heading && otherTexts(group.heading) && <p className="truncate text-[12px] text-[#595959]">{otherTexts(group.heading)}</p>}
       </div>
@@ -79,7 +83,7 @@ function LinkRow({ link, groupHidden, actions }: { link: AdminMenuLink; groupHid
           {link.hidden && <StatusBadge tone="muted">Hidden</StatusBadge>}
           {link.category?.state === "hidden" && <StatusBadge tone="muted">Category hidden</StatusBadge>}
           {link.category?.state === "removed" && <StatusBadge tone="muted">Category deleted</StatusBadge>}
-          {link.override && <StatusBadge tone="muted">Renamed</StatusBadge>}
+          {link.category && link.customLabel && <StatusBadge tone="muted">Own text</StatusBadge>}
           <span className="inline-flex items-center gap-1 text-[12px] text-[#595959]">
             {link.external ? <><ExternalLink className="h-3 w-3" aria-hidden />{shortHref(link.href)}</> : <>opens {link.href}</>}
           </span>
@@ -134,23 +138,60 @@ export function CategoriesScreen() {
   };
   const reorder = (parentKey: string | null, keys: string[], index: number, delta: -1 | 1) => { void act(epoch => categoryApi.order(epoch, parentKey, moved(keys, index, delta))); };
   const movePlacement = (item: AdminMenuItem, index: number, delta: -1 | 1) => { void act(epoch => categoryApi.placements(epoch, item.key, moved(item.placements.map(p => p.key), index, delta))); };
-  const menuWrite = (item: AdminMenuItem, target: { group: string } | { link: string }, change: { hidden?: boolean; text?: MenuText | null }, fromDialog = false) =>
-    act(epoch => categoryApi.menu(epoch, item.key, { ...target, ...change }), { fromDialog });
-  const renameMenuText = (item: AdminMenuItem, target: { group: string } | { link: string }, kind: "heading" | "link", current: LocalText) => setDialog({
-    type: "name", title: `Rename ${kind} “${current.en}” in ${item.name.en}`, showVisibility: false, initial: { name: { en: current.en, ru: current.ru, kk: current.kk }, navVisible: true },
-    emptyHint: "Uses the original text when empty",
-    note: `Changes this ${kind} in the ${item.name.en} menu only. Saving the original text again (or Reset) brings back the default.`,
-    save: (values) => menuWrite(item, target, { text: { en: values.en, ru: values.ru, kk: values.kk } }, true),
+  // ── Menu columns: every change sends the item's whole layout. ──
+  const newId = (prefix: string) => `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+  const saveLayout = (item: AdminMenuItem, change: (layout: ItemLayout) => ItemLayout, fromDialog = false) =>
+    act(epoch => categoryApi.menu(epoch, item.key, change(structuredClone(item.layout))), { fromDialog });
+  const headingName = (heading: MenuText | undefined, products?: boolean) => heading?.en || (products ? "Products" : "(no heading)");
+  const headingDialog = (item: AdminMenuItem, groupId?: string) => {
+    const group = groupId ? item.layout.groups.find(entry => entry.id === groupId) : undefined;
+    setDialog({
+      type: "heading", products: group?.products, initial: group ? { heading: group.heading, column: group.column } : undefined,
+      title: group ? `Edit heading “${headingName(group.heading, group.products)}” in ${item.name.en}` : `New heading in ${item.name.en}`,
+      save: (values) => saveLayout(item, layout => ({
+        groups: group
+          ? layout.groups.map(entry => entry.id === group.id ? { ...entry, heading: Object.keys(values.heading).length ? values.heading : undefined, column: values.column } : entry)
+          : [...layout.groups, { id: newId("h"), column: values.column, heading: values.heading, links: [] }],
+      }), true),
+    });
+  };
+  const linkDialog = (item: AdminMenuItem, groupId: string, linkId?: string) => {
+    const current = linkId ? item.layout.groups.find(entry => entry.id === groupId)?.links.find(entry => entry.id === linkId) : undefined;
+    const shown = linkId ? item.groups.find(entry => entry.id === groupId)?.links.find(entry => entry.id === linkId) : undefined;
+    setDialog({
+      type: "link", title: current ? `Edit link “${shown?.label.en ?? ""}” in ${item.name.en}` : `New link in ${item.name.en}`,
+      initial: { category: current?.category, href: current?.href, label: current?.label, groupId },
+      headings: item.layout.groups.filter(entry => !entry.products).map(entry => ({ id: entry.id, name: `${headingName(entry.heading)} (column ${entry.column + 1})` })),
+      save: (values) => saveLayout(item, layout => {
+        const next: LayoutLink = { id: current?.id ?? newId("l"), ...(values.category ? { category: values.category } : { href: values.href }), ...(values.label ? { label: values.label } : {}), ...(current?.hidden ? { hidden: true } : {}) };
+        const groups = layout.groups.map(entry => ({ ...entry, links: entry.links.filter(link => link.id !== next.id || (entry.id === values.groupId && current)) }));
+        return {
+          groups: groups.map(entry => {
+            if (entry.id !== values.groupId) return entry;
+            const at = entry.links.findIndex(link => link.id === next.id);
+            return { ...entry, links: at >= 0 ? entry.links.map(link => link.id === next.id ? next : link) : [...entry.links, next] };
+          }),
+        };
+      }, true),
+    });
+  };
+  const updateGroup = (item: AdminMenuItem, groupId: string, change: (group: ItemLayout["groups"][number]) => ItemLayout["groups"][number] | null) =>
+    void saveLayout(item, layout => ({ groups: layout.groups.flatMap(entry => { if (entry.id !== groupId) return [entry]; const next = change(entry); return next ? [next] : []; }) }));
+  const moveGroup = (item: AdminMenuItem, groupId: string, delta: -1 | 1) => void saveLayout(item, layout => {
+    const groups = [...layout.groups];
+    const index = groups.findIndex(entry => entry.id === groupId);
+    const siblings = groups.map((entry, at) => ({ entry, at })).filter(({ entry }) => entry.column === groups[index].column);
+    const mine = siblings.findIndex(({ at }) => at === index), other = siblings[mine + delta];
+    if (other) [groups[index], groups[other.at]] = [groups[other.at], groups[index]];
+    return { groups };
   });
-  const menuActions = (item: AdminMenuItem, target: { group: string } | { link: string }, entry: { hidden: boolean; override: MenuText | null }, kind: "heading" | "link", text: LocalText | null) => (
-    <>
-      <IconButton label={entry.hidden ? `Show this ${kind}` : `Hide this ${kind}`} onClick={() => { void menuWrite(item, target, { hidden: !entry.hidden }); }} disabled={busy}>
-        {entry.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-      </IconButton>
-      {text && <IconButton label={`Rename this ${kind}`} onClick={() => renameMenuText(item, target, kind, text)} disabled={busy}><Pencil className="h-4 w-4" /></IconButton>}
-      {entry.override && <IconButton label={`Reset this ${kind} to its original text`} onClick={() => { void menuWrite(item, target, { text: null }); }} disabled={busy}><RotateCcw className="h-4 w-4" /></IconButton>}
-    </>
-  );
+  const updateLink = (item: AdminMenuItem, groupId: string, linkId: string, change: (links: LayoutLink[], index: number) => LayoutLink[]) =>
+    void saveLayout(item, layout => ({ groups: layout.groups.map(entry => entry.id === groupId ? { ...entry, links: change(entry.links, entry.links.findIndex(link => link.id === linkId)) } : entry) }));
+  const restoreMenu = (item: AdminMenuItem) => {
+    if (!window.confirm(`Restore the original columns of “${item.name.en}”? Every heading and link you added, edited or deleted there goes back to how it was. Products subcategories are not affected.`)) return;
+    void act(epoch => categoryApi.menu(epoch, item.key, null));
+  };
+  const toggle = (hidden: boolean | undefined) => (hidden ? undefined : true);
   const savePlacements = (node: AdminNode, menuKeys: string[]) => act(async (epoch) => {
     if (!tree) throw new Error("Categories are not loaded");
     let current = epoch, latest: CategoryTree = tree;
@@ -218,16 +259,23 @@ export function CategoriesScreen() {
               <ul>
                 <Row node={item} extra={item.menuHref ? <span className="text-[12px] text-[#595959]">opens {item.menuHref}</span> : null}
                   actions={actions(item, { up: itemIndex > 0 ? () => reorder(null, menuKeys, itemIndex, -1) : undefined, down: itemIndex < menuKeys.length - 1 ? () => reorder(null, menuKeys, itemIndex, 1) : undefined, edit: () => rename(item, true, item.menuHref) })} />
-                {item.groups.map((group, groupIndex) => {
-                  const firstProducts = group.products && item.groups.findIndex(entry => entry.products) === groupIndex;
-                  if (group.products && !firstProducts) {
-                    return <li key={group.id} className="border-b border-[#e5e5e5] py-2 pl-6 text-[12px] text-[#595959] sm:pl-10">Products continue in column {group.column + 1} when the list is long.</li>;
-                  }
-                  const label = group.heading?.en || (group.products ? "Products" : `Column ${group.column + 1}`);
+                {[...item.groups].sort((a, b) => a.column - b.column).map((group, _index, sorted) => {
+                  const column = sorted.filter(entry => entry.column === group.column), place = column.indexOf(group);
+                  const groupActions = (
+                    <>
+                      {place > 0 && <IconButton label="Move heading up" onClick={() => moveGroup(item, group.id, -1)} disabled={busy}><ArrowUp className="h-4 w-4" /></IconButton>}
+                      {place < column.length - 1 && <IconButton label="Move heading down" onClick={() => moveGroup(item, group.id, 1)} disabled={busy}><ArrowDown className="h-4 w-4" /></IconButton>}
+                      <IconButton label={group.hidden ? "Show this heading" : "Hide this heading"} onClick={() => updateGroup(item, group.id, entry => ({ ...entry, hidden: toggle(entry.hidden) }))} disabled={busy}>
+                        {group.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </IconButton>
+                      <IconButton label="Edit this heading" onClick={() => headingDialog(item, group.id)} disabled={busy}><Pencil className="h-4 w-4" /></IconButton>
+                      {!group.products && <IconButton label="Delete this heading" onClick={() => { if (window.confirm(`Delete the heading “${group.heading?.en ?? ""}” and its ${group.links.length} links from the ${item.name.en} menu? Categories are not deleted.`)) updateGroup(item, group.id, () => null); }} disabled={busy}><Trash2 className="h-4 w-4 text-[#c20f2f]" /></IconButton>}
+                    </>
+                  );
                   return (
                     <li key={group.id}>
                       <ul>
-                        <GroupRow group={group} label={label} actions={menuActions(item, { group: group.id }, group, "heading", group.heading)} />
+                        <GroupRow group={group} label={group.heading?.en || (group.products ? "Products" : "(no heading)")} actions={groupActions} />
                         {group.products && <>
                           {item.placements.map((placement, index) => (
                             <Row key={`${item.key}-${placement.key}`} node={placement} depth={1}
@@ -247,13 +295,26 @@ export function CategoriesScreen() {
                           ))}
                           <li className="border-b border-[#e5e5e5] py-2 pl-6 sm:pl-10"><Button variant="link" size="sm" onClick={() => create(`New subcategory in ${item.name.en}`, "menu-child", item.key, true)} disabled={busy}><Plus className="h-4 w-4" />Add subcategory</Button></li>
                         </>}
-                        {group.links.map(link => (
-                          <LinkRow key={link.id} link={link} groupHidden={group.hidden} actions={menuActions(item, { link: link.id }, link, "link", link.label)} />
+                        {group.links.map((link, index) => (
+                          <LinkRow key={link.id} link={link} groupHidden={group.hidden} actions={<>
+                            {index > 0 && <IconButton label="Move link up" onClick={() => updateLink(item, group.id, link.id, (links, at) => moved(links, at, -1))} disabled={busy}><ArrowUp className="h-4 w-4" /></IconButton>}
+                            {index < group.links.length - 1 && <IconButton label="Move link down" onClick={() => updateLink(item, group.id, link.id, (links, at) => moved(links, at, 1))} disabled={busy}><ArrowDown className="h-4 w-4" /></IconButton>}
+                            <IconButton label={link.hidden ? "Show this link" : "Hide this link"} onClick={() => updateLink(item, group.id, link.id, (links, at) => links.map((entry, i) => i === at ? { ...entry, hidden: toggle(entry.hidden) } : entry))} disabled={busy}>
+                              {link.hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                            </IconButton>
+                            <IconButton label="Edit this link" onClick={() => linkDialog(item, group.id, link.id)} disabled={busy}><Pencil className="h-4 w-4" /></IconButton>
+                            <IconButton label="Delete this link" onClick={() => { if (window.confirm(`Delete the link “${link.label.en}” from the ${item.name.en} menu? The page or category itself is not deleted.`)) updateLink(item, group.id, link.id, (links, at) => links.filter((_, i) => i !== at)); }} disabled={busy}><Trash2 className="h-4 w-4 text-[#c20f2f]" /></IconButton>
+                          </>} />
                         ))}
+                        {!group.products && <li className="border-b border-[#e5e5e5] py-2 pl-6 sm:pl-10"><Button variant="link" size="sm" onClick={() => linkDialog(item, group.id)} disabled={busy}><Plus className="h-4 w-4" />Add link</Button></li>}
                       </ul>
                     </li>
                   );
                 })}
+                <li className="flex flex-wrap items-center gap-3 py-2 pl-3 sm:pl-6">
+                  <Button variant="link" size="sm" onClick={() => headingDialog(item)} disabled={busy}><Plus className="h-4 w-4" />Add heading</Button>
+                  {item.customized && <Button variant="link" size="sm" onClick={() => restoreMenu(item)} disabled={busy}><RotateCcw className="h-4 w-4" />Restore original menu</Button>}
+                </li>
               </ul>
               {item.others.length > 0 && (
                 <div className="border-t border-[#d9d9d9]">
@@ -305,6 +366,8 @@ export function CategoriesScreen() {
 
       {dialog?.type === "name" && <CategoryNameDialog title={dialog.title} initial={dialog.initial} showVisibility={dialog.showVisibility} fixedLink={dialog.fixedLink} emptyHint={dialog.emptyHint} note={dialog.note} onSave={dialog.save} onClose={() => setDialog(null)} />}
       {dialog?.type === "blocked" && <DeleteBlockedDialog name={dialog.name} counts={dialog.counts} onClose={() => setDialog(null)} />}
+      {dialog?.type === "heading" && <HeadingDialog title={dialog.title} initial={dialog.initial} products={dialog.products} onSave={dialog.save} onClose={() => setDialog(null)} />}
+      {dialog?.type === "link" && <LinkDialog title={dialog.title} initial={dialog.initial} targets={tree.targets} headings={dialog.headings} onSave={dialog.save} onClose={() => setDialog(null)} />}
       {dialog?.type === "placements" && <PlacementDialog name={dialog.node.name.en} categoryKey={dialog.node.key} menu={tree.menu} onSave={(keys) => savePlacements(dialog.node, keys)} onClose={() => setDialog(null)} />}
     </div>
   );

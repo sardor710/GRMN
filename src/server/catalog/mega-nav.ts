@@ -7,13 +7,13 @@
 //   - Other columns, groups and promos come from the built-in menu. A link there that stands for a category
 //     (/c/<slug>) is dropped when the category is hidden, archived or deleted; its label stays the built-in one
 //     until the category is renamed in that language, then it is the category's name.
-//   - Owner 2026-11-24: Admin ▸ Categories can hide or rename (per language) any heading and any column link under
-//     one top item (menu-overrides.ts, stored in store_settings.presentation_config.megaMenu). With no overrides
-//     the menu is exactly the one above.
+//   - Owner 2026-11-24: once Admin ▸ Categories saves a top item's columns (menu-layout.ts, stored in
+//     store_settings.presentation_config.megaMenu), that layout replaces the built-in columns for the item; the
+//     Products group still lists the placements. Items without a stored layout are exactly as above.
 // Returns null while there are no catalog roots, so callers keep the built-in menu.
 import { megaNav, resolveNavPromo, type NavGroup, type NavItem, type NavLink } from "../../lib/homepage-nav.ts";
 import { PRODUCTS_HEADING } from "./menu-source.ts";
-import { MENU_OVERRIDES_KEY, menuGroups, parseMenuOverrides, type MenuLocale, type MenuOverrides } from "./menu-overrides.ts";
+import { MENU_CONFIG_KEY, menuGroups, parseMenuConfig, renderLayout, type MenuConfig, type MenuLocale } from "./menu-layout.ts";
 import { menuSourceKey } from "./taxonomy-load.ts";
 import { taxonomySeed } from "./taxonomy-seed.ts";
 
@@ -26,6 +26,8 @@ type CategoryRow = MenuCategoryRow;
 interface PlacementRow { menu_category_id: string; category_id: string; href: string | null; label: Partial<Record<MenuLocale, string>> | null }
 
 const SEED_SLUGS = new Set(taxonomySeed.map(node => node.slug));
+/** Seed category key by slug: a built-in link to a deleted seed category stays dropped once stored. */
+export const SEED_KEY_BY_SLUG = new Map(taxonomySeed.flatMap(node => node.slug ? [[node.slug, node.key] as const] : []));
 
 /** Category a built-in /c/<slug> link stands for, or null. */
 export function linkSlug(href: string): string | null {
@@ -50,10 +52,10 @@ export function columnLinkResolver(categories: readonly CategoryRow[], t: Transl
   };
 }
 
-/** The stored overrides; {} when there are none or store_settings is unreadable. */
-export async function readMenuOverrides(client: Query): Promise<MenuOverrides> {
-  const row = (await client.query<{ config: unknown }>(`SELECT presentation_config->'${MENU_OVERRIDES_KEY}' AS config FROM store_settings WHERE id=1`)).rows[0];
-  return parseMenuOverrides(row?.config);
+/** The stored menu layouts; none when nothing is stored or store_settings is unreadable. */
+export async function readMenuConfig(client: Query): Promise<MenuConfig> {
+  const row = (await client.query<{ config: unknown }>(`SELECT presentation_config->'${MENU_CONFIG_KEY}' AS config FROM store_settings WHERE id=1`)).rows[0];
+  return parseMenuConfig(row?.config);
 }
 
 export async function buildMegaNav(client: Query, locale: MenuLocale, t: Translate): Promise<NavItem[] | null> {
@@ -64,7 +66,8 @@ export async function buildMegaNav(client: Query, locale: MenuLocale, t: Transla
   const roots = categories.filter(row => row.kind === "catalog" && row.parent_id === null && row.nav_visible && !row.archived);
   if (!roots.length) return null;
   const placements = (await client.query<PlacementRow>("SELECT menu_category_id,category_id,href,label FROM category_menu_placements ORDER BY menu_category_id,position,id")).rows;
-  const overrides = await readMenuOverrides(client).catch(() => ({} as MenuOverrides));
+  const config = await readMenuConfig(client).catch((): MenuConfig => ({ items: {} }));
+  const byKey = new Map(categories.map(row => [row.key, row]));
   const byId = new Map(categories.map(row => [row.id, row]));
   const name = (row: CategoryRow) => row.local_name ?? row.name;
   const shown = (row: CategoryRow | undefined): row is CategoryRow => !!row && row.nav_visible && !row.archived;
@@ -72,11 +75,7 @@ export async function buildMegaNav(client: Query, locale: MenuLocale, t: Transla
 
   return roots.map((root): NavItem => {
     const builtIn = megaNav.find(item => item.categoryKey === root.key);
-    const own = overrides.items?.[root.key];
-    const heading = (id: string, headingKey: string | undefined) => {
-      const text = own?.groups?.[id]?.heading?.[locale];
-      return text ? { heading: text } : headingKey ? { heading: t(headingKey) } : {};
-    };
+    const heading = (headingKey: string | undefined) => headingKey ? { heading: t(headingKey) } : {};
     const products: NavLink[] = placements
       .filter(row => row.menu_category_id === root.id)
       .flatMap(row => {
@@ -86,36 +85,30 @@ export async function buildMegaNav(client: Query, locale: MenuLocale, t: Transla
       });
 
     let columns: NavGroup[][] | undefined;
-    if (builtIn?.columns) {
+    const layout = config.items[root.key];
+    if (layout) {
+      columns = renderLayout(layout, locale, products, key => { const row = byKey.get(key); return row && { slug: row.slug, shown: shown(row), name: name(row) }; });
+    } else if (builtIn?.columns) {
       const groups = menuGroups(builtIn);
       const productGroups = groups.filter(entry => entry.products);
       let next = 0;
       const built: NavGroup[][] = builtIn.columns.map(() => []);
       groups.forEach(entry => {
-        // Hiding Products hides every Products column of the item (Marine continues it in a headless column).
-        const hidden = own?.groups?.[entry.products ? productGroups[0].id : entry.id]?.hidden === true;
         if (entry.products) {
           const last = entry === productGroups.at(-1);
           const take = last ? products.length - next : Math.min(entry.group.links.length, products.length - next);
           const slice = products.slice(next, next + take);
           next += take;
-          if (slice.length && !hidden) built[entry.column].push({ ...heading(entry.id, entry.group.headingKey), links: slice });
+          if (slice.length) built[entry.column].push({ ...heading(entry.group.headingKey), links: slice });
           return;
         }
-        if (hidden) return;
-        const kept = entry.links.flatMap((link): NavLink[] => {
-          const override = own?.links?.[link.id];
-          if (override?.hidden) return [];
-          const resolved = columnLink(link);
-          if (!resolved) return [];
-          return [{ label: override?.label?.[locale] ?? resolved.label, href: resolved.href }];
-        });
-        if (kept.length) built[entry.column].push({ ...heading(entry.id, entry.group.headingKey), links: kept });
+        const kept = entry.links.map(columnLink).filter((link): link is NavLink => link !== null);
+        if (kept.length) built[entry.column].push({ ...heading(entry.group.headingKey), links: kept });
       });
       columns = built.filter(column => column.length);
       if (!columns.length) columns = undefined;
-    } else if (products.length && own?.groups?.[menuGroups(undefined)[0].id]?.hidden !== true) {
-      columns = [[{ ...heading(menuGroups(undefined)[0].id, PRODUCTS_HEADING), links: products }]];
+    } else if (products.length) {
+      columns = [[{ heading: t(PRODUCTS_HEADING), links: products }]];
     }
     return {
       label: name(root),

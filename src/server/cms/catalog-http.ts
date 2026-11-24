@@ -28,7 +28,7 @@ import { CategoryInUse } from "./category-admin.ts";
 //   DELETE categories?key=K              delete (409 IN_USE with counts while anything is attached)
 //   PUT    categories/order              {parentKey|null, keys[]}  sibling order
 //   PUT    categories/placements?key=K   {keys[]}  ordered Products group of top menu item K
-//   PUT    categories/menu?key=K         {group|link, hidden?, text?:{en?,ru?,kk?}|null}  hide/rename a heading or column link of K
+//   PUT    categories/menu?key=K         {layout: {groups[]} | null}  the whole column layout of K (null = built-in columns)
 
 const LIST_KEYS = ["limit", "cursor", "search", "status", "category", "family", "stock"];
 const PICKER_KEYS = ["limit", "cursor", "search", "category", "exclude", "status"];
@@ -121,7 +121,7 @@ export function createCatalogHTTP(input: { service: CatalogAdminService; baseURL
         if (id === undefined && method === "PATCH") { const { key } = query(url, ["key"]); if (!key) bad(); return adminJSON(await service.updateCategory(request.headers, ifMatchEpoch(request), key, await readAdminJSON(request, true))); }
         if (id === undefined && method === "DELETE") { const { key } = query(url, ["key"]); if (!key) bad(); return adminJSON(await service.deleteCategory(request.headers, ifMatchEpoch(request), key)); }
         if (id === "order" && sub === undefined && method === "PUT") { query(url, []); return adminJSON(await service.orderCategories(request.headers, ifMatchEpoch(request), await readAdminJSON(request, true))); }
-        if (id === "menu" && sub === undefined && method === "PUT") { const { key } = query(url, ["key"]); if (!key) bad(); return adminJSON(await service.setMenuOverride(request.headers, ifMatchEpoch(request), key, await readAdminJSON(request, true))); }
+        if (id === "menu" && sub === undefined && method === "PUT") { const { key } = query(url, ["key"]); if (!key) bad(); return adminJSON(await service.setMenuLayout(request.headers, ifMatchEpoch(request), key, await readAdminJSON(request, true))); }
         if (id === "placements" && sub === undefined && method === "PUT") { const { key } = query(url, ["key"]); if (!key) bad(); return adminJSON(await service.setPlacements(request.headers, ifMatchEpoch(request), key, await readAdminJSON(request, true))); }
       } else if (resource === "picker" && id === undefined && method === "GET") return adminJSON(await service.picker(request.headers, query(url, PICKER_KEYS)));
       else if (resource === "restock" && id === undefined && method === "POST") { query(url, []); return adminJSON(await service.restock(request.headers, await readAdminJSON(request))); }

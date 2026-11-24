@@ -9,13 +9,18 @@ export interface AdminPlacement extends AdminNode { href: string | null; label: 
 export type LocalText = Record<Locale, string>;
 export type MenuText = Partial<Record<Locale, string>>;
 export interface AdminMenuLink {
-  id: string; href: string; external: boolean; label: LocalText; defaultLabel: LocalText; override: MenuText | null; hidden: boolean;
-  category: { key: string | null; state: "shown" | "hidden" | "removed" } | null;
+  id: string; href: string; external: boolean; label: LocalText; customLabel: boolean; hidden: boolean;
+  category: { key: string; state: "shown" | "hidden" | "removed"; name: LocalText } | null;
 }
-export interface AdminMenuGroup { id: string; column: number; products: boolean; heading: LocalText | null; defaultHeading: LocalText | null; override: MenuText | null; hidden: boolean; links: AdminMenuLink[] }
-export interface AdminMenuItem extends AdminNode { menuHref: string | null; placements: AdminPlacement[]; groups: AdminMenuGroup[]; others: AdminNode[] }
+export interface AdminMenuGroup { id: string; column: number; products: boolean; heading: LocalText | null; hidden: boolean; links: AdminMenuLink[] }
+/** The stored shape of a top item's columns (src/server/catalog/menu-layout.ts); edited here and sent back whole. */
+export interface LayoutLink { id: string; category?: string; href?: string; label?: MenuText; hidden?: boolean }
+export interface LayoutGroup { id: string; column: number; products?: boolean; heading?: MenuText; hidden?: boolean; links: LayoutLink[] }
+export interface ItemLayout { groups: LayoutGroup[] }
+export interface AdminMenuItem extends AdminNode { menuHref: string | null; placements: AdminPlacement[]; layout: ItemLayout; customized: boolean; groups: AdminMenuGroup[]; others: AdminNode[] }
+export interface MenuTarget { key: string; slug: string; kind: string; name: string; hidden: boolean }
 export interface AdminAccessory extends AdminNode { children: AdminNode[] }
-export interface CategoryTree { epoch: string; menu: AdminMenuItem[]; accessories: AdminAccessory[]; series: AdminNode[] }
+export interface CategoryTree { epoch: string; menu: AdminMenuItem[]; accessories: AdminAccessory[]; series: AdminNode[]; targets: MenuTarget[] }
 export interface CategoryUsage { products: number; children: number; typeLinks: number; promotions: number; priceRules: number; presets: number }
 
 export class CategoryRequestError extends Error {
@@ -42,9 +47,9 @@ export const categoryApi = {
     send(BASE + keyQuery(key), { method: "PATCH", body: JSON.stringify(body) }, epoch),
   remove: (epoch: string, key: string) => send(BASE + keyQuery(key), { method: "DELETE" }, epoch),
   order: (epoch: string, parentKey: string | null, keys: string[]) => send(`${BASE}/order`, { method: "PUT", body: JSON.stringify({ parentKey, keys }) }, epoch),
-  /** Hide/show or rename (text: null = back to the default) one heading or column link of top item `menuKey`. */
-  menu: (epoch: string, menuKey: string, body: ({ group: string } | { link: string }) & { hidden?: boolean; text?: MenuText | null }) =>
-    send(`${BASE}/menu${keyQuery(menuKey)}`, { method: "PUT", body: JSON.stringify(body) }, epoch),
+  /** Saves the whole column layout of top item `menuKey`; null restores its original (built-in) columns. */
+  menu: (epoch: string, menuKey: string, layout: ItemLayout | null) =>
+    send(`${BASE}/menu${keyQuery(menuKey)}`, { method: "PUT", body: JSON.stringify({ layout }) }, epoch),
   placements: (epoch: string, menuKey: string, keys: string[]) => send(`${BASE}/placements${keyQuery(menuKey)}`, { method: "PUT", body: JSON.stringify({ keys }) }, epoch),
 };
 

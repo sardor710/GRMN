@@ -764,40 +764,62 @@ async function categoriesScenario({pool,send,evaluate,navigate,text,click,receip
     await until(()=>evaluate("!!document.querySelector('[data-category=\"wearables-smartwatches/ui-trail\"]')"),"The hidden subcategory is not listed in the admin");
     await evaluate("window.confirm=()=>true;document.querySelector('[data-category=\"wearables-smartwatches/ui-trail\"] button[aria-label=\"Delete UI Trail\"]').click();true");
     await until(()=>evaluate("!document.querySelector('[data-category=\"wearables-smartwatches/ui-trail\"]')"),"The bin did not delete the subcategory");
-    // Owner 2026-11-24: every heading and link of the menu is listed under its top item; hiding one link under
-    // Smartwatches takes it out of that menu, showing it brings it back.
-    // Menu overrides live in the store settings row; a fresh database has none (production does).
+    // Owner 2026-11-24: every heading and link of the menu is listed under its top item and can be added, edited,
+    // hidden and deleted; "Restore original menu" brings back the built-in columns.
+    // Menu layouts live in the store settings row; a fresh database has none (production does).
     await pool.query("INSERT INTO store_settings(id,maintenance_mode) VALUES(1,false) ON CONFLICT (id) DO NOTHING");
-    await navigate("/admin/categories");
-    await until(async()=>/menu categories/i.test(await text()),"The categories page did not reload");
-    const golf='section[aria-label="Smartwatches"] [data-menu-link="maps|https://www.garmin.com/en-US/golf-courses/"]';
-    await until(()=>evaluate(`!!document.querySelector('${golf}')&&!!document.querySelector('section[aria-label="Smartwatches"] [data-menu-group="discover"]')`),"The Maps and Discover columns are not listed");
-    await evaluate(`document.querySelector('${golf} button[aria-label="Hide this link"]').click();true`);
-    await until(()=>evaluate(`/hidden/i.test(document.querySelector('${golf}').textContent)`),"The link was not marked hidden");
-    await evaluate(`document.querySelector('section[aria-label="Smartwatches"] [data-menu-group="maps"]').scrollIntoView({block:"start"});true`);
+    const sw='section[aria-label="Smartwatches"]';
+    const openMenu="(()=>{const nav=document.querySelector('header nav');const button=nav&&[...nav.querySelectorAll('button[aria-expanded]')][0];if(button&&button.getAttribute('aria-expanded')!=='true')button.click();return document.querySelector('header').innerText;})()";
+    const storeMenu=async()=>{await navigate("/en");await until(async()=>/Running/.test(await evaluate(openMenu)),"The /en menu did not open");return evaluate(openMenu);};
+    const adminPage=async()=>{await navigate("/admin/categories");await until(()=>evaluate(`!!document.querySelector('${sw} [data-menu-group="maps"]')`),"The menu columns are not listed");};
+    const press=(row,label)=>evaluate(`(()=>{window.confirm=()=>true;const b=${row}.querySelector('button[aria-label="${label}"]');if(!b)throw Error('no ${label}');b.click();return true;})()`);
+    const rowByText=(kind,textValue)=>`[...document.querySelectorAll('${sw} [data-menu-${kind}]')].find(r=>r.textContent.includes(${JSON.stringify(textValue)}))`;
+    const pick=(id,value)=>evaluate(`(()=>{const el=document.getElementById(${JSON.stringify(id)});Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(el,${JSON.stringify(value)});el.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
+    const addButton=(label,scope)=>evaluate(`(()=>{window.confirm=()=>true;const b=[...(${scope}).querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(label)});if(!b)throw Error('no button');b.click();return true;})()`);
+    await adminPage();
     await shot("admin-categories-menu-columns-1440.png");
-    await navigate("/en");
-    await until(async()=>!(await menuText()).includes("Golf Course Locator")&&(await menuText()).includes("Running"),"Hiding did not take the link out of the menu");
-    await navigate("/admin/categories");
-    await until(()=>evaluate(`!!document.querySelector('${golf} button[aria-label="Show this link"]')`),"The hidden link is not listed");
-    await evaluate(`document.querySelector('${golf} button[aria-label="Show this link"]').click();true`);
-    await until(()=>evaluate(`!!document.querySelector('${golf} button[aria-label="Hide this link"]')`),"The link was not shown again");
-    await navigate("/en");
-    await until(async()=>(await menuText()).includes("Golf Course Locator"),"Showing did not bring the link back");
-    await navigate("/admin/categories");
-    await until(async()=>/menu categories/i.test(await text()),"The categories page did not reload");
-    // Renaming a heading marks it Renamed and shows in the /en menu; Reset brings back the original.
-    const discover='section[aria-label="Smartwatches"] [data-menu-group="discover"]';
-    await evaluate(`document.querySelector('${discover} button[aria-label="Rename this heading"]').click();true`);
-    await until(()=>setById("category-en","UI Explore"),"The heading rename dialog did not open");
-    await click("Save");
-    await until(()=>evaluate(`/UI Explore/.test(document.querySelector('${discover}').textContent)&&/renamed/i.test(document.querySelector('${discover}').textContent)`),"The heading was not renamed");
-    await navigate("/en");
-    await until(()=>evaluate("(()=>{const nav=document.querySelector('header nav');const button=nav&&[...nav.querySelectorAll('button[aria-expanded]')][0];if(button&&button.getAttribute('aria-expanded')!=='true')button.click();return /UI Explore/.test(document.querySelector('header').textContent);})()"),"The renamed heading is not in the /en menu");
-    await navigate("/admin/categories");
-    await until(()=>evaluate(`!!document.querySelector('${discover} button[aria-label="Reset this heading to its original text"]')`),"No reset button on the renamed heading");
-    await evaluate(`document.querySelector('${discover} button[aria-label="Reset this heading to its original text"]').click();true`);
-    await until(()=>evaluate(`/Discover/.test(document.querySelector('${discover}').textContent)&&!/renamed/i.test(document.querySelector('${discover}').textContent)`),"Reset did not bring back the original heading");
+    // Hide one built-in link.
+    const golf=`document.querySelector('${sw} [data-menu-link="maps|https://www.garmin.com/en-US/golf-courses/"]')`;
+    await press(golf,"Hide this link");
+    await until(()=>evaluate(`/hidden/i.test(${golf}.textContent)`),"The link was not marked hidden");
+    // A new heading in column 3 with a web-address link and a category link.
+    await addButton("Add heading",`document.querySelector('${sw}')`);
+    await until(()=>setById("menu-en","UI Picks"),"The heading dialog did not open");
+    await pick("menu-column","2");await click("Save");
+    await until(()=>evaluate(`!!${rowByText("group","UI Picks")}`),"The new heading is not listed");
+    const picks=`${rowByText("group","UI Picks")}.closest('li:not([data-menu-group])')`;
+    await addButton("Add link",picks);
+    await until(()=>evaluate("!!document.getElementById('menu-category')"),"The link dialog did not open");
+    await evaluate("(()=>{[...document.querySelectorAll('input[name=menu-mode]')][1].click();return true;})()");
+    await until(()=>setById("menu-href","https://example.com/ui"),"No address field");
+    await setById("menu-en","UI Example");await click("Save");
+    await until(()=>evaluate(`!!${rowByText("link","UI Example")}`),"The address link is not listed");
+    await addButton("Add link",picks);
+    await until(()=>evaluate("!!document.getElementById('menu-category')"),"The link dialog did not open again");
+    await pick("menu-category","sports-fitness/running-smartwatches");await setById("menu-en","UI Run");await click("Save");
+    await until(()=>evaluate(`!!${rowByText("link","UI Run")}`),"The category link is not listed");
+    // Edit the address link's text; delete the Discover heading.
+    await press(rowByText("link","UI Example"),"Edit this link");
+    await until(()=>setById("menu-en","UI Example 2"),"The edit dialog did not open");await click("Save");
+    await until(()=>evaluate(`!!${rowByText("link","UI Example 2")}`),"The link was not renamed");
+    await press(`document.querySelector('${sw} [data-menu-group="discover"]')`,"Delete this heading");
+    await until(()=>evaluate(`!document.querySelector('${sw} [data-menu-group="discover"]')`),"The heading was not deleted");
+    await evaluate(`${rowByText("group","Accessories")}.scrollIntoView({block:"start"});true`);
+    await shot("admin-categories-menu-edited-1440.png");
+    await press(rowByText("link","UI Run"),"Edit this link");
+    await until(()=>evaluate("!!document.getElementById('menu-category')"),"The edit dialog did not open");
+    await shot("admin-categories-link-dialog-1440.png");await click("Cancel");
+    let menu=await storeMenu();
+    assert.ok(menu.includes("UI Picks")&&menu.includes("UI Example 2")&&menu.includes("UI Run"),"The new heading and links are in the /en menu");
+    assert.ok(!menu.includes("Golf Course Locator")&&!menu.includes("Watch Finder"),"The hidden link and the deleted heading are gone from the /en menu");
+    assert.match(await evaluate("[...document.querySelectorAll('header a')].find(a=>a.textContent.trim()==='UI Run')?.getAttribute('href')"),/^(\/en)?\/c\/sports-fitness\/running-smartwatches$/);
+    // Restore the original columns.
+    await adminPage();
+    await addButton("Restore original menu",`document.querySelector('${sw}')`);
+    await until(()=>evaluate(`!${rowByText("group","UI Picks")}&&!!document.querySelector('${sw} [data-menu-group="discover"]')`),"Restore did not bring back the original columns");
+    menu=await storeMenu();
+    assert.ok(menu.includes("Golf Course Locator")&&menu.includes("Watch Finder")&&!menu.includes("UI Picks"),"The /en menu is back to the original");
+    await adminPage();
     await click("Series (filters)");await until(async()=>/fēnix/i.test(await text()),"The series tab did not open");await shot("admin-categories-series-1440.png");
     await click("Accessories");await until(async()=>/quickfit 22 mm/i.test(await text()),"The accessories tab did not open");await shot("admin-categories-accessories-1440.png");
     await send("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:1,mobile:true});

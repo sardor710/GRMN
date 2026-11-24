@@ -5,8 +5,8 @@ import { z } from "zod";
 import { AuthFailure } from "../auth/config.ts";
 import { seriesValue } from "../../lib/catalog-facets.ts";
 import { megaNav } from "../../lib/homepage-nav.ts";
-import { columnLinkResolver, linkSlug, readMenuOverrides, type MenuCategoryRow } from "../catalog/mega-nav.ts";
-import { MENU_LOCALES, MENU_OVERRIDES_KEY, menuGroups, parseMenuOverrides as parseMenuOverridesStored, type ItemOverrides, type MenuOverrides, type MenuText } from "../catalog/menu-overrides.ts";
+import { columnLinkResolver, readMenuConfig, SEED_KEY_BY_SLUG, type MenuCategoryRow } from "../catalog/mega-nav.ts";
+import { builtInLayout, itemLayoutSchema, MENU_CONFIG_KEY, MENU_LOCALES, parseMenuConfig, type ItemLayout, type LayoutCategory, type MenuConfig, type Translator } from "../catalog/menu-layout.ts";
 import en from "../../../messages/en.json" with { type: "json" };
 import ru from "../../../messages/ru.json" with { type: "json" };
 import kk from "../../../messages/kk.json" with { type: "json" };
@@ -34,14 +34,16 @@ export type LocalText = Record<Locale, string>;
  * "hidden" (the category is hidden from the menu, so the link is too), "removed" (deleted or archived).
  */
 export interface AdminMenuLink {
-  id: string; href: string; external: boolean; label: LocalText; defaultLabel: LocalText; override: MenuText | null; hidden: boolean;
-  category: { key: string | null; state: "shown" | "hidden" | "removed" } | null;
+  id: string; href: string; external: boolean; label: LocalText; customLabel: boolean; hidden: boolean;
+  category: { key: string; state: "shown" | "hidden" | "removed"; name: LocalText } | null;
 }
-/** A heading group of a top item in reading order; the Products group's links are the placements. */
-export interface AdminMenuGroup { id: string; column: number; products: boolean; heading: LocalText | null; defaultHeading: LocalText | null; override: MenuText | null; hidden: boolean; links: AdminMenuLink[] }
-export interface AdminMenuItem extends AdminNode { menuHref: string | null; placements: AdminPlacement[]; groups: AdminMenuGroup[]; others: AdminNode[] }
+/** A heading of a top item in layout order; the Products heading's links are the placements. */
+export interface AdminMenuGroup { id: string; column: number; products: boolean; heading: LocalText | null; hidden: boolean; links: AdminMenuLink[] }
+/** `layout` is what the admin edits and sends back whole; `customized` is false while the built-in columns show. */
+export interface AdminMenuItem extends AdminNode { menuHref: string | null; placements: AdminPlacement[]; layout: ItemLayout; customized: boolean; groups: AdminMenuGroup[]; others: AdminNode[] }
+export interface MenuTarget { key: string; slug: string; kind: string; name: string; hidden: boolean }
 export interface AdminAccessory extends AdminNode { children: AdminNode[] }
-export interface AdminCategoryTree { epoch: string; menu: AdminMenuItem[]; accessories: AdminAccessory[]; series: AdminNode[] }
+export interface AdminCategoryTree { epoch: string; menu: AdminMenuItem[]; accessories: AdminAccessory[]; series: AdminNode[]; targets: MenuTarget[] }
 export interface CategoryUsage { products: number; children: number; typeLinks: number; promotions: number; priceRules: number; presets: number }
 
 export class CategoryInUse extends AuthFailure {
@@ -99,31 +101,30 @@ export async function readCategoryTree(client: Pick<PoolClient, "query">): Promi
     while (queue.length) { const id = queue.shift()!; for (const row of all) if (row.parent_id === id) { out.push(row); queue.push(row.id); } }
     return out;
   };
-  const overrides = await readMenuOverrides(client);
-  const menuRows = await menuCategoryRows(client);
-  const resolvers = menuResolvers(menuRows);
-  const bySlug = new Map(menuRows.flatMap(row => row.slug ? [[row.slug, row] as const] : []));
+  const config = await readMenuConfig(client);
+  const context = menuContext(await menuCategoryRows(client));
   const menu = all.filter(row => row.kind === "catalog" && row.parent_id === null).map((root): AdminMenuItem => {
     const placed = placements.filter(row => row.menu_category_id === root.id).flatMap(row => { const target = byId.get(row.category_id); return target ? [{ ...node(target), href: row.href, label: row.label }] : []; });
-    const groups = adminGroups(root.key, overrides.items?.[root.key], resolvers, bySlug);
+    const layout = effectiveLayout(root.key, config, context);
+    const groups = adminGroups(layout, context);
     const shownKeys = new Set([...placed.map(row => row.key), ...groups.flatMap(group => group.links.flatMap(link => link.category?.key ? [link.category.key] : []))]);
-    return { ...node(root), menuHref: root.menu_href, placements: placed, groups, others: descendants(root.id).filter(row => row.kind === "catalog" && !shownKeys.has(row.key)).map(node) };
+    return { ...node(root), menuHref: root.menu_href, placements: placed, layout, customized: root.key in config.items, groups, others: descendants(root.id).filter(row => row.kind === "catalog" && !shownKeys.has(row.key)).map(node) };
   });
   const accessories = all.filter(row => row.kind === "accessory" && row.parent_id === null).map((root): AdminAccessory => ({ ...node(root), children: descendants(root.id).map(node) }));
   const seriesRoot = all.find(row => row.key === SERIES_ROOT_KEY);
   const series = seriesRoot ? all.filter(row => row.parent_id === seriesRoot.id).map(node) : [];
-  return { epoch, menu, accessories, series };
+  return { epoch, menu, accessories, series, targets: menuTargets(context) };
 }
 
 // ── Menu columns (owner 2026-11-24) ────────────────────────────────────────────────────────────────────────────
 type MenuRow = MenuCategoryRow & { ru: string | null; kk: string | null };
-type Resolvers = Record<Locale, { t: (key: string) => string; link: ReturnType<typeof columnLinkResolver> }>;
 const MESSAGES: Record<Locale, unknown> = { en, ru, kk };
 const lookup = (messages: unknown, key: string): string | undefined => {
   const value = key.split(".").reduce<unknown>((at, part) => (at && typeof at === "object" ? (at as Record<string, unknown>)[part] : undefined), messages);
   return typeof value === "string" ? value : undefined;
 };
 const translator = (locale: Locale) => (key: string) => lookup(MESSAGES[locale], key) ?? lookup(MESSAGES.en, key) ?? key;
+const T: Translator = { en: translator("en"), ru: translator("ru"), kk: translator("kk") };
 
 /** Every category, archived included, the way the menu builder reads them. */
 async function menuCategoryRows(client: Pick<PoolClient, "query">): Promise<MenuRow[]> {
@@ -132,89 +133,80 @@ async function menuCategoryRows(client: Pick<PoolClient, "query">): Promise<Menu
       (SELECT t.name FROM category_translations t WHERE t.category_id=c.id AND t.locale='kk') AS kk
     FROM categories c ORDER BY c.parent_id NULLS FIRST,c.position,c.key`)).rows;
 }
-function menuResolvers(menuRows: readonly MenuRow[]): Resolvers {
-  const forLocale = (locale: Locale) => {
-    const t = translator(locale);
-    return { t, link: columnLinkResolver(menuRows.map(row => ({ ...row, local_name: locale === "en" ? null : row[locale] })), t) };
+
+interface MenuContext { bySlug: Map<string, LayoutCategory>; byKey: Map<string, LayoutCategory & { kind: string }>; resolve: (locale: Locale, link: { labelKey: string; href: string }) => string | null }
+function menuContext(menuRows: readonly MenuRow[]): MenuContext {
+  const resolvers = Object.fromEntries(MENU_LOCALES.map(locale => [locale, columnLinkResolver(menuRows.map(row => ({ ...row, local_name: locale === "en" ? null : row[locale] })), T[locale])])) as Record<Locale, ReturnType<typeof columnLinkResolver>>;
+  const categories = menuRows.map(row => ({ key: row.key, slug: row.slug, kind: row.kind, nav_visible: row.nav_visible, archived: row.archived, name: { en: row.name, ru: row.ru ?? row.name, kk: row.kk ?? row.name } }));
+  return {
+    bySlug: new Map(categories.flatMap(row => row.slug ? [[row.slug, row] as const] : [])),
+    byKey: new Map(categories.map(row => [row.key, row])),
+    resolve: (locale, link) => resolvers[locale](link)?.label ?? null,
   };
-  return { en: forLocale("en"), ru: forLocale("ru"), kk: forLocale("kk") };
+}
+/** The item's stored layout, or its built-in columns converted to one. */
+function effectiveLayout(rootKey: string, config: MenuConfig, context: MenuContext): ItemLayout {
+  return config.items[rootKey] ?? builtInLayout(megaNav.find(item => item.categoryKey === rootKey), { bySlug: context.bySlug, seedKeyBySlug: SEED_KEY_BY_SLUG }, T, context.resolve);
 }
 const perLocale = (pick: (locale: Locale) => string): LocalText => ({ en: pick("en"), ru: pick("ru"), kk: pick("kk") });
-const withOverride = (base: LocalText, override: MenuText | undefined): LocalText => perLocale(locale => override?.[locale] ?? base[locale]);
 
-/** The columns of one top item as the storefront builds them, with each heading's and link's overrides. */
-function adminGroups(rootKey: string, own: ItemOverrides | undefined, resolvers: Resolvers, bySlug: Map<string, MenuRow>): AdminMenuGroup[] {
-  return menuGroups(megaNav.find(item => item.categoryKey === rootKey)).map((group): AdminMenuGroup => {
-    const groupOverride = own?.groups?.[group.id];
-    const defaultHeading = group.group.headingKey ? perLocale(locale => resolvers[locale].t(group.group.headingKey!)) : null;
-    const links = group.products ? [] : group.links.map((link): AdminMenuLink => {
-      const override = own?.links?.[link.id];
-      const resolved = perLocale(locale => resolvers[locale].link(link)?.label ?? resolvers[locale].t(link.labelKey));
-      const slug = linkSlug(link.href);
-      const row = slug === null ? undefined : bySlug.get(slug);
-      const dropped = resolvers.en.link(link) === null;
-      const category = slug === null || (!row && !dropped) ? null
-        : { key: row?.key ?? null, state: (!row || row.archived ? "removed" : row.nav_visible ? "shown" : "hidden") as "shown" | "hidden" | "removed" };
-      return {
-        id: link.id, href: link.href, external: /^https?:\/\//.test(link.href), defaultLabel: resolved, label: withOverride(resolved, override?.label),
-        override: override?.label ?? null, hidden: override?.hidden === true, category,
+/** The layout as the admin lists it: every text resolved per language, each category link with its state. */
+function adminGroups(layout: ItemLayout, context: MenuContext): AdminMenuGroup[] {
+  return layout.groups.map((group): AdminMenuGroup => ({
+    id: group.id, column: group.column, products: group.products === true, hidden: group.hidden === true,
+    heading: group.heading ? perLocale(locale => group.heading?.[locale] ?? group.heading?.en ?? "") : null,
+    links: group.links.map((link): AdminMenuLink => {
+      const row = link.category === undefined ? undefined : context.byKey.get(link.category);
+      const category = link.category === undefined ? null : {
+        key: link.category, state: (!row || row.archived ? "removed" : row.nav_visible ? "shown" : "hidden") as "shown" | "hidden" | "removed",
+        name: row ? row.name : perLocale(() => link.category!),
       };
-    });
-    return {
-      id: group.id, column: group.column, products: group.products, defaultHeading,
-      heading: defaultHeading || groupOverride?.heading ? withOverride(defaultHeading ?? { en: "", ru: "", kk: "" }, groupOverride?.heading) : null,
-      override: groupOverride?.heading ?? null, hidden: groupOverride?.hidden === true, links,
-    };
-  });
+      const href = link.href ?? (row?.slug ? `/c/${row.slug}` : "");
+      return {
+        id: link.id, href, external: /^https?:\/\//.test(href), hidden: link.hidden === true, customLabel: link.category !== undefined && link.label !== undefined,
+        label: perLocale(locale => link.label?.[locale] ?? (category ? category.name[locale] : link.label?.en ?? href)), category,
+      };
+    }),
+  }));
 }
 
-const menuTextInput = z.object({ en: nameText.optional(), ru: nameText.optional(), kk: nameText.optional() }).strict();
-const menuOverrideInput = z.object({
-  group: z.string().min(1).max(300).optional(),
-  link: z.string().min(1).max(600).optional(),
-  hidden: z.boolean().optional(),
-  text: menuTextInput.nullable().optional(),
-}).strict()
-  .refine(value => (value.group === undefined) !== (value.link === undefined), "Name one heading or one link")
-  .refine(value => value.hidden !== undefined || value.text !== undefined, "Nothing to change");
+/** Categories a menu link can open (each has its own /c page). */
+function menuTargets(context: MenuContext): MenuTarget[] {
+  return [...context.byKey.values()].filter(row => !row.archived && row.slug && (row.kind === "catalog" || row.kind === "accessory"))
+    .map(row => ({ key: row.key, slug: row.slug!, kind: row.kind, name: row.name.en, hidden: !row.nav_visible }))
+    .sort((a, b) => a.slug.localeCompare(b.slug));
+}
 
-/** Hide/show or rename one heading or column link under top item `menuKey`. Text equal to the default is not stored. */
-export async function setMenuOverride(client: PoolClient, epoch: string, menuKey: string, raw: unknown): Promise<void> {
-  const input = parse(menuOverrideInput, raw);
+/** Replace (or, with null, restore to the built-in columns) the whole column layout of top item `menuKey`. */
+export async function setMenuLayout(client: PoolClient, epoch: string, menuKey: string, raw: unknown): Promise<void> {
+  const body = parse(z.object({ layout: z.unknown() }).strict(), raw);
   await lock(client, epoch);
   const root = (await rows(client)).find(row => row.key === menuKey) ?? fail("NOT_FOUND", 404, "Menu item was not found");
   if (root.kind !== "catalog" || root.parent_id !== null) invalid("Headings and links belong to a top menu item");
-  const groups = adminGroups(root.key, undefined, menuResolvers(await menuCategoryRows(client)), new Map());
-  const target = input.group !== undefined
-    ? groups.find(group => group.id === input.group) ?? fail("NOT_FOUND", 404, "This heading is not in that menu")
-    : groups.flatMap(group => group.links).find(link => link.id === input.link) ?? fail("NOT_FOUND", 404, "This link is not in that menu");
-  const defaults = "links" in target ? target.defaultHeading : target.defaultLabel;
-
-  const settings = (await client.query<{ config: unknown }>(`SELECT presentation_config->'${MENU_OVERRIDES_KEY}' AS config FROM store_settings WHERE id=1 FOR UPDATE`)).rows[0]
+  const settings = (await client.query<{ config: unknown }>(`SELECT presentation_config->'${MENU_CONFIG_KEY}' AS config FROM store_settings WHERE id=1 FOR UPDATE`)).rows[0]
     ?? fail("SETTINGS_MISSING", 409, "Store settings have not been saved yet: save Admin ▸ Settings once, then try again");
-  const stored: MenuOverrides = parseMenuOverridesStored(settings.config);
-  const items = { ...(stored.items ?? {}) };
-  const item: ItemOverrides = { ...(items[root.key] ?? {}) };
-  const field = input.group !== undefined ? "groups" : "links";
-  const textField = field === "groups" ? "heading" : "label";
-  const map: Record<string, { hidden?: boolean; heading?: MenuText; label?: MenuText }> = { ...(item[field] ?? {}) };
-  const id = (input.group ?? input.link)!;
-  const entry = { ...(map[id] ?? {}) };
-  if (input.hidden !== undefined) { if (input.hidden) entry.hidden = true; else delete entry.hidden; }
-  if (input.text !== undefined) {
-    const text: MenuText = {};
-    for (const locale of MENU_LOCALES) {
-      const value = input.text?.[locale]?.trim();
-      if (value && value !== defaults?.[locale]) text[locale] = value;
+  const config = parseMenuConfig(settings.config);
+  if (body.layout === null) delete config.items[root.key];
+  else {
+    const layout = parse(itemLayoutSchema, body.layout) as ItemLayout;
+    const context = menuContext(await menuCategoryRows(client));
+    for (const link of layout.groups.flatMap(group => group.links)) {
+      if (link.category === undefined) continue;
+      const row = context.byKey.get(link.category);
+      // A converted built-in link may keep pointing at a deleted seed category (it stays dropped); a new one may not.
+      const known = config.items[root.key] ?? effectiveLayout(root.key, { items: {} }, context);
+      const kept = known.groups.some(group => group.links.some(entry => entry.id === link.id && entry.category === link.category));
+      if (!row && !kept) invalid(`Category ${link.category} was not found`);
+      if (row && !(row.kind === "catalog" || row.kind === "accessory") && !kept) invalid("A menu link can open a menu or accessory category");
     }
-    if (Object.keys(text).length) entry[textField] = text; else delete entry[textField];
+    config.items[root.key] = layout;
   }
-  if (Object.keys(entry).length) map[id] = entry; else delete map[id];
-  if (Object.keys(map).length) (item as Record<string, unknown>)[field] = map; else delete item[field];
-  if (Object.keys(item).length) items[root.key] = item; else delete items[root.key];
+  await writeMenuConfig(client, config);
+}
 
-  if (Object.keys(items).length) await client.query("UPDATE store_settings SET presentation_config=presentation_config||jsonb_build_object($1::text,$2::jsonb) WHERE id=1", [MENU_OVERRIDES_KEY, JSON.stringify({ items })]);
-  else await client.query("UPDATE store_settings SET presentation_config=presentation_config-$1::text WHERE id=1", [MENU_OVERRIDES_KEY]);
+async function writeMenuConfig(client: PoolClient, config: MenuConfig): Promise<void> {
+  if (Object.keys(config.items).length) await client.query("UPDATE store_settings SET presentation_config=presentation_config||jsonb_build_object($1::text,$2::jsonb) WHERE id=1", [MENU_CONFIG_KEY, JSON.stringify({ version: 2, items: config.items })]);
+  else await client.query("UPDATE store_settings SET presentation_config=presentation_config-$1::text WHERE id=1", [MENU_CONFIG_KEY]);
   // store_settings has no taxonomy trigger: move the epoch so the cached header menu and open editors see the change.
   await client.query("UPDATE catalog_taxonomy_guard SET epoch=epoch+1 WHERE id=1");
 }
@@ -338,4 +330,10 @@ export async function deleteCategory(client: PoolClient, epoch: string, key: str
   const counts = await categoryUsage(client, row);
   if (Object.values(counts).some(count => count > 0)) throw new CategoryInUse(counts);
   await client.query("DELETE FROM categories WHERE id=$1", [row.id]);
+  // A deleted top item takes its stored menu columns with it, so a new item with the same key starts fresh.
+  if (row.kind === "catalog" && row.parent_id === null) {
+    const stored = (await client.query<{ config: unknown }>(`SELECT presentation_config->'${MENU_CONFIG_KEY}' AS config FROM store_settings WHERE id=1 FOR UPDATE`)).rows[0];
+    const config = parseMenuConfig(stored?.config);
+    if (stored && row.key in config.items) { delete config.items[row.key]; await writeMenuConfig(client, config); }
+  }
 }
