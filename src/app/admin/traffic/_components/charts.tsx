@@ -32,6 +32,8 @@ export function VisitsChart({ days }: { days: Day[] }) {
   const plotW = W - LEFT - RIGHT, plotH = H - TOP - BOTTOM;
   const y = (value: number) => TOP + ((top - value) / top) * plotH;
   const slot = plotW / Math.max(days.length, 1), barW = Math.max(1, Math.min(24, slot - 2));
+  // Counts are whole numbers: a middle tick only when it is one (no "1, 1" axis for small ranges).
+  const ticks = top >= 2 && Number.isInteger(top / 2) ? [0, top / 2, top] : [0, top];
   const labelled = days.length > 2 ? [0, Math.floor((days.length - 1) / 2), days.length - 1] : days.map((_, index) => index);
   const current = active === null ? null : days[active];
   return (
@@ -56,7 +58,7 @@ export function VisitsChart({ days }: { days: Day[] }) {
         </table>
       ) : (
         <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full" role="img" aria-label={`${SERIES[series]} per day. Total ${count(total)}.`} onMouseLeave={() => setActive(null)}>
-          {[0, top / 2, top].map(tick => (
+          {ticks.map(tick => (
             <g key={tick}>
               <line x1={LEFT} x2={W - RIGHT} y1={y(tick)} y2={y(tick)} strokeWidth={1} className={tick === 0 ? "stroke-[#c3c2b7]" : "stroke-[#e1e0d9]"} />
               <text x={LEFT - 6} y={y(tick)} dy="0.32em" textAnchor="end" className="fill-neutral-500 text-xs tabular-nums">{axisLabel(tick)}</text>
