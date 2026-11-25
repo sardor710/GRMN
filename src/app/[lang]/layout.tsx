@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
@@ -11,6 +12,8 @@ import { getMegaNav } from "@/server/catalog/mega-nav-runtime";
 import { LOCALES } from "@/i18n/config";
 import { SITE_URL } from "@/i18n/seo";
 import { bodyClassName, htmlClassName, siteIcons } from "../fonts";
+import { PageViewTracker } from "@/components/traffic/PageViewTracker";
+import { CookieNotice } from "@/components/traffic/CookieNotice";
 
 /** Message namespaces that client components read. Server-only namespaces stay off the client. */
 const CLIENT_NAMESPACES: readonly string[] = [
@@ -22,6 +25,7 @@ const CLIENT_NAMESPACES: readonly string[] = [
   "CatalogueGrid",
   "Compare",
   "CompareBar",
+  "CookieNotice",
   "Footer",
   "Header",
   "HomeFeatured",
@@ -73,6 +77,9 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
         <NextIntlClientProvider locale={lang} messages={clientMessages}>
           <MegaNavProvider items={menu}>
             <CartProvider>{children}</CartProvider>
+            {/* Owner 2026-11-25: Admin ▸ Traffic page views; useSearchParams needs its own Suspense boundary. */}
+            <Suspense fallback={null}><PageViewTracker /></Suspense>
+            <CookieNotice />
           </MegaNavProvider>
         </NextIntlClientProvider>
       </body>

@@ -12,6 +12,7 @@ import { variantParam } from "@/lib/catalog/variant-selection";
 import { initialVariantId as pickInitialVariant } from "@/lib/variant-availability";
 import { getProductDetail, getAllProducts, getCMSProduct, getRawCMSProduct } from "@/lib/products";
 import { ProductJsonLd, BreadcrumbJsonLd } from "@/components/seo/JsonLd";
+import { ProductViewMarker } from "@/components/traffic/ProductViewMarker";
 import { getMetaTranslations, initPageLocale } from "@/i18n/page-locale";
 import { localizedSeo, localizedUrl } from "@/i18n/seo";
 import { resolveSeoText, translatedLocales } from "@/i18n/translate-record";
@@ -140,6 +141,7 @@ export default async function ProductPage({ params, searchParams }: PageProps<"/
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
+      {detail.commerce && <ProductViewMarker productId={detail.commerce.id} />}
       {/* Google Structured Data */}
       <ProductJsonLd
         // Task 5a.2: the offer uses the storefront price (legacy USD already converted to tenge in products.ts);

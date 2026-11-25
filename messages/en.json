@@ -1072,5 +1072,10 @@
     "dialogBody": "You clicked a link to leave Garmin.kz and visit the website of another distributor. Do you want to continue?",
     "continue": "Continue",
     "stay": "Cancel"
+  },
+  "CookieNotice": {
+    "label": "Cookie notice",
+    "text": "We use cookies to count visits and see which links bring you here. No personal data is shared.",
+    "ok": "OK"
   }
 }
