@@ -60,6 +60,12 @@ const updateInput = z.strictObject({
   action: z.enum(["dispatch", "deliver", "cancel", "annotate"]),
   carrier: short.optional(), trackingReference: short.optional(), internalNote: note.optional(),
 }).refine(value => value.action !== "annotate" || value.carrier !== undefined || value.trackingReference !== undefined || value.internalNote !== undefined);
+// 0030: replace one item's serials on a ready (packed) shipment; units.length = the item's quantity in it, or 0 when
+// the product needs no serial.
+const serialsInput = z.strictObject({
+  shipmentId: z.string().regex(UUID), expectedVersion: z.number().int().min(1), idempotencyKey: key,
+  action: z.literal("set_serials"), orderItemId: z.string().regex(UUID), units: z.array(serialText).max(10000),
+});
 const listInput = z.strictObject({
   fulfillmentStatus: z.enum(FULFILLMENT_STATUSES).optional(),
   // Task 3.3: "demo" lists only demo-checkout orders (to find and cancel stray ones), "live" only real ones.
@@ -253,7 +259,7 @@ export async function inTransaction<T>(pool: Pool, work: (client: PoolClient) =>
 interface Options { pool: Pool; authorize: (headers: Headers, permission: Permission) => Promise<Principal> }
 
 export function createFulfillmentService({ pool, authorize }: Options) {
-  return {
+  const service = {
     /** Staff order queue, newest first, optionally by fulfillment status and payment mode. Keyset-paged. */
     async listOrders(headers: Headers, input: unknown): Promise<{ items: AdminOrderSummaryDTO[]; nextCursor: string | null }> {
       await authorize(headers, "orders:read");
@@ -410,8 +416,9 @@ export function createFulfillmentService({ pool, authorize }: Options) {
       });
     },
 
-    /** dispatch (ready -> dispatched), deliver (dispatched -> delivered), cancel (ready -> cancelled) or annotate. */
+    /** dispatch (ready -> dispatched), deliver (dispatched -> delivered), cancel (ready -> cancelled), annotate, or set_serials. */
     async updateShipment(headers: Headers, input: unknown): Promise<ShipmentResultDTO> {
+      if ((input as { action?: unknown } | null)?.action === "set_serials") return service.setSerials(headers, input);
       const principal = await authorize(headers, "orders:fulfill");
       const command = parse(updateInput, input);
       const hash = requestHash(command), dedupeKey = `fulfillment:${principal.userId}:${command.idempotencyKey}`;
@@ -450,6 +457,49 @@ export function createFulfillmentService({ pool, authorize }: Options) {
         return { shipment: await readShipment(client, shipment.id), order: updated, replayed: false };
       });
     },
+
+    /** Replaces one item's serials while its shipment is packed (ready); locked once dispatched. */
+    async setSerials(headers: Headers, input: unknown): Promise<ShipmentResultDTO> {
+      const principal = await authorize(headers, "orders:fulfill");
+      const command = parse(serialsInput, input);
+      const hash = requestHash(command), dedupeKey = `fulfillment:${principal.userId}:${command.idempotencyKey}`;
+      return inTransaction(pool, async client => {
+        const orderId = (await client.query<{ order_id: string }>("SELECT order_id FROM shipments WHERE id=$1", [command.shipmentId])).rows[0]?.order_id ?? notFound();
+        const order = await lockOrder(client, orderId);
+        const prior = await priorAction(client, dedupeKey, hash);
+        if (prior) {
+          if (prior !== command.shipmentId) fail("IDEMPOTENCY_CONFLICT", 409, "This idempotency key was used for a different action");
+          return { shipment: await readShipment(client, prior), order: { id: order.id, version: order.version, fulfillmentStatus: order.fulfillment_status }, replayed: true };
+        }
+        if (isLegacy(order)) refuse("LEGACY_ORDER");
+        const shipment = (await client.query<ShipmentRow>(`SELECT ${SHIPMENT_COLUMNS} FROM shipments WHERE id=$1 FOR UPDATE`, [command.shipmentId])).rows[0];
+        if (shipment.version !== command.expectedVersion) fail("VERSION_CONFLICT", 409, "The shipment changed; reload and try again");
+        if (shipment.status !== "ready") fail("INVALID_TRANSITION", 409, `Serials of a ${shipment.status} shipment cannot change`);
+        const itemId = command.orderItemId.toLowerCase();
+        const lines = (await client.query<{ id: string; quantity: number }>("SELECT id,quantity FROM shipment_items WHERE shipment_id=$1 AND order_item_id=$2 ORDER BY id FOR UPDATE", [shipment.id, itemId])).rows;
+        if (!lines.length) notFound();
+        const quantity = lines.reduce((sum, line) => sum + line.quantity, 0);
+        if (command.units.length > quantity) invalid();
+        if (command.units.length !== quantity) await requireSerials(client, [{ orderItemId: itemId, quantity }], new Map([[itemId, command.units]]));
+        await claimSerials(client, command.units, lines.map(line => line.id));
+        await client.query("DELETE FROM order_unit_serials WHERE shipment_item_id=ANY($1::uuid[])", [lines.map(line => line.id)]);
+        let next = 0;
+        for (const line of lines) {
+          for (const [index, serial] of command.units.slice(next, next + line.quantity).entries()) {
+            await client.query("INSERT INTO order_unit_serials(id,order_id,order_item_id,shipment_item_id,unit_index,serial,created_by) VALUES($1,$2,$3,$4,$5,$6,$7)",
+              [randomUUID(), order.id, itemId, line.id, index + 1, serial, principal.userId]);
+          }
+          next += line.quantity;
+        }
+        await client.query("UPDATE shipments SET version=version+1 WHERE id=$1", [shipment.id]);
+        const eventId = await orderEvent(client, { orderId: order.id, type: "shipment.serials_updated", actor: principal.userId, dedupeKey, visibility: "internal",
+          payload: { shipmentId: shipment.id, requestHash: hash, orderItemId: itemId, units: command.units.length } });
+        await shipmentEvent(client, shipment.id, "serials_updated", principal.userId, `shipment-serials:${shipment.id}:${eventId}`, undefined);
+        await audit(client, principal.userId, "fulfillment.serials_updated", shipment.id, eventId, { orderId: order.id, orderItemId: itemId, units: command.units.length });
+        return { shipment: await readShipment(client, shipment.id), order: { id: order.id, version: order.version, fulfillmentStatus: order.fulfillment_status }, replayed: false };
+      });
+    },
   };
+  return service;
 }
 export type FulfillmentService = ReturnType<typeof createFulfillmentService>;

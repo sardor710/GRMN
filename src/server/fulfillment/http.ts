@@ -35,7 +35,7 @@ export function createFulfillmentHTTP(input: { service: FulfillmentService; afte
       if (!body || typeof body !== "object" || Array.isArray(body)) return bad();
       const { action, ...rest } = body as Record<string, unknown>;
       if (action === "create_shipment") return adminJSON(await service.createShipment(request.headers, rest));
-      if (action === "dispatch" || action === "deliver" || action === "cancel" || action === "annotate") return adminJSON(await service.updateShipment(request.headers, body));
+      if (action === "dispatch" || action === "deliver" || action === "cancel" || action === "annotate" || action === "set_serials") return adminJSON(await service.updateShipment(request.headers, body));
       if (manualPayments) {
         if (action === "confirm_payment") return adminJSON(await manualPayments.confirm(request.headers, rest));
         if (action === "complete_manual_refund") return adminJSON(await manualPayments.completeRefund(request.headers, rest));

@@ -176,3 +176,81 @@ test("packing tells the customer once, even when the request is replayed",async(
   const events=(await q("SELECT type,visibility FROM order_events WHERE order_id=$1 AND type='fulfillment.packed'",[order.orderId])).rows;
   assert.deepEqual(events,[{type:"fulfillment.packed",visibility:"customer"}]);
 });
+
+// ---------------------------------------------------------------- T3.2 one active order per serial; edits while packed
+async function packedWatch(sn){
+  const w=await watch(),order=await paidOrder([[w.variant,1]]);
+  const created=sn===undefined?null:await pack(order.orderId,[{orderItemId:order.item[w.variant],quantity:1}],[{orderItemId:order.item[w.variant],units:[sn]}]);
+  return{w,order,created,item:order.item[w.variant]};
+}
+
+test("a serial already on another active order is refused, whatever its case and spacing",async()=>{
+  const sn=uniq();
+  await packedWatch(sn);
+  const other=await packedWatch();
+  const spaced=sn.toLowerCase().replace(/(.{4})/,"$1 ");
+  await rejectsWith(pack(other.order.orderId,[{orderItemId:other.item,quantity:1}],[{orderItemId:other.item,units:[spaced]}]),409,"SERIAL_IN_USE");
+});
+
+test("the same serial twice in one pack is refused",async()=>{
+  const w=await watch(),order=await paidOrder([[w.variant,2]]),sn=uniq();
+  await rejectsWith(pack(order.orderId,[{orderItemId:order.item[w.variant],quantity:2}],[{orderItemId:order.item[w.variant],units:[sn,sn.toLowerCase()]}]),409,"SERIAL_DUPLICATE");
+});
+
+test("two staff packing the same serial at the same moment: exactly one succeeds",async()=>{
+  const a=await packedWatch(),b=await packedWatch(),sn=uniq();
+  const results=await Promise.allSettled([
+    pack(a.order.orderId,[{orderItemId:a.item,quantity:1}],[{orderItemId:a.item,units:[sn]}]),
+    pack(b.order.orderId,[{orderItemId:b.item,quantity:1}],[{orderItemId:b.item,units:[sn]}]),
+  ]);
+  assert.equal(results.filter(r=>r.status==="fulfilled").length,1);
+  assert.equal(results.find(r=>r.status==="rejected").reason.code,"SERIAL_IN_USE");
+});
+
+test("a cancelled shipment frees its serial",async()=>{
+  const sn=uniq(),first=await packedWatch(sn);
+  await act(first.created.shipment,"cancel");
+  const other=await packedWatch();
+  await pack(other.order.orderId,[{orderItemId:other.item,quantity:1}],[{orderItemId:other.item,units:[sn]}]);
+});
+
+async function setSerials(shipmentId,orderItemId,units){
+  const current=(await q("SELECT version FROM shipments WHERE id=$1",[shipmentId])).rows[0].version;
+  return fulfillment.updateShipment(fulfiller,{shipmentId,expectedVersion:current,idempotencyKey:key(),action:"set_serials",orderItemId,units});
+}
+
+test("a serial typo is fixed while packed and locked once shipped",async()=>{
+  const p=await packedWatch(uniq()),fixed=uniq();
+  const result=await setSerials(p.created.shipment.id,p.item,[fixed]);
+  assert.equal(result.shipment.status,"ready");
+  assert.deepEqual((await serialRows(p.order.orderId)).map(row=>row.serial),[fixed]);
+  assert.equal((await q("SELECT count(*)::int AS n FROM order_events WHERE order_id=$1 AND type='shipment.serials_updated'",[p.order.orderId])).rows[0].n,1);
+  await act(p.created.shipment,"dispatch");
+  await rejectsWith(setSerials(p.created.shipment.id,p.item,[uniq()]),409,"INVALID_TRANSITION");
+});
+
+test("editing keeps the one-active-order rule and the one-serial-per-unit rule",async()=>{
+  const taken=uniq();await packedWatch(taken);
+  const p=await packedWatch(uniq());
+  await rejectsWith(setSerials(p.created.shipment.id,p.item,[taken]),409,"SERIAL_IN_USE");
+  await rejectsWith(setSerials(p.created.shipment.id,p.item,[]),409,"SERIALS_REQUIRED");
+  // Re-saving its own serial is fine.
+  const own=(await serialRows(p.order.orderId))[0].serial;
+  await setSerials(p.created.shipment.id,p.item,[own]);
+});
+
+test("an order packed before serials existed still ships, and staff can add the serial later",async()=>{
+  const w=await watch(),order=await paidOrder([[w.variant,1]]);
+  // As before this release: a ready shipment without serial rows (test-only insert of the old shape).
+  const created=await (async()=>{
+    await q("UPDATE products SET serial_policy='none' WHERE id=$1",[w.id]);
+    const result=await pack(order.orderId,[{orderItemId:order.item[w.variant],quantity:1}]);
+    await q("UPDATE products SET serial_policy='required' WHERE id=$1",[w.id]);
+    return result;
+  })();
+  const sn=uniq();
+  await setSerials(created.shipment.id,order.item[w.variant],[sn]);
+  await act(created.shipment,"dispatch");
+  assert.equal((await orderRow(order.orderId)).fulfillment_status,"shipped");
+  assert.deepEqual((await serialRows(order.orderId)).map(row=>row.serial),[sn]);
+});
