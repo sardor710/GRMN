@@ -204,6 +204,13 @@
       "when": 1795375500228,
       "tag": "0028_category-manager",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1795400000000,
+      "tag": "0029_traffic-analytics",
+      "breakpoints": true
     }
   ]
 }
