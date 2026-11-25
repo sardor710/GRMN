@@ -55,7 +55,8 @@ export interface FooterColumn {
   id: string;
   /** Message keys (`Footer.*`), resolved with `t()` where rendered. */
   headingKey: string;
-  links: { labelKey: string; href: string }[];
+  /** No href = shown as plain text. */
+  links: { labelKey: string; href?: string }[];
 }
 
 export interface Product {
