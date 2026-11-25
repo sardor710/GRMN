@@ -24,6 +24,8 @@ type Locale = "en" | "ru" | "kk";
 export type LocalName = { en: string; ru: string | null; kk: string | null };
 export interface AdminNode {
   key: string; slug: string | null; kind: string; name: LocalName; parentKey: string | null; position: number; navVisible: boolean;
+  /** 0030: serial number at packing — own setting; null = same as parent. */
+  serialPolicy: "required" | "none" | null;
   productCount: number; childCount: number;
 }
 export interface AdminPlacement extends AdminNode { href: string | null; label: Partial<Record<Locale, string>> | null }
@@ -69,7 +71,9 @@ const createInput = z.object({
 const updateInput = z.object({
   name: z.object({ en: nameText.min(1, "The English name cannot be empty").optional(), ru: nameText.optional(), kk: nameText.optional() }).strict().optional(),
   navVisible: z.boolean().optional(),
-}).strict().refine(value => value.name !== undefined || value.navVisible !== undefined, "Nothing to change");
+  /** 0030 (owner 2026-11-25): serial number at packing; null = same as parent. */
+  serialPolicy: z.enum(["required", "none"]).nullable().optional(),
+}).strict().refine(value => value.name !== undefined || value.navVisible !== undefined || value.serialPolicy !== undefined, "Nothing to change");
 const orderInput = z.object({ parentKey: categoryKey.nullable(), keys: z.array(categoryKey).min(1).max(500) }).strict();
 const placementsInput = z.object({ keys: z.array(categoryKey).max(500) }).strict();
 
@@ -78,17 +82,17 @@ export function slugify(name: string): string {
   return name.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/&/g, " and ").replace(/[™®©]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "category";
 }
 
-interface Row { id: string; key: string; slug: string | null; kind: string; parent_id: string | null; parent_key: string | null; position: number; nav_visible: boolean; menu_href: string | null; name: string; ru: string | null; kk: string | null; products: number; children: number }
+interface Row { id: string; key: string; slug: string | null; kind: string; parent_id: string | null; parent_key: string | null; position: number; nav_visible: boolean; menu_href: string | null; serial_policy: "required" | "none" | null; name: string; ru: string | null; kk: string | null; products: number; children: number }
 
 async function rows(client: Pick<PoolClient, "query">): Promise<Row[]> {
-  return (await client.query<Row>(`SELECT c.id,c.key,c.slug,c.kind,c.parent_id,p.key AS parent_key,c.position,c.nav_visible,c.menu_href,c.name,
+  return (await client.query<Row>(`SELECT c.id,c.key,c.slug,c.kind,c.parent_id,p.key AS parent_key,c.position,c.nav_visible,c.menu_href,c.serial_policy,c.name,
       (SELECT t.name FROM category_translations t WHERE t.category_id=c.id AND t.locale='ru') AS ru,
       (SELECT t.name FROM category_translations t WHERE t.category_id=c.id AND t.locale='kk') AS kk,
       (SELECT count(*)::int FROM product_categories pc WHERE pc.category_id=c.id) AS products,
       (SELECT count(*)::int FROM categories x WHERE x.parent_id=c.id AND NOT x.archived) AS children
     FROM categories c LEFT JOIN categories p ON p.id=c.parent_id WHERE NOT c.archived ORDER BY c.position,c.key`)).rows;
 }
-const node = (row: Row): AdminNode => ({ key: row.key, slug: row.slug, kind: row.kind, name: { en: row.name, ru: row.ru, kk: row.kk }, parentKey: row.parent_key, position: row.position, navVisible: row.nav_visible, productCount: row.products, childCount: row.children });
+const node = (row: Row): AdminNode => ({ key: row.key, slug: row.slug, kind: row.kind, name: { en: row.name, ru: row.ru, kk: row.kk }, parentKey: row.parent_key, position: row.position, navVisible: row.nav_visible, serialPolicy: row.serial_policy, productCount: row.products, childCount: row.children });
 
 export async function readCategoryTree(client: Pick<PoolClient, "query">): Promise<AdminCategoryTree> {
   const epoch = (await client.query<{ epoch: string }>("SELECT epoch::text AS epoch FROM catalog_taxonomy_guard WHERE id=1")).rows[0]?.epoch ?? "0";
@@ -277,6 +281,7 @@ export async function updateCategory(client: PoolClient, epoch: string, key: str
       WHERE category_id=$1 AND label ? $2`, [row.id, locale]);
   }
   if (input.navVisible !== undefined) await client.query("UPDATE categories SET nav_visible=$2 WHERE id=$1", [row.id, input.navVisible]);
+  if (input.serialPolicy !== undefined) await client.query("UPDATE categories SET serial_policy=$2 WHERE id=$1", [row.id, input.serialPolicy]);
 }
 
 export async function orderCategories(client: PoolClient, epoch: string, raw: unknown): Promise<void> {

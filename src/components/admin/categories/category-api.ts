@@ -4,7 +4,7 @@
 // read with (If-Match); every write answers with the whole new tree.
 export type Locale = "en" | "ru" | "kk";
 export interface LocalName { en: string; ru: string | null; kk: string | null }
-export interface AdminNode { key: string; slug: string | null; kind: string; name: LocalName; parentKey: string | null; position: number; navVisible: boolean; productCount: number; childCount: number }
+export interface AdminNode { key: string; slug: string | null; kind: string; name: LocalName; parentKey: string | null; position: number; navVisible: boolean; serialPolicy: "required" | "none" | null; productCount: number; childCount: number }
 export interface AdminPlacement extends AdminNode { href: string | null; label: Partial<Record<Locale, string>> | null }
 export type LocalText = Record<Locale, string>;
 export type MenuText = Partial<Record<Locale, string>>;
