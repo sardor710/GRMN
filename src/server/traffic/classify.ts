@@ -56,9 +56,15 @@ function referrerSource(referrer: string | null, ownHost: string): { platform: s
   return hit ? { platform: hit[1], medium: hit[2], host } : { platform: "Other referral", medium: "referral", host: host.slice(0, 253) };
 }
 
-function normaliseMedium(raw: string | null): string | null {
+export function normaliseMedium(raw: string | null): string | null {
   const medium = clean(raw, 80)?.toLowerCase() ?? null;
   return medium && AD_MEDIUMS.has(medium) ? "ad" : medium;
+}
+
+/** The platform a utm_source value counts under: known aliases, else the value with a capital first letter. */
+export function platformFromUtm(value: string): string {
+  const text = value.trim().slice(0, 40);
+  return SOURCE_ALIASES[text.toLowerCase()] ?? text[0].toUpperCase() + text.slice(1);
 }
 
 export function classifySource({ url, referrer, userAgent, ownHost }: SourceInput): Source {
@@ -68,8 +74,7 @@ export function classifySource({ url, referrer, userAgent, ownHost }: SourceInpu
 
   const utmSource = clean(params.get("utm_source"), 40);
   if (utmSource) {
-    const key = utmSource.toLowerCase();
-    const platform = SOURCE_ALIASES[key] ?? (utmSource[0].toUpperCase() + utmSource.slice(1)).slice(0, 40);
+    const platform = platformFromUtm(utmSource);
     const medium = normaliseMedium(params.get("utm_medium")) ?? (platform === "Google" || platform === "Yandex" ? "organic" : "referral");
     return { platform, medium, campaign: clean(params.get("utm_campaign"), 80)?.toLowerCase() ?? null, referrerHost };
   }

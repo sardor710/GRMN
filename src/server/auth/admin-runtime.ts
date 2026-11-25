@@ -62,7 +62,7 @@ async function handlers(request: Request, resource: AdminResource) {
   };
   return createAdminHandlers({ runtime, store, baseURL: new URL(process.env.AUTH_BASE_URL!).origin });
 }
-export async function handleAdminRequest(resource: AdminResource | "order-claims" | "inventory" | "operations" | "content" | "media" | "reports" | "exports" | "catalog", request: Request) {
+export async function handleAdminRequest(resource: AdminResource | "order-claims" | "inventory" | "operations" | "content" | "media" | "reports" | "exports" | "catalog" | "traffic", request: Request) {
   // Legacy-order claim approval exists only in PostgreSQL+auth mode; the account service
   // enforces staff MFA admission and customers:write itself.
   if (resource === "order-claims") return (await import("../account/runtime.ts")).handleClaimApprovalRequest(request);
@@ -77,6 +77,8 @@ export async function handleAdminRequest(resource: AdminResource | "order-claims
   if (resource === "media") return (await import("../content/runtime.ts")).handleMediaRequest(request);
   // Reports, exports and typed settings (Task 18B) are PostgreSQL-only; each service checks its permission.
   if (resource === "reports") return (await import("../reports/runtime.ts")).handleReportsRequest(request);
+  // Traffic analytics (owner 2026-11-25) is PostgreSQL-only; reports need orders:read, campaign links content:write.
+  if (resource === "traffic") return (await import("../traffic/runtime.ts")).handleTrafficRequest(request);
   if (resource === "exports") return (await import("../reports/runtime.ts")).handleExportsRequest(request);
   if (resource === "settings" && cmsBackend() === "postgres") return (await import("../reports/runtime.ts")).handleSettingsRequest(request);
   // Discounts and promotions in PostgreSQL mode (owner 2026-11-19): the promotions tables checkout applies.
