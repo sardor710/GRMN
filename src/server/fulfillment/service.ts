@@ -10,6 +10,7 @@ import { AuthFailure } from "../auth/config.ts";
 import { withInventoryTransaction } from "../inventory/reservations.ts";
 import { readRefunds, readReturns } from "./aftersales.ts";
 import { resolveSerialRequirements } from "./serial-policy.ts";
+import { BOARD_COLUMNS, BOARD_PERIODS, BOARD_STAGES, boardWhere, STAGE, type BoardColumns, type BoardStage } from "./board.ts";
 
 // Task 16A. Permissioned, versioned manual fulfillment (D04: staff ship themselves).
 //
@@ -72,8 +73,21 @@ const listInput = z.strictObject({
   // "demo" lists both demo kinds (Task 3.2 demo checkout and D03a sandbox demo purchases); "sandbox" only the latter.
   paymentMode: z.enum(["demo", "live", "sandbox"]).optional(),
   cursor: z.string().regex(/^[A-Za-z0-9_-]{1,200}$/).optional(),
-  limit: z.coerce.number().int().min(1).max(100).optional(),
-});
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+  // Owner 2026-11-25 board (board.ts).
+  view: z.enum(["active", "archive"]).optional(),
+  period: z.enum(BOARD_PERIODS).optional(),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  q: z.string().trim().min(1).max(80).optional(),
+  stage: z.enum(BOARD_STAGES).optional(),
+}).refine(value => value.period !== "custom" || (value.from !== undefined && value.to !== undefined && validRange(value.from, value.to)))
+  .refine(value => value.period === "custom" || (value.from === undefined && value.to === undefined));
+/** A real calendar range, from <= to, at most 366 days. */
+function validRange(from: string, to: string): boolean {
+  const a = Date.parse(from + "T00:00:00Z"), b = Date.parse(to + "T00:00:00Z");
+  return Number.isFinite(a) && Number.isFinite(b) && new Date(a).toISOString().startsWith(from) && new Date(b).toISOString().startsWith(to) && a <= b && b - a <= 366 * 86400000;
+}
 
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
@@ -237,6 +251,15 @@ async function claimSerials(client: PoolClient, serials: string[], ownShipmentIt
   if (taken) fail("SERIAL_IN_USE", 409, `Serial ${taken.serial} is already on order ${taken.order_number}`);
 }
 
+type SummaryRow = { id: string; order_number: string; shown_at: Date; order_status: OrderStatus; payment_status: PaymentStatus; fulfillment_status: FulfillmentStatus; payment_mode: AdminOrderSummaryDTO["paymentMode"]; data_quality: "complete" | "legacy_incomplete"; total_minor: string; items_count: number; contact_name: string } & BoardColumns;
+function summary(row: SummaryRow): AdminOrderSummaryDTO {
+  return {
+    id: row.id, orderNumber: row.order_number, placedAt: row.shown_at.toISOString(), status: row.order_status, paymentStatus: row.payment_status, fulfillmentStatus: row.fulfillment_status,
+    paymentMode: row.payment_mode, dataQuality: row.data_quality, total: money(row.total_minor), itemsCount: row.items_count, contactName: row.contact_name,
+    stage: row.stage, archived: row.archived, paymentPill: row.payment, legacy: row.legacy, itemNames: row.item_names, deliveredAt: row.delivered_at ? new Date(row.delivered_at).toISOString() : null,
+  };
+}
+
 const encodeCursor = (at: Date, id: string) => Buffer.from(`${at.toISOString()}|${id}`).toString("base64url");
 function decodeCursor(cursor: string): { at: Date; id: string } {
   const [at, id, extra] = Buffer.from(cursor, "base64url").toString("utf8").split("|");
@@ -260,28 +283,43 @@ interface Options { pool: Pool; authorize: (headers: Headers, permission: Permis
 
 export function createFulfillmentService({ pool, authorize }: Options) {
   const service = {
-    /** Staff order queue, newest first, optionally by fulfillment status and payment mode. Keyset-paged. */
-    async listOrders(headers: Headers, input: unknown): Promise<{ items: AdminOrderSummaryDTO[]; nextCursor: string | null }> {
+    /**
+     * Staff order board and list, newest first: active or archived orders (a search covers both), by period, stage,
+     * fulfillment status and payment mode. Keyset-paged; `counts` per column for the active view without a search.
+     */
+    async listOrders(headers: Headers, input: unknown): Promise<{ items: AdminOrderSummaryDTO[]; nextCursor: string | null; counts: Record<BoardStage, number> | null }> {
       await authorize(headers, "orders:read");
       const query = parse(listInput, input ?? {});
-      const limit = query.limit ?? PAGE_LIMIT, args: unknown[] = [limit + 1];
-      let where = "";
-      if (query.fulfillmentStatus) { args.push(query.fulfillmentStatus); where += ` AND o.fulfillment_status=$${args.length}`; }
-      if (query.paymentMode) { args.push(query.paymentMode === "demo" ? ["demo", "sandbox"] : [query.paymentMode]); where += ` AND o.payment_mode=ANY($${args.length}::text[])`; }
+      const limit = query.limit ?? PAGE_LIMIT;
+      const filter = { view: query.view, period: query.period, from: query.from, to: query.to, q: query.q, stage: query.stage };
+      // Filters shared by the page and the column counts; built once per argument list so placeholders line up.
+      const shared = (args: unknown[], withStage: boolean) => {
+        let where = "";
+        if (query.fulfillmentStatus) { args.push(query.fulfillmentStatus); where += ` AND o.fulfillment_status=$${args.length}`; }
+        if (query.paymentMode) { args.push(query.paymentMode === "demo" ? ["demo", "sandbox"] : [query.paymentMode]); where += ` AND o.payment_mode=ANY($${args.length}::text[])`; }
+        return where + boardWhere(filter, args, withStage);
+      };
+      const args: unknown[] = [limit + 1];
+      let where = shared(args, true);
       if (query.cursor) {
         const cursor = decodeCursor(query.cursor);
         args.push(cursor.at, cursor.id);
         where += ` AND (COALESCE(o.placed_at,o.created_at),o.id)<($${args.length - 1},$${args.length})`;
       }
-      const rows = (await pool.query<{ id: string; order_number: string; shown_at: Date; order_status: OrderStatus; payment_status: PaymentStatus; fulfillment_status: FulfillmentStatus; payment_mode: AdminOrderSummaryDTO["paymentMode"]; data_quality: "complete" | "legacy_incomplete"; total_minor: string; items_count: number; contact_name: string }>(
+      const rows = (await pool.query<SummaryRow>(
         `SELECT o.id,o.order_number,COALESCE(o.placed_at,o.created_at) AS shown_at,o.order_status,o.payment_status,o.fulfillment_status,o.payment_mode,o.data_quality,o.total_minor::text AS total_minor,
-          (SELECT COALESCE(sum(quantity),0)::int FROM order_items WHERE order_id=o.id) AS items_count,o.contact_name
+          (SELECT COALESCE(sum(quantity),0)::int FROM order_items WHERE order_id=o.id) AS items_count,o.contact_name,${BOARD_COLUMNS}
          FROM orders o WHERE true${where} ORDER BY COALESCE(o.placed_at,o.created_at) DESC,o.id DESC LIMIT $1`, args)).rows;
+      let counts: Record<BoardStage, number> | null = null;
+      if (query.view !== "archive" && !query.q) {
+        const countArgs: unknown[] = [];
+        const countWhere = shared(countArgs, false);
+        const grouped = (await pool.query<{ stage: BoardStage; n: number }>(`SELECT ${STAGE} AS stage,count(*)::int AS n FROM orders o WHERE true${countWhere} GROUP BY 1`, countArgs)).rows;
+        counts = { new: 0, packed: 0, shipped: 0, delivered: 0 };
+        for (const row of grouped) counts[row.stage] = row.n;
+      }
       const page = rows.slice(0, limit), last = page[page.length - 1];
-      return {
-        items: page.map(row => ({ id: row.id, orderNumber: row.order_number, placedAt: row.shown_at.toISOString(), status: row.order_status, paymentStatus: row.payment_status, fulfillmentStatus: row.fulfillment_status, paymentMode: row.payment_mode, dataQuality: row.data_quality, total: money(row.total_minor), itemsCount: row.items_count, contactName: row.contact_name })),
-        nextCursor: rows.length > limit && last ? encodeCursor(last.shown_at, last.id) : null,
-      };
+      return { items: page.map(summary), nextCursor: rows.length > limit && last ? encodeCursor(last.shown_at, last.id) : null, counts };
     },
 
     /** One order with its items, shipments and the full recorded timeline. */
@@ -289,8 +327,8 @@ export function createFulfillmentService({ pool, authorize }: Options) {
       const principal = await authorize(headers, "orders:read");
       const staffDetail = principal.permissions.includes("orders:fulfill");
       if (typeof orderId !== "string" || !UUID.test(orderId)) return notFound();
-      const order = (await pool.query<OrderRow & { shown_at: Date; total_minor: string; contact_name: string; contact_phone: string | null; contact_email: string | null }>(
-        `SELECT ${ORDER_COLUMNS},COALESCE(o.placed_at,o.created_at) AS shown_at,o.total_minor::text AS total_minor,o.contact_name,o.contact_phone,o.contact_email FROM orders o WHERE o.id=$1`, [orderId])).rows[0] ?? notFound();
+      const order = (await pool.query<OrderRow & BoardColumns & { shown_at: Date; total_minor: string; contact_name: string; contact_phone: string | null; contact_email: string | null }>(
+        `SELECT ${ORDER_COLUMNS},COALESCE(o.placed_at,o.created_at) AS shown_at,o.total_minor::text AS total_minor,o.contact_name,o.contact_phone,o.contact_email,${BOARD_COLUMNS} FROM orders o WHERE o.id=$1`, [orderId])).rows[0] ?? notFound();
       const [items, address, shipments, events] = await Promise.all([
         pool.query<{ id: string; name: string; sku: string | null; quantity: number; allocated: string; claimed: string; shipped: string; remaining: string }>(`
           SELECT i.id,i.name,i.sku,i.quantity,
@@ -321,6 +359,7 @@ export function createFulfillmentService({ pool, authorize }: Options) {
         id: order.id, orderNumber: order.order_number, placedAt: order.shown_at.toISOString(), status: order.order_status, paymentStatus: order.payment_status,
         fulfillmentStatus: order.fulfillment_status, paymentMode: order.payment_mode, dataQuality: order.data_quality, total: money(order.total_minor),
         itemsCount: items.rows.reduce((sum, row) => sum + row.quantity, 0), contactName: order.contact_name,
+        stage: order.stage, archived: order.archived, paymentPill: order.payment, itemNames: order.item_names, deliveredAt: order.delivered_at ? new Date(order.delivered_at).toISOString() : null,
         version: order.version, legacy: isLegacy(order), fulfillable: { allowed: block === null, reason: block },
         contact: { name: order.contact_name, phone: order.contact_phone, email: order.contact_email }, deliveryAddress,
         items: items.rows.map(row => {

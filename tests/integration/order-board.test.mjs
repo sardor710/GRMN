@@ -254,3 +254,118 @@ test("an order packed before serials existed still ships, and staff can add the 
   assert.equal((await orderRow(order.orderId)).fulfillment_status,"shipped");
   assert.deepEqual((await serialRows(order.orderId)).map(row=>row.serial),[sn]);
 });
+
+// ---------------------------------------------------------------- T3.3 board listing
+const support=new Headers({"x-test-role":"support"});
+const list=input=>fulfillment.listOrders(support,{limit:200,...input});
+const numberOf=async id=>(await q("SELECT order_number FROM orders WHERE id=$1",[id])).rows[0].order_number;
+const find=async(id,input={})=>(await list({q:await numberOf(id),...input})).items.find(item=>item.id===id);
+const ids=page=>new Set(page.items.map(item=>item.id));
+/** Test-only time travel and state edits past the immutability triggers (they guard real snapshots). */
+async function raw(sql,args=[]){
+  const client=await database.pool.connect();
+  try{await client.query("SET session_replication_role=replica");return await client.query(sql,args);}
+  finally{await client.query("SET session_replication_role=origin");client.release();}
+}
+/** Moves a delivered order's delivery to `offset` relative to today's 00:00 in Almaty (test-only time travel). */
+async function deliveredAt(orderId,offset){
+  await raw(`UPDATE shipments SET dispatched_at=(date_trunc('day',now() AT TIME ZONE 'Asia/Almaty') AT TIME ZONE 'Asia/Almaty')+$2::interval-interval '1 hour',
+    delivered_at=(date_trunc('day',now() AT TIME ZONE 'Asia/Almaty') AT TIME ZONE 'Asia/Almaty')+$2::interval WHERE order_id=$1 AND status='delivered'`,[orderId,offset]);
+}
+async function deliveredOrder(){
+  const b=await band(),order=await paidOrder([[b.variant,1]]);
+  const created=await pack(order.orderId,[{orderItemId:order.item[b.variant],quantity:1}]);
+  await act(created.shipment,"dispatch");await act(created.shipment,"deliver");
+  return order;
+}
+
+test("each order lands in the right column with the right payment pill",async()=>{
+  const b=await band();
+  const unpaid=await placedOrder([[b.variant,1]]);
+  const paid=await paidOrder([[b.variant,1]]);
+  const packed=await paidOrder([[b.variant,1]]);const pc=await pack(packed.orderId,[{orderItemId:packed.item[b.variant],quantity:1}]);
+  const shipped=await paidOrder([[b.variant,1]]);const sc=await pack(shipped.orderId,[{orderItemId:shipped.item[b.variant],quantity:1}]);await act(sc.shipment,"dispatch");
+  const delivered=await deliveredOrder();
+  const expect={[unpaid.orderId]:["new","awaiting"],[paid.orderId]:["new","paid"],[packed.orderId]:["packed","paid"],[shipped.orderId]:["shipped","paid"],[delivered.orderId]:["delivered","paid"]};
+  for(const [id,[stage,payment]] of Object.entries(expect)){
+    const row=await find(id);
+    assert.equal(row.stage,stage,id);assert.equal(row.paymentPill,payment,id);assert.equal(row.archived,false,id);assert.equal(row.legacy,false);
+    assert.ok(row.itemNames.length>=1&&row.itemNames[0].startsWith("Synthetic QuickFit band"));
+  }
+  assert.equal((await find(delivered.orderId)).deliveredAt!==null,true);
+  const page=await list({});
+  for(const id of Object.keys(expect))assert.ok(ids(page).has(id));
+  assert.ok(page.counts.new>=2&&page.counts.packed>=1&&page.counts.shipped>=1&&page.counts.delivered>=1);
+  assert.ok(pc&&sc);
+});
+
+test("delivered orders move to the archive at 00:00 Almaty the next day, not 24 hours later",async()=>{
+  const yesterday=await deliveredOrder(),today=await deliveredOrder();
+  await deliveredAt(yesterday.orderId,"-1 second");
+  await deliveredAt(today.orderId,"0 seconds");
+  const active=await list({}),archive=await list({view:"archive"});
+  assert.ok(!ids(active).has(yesterday.orderId)&&ids(archive).has(yesterday.orderId));
+  assert.ok(ids(active).has(today.orderId)&&!ids(archive).has(today.orderId));
+  assert.equal((await find(yesterday.orderId)).archived,true);
+  assert.equal(archive.counts,null);
+});
+
+test("cancelled, fully refunded, fully returned and imported orders are archived; failed payments show a problem",async()=>{
+  const b=await band();
+  const unpaidCancelled=await placedOrder([[b.variant,1]]);await cancel(unpaidCancelled.orderId);
+  const packedThenCancelled=await paidOrder([[b.variant,1]]);
+  const pc=await pack(packedThenCancelled.orderId,[{orderItemId:packedThenCancelled.item[b.variant],quantity:1}]);
+  await cancel(packedThenCancelled.orderId);
+  assert.equal((await q("SELECT status FROM shipments WHERE id=$1",[pc.shipment.id])).rows[0].status,"cancelled");
+  const refunded=await paidOrder([[b.variant,1]]);await raw("UPDATE orders SET payment_status='refunded' WHERE id=$1",[refunded.orderId]);
+  const returned=await deliveredOrder();
+  const shipmentItem=(await q("SELECT id FROM shipment_items WHERE order_id=$1",[returned.orderId])).rows[0].id;
+  const created=await api.createReturn(fulfiller,{orderId:returned.orderId,idempotencyKey:key(),reason:"Changed mind",lines:[{orderItemId:Object.values(returned.item)[0],quantity:1}]});
+  const step=async(action,extra={})=>{const v=(await q("SELECT version FROM returns WHERE id=$1",[created.return.id])).rows[0].version;return api.updateReturn(fulfiller,{returnId:created.return.id,expectedVersion:v,idempotencyKey:key(),action,...extra});};
+  await step("authorize");await step("receive",{lines:[{returnItemId:created.return.items[0].id,receivedQuantity:1}]});
+  assert.ok(shipmentItem);
+  const legacyId=randomUUID();
+  await q("INSERT INTO orders(id,order_number,contact_name,total_minor,payment_mode,data_quality) VALUES($1,$2,'Old site buyer',100,'legacy_unknown','legacy_incomplete')",[legacyId,"LEG-"+legacyId.slice(0,8)]);
+  const failed=await placedOrder([[b.variant,1]]);await raw("UPDATE orders SET payment_status='failed' WHERE id=$1",[failed.orderId]);
+  const active=ids(await list({})),archive=ids(await list({view:"archive"}));
+  for(const id of [unpaidCancelled.orderId,packedThenCancelled.orderId,refunded.orderId,returned.orderId,legacyId]){assert.ok(!active.has(id),id);assert.ok(archive.has(id),id);}
+  assert.equal((await find(legacyId)).legacy,true);
+  assert.equal((await find(failed.orderId)).paymentPill,"problem");
+  assert.ok(active.has(failed.orderId));
+  // The serial-free cancelled pack let its band go: nothing to assert on serials here (band), stage stays new.
+  assert.equal((await find(packedThenCancelled.orderId)).stage,"new");
+});
+
+test("demo orders are on the board, tagged by their payment mode",async()=>{
+  const b=await band(),order=await paidOrder([[b.variant,1]]);
+  await raw("UPDATE orders SET payment_mode='demo' WHERE id=$1",[order.orderId]);
+  const row=await find(order.orderId);
+  assert.equal(row.paymentMode,"demo");assert.equal(row.archived,false);assert.equal(row.stage,"new");
+});
+
+test("periods filter by order date in Almaty; custom ranges are inclusive",async()=>{
+  const b=await band();
+  const now=await paidOrder([[b.variant,1]]),tenDays=await paidOrder([[b.variant,1]]),fortyDays=await paidOrder([[b.variant,1]]);
+  await raw("UPDATE orders SET placed_at=now()-interval '10 days' WHERE id=$1",[tenDays.orderId]);
+  await raw("UPDATE orders SET placed_at=now()-interval '40 days' WHERE id=$1",[fortyDays.orderId]);
+  const has=async(period,extra={})=>{const s=ids(await list({period,...extra}));return [now,tenDays,fortyDays].map(o=>s.has(o.orderId));};
+  assert.deepEqual(await has("today"),[true,false,false]);
+  assert.deepEqual(await has("7d"),[true,false,false]);
+  assert.deepEqual(await has("30d"),[true,true,false]);
+  assert.deepEqual(await has("all"),[true,true,true]);
+  const day=(await q("SELECT to_char((now()-interval '10 days') AT TIME ZONE 'Asia/Almaty','YYYY-MM-DD') AS d")).rows[0].d;
+  assert.deepEqual(await has("custom",{from:day,to:day}),[false,true,false]);
+  await rejectsWith(list({period:"custom"}),400,"INVALID_INPUT");
+  await rejectsWith(list({period:"custom",from:"2026-01-02",to:"2026-01-01"}),400,"INVALID_INPUT");
+});
+
+test("search finds an order by number, customer name or serial, archived ones too",async()=>{
+  const sn=uniq(),p=await packedWatch(sn);
+  await act(p.created.shipment,"dispatch");await act(p.created.shipment,"deliver");
+  await deliveredAt(p.order.orderId,"-2 days");
+  const bySerial=await list({q:sn.slice(0,6).toLowerCase()});
+  const row=bySerial.items.find(item=>item.id===p.order.orderId);
+  assert.ok(row);assert.equal(row.archived,true);
+  assert.ok((await list({q:"Aftersales"})).items.length>0);
+  await rejectsWith(list({q:"x".repeat(81)}),400,"INVALID_INPUT");
+});

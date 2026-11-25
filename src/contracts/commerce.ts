@@ -457,6 +457,13 @@ export interface AdminOrderSummaryDTO {
   total: Money;
   itemsCount: number;
   contactName: string;
+  /** Owner 2026-11-25 board: column, next-day archive, payment pill, imported flag, first item names, last delivery. */
+  stage: "new" | "packed" | "shipped" | "delivered";
+  archived: boolean;
+  paymentPill: "awaiting" | "paid" | "problem";
+  legacy: boolean;
+  itemNames: string[];
+  deliveredAt: string | null;
 }
 export interface TimelineEventDTO {
   id: string;
