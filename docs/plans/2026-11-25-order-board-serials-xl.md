@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 1 | 0/19 | 2026-11-25 | T1.1 schema + migration |
+| Executing | 3 | 4/19 | 2026-11-25 | T3.1 pack with serials |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -136,7 +136,7 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 5. Order packed before this release (ready shipment, no serials) → still dispatches; staff can add serials later. → T3.2
 
 ### M1 — Schema + migration (wave 1, owner: agent_direct)
-- [ ] **T1.1 Schema + migration.**
+- [x] **T1.1 Schema + migration.** ✅ 2a954d1 — order-serials-schema 4/4, database.test 4/4.
   - `categories.serial_policy` and `products.serial_policy`: `text NULL`, CHECK `IN ('required','none')` (NULL = same as parent / auto).
   - New table `order_unit_serials` (schema in `src/server/db/schema/fulfillment.ts`, export `orderUnitSerials`): `id uuid pk`, `order_id`, `order_item_id`, `shipment_item_id` (all NOT NULL), `unit_index int NOT NULL CHECK >=1`, `serial text NOT NULL CHECK (serial=btrim(serial) AND char_length(serial) BETWEEN 1 AND 64)`, `serial_key text GENERATED ALWAYS AS (upper(regexp_replace(serial,'\s','','g'))) STORED`, `return_item_id uuid NULL REFERENCES return_items(id) ON DELETE RESTRICT`, `created_by uuid REFERENCES users(id)`, `created_at`, `updated_at`. FKs `(shipment_item_id, order_item_id) → shipment_items(id, order_item_id)`, `(order_item_id, order_id) → order_items(id, order_id)`. Unique `(shipment_item_id, unit_index)`; indexes on `serial_key`, `order_id`, `return_item_id`.
   - Seed **only in the same DO block that first adds `categories.serial_policy`** (so a later re-apply, e.g. at the beta5 merge, never overwrites an owner's choice): `'none'` for keys `bands, dive-bands, marq-straps-bracelets, cables-chargers, apps, subscription-plans, sports-fitness/cycling-biking-accessories, sports-fitness/indoor-training/accessories, wearables-smartwatches-accessories`; `'required'` for `heart-rate-monitors, sensors`. (No case/mount categories exist in the seed; the name fallback in M2 covers them.)
@@ -145,7 +145,7 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
   - verify: `node --conditions=react-server --test tests/integration/order-serials-schema.test.mjs` PASS; `npm run typecheck` PASS. Commit `feat(db): order unit serials and serial policy (0030)`.
 
 ### M2 — Serial rule (wave 2, owner: TDD)
-- [ ] **T2.1 Pure decision** in `src/server/fulfillment/serial-policy.ts`:
+- [x] **T2.1 Pure decision** ✅ unit 9/9 (rule tightened, see Decisions) in `src/server/fulfillment/serial-policy.ts`:
   - `export type SerialPolicy = "required" | "none";`
   - `export interface SerialDecision { required: boolean; source: "product" | "category" | "legacy-category" | "name" | "default"; detail: string | null }` (detail = deciding category key or matched word).
   - `export function decideSerial(input: { productPolicy: SerialPolicy | null; categories: { key: string; effective: SerialPolicy | null }[]; legacyCategories: { key: string; effective: SerialPolicy | null }[]; name: string }): SerialDecision`
@@ -153,13 +153,13 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
   - Name fallback must fail **safe** (a device must never be exempted by name): a name is "no serial" only when it **starts with / is about** the accessory, not when it merely mentions one. Rule: lower-cased, NFKC name matches `NO_SERIAL_NAME = /^(?:garmin\s+)?(?:[\p{L}\d.\- ]{0,30}\s)?(?:band|bands|strap|bracelet|cable|charger|charging (?:clip|cable|cradle)|case|mount|screen protector|lanyard|ремешок|браслет|кабель|зарядн\S*|чехол|крепление|защитн\S* пл[её]нк\S*)\b/iu` **and** does not contain a device word `DEVICE_NAME = /(?:watch|fēnix|fenix|forerunner|venu|vívo|vivo|instinct|epix|enduro|marq|edge|hrm|sensor|varia|echomap|striker|livescope|approach|descent|tacx|drive|zūmo|zumo|dezl|montana|gpsmap|etrex|inreach|rangefinder|fishfinder|часы|датчик|навигатор)/iu` (Unicode-aware; no `\b` on Cyrillic — `\b` is ASCII-only in JS so the Cyrillic words are matched without it).
   - Tests `tests/unit/serial-policy.test.mjs` (`node:test`): HRM category required + sport null → required; band in watch-series(null) + quickfit (none) → not; watch in multisport (null) → required (default); product `none` overrides HRM; no categories + legacy "Heart rate and sensors" required; no categories, no legacy, name "QuickFit 22 Band" → not (`name`); "Ремешок QuickFit 22" → not; "Charging Cable" → not; name "fēnix 8" → required; **"vívoactive 6 with Silicone Band" → required; "Forerunner 970 Stainless Steel Case" → required; "Edge Mount" → required (device word wins = safe side)**; fishfinder/rangefinder (null categories) → required.
   - verify: `node --conditions=react-server --test tests/unit/serial-policy.test.mjs` PASS.
-- [ ] **T2.2 DB resolver + settings** in same file:
+- [x] **T2.2 DB resolver + settings** ✅ integration 7/7, category tests 25/25 in same file:
   - `export async function resolveSerialRequirements(db: Pick<PoolClient, "query">, productIds: string[]): Promise<Map<string, SerialDecision>>` — one recursive CTE: each product's categories with effective policy (own or nearest ancestor's non-null, skipping archived); legacy categories via `matchLegacyCategories` (`src/server/catalog/category-match.ts:83`) against all category nodes; then `decideSerial`.
   - `export async function setProductSerialPolicy(client: PoolClient, productId: string, policy: SerialPolicy | null): Promise<void>` — updates only `serial_policy` (does **not** bump `products.version`/`updated_at`, so an open product editor's next save is not rejected; the field is outside the editor's CAS-protected content). Writes an `audit_events` row `catalog.serial_policy`.
   - Category setting goes through existing category PATCH: `updateInput` in `src/server/cms/category-admin.ts:68` gains `serialPolicy: z.enum(["required","none"]).nullable().optional()` (refine accepts it as a change); `AdminNode` gains `serialPolicy: SerialPolicy | null` (`rows()` selects `c.serial_policy`). Mirror type in `src/components/admin/categories/category-api.ts`.
   - Test `tests/integration/serial-policy.test.mjs`: temp DB with a tiny tree (accessory root `bands` none → child `bands/quickfit-22-mm` null; `heart-rate-monitors` required; `wearables-smartwatches` → `sports-fitness/multisport-smartwatches`); products filed accordingly → expected decisions; ancestor inheritance; archived category ignored; product override.
   - verify: `node --conditions=react-server --test tests/integration/serial-policy.test.mjs` PASS. Commit `feat(fulfillment): serial requirement rule`.
-- [ ] **T2.3 Report script + reality check** `scripts/ops/serial-policy-report.mjs` (run in ops image like `load-taxonomy.mjs`): prints CSV `product_id,status,name,needs_serial,source,detail,guess` (`guess=yes` for `name` and `legacy-category` sources) for every non-archived product; summary counts per source to stderr. Test: `tests/integration/serial-policy.test.mjs` calls exported `serialPolicyReport(client)` on the fixture.
+- [x] **T2.3 Report script + reality check** ✅ prod copy: 20 need serial, 4 bands no, 0 guesses (CSV in grmn-production) `scripts/ops/serial-policy-report.mjs` (run in ops image like `load-taxonomy.mjs`): prints CSV `product_id,status,name,needs_serial,source,detail,guess` (`guess=yes` for `name` and `legacy-category` sources) for every non-archived product; summary counts per source to stderr. Test: `tests/integration/serial-policy.test.mjs` calls exported `serialPolicyReport(client)` on the fixture.
   - **Gate before M3:** restore today's prod dump into `grmn-staging` (memory: staging restore steps), migrate to 0030, run the report. If any device lands on `source=name` (exempted) or any band/cable on `default` in large numbers, adjust rule/seed and re-run before continuing. Save CSV to `/home/nick/grmn-production/serial-policy-report-<date>.csv`; owner gets the summary (guess rows flagged) at delivery.
 
 ### M3 — Fulfillment backend (wave 3, owner: TDD; verifier: backend-architect read-only)
