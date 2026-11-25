@@ -9,6 +9,7 @@ import type { Permission, Principal } from "../context.ts";
 import { AuthFailure } from "../auth/config.ts";
 import { withInventoryTransaction } from "../inventory/reservations.ts";
 import { readRefunds, readReturns } from "./aftersales.ts";
+import { resolveSerialRequirements } from "./serial-policy.ts";
 
 // Task 16A. Permissioned, versioned manual fulfillment (D04: staff ship themselves).
 //
@@ -40,11 +41,20 @@ const money = (amountMinor: string): Money => ({ amountMinor, currency: "KZT" })
 const key = z.string().regex(/^[A-Za-z0-9_.:-]{8,128}$/);
 const short = z.string().trim().min(1).max(120);
 const note = z.string().trim().min(1).max(1000);
+const serialText = z.string().trim().min(1).max(64);
 const createInput = z.strictObject({
   orderId: z.string().regex(UUID), expectedOrderVersion: z.number().int().min(1), idempotencyKey: key,
   lines: z.array(z.strictObject({ orderItemId: z.string().regex(UUID), quantity: z.number().int().min(1).max(10000) })).min(1).max(100),
   carrier: short.optional(), trackingReference: short.optional(), internalNote: note.optional(),
-}).refine(value => new Set(value.lines.map(line => line.orderItemId.toLowerCase())).size === value.lines.length);
+  // 0030 (owner 2026-11-25): one serial per unit packed; required for every serial-required product in the lines.
+  serials: z.array(z.strictObject({ orderItemId: z.string().regex(UUID), units: z.array(serialText).max(10000) })).max(100).optional(),
+}).refine(value => new Set(value.lines.map(line => line.orderItemId.toLowerCase())).size === value.lines.length)
+  .refine(value => {
+    if (!value.serials) return true;
+    const quantities = new Map(value.lines.map(line => [line.orderItemId.toLowerCase(), line.quantity]));
+    const ids = value.serials.map(entry => entry.orderItemId.toLowerCase());
+    return new Set(ids).size === ids.length && value.serials.every(entry => (quantities.get(entry.orderItemId.toLowerCase()) ?? -1) >= entry.units.length);
+  });
 const updateInput = z.strictObject({
   shipmentId: z.string().regex(UUID), expectedVersion: z.number().int().min(1), idempotencyKey: key,
   action: z.enum(["dispatch", "deliver", "cancel", "annotate"]),
@@ -177,6 +187,48 @@ async function priorAction(client: PoolClient, dedupeKey: string, hash: string):
   if (!prior) return null;
   if (prior.payload.requestHash !== hash || !prior.payload.shipmentId) fail("IDEMPOTENCY_CONFLICT", 409, "This idempotency key was used for a different action");
   return prior.payload.shipmentId!;
+}
+
+// ---------------------------------------------------------------- serials (0030, owner 2026-11-25)
+/** The serial key the database stores: upper case, no whitespace (same as order_unit_serials.serial_key). */
+export const serialKey = (serial: string) => serial.replace(/\s/g, "").toUpperCase();
+
+/** 409 SERIALS_REQUIRED unless every serial-required item has one serial per unit in `unitsByItem`. */
+async function requireSerials(client: PoolClient, lines: { orderItemId: string; quantity: number }[], unitsByItem: Map<string, string[]>): Promise<void> {
+  const items = (await client.query<{ id: string; product_id: string | null; name: string }>("SELECT id,product_id,name FROM order_items WHERE id=ANY($1::uuid[])", [lines.map(line => line.orderItemId)])).rows;
+  const decisions = await resolveSerialRequirements(client, items.flatMap(item => item.product_id ? [item.product_id] : []));
+  const missing = lines.flatMap(line => {
+    const item = items.find(row => row.id === line.orderItemId);
+    // An item whose product is gone is treated as a device (the safe side).
+    const required = item?.product_id ? decisions.get(item.product_id)?.required ?? true : true;
+    return required && (unitsByItem.get(line.orderItemId)?.length ?? 0) !== line.quantity ? [item?.name ?? line.orderItemId] : [];
+  });
+  if (missing.length) fail("SERIALS_REQUIRED", 409, `Enter a serial number for every unit of: ${missing.join(", ")}`);
+}
+
+/**
+ * Locks the serial keys (sorted, so two packers never deadlock) and refuses a duplicate in the request or a serial
+ * still active on another unit. Active = its shipment is not cancelled and it is not on a return that was received.
+ * `ownShipmentItemIds` are lines whose serials are being replaced, so their current rows don't count.
+ */
+async function claimSerials(client: PoolClient, serials: string[], ownShipmentItemIds: string[]): Promise<void> {
+  const keys = serials.map(serialKey);
+  const seen = new Set<string>();
+  for (const [index, k] of keys.entries()) {
+    if (!k) invalid();
+    if (seen.has(k)) fail("SERIAL_DUPLICATE", 409, `Serial ${serials[index]} is entered twice`);
+    seen.add(k);
+  }
+  for (const k of [...seen].sort()) await client.query("SELECT pg_advisory_xact_lock(hashtextextended('grmn:serial:' || $1, 0))", [k]);
+  if (!seen.size) return;
+  const taken = (await client.query<{ serial: string; order_number: string }>(`
+    SELECT u.serial, o.order_number FROM order_unit_serials u
+      JOIN shipment_items si ON si.id = u.shipment_item_id JOIN shipments s ON s.id = si.shipment_id JOIN orders o ON o.id = u.order_id
+      LEFT JOIN return_items ri ON ri.id = u.return_item_id LEFT JOIN returns r ON r.id = ri.return_id
+    WHERE u.serial_key = ANY($1::text[]) AND s.status <> 'cancelled' AND COALESCE(r.status, '') NOT IN ('received', 'inspected', 'closed')
+      AND NOT (u.shipment_item_id = ANY($2::uuid[]))
+    ORDER BY u.serial LIMIT 1`, [[...seen], ownShipmentItemIds])).rows[0];
+  if (taken) fail("SERIAL_IN_USE", 409, `Serial ${taken.serial} is already on order ${taken.order_number}`);
 }
 
 const encodeCursor = (at: Date, id: string) => Buffer.from(`${at.toISOString()}|${id}`).toString("base64url");
@@ -325,18 +377,34 @@ export function createFulfillmentService({ pool, authorize }: Options) {
           }
           if (wanted > 0) fail("OVER_SHIPMENT", 409, "The shipment exceeds the paid quantity not yet shipped");
         }
+        const unitsByItem = new Map((command.serials ?? []).map(entry => [entry.orderItemId.toLowerCase(), entry.units]));
+        await requireSerials(client, command.lines.map(line => ({ orderItemId: line.orderItemId.toLowerCase(), quantity: line.quantity })), unitsByItem);
+        await claimSerials(client, [...unitsByItem.values()].flat(), []);
         const shipmentId = randomUUID();
         await client.query("INSERT INTO shipments(id,order_id,carrier,tracking_reference,internal_notes) VALUES($1,$2,$3,$4,$5)",
           [shipmentId, order.id, command.carrier ?? null, command.trackingReference ?? null, command.internalNote ?? null]);
+        const nextUnit = new Map<string, number>();
         for (const line of plan) {
+          const shipmentItemId = randomUUID();
           await client.query("INSERT INTO shipment_items(id,shipment_id,order_id,order_item_id,allocation_id,quantity) VALUES($1,$2,$3,$4,$5,$6)",
-            [randomUUID(), shipmentId, order.id, line.orderItemId, line.allocationId, line.quantity]);
+            [shipmentItemId, shipmentId, order.id, line.orderItemId, line.allocationId, line.quantity]);
+          // Serials go one per unit, in the order given, across this item's shipment lines.
+          const units = unitsByItem.get(line.orderItemId) ?? [], from = nextUnit.get(line.orderItemId) ?? 0;
+          const mine = units.slice(from, from + line.quantity);
+          nextUnit.set(line.orderItemId, from + mine.length);
+          for (const [index, serial] of mine.entries()) {
+            await client.query("INSERT INTO order_unit_serials(id,order_id,order_item_id,shipment_item_id,unit_index,serial,created_by) VALUES($1,$2,$3,$4,$5,$6,$7)",
+              [randomUUID(), order.id, line.orderItemId, shipmentItemId, index + 1, serial, principal.userId]);
+          }
         }
         await client.query("UPDATE shipments SET status='ready',version=version+1 WHERE id=$1", [shipmentId]);
         const eventId = await orderEvent(client, { orderId: order.id, type: "shipment.created", actor: principal.userId, dedupeKey, visibility: "internal",
           payload: { shipmentId, requestHash: hash, lines: command.lines, ...(command.internalNote ? { internalNote: command.internalNote } : {}) } });
         await shipmentEvent(client, shipmentId, "created", principal.userId, `shipment-created:${shipmentId}`, command.internalNote);
-        await audit(client, principal.userId, "fulfillment.shipment_created", shipmentId, eventId, { orderId: order.id, lines: command.lines, carrier: command.carrier !== undefined, trackingReference: command.trackingReference !== undefined });
+        // 0030: customers see "Packed" in their order tracker.
+        await orderEvent(client, { orderId: order.id, type: "fulfillment.packed", actor: principal.userId, dedupeKey: `fulfillment.packed:${shipmentId}`, visibility: "customer",
+          payload: { shipmentId, items: command.lines.map(line => ({ orderItemId: line.orderItemId.toLowerCase(), quantity: line.quantity })) } });
+        await audit(client, principal.userId, "fulfillment.shipment_created", shipmentId, eventId, { orderId: order.id, lines: command.lines, carrier: command.carrier !== undefined, trackingReference: command.trackingReference !== undefined, serials: [...unitsByItem.values()].flat().length });
         const updated = await refreshOrder(client, order.id);
         return { shipment: await readShipment(client, shipmentId), order: updated, replayed: false };
       });
