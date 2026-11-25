@@ -9,27 +9,33 @@ const base = { productPolicy: null, categories: [], legacyCategories: [], name: 
 const decide = input => decideSerial({ ...base, ...input });
 
 test("an explicit 'needs serial' category wins over an unset one", () => {
-  const d = decide({ categories: [{ key: "heart-rate-monitors", effective: "required" }, { key: "sports-fitness/running-smartwatches", effective: null }] });
+  const d = decide({ categories: [{ key: "heart-rate-monitors", kind: "accessory", effective: "required" }, { key: "sports-fitness/running-smartwatches", kind: "catalog", effective: null }] });
   assert.deepEqual(d, { required: true, source: "category", detail: "heart-rate-monitors" });
 });
 
 test("a band in a watch series and a QuickFit type needs no serial", () => {
-  const d = decide({ categories: [{ key: "watch-series/fenix", effective: null }, { key: "bands/quickfit-22-mm", effective: "none" }] });
-  assert.deepEqual(d, { required: false, source: "category", detail: "bands/quickfit-22-mm" });
+  const d = decide({ categories: [{ key: "watch-series/fenix", kind: "group", effective: null }, { key: "bands", kind: "accessory", effective: "none" }, { key: "bands/quickfit-22-mm", kind: "group", effective: "none" }] });
+  assert.deepEqual(d, { required: false, source: "category", detail: "bands" });
+});
+
+test("a watch wrongly also filed under 'no serial' categories still needs a serial (real MARQ filing)", () => {
+  const d = decide({ categories: [{ key: "wearables-smartwatches", kind: "catalog", effective: null }, { key: "apps", kind: "accessory", effective: "none" }, { key: "cables-chargers", kind: "accessory", effective: "none" }, { key: "watch-series/marq", kind: "group", effective: null }] });
+  assert.deepEqual(d, { required: true, source: "default", detail: "wearables-smartwatches" });
 });
 
 test("a filed product whose categories are all unset needs a serial by default", () => {
-  assert.deepEqual(decide({ categories: [{ key: "sports-fitness/multisport-smartwatches", effective: null }] }), { required: true, source: "default", detail: null });
+  assert.deepEqual(decide({ categories: [{ key: "sports-fitness/multisport-smartwatches", kind: "catalog", effective: null }] }), { required: true, source: "default", detail: "sports-fitness/multisport-smartwatches" });
+  assert.deepEqual(decide({ categories: [{ key: "watch-series/venu", kind: "group", effective: null }] }), { required: true, source: "default", detail: null });
 });
 
 test("the product setting beats every category", () => {
-  assert.deepEqual(decide({ productPolicy: "none", categories: [{ key: "heart-rate-monitors", effective: "required" }] }), { required: false, source: "product", detail: null });
-  assert.deepEqual(decide({ productPolicy: "required", categories: [{ key: "bands", effective: "none" }] }), { required: true, source: "product", detail: null });
+  assert.deepEqual(decide({ productPolicy: "none", categories: [{ key: "heart-rate-monitors", kind: "accessory", effective: "required" }] }), { required: false, source: "product", detail: null });
+  assert.deepEqual(decide({ productPolicy: "required", categories: [{ key: "bands", kind: "accessory", effective: "none" }] }), { required: true, source: "product", detail: null });
 });
 
 test("an unfiled product uses its old-site category first", () => {
-  assert.deepEqual(decide({ legacyCategories: [{ key: "heart-rate-monitors", effective: "required" }], name: "HRM 600 Band" }), { required: true, source: "legacy-category", detail: "heart-rate-monitors" });
-  assert.deepEqual(decide({ legacyCategories: [{ key: "cables-chargers", effective: "none" }] }), { required: false, source: "legacy-category", detail: "cables-chargers" });
+  assert.deepEqual(decide({ legacyCategories: [{ key: "heart-rate-monitors", kind: "accessory", effective: "required" }], name: "HRM 600 Band" }), { required: true, source: "legacy-category", detail: "heart-rate-monitors" });
+  assert.deepEqual(decide({ legacyCategories: [{ key: "cables-chargers", kind: "accessory", effective: "none" }] }), { required: false, source: "legacy-category", detail: "cables-chargers" });
 });
 
 test("an unfiled accessory is exempted by a name that is about the accessory", () => {
@@ -46,5 +52,5 @@ test("an unfiled device is never exempted by its name", () => {
 });
 
 test("legacy categories that are all unset fall through to the name, then the default", () => {
-  assert.equal(decide({ legacyCategories: [{ key: "wearables-smartwatches", effective: null }], name: "Venu 4" }).source, "default");
+  assert.equal(decide({ legacyCategories: [{ key: "wearables-smartwatches", kind: "catalog", effective: null }], name: "Venu 4" }).source, "default");
 });

@@ -2,8 +2,11 @@
 // at packing. Every electronic device does; only non-electronic accessories (bands, cases, cables, chargers, mounts)
 // and digital items don't. Decided per product:
 //   1. the product's own setting ("required" / "none"), else
-//   2. its categories' effective settings (own or nearest ancestor's): any "required" wins, else any "none" exempts,
-//      else it needs a serial; a product in no category instead uses
+//   2. its categories' effective settings (own or nearest ancestor's): any "required" wins; else any non-group
+//      category with no setting (e.g. Smartwatches) means a device, so it needs a serial; else any "none" exempts;
+//      else it needs a serial. Series groupings (kind "group", e.g. fēnix series) without a setting don't vote, so a
+//      band in "fēnix series" + "Bands" is exempt while a watch wrongly also filed under "Apps" is not (real
+//      MARQ filing, 2026-11-25). A product in no category instead uses
 //   3. its old-site category (legacy_content category/subCategory) the same way, else
 //   4. its name, only to exempt an obvious accessory and never when the name also names a device, else
 //   5. it needs a serial (the safe side for warranty).
@@ -17,7 +20,7 @@ export interface SerialDecision {
   /** The deciding category key, or the matched accessory word for "name". */
   detail: string | null;
 }
-export interface CategorySetting { key: string; effective: SerialPolicy | null }
+export interface CategorySetting { key: string; kind: string; effective: SerialPolicy | null }
 
 /** Accessory words (EN + RU stems). Latin words use \b; JS \b is ASCII-only, so Cyrillic stems match without it. */
 export const NO_SERIAL_NAME = /\b(bands?|straps?|bracelets?|cables?|chargers?|charging|cases?|mounts?|protectors?|lanyards?)\b|(ремеш|браслет|кабел|зарядн|чехол|креплен|пл[её]нк)/iu;
@@ -27,6 +30,8 @@ export const DEVICE_NAME = /(watch|fēnix|fenix|forerunner|venu|vívo|vivo|insti
 function byCategories(categories: readonly CategorySetting[], source: "category" | "legacy-category"): SerialDecision {
   const required = categories.find(category => category.effective === "required");
   if (required) return { required: true, source, detail: required.key };
+  const device = categories.find(category => category.effective === null && category.kind !== "group");
+  if (device) return { required: true, source: "default", detail: device.key };
   const exempt = categories.find(category => category.effective === "none");
   if (exempt) return { required: false, source, detail: exempt.key };
   return { required: true, source: "default", detail: null };
@@ -63,15 +68,16 @@ async function decide(db: Query, products: ProductRow[]): Promise<Map<string, Se
   const out = new Map<string, SerialDecision>();
   if (!products.length) return out;
   const needLegacy = products.some(product => !product.serial_policy && !product.categories.length);
-  let nodes: CategoryMatchNode[] = [], effective = new Map<string, SerialPolicy | null>();
+  let nodes: CategoryMatchNode[] = [], effective = new Map<string, SerialPolicy | null>(), kinds = new Map<string, string>();
   if (needLegacy) {
     const rows = (await db.query<{ key: string; name: string; kind: CategoryMatchNode["kind"]; parent_key: string | null; effective: SerialPolicy | null }>(EFFECTIVE_SQL)).rows;
     nodes = rows.map(row => ({ key: row.key, name: row.name, kind: row.kind, parentKey: row.parent_key }));
     effective = new Map(rows.map(row => [row.key, row.effective]));
+    kinds = new Map(rows.map(row => [row.key, row.kind]));
   }
   for (const product of products) {
     const legacyCategories = !product.serial_policy && !product.categories.length && nodes.length
-      ? matchLegacyCategories(nodes, { category: product.category, subCategory: product.sub_category, family: product.family }).keys.map(key => ({ key, effective: effective.get(key) ?? null }))
+      ? matchLegacyCategories(nodes, { category: product.category, subCategory: product.sub_category, family: product.family }).keys.map(key => ({ key, kind: kinds.get(key) ?? "catalog", effective: effective.get(key) ?? null }))
       : [];
     out.set(product.id, decideSerial({ productPolicy: product.serial_policy, categories: product.categories, legacyCategories, name: product.name }));
   }
@@ -81,7 +87,7 @@ async function decide(db: Query, products: ProductRow[]): Promise<Map<string, Se
 async function productRows(db: Query, productIds: string[] | null): Promise<ProductRow[]> {
   return (await db.query<ProductRow>(`WITH eff AS (${EFFECTIVE_SQL})
     SELECT p.id, p.name, p.status, p.family, p.serial_policy, p.legacy_content->>'category' AS category, p.legacy_content->>'subCategory' AS sub_category,
-      COALESCE((SELECT json_agg(json_build_object('key', e.key, 'effective', e.effective) ORDER BY e.key) FROM product_categories x JOIN eff e ON e.id = x.category_id WHERE x.product_id = p.id), '[]'::json) AS categories
+      COALESCE((SELECT json_agg(json_build_object('key', e.key, 'kind', e.kind, 'effective', e.effective) ORDER BY e.key) FROM product_categories x JOIN eff e ON e.id = x.category_id WHERE x.product_id = p.id), '[]'::json) AS categories
     FROM products p WHERE ${productIds ? "p.id = ANY($1::uuid[])" : "p.status <> 'archived'"} ORDER BY p.name, p.id`, productIds ? [productIds] : [])).rows;
 }
 
