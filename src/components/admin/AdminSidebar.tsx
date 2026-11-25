@@ -18,7 +18,7 @@ interface NavItem {
 }
 
 const navSections: { title: string; items: NavItem[] }[] = [
-  { title: "Overview", items: [{ label: "Dashboard", href: "/admin" }] },
+  { title: "Overview", items: [{ label: "Dashboard", href: "/admin" }, { label: "Traffic", href: "/admin/traffic" }, { label: "Campaign links", href: "/admin/traffic/links" }] },
   {
     title: "Store",
     items: [
@@ -49,7 +49,7 @@ const navSections: { title: string; items: NavItem[] }[] = [
 
 const navPermissions: Record<string, string> = {
   "/admin/products": "catalog:read", "/admin/categories": "catalog:read", "/admin/discounts": "catalog:read",
-  "/admin/orders": "orders:read", "/admin/clients": "customers:read",
+  "/admin/orders": "orders:read", "/admin/traffic": "orders:read", "/admin/traffic/links": "orders:read", "/admin/clients": "customers:read",
   "/admin/homepage": "content:write", "/admin/banners": "content:write",
   "/admin/blogs": "content:write", "/admin/seo": "content:write",
   "/admin/admins": "staff:manage", "/admin/settings": "settings:write",
@@ -98,7 +98,7 @@ export function AdminSidebar({ permissions }: { permissions: readonly string[] }
             <p className="mb-2 border-b border-garmin-rule pb-3.5 pt-6 text-sm font-medium tracking-[0.64px]">{section.title}</p>
             <ul>
               {section.items.map(item => {
-                const isActive = item.href === "/admin" ? pathname === "/admin" : pathname.startsWith(item.href);
+                const isActive = item.href === "/admin" || item.href === "/admin/traffic" ? pathname === item.href : pathname.startsWith(item.href);
                 return (
                   <li key={item.href}>
                     <Link

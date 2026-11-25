@@ -66,7 +66,7 @@ function CardBadge({ text, price, originalPrice }: { text: string; price?: strin
   const savings = code ? null : savingsParts(text);
   if (savings) {
     return (
-      <div className={`${styles.burst} home-display`} data-badge="CUSTOM" data-size="savings">
+      <div className={`${styles.burst} home-display`} data-badge="CUSTOM" data-size="savings" data-tone="sale">
         <span>
           <span>{savings.word}</span>
           <span className={styles.burstAmount}>{savings.amount}</span>
@@ -77,7 +77,7 @@ function CardBadge({ text, price, originalPrice }: { text: string; price?: strin
   const label = code ? t(`badges.${code}`) : text.trim();
   const percent = code === "SALE" ? discountPercent(price, originalPrice) : null;
   return (
-    <div className={`${styles.burst} home-display`} data-badge={code ?? "CUSTOM"} data-size={percent !== null ? "medium" : badgeSize(label)}>
+    <div className={`${styles.burst} home-display`} data-badge={code ?? "CUSTOM"} data-size={percent !== null ? "medium" : badgeSize(label)} data-tone={code === "SALE" ? "sale" : undefined}>
       <span>
         {label}
         {percent !== null && <span className={styles.burstPercent}>{`−${percent}%`}</span>}

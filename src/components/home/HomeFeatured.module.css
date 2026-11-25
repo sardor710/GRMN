@@ -196,6 +196,12 @@
   letter-spacing: 0.2px;
 }
 
+/* Owner 2026-11-23: every badge is black; only sales (SALE, catalog savings) use Garmin cyan with black text. */
+.burst[data-tone="sale"] {
+  background: var(--garmin-candy-blue, #6dcff6);
+  color: #000;
+}
+
 /* Catalog savings: the word, then the amount on its own unbroken line. */
 .burst[data-size="savings"] {
   font-size: 10px;

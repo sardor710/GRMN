@@ -297,66 +297,43 @@ export const categoryTiles: CategoryTile[] = [
   { titleKey: "CategoryGrid.tiles.aviation", image: "/images/46074-aviation.jpg", href: "#" },
 ];
 
+// Owner 2026-11-25: the footer keeps only these entries. Blog opens our blog; the Platforms keep their Garmin
+// addresses; every other entry is plain text (no link to garmin.com or any other outside site).
 export const footerColumns: FooterColumn[] = [
   {
     id: "customer-service",
     headingKey: "Footer.columns.customerService",
     links: [
-      { labelKey: "Footer.links.supportCenter", href: "#" },
-      { labelKey: "Footer.links.contactUs", href: "#" },
-      { labelKey: "Footer.links.shippingReturnsRefunds", href: "#" },
-      { labelKey: "Footer.links.orderSupport", href: "#" },
-      { labelKey: "Footer.links.warrantyInformation", href: "#" },
-      { labelKey: "Footer.links.dataManagement", href: "#" },
-      { labelKey: "Footer.links.dealsPromotions", href: "#" },
-      { labelKey: "Footer.links.findADealer", href: "#" },
+      { labelKey: "Footer.links.supportCenter" },
+      { labelKey: "Footer.links.contactUs" },
+      { labelKey: "Footer.links.shippingReturnsRefunds" },
+      { labelKey: "Footer.links.orderSupport" },
+      { labelKey: "Footer.links.warrantyInformation" },
+      { labelKey: "Footer.links.findADealer" },
     ],
   },
   {
     id: "company",
     headingKey: "Footer.columns.company",
     links: [
-      { labelKey: "Footer.links.aboutUs", href: "#" },
+      { labelKey: "Footer.links.aboutUs" },
       { labelKey: "Footer.links.blog", href: "/blog" },
-      { labelKey: "Footer.links.investors", href: "#" },
-      { labelKey: "Footer.links.newsroom", href: "#" },
-      { labelKey: "Footer.links.retailStore", href: "#" },
-      { labelKey: "Footer.links.corporateSustainability", href: "#" },
-      { labelKey: "Footer.links.careerOpportunities", href: "#" },
-      { labelKey: "Footer.links.earlyCareers", href: "#" },
+      { labelKey: "Footer.links.retailStore" },
     ],
   },
   {
     id: "platforms",
     headingKey: "Footer.columns.platforms",
     links: [
-      { labelKey: "Footer.links.garminConnect", href: "#" },
-      { labelKey: "Footer.links.garminExpress", href: "#" },
-      { labelKey: "Footer.links.connectIq", href: "#" },
-      { labelKey: "Footer.links.flygarmin", href: "#" },
-      { labelKey: "Footer.links.garminExplore", href: "#" },
-      { labelKey: "Footer.links.navionicsChartInstaller", href: "#" },
-    ],
-  },
-  {
-    id: "for-business",
-    headingKey: "Footer.columns.forBusiness",
-    links: [
-      { labelKey: "Footer.links.garminHealth", href: "#" },
-      { labelKey: "Footer.links.dealerResourceCenter", href: "#" },
-      { labelKey: "Footer.links.developers", href: "#" },
-      { labelKey: "Footer.links.inreachProfessional", href: "#" },
-      { labelKey: "Footer.links.marineFirstResponderSolutions", href: "#" },
-      { labelKey: "Footer.links.seastarInformationService", href: "#" },
-      { labelKey: "Footer.links.automotiveOem", href: "#" },
-      { labelKey: "Footer.links.rvOem", href: "#" },
-      { labelKey: "Footer.links.sensors", href: "#" },
-      { labelKey: "Footer.links.ambassadorsAffiliates", href: "#" },
-      { labelKey: "Footer.links.corporateSponsorships", href: "#" },
+      { labelKey: "Footer.links.garminConnect", href: "https://connect.garmin.com/" },
+      { labelKey: "Footer.links.garminExpress", href: "https://www.garmin.com/en-US/software/express/windows/" },
+      { labelKey: "Footer.links.connectIq", href: "https://apps.garmin.com/en-US" },
+      { labelKey: "Footer.links.garminExplore", href: "https://explore.garmin.com/" },
     ],
   },
 ];
 
+/** Not rendered since owner 2026-11-25 (garmin.com pages); kept as a source in the legacy migration inventory. */
 export const legalLinks = [
   { labelKey: "Footer.legal.siteMap", href: "#" },
   { labelKey: "Footer.legal.termsOfUse", href: "#" },

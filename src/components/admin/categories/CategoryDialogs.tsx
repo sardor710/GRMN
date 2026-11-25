@@ -11,8 +11,12 @@ const label = "block text-[12px] font-medium uppercase tracking-[0.04em] text-[#
 export interface NameValues { en: string; ru: string; kk: string; navVisible: boolean }
 
 /** Name in English, Russian and Kazakh (auto-translate fills the empty ones), plus "show in the menu". */
-export function CategoryNameDialog({ title, initial, showVisibility, fixedLink, onSave, onClose }: {
+export function CategoryNameDialog({ title, initial, showVisibility, fixedLink, emptyHint = "Uses the English name when empty", note, onSave, onClose }: {
   title: string;
+  /** Placeholder of the empty RU/KZ fields. */
+  emptyHint?: string;
+  /** A line under the fields (e.g. where a menu rename applies). */
+  note?: string;
   initial?: { name: LocalName; navVisible: boolean };
   showVisibility: boolean;
   /** A fixed menu link (e.g. Sports & Fitness opens Running), shown read-only. */
@@ -41,8 +45,8 @@ export function CategoryNameDialog({ title, initial, showVisibility, fixedLink, 
     <AdminModal isOpen onClose={onClose} title={title} maxWidth="lg">
       <form className="space-y-4 font-sans" onSubmit={(event) => { event.preventDefault(); void save(); }}>
         <div><label className={label} htmlFor="category-en">English</label><input id="category-en" className={input} value={values.en} onChange={(e) => set("en")(e.target.value)} autoFocus /></div>
-        <div><label className={label} htmlFor="category-ru">Russian</label><input id="category-ru" className={input} value={values.ru} onChange={(e) => set("ru")(e.target.value)} placeholder="Uses the English name when empty" /></div>
-        <div><label className={label} htmlFor="category-kk">Kazakh</label><input id="category-kk" className={input} value={values.kk} onChange={(e) => set("kk")(e.target.value)} placeholder="Uses the English name when empty" /></div>
+        <div><label className={label} htmlFor="category-ru">Russian</label><input id="category-ru" className={input} value={values.ru} onChange={(e) => set("ru")(e.target.value)} placeholder={emptyHint} /></div>
+        <div><label className={label} htmlFor="category-kk">Kazakh</label><input id="category-kk" className={input} value={values.kk} onChange={(e) => set("kk")(e.target.value)} placeholder={emptyHint} /></div>
         <Button type="button" variant="outline" size="sm" onClick={() => { void translate(); }} disabled={busy !== null || !values.en.trim()} loading={busy === "translate"}>Auto-translate RU &amp; KZ</Button>
         {showVisibility && (
           <label className="flex items-center gap-2 text-[14px] text-black">
@@ -51,6 +55,7 @@ export function CategoryNameDialog({ title, initial, showVisibility, fixedLink, 
           </label>
         )}
         {showVisibility && <p className="text-[12px] text-[#595959]">Hiding takes it out of every menu it is in. To remove it from one menu only, use “Show under…”.</p>}
+        {note && <p className="text-[12px] text-[#595959]">{note}</p>}
         {fixedLink && <p className="text-[13px] text-[#595959]">Menu link: <code className="bg-[#f2f2f2] px-1">{fixedLink}</code> (fixed)</p>}
         {message && <p role="status" className="text-[13px] text-[#595959]">{message}</p>}
         <div className="flex justify-end gap-2 border-t border-[#d9d9d9] pt-4">

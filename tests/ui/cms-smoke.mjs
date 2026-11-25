@@ -726,9 +726,77 @@ async function variantDeleteScenario({cms,headers,send,evaluate,navigate,text,cl
   assert.ok(after.variants.some(x=>x.isDefault&&x.sku==="UI-VD-47-black"),"the default is unchanged");
 }
 
+// Owner 2026-11-25 (CMS_SMOKE_ONLY=traffic): Admin ▸ Campaign links + Admin ▸ Traffic. A link built in admin is opened
+// by a visitor (no staff cookie): the visit lands under Instagram ▸ Story ▸ smoke-test, a product page view and a
+// client-side navigation join the same visit, the cookie notice shows once; staff browsing adds nothing.
+async function trafficScenario({pool,origin,send,evaluate,navigate,text,staffCookieValue,receipt}){
+  const shot=async name=>{const image=await send("Page.captureScreenshot",{format:"png"});await saveShot(name,image.data);};
+  const visits=async()=>(await pool.query("SELECT count(*)::int AS n FROM traffic_sessions")).rows[0].n;
+  const setStaff=async on=>{
+    for(const name of ["grmn-auth.session_token","grmn_vid","grmn_sid"])await send("Network.deleteCookies",{name,url:origin});
+    if(on)await send("Network.setCookie",{name:"grmn-auth.session_token",value:staffCookieValue,url:origin,httpOnly:true,sameSite:"Lax"});
+  };
+  const fill=(selector,value)=>evaluate(`(()=>{const el=document.querySelector(${JSON.stringify(selector)});if(!el)throw Error('Missing '+${JSON.stringify(selector)});const proto=el.tagName==='SELECT'?HTMLSelectElement.prototype:HTMLInputElement.prototype;Object.getOwnPropertyDescriptor(proto,'value').set.call(el,${JSON.stringify(value)});el.dispatchEvent(new Event(el.tagName==='SELECT'?'change':'input',{bubbles:true}));return true;})()`);
+  await pool.query("DELETE FROM traffic_sessions");await pool.query("DELETE FROM traffic_links");
+  const product=(await pool.query("SELECT id,product_code,name FROM products WHERE status='published' ORDER BY name LIMIT 1")).rows[0];
+  assert.ok(product,"a published product exists");
+  await send("Emulation.setDeviceMetricsOverride",{width:1440,height:1000,deviceScaleFactor:1,mobile:false});
+  // Headless Chrome says "HeadlessChrome" and is dropped as a bot (by design); browse as a desktop Chrome.
+  const originalAgent=await evaluate("navigator.userAgent");
+  await send("Network.setUserAgentOverride",{userAgent:"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"});
+  try{
+    // 1. Staff build the link; staff browsing the storefront is not counted.
+    await setStaff(true);
+    await navigate("/admin/traffic/links");
+    await until(async()=>/campaign links/i.test(await text())&&/new link/i.test(await text()),"The campaign links page did not load");
+    await fill('input[placeholder="e.g. fenix9-december"]',"Smoke Test");
+    await fill('input[placeholder="/p/… or paste a store address"]',"/");
+    await evaluate("(()=>{[...document.querySelectorAll('button')].find(b=>/create link/i.test(b.textContent)).click();return true;})()");
+    const url=await until(()=>evaluate("document.querySelector('[data-created-link] code')?.textContent"),"The link was not created");
+    assert.equal(url,`${origin}/?utm_source=instagram&utm_medium=story&utm_campaign=smoke-test`);
+    await navigate("/");await delay(1500);
+    assert.equal(await visits(),0,"a signed-in staff browser is not counted");
+    // 2. A visitor opens the link, sees the cookie notice once, then views a product and navigates client-side.
+    await setStaff(false);
+    await navigate(url.slice(origin.length));
+    await until(async()=>(await pool.query("SELECT platform,medium,campaign FROM traffic_sessions")).rows.some(r=>r.platform==="Instagram"&&r.medium==="story"&&r.campaign==="smoke-test"),"The link visit was not recorded under Instagram ▸ story ▸ smoke-test");
+    await until(async()=>/we use cookies/i.test(await text()),"The cookie notice did not show");
+    await evaluate("(()=>{const region=document.querySelector('[role=region][aria-label=\"Cookie notice\"]');region.querySelector('button').click();return true;})()");
+    await navigate(`/p/${product.product_code}`);
+    await until(async()=>(await pool.query("SELECT count(*)::int AS n FROM traffic_views WHERE product_id=$1",[product.id])).rows[0].n===1,"The product view was not recorded with its product id");
+    assert.equal(/we use cookies/i.test(await text()),false,"the cookie notice stays hidden after OK");
+    const before=(await pool.query("SELECT count(*)::int AS n FROM traffic_views")).rows[0].n;
+    const clientNav=await evaluate("(()=>{const a=[...document.querySelectorAll('a[href]')].find(a=>{const h=a.getAttribute('href');return h&&h.startsWith('/')&&!h.startsWith('/p/')&&!h.includes('#')&&h!==location.pathname;});if(!a)return null;const href=a.getAttribute('href');a.click();return href;})()");
+    assert.ok(clientNav,"an internal link to follow");
+    await until(async()=>(await pool.query("SELECT count(*)::int AS n FROM traffic_views")).rows[0].n===before+1,`The client-side navigation to ${clientNav} was not recorded`);
+    const sessions=(await pool.query("SELECT platform,views FROM traffic_sessions")).rows;
+    assert.deepEqual(sessions.map(r=>[r.platform,r.views]),[["Instagram",before+1]],"every view of the visit stays in one Instagram visit");
+    // 3. Staff read it in Admin ▸ Traffic.
+    await setStaff(true);
+    await navigate("/admin/traffic");
+    await until(()=>evaluate("!!document.querySelector('[data-platform=\"Instagram\"] button')"),"Instagram is not listed in Traffic").catch(async error=>{await writeFile(path.join(receipt,"traffic-body.txt"),await text());throw error;});
+    await evaluate("(()=>{document.querySelector('[data-platform=\"Instagram\"] button').click();return true;})()");
+    await until(()=>evaluate("!!document.querySelector('[data-medium=\"story\"] button')"),"Story is not listed under Instagram");
+    await evaluate("(()=>{document.querySelector('[data-medium=\"story\"] button').click();return true;})()");
+    await until(()=>evaluate("document.querySelector('[data-campaign=\"smoke-test\"]')?.textContent.includes('1')"),"smoke-test is not listed with its click");
+    await until(()=>evaluate(`!!document.querySelector('[data-product="${product.id}"]')`),"The product is not under Most viewed products");
+    await until(()=>evaluate("!!document.querySelector('[data-device=\"Windows\"]')"),"Windows is not listed under Devices");
+    await shot("admin-traffic-1440.png");
+    await evaluate("(()=>{document.querySelector('section[aria-label=\"Busiest hours and weekdays\"]').scrollIntoView();return true;})()");await delay(300);
+    await shot("admin-traffic-1440-lower.png");
+    await navigate("/admin/traffic/links");
+    await until(()=>evaluate("document.querySelector('[data-link=\"smoke-test\"]')?.textContent.includes('1')"),"The saved link does not show its click");
+    await shot("admin-campaign-links-1440.png");
+    assert.equal(await visits(),1,"admin browsing added no visits");
+    await send("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:1,mobile:true});
+    await navigate("/admin/traffic");await until(()=>evaluate("!!document.querySelector('[data-platform=\"Instagram\"]')"),"Traffic did not load at 390");
+    await shot("admin-traffic-390.png");
+  }finally{await send("Emulation.clearDeviceMetricsOverride").catch(()=>{});await send("Network.setUserAgentOverride",{userAgent:originalAgent}).catch(()=>{});}
+}
+
 // Owner 2026-11-22 (CMS_SMOKE_ONLY=categories): Admin ▸ Categories. A subcategory created under Smartwatches with a
 // Russian name appears in the /ru header menu, hiding takes it out, the bin deletes it; admin status badges are square.
-async function categoriesScenario({send,evaluate,navigate,text,click,receipt}){
+async function categoriesScenario({pool,send,evaluate,navigate,text,click,receipt}){
   const setById=(id,value)=>evaluate(`(()=>{const input=document.getElementById(${JSON.stringify(id)});if(!input)throw Error('Missing input');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`);
   // The mega menu renders its links only while open: open the first top item (Smartwatches) and read them.
   const menuText=()=>evaluate("(()=>{const nav=document.querySelector('header nav');const button=nav&&[...nav.querySelectorAll('button[aria-expanded]')][0];if(button&&button.getAttribute('aria-expanded')!=='true')button.click();return [...document.querySelectorAll('header a')].map(a=>a.textContent.trim()).join('|');})()");
@@ -765,6 +833,77 @@ async function categoriesScenario({send,evaluate,navigate,text,click,receipt}){
     await until(()=>evaluate("!!document.querySelector('[data-category=\"wearables-smartwatches/ui-trail\"]')"),"The hidden subcategory is not listed in the admin");
     await evaluate("window.confirm=()=>true;document.querySelector('[data-category=\"wearables-smartwatches/ui-trail\"] button[aria-label=\"Delete UI Trail\"]').click();true");
     await until(()=>evaluate("!document.querySelector('[data-category=\"wearables-smartwatches/ui-trail\"]')"),"The bin did not delete the subcategory");
+    // Owner 2026-11-24: every heading and link of the menu is listed under its top item and can be added, edited,
+    // hidden and deleted; "Restore original menu" brings back the built-in columns.
+    // Menu layouts live in the store settings row; a fresh database has none (production does).
+    await pool.query("INSERT INTO store_settings(id,maintenance_mode) VALUES(1,false) ON CONFLICT (id) DO NOTHING");
+    const sw='section[aria-label="Smartwatches"]';
+    const openMenu="(()=>{const nav=document.querySelector('header nav');const button=nav&&[...nav.querySelectorAll('button[aria-expanded]')][0];if(button&&button.getAttribute('aria-expanded')!=='true')button.click();return document.querySelector('header').innerText;})()";
+    const storeMenu=async()=>{await navigate("/en");await until(async()=>/Running/.test(await evaluate(openMenu)),"The /en menu did not open");return evaluate(openMenu);};
+    const adminPage=async()=>{await navigate("/admin/categories");await until(()=>evaluate(`!!document.querySelector('${sw} [data-menu-group="maps"]')`),"The menu columns are not listed");};
+    const press=(row,label)=>evaluate(`(()=>{window.confirm=()=>true;const b=${row}.querySelector('button[aria-label="${label}"]');if(!b)throw Error('no ${label}');b.click();return true;})()`);
+    const rowByText=(kind,textValue)=>`[...document.querySelectorAll('${sw} [data-menu-${kind}]')].find(r=>r.textContent.includes(${JSON.stringify(textValue)}))`;
+    const pick=(id,value)=>evaluate(`(()=>{const el=document.getElementById(${JSON.stringify(id)});Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(el,${JSON.stringify(value)});el.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
+    const addButton=(label,scope)=>evaluate(`(()=>{window.confirm=()=>true;const b=[...(${scope}).querySelectorAll('button')].find(b=>b.textContent.trim()===${JSON.stringify(label)});if(!b)throw Error('no button');b.click();return true;})()`);
+    await adminPage();
+    await shot("admin-categories-menu-columns-1440.png");
+    // Hide one built-in link.
+    const golf=`document.querySelector('${sw} [data-menu-link="maps|https://www.garmin.com/en-US/golf-courses/"]')`;
+    await press(golf,"Hide this link");
+    await until(()=>evaluate(`/hidden/i.test(${golf}.textContent)`),"The link was not marked hidden");
+    // A new heading in column 3 with a web-address link and a category link.
+    await addButton("Add heading",`document.querySelector('${sw}')`);
+    await until(()=>setById("menu-en","UI Picks"),"The heading dialog did not open");
+    await pick("menu-column","2");await click("Save");
+    await until(()=>evaluate(`!!${rowByText("group","UI Picks")}`),"The new heading is not listed");
+    const picks=`${rowByText("group","UI Picks")}.closest('li:not([data-menu-group])')`;
+    await addButton("Add link",picks);
+    await until(()=>evaluate("!!document.getElementById('menu-category')"),"The link dialog did not open");
+    await evaluate("(()=>{[...document.querySelectorAll('input[name=menu-mode]')][1].click();return true;})()");
+    await until(()=>setById("menu-href","https://example.com/ui"),"No address field");
+    await setById("menu-en","UI Example");await click("Save");
+    await until(()=>evaluate(`!!${rowByText("link","UI Example")}`),"The address link is not listed");
+    await addButton("Add link",picks);
+    await until(()=>evaluate("!!document.getElementById('menu-category')"),"The link dialog did not open again");
+    await pick("menu-category","sports-fitness/running-smartwatches");await setById("menu-en","UI Run");await click("Save");
+    await until(()=>evaluate(`!!${rowByText("link","UI Run")}`),"The category link is not listed");
+    // Edit the address link's text; delete the Discover heading.
+    await press(rowByText("link","UI Example"),"Edit this link");
+    await until(()=>setById("menu-en","UI Example 2"),"The edit dialog did not open");await click("Save");
+    await until(()=>evaluate(`!!${rowByText("link","UI Example 2")}`),"The link was not renamed");
+    await press(`document.querySelector('${sw} [data-menu-group="discover"]')`,"Delete this heading");
+    await until(()=>evaluate(`!document.querySelector('${sw} [data-menu-group="discover"]')`),"The heading was not deleted");
+    await evaluate(`${rowByText("group","Accessories")}.scrollIntoView({block:"start"});true`);
+    await shot("admin-categories-menu-edited-1440.png");
+    await press(rowByText("link","UI Run"),"Edit this link");
+    await until(()=>evaluate("!!document.getElementById('menu-category')"),"The edit dialog did not open");
+    await shot("admin-categories-link-dialog-1440.png");await click("Cancel");
+    let menu=await storeMenu();
+    assert.ok(menu.includes("UI Picks")&&menu.includes("UI Example 2")&&menu.includes("UI Run"),"The new heading and links are in the /en menu");
+    assert.ok(!menu.includes("Golf Course Locator")&&!menu.includes("Watch Finder"),"The hidden link and the deleted heading are gone from the /en menu");
+    assert.match(await evaluate("[...document.querySelectorAll('header a')].find(a=>a.textContent.trim()==='UI Run')?.getAttribute('href')"),/^(\/en)?\/c\/sports-fitness\/running-smartwatches$/);
+    // Promo pictures: the first one gets a picture uploaded from the PC and a new title; it shows in the /en menu.
+    await adminPage();
+    const promo=`document.querySelector('${sw} [data-menu-promo]')`;
+    await until(()=>evaluate(`!!${promo}`),"The promo pictures are not listed");
+    await press(promo,"Edit this promo picture");
+    await until(()=>setById("promo-title-en","UI Promo"),"The promo dialog did not open");
+    {const {root}=await send("DOM.getDocument",{depth:-1});const {nodeId}=await send("DOM.querySelector",{nodeId:root.nodeId,selector:"[data-testid=homepage-image-file]"});assert.ok(nodeId,"promo picture upload missing");
+     await send("DOM.setFileInputFiles",{nodeId,files:[path.resolve("public/homepage/nav/HOLIDAY-SALE-TOP-NAV.jpg")]});}
+    await until(()=>evaluate("/^\\/uploads\\/homepage\\//.test(document.querySelector('img[alt=\"Picture preview\"]')?.getAttribute('src')??'')"),"The promo picture did not upload");
+    await shot("admin-categories-promo-dialog-1440.png");
+    await click("Save");
+    await until(()=>evaluate(`/UI Promo/.test(${promo}.textContent)`),"The promo was not saved");
+    await storeMenu();
+    assert.ok(await evaluate("[...document.querySelectorAll('header img')].some(img=>/^\\/uploads\\/homepage\\//.test(img.getAttribute('src')))&&/UI Promo/.test(document.querySelector('header').innerText)"),"The uploaded promo picture and title are in the /en menu");
+    await adminPage();
+    // Restore the original columns.
+    await adminPage();
+    await addButton("Restore original menu",`document.querySelector('${sw}')`);
+    await until(()=>evaluate(`!${rowByText("group","UI Picks")}&&!!document.querySelector('${sw} [data-menu-group="discover"]')`),"Restore did not bring back the original columns");
+    menu=await storeMenu();
+    assert.ok(menu.includes("Golf Course Locator")&&menu.includes("Watch Finder")&&!menu.includes("UI Picks"),"The /en menu is back to the original");
+    await adminPage();
     await click("Series (filters)");await until(async()=>/fēnix/i.test(await text()),"The series tab did not open");await shot("admin-categories-series-1440.png");
     await click("Accessories");await until(async()=>/quickfit 22 mm/i.test(await text()),"The accessories tab did not open");await shot("admin-categories-accessories-1440.png");
     await send("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:1,mobile:true});
@@ -1194,6 +1333,12 @@ try{
   const onlyAdminShots=process.env.CMS_SMOKE_ONLY==="admin-shots",onlyVariantContent=process.env.CMS_SMOKE_ONLY==="variant-content",onlyVariantSwitch=process.env.CMS_SMOKE_ONLY==="variant-switch",onlyDashboard=process.env.CMS_SMOKE_ONLY==="dashboard"||onlyAdminShots,onlyCompare=process.env.CMS_SMOKE_ONLY==="compare",onlyCategories=process.env.CMS_SMOKE_ONLY==="categories";
   const onlyHomepageArchive=process.env.CMS_SMOKE_ONLY==="homepage-archive";
   const onlyVariantDelete=process.env.CMS_SMOKE_ONLY==="variant-delete";
+  const onlyTraffic=process.env.CMS_SMOKE_ONLY==="traffic";
+  if(onlyTraffic){
+    await trafficScenario({pool:database.pool,origin,send,evaluate,navigate,text,staffCookieValue:cookie,receipt});
+    console.log("PASS traffic: campaign link built in admin, visitor click recorded under Instagram ▸ story ▸ smoke-test, product view with its id and a client-side navigation in the same visit, cookie notice once, staff browsing not counted; Traffic and Campaign links show it");
+    console.log("Browser smoke passed (CMS_SMOKE_ONLY=traffic): only the traffic block ran.");
+  }
   if(onlyVariantDelete){
     await variantDeleteScenario({cms,headers,send,evaluate,navigate,text,click,receipt});
     console.log("PASS variant-delete: bin on every variant row, the Gray variant removed and saved, its colour pruned, default kept");
@@ -1202,13 +1347,13 @@ try{
   if(onlyCategories){
     await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
-    await categoriesScenario({send,evaluate,navigate,text,click,receipt});
+    await categoriesScenario({pool:database.pool,send,evaluate,navigate,text,click,receipt});
     console.log("PASS categories: subcategory created with a Russian name shows in the /ru menu, hidden and gone from the menu, deleted with the bin; square status badge; no horizontal scroll at 390 px");
     console.log("Browser smoke passed (CMS_SMOKE_ONLY=categories): only the categories block ran.");
   }
-  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare)await fullSuite();
+  if(!onlyCategories&&!onlyTraffic&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare)await fullSuite();
 
-  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
+  if(!onlyCategories&&!onlyTraffic&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
   // Task 2.3: per-variant content in the product editor (independent blocks; staff session).
   await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
   await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
@@ -1223,40 +1368,45 @@ try{
   }
 
   // Task 2.4: the storefront variant switch (independent block: its own published product).
-  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyDashboard&&!onlyCompare){
+  if(!onlyCategories&&!onlyTraffic&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyDashboard&&!onlyCompare){
     await variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,text,receipt});
     console.log("PASS Task2.4 variant switch: 47 -> 51 mm swaps Specs, In the box and Overview with no document navigation, address moves to /p/{code}/{sku}, reload and server render show 51 mm, own canonical, unknown SKU 404");
   }
 
   // Task C-e: the compare flow (an independent block: its own published products; CMS_SMOKE_ONLY=compare runs only this).
-  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard){
+  if(!onlyCategories&&!onlyTraffic&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard){
     await compareScenario({cms,headers,send,evaluate,navigate,text,receipt});
     console.log("PASS C-e compare: catalogue compare mode, 2 cards added (aria-pressed, 2 slots, Compare disabled at 1), kept on reload; comparison with grouped specs and an empty cell; 47 -> 51 mm changes specs, price and URL item with no document load; only differences with diff=1 across a reload; group collapse; compact bar on scroll; column removal; PDP adds the 51 mm SKU; /ru/compare Russian headings with no hydration warning; Z to A sort");
   }
 
   // Task 4.2: the PostgreSQL dashboard (an independent block; CMS_SMOKE_ONLY=dashboard runs only this).
-  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyCompare){await dashboardScenario({pool:database.pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue:cookie,receipt,alone:onlyDashboard});
+  if(!onlyCategories&&!onlyTraffic&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyCompare){await dashboardScenario({pool:database.pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue:cookie,receipt,alone:onlyDashboard});
   console.log("PASS Task4.2 dashboard: one demo order via checkout; Demo revenue > 0 and Revenue only real money, the order in Recent orders linking to its detail, its product under Best-sellers > Demo only, empty range says so; screenshot saved");}
   // Owner 2026-11-22: Admin ▸ Categories (also CMS_SMOKE_ONLY=categories, above).
-  if(!onlyCategories&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
+  if(!onlyCategories&&!onlyTraffic&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
     await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
-    await categoriesScenario({send,evaluate,navigate,text,click,receipt});
+    await categoriesScenario({pool:database.pool,send,evaluate,navigate,text,click,receipt});
     console.log("PASS categories: subcategory created with a Russian name shows in the /ru menu, hidden and gone from the menu, deleted with the bin; square status badge; no horizontal scroll at 390 px");
   }
   // Owner 2026-11-23: homepage archive / delete / PC upload / merged card (also CMS_SMOKE_ONLY=homepage-archive).
-  if(onlyHomepageArchive||(!onlyVariantDelete&&!onlyCategories&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare&&!onlyAdminShots)){
+  if(!onlyTraffic&&(onlyHomepageArchive||(!onlyVariantDelete&&!onlyCategories&&!onlyTraffic&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare&&!onlyAdminShots))){
     await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
     await homepageArchiveScenario({cms,headers,origin,send,evaluate,navigate,text,click,receipt});
     console.log("PASS homepage-archive: banner and category tile archived, card deleted, banner image uploaded from the PC (non-image refused with an error), storefront hides archived entries and shows the merged card price and button, Restore brings the banner back; no horizontal scroll at 390 px");
+  }
+  // Owner 2026-11-25: traffic analytics (also CMS_SMOKE_ONLY=traffic, above).
+  if(!onlyTraffic&&!onlyVariantDelete&&!onlyCategories&&!onlyHomepageArchive&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare&&!onlyAdminShots){
+    await trafficScenario({pool:database.pool,origin,send,evaluate,navigate,text,staffCookieValue:cookie,receipt});
+    console.log("PASS traffic: campaign link click attributed to Instagram ▸ story ▸ smoke-test, product view and client-side navigation in one visit, staff excluded");
   }
   if(onlyAdminShots){await adminShotsScenario({cms,headers,send,evaluate,navigate,text,click});console.log("Admin screenshots saved (CMS_SMOKE_ONLY=admin-shots).");}
 
   assert.equal(hash(),before,"Task08 must not write the JSON source");
   if(onlyHomepageArchive)console.log("Browser smoke passed (CMS_SMOKE_ONLY=homepage-archive): only the homepage archive block ran.");
   else if(onlyVariantDelete){}
-  else if(!onlyCategories)console.log(onlyCompare
+  else if(!onlyCategories&&!onlyTraffic)console.log(onlyCompare
     ?"Browser smoke passed (CMS_SMOKE_ONLY=compare): only the C-e compare block ran; the rest of the suite was skipped."
     :onlyDashboard
     ?"Browser smoke passed (CMS_SMOKE_ONLY=dashboard): only the Task 4.2 dashboard block ran; the rest of the suite was skipped."

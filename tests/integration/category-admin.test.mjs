@@ -167,3 +167,53 @@ test("series delete guard survives a rename: MARQ renamed is still blocked by th
   t = await tree();
   await f.catalog.updateCategory(f.admin, t.epoch, "watch-series/marq", { name: { en: "MARQ" } });
 });
+
+// Owner 2026-11-24: the columns of each top item (headings + links) are a layout the admin edits whole.
+test("menu layout: built-in columns are shown until the first save; add/delete/restore; bad links refused; reader refused", async () => {
+  await q("INSERT INTO store_settings(id,maintenance_mode) VALUES(1,false) ON CONFLICT (id) DO NOTHING");
+  let t = await tree();
+  let smart = top(t, "wearables-smartwatches");
+  assert.equal(smart.customized, false);
+  assert.deepEqual(smart.layout.groups.map(group => group.id), ["products", "maps", "accessoriesPlans", "discover"]);
+  assert.ok(smart.groups.find(group => group.id === "maps").links.some(link => link.external && /golf-courses/.test(link.href)));
+  assert.ok(t.targets.some(target => target.key === "apps" && target.kind === "accessory"), "accessory categories can be link targets");
+  assert.deepEqual(smart.layout.promos.map(promo => promo.image), ["/homepage/nav/HOLIDAY-SALE-TOP-NAV.jpg", "/homepage/nav/87582-TN-NEW.jpg"], "built-in promo pictures are editable");
+  await rejectsWith(f.catalog.setMenuLayout(f.admin, t.epoch, "wearables-smartwatches", { layout: { ...smart.layout, promos: [{ id: "p", title: { en: "X" }, href: "/", image: "javascript:x" }] } }), 400, "INVALID_INPUT");
+  const layout = structuredClone(smart.layout);
+  layout.groups = layout.groups.filter(group => group.id !== "maps");
+  layout.groups.push({ id: "it-h", column: 2, heading: { en: "IT picks" }, links: [{ id: "it-u", href: "/minisite/fenix-8", label: { en: "fēnix" } }, { id: "it-c", category: "sports-fitness/running-smartwatches" }] });
+  t = await f.catalog.setMenuLayout(f.admin, t.epoch, "wearables-smartwatches", { layout });
+  smart = top(t, "wearables-smartwatches");
+  assert.equal(smart.customized, true);
+  assert.equal(smart.groups.find(group => group.id === "it-h").links[1].label.en, "Running", "a category link without text is named after the category");
+  assert.ok(!smart.groups.some(group => group.id === "maps"));
+  assert.ok(smart.others.some(node => node.key === "wearables-mapping"), "a category keeps its own row when its link is deleted");
+  for (const [bad, why] of [
+    [{ ...layout, groups: layout.groups.filter(group => !group.products) }, "products heading kept"],
+    [{ groups: [...layout.groups, { id: "x", column: 0, heading: { en: "X" }, links: [{ id: "x1", href: "//evil.example", label: { en: "x" } }] }] }, "protocol-relative"],
+    [{ groups: [...layout.groups, { id: "x", column: 0, heading: { en: "X" }, links: [{ id: "x1", href: "/\\evil.example", label: { en: "x" } }] }] }, "backslash"],
+    [{ groups: [...layout.groups, { id: "x", column: 0, heading: { en: "X" }, links: [{ id: "x1", href: "javascript:alert(1)", label: { en: "x" } }] }] }, "javascript"],
+    [{ groups: [...layout.groups, { id: "x", column: 0, heading: { en: "X" }, links: [{ id: "x1", category: "no-such-category" }] }] }, "unknown category"],
+    [{ groups: [...layout.groups, { id: "x", column: 3, heading: { en: "X" }, links: [] }] }, "column out of range"],
+  ]) await rejectsWith(f.catalog.setMenuLayout(f.admin, t.epoch, "wearables-smartwatches", { layout: bad }), 400, "INVALID_INPUT").catch(error => { throw Error(`${why}: ${error.message}`); });
+  await rejectsWith(f.catalog.setMenuLayout(f.reader.headers, t.epoch, "wearables-smartwatches", { layout }), 403);
+  await rejectsWith(f.catalog.setMenuLayout(f.admin, "1", "wearables-smartwatches", { layout }), 409, "VERSION_CONFLICT");
+  t = await f.catalog.setMenuLayout(f.admin, t.epoch, "wearables-smartwatches", { layout: null });
+  assert.equal(top(t, "wearables-smartwatches").customized, false);
+  assert.deepEqual((await q("SELECT presentation_config FROM store_settings WHERE id=1")).rows[0].presentation_config, {});
+});
+
+test("menu layout: deleting a top item drops its stored layout, so a new item with the same key starts fresh", async () => {
+  let t = await f.catalog.createCategory(f.admin, await epoch(), { section: "menu", name: { en: "IT Layout Item" } });
+  const item = t.menu.find(entry => entry.name.en === "IT Layout Item");
+  assert.deepEqual(item.layout.groups.map(group => group.id), ["products"]);
+  t = await f.catalog.setMenuLayout(f.admin, t.epoch, item.key, { layout: { groups: [...item.layout.groups, { id: "h1", column: 1, heading: { en: "Extra" }, links: [{ id: "l1", href: "https://example.com/", label: { en: "Example" } }] }] } });
+  assert.ok((await q("SELECT presentation_config->'megaMenu'->'items' ? $1 AS has FROM store_settings WHERE id=1", [item.key])).rows[0].has);
+  t = await f.catalog.deleteCategory(f.admin, t.epoch, item.key);
+  assert.equal((await q("SELECT coalesce(presentation_config->'megaMenu'->'items' ? $1,false) AS has FROM store_settings WHERE id=1", [item.key])).rows[0].has, false);
+  t = await f.catalog.createCategory(f.admin, t.epoch, { section: "menu", name: { en: "IT Layout Item" } });
+  const again = t.menu.find(entry => entry.name.en === "IT Layout Item");
+  assert.equal(again.key, item.key);
+  assert.equal(again.customized, false);
+  await f.catalog.deleteCategory(f.admin, t.epoch, again.key);
+});

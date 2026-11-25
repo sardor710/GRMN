@@ -15,6 +15,7 @@ import { isProductCode, productPath } from "@/lib/catalog/product-url";
 import { initialVariantId as pickInitialVariant } from "@/lib/variant-availability";
 import { getProductDetail, getCMSProduct, getRawCMSProduct } from "@/lib/products";
 import { ProductJsonLd, BreadcrumbJsonLd, JsonLdScript } from "@/components/seo/JsonLd";
+import { ProductViewMarker } from "@/components/traffic/ProductViewMarker";
 import { productGroupJsonLd, variantProductJsonLd } from "@/lib/seo/product-jsonld";
 import { getMetaTranslations } from "@/i18n/page-locale";
 import { SITE_URL, localizedSeo, localizedUrl } from "@/i18n/seo";
@@ -150,6 +151,8 @@ export async function ProductPageView({ locale, code, sku }: { locale: Locale; c
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
+      {/* Owner 2026-11-25: Admin ▸ Traffic counts product views by product id (all codes, SKUs and locales). */}
+      {detail.commerce && <ProductViewMarker productId={detail.commerce.id} />}
       {/* Google Structured Data: PostgreSQL products are a ProductGroup (product page) or one variant's Product. */}
       {detail.commerce ? (
         <JsonLdScript data={variant ? variantProductJsonLd(detail.commerce, variant, locale, SITE_URL) : productGroupJsonLd(detail.commerce, locale, SITE_URL)} />

@@ -38,10 +38,10 @@ import { moveEntry, removeEntry, setEntryArchived, type HomepageEntryRef } from 
 import { HomepageImageField } from "./HomepageImageField";
 import { CAROUSEL_BADGES, badgeCode, type CarouselBadgeCode } from "@/lib/cms/carousel-badges";
 
-/** Admin preview chip: black like the storefront's garmin.ae starburst. */
+/** Admin preview chip: black like the storefront's garmin.ae starburst; SALE in Garmin cyan. */
 const BADGE_CHIP: Record<CarouselBadgeCode, string> = {
   NEW: "bg-black text-white",
-  SALE: "bg-black text-white",
+  SALE: "bg-[#6dcff6] text-black",
   SOON: "bg-black text-white",
   HIT: "bg-black text-white",
   LIMITED: "bg-black text-white",
