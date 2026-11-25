@@ -74,3 +74,22 @@ export const returnItems = pgTable("return_items", {
   check("return_items_quantities_valid", sql`${t.quantity}>0 AND ${t.receivedQuantity} BETWEEN 0 AND ${t.quantity} AND ${t.acceptedQuantity} BETWEEN 0 AND ${t.receivedQuantity} AND ${t.restockedQuantity} BETWEEN 0 AND ${t.acceptedQuantity}`),
   check("return_items_inspection_valid", sql`${t.restockDecision} IN ('undecided','restock','quarantine','dispose') AND (${t.acceptedQuantity}=0 OR ${t.inspectedAt} IS NOT NULL) AND (${t.restockedQuantity}=0 OR (${t.restockDecision}='restock' AND ${t.inspectedAt} IS NOT NULL AND ${t.restockLocationId} IS NOT NULL))`),
 ]);
+
+// 0030 (owner 2026-11-25): one serial number per physical unit, recorded when the order is packed, for
+// warranty claims and returns. serial_key (upper case, no spaces) is what "same serial" means. A serial is
+// active while its shipment is not cancelled and it is not on a return that reached received/inspected/closed;
+// the service enforces that only one active row holds a key (it depends on other tables, so no index can).
+export const orderUnitSerials = pgTable("order_unit_serials", {
+  id: id(), orderId: uuid("order_id").notNull(), orderItemId: uuid("order_item_id").notNull(), shipmentItemId: uuid("shipment_item_id").notNull(),
+  unitIndex: integer("unit_index").notNull(), serial: text("serial").notNull(),
+  serialKey: text("serial_key").generatedAlwaysAs(sql`upper(regexp_replace(serial,'\\s','','g'))`),
+  returnItemId: uuid("return_item_id").references(() => returnItems.id, { onDelete: "restrict" }),
+  createdBy: uuid("created_by").references(() => user.id, { onDelete: "restrict" }),
+  createdAt: createdAt(), updatedAt: time("updated_at").notNull().defaultNow(),
+}, t => [
+  foreignKey({ columns: [t.shipmentItemId, t.orderItemId], foreignColumns: [shipmentItems.id, shipmentItems.orderItemId] }).onDelete("restrict"),
+  foreignKey({ columns: [t.orderItemId, t.orderId], foreignColumns: [orderItems.id, orderItems.orderId] }).onDelete("restrict"),
+  uniqueIndex("order_unit_serials_unit_unique").on(t.shipmentItemId, t.unitIndex),
+  index("order_unit_serials_key_idx").on(t.serialKey), index("order_unit_serials_order_idx").on(t.orderId), index("order_unit_serials_return_idx").on(t.returnItemId),
+  check("order_unit_serials_serial_valid", sql`${t.unitIndex}>=1 AND ${t.serial}=btrim(${t.serial}) AND char_length(${t.serial}) BETWEEN 1 AND 64`),
+]);

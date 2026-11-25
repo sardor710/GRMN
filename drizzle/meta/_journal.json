@@ -211,6 +211,13 @@
       "when": 1795400000000,
       "tag": "0029_traffic-analytics",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1795410000000,
+      "tag": "0030_order-serials",
+      "breakpoints": true
     }
   ]
 }
