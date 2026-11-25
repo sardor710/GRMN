@@ -9,6 +9,9 @@ import { createBeaconHandler, createTrafficCollector } from "./collect.ts";
 // Owner 2026-11-25: POST /api/t wiring. PostgreSQL mode with auth only; otherwise the beacon is accepted
 // and dropped (204), so the storefront never shows an error for analytics.
 
+// The better-auth session cookie (cookiePrefix "grmn-auth"; "__Secure-" on https) with a token-shaped value.
+const SESSION_COOKIE = /(?:^|;\s*)(?:__Secure-)?grmn-auth\.session_token=[A-Za-z0-9._%~-]{20,}/;
+
 let handler: ReturnType<typeof createBeaconHandler> | undefined;
 
 function getHandler() {
@@ -17,7 +20,7 @@ function getHandler() {
   const collector = createTrafficCollector({
     pool, ownHost: new URL(config.baseURL).hostname,
     // Only browsers carrying a session cookie can be staff; everyone else skips the session lookup.
-    isStaff: async headers => (headers.get("cookie") ?? "").includes("grmn-auth") && Boolean((await getSessionIdentity(runtime, headers))?.staff),
+    isStaff: async headers => SESSION_COOKIE.test(headers.get("cookie") ?? "") && Boolean((await getSessionIdentity(runtime, headers))?.staff),
   });
   handler = createBeaconHandler({ collector, pool, baseURL: config.baseURL, secret: config.secret, trustedProxy: config.trustedIPHeader !== null });
   return handler;

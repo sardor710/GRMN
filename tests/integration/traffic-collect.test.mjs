@@ -44,7 +44,7 @@ test("first beacon creates one visit and one view and hands back both cookies", 
 });
 
 test("a second beacon with the visit cookie is a page view of the same visit", async () => {
-  const productId = randomUUID();
+  const productId = (await q("INSERT INTO products(id,public_key,name) VALUES($1,$2,'Venu 4') RETURNING id", [randomUUID(), "pk-" + randomUUID()])).rows[0].id;
   const first = await collector.collect(visitor(), beacon("/?utm_source=fb"), {});
   const second = await collector.collect(visitor(), beacon(`/p/${productId}`, { productId, referrer: BASE + "/" }), first.setCookies);
   assert.equal(second.setCookies.sid, first.setCookies.sid);
@@ -137,4 +137,40 @@ test("prune removes visits older than 13 months with their views and keeps newer
   const { deleted } = await pruneTraffic(f.database.pool);
   assert.equal(deleted, 1);
   assert.deepEqual((await q("SELECT path FROM traffic_views")).rows.map(r => r.path), ["/new"]);
+});
+
+// Security review 2026-11-25 (appsec): bounded body without Content-Length, Sec-Fetch-Site fallback,
+// per-address limit on new visits (IPv6 by /64), unknown product ids, admin-path look-alikes.
+test("security: unbounded or mislabelled bodies are refused; same-origin without Origin is accepted", async () => {
+  const handler = createBeaconHandler({ collector, pool: f.database.pool, baseURL: BASE, secret: "s", trustedProxy: false });
+  const big = "x".repeat(5000);
+  const chunked = new ReadableStream({ start(c) { c.enqueue(new TextEncoder().encode(big)); c.close(); } });
+  const r1 = await handler(new Request(BASE + "/api/t", { method: "POST", body: chunked, duplex: "half", headers: { origin: BASE, "user-agent": CHROME } }));
+  assert.equal(r1.status, 400);
+  const r2 = await handler(new Request(BASE + "/api/t", { method: "POST", body: beacon("/"), headers: { origin: BASE, "user-agent": CHROME, "content-length": "abc" } }));
+  assert.equal(r2.status, 400);
+  const r3 = await handler(new Request(BASE + "/api/t", { method: "POST", body: beacon("/"), headers: { "sec-fetch-site": "same-origin", "user-agent": CHROME } }));
+  assert.equal(r3.status, 204);
+  const r4 = await handler(new Request(BASE + "/api/t", { method: "POST", body: beacon("/"), headers: { "sec-fetch-site": "cross-site", "user-agent": CHROME } }));
+  assert.equal(r4.status, 403);
+});
+
+test("security: new visits are limited per address, IPv6 counted by /64; views of an open visit are not", async () => {
+  const handler = createBeaconHandler({ collector, pool: f.database.pool, baseURL: BASE, secret: "s2", trustedProxy: true, limit: 100, newVisitLimit: 2 });
+  const post = (ip, cookie) => handler(new Request(BASE + "/api/t", { method: "POST", body: beacon("/"), headers: { origin: BASE, "user-agent": CHROME, "x-grmn-client-ip": ip, ...(cookie ? { cookie } : {}) } }));
+  const first = await post("2001:db8:1:1::1");
+  assert.equal(first.status, 204);
+  assert.equal((await post("2001:db8:1:1::2")).status, 204);
+  assert.equal((await post("2001:db8:1:1::3")).status, 429, "same /64 shares the new-visit budget");
+  const cookie = first.headers.getSetCookie().map(c => c.split(";")[0]).join("; ");
+  assert.equal((await post("2001:db8:1:1::1", cookie)).status, 204, "a page view of an open visit is not a new visit");
+  assert.equal((await post("2001:db8:2:2::1")).status, 204, "another /64 has its own budget");
+});
+
+test("security: unknown product ids are not stored and admin look-alike paths are ignored", async () => {
+  await collector.collect(visitor(), beacon(`/p/${randomUUID()}`, { productId: randomUUID() }), {});
+  assert.deepEqual((await q("SELECT product_id FROM traffic_views")).rows, [{ product_id: null }]);
+  for (const path of ["//admin/orders", "/ru/admin", "/kk/api/cart", "/%61dmin/x", "/ADMIN"]) {
+    assert.equal((await collector.collect(visitor(), beacon(path), {})).stored, false, path);
+  }
 });

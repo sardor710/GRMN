@@ -1,5 +1,6 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
+import { isIP } from "node:net";
 import type { Pool } from "pg";
 import { z } from "zod";
 import { AuthFailure } from "../auth/config.ts";
@@ -47,17 +48,35 @@ function parseBeacon(raw: string, ownHost: string) {
   return { ...parsed.data, url };
 }
 
+/** Decoded path with repeated slashes collapsed, so /%61dmin and //admin are seen as /admin. */
+function normalisePath(pathname: string): string {
+  let path = pathname;
+  try { path = decodeURIComponent(pathname); } catch { /* keep the raw path */ }
+  return path.replace(/\/{2,}/g, "/").slice(0, 512) || "/";
+}
+const PRIVATE_PATH = /^\/(?:(?:en|ru|kk)\/)?(?:admin|api)(?:\/|$)/i;
+
+/** Rate-limit identity: an IPv4 address as is, an IPv6 address by its /64 (one subscriber's network). */
+export function addressKey(address: string): string {
+  if (isIP(address) !== 6) return address;
+  const [head, tail = ""] = address.toLowerCase().split("::");
+  const left = head ? head.split(":") : [], right = tail ? tail.split(":") : [];
+  const groups = address.includes("::") ? [...left, ...Array(8 - left.length - right.length).fill("0"), ...right] : left;
+  return groups.slice(0, 4).map(g => g.padStart(4, "0")).join(":") + "::/64";
+}
+
 const isPrefetch = (headers: Headers) => /prefetch|prerender/i.test(`${headers.get("sec-purpose") ?? ""} ${headers.get("purpose") ?? ""} ${headers.get("x-moz") ?? ""}`);
 const localeOf = (path: string, given?: string) => given ?? (/^\/(ru|kk|en)(?:\/|$)/.exec(path)?.[1] ?? null);
 const sameSource = (a: Source, row: { platform: string; medium: string | null; campaign: string | null }) =>
   a.platform === row.platform && a.medium === row.medium && a.campaign === row.campaign;
 
 export function createTrafficCollector({ pool, ownHost, isStaff }: TrafficCollectorDeps) {
-  async function collect(headers: Headers, body: string, cookies: { vid?: string; sid?: string }): Promise<CollectResult> {
+  /** onNewVisit runs (and may throw 429) only when this view would start a new visit. */
+  async function collect(headers: Headers, body: string, cookies: { vid?: string; sid?: string }, hooks: { onNewVisit?: () => Promise<void> } = {}): Promise<CollectResult> {
     const beacon = parseBeacon(body, ownHost);
-    const path = beacon.url.pathname.slice(0, 512) || "/";
+    const path = normalisePath(beacon.url.pathname);
     const ua = parseUserAgent(headers.get("user-agent") ?? "");
-    if (ua.bot || isPrefetch(headers) || /^\/(?:admin|api)(?:\/|$)/.test(path)) return { stored: false, setCookies: null };
+    if (ua.bot || isPrefetch(headers) || PRIVATE_PATH.test(path)) return { stored: false, setCookies: null };
     if (await isStaff(headers)) return { stored: false, setCookies: null };
 
     const locale = localeOf(path, beacon.locale);
@@ -76,13 +95,15 @@ export function createTrafficCollector({ pool, ownHost, isStaff }: TrafficCollec
     if (sid) {
       await pool.query("UPDATE traffic_sessions SET views = views + 1, last_seen_at = now() WHERE id=$1", [sid]);
     } else {
+      await hooks.onNewVisit?.();
       sid = randomUUID();
       await pool.query(
         `INSERT INTO traffic_sessions(id, visitor_id, platform, medium, campaign, referrer_host, landing_path, locale, os, device_type, browser)
          VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
         [sid, vid, source.platform, source.medium, source.campaign, source.referrerHost, path, locale, ua.os, ua.deviceType, ua.browser]);
     }
-    await pool.query("INSERT INTO traffic_views(id, session_id, path, product_id, locale) VALUES($1,$2,$3,$4,$5)",
+    // A product id the catalog does not know is dropped, so made-up ids never reach Top products.
+    await pool.query("INSERT INTO traffic_views(id, session_id, path, product_id, locale) VALUES($1,$2,$3,(SELECT id FROM products WHERE id=$4::uuid),$5)",
       [randomUUID(), sid, path, beacon.productId ?? null, locale]);
     return { stored: true, setCookies: { vid, sid } };
   }
@@ -104,11 +125,29 @@ function readCookies(header: string | null): { vid?: string; sid?: string } {
 export interface BeaconHandlerDeps {
   collector: TrafficCollector; pool: Pick<Pool, "query">; baseURL: string; secret?: string;
   /** true when the TLS proxy sets x-grmn-client-ip (production); without it there is no per-address limit. */
-  trustedProxy: boolean; limit?: number;
+  trustedProxy: boolean;
+  /** Beacons per address per minute (60) and new visits per address per minute (10). */
+  limit?: number; newVisitLimit?: number;
+}
+
+/** Reads at most max bytes of the body, whatever Content-Length says (chunked bodies included). */
+async function readBounded(request: Request, max: number): Promise<string> {
+  const reader = request.body?.getReader();
+  if (!reader) return "";
+  const chunks: Uint8Array[] = [];
+  let size = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    size += value.byteLength;
+    if (size > max) { await reader.cancel().catch(() => {}); return invalid(); }
+    chunks.push(value);
+  }
+  return Buffer.concat(chunks).toString("utf8");
 }
 
 /** POST /api/t: 204 accepted-or-ignored, 400 malformed, 403 foreign origin, 405 other methods, 429 rate limited. */
-export function createBeaconHandler({ collector, pool, baseURL, secret, trustedProxy, limit = 60 }: BeaconHandlerDeps) {
+export function createBeaconHandler({ collector, pool, baseURL, secret, trustedProxy, limit = 60, newVisitLimit = 10 }: BeaconHandlerDeps) {
   const origin = new URL(baseURL).origin, secure = origin.startsWith("https:");
   const empty = (status: number, headers?: Headers) => new Response(null, { status, headers });
   return async function handle(request: Request): Promise<Response> {
@@ -116,12 +155,14 @@ export function createBeaconHandler({ collector, pool, baseURL, secret, trustedP
     try {
       const sentOrigin = request.headers.get("origin");
       if (sentOrigin ? sentOrigin !== origin : request.headers.get("sec-fetch-site") !== "same-origin") throw new AuthFailure("FORBIDDEN", 403, "Invalid request origin");
-      const declared = Number(request.headers.get("content-length") ?? "0");
-      if (declared > MAX_BEACON_BYTES) invalid();
+      const declared = request.headers.get("content-length");
+      if (declared !== null && (!/^\d+$/.test(declared) || Number(declared) > MAX_BEACON_BYTES)) invalid();
       const address = trustedProxy ? trustedClientAddress(request.headers, { AUTH_TRUSTED_IP_HEADER: "x-grmn-client-ip" }) : null;
-      if (address) await enforceRateLimit(pool, { scope: "traffic:beacon", identifier: address, limit, windowMs: 60_000 }, secret);
-      const body = await request.text();
-      const result = await collector.collect(request.headers, body, readCookies(request.headers.get("cookie")));
+      const key = address ? addressKey(address) : null;
+      if (key) await enforceRateLimit(pool, { scope: "traffic:beacon", identifier: key, limit, windowMs: 60_000 }, secret);
+      const body = await readBounded(request, MAX_BEACON_BYTES);
+      const onNewVisit = key ? () => enforceRateLimit(pool, { scope: "traffic:visit", identifier: key, limit: newVisitLimit, windowMs: 60_000 }, secret) : undefined;
+      const result = await collector.collect(request.headers, body, readCookies(request.headers.get("cookie")), { onNewVisit });
       const headers = new Headers({ "cache-control": "no-store" });
       if (result.setCookies) {
         const flags = `Path=/; HttpOnly; SameSite=Lax${secure ? "; Secure" : ""}`;
