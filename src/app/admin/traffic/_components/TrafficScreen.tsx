@@ -18,7 +18,7 @@ interface Devices { os: { os: string; clicks: number }[]; deviceTypes: { deviceT
 
 const EMPTY = "No visits in this range yet. Counting started the day tracking went live.";
 const pct = (value: number, total: number) => total > 0 ? `${((value / total) * 100).toFixed(value / total < 0.1 ? 1 : 0)}%` : "—";
-const mediumLabel = (medium: string | null) => medium === null ? "—" : medium === "ad" ? "Ads" : medium === "organic" ? "Search" : medium === "referral" ? "Untagged link" : medium[0].toUpperCase() + medium.slice(1);
+const mediumLabel = (medium: string | null) => medium === null ? "—" : medium === "ad" ? "Ads" : medium === "organic" ? "Search" : medium === "referral" ? "Untagged link" : medium === "link" ? "Tagged link" : medium[0].toUpperCase() + medium.slice(1);
 const DEVICE_LABEL: Record<string, string> = { mobile: "Phone", tablet: "Tablet", desktop: "Computer" };
 
 function useLoad<T>(query: string): Loadable<T> {

@@ -536,7 +536,7 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     await until(async()=>{try{await click("Review order");return true;}catch{return false;}},"Review order stayed disabled");
     await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Pay')"),"The demo pay button did not render").catch(async error=>{await writeFile(path.join(receipt,"demo-checkout-body.txt"),await text());throw error;});
     assert.ok((await text()).includes("No payment is taken for this order."),"one neutral line under the pay button");
-    assert.ok(!/demo/i.test(await text()),"no demo wording for customers");
+    {const body=await text();if(/demo/i.test(body))await writeFile(path.join(receipt,"demo-wording-body.txt"),body);assert.ok(!/demo/i.test(body),"no demo wording for customers: "+(body.match(/.{0,60}demo.{0,60}/i)?.[0]??""));}
     assert.equal(await evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Place order')"),false,"demo and manual are never offered together");
     assert.ok(!/we confirm your payment by hand/i.test(await text()),"no manual payment notice in demo checkout");
     // The setting flips between review and pay: the server refuses the stale method (409), the panel

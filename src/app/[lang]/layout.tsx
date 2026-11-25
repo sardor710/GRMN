@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
@@ -77,8 +76,8 @@ export default async function LocaleLayout({ children, params }: LayoutProps<"/[
         <NextIntlClientProvider locale={lang} messages={clientMessages}>
           <MegaNavProvider items={menu}>
             <CartProvider>{children}</CartProvider>
-            {/* Owner 2026-11-25: Admin ▸ Traffic page views; useSearchParams needs its own Suspense boundary. */}
-            <Suspense fallback={null}><PageViewTracker /></Suspense>
+            {/* Owner 2026-11-25: Admin ▸ Traffic page views. */}
+            <PageViewTracker />
             <CookieNotice />
           </MegaNavProvider>
         </NextIntlClientProvider>

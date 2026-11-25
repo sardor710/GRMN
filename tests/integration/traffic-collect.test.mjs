@@ -174,3 +174,12 @@ test("security: unknown product ids are not stored and admin look-alike paths ar
     assert.equal((await collector.collect(visitor(), beacon(path), {})).stored, false, path);
   }
 });
+
+// Final review 2026-11-25: a later page of the same visit still carries ?fbclid / utm in its URL (variant switch,
+// compare bar) but comes from our own page; it must stay in the visit, not start a new "Meta" one.
+test("campaign params on a page reached from our own page stay in the visit", async () => {
+  const first = await collector.collect(visitor(), beacon("/p/x?fbclid=abc", { referrer: "https://l.facebook.com/" }), {});
+  const later = await collector.collect(visitor(), beacon("/p/x?fbclid=abc&sku=2", { referrer: BASE + "/p/x?fbclid=abc" }), first.setCookies);
+  assert.equal(later.setCookies.sid, first.setCookies.sid);
+  assert.deepEqual((await q("SELECT platform, views FROM traffic_sessions")).rows, [{ platform: "Facebook", views: 2 }]);
+});

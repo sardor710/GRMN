@@ -82,7 +82,11 @@ export function createTrafficCollector({ pool, ownHost, isStaff }: TrafficCollec
     const locale = localeOf(path, beacon.locale);
     const source = classifySource({ url: beacon.url, referrer: beacon.referrer || null, userAgent: headers.get("user-agent") ?? "", ownHost });
     const vid = cookies.vid && UUID.test(cookies.vid) ? cookies.vid.toLowerCase() : randomUUID();
-    const hasCampaign = CAMPAIGN_PARAMS.some(name => beacon.url.searchParams.get(name)?.trim());
+    // Campaign params start a new visit only on an arrival from elsewhere: a later page of the visit can keep
+    // ?fbclid / utm in its URL (variant switch, compare bar) while its referrer is our own page.
+    let fromOwnPage = false;
+    try { fromOwnPage = new URL(beacon.referrer).hostname.toLowerCase() === ownHost.toLowerCase(); } catch { /* no referrer */ }
+    const hasCampaign = !fromOwnPage && CAMPAIGN_PARAMS.some(name => beacon.url.searchParams.get(name)?.trim());
 
     let sid: string | null = null;
     if (cookies.sid && UUID.test(cookies.sid)) {
@@ -126,7 +130,7 @@ export interface BeaconHandlerDeps {
   collector: TrafficCollector; pool: Pick<Pool, "query">; baseURL: string; secret?: string;
   /** true when the TLS proxy sets x-grmn-client-ip (production); without it there is no per-address limit. */
   trustedProxy: boolean;
-  /** Beacons per address per minute (60) and new visits per address per minute (10). */
+  /** Beacons per address per minute (120) and new visits per address per minute (60; mobile carriers share addresses). */
   limit?: number; newVisitLimit?: number;
 }
 
@@ -147,7 +151,7 @@ async function readBounded(request: Request, max: number): Promise<string> {
 }
 
 /** POST /api/t: 204 accepted-or-ignored, 400 malformed, 403 foreign origin, 405 other methods, 429 rate limited. */
-export function createBeaconHandler({ collector, pool, baseURL, secret, trustedProxy, limit = 60, newVisitLimit = 10 }: BeaconHandlerDeps) {
+export function createBeaconHandler({ collector, pool, baseURL, secret, trustedProxy, limit = 120, newVisitLimit = 60 }: BeaconHandlerDeps) {
   const origin = new URL(baseURL).origin, secure = origin.startsWith("https:");
   const empty = (status: number, headers?: Headers) => new Response(null, { status, headers });
   return async function handle(request: Request): Promise<Response> {

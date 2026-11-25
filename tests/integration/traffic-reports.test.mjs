@@ -122,3 +122,9 @@ test("campaign links refuse unsafe targets and need content:write to change", as
   await rejectsWith(links.create(f.reader.headers, { platform: "Instagram", medium: "story", campaign: "a", targetPath: "/" }), 403);
   await rejectsWith(links.list(f.catalogEditor.headers, RANGE), 403);
 });
+
+// Final review 2026-11-25: one active link per (platform, format, campaign), so a link's clicks are its own.
+test("a second link for the same platform, format and campaign is refused with 409", async () => {
+  await links.create(f.admin, { platform: "Instagram", medium: "story", campaign: "dup", targetPath: "/p/a" });
+  await rejectsWith(links.create(f.admin, { platform: "Instagram", medium: "story", campaign: "dup", targetPath: "/p/b" }), 409);
+});

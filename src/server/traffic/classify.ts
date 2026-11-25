@@ -15,6 +15,8 @@ const SOURCE_ALIASES: Record<string, string> = {
   fb: "Facebook", facebook: "Facebook", meta: "Meta",
   google: "Google", yandex: "Yandex", ya: "Yandex",
   tg: "Telegram", telegram: "Telegram",
+  tiktok: "TikTok", tt: "TikTok", whatsapp: "WhatsApp", wa: "WhatsApp", vk: "VK", vkontakte: "VK",
+  youtube: "YouTube", yt: "YouTube", twitter: "X", x: "X", threads: "Threads", "2gis": "2GIS", kaspi: "Kaspi",
 };
 const AD_MEDIUMS = new Set(["cpc", "ppc", "paid", "ad", "ads", "paid_social", "paidsocial", "paid-social", "cpm"]);
 
@@ -64,7 +66,9 @@ export function normaliseMedium(raw: string | null): string | null {
 /** The platform a utm_source value counts under: known aliases, else the value with a capital first letter. */
 export function platformFromUtm(value: string): string {
   const text = value.trim().slice(0, 40);
-  return SOURCE_ALIASES[text.toLowerCase()] ?? text[0].toUpperCase() + text.slice(1);
+  const lower = text.toLowerCase();
+  // One spelling per platform whatever the link's casing: known names, else "Newsletter" from NEWSLETTER/newsletter.
+  return SOURCE_ALIASES[lower] ?? lower[0].toUpperCase() + lower.slice(1);
 }
 
 export function classifySource({ url, referrer, userAgent, ownHost }: SourceInput): Source {
@@ -75,7 +79,7 @@ export function classifySource({ url, referrer, userAgent, ownHost }: SourceInpu
   const utmSource = clean(params.get("utm_source"), 40);
   if (utmSource) {
     const platform = platformFromUtm(utmSource);
-    const medium = normaliseMedium(params.get("utm_medium")) ?? (platform === "Google" || platform === "Yandex" ? "organic" : "referral");
+    const medium = normaliseMedium(params.get("utm_medium")) ?? (platform === "Google" || platform === "Yandex" ? "organic" : "link");
     return { platform, medium, campaign: clean(params.get("utm_campaign"), 80)?.toLowerCase() ?? null, referrerHost };
   }
   if (clean(params.get("gclid"), 200)) return { platform: "Google", medium: "ad", campaign: null, referrerHost };

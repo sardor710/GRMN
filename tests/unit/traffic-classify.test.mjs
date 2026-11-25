@@ -65,3 +65,14 @@ test("long or odd tag values are capped", () => {
   assert.ok(r.platform.length <= 40 && r.medium.length <= 80 && r.campaign.length <= 80);
   assert.equal(run("/?utm_source=%20%20").platform, "Direct");
 });
+
+// Final review 2026-11-25: one spelling per platform, and a tagged link without utm_medium is "link", not "referral".
+test("platform spelling is stable and tagged links without a medium say link", () => {
+  assert.equal(run("/?utm_source=TikTok").platform, "TikTok");
+  assert.equal(run("/?utm_source=tiktok").platform, "TikTok");
+  assert.equal(run("/?utm_source=WHATSAPP").platform, "WhatsApp");
+  assert.equal(run("/?utm_source=vk").platform, "VK");
+  assert.equal(run("/?utm_source=NEWSLETTER").platform, "Newsletter");
+  assert.equal(run("/?utm_source=instagram").medium, "link");
+  assert.equal(run("/?utm_source=google").medium, "organic");
+});

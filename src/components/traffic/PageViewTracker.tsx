@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 
 // Owner 2026-11-25: one beacon to /api/t per storefront page view, on the first load and on every client-side
 // navigation (plan docs/plans/2026-11-25-traffic-analytics-xl.md). The server decides visits and sources and
@@ -10,14 +10,21 @@ import { usePathname, useSearchParams } from "next/navigation";
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const LOCALES = new Set(["en", "ru", "kk"]);
 
+// Beacons go out one after another: the first one's response sets the visit cookies, and a quick second
+// page (a tap before that response on a slow phone) must carry them, or it would count as a new visitor.
+let queue: Promise<unknown> = Promise.resolve();
+function send(body: string) {
+  queue = queue.then(() => fetch("/api/t", { method: "POST", body, keepalive: true, credentials: "same-origin", headers: { "content-type": "text/plain" } }).catch(() => undefined));
+}
+
 export function PageViewTracker() {
+  // A page view is a new path: query-only changes (variant pick, compare bar, filters) are the same page.
   const pathname = usePathname();
-  const search = useSearchParams().toString();
   const last = useRef<string | null>(null);
   const previousUrl = useRef<string | null>(null);
 
   useEffect(() => {
-    const key = `${pathname}?${search}`;
+    const key = pathname;
     if (last.current === key) return; // React strict mode runs effects twice in development
     last.current = key;
     const url = window.location.href;
@@ -31,11 +38,8 @@ export function PageViewTracker() {
       ...(LOCALES.has(lang) ? { locale: lang } : {}),
     });
     previousUrl.current = url;
-    try {
-      const sent = typeof navigator.sendBeacon === "function" && navigator.sendBeacon("/api/t", new Blob([body], { type: "text/plain" }));
-      if (!sent) void fetch("/api/t", { method: "POST", body, keepalive: true, credentials: "same-origin", headers: { "content-type": "text/plain" } }).catch(() => {});
-    } catch { /* analytics never breaks the page */ }
-  }, [pathname, search]);
+    try { send(body); } catch { /* analytics never breaks the page */ }
+  }, [pathname]);
 
   return null;
 }

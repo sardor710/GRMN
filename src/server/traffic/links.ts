@@ -61,6 +61,11 @@ export function createTrafficLinks({ pool, authorize, origin }: { pool: Pick<Poo
     if (!source || !medium || !campaign) return invalid();
     const platform = platformFromUtm(source), targetPath = safeTarget(parsed.data.targetPath);
     const label = parsed.data.label?.trim() || null;
+    // One active link per (platform, format, campaign): a link's clicks are matched on that triple, so a second
+    // link with the same triple (another page) would show the same clicks twice.
+    const same = (await pool.query<LinkRow>("SELECT * FROM traffic_links WHERE platform=$1 AND medium=$2 AND campaign=$3 AND archived_at IS NULL", [platform, medium, campaign])).rows[0];
+    if (same && same.target_path === targetPath) return toDTO(same);
+    if (same) throw new AuthFailure("LINK_EXISTS", 409, `A ${platform} ${medium} link named "${campaign}" already exists for ${same.target_path}. Use another campaign name.`);
     const inserted = (await pool.query<LinkRow>(
       `INSERT INTO traffic_links(id, platform, medium, campaign, target_path, label, created_by) VALUES($1,$2,$3,$4,$5,$6,$7)
        ON CONFLICT (platform, medium, campaign, target_path) WHERE archived_at IS NULL DO NOTHING RETURNING *`,
