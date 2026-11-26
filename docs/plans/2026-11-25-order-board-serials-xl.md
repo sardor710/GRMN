@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 4 | 12/19 | 2026-11-26 | T5.1 customer OrderTracker |
+| Executing | 5 | 15/19 | 2026-11-26 | T6.1–T6.2 full checks |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -210,10 +210,10 @@ All in `tests/integration/order-board.test.mjs` (fixtures copied from `tests/int
   - verify M4: `npm run lint && npm run typecheck` PASS; `npm run test:unit` PASS; screenshots via `/home/nick/tools/browser/review.mjs` of board, list, archive, pack panel, drawer at 1440 and 390 widths saved under scratchpad; commit.
 
 ### M5 — Customer tracker (wave 4, owner: frontend-developer)
-- [ ] **T5.1** `src/components/account/OrderTracker.tsx`: `export function OrderTracker(props: { stage: OrderStage; dates?: StageDates; compact?: boolean; labels: TrackerLabels }): JSX.Element`. Four steps with lucide icons (Receipt, Package, Truck, PackageCheck); completed = circle filled `#6DCFF6` with black icon; current = cyan ring + bold label; future = grey `#D9D9D9` outline; connecting line cyan on passed segments, grey ahead; dates under steps when given (locale format); `cancelled` → all grey + "Cancelled" note. `role="list"`, each step `aria-current="step"` on current, text not colour-only.
+- [x] **T5.1** ✅ `src/components/account/OrderTracker.tsx`: `export function OrderTracker(props: { stage: OrderStage; dates?: StageDates; compact?: boolean; labels: TrackerLabels }): JSX.Element`. Four steps with lucide icons (Receipt, Package, Truck, PackageCheck); completed = circle filled `#6DCFF6` with black icon; current = cyan ring + bold label; future = grey `#D9D9D9` outline; connecting line cyan on passed segments, grey ahead; dates under steps when given (locale format); `cancelled` → all grey + "Cancelled" note. `role="list"`, each step `aria-current="step"` on current, text not colour-only.
   - Unit test `tests/unit/order-tracker.test.mjs` (render to string like `account-dashboard.test.mjs`): stage packed → 2 completed, line segment 1 cyan, 2 grey; cancelled → no cyan; aria-current on right step.
-- [ ] **T5.2** Use in `AccountDashboard.tsx`: compact tracker on each order row (list ~:766 and recent order ~:729) and full tracker with dates on top of the order detail (~:866); serials under each item ("Serial number: …"); event labels translated via `t("events." + type.replace(".", "_"))` with server label fallback (`t.has`).
-- [ ] **T5.3** Messages `messages/{en,ru,kk}.json` `AccountPortal.tracker.{ordered,packed,shipped,delivered,cancelled,cancelledNote}`, `AccountPortal.order.serial`, `AccountPortal.events.{order_placed,…,fulfillment_packed,fulfillment_shipped,fulfillment_delivered}` (next-intl treats dots as nesting — event type `a.b` maps to key `a_b`), `AccountPortal.status.{partially_shipped,exception}`. Test: key parity across the three files (extend existing messages parity test if present, else in `order-tracker.test.mjs`).
+- [x] **T5.2** ✅ Use in `AccountDashboard.tsx`: compact tracker on each order row (list ~:766 and recent order ~:729) and full tracker with dates on top of the order detail (~:866); serials under each item ("Serial number: …"); event labels translated via `t("events." + type.replace(".", "_"))` with server label fallback (`t.has`).
+- [x] **T5.3** ✅ Messages `messages/{en,ru,kk}.json` `AccountPortal.tracker.{ordered,packed,shipped,delivered,cancelled,cancelledNote}`, `AccountPortal.order.serial`, `AccountPortal.events.{order_placed,…,fulfillment_packed,fulfillment_shipped,fulfillment_delivered}` (next-intl treats dots as nesting — event type `a.b` maps to key `a_b`), `AccountPortal.status.{partially_shipped,exception}`. Test: key parity across the three files (extend existing messages parity test if present, else in `order-tracker.test.mjs`).
   - verify M5: `npm run test:unit` PASS; screenshots of account orders list + detail at each stage (EN, RU) at 1440/390; commit.
 
 ### M6 — Verify + review (wave 5)
