@@ -160,7 +160,7 @@ Advisor review 2026-11-26 (folded in):
 
 ### M3 — Pickup settings
 - [x] T3.1 (reports-settings: settings test passes with pickup round-trip) `src/lib/pickup.ts` (type, schema, seed, `pickupHoursFor(locale)`); settings service read/write `pickupLocation` with version check — verify: reports-settings tests
-- [x] T3.2 (StorePickupSection; smoke pending in M8) Admin ▸ Settings "Store pickup" block — verify: tsc + smoke settings
+- [x] T3.2 (StorePickupSection; PUT /api/admin/settings passes the body to settings.update unchanged (read in reports/runtime.ts), service covered by reports-settings; not clicked in a browser) Admin ▸ Settings "Store pickup" block — verify: tsc + smoke settings
 
 ### M4 — Checkout pickup
 - [x] T4.1 (checkout.test 13/13) Cart quote accepts `kind:"pickup"` (refused `PICKUP_UNAVAILABLE` when disabled), snapshot = store address + contact + pickup copy; pricing shipping 0 for pickup — verify: checkout tests (quote shipping 0, disabled refused)
@@ -208,15 +208,16 @@ Migration 0033 is additive (new nullable/defaulted columns), so `switch-version.
 - 2026-11-26: requirement approved; owner waived the plan stop ("do it by your choice … finish, deploy, ask for pushing").
 
 ## Result
-Delivered (live 2026-11-26, grmn:ef5c461 / grmn-ops:ef5c461, branch account-pickup-devices, not pushed):
+Delivered (live 2026-11-26, grmn:d5f53e6 / grmn-ops:d5f53e6 — ef5c461 + staff Telegram alert marks pickup orders "PICKUP AT STORE — do not ship"; branch account-pickup-devices, not pushed):
 - One-page sign-up /account/sign-up (name, phone + Send code, SMS code, email, gender, birthday); code always checked; old code-free shortcut closed. Gender in Profile.
 - Orders: formal table, order page inside the tab (?order=<id>) with photos, product links, serials, totals, address or pickup store, updates; pickup tracker (3 steps).
 - Checkout: saved addresses, Pick up at store (store card, 0 ₸, paid at checkout), Another address; guests get pickup/address.
 - Admin ▸ Settings ▸ Store pickup (seed Panfilova 154, daily 10:00–19:00); board: Ready for pickup (serials) → Mark picked up.
 - My devices (serialised, delivered/picked-up, not returned) with warranty left; warranty months per category/product (default 12).
 Checks run: see T8.1–T8.4.
-Rollback: `switch-version.sh 1d5e957` (0033 additive; verified on staging). Pre-deploy dump /home/nick/grmn-production/predeploy-pickup-devices-1d5e957.dump; env backup production.env.bak-1d5e957-pre-pickup. On the old image, pickup orders look like delivery orders to the store address (staff could "Ship" them).
-Gaps: board pick_up click not exercised on staging (staging needs staff MFA); covered by integration + local browser smoke. Store map pin not set (link searches the address); set lat/lng in Admin if wanted. Customer notifications out of scope (owner: later).
+Final checks at d5f53e6: unit 733/0, legacy 337/0, demo-checkout 21/21 (new alert test), tsc 0; live /ru, sign-up en/ru/kz, /api/store/pickup, account, cart 200.
+Rollback: `switch-version.sh 1d5e957` (or `ef5c461` to keep everything but the alert wording) (0033 additive; verified on staging). Pre-deploy dump /home/nick/grmn-production/predeploy-pickup-devices-1d5e957.dump; env backup production.env.bak-1d5e957-pre-pickup. On the old image, pickup orders look like delivery orders to the store address (staff could "Ship" them).
+Gaps: the ui-finish-gate reviewer was not run (a ui-designer design pass was, and screenshots were checked by hand: EN/KZ list, EN detail/pickup/devices/sign-up, mobile detail/sign-up). Kazakh short dates read "2026 M11 26" (existing date formatter). Board pick_up click not exercised on staging (staging needs staff MFA); covered by integration + local browser smoke. Store map pin not set (link searches the address); set lat/lng in Admin if wanted. Customer notifications out of scope (owner: later).
 Follow-ups: while AUTH_TEST_OTP_CODE=1234 is set, anyone can sign in as any customer by phone (pre-existing; remove once SMS is connected). Merge into beta5 before the next beta5 deploy (beta5 is behind live).
 
 ## Handoff
