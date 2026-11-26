@@ -142,19 +142,24 @@ export async function lockOrder(client: PoolClient, orderId: string): Promise<Or
   return (await client.query<OrderRow>(`SELECT ${ORDER_COLUMNS} FROM orders o WHERE o.id=$1`, [orderId])).rows[0];
 }
 
-async function shipmentItems(client: PoolClient | Pool, shipmentIds: string[]): Promise<Map<string, { orderItemId: string; quantity: number }[]>> {
-  const map = new Map<string, { orderItemId: string; quantity: number }[]>();
+type ShipmentLine = ShipmentDTO["items"][number];
+async function shipmentItems(client: PoolClient | Pool, shipmentIds: string[], withSerials = false): Promise<Map<string, ShipmentLine[]>> {
+  const map = new Map<string, ShipmentLine[]>();
   if (!shipmentIds.length) return map;
-  const rows = (await client.query<{ shipment_id: string; order_item_id: string; quantity: string }>(
-    "SELECT shipment_id,order_item_id,sum(quantity)::text AS quantity FROM shipment_items WHERE shipment_id=ANY($1::uuid[]) GROUP BY shipment_id,order_item_id ORDER BY order_item_id", [shipmentIds])).rows;
+  const rows = (await client.query<{ shipment_id: string; order_item_id: string; quantity: string; serials: { id: string; serial: string; returned: boolean }[] }>(
+    `SELECT i.shipment_id,i.order_item_id,sum(i.quantity)::text AS quantity,
+       COALESCE((SELECT json_agg(json_build_object('id',u.id,'serial',u.serial,'returned',COALESCE(r.status IN ('received','inspected','closed'),false)) ORDER BY u.shipment_item_id,u.unit_index)
+         FROM order_unit_serials u JOIN shipment_items x ON x.id=u.shipment_item_id LEFT JOIN return_items ri ON ri.id=u.return_item_id LEFT JOIN returns r ON r.id=ri.return_id
+         WHERE x.shipment_id=i.shipment_id AND x.order_item_id=i.order_item_id),'[]'::json) AS serials
+     FROM shipment_items i WHERE i.shipment_id=ANY($1::uuid[]) GROUP BY i.shipment_id,i.order_item_id ORDER BY i.order_item_id`, [shipmentIds])).rows;
   for (const row of rows) {
     const list = map.get(row.shipment_id) ?? [];
-    list.push({ orderItemId: row.order_item_id, quantity: Number(row.quantity) });
+    list.push({ orderItemId: row.order_item_id, quantity: Number(row.quantity), ...(withSerials ? { serials: row.serials } : {}) });
     map.set(row.shipment_id, list);
   }
   return map;
 }
-function shipmentDTO(row: ShipmentRow, items: { orderItemId: string; quantity: number }[], staffDetail: boolean): ShipmentDTO {
+function shipmentDTO(row: ShipmentRow, items: ShipmentLine[], staffDetail: boolean): ShipmentDTO {
   return {
     id: row.id, status: row.status, version: row.version,
     carrier: staffDetail ? row.carrier : null, trackingReference: staffDetail ? row.tracking_reference : null, internalNotes: staffDetail ? row.internal_notes : null,
@@ -164,7 +169,7 @@ function shipmentDTO(row: ShipmentRow, items: { orderItemId: string; quantity: n
 }
 async function readShipment(client: PoolClient, shipmentId: string): Promise<ShipmentDTO> {
   const row = (await client.query<ShipmentRow>(`SELECT ${SHIPMENT_COLUMNS} FROM shipments WHERE id=$1`, [shipmentId])).rows[0] ?? notFound();
-  return shipmentDTO(row, (await shipmentItems(client, [shipmentId])).get(shipmentId) ?? [], true);
+  return shipmentDTO(row, (await shipmentItems(client, [shipmentId], true)).get(shipmentId) ?? [], true);
 }
 
 /** Derives the order's fulfillment status from its shipments; an exception is never overwritten. */
@@ -330,8 +335,8 @@ export function createFulfillmentService({ pool, authorize }: Options) {
       const order = (await pool.query<OrderRow & BoardColumns & { shown_at: Date; total_minor: string; contact_name: string; contact_phone: string | null; contact_email: string | null }>(
         `SELECT ${ORDER_COLUMNS},COALESCE(o.placed_at,o.created_at) AS shown_at,o.total_minor::text AS total_minor,o.contact_name,o.contact_phone,o.contact_email,${BOARD_COLUMNS} FROM orders o WHERE o.id=$1`, [orderId])).rows[0] ?? notFound();
       const [items, address, shipments, events] = await Promise.all([
-        pool.query<{ id: string; name: string; sku: string | null; quantity: number; allocated: string; claimed: string; shipped: string; remaining: string }>(`
-          SELECT i.id,i.name,i.sku,i.quantity,
+        pool.query<{ id: string; product_id: string | null; name: string; sku: string | null; quantity: number; allocated: string; claimed: string; shipped: string; remaining: string }>(`
+          SELECT i.id,i.product_id,i.name,i.sku,i.quantity,
             COALESCE((SELECT sum(a.quantity-a.restored_quantity) FROM inventory_allocations a WHERE a.order_item_id=i.id),0)::text AS allocated,
             COALESCE((SELECT sum(si.quantity) FROM shipment_items si JOIN shipments s ON s.id=si.shipment_id WHERE si.order_item_id=i.id AND s.status<>'cancelled'),0)::text AS claimed,
             COALESCE((SELECT sum(si.quantity) FROM shipment_items si JOIN shipments s ON s.id=si.shipment_id WHERE si.order_item_id=i.id AND s.status IN ('dispatched','delivered')),0)::text AS shipped,
@@ -342,7 +347,9 @@ export function createFulfillmentService({ pool, authorize }: Options) {
         pool.query<{ id: string; type: string; visibility: "internal" | "customer"; source: string; actor_user_id: string | null; happened_at: Date; payload: Record<string, unknown> }>(
           "SELECT id,type,visibility,source,actor_user_id,COALESCE(occurred_at,recorded_at) AS happened_at,payload FROM order_events WHERE order_id=$1 ORDER BY COALESCE(occurred_at,recorded_at),recorded_at,id", [orderId]),
       ]);
-      const lines = await shipmentItems(pool, shipments.rows.map(row => row.id));
+      // Serials are shown to every order reader (support looks them up for warranty claims).
+      const lines = await shipmentItems(pool, shipments.rows.map(row => row.id), true);
+      const serialDecisions = await resolveSerialRequirements(pool, items.rows.flatMap(row => row.product_id ? [row.product_id] : []));
       const block = fulfillmentBlock(order);
       // O07: how the order is paid, whether a manual payment can be confirmed now, and the confirmation.
       const payment = (await pool.query<{ method: PaymentMethodCode | null; attempt_open: boolean; hold_running: boolean }>(
@@ -364,7 +371,9 @@ export function createFulfillmentService({ pool, authorize }: Options) {
         contact: { name: order.contact_name, phone: order.contact_phone, email: order.contact_email }, deliveryAddress,
         items: items.rows.map(row => {
           const allocated = Number(row.allocated), claimed = Number(row.claimed);
-          return { id: row.id, name: row.name, sku: row.sku, quantity: row.quantity, allocated, claimed, shipped: Number(row.shipped), remaining: Math.max(allocated - claimed, 0) };
+          const decision = row.product_id ? serialDecisions.get(row.product_id) : undefined;
+          return { id: row.id, name: row.name, sku: row.sku, quantity: row.quantity, allocated, claimed, shipped: Number(row.shipped), remaining: Math.max(allocated - claimed, 0),
+            serialRequired: decision?.required ?? true, serialSource: decision?.source ?? "default" };
         }),
         shipments: shipments.rows.map(row => shipmentDTO(row, lines.get(row.id) ?? [], staffDetail)),
         timeline: events.rows.map(row => {

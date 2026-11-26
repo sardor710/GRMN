@@ -443,7 +443,8 @@ export interface ShipmentDTO {
   createdAt: string;
   dispatchedAt: string | null;
   deliveredAt: string | null;
-  items: { orderItemId: string; quantity: number }[];
+  /** 0030: serials per line (staff views; empty elsewhere). returned = on a return that was received. */
+  items: { orderItemId: string; quantity: number; serials?: { id: string; serial: string; returned: boolean }[] }[];
 }
 export interface AdminOrderSummaryDTO {
   id: string;
@@ -482,7 +483,9 @@ export interface AdminOrderDetailDTO extends AdminOrderSummaryDTO {
   fulfillable: { allowed: boolean; reason: FulfillmentBlock | null };
   contact: { name: string; phone: string | null; email: string | null };
   deliveryAddress: Record<string, string> | null;
-  items: { id: string; name: string; sku: string | null; quantity: number; allocated: number; claimed: number; shipped: number; remaining: number }[];
+  items: { id: string; name: string; sku: string | null; quantity: number; allocated: number; claimed: number; shipped: number; remaining: number;
+    /** 0030: whether packing asks for a serial per unit, and what decided it. */
+    serialRequired: boolean; serialSource: "product" | "category" | "legacy-category" | "name" | "default" }[];
   shipments: ShipmentDTO[];
   timeline: TimelineEventDTO[];
   /** Task 16B: refunds of this order (reserved, pending, unknown, succeeded, failed, cancelled). */
@@ -523,7 +526,9 @@ export interface ReturnDTO {
   createdAt: string;
   receivedAt: string | null;
   inspectedAt: string | null;
-  items: { id: string; orderItemId: string; shipmentItemId: string; quantity: number; receivedQuantity: number; acceptedQuantity: number; restockedQuantity: number; decision: "undecided" | "restock" | "quarantine" | "dispose" }[];
+  items: { id: string; orderItemId: string; shipmentItemId: string; quantity: number; receivedQuantity: number; acceptedQuantity: number; restockedQuantity: number; decision: "undecided" | "restock" | "quarantine" | "dispose";
+    /** 0030: serials of the units on this return line. */
+    serials: string[] }[];
 }
 export interface CancelResultDTO {
   order: { id: string; version: number; status: OrderStatus; paymentStatus: PaymentStatus; fulfillmentStatus: FulfillmentStatus };

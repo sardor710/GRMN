@@ -369,3 +369,52 @@ test("search finds an order by number, customer name or serial, archived ones to
   assert.ok((await list({q:"Aftersales"})).items.length>0);
   await rejectsWith(list({q:"x".repeat(81)}),400,"INVALID_INPUT");
 });
+
+// ---------------------------------------------------------------- T3.4 detail serials; returns name the unit that came back
+test("order detail says which items need a serial and lists the serials per shipment line",async()=>{
+  const w=await watch(),b=await band(),order=await paidOrder([[w.variant,1],[b.variant,1]]),sn=uniq();
+  await pack(order.orderId,[{orderItemId:order.item[w.variant],quantity:1},{orderItemId:order.item[b.variant],quantity:1}],[{orderItemId:order.item[w.variant],units:[sn]}]);
+  const detail=await fulfillment.getOrder(support,order.orderId);
+  const byId=Object.fromEntries(detail.items.map(item=>[item.id,item]));
+  assert.equal(byId[order.item[w.variant]].serialRequired,true);assert.equal(byId[order.item[w.variant]].serialSource,"product");
+  assert.equal(byId[order.item[b.variant]].serialRequired,false);
+  const line=detail.shipments[0].items.find(item=>item.orderItemId===order.item[w.variant]);
+  assert.deepEqual(line.serials.map(entry=>[entry.serial,entry.returned]),[[sn,false]]);
+  assert.equal(detail.stage,"packed");assert.equal(detail.paymentPill,"paid");
+});
+
+async function shippedWatches(units){
+  const w=await watch(),order=await paidOrder([[w.variant,units.length]]),item=order.item[w.variant];
+  const created=await pack(order.orderId,[{orderItemId:item,quantity:units.length}],[{orderItemId:item,units}]);
+  await act(created.shipment,"dispatch");
+  const ids=Object.fromEntries((await q("SELECT id,serial FROM order_unit_serials WHERE order_id=$1",[order.orderId])).rows.map(row=>[row.serial,row.id]));
+  return{order,item,ids};
+}
+const returnStep=async(returnId,action,extra={})=>{const v=(await q("SELECT version FROM returns WHERE id=$1",[returnId])).rows[0].version;return api.updateReturn(fulfiller,{returnId,expectedVersion:v,idempotencyKey:key(),action,...extra});};
+
+test("a return names the serial that comes back; once received, only that serial can be sold again",async()=>{
+  const [a,b]=[uniq(),uniq()],s=await shippedWatches([a,b]);
+  await rejectsWith(api.createReturn(fulfiller,{orderId:s.order.orderId,idempotencyKey:key(),reason:"Faulty",lines:[{orderItemId:s.item,quantity:1}]}),409,"SERIALS_REQUIRED");
+  const created=await api.createReturn(fulfiller,{orderId:s.order.orderId,idempotencyKey:key(),reason:"Faulty",lines:[{orderItemId:s.item,quantity:1,serialIds:[s.ids[b]]}]});
+  assert.deepEqual(created.return.items[0].serials,[b]);
+  // Not yet received: B is still out with the customer.
+  const next=await packedWatch();
+  await rejectsWith(pack(next.order.orderId,[{orderItemId:next.item,quantity:1}],[{orderItemId:next.item,units:[b]}]),409,"SERIAL_IN_USE");
+  await returnStep(created.return.id,"authorize");
+  await returnStep(created.return.id,"receive",{lines:[{returnItemId:created.return.items[0].id,receivedQuantity:1}]});
+  await rejectsWith(pack(next.order.orderId,[{orderItemId:next.item,quantity:1}],[{orderItemId:next.item,units:[a]}]),409,"SERIAL_IN_USE");
+  await pack(next.order.orderId,[{orderItemId:next.item,quantity:1}],[{orderItemId:next.item,units:[b]}]);
+  const detail=await fulfillment.getOrder(support,s.order.orderId);
+  assert.deepEqual(detail.shipments[0].items[0].serials.map(entry=>[entry.serial,entry.returned]).sort(),[[a,false],[b,true]].sort());
+});
+
+test("a serial can be on one open return only, must belong to the item, and a rejected return lets it go",async()=>{
+  const [a,b]=[uniq(),uniq()],s=await shippedWatches([a,b]);
+  const other=await shippedWatches([uniq()]);
+  await rejectsWith(api.createReturn(fulfiller,{orderId:s.order.orderId,idempotencyKey:key(),reason:"x",lines:[{orderItemId:s.item,quantity:1,serialIds:[Object.values(other.ids)[0]]}]}),409,"SERIAL_NOT_RETURNABLE");
+  const first=await api.createReturn(fulfiller,{orderId:s.order.orderId,idempotencyKey:key(),reason:"x",lines:[{orderItemId:s.item,quantity:1,serialIds:[s.ids[a]]}]});
+  await rejectsWith(api.createReturn(fulfiller,{orderId:s.order.orderId,idempotencyKey:key(),reason:"y",lines:[{orderItemId:s.item,quantity:1,serialIds:[s.ids[a]]}]}),409,"SERIAL_NOT_RETURNABLE");
+  await returnStep(first.return.id,"reject");
+  assert.equal((await q("SELECT return_item_id FROM order_unit_serials WHERE id=$1",[s.ids[a]])).rows[0].return_item_id,null);
+  await api.createReturn(fulfiller,{orderId:s.order.orderId,idempotencyKey:key(),reason:"z",lines:[{orderItemId:s.item,quantity:1,serialIds:[s.ids[a]]}]});
+});

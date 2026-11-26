@@ -65,8 +65,10 @@ const refundInput = z.strictObject({
   .refine(value => !value.items || uniqueBy(value.items, item => item.orderItemId));
 const returnInput = z.strictObject({
   orderId: z.string().regex(UUID), idempotencyKey: key, reason,
-  lines: z.array(z.strictObject({ orderItemId: z.string().regex(UUID), quantity: z.number().int().min(1).max(10000) })).min(1).max(100),
-}).refine(value => uniqueBy(value.lines, line => line.orderItemId));
+  // 0030: which units come back, by serial row id; required when the item's shipped units have serials.
+  lines: z.array(z.strictObject({ orderItemId: z.string().regex(UUID), quantity: z.number().int().min(1).max(10000), serialIds: z.array(z.string().regex(UUID)).max(10000).optional() })).min(1).max(100),
+}).refine(value => uniqueBy(value.lines, line => line.orderItemId))
+  .refine(value => value.lines.every(line => !line.serialIds || (line.serialIds.length <= line.quantity && uniqueBy(line.serialIds, id => id))));
 const returnBase = { returnId: z.string().regex(UUID), expectedVersion: z.number().int().min(1), idempotencyKey: key };
 const updateReturnInput = z.discriminatedUnion("action", [
   z.strictObject({ ...returnBase, action: z.enum(["authorize", "reject", "cancel", "close"]) }),
@@ -233,7 +235,8 @@ export async function readReturns(db: Pool | PoolClient, orderId: string, return
   const rows = (await db.query<{ id: string; status: ReturnDTO["status"]; version: number; reason: string; created_at: Date; received_at: Date | null; inspected_at: Date | null; items: ReturnDTO["items"] }>(`
     SELECT r.id,r.status,r.version,r.reason,r.created_at,r.received_at,r.inspected_at,
       COALESCE((SELECT json_agg(json_build_object('id',i.id,'orderItemId',i.order_item_id,'shipmentItemId',i.shipment_item_id,'quantity',i.quantity,'receivedQuantity',i.received_quantity,
-        'acceptedQuantity',i.accepted_quantity,'restockedQuantity',i.restocked_quantity,'decision',i.restock_decision) ORDER BY i.id) FROM return_items i WHERE i.return_id=r.id),'[]'::json) AS items
+        'acceptedQuantity',i.accepted_quantity,'restockedQuantity',i.restocked_quantity,'decision',i.restock_decision,
+        'serials',COALESCE((SELECT json_agg(u.serial ORDER BY u.unit_index) FROM order_unit_serials u WHERE u.return_item_id=i.id),'[]'::json)) ORDER BY i.id) FROM return_items i WHERE i.return_id=r.id),'[]'::json) AS items
     FROM returns r WHERE r.order_id=$1 AND ($2::uuid IS NULL OR r.id=$2) ORDER BY r.created_at,r.id`, [orderId, returnId ?? null])).rows;
   return rows.map(row => ({ id: row.id, status: row.status, version: row.version, reason: row.reason, createdAt: row.created_at.toISOString(), receivedAt: row.received_at?.toISOString() ?? null, inspectedAt: row.inspected_at?.toISOString() ?? null, items: row.items }));
 }
@@ -489,6 +492,32 @@ export function createAfterSalesService({ pool, authorize }: Options) {
           [returnId, order.id, principal.userId, command.reason, sha256(principal.userId + ":" + command.idempotencyKey)]);
         for (const line of command.lines) {
           const id = line.orderItemId.toLowerCase();
+          // 0030: shipped units of this item that have a serial and are not on an open or finished return.
+          const serialRows = (await client.query<{ id: string; shipment_item_id: string }>(`
+            SELECT u.id,u.shipment_item_id FROM order_unit_serials u JOIN shipment_items i ON i.id=u.shipment_item_id JOIN shipments s ON s.id=i.shipment_id
+              LEFT JOIN return_items ri ON ri.id=u.return_item_id LEFT JOIN returns r ON r.id=ri.return_id
+            WHERE u.order_id=$1 AND u.order_item_id=$2 AND s.status IN ('dispatched','delivered') AND (u.return_item_id IS NULL OR r.status IN ('rejected','cancelled'))
+            ORDER BY u.id FOR UPDATE OF u`, [order.id, id])).rows;
+          const hasSerials = (await client.query<{ n: number }>(`SELECT count(*)::int AS n FROM order_unit_serials u JOIN shipment_items i ON i.id=u.shipment_item_id JOIN shipments s ON s.id=i.shipment_id
+            WHERE u.order_id=$1 AND u.order_item_id=$2 AND s.status IN ('dispatched','delivered')`, [order.id, id])).rows[0].n > 0;
+          if (hasSerials || line.serialIds) {
+            if ((line.serialIds?.length ?? 0) !== line.quantity) fail("SERIALS_REQUIRED", 409, "Pick the serial number of every unit that comes back");
+            const available = new Map(serialRows.map(row => [row.id, row.shipment_item_id]));
+            const picked = line.serialIds!.map(serialId => serialId.toLowerCase());
+            if (picked.some(serialId => !available.has(serialId))) fail("SERIAL_NOT_RETURNABLE", 409, "A picked serial is not a shipped unit of this item, or is already on a return");
+            // The picked serials decide which shipment lines take the return quantity.
+            const groups = new Map<string, string[]>();
+            for (const serialId of picked) groups.set(available.get(serialId)!, [...(groups.get(available.get(serialId)!) ?? []), serialId]);
+            for (const [shipmentItemId, serialIds] of groups) {
+              const returnable = Number((await client.query<{ returnable: string }>(`SELECT (i.quantity-COALESCE((SELECT sum(ri.quantity) FROM return_items ri JOIN returns r ON r.id=ri.return_id
+                WHERE ri.shipment_item_id=i.id AND r.status NOT IN ('rejected','cancelled')),0))::text AS returnable FROM shipment_items i WHERE i.id=$1 FOR UPDATE`, [shipmentItemId])).rows[0].returnable);
+              if (returnable < serialIds.length) fail("RETURN_EXCEEDS_SHIPPED", 409, "More units than were shipped and not yet returned");
+              const returnItemId = randomUUID();
+              await client.query("INSERT INTO return_items(id,return_id,order_id,order_item_id,shipment_item_id,quantity) VALUES($1,$2,$3,$4,$5,$6)", [returnItemId, returnId, order.id, id, shipmentItemId, serialIds.length]);
+              await client.query("UPDATE order_unit_serials SET return_item_id=$2,updated_at=now() WHERE id=ANY($1::uuid[])", [serialIds, returnItemId]);
+            }
+            continue;
+          }
           const shipped = (await client.query<{ id: string; returnable: string }>(`
             SELECT i.id,(i.quantity-COALESCE((SELECT sum(ri.quantity) FROM return_items ri JOIN returns r ON r.id=ri.return_id WHERE ri.shipment_item_id=i.id AND r.status NOT IN ('rejected','cancelled')),0))::text AS returnable
             FROM shipment_items i JOIN shipments s ON s.id=i.shipment_id WHERE i.order_id=$1 AND i.order_item_id=$2 AND s.status IN ('dispatched','delivered') ORDER BY i.id FOR UPDATE OF i`, [order.id, id])).rows;
@@ -553,6 +582,10 @@ export function createAfterSalesService({ pool, authorize }: Options) {
           }
         } else {
           await client.query("UPDATE returns SET status=$2,version=version+1 WHERE id=$1", [command.returnId, to[command.action]]);
+          // 0030: a rejected or cancelled return lets its serials go (the units stay with the customer).
+          if (command.action === "reject" || command.action === "cancel") {
+            await client.query("UPDATE order_unit_serials SET return_item_id=NULL,updated_at=now() WHERE return_item_id IN (SELECT id FROM return_items WHERE return_id=$1)", [command.returnId]);
+          }
         }
         const eventId = await orderEvent(client, { orderId: order.id, type: `return.${to[command.action]}`, actor: principal.userId, dedupeKey, visibility: "internal", payload: { requestHash: hash, returnId: command.returnId } });
         await audit(client, principal.userId, `return.${to[command.action]}`, "return", command.returnId, eventId, { orderId: order.id, from: current.status, to: to[command.action] });
