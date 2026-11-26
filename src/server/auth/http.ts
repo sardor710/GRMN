@@ -11,7 +11,7 @@ import type { AuthConfig } from "./config.ts";
 import { authDigest, consumeAuthBudget, OTP_PATTERN, PHONE_PURPOSES } from "./phone-service.ts";
 import type { PhoneSender } from "./phone-service.ts";
 import { getSessionIdentity, staffMfaRequired } from "./principal.ts";
-import { completeProfileInput, emailInput, phoneInput } from "./validation.ts";
+import { completeProfileInput, emailInput, phoneInput, signUpInput } from "./validation.ts";
 import { revokeBrowserAuthentication } from "./lifecycle.ts";
 import { requestURL } from "./request-url.ts";
 
@@ -24,7 +24,7 @@ const bodies = {
   "/grmn/phone/send": z.object({ phoneNumber: phoneInput, purpose: z.enum(PHONE_PURPOSES).optional() }).strict(),
   "/grmn/phone/verify": z.object({ phoneNumber: phoneInput, challengeId: z.uuid(), code: z.string().regex(OTP_PATTERN) }).strict(),
   "/grmn/phone/complete": completeProfileInput,
-  "/grmn/signup": completeProfileInput,
+  "/grmn/signup": signUpInput,
   // Staff credential change through the Better Auth credential service; every session is revoked.
   "/change-password": z.object({ currentPassword: z.string().min(1).max(128), newPassword: z.string().min(16).max(128), revokeOtherSessions: z.literal(true).default(true) }).strict(),
 };
@@ -95,9 +95,9 @@ export function createAuthFoundation(input: { database: DatabaseHandle; config: 
       if (request.method==="GET" && path==="/grmn/mode") {
         // Read at runtime (never baked into the client bundle): the account page shows Sign up and the test-code note.
         // The test code is shown on the sign-in form while test mode is on (owner 2026-11-26: site not public yet).
-        return json(input.testCode !== undefined ? { testCode: true, signUp: true, code: input.testCode } : { testCode: false, signUp: false });
+        // Sign-up is open whenever a code can be sent (a real sender or the fixed code); the code is always checked.
+        return json(input.testCode !== undefined ? { testCode: true, signUp: true, code: input.testCode } : { testCode: false, signUp: Boolean(input.phoneSender) });
       }
-      if (path==="/grmn/signup" && input.testCode===undefined) return json({ error: { code: "NOT_FOUND", message: "Auth operation is unavailable" } }, 404);
       if (request.method!=="POST" || !(path in bodies)) return json({ error: { code: "NOT_FOUND", message: "Auth operation is unavailable" } }, 404);
       if (request.headers.get("origin")!==config.baseURL) throw new AuthFailure("FORBIDDEN", 403, "Invalid auth origin");
       if (request.headers.get("content-type")?.split(";")[0].trim()!=="application/json") throw new AuthFailure("INVALID_INPUT", 400, "JSON input is required");

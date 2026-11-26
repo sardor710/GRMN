@@ -113,3 +113,16 @@ test("HTTP: a direct POST with country UZ is rejected with 400 and a clear messa
   assert.equal(response.status,400);
   const body=await response.json();assert.equal(body.error.code,"INVALID_INPUT");assert.match(body.error.message,/only within Kazakhstan/);
 });
+
+// 0033 (owner 2026-11-26): optional gender in Profile, same keep/clear rules as the birthday.
+test("gender is optional: saved, kept when omitted, cleared with null, and validated",async()=>{
+  const a=await owner(),base={name:"Gender owner",email:"gender@example.invalid",phone:a.phone};
+  assert.equal((await api.getProfile(a.headers)).gender,null);
+  const first=await api.saveProfile(a.headers,{...base,gender:"male",expectedVersion:0});
+  assert.equal(first.gender,"male");assert.equal((await api.getProfile(a.headers)).gender,"male");
+  const kept=await api.saveProfile(a.headers,{...base,name:"Renamed",expectedVersion:first.version});
+  assert.equal(kept.gender,"male","an omitted gender keeps the stored value");
+  const cleared=await api.saveProfile(a.headers,{...base,gender:null,expectedVersion:kept.version});
+  assert.equal(cleared.gender,null);
+  await assert.rejects(api.saveProfile(a.headers,{...base,gender:"other",expectedVersion:cleared.version}),e=>e.status===400);
+});

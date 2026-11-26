@@ -174,8 +174,11 @@ export interface CompleteProfileCommand {
   phone: string;
   /** ISO date (YYYY-MM-DD); null clears it, omitted keeps the stored value. */
   birthDate?: string | null;
+  /** 0033: optional gender; null clears it, omitted keeps the stored value. */
+  gender?: CustomerGender | null;
   expectedVersion: number;
 }
+export type CustomerGender = "male" | "female" | "unspecified";
 
 export interface CustomerProfileDTO {
   /** Null until the signed-in user first saves a customer profile (version 0). */
@@ -188,6 +191,8 @@ export interface CustomerProfileDTO {
   phoneVerified: boolean;
   /** Optional birthday as an ISO date (YYYY-MM-DD). */
   birthDate: string | null;
+  /** 0033 (owner 2026-11-26): optional; null = not given. */
+  gender: CustomerGender | null;
   profileState: "provisional" | "complete";
   version: number;
 }

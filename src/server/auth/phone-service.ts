@@ -2,7 +2,7 @@ import "server-only";
 import { createHash, createHmac, randomBytes, randomInt, randomUUID } from "node:crypto";
 import type { DatabaseHandle } from "../db/client.ts";
 import { AuthFailure } from "./config.ts";
-import { completeProfileInput } from "./validation.ts";
+import { completeProfileInput, signUpInput } from "./validation.ts";
 
 export const PHONE_PURPOSES = ["sign_in", "phone_change_current", "phone_change_new", "order_claim"] as const;
 export type PhonePurpose = typeof PHONE_PURPOSES[number];
@@ -30,7 +30,7 @@ export function createPhoneService(input: { database: Pick<DatabaseHandle, "pool
   if (!Number.isInteger(ttlMs) || ttlMs<100 || ttlMs>300000) throw new Error("Invalid phone challenge lifetime");
   const invalid = () => new AuthFailure("UNAUTHENTICATED", 401, "Invalid or expired verification");
   const proofs = new WeakSet<VerifiedPhoneProof>();
-  return {
+  const service = {
     async request(phoneNumber: string, purpose: PhonePurpose = "sign_in") {
       if (!PHONE_PURPOSES.includes(purpose)) throw new AuthFailure("INVALID_INPUT", 400, "Invalid verification purpose");
       if (!canonicalPhone(phoneNumber)) throw new AuthFailure("INVALID_INPUT", 400, "Invalid phone number");
@@ -67,21 +67,25 @@ export function createPhoneService(input: { database: Pick<DatabaseHandle, "pool
       await database.pool.query("INSERT INTO customer_completion_sessions(id,phone_number,token_hash,phone_verified_at,expires_at) VALUES($1,$2,$3,now(),now()+interval '10 minutes')", [randomUUID(), proof.phoneNumber, capabilityHash(token)]);
       return token;
     },
-    /** Owner 2026-11-26: direct signup without phone proof, only while a test code is configured. */
-    async signUpUnverified(details: { name: string; email: string; phoneNumber: string }) {
-      if (!testCode) throw new AuthFailure("FORBIDDEN", 403, "Sign up requires phone verification");
-      const parsed = completeProfileInput.safeParse(details);
-      if (!parsed.success) throw new AuthFailure("INVALID_INPUT", 400, "Invalid profile details");
-      details = parsed.data;
-      await consumeAuthBudget(database, secret, "phone-signup", details.phoneNumber, 5, 900);
+    /**
+     * Owner 2026-11-26 (one-page sign-up): checks the phone code and creates the account with the optional gender and
+     * birthday in one step. Details are validated before the code is spent, so a typo never burns it.
+     */
+    async signUp(input: { name: string; email: string; phoneNumber: string; challengeId: string; code: string; gender?: string | null; birthDate?: string | null }) {
+      const parsed = signUpInput.safeParse(input);
+      if (!parsed.success) throw new AuthFailure("INVALID_INPUT", 400, "Invalid sign-up details");
+      const details = parsed.data;
+      const taken = await database.pool.query("SELECT 1 FROM users WHERE phone_number=$1 OR lower(email)=$2 LIMIT 1", [details.phoneNumber, details.email]);
+      if (taken.rowCount) throw new AuthFailure("VERSION_CONFLICT", 409, "This phone or email already has an account; sign in instead");
+      await service.consume(details.challengeId, details.phoneNumber, details.code, "sign_in");
       const client = await database.pool.connect();
       try {
         await client.query("BEGIN");
         const id = randomUUID();
-        // phone_number_verified=true so sign-in and profile editing work; the audit action marks the phone as unproven.
         await client.query("INSERT INTO users(id,name,email,phone_number,phone_number_verified) VALUES($1,$2,$3,$4,true)", [id, details.name, details.email, details.phoneNumber]);
-        await client.query("INSERT INTO customer_profiles(id,user_id,name,email,entered_phone,normalized_phone,profile_state) VALUES($1,$2,$3,$4,$5,$5,'complete')", [randomUUID(), id, details.name, details.email, details.phoneNumber]);
-        await client.query("INSERT INTO audit_events(id,actor_user_id,action,target_type,target_id,dedupe_key) VALUES($1,$2,'customer.signup_unverified','user',$2,$3)", [randomUUID(), id, `signup-unverified:${id}`]);
+        await client.query("INSERT INTO customer_profiles(id,user_id,name,email,entered_phone,normalized_phone,profile_state,gender,birth_date) VALUES($1,$2,$3,$4,$5,$5,'complete',$6,$7::date)",
+          [randomUUID(), id, details.name, details.email, details.phoneNumber, details.gender ?? null, details.birthDate ?? null]);
+        await client.query("INSERT INTO audit_events(id,actor_user_id,action,target_type,target_id,dedupe_key) VALUES($1,$2,'customer.signed_up','user',$2,$3)", [randomUUID(), id, `signed-up:${id}`]);
         await client.query("COMMIT");
         return id;
       } catch (error) {
@@ -112,4 +116,5 @@ export function createPhoneService(input: { database: Pick<DatabaseHandle, "pool
       } finally { client.release(); }
     },
   };
+  return service;
 }

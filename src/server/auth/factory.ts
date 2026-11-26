@@ -11,7 +11,7 @@ import { AuthFailure } from "./config.ts";
 import type { AuthConfig } from "./config.ts";
 import { createPhoneService, OTP_PATTERN, PHONE_PURPOSES } from "./phone-service.ts";
 import type { PhoneSender } from "./phone-service.ts";
-import { completeProfileInput, phoneInput } from "./validation.ts";
+import { completeProfileInput, phoneInput, signUpInput } from "./validation.ts";
 
 async function endpointResult<T>(run: () => Promise<T>): Promise<T> {
   try { return await run(); }
@@ -82,8 +82,8 @@ export function buildAuth(input: { database: DatabaseHandle; config: AuthConfig;
             await setSessionCookie(ctx, { user, session });
             return ctx.json({ state: "authenticated" });
           })),
-          signUpUnverified: createAuthEndpoint("/grmn/signup", { method: "POST", body: completeProfileInput }, ctx => endpointResult(async () => {
-            const userId = await phones.signUpUnverified(ctx.body), user = await ctx.context.internalAdapter.findUserById(userId), session = await ctx.context.internalAdapter.createSession(userId);
+          signUp: createAuthEndpoint("/grmn/signup", { method: "POST", body: signUpInput }, ctx => endpointResult(async () => {
+            const userId = await phones.signUp(ctx.body), user = await ctx.context.internalAdapter.findUserById(userId), session = await ctx.context.internalAdapter.createSession(userId);
             if (!user || !session) throw new AuthFailure("DEPENDENCY_UNAVAILABLE", 503, "Authentication is unavailable");
             await setSessionCookie(ctx, { user, session });
             return ctx.json({ state: "authenticated" });

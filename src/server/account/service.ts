@@ -31,6 +31,8 @@ const profileInput = z.strictObject({
   phone,
   // Optional birthday (M8), checked by checkBirthDate; undefined keeps the stored value.
   birthDate: z.union([z.string().max(10), z.null()]).optional(),
+  // 0033 (owner 2026-11-26): optional gender; undefined keeps the stored value, null clears it.
+  gender: z.enum(["male", "female", "unspecified"]).nullable().optional(),
   expectedVersion: z.number().int().min(0),
 });
 const addressInput = z.strictObject({
@@ -154,14 +156,14 @@ export function createAccountService({ database, authorize, authorizeFresh, secr
   return {
     async getProfile(headers: Headers): Promise<CustomerProfileDTO> {
       const principal = await authorize(headers);
-      const result = await database.pool.query<{ user_name: string; user_email: string; user_email_verified: boolean; phone_number: string | null; phone_number_verified: boolean; id: string | null; name: string | null; email: string | null; email_verified_at: Date | null; birth_date: string | null; profile_state: "provisional" | "complete" | null; version: number | null }>(
-        "SELECT u.name AS user_name,u.email AS user_email,u.email_verified AS user_email_verified,u.phone_number,u.phone_number_verified,p.id,p.name,p.email,p.email_verified_at,to_char(p.birth_date,'YYYY-MM-DD') AS birth_date,p.profile_state,p.version FROM users u LEFT JOIN customer_profiles p ON p.user_id=u.id WHERE u.id=$1 AND u.status='active'", [principal.userId]);
+      const result = await database.pool.query<{ user_name: string; user_email: string; user_email_verified: boolean; phone_number: string | null; phone_number_verified: boolean; id: string | null; name: string | null; email: string | null; email_verified_at: Date | null; birth_date: string | null; gender: CustomerProfileDTO["gender"]; profile_state: "provisional" | "complete" | null; version: number | null }>(
+        "SELECT u.name AS user_name,u.email AS user_email,u.email_verified AS user_email_verified,u.phone_number,u.phone_number_verified,p.id,p.name,p.email,p.email_verified_at,to_char(p.birth_date,'YYYY-MM-DD') AS birth_date,p.gender,p.profile_state,p.version FROM users u LEFT JOIN customer_profiles p ON p.user_id=u.id WHERE u.id=$1 AND u.status='active'", [principal.userId]);
       const row = result.rows[0] ?? (() => { throw new AuthFailure("UNAUTHENTICATED", 401, "Sign in is required"); })();
       const profileEmail = row.id !== null && row.email !== null;
       return {
         id: row.id, name: row.name ?? row.user_name, email: profileEmail ? row.email : row.user_email,
         emailVerified: profileEmail ? row.email_verified_at !== null : row.user_email_verified,
-        phone: row.phone_number, phoneVerified: Boolean(row.phone_number && row.phone_number_verified), birthDate: row.birth_date,
+        phone: row.phone_number, phoneVerified: Boolean(row.phone_number && row.phone_number_verified), birthDate: row.birth_date, gender: row.gender ?? null,
         profileState: row.profile_state ?? "provisional", version: row.version ?? 0,
       };
     },
@@ -179,13 +181,14 @@ export function createAccountService({ database, authorize, authorizeFresh, secr
         const owner = await lockOwner(client, principal.userId);
         if (!owner.phone_number || !owner.phone_number_verified || owner.phone_number !== command.phone) invalid("Phone must match your verified phone number");
         const values = [principal.userId, command.name, command.email, command.phone];
-        type Saved = { id: string; version: number; email_verified_at: Date | null; birth_date: string | null };
+        type Saved = { id: string; version: number; email_verified_at: Date | null; birth_date: string | null; gender: CustomerProfileDTO["gender"] };
+        const keepGender = command.gender === undefined, gender = command.gender ?? null;
         // A new or changed email is stored unverified; only an unchanged email keeps prior verification.
         const saved = command.expectedVersion === 0
-          ? await client.query<Saved>("INSERT INTO customer_profiles(id,user_id,name,email,email_verified_at,entered_phone,normalized_phone,birth_date,profile_state,version) VALUES($5,$1,$2,$3,NULL,$4,$4,$6::date,'complete',1) ON CONFLICT (user_id) WHERE user_id IS NOT NULL DO NOTHING RETURNING id,version,email_verified_at,to_char(birth_date,'YYYY-MM-DD') AS birth_date", [...values, randomUUID(), birthDate])
-          : await client.query<Saved>("UPDATE customer_profiles SET name=$2,email_verified_at=CASE WHEN email IS NOT DISTINCT FROM $3 THEN email_verified_at ELSE NULL END,email=$3,entered_phone=$4,normalized_phone=$4,birth_date=CASE WHEN $7::boolean THEN birth_date ELSE $6::date END,profile_state='complete',version=version+1,updated_at=now() WHERE user_id=$1 AND version=$5 RETURNING id,version,email_verified_at,to_char(birth_date,'YYYY-MM-DD') AS birth_date", [...values, command.expectedVersion, birthDate, keepBirth]);
+          ? await client.query<Saved>("INSERT INTO customer_profiles(id,user_id,name,email,email_verified_at,entered_phone,normalized_phone,birth_date,gender,profile_state,version) VALUES($5,$1,$2,$3,NULL,$4,$4,$6::date,$7,'complete',1) ON CONFLICT (user_id) WHERE user_id IS NOT NULL DO NOTHING RETURNING id,version,email_verified_at,to_char(birth_date,'YYYY-MM-DD') AS birth_date,gender", [...values, randomUUID(), birthDate, gender])
+          : await client.query<Saved>("UPDATE customer_profiles SET name=$2,email_verified_at=CASE WHEN email IS NOT DISTINCT FROM $3 THEN email_verified_at ELSE NULL END,email=$3,entered_phone=$4,normalized_phone=$4,birth_date=CASE WHEN $7::boolean THEN birth_date ELSE $6::date END,gender=CASE WHEN $9::boolean THEN gender ELSE $8 END,profile_state='complete',version=version+1,updated_at=now() WHERE user_id=$1 AND version=$5 RETURNING id,version,email_verified_at,to_char(birth_date,'YYYY-MM-DD') AS birth_date,gender", [...values, command.expectedVersion, birthDate, keepBirth, gender, keepGender]);
         const row = saved.rows[0] ?? conflict();
-        return { id: row.id, name: command.name, email: command.email, emailVerified: row.email_verified_at !== null, phone: command.phone, phoneVerified: true, birthDate: row.birth_date, profileState: "complete" as const, version: row.version };
+        return { id: row.id, name: command.name, email: command.email, emailVerified: row.email_verified_at !== null, phone: command.phone, phoneVerified: true, birthDate: row.birth_date, gender: row.gender ?? null, profileState: "complete" as const, version: row.version };
       });
     },
 

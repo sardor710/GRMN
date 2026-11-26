@@ -1,6 +1,6 @@
 // Browser client for the session-owned account API (Task 10C). Identity always comes from the
 // session cookie; no call accepts an email, phone or user ID as a selector.
-import type { CustomerProfileDTO, GeoPrecision, Money, OrderDetailDTO, OrderSummaryDTO, SavedAddressDTO, WishlistItemDTO } from "../contracts/commerce.ts";
+import type { CustomerGender, CustomerProfileDTO, GeoPrecision, Money, OrderDetailDTO, OrderSummaryDTO, SavedAddressDTO, WishlistItemDTO } from "../contracts/commerce.ts";
 import type { Page } from "../contracts/pagination.ts";
 import { formatKzt as formatKztAmount } from "./money.ts";
 import { kzRegionLabel } from "./kz-regions.ts";
@@ -77,7 +77,7 @@ export function createAccountClient(fetcher: AccountFetcher) {
   return {
     session: () => call<AccountSession>("/api/auth/get-session"),
     profile: () => call<CustomerProfileDTO>("/api/account/profile"),
-    saveProfile: (command: { name: string; email: string; phone: string; birthDate?: string | null; expectedVersion: number }) => call<CustomerProfileDTO>("/api/account/profile", "PUT", command),
+    saveProfile: (command: { name: string; email: string; phone: string; birthDate?: string | null; gender?: CustomerGender | null; expectedVersion: number }) => call<CustomerProfileDTO>("/api/account/profile", "PUT", command),
     addresses: () => call<Page<SavedAddressDTO>>("/api/account/addresses"),
     saveAddress: (fields: AddressFields, existing?: { id: string; version: number }) => existing
       ? call<SavedAddressDTO>(`/api/account/addresses/${encodeURIComponent(existing.id)}`, "PUT", { ...addressBody(fields), expectedVersion: existing.version })
@@ -86,7 +86,7 @@ export function createAccountClient(fetcher: AccountFetcher) {
     orders: (cursor?: string) => call<Page<OrderSummaryDTO>>(`/api/account/orders?limit=${ORDER_PAGE_SIZE}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
     order: (id: string) => call<OrderDetailDTO>(`/api/account/orders/${encodeURIComponent(id)}`),
     authMode: () => call<AuthMode>("/api/auth/grmn/mode"),
-    signUp: (command: { name: string; email: string; phoneNumber: string }) => call<{ state: "authenticated" }>("/api/auth/grmn/signup", "POST", command),
+    signUp: (command: { name: string; email: string; phoneNumber: string; challengeId: string; code: string; gender?: CustomerGender | null; birthDate?: string | null }) => call<{ state: "authenticated" }>("/api/auth/grmn/signup", "POST", command),
     sendCode: (phoneNumber: string, purpose: PhonePurpose) => call<{ challengeId: string; testCode?: true }>("/api/auth/grmn/phone/send", "POST", { phoneNumber, purpose }),
     verifySignIn: (command: { phoneNumber: string; challengeId: string; code: string }) => call<{ state: "authenticated" | "complete_profile" }>("/api/auth/grmn/phone/verify", "POST", command),
     completeProfile: (command: { name: string; email: string; phoneNumber: string }) => call<unknown>("/api/auth/grmn/phone/complete", "POST", command),
