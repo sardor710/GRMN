@@ -829,7 +829,7 @@
       "email": "Email",
       "create": "Create account"
     },
-    "code": "6-digit code",
+    "code": "Verification code",
     "sections": "Account sections",
     "tabs": {
       "Profile": "Profile",
