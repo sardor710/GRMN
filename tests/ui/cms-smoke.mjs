@@ -513,8 +513,8 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
   const shoot=async name=>{const image=await send("Page.captureScreenshot",{format:"png"});await saveShot(name,image.data,shots);};
   const signOut=()=>send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
   const product=randomUUID(),variant=randomUUID();
-  await pool.query("INSERT INTO products(id,public_key,name,status) VALUES($1,'ui-demo-fixture','UI DEMO FIXTURE','published')",[product]);
-  await pool.query("INSERT INTO product_variants(id,product_id,sku,name,is_default,status) VALUES($1,$2,'UI-DEMO-SKU','Base',true,'active')",[variant,product]);
+  await pool.query("INSERT INTO products(id,public_key,name,status) VALUES($1,'ui-nopay-fixture','UI NOPAY FIXTURE','published')",[product]);
+  await pool.query("INSERT INTO product_variants(id,product_id,sku,name,is_default,status) VALUES($1,$2,'UI-NOPAY-SKU','Base',true,'active')",[variant,product]);
   await pool.query("INSERT INTO prices(id,variant_id,amount_minor) VALUES($1,$2,100000)",[randomUUID(),variant]);
   const main=(await pool.query("SELECT id FROM stock_locations WHERE key='main'")).rows[0].id;
   await pool.query("INSERT INTO inventory_balances(variant_id,location_id) VALUES($1,$2)",[variant,main]);
@@ -527,10 +527,10 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
   try{
     // Storefront: add to cart, review, Pay (customers never read "demo" since 2026-11-22).
     await signOut();await customerCookie();
-    await navigate("/p/ui-demo-fixture");await until(async()=>(await text()).includes("UI DEMO FIXTURE"),"Demo fixture product did not render");
+    await navigate("/p/ui-nopay-fixture");await until(async()=>(await text()).includes("UI NOPAY FIXTURE"),"Demo fixture product did not render");
     await until(async()=>{try{await click("Add To Cart");return true;}catch{return false;}},"Add To Cart was not clickable");
     await until(async()=>(await pool.query("SELECT 1 FROM cart_items ci JOIN carts c ON c.id=ci.cart_id WHERE c.user_id=$1 AND c.status='active' AND ci.variant_id=$2",[customerId,variant])).rowCount===1,"The demo fixture did not reach the account cart");
-    await navigate("/cart");await until(async()=>(await text()).includes("UI DEMO FIXTURE")&&/review order/i.test(await text()),"Cart with the demo fixture missing");
+    await navigate("/cart");await until(async()=>(await text()).includes("UI NOPAY FIXTURE")&&/review order/i.test(await text()),"Cart with the demo fixture missing");
     // The customer's saved primary address (UI Home) is preselected since the Kazakhstan checkout (f0df306).
     await until(()=>evaluate("document.querySelector('input[name=delivery-address]:checked')?.closest('label')?.textContent.includes('UI Home')"),"The saved primary address was not preselected");
     await until(async()=>{try{await click("Review order");return true;}catch{return false;}},"Review order stayed disabled");
@@ -587,7 +587,8 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     await until(async()=>{try{await click("Mark as shipped");return true;}catch{return false;}},"The packed demo order offered no shipping");
     await until(async()=>(await pool.query("SELECT count(*)::int AS n FROM shipments WHERE order_id=$1 AND status='dispatched'",[order[0].id])).rows[0].n===1,"The demo shipment was not dispatched");
     await evaluate("window.confirm=()=>true");
-    await until(async()=>{try{await click("Mark delivered");return true;}catch{return false;}},"The dispatched demo shipment offered no delivery");
+    // The drawer's own button (the board card behind it carries the same label).
+    await until(()=>evaluate(`(()=>{const b=[...document.querySelectorAll('section[aria-label="Confirm delivery"] button')].find(b=>b.textContent.trim()==='Mark delivered'&&!b.disabled);if(!b)return false;b.click();return true;})()`),"The dispatched demo shipment offered no delivery");
     await until(async()=>(await pool.query("SELECT fulfillment_status FROM orders WHERE id=$1",[order[0].id])).rows[0].fulfillment_status==="delivered","The demo order was not delivered");
     assert.equal((await pool.query("SELECT payment_mode FROM orders WHERE id=$1",[order[0].id])).rows[0].payment_mode,"demo","still labelled demo after delivery");
   }finally{
