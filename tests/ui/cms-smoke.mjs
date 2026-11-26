@@ -569,7 +569,7 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     // Account history: the demo order carries the candy-blue dot (no DEMO text for customers).
     await navigate("/account");await until(async()=>(await text()).toLowerCase().includes("ui account owner"),"Account page did not load");
     await click("Orders");
-    await until(()=>evaluate(`[...document.querySelectorAll('button')].some(b=>b.textContent.toUpperCase().includes(${number})&&!!b.querySelector('[data-demo-dot]'))`),"The account history does not mark the demo order");
+    await until(()=>evaluate(`[...document.querySelectorAll('main a[href^="?order="]')].some(b=>b.textContent.toUpperCase().includes(${number})&&!!b.querySelector('[data-demo-dot]'))`),"The account history does not mark the demo order");
     // Admin (owner 2026-11-25 board): the Demo filter shows only demo orders, each card tagged Demo; the demo order is
     // packed from its card (the fixture is an unfiled product, so it needs a serial), shipped and delivered.
     await signOut();await staffCookie();
