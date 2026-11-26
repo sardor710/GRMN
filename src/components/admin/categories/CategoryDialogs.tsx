@@ -8,7 +8,7 @@ import { translateName, type AdminMenuItem, type CategoryUsage, type LocalName }
 const input = "h-10 w-full border border-[#d9d9d9] bg-white px-3 text-[14px] text-black outline-none focus:border-black";
 const label = "block text-[12px] font-medium uppercase tracking-[0.04em] text-[#595959]";
 
-export interface NameValues { en: string; ru: string; kk: string; navVisible: boolean; serialPolicy: SerialPolicy }
+export interface NameValues { en: string; ru: string; kk: string; navVisible: boolean; serialPolicy: SerialPolicy; warrantyMonths: string }
 /** 0030 (owner 2026-11-25): serial number at packing; null = same as the parent category. */
 export type SerialPolicy = "required" | "none" | null;
 
@@ -19,14 +19,14 @@ export function CategoryNameDialog({ title, initial, showVisibility, fixedLink, 
   emptyHint?: string;
   /** A line under the fields (e.g. where a menu rename applies). */
   note?: string;
-  initial?: { name: LocalName; navVisible: boolean; serialPolicy?: SerialPolicy };
+  initial?: { name: LocalName; navVisible: boolean; serialPolicy?: SerialPolicy; warrantyMonths?: number | null };
   showVisibility: boolean;
   /** A fixed menu link (e.g. Sports & Fitness opens Running), shown read-only. */
   fixedLink?: string | null;
   onSave: (values: NameValues) => Promise<void>;
   onClose: () => void;
 }) {
-  const [values, setValues] = useState<NameValues>({ en: initial?.name.en ?? "", ru: initial?.name.ru ?? "", kk: initial?.name.kk ?? "", navVisible: initial?.navVisible ?? true, serialPolicy: initial?.serialPolicy ?? null });
+  const [values, setValues] = useState<NameValues>({ en: initial?.name.en ?? "", ru: initial?.name.ru ?? "", kk: initial?.name.kk ?? "", navVisible: initial?.navVisible ?? true, serialPolicy: initial?.serialPolicy ?? null, warrantyMonths: initial?.warrantyMonths ? String(initial.warrantyMonths) : "" });
   const [busy, setBusy] = useState<"save" | "translate" | null>(null);
   const [message, setMessage] = useState("");
   const set = (field: keyof NameValues) => (value: string | boolean | null) => setValues(current => ({ ...current, [field]: value }));
@@ -66,6 +66,13 @@ export function CategoryNameDialog({ title, initial, showVisibility, fixedLink, 
               <option value="none">No serial (bands, cables, chargers, cases)</option>
             </select>
             <p className="mt-1 text-[12px] text-[#595959]">Products here ask for one serial per unit when packed. A product can override this on its General tab.</p>
+          </div>
+        )}
+        {initial && (
+          <div>
+            <label className={label} htmlFor="category-warranty">Warranty (months)</label>
+            <input id="category-warranty" inputMode="numeric" className={input} placeholder="Same as parent (12 if none)" value={values.warrantyMonths} onChange={(e) => set("warrantyMonths")(e.target.value.replace(/\D/g, "").slice(0, 3))} />
+            <p className="mt-1 text-[12px] text-[#595959]">Shown in customers’ My devices from the delivery or pickup day. Empty = same as the parent category; 12 months when nothing is set. A product can override this on its General tab.</p>
           </div>
         )}
         {note && <p className="text-[12px] text-[#595959]">{note}</p>}

@@ -94,11 +94,40 @@ test("the product editor reads and changes the serial setting; only catalog edit
   const { createFulfillmentService } = await import("../../src/server/fulfillment/service.ts");
   const service = createFulfillmentService({ pool: f.database.pool, authorize: f.authorize });
   const id = await product("Editor watch", { categories: ["sports-fitness/multisport-smartwatches"] });
-  assert.deepEqual(await service.getProductSerial(f.admin, id), { productId: id, policy: null, decision: { required: true, source: "default", detail: "sports-fitness/multisport-smartwatches" } });
+  assert.deepEqual(await service.getProductSerial(f.admin, id), { productId: id, policy: null, decision: { required: true, source: "default", detail: "sports-fitness/multisport-smartwatches" }, warranty: { months: null, effective: 12 } });
   const changed = await service.setProductSerial(f.catalogEditor.headers, { productId: id, policy: "none" });
   assert.equal(changed.policy, "none");assert.equal(changed.decision.required, false);
   assert.equal((await q("SELECT count(*)::int AS n FROM audit_events WHERE action='catalog.serial_policy' AND target_id=$1", [id])).rows[0].n, 1);
   await assert.rejects(service.setProductSerial(f.reader.headers, { productId: id, policy: "required" }), error => error.status === 403);
   await assert.rejects(service.setProductSerial(f.admin, { productId: id, policy: "maybe" }), error => error.status === 400);
   await assert.rejects(service.setProductSerial(f.admin, { productId: randomUUID(), policy: null }), error => error.status === 404);
+  // 0033: the product's own warranty months, audited; readers may not change them.
+  const warranted = await service.setProductWarranty(f.catalogEditor.headers, { productId: id, months: 24 });
+  assert.deepEqual(warranted.warranty, { months: 24, effective: 24 });
+  assert.equal((await q("SELECT count(*)::int AS n FROM audit_events WHERE action='catalog.warranty_months' AND target_id=$1", [id])).rows[0].n, 1);
+  await assert.rejects(service.setProductWarranty(f.reader.headers, { productId: id, months: 6 }), error => error.status === 403);
+  await assert.rejects(service.setProductWarranty(f.admin, { productId: id, months: 0 }), error => error.status === 400);
+  assert.deepEqual((await service.setProductWarranty(f.admin, { productId: id, months: null })).warranty, { months: null, effective: 12 });
+});
+
+// 0033 (owner 2026-11-26): warranty months — product, else the longest of its categories' (own or inherited), else 12.
+test("warranty months: Admin ▸ Categories sets and clears them; a product's own value wins; default 12", async () => {
+  const { resolveWarrantyMonths, setProductWarrantyMonths, warrantyEnd } = await import("../../src/server/fulfillment/warranty.ts");
+  const months = async id => (await resolveWarrantyMonths(f.database.pool, [id])).get(id.toLowerCase());
+  const epochOf = async () => (await q("SELECT epoch::text AS epoch FROM catalog_taxonomy_guard WHERE id=1")).rows[0]?.epoch ?? "0";
+  const watch = await product("Warranty watch", { categories: ["sports-fitness/multisport-smartwatches"] });
+  assert.equal(await months(watch), 12);
+  let tree = await f.catalog.updateCategory(f.admin, await epochOf(), "wearables-smartwatches", { warrantyMonths: 24 });
+  assert.equal(tree.menu.find(item => item.key === "wearables-smartwatches").warrantyMonths, 24);
+  await assert.rejects(f.catalog.updateCategory(f.admin, await epochOf(), "wearables-smartwatches", { warrantyMonths: 0 }), error => error.status === 400);
+  const inherited = await months(watch);
+  await setProductWarrantyMonths(f.database.pool, watch, 6);
+  assert.equal(await months(watch), 6);
+  await setProductWarrantyMonths(f.database.pool, watch, null);
+  assert.equal(await months(watch), inherited);
+  tree = await f.catalog.updateCategory(f.admin, await epochOf(), "wearables-smartwatches", { warrantyMonths: null });
+  assert.equal(tree.menu.find(item => item.key === "wearables-smartwatches").warrantyMonths, null);
+  assert.equal(await months(watch), 12);
+  assert.equal(warrantyEnd(new Date("2026-01-31T10:00:00Z"), 1).toISOString().slice(0, 10), "2026-02-28", "31 Jan + 1 month = end of February");
+  assert.equal(warrantyEnd(new Date("2026-11-26T10:00:00Z"), 12).toISOString().slice(0, 10), "2027-11-26");
 });
