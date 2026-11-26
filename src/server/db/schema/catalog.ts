@@ -61,6 +61,8 @@ export const products = pgTable("products", {
   configurationEpoch: bigint("configuration_epoch", { mode: "bigint" }).notNull().default(sql`0`),
   /** 0030: serial number at packing — "required", "none", or NULL = decided by categories (owner 2026-11-25). */
   serialPolicy: text("serial_policy"),
+  /** 0033: warranty length in months; null = from categories, else 12. */
+  warrantyMonths: integer("warranty_months"),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, (table) => [
@@ -75,6 +77,7 @@ export const products = pgTable("products", {
   check("products_status_valid", sql`${table.status} IN ('draft','published','archived')`),
   check("products_content_shapes", sql`jsonb_typeof(${table.specs})='array' AND jsonb_typeof(${table.features})='array' AND jsonb_typeof(${table.inTheBox})='array' AND jsonb_typeof(${table.focusKeywords})='array' AND jsonb_typeof(${table.legacyContent})='object'`),
   check("products_versions_valid", sql`${table.version}>=1 AND ${table.configurationEpoch}>=0`),
+  check("products_warranty_months_valid", sql`${table.warrantyMonths} IS NULL OR ${table.warrantyMonths} BETWEEN 1 AND 120`),
   check("products_serial_policy_valid", sql`${table.serialPolicy} IS NULL OR ${table.serialPolicy} IN ('required','none')`),
 ]);
 
@@ -163,6 +166,8 @@ export const categories = pgTable("categories", {
   menuHref: text("menu_href"),
   /** 0030: serial number at packing — "required", "none", or NULL = same as parent (owner 2026-11-25). */
   serialPolicy: text("serial_policy"),
+  /** 0033: warranty length in months; null = from categories, else 12. */
+  warrantyMonths: integer("warranty_months"),
 }, (table) => [
   index("categories_parent_order_idx").on(table.parentId, table.position, table.id),
   check("categories_fields_valid", sql`length(btrim(${table.key}))>0 AND length(btrim(${table.name}))>0 AND ${table.position}>=0`),
@@ -170,6 +175,7 @@ export const categories = pgTable("categories", {
   check("categories_kind_valid", sql`${table.kind} IN ('catalog','accessory','group')`),
   check("categories_slug_valid", sql`${table.slug} IS NULL OR ${table.slug} ~ '^[a-z0-9]+(-[a-z0-9]+)*(/[a-z0-9]+(-[a-z0-9]+)*)*$'`),
   check("categories_preset_filters_object", sql`jsonb_typeof(${table.presetFilters})='object'`),
+  check("categories_warranty_months_valid", sql`${table.warrantyMonths} IS NULL OR ${table.warrantyMonths} BETWEEN 1 AND 120`),
   check("categories_serial_policy_valid", sql`${table.serialPolicy} IS NULL OR ${table.serialPolicy} IN ('required','none')`),
 ]);
 

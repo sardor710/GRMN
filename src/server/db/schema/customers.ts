@@ -20,6 +20,8 @@ export const customerProfiles = pgTable("customer_profiles", {
   normalizedPhone: text("normalized_phone"),
   countryCode: text("country_code"),
   birthDate: date("birth_date"),
+  /** 0033 (owner 2026-11-26): optional, asked on sign-up and editable in Profile. */
+  gender: text("gender"),
   avatar: text("avatar"),
   status: text("status", { enum: ["active", "vip", "pending", "suspended"] }).notNull().default("active"),
   profileState: text("profile_state", { enum: ["provisional", "complete"] }).notNull().default("provisional"),
@@ -27,6 +29,7 @@ export const customerProfiles = pgTable("customer_profiles", {
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, (table) => [
+  check("customer_profiles_gender_valid", sql`${table.gender} IS NULL OR ${table.gender} IN ('male','female','unspecified')`),
   uniqueIndex("customer_profiles_user_unique").on(table.userId).where(sql`${table.userId} IS NOT NULL`),
   index("customer_profiles_phone_lookup_idx").on(table.normalizedPhone),
   check("customer_profiles_name_present", sql`length(btrim(${table.name})) BETWEEN 1 AND 200`),

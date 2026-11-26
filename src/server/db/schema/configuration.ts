@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { bigint, boolean, check, index, integer, jsonb, numeric, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { user } from "./identity.ts";
+import { PICKUP_SEED } from "../../../lib/pickup.ts";
 
 const id = () => uuid("id").primaryKey().$defaultFn(randomUUID);
 const time = (name: string) => timestamp(name, { withTimezone: true });
@@ -38,4 +39,6 @@ export const storeSettings = pgTable("store_settings", {
   // O07 (Task 21C): the payment instructions shown on the receipt of a manual-payment order, and how
   // long its stock and coupon are held while staff wait for the money.
   manualPaymentInstructions: text("manual_payment_instructions"), manualPaymentHoldHours: integer("manual_payment_hold_hours").notNull().default(48),
+  /** 0033 (owner 2026-11-26): the one store customers can pick up from (see src/lib/pickup.ts). */
+  pickupLocation: object("pickup_location").notNull().default(PICKUP_SEED),
 }, t => [check("store_settings_manual_payment_valid", sql`${t.manualPaymentHoldHours} BETWEEN 1 AND 168 AND (${t.manualPaymentInstructions} IS NULL OR length(${t.manualPaymentInstructions}) BETWEEN 1 AND 2000)`), check("store_settings_valid", sql`${t.id}=1 AND ${t.version}>0 AND ${t.baseCurrency}='KZT' AND (NOT ${t.usdDisplayEnabled} OR ${t.activeExchangeRateId} IS NOT NULL) AND (${t.freeShippingThresholdMinor} IS NULL OR ${t.freeShippingThresholdMinor}>=0) AND ${t.paymentMode} IN ('demo','live') AND jsonb_typeof(${t.presentationConfig})='object' AND jsonb_typeof(${t.legacySettings})='object'`)]);

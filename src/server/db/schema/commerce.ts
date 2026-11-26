@@ -92,6 +92,8 @@ export const orders = pgTable("orders", {
   legacySummary: object("legacy_summary").notNull().default({}),
   orderStatus: text("order_status").notNull().default("pending_payment"), paymentStatus: text("payment_status").notNull().default("unpaid"),
   fulfillmentStatus: text("fulfillment_status").notNull().default("unfulfilled"), paymentMode: text("payment_mode").notNull(),
+  /** 0033 (owner 2026-11-26): delivery to an address or pickup at the store; pickupSnapshot = the store at order time. */
+  fulfillmentMethod: text("fulfillment_method").notNull().default("delivery"), pickupSnapshot: jsonb("pickup_snapshot").$type<Record<string, unknown>>(),
   snapshotSealed: boolean("snapshot_sealed").notNull().default(false),
   version: integer("version").notNull().default(1), placedAt: time("placed_at"), createdAt: createdAt(), updatedAt: updatedAt(),
 }, t => [
@@ -105,6 +107,7 @@ export const orders = pgTable("orders", {
   index("orders_payment_queue_idx").on(t.paymentStatus, t.placedAt, t.id),
   // Task 21A: the staff order queue and dated exports sort or filter on the shown time (EXPLAIN: seq scan + sort over all orders without it).
   index("orders_shown_at_idx").on(sql`(COALESCE(${t.placedAt},${t.createdAt})) DESC`, t.id.desc().nullsFirst()),
+  check("orders_fulfillment_method_valid", sql`${t.fulfillmentMethod} IN ('delivery','pickup') AND (${t.fulfillmentMethod}='delivery' OR ${t.pickupSnapshot} IS NOT NULL)`),
   check("orders_fields_valid", sql`length(btrim(${t.orderNumber}))>0 AND length(btrim(${t.contactName}))>0 AND ${t.currency}='KZT' AND ${t.dataQuality} IN ('complete','legacy_incomplete') AND ${t.version}>0`),
   check("orders_statuses_valid", sql`${t.orderStatus} IN ('pending_payment','confirmed','cancel_requested','cancelled','closed') AND ${t.paymentStatus} IN ('unpaid','pending','authorized','paid','partially_refunded','refunded','failed') AND ${t.fulfillmentStatus} IN ('unfulfilled','processing','partially_shipped','shipped','delivered','exception') AND ${t.paymentMode} IN ('demo','live','sandbox','legacy_unknown')`),
   check("orders_amounts_valid", sql`${t.totalMinor}>=0 AND (${t.subtotalMinor} IS NULL OR ${t.subtotalMinor}>=0) AND (${t.discountMinor} IS NULL OR ${t.discountMinor}>=0) AND (${t.shippingMinor} IS NULL OR ${t.shippingMinor}>=0) AND (${t.taxMinor} IS NULL OR ${t.taxMinor}>=0) AND (${t.shippingTaxMinor} IS NULL OR ${t.shippingTaxMinor} BETWEEN 0 AND ${t.taxMinor}) AND (${t.subtotalMinor} IS NULL OR ${t.discountMinor} IS NULL OR ${t.discountMinor}<=${t.subtotalMinor})`),

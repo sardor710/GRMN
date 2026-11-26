@@ -232,6 +232,13 @@
       "when": 1795707812653,
       "tag": "0032_order-serials",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1795727864501,
+      "tag": "0033_account-pickup-devices",
+      "breakpoints": true
     }
   ]
 }
