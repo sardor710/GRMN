@@ -6,7 +6,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 4 | 8/22 | 2026-11-26 | M5 board pickup |
+| Executing | 7 | 19/22 | 2026-11-26 | M8 verify: integration, build, smoke, screenshots, review, staging, deploy |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -168,21 +168,21 @@ Advisor review 2026-11-26 (folded in):
 - [x] T4.3 (checkout-address-step 11/11; /api/store/pickup) CheckoutPanel: saved addresses, Pick up at store (store card), Another address (empty form), guest choices — verify: component/ui test + smoke checkout
 
 ### M5 — Board pickup
-- [ ] T5.1 Server `pick_up` action + refusal of dispatch for pickup, admin DTO `fulfillmentMethod` — verify: fulfillment/order-board tests
-- [ ] T5.2 Board labels (Ready for pickup / Picked up, "Pickup" mark, action "Mark picked up") — verify: unit stage tests + smoke orders
+- [x] T5.1 (order-board.test pickup case; ready→dispatched→delivered in one tx — the shipments_guard trigger forbids ready→delivered) Server `pick_up` action + refusal of dispatch for pickup, admin DTO `fulfillmentMethod` — verify: fulfillment/order-board tests
+- [x] T5.2 (orders-board-state 8/8; PickUpPanel, Pickup chip) Board labels (Ready for pickup / Picked up, "Pickup" mark, action "Mark picked up") — verify: unit stage tests + smoke orders
 
 ### M6 — Account data + warranty
-- [ ] T6.1 Order list/detail DTO: fulfillmentMethod, pickup, item productCode/sku/image — verify: account-services tests
-- [ ] T6.2 `warranty.ts` resolve months (product → categories max effective → 12) + `getOwnDevices` + route — verify: new devices integration test (band excluded, returned excluded, undelivered excluded, months override)
-- [ ] T6.3 Admin warranty fields (category editor + product General tab) — verify: category-admin tests + tsc
+- [x] T6.1 (order-board.test devices/links cases) Order list/detail DTO: fulfillmentMethod, pickup, item productCode/sku/image — verify: account-services tests
+- [x] T6.2 (order-board.test 30/30 incl. returned unit leaves My devices) `warranty.ts` resolve months (product → categories max effective → 12) + `getOwnDevices` + route — verify: new devices integration test (band excluded, returned excluded, undelivered excluded, months override)
+- [x] T6.3 (serial-policy 9/9, category-admin 15/15) Admin warranty fields (category editor + product General tab) — verify: category-admin tests + tsc
 
 ### M7 — Customer UI
-- [ ] T7.1 Sign-up page `/[lang]/account/sign-up` + `SignUpForm` component; Sign up tab links there — verify: smoke signup + screenshots
-- [ ] T7.2 Profile gender view/edit — verify: smoke
-- [ ] T7.3 Orders table + order detail view (`?order=`), recent order row — verify: screenshots 1440/390
-- [ ] T7.4 OrderTracker pickup steps — verify: unit
-- [ ] T7.5 My devices tab — verify: screenshots
-- [ ] T7.6 Messages EN/RU/KK, wording rules — verify: i18n + wording tests
+- [x] T7.1 (signup-form 3/3; /account/sign-up) Sign-up page `/[lang]/account/sign-up` + `SignUpForm` component; Sign up tab links there — verify: smoke signup + screenshots
+- [x] T7.2 (account-dashboard tests) Profile gender view/edit — verify: smoke
+- [x] T7.3 (design pass by ui-designer agent; built to its spec; account-dashboard 28/28) Orders table + order detail view (`?order=`), recent order row — verify: screenshots 1440/390
+- [x] T7.4 (OrderTracker pickup prop) OrderTracker pickup steps — verify: unit
+- [x] T7.5 (account-dashboard devices test) My devices tab — verify: screenshots
+- [x] T7.6 (test:legacy 337/337 incl. i18n parity + wording) Messages EN/RU/KK, wording rules — verify: i18n + wording tests
 
 ### M8 — Verify + ship
 - [ ] T8.1 tsc, unit, integration, webpack build, full cms-ui smoke
