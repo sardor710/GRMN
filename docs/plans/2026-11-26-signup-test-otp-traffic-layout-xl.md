@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Done – partial | – | 12/12 tasks; A7 open | 2026-11-26 | Owner reviews the look (A7), then deploys on "deploy" — sign-in on the live site is still 503 until then |
+| Done (deployed) | – | 12/12 | 2026-11-26 | Owner checks Traffic page look (A7) |
 
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
 
@@ -106,3 +106,6 @@ Follow-ups:
 
 ## Handoff
 Work is complete on branch `signup-traffic-ui` (6eccc33, based on beta5 e1892be), but it is not pushed or deployed. Deploy only on the owner's "deploy": first add `AUTH_TEST_OTP_CODE=1234` to /home/nick/grmn-production/production.env, then follow the deploy steps in the grmn-production memory. There are no DB migrations. The `customer-demo-wording` test forbids "test" in customer text.
+
+## Deploy (2026-11-26, owner "deploy")
+Live is grmn:1d5e957 / grmn-ops:1d5e957 (built from a clean `git archive`; this was the first `next build` of the branch, and it passed). AUTH_TEST_OTP_CODE=1234 is in production.env. Migrate: no-op (35). Pre-deploy dump: predeploy-signup-traffic-e1892be.dump. Env backup: production.env.bak-e1892be-pre-signup. Live checks: /api/auth/grmn/mode → code 1234. In the browser, signing up on the live site and then signing in with 1234 both worked. The throwaway account cannot be deleted (audit_events is immutable, with an FK on actor), so it was disabled and anonymised. Rollback: `switch-version.sh e1892be` (no DB changes), and optionally remove AUTH_TEST_OTP_CODE. The Traffic admin UI was not opened live (no staff session).
