@@ -1180,7 +1180,8 @@ async function dashboardScenario({pool,runtime,secret,origin,send,evaluate,navig
     // Kazakhstan checkout (f0df306): a saved primary address is preselected (full suite); a customer without one
     // (this block alone) types a new address, whose region follows the city.
     await until(()=>evaluate("!!document.querySelector('input[name=delivery-address]:checked')||!!document.querySelector('input[name=line1]')"),"Checkout delivery step did not load");
-    if(!(await evaluate("!!document.querySelector('input[name=delivery-address]:checked')")))
+    // 0033: pickup and "Deliver to an address" are radios too; only a saved address brings its own details.
+    if(!(await evaluate("!['new','pickup',undefined].includes(document.querySelector('input[name=delivery-address]:checked')?.value)")))
       for(const [name,value] of [["name","UI Dashboard Buyer"],["phone","+77000000088"],["city","Almaty"],["line1","UI dashboard street 4"]])await until(()=>setInput(name,value),"Could not fill "+name);
     await until(async()=>{try{await click("Review order");return true;}catch{return false;}},"Review order stayed disabled");
     await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>b.textContent.trim()==='Pay')"),"The demo pay button did not render").catch(dump("dashboard-checkout-body.txt"));
