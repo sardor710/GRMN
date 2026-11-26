@@ -554,6 +554,8 @@ export function createFulfillmentService({ pool, authorize }: Options) {
         if (command.units.length > quantity) invalid();
         if (command.units.length !== quantity) await requireSerials(client, [{ orderItemId: itemId, quantity }], new Map([[itemId, command.units]]));
         await claimSerials(client, command.units, lines.map(line => line.id));
+        // Final review: keep what the serials were, so a warranty claim can see a correction and who made it.
+        const previous = (await client.query<{ serial: string }>("SELECT serial FROM order_unit_serials WHERE shipment_item_id=ANY($1::uuid[]) ORDER BY shipment_item_id,unit_index", [lines.map(line => line.id)])).rows.map(row => row.serial);
         await client.query("DELETE FROM order_unit_serials WHERE shipment_item_id=ANY($1::uuid[])", [lines.map(line => line.id)]);
         let next = 0;
         for (const line of lines) {
@@ -565,9 +567,9 @@ export function createFulfillmentService({ pool, authorize }: Options) {
         }
         await client.query("UPDATE shipments SET version=version+1 WHERE id=$1", [shipment.id]);
         const eventId = await orderEvent(client, { orderId: order.id, type: "shipment.serials_updated", actor: principal.userId, dedupeKey, visibility: "internal",
-          payload: { shipmentId: shipment.id, requestHash: hash, orderItemId: itemId, units: command.units.length } });
+          payload: { shipmentId: shipment.id, requestHash: hash, orderItemId: itemId, units: command.units.length, before: previous, after: command.units } });
         await shipmentEvent(client, shipment.id, "serials_updated", principal.userId, `shipment-serials:${shipment.id}:${eventId}`, undefined);
-        await audit(client, principal.userId, "fulfillment.serials_updated", shipment.id, eventId, { orderId: order.id, orderItemId: itemId, units: command.units.length });
+        await audit(client, principal.userId, "fulfillment.serials_updated", shipment.id, eventId, { orderId: order.id, orderItemId: itemId, units: command.units.length, before: previous, after: command.units });
         return { shipment: await readShipment(client, shipment.id), order: { id: order.id, version: order.version, fulfillmentStatus: order.fulfillment_status }, replayed: false };
       });
     },

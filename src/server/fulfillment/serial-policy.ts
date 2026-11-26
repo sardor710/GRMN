@@ -8,24 +8,21 @@
 //      band in "fēnix series" + "Bands" is exempt while a watch wrongly also filed under "Apps" is not (real
 //      MARQ filing, 2026-11-25). A product in no category instead uses
 //   3. its old-site category (legacy_content category/subCategory) the same way, else
-//   4. its name, only to exempt an obvious accessory and never when the name also names a device, else
-//   5. it needs a serial (the safe side for warranty).
+//   4. it needs a serial (the safe side for warranty). Final review 2026-11-26: the product name is never used —
+//      names like "D2 Mach 1 Pro with Leather Band" or "Bark Collar Charger" exempted real devices; staff set an
+//      unfiled accessory to "Never ask" on its General tab or file it under a "no serial" category.
 
 import { matchLegacyCategories, type CategoryMatchNode } from "../catalog/category-match.ts";
 
 export type SerialPolicy = "required" | "none";
 export interface SerialDecision {
   required: boolean;
-  source: "product" | "category" | "legacy-category" | "name" | "default";
-  /** The deciding category key, or the matched accessory word for "name". */
+  source: "product" | "category" | "legacy-category" | "default";
+  /** The deciding category key (or the device category behind a default). */
   detail: string | null;
 }
 export interface CategorySetting { key: string; kind: string; effective: SerialPolicy | null }
 
-/** Accessory words (EN + RU stems). Latin words use \b; JS \b is ASCII-only, so Cyrillic stems match without it. */
-export const NO_SERIAL_NAME = /\b(bands?|straps?|bracelets?|cables?|chargers?|charging|cases?|mounts?|protectors?|lanyards?)\b|(ремеш|браслет|кабел|зарядн|чехол|креплен|пл[её]нк)/iu;
-/** Device words: a name with any of these is never exempted, whatever accessory it mentions. */
-export const DEVICE_NAME = /(watch|fēnix|fenix|forerunner|venu|vívo|vivo|instinct|epix|enduro|marq|quatix|tactix|descent|approach|lily|bounce|edge|hrm|sensor|varia|rally|vector|index|echomap|striker|livescope|panoptix|gpsmap|etrex|montana|oregon|inreach|zūmo|zumo|dēzl|dezl|drive|camper|tread|catalyst|dash ?cam|tacx|neo|flux|rangefinder|fishfinder|transducer|radar|часы|датчик|навигатор|эхолот)/iu;
 
 function byCategories(categories: readonly CategorySetting[], source: "category" | "legacy-category"): SerialDecision {
   const required = categories.find(category => category.effective === "required");
@@ -41,9 +38,6 @@ export function decideSerial(input: { productPolicy: SerialPolicy | null; catego
   if (input.productPolicy) return { required: input.productPolicy === "required", source: "product", detail: null };
   if (input.categories.length) return byCategories(input.categories, "category");
   if (input.legacyCategories.length) return byCategories(input.legacyCategories, "legacy-category");
-  const name = input.name.normalize("NFKC");
-  const accessory = NO_SERIAL_NAME.exec(name);
-  if (accessory && !DEVICE_NAME.test(name)) return { required: false, source: "name", detail: accessory[0].toLowerCase() };
   return { required: true, source: "default", detail: null };
 }
 
@@ -107,11 +101,11 @@ export async function setProductSerialPolicy(db: Query, productId: string, polic
 }
 
 export interface SerialReportRow { productId: string; status: string; name: string; needsSerial: boolean; source: SerialDecision["source"]; detail: string | null; guess: boolean }
-/** Every non-archived product with its decision; name and old-site-category decisions are flagged as guesses. */
+/** Every non-archived product with its decision; old-site-category decisions are flagged as guesses. */
 export async function serialPolicyReport(db: Query): Promise<SerialReportRow[]> {
   const rows = await productRows(db, null), decisions = await decide(db, rows);
   return rows.map(row => {
     const d = decisions.get(row.id)!;
-    return { productId: row.id, status: row.status, name: row.name, needsSerial: d.required, source: d.source, detail: d.detail, guess: d.source === "name" || d.source === "legacy-category" };
+    return { productId: row.id, status: row.status, name: row.name, needsSerial: d.required, source: d.source, detail: d.detail, guess: d.source === "legacy-category" };
   });
 }

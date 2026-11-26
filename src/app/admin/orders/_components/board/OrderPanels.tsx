@@ -8,6 +8,7 @@ import { useState } from "react";
 import { Check, PackageCheck, RotateCcw, ScanLine, Truck } from "lucide-react";
 import type { AdminOrderDetailDTO, ShipmentDTO } from "@/contracts/commerce";
 import { Button } from "@/components/admin/ui";
+import { returnLines } from "./stage";
 
 type Post = (body: Record<string, unknown>) => Promise<boolean>;
 const field = "h-10 w-full border border-garmin-control bg-white px-3 text-sm text-black placeholder:text-[#9a9a9a] focus:border-black focus:outline-none";
@@ -174,16 +175,12 @@ export function ReturnsPanel({ detail, busy, post }: { detail: AdminOrderDetailD
     byItem.set(line.orderItemId, entry);
   }
   const step = (returnId: string, version: number, returnAction: string, extra: Record<string, unknown> = {}) => post({ action: "update_return", returnId, expectedVersion: version, returnAction, ...extra });
+  const [hint, setHint] = useState<string | null>(null);
   async function create() {
-    const lines = [...byItem.entries()].flatMap(([orderItemId, entry]) => {
-      if (entry.serials.length || detail.items.find(item => item.id === orderItemId)?.serialRequired) {
-        const serialIds = entry.serials.filter(serial => picked[serial.id]).map(serial => serial.id);
-        return serialIds.length ? [{ orderItemId, quantity: serialIds.length, serialIds }] : [];
-      }
-      const quantity = Number(counts[orderItemId] ?? 0);
-      return Number.isInteger(quantity) && quantity > 0 ? [{ orderItemId, quantity }] : [];
-    });
-    if (!lines.length || !reason.trim()) return;
+    const lines = returnLines(byItem, picked, counts);
+    if (!lines.length) { setHint("Pick a serial number or type how many units come back."); return; }
+    if (!reason.trim()) { setHint("Write the reason for the return."); return; }
+    setHint(null);
     if (await post({ action: "create_return", orderId: detail.id, reason: reason.trim(), lines })) { setOpen(false); setPicked({}); setCounts({}); setReason(""); }
   }
   if (!shipped.length && !detail.returns.length) return null;
@@ -218,8 +215,9 @@ export function ReturnsPanel({ detail, busy, post }: { detail: AdminOrderDetailD
             );
           })}
           <input aria-label="Return reason" placeholder="Reason (e.g. faulty strap sensor)" maxLength={500} className={field} value={reason} onChange={event => setReason(event.target.value)} />
+          {hint && <p role="status" className="text-xs text-[#92400e]">{hint}</p>}
           <div className="flex gap-2">
-            <Button variant="primary" size="sm" type="button" disabled={busy || !reason.trim()} onClick={() => void create()}>Create return</Button>
+            <Button variant="primary" size="sm" type="button" disabled={busy} onClick={() => void create()}>Create return</Button>
             <Button variant="ghost" size="sm" type="button" onClick={() => setOpen(false)}>Cancel</Button>
           </div>
         </div>

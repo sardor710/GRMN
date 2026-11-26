@@ -9,12 +9,12 @@ import { ScanLine } from "lucide-react";
 type Policy = "required" | "none" | null;
 interface Setting { policy: Policy; decision: { required: boolean; source: string; detail: string | null } }
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const SOURCE: Record<string, string> = { product: "set on this product", category: "from category", "legacy-category": "from its old-site category", name: "guessed from the name", default: "electronic device by default" };
+const SOURCE: Record<string, string> = { product: "set on this product", category: "from category", "legacy-category": "from its old-site category", default: "every product needs one unless its category says otherwise" };
 
 function explain(setting: Setting): string {
   const what = setting.decision.required ? "Needs a serial" : "No serial";
   const why = SOURCE[setting.decision.source] ?? setting.decision.source;
-  return `${what} — ${why}${setting.decision.detail && setting.decision.source !== "name" ? ` “${setting.decision.detail}”` : ""}`;
+  return `${what} — ${why}${setting.decision.detail && setting.decision.source !== "default" ? ` “${setting.decision.detail}”` : ""}`;
 }
 
 export function SerialSettingField({ productId }: { productId: string | undefined }) {

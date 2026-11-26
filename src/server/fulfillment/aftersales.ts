@@ -561,6 +561,13 @@ export function createAfterSalesService({ pool, authorize }: Options) {
         }
         if (command.action === "receive") {
           for (const line of command.lines) if (line.receivedQuantity > byId.get(line.returnItemId.toLowerCase())!.quantity) invalid();
+          // 0030 (final review): receiving frees the linked serials for resale, so a line that names serials must come
+          // back whole; otherwise a unit still with the customer would become sellable.
+          const serialLines = new Set((await client.query<{ return_item_id: string }>("SELECT DISTINCT return_item_id FROM order_unit_serials WHERE return_item_id=ANY($1::uuid[])", [items.map(item => item.id)])).rows.map(row => row.return_item_id));
+          for (const line of command.lines) {
+            const id = line.returnItemId.toLowerCase();
+            if (serialLines.has(id) && line.receivedQuantity !== byId.get(id)!.quantity) fail("SERIALS_PARTIAL_RECEIVE", 409, "A return with serial numbers is received in full; return the missing unit separately");
+          }
           await client.query("UPDATE returns SET status='received',received_at=clock_timestamp(),version=version+1 WHERE id=$1", [command.returnId]);
           for (const line of command.lines) await client.query("UPDATE return_items SET received_quantity=$2 WHERE id=$1", [line.returnItemId.toLowerCase(), line.receivedQuantity]);
         } else if (command.action === "inspect") {

@@ -445,3 +445,30 @@ test("a cancelled order shows the tracker stopped; a cancelled pack leaves no Pa
   assert.equal(detail.stage,"cancelled");assert.equal(detail.stageDates.packed,null);
   assert.deepEqual(detail.items[0].serials,[]);
 });
+
+// ---------------------------------------------------------------- final review fixes
+test("a serial pasted with a no-break or zero-width space is the same serial", async () => {
+  const sn = uniq(); await packedWatch(sn);
+  const other = await packedWatch();
+  const pasted = sn.slice(0, 4) + " " + sn.slice(4) + "﻿";
+  await rejectsWith(pack(other.order.orderId, [{ orderItemId: other.item, quantity: 1 }], [{ orderItemId: other.item, units: [pasted] }]), 409, "SERIAL_IN_USE");
+  const found = await list({ q: sn.slice(0, 4) + " " + sn.slice(4, 8) });
+  assert.ok(found.items.length >= 1, "search ignores the pasted no-break space");
+});
+
+test("a serial correction records what it was and what it became", async () => {
+  const before = uniq(), after = uniq(), p = await packedWatch(before);
+  await setSerials(p.created.shipment.id, p.item, [after]);
+  const payload = (await q("SELECT payload FROM order_events WHERE order_id=$1 AND type='shipment.serials_updated'", [p.order.orderId])).rows[0].payload;
+  assert.deepEqual([payload.before, payload.after], [[before], [after]]);
+  const changes = (await q("SELECT redacted_changes FROM audit_events WHERE action='fulfillment.serials_updated' AND target_id=$1", [p.created.shipment.id])).rows[0].redacted_changes;
+  assert.deepEqual([changes.before, changes.after], [[before], [after]]);
+});
+
+test("a return of serialized units is received in full or not at all, so no unit still out is freed", async () => {
+  const [a, b] = [uniq(), uniq()], s = await shippedWatches([a, b]);
+  const created = await api.createReturn(fulfiller, { orderId: s.order.orderId, idempotencyKey: key(), reason: "Faulty", lines: [{ orderItemId: s.item, quantity: 2, serialIds: [s.ids[a], s.ids[b]] }] });
+  await returnStep(created.return.id, "authorize");
+  await rejectsWith(returnStep(created.return.id, "receive", { lines: [{ returnItemId: created.return.items[0].id, receivedQuantity: 1 }] }), 409, "SERIALS_PARTIAL_RECEIVE");
+  await returnStep(created.return.id, "receive", { lines: [{ returnItemId: created.return.items[0].id, receivedQuantity: 2 }] });
+});

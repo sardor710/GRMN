@@ -492,7 +492,7 @@ export interface AdminOrderDetailDTO extends AdminOrderSummaryDTO {
   deliveryAddress: Record<string, string> | null;
   items: { id: string; name: string; sku: string | null; quantity: number; allocated: number; claimed: number; shipped: number; remaining: number;
     /** 0030: whether packing asks for a serial per unit, and what decided it. */
-    serialRequired: boolean; serialSource: "product" | "category" | "legacy-category" | "name" | "default" }[];
+    serialRequired: boolean; serialSource: "product" | "category" | "legacy-category" | "default" }[];
   shipments: ShipmentDTO[];
   timeline: TimelineEventDTO[];
   /** Task 16B: refunds of this order (reserved, pending, unknown, succeeded, failed, cancelled). */

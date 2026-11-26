@@ -323,6 +323,12 @@ export default function FulfillmentScreen() {
               </div>
             );
           })}
+          {nextCursor && (
+            <div className="col-span-full flex shrink-0 items-center justify-center gap-3 py-2 text-sm text-muted-foreground lg:col-span-4">
+              Showing the newest {orders.length} orders.
+              <Button variant="outline" size="sm" type="button" onClick={() => void loadOrders(nextCursor)}>Load more orders</Button>
+            </div>
+          )}
         </section>
       ) : orders.length === 0 ? <p className="py-10 text-center text-sm text-muted-foreground">No orders.</p> : (
         <section aria-label="Order list" className="overflow-x-auto border border-garmin-control">

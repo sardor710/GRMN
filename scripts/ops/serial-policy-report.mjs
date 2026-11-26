@@ -2,7 +2,7 @@
 // serial number (src/server/fulfillment/serial-policy.ts). CSV on stdout, counts per source on stderr.
 //   docker compose -p grmn -f deploy/compose.yml --env-file <env> run --rm -T ops \
 //     node --conditions=react-server scripts/ops/serial-policy-report.mjs > serial-policy-report.csv
-// guess=yes rows were decided by the old-site category or the product name: check those first.
+// guess=yes rows were decided by the old-site category: check those first.
 import { createDatabase } from "../../src/server/db/client.ts";
 import { parseServerEnv } from "../../src/server/config/env.ts";
 import { serialPolicyReport } from "../../src/server/fulfillment/serial-policy.ts";

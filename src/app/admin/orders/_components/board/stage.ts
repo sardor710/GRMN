@@ -51,3 +51,20 @@ export function listQuery(filters: ListFilters, cursor?: string | null): string 
   if (cursor) query.set("cursor", cursor);
   return query.toString();
 }
+
+export interface ShippedItem { serials: { id: string; serial: string }[]; units: number }
+export interface ReturnLine { orderItemId: string; quantity: number; serialIds?: string[] }
+/**
+ * Lines for a new return (final review 2026-11-26): an item whose shipped units have serials returns the picked
+ * serials; an item without serials (a band, or a device shipped before serials were recorded) returns the typed count.
+ */
+export function returnLines(shipped: ReadonlyMap<string, ShippedItem>, picked: Readonly<Record<string, boolean>>, counts: Readonly<Record<string, string>>): ReturnLine[] {
+  return [...shipped.entries()].flatMap(([orderItemId, entry]): ReturnLine[] => {
+    if (entry.serials.length) {
+      const serialIds = entry.serials.filter(serial => picked[serial.id]).map(serial => serial.id);
+      return serialIds.length ? [{ orderItemId, quantity: serialIds.length, serialIds }] : [];
+    }
+    const quantity = Number(counts[orderItemId] ?? 0);
+    return Number.isInteger(quantity) && quantity > 0 && quantity <= entry.units ? [{ orderItemId, quantity }] : [];
+  });
+}

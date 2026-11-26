@@ -61,9 +61,9 @@ test("the product setting wins and can be changed back to automatic", async () =
   } finally { client.release(); }
 });
 
-test("an unfiled product uses its old-site category, then its name", async () => {
+test("an unfiled product uses its old-site category, otherwise it needs a serial (names are never used)", async () => {
   assert.deepEqual(await decision(await product("Something", { legacy: { category: "Accessories", subCategory: "Cables & Chargers" } })), { required: false, source: "legacy-category", detail: "cables-chargers" });
-  assert.deepEqual(await decision(await product("QuickFit 26 Band")), { required: false, source: "name", detail: "band" });
+  assert.deepEqual(await decision(await product("QuickFit 26 Band")), { required: true, source: "default", detail: null });
   assert.deepEqual(await decision(await product("vívoactive 6 with Silicone Band")), { required: true, source: "default", detail: null });
 });
 
@@ -82,8 +82,10 @@ test("Admin ▸ Categories sets and clears the setting, and shows it on the tree
 test("the report lists every product with its decision and flags guesses", async () => {
   const rows = await serialPolicyReport(f.database.pool);
   const byName = new Map(rows.map(row => [row.name, row]));
-  assert.equal(byName.get("QuickFit 26 Band").guess, true);
-  assert.equal(byName.get("QuickFit 26 Band").needsSerial, false);
+  assert.equal(byName.get("Something").guess, true, "an old-site category decision is a guess");
+  assert.equal(byName.get("Something").needsSerial, false);
+  assert.equal(byName.get("QuickFit 26 Band").guess, false);
+  assert.equal(byName.get("QuickFit 26 Band").needsSerial, true);
   assert.equal(byName.get("HRM 600").guess, false);
   assert.equal(byName.get("HRM 600").needsSerial, true);
 });

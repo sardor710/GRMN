@@ -38,15 +38,9 @@ test("an unfiled product uses its old-site category first", () => {
   assert.deepEqual(decide({ legacyCategories: [{ key: "cables-chargers", kind: "accessory", effective: "none" }] }), { required: false, source: "legacy-category", detail: "cables-chargers" });
 });
 
-test("an unfiled accessory is exempted by a name that is about the accessory", () => {
-  for (const name of ["QuickFit 22 Band", "Ремешок QuickFit 22", "Charging Cable", "Garmin Charging Clip", "Protective Case", "Screen Protector (6-pack)", "Кабель для зарядки"]) {
-    assert.equal(decide({ name }).required, false, name);
-    assert.equal(decide({ name }).source, "name", name);
-  }
-});
-
-test("an unfiled device is never exempted by its name", () => {
-  for (const name of ["fēnix 8", "vívoactive 6 with Silicone Band", "Forerunner 970 Stainless Steel Case", "Edge Mount", "ECHOMAP UHD2 fishfinder", "Approach Z82 rangefinder", "HRM 600", "Часы Venu 4 с ремешком"]) {
+test("an unfiled product always needs a serial, whatever its name says (final review: names exempted real devices)", () => {
+  for (const name of ["QuickFit 22 Band", "Charging Cable", "fēnix 8", "vívoactive 6 with Silicone Band", "D2 Mach 1 Pro with Leather Band", "Garmin Swim 2 Silicone Band",
+    "Force Kraken Trolling Motor Mount", "Xero C1 Pro Chronograph with Case", "Bark Collar Charger", "Фитнес-браслет Garmin Smart 5", "Ремешок QuickFit 22"]) {
     assert.deepEqual(decide({ name }), { required: true, source: "default", detail: null }, name);
   }
 });
