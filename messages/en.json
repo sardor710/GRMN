@@ -19,7 +19,8 @@
     "productDescription": "{name}: specs, price and availability.",
     "catalogueTitle": "{title} | Garmin",
     "garminPayTitle": "Garmin Pay™ | A Contactless Payment Solution",
-    "garminPayDescription": "No wallet? No phone? No problem. Make contactless payments on the go with your compatible Garmin smartwatch or bike computer."
+    "garminPayDescription": "No wallet? No phone? No problem. Make contactless payments on the go with your compatible Garmin smartwatch or bike computer.",
+    "signUpTitle": "Create account | Garmin"
   },
   "Account": {
     "tabs": {
@@ -827,7 +828,8 @@
       "completeIntro": "Your phone is verified. Tell us who you are to create your account.",
       "fullName": "Full name",
       "email": "Email",
-      "create": "Create account"
+      "create": "Create account",
+      "noAccount": "New here?"
     },
     "code": "Verification code",
     "sections": "Account sections",
@@ -1029,6 +1031,33 @@
       "title": "Create your account",
       "intro": "Enter your details to create an account. You will be signed in right away.",
       "verifyIntro": "Enter your phone number. We send a one-time code, then ask for your name and email to create your account."
+    },
+    "signUpPage": {
+      "intro": "Fill in your details, confirm your phone with the SMS code and your account is ready.",
+      "code": "SMS code",
+      "codeHelp": "Press “Send code” to get it on your phone.",
+      "sent": "Code sent to {phone}.",
+      "sentWait": "Code sent to {phone}. You can ask for a new one in {seconds} s.",
+      "resend": "New code",
+      "gender": "Gender",
+      "optional": "(optional)",
+      "addressLater": "You can add delivery addresses later in your profile.",
+      "haveAccount": "Already have an account?",
+      "unavailable": "Sign-up is temporarily unavailable. Please try again later.",
+      "create": "Create an account",
+      "errors": {
+        "name": "Enter your full name.",
+        "phone": "Enter the phone in international format, e.g. +77001234567.",
+        "codeFirst": "Press “Send code” and enter the code from the SMS.",
+        "code": "Enter the code from the SMS.",
+        "email": "Enter a valid email.",
+        "birthDate": "Birthday must be 10 to 120 years ago."
+      }
+    },
+    "genders": {
+      "male": "Male",
+      "female": "Female",
+      "unspecified": "Prefer not to say"
     }
   },
   "Checkout": {
