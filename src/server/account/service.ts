@@ -5,7 +5,7 @@ import { z } from "zod";
 import type { DatabaseHandle } from "../db/client.ts";
 import type { Permission, Principal } from "../context.ts";
 import { AuthFailure } from "../auth/config.ts";
-import { authDigest, capabilityHash, createPhoneService } from "../auth/phone-service.ts";
+import { authDigest, capabilityHash, createPhoneService, OTP_PATTERN } from "../auth/phone-service.ts";
 import type { CustomerProfileDTO, DeliveryAddress, GeoPrecision, Money, OrderDetailDTO, OrderItemDTO, OrderStage, OrderSummaryDTO, SavedAddressDTO } from "../../contracts/commerce.ts";
 import type { Page } from "../../contracts/pagination.ts";
 import { checkBirthDate, checkKzAddress } from "./address-rules.ts";
@@ -53,7 +53,7 @@ const addressInput = z.strictObject({
 }).refine(value => (value.id === undefined) === (value.expectedVersion === undefined));
 const pageInput = z.strictObject({ limit: z.number().int().min(1).max(100).optional(), cursor: z.string().min(1).max(2048).optional() });
 const uuid = z.string().regex(UUID);
-const otp = z.string().regex(/^[0-9]{6}$/);
+const otp = z.string().regex(OTP_PATTERN);
 const approveClaimInput = z.strictObject({ orderId: uuid, expectedVersion: z.number().int().min(1), reason: z.string().trim().min(1).max(500), phoneNumber: phone.optional() });
 const claimInput = z.strictObject({ orderId: uuid, receiptToken: z.string().regex(/^[A-Za-z0-9_-]{43}$/), challengeId: uuid, code: otp });
 const changePhoneInput = z.strictObject({ phoneNumber: phone, currentChallengeId: uuid, currentCode: otp, challengeId: uuid, code: otp, expectedVersion: z.number().int().min(0) });

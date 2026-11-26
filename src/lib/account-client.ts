@@ -7,6 +7,8 @@ import { kzRegionLabel } from "./kz-regions.ts";
 // Sign-in and sign-out in the account page tell the cart to re-sync (and merge a guest cart).
 export { announceSessionChange } from "./cart-client.ts";
 
+/** Owner 2026-11-26: test mode (AUTH_TEST_OTP_CODE) = fixed code for every customer and direct signup without SMS. */
+export interface AuthMode { testCode: boolean; signUp: boolean; code?: string }
 export type PhonePurpose = "sign_in" | "phone_change_current" | "phone_change_new" | "order_claim";
 export interface AccountSession { user: { id: string; name: string } | null; staff: boolean }
 /** Saved-address form fields. Country is always KZ for new saves; region is a kz-regions code; the pin is optional. */
@@ -83,7 +85,9 @@ export function createAccountClient(fetcher: AccountFetcher) {
     deleteAddress: (address: { id: string; version: number }) => call<{ id: string; deleted: true }>(`/api/account/addresses/${encodeURIComponent(address.id)}`, "DELETE", { expectedVersion: address.version }),
     orders: (cursor?: string) => call<Page<OrderSummaryDTO>>(`/api/account/orders?limit=${ORDER_PAGE_SIZE}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
     order: (id: string) => call<OrderDetailDTO>(`/api/account/orders/${encodeURIComponent(id)}`),
-    sendCode: (phoneNumber: string, purpose: PhonePurpose) => call<{ challengeId: string }>("/api/auth/grmn/phone/send", "POST", { phoneNumber, purpose }),
+    authMode: () => call<AuthMode>("/api/auth/grmn/mode"),
+    signUp: (command: { name: string; email: string; phoneNumber: string }) => call<{ state: "authenticated" }>("/api/auth/grmn/signup", "POST", command),
+    sendCode: (phoneNumber: string, purpose: PhonePurpose) => call<{ challengeId: string; testCode?: true }>("/api/auth/grmn/phone/send", "POST", { phoneNumber, purpose }),
     verifySignIn: (command: { phoneNumber: string; challengeId: string; code: string }) => call<{ state: "authenticated" | "complete_profile" }>("/api/auth/grmn/phone/verify", "POST", command),
     completeProfile: (command: { name: string; email: string; phoneNumber: string }) => call<unknown>("/api/auth/grmn/phone/complete", "POST", command),
     changePhone: (command: { phoneNumber: string; currentChallengeId: string; currentCode: string; challengeId: string; code: string; expectedVersion: number }) => call<{ phone: string; version: number; signedOut: true }>("/api/account/phone", "POST", command),

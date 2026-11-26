@@ -1017,6 +1017,18 @@
       "fulfillment_packed": "Packed",
       "fulfillment_shipped": "Shipped",
       "fulfillment_delivered": "Delivered"
+    },
+    "auth": {
+      "tabsLabel": "Sign in or create an account",
+      "signInTab": "Sign in",
+      "signUpTab": "Sign up",
+      "testMode": "SMS codes are not sent yet. Enter the code you were given.",
+      "testModeCode": "SMS codes are not sent yet. Enter code {code}."
+    },
+    "signUp": {
+      "title": "Create your account",
+      "intro": "Enter your details to create an account. You will be signed in right away.",
+      "verifyIntro": "Enter your phone number. We send a one-time code, then ask for your name and email to create your account."
     }
   },
   "Checkout": {

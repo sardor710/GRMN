@@ -9,7 +9,7 @@ import type { DatabaseHandle } from "../db/client.ts";
 import { authTables } from "../db/auth-tables.ts";
 import { AuthFailure } from "./config.ts";
 import type { AuthConfig } from "./config.ts";
-import { createPhoneService, PHONE_PURPOSES } from "./phone-service.ts";
+import { createPhoneService, OTP_PATTERN, PHONE_PURPOSES } from "./phone-service.ts";
 import type { PhoneSender } from "./phone-service.ts";
 import { completeProfileInput, phoneInput } from "./validation.ts";
 
@@ -25,10 +25,10 @@ async function endpointResult<T>(run: () => Promise<T>): Promise<T> {
     throw new APIError("SERVICE_UNAVAILABLE", { code: "DEPENDENCY_UNAVAILABLE", message: "Authentication is unavailable" });
   }
 }
-export function buildAuth(input: { database: DatabaseHandle; config: AuthConfig; phoneSender?: PhoneSender }) {
+export function buildAuth(input: { database: DatabaseHandle; config: AuthConfig; phoneSender?: PhoneSender; testCode?: string }) {
   const { database, config } = input;
   if ((database.pool.options.max ?? 0)<2) throw new Error("Auth database pool requires at least two connections");
-  const phones = createPhoneService({ database, secret: config.secret, send: input.phoneSender });
+  const phones = createPhoneService({ database, secret: config.secret, send: input.phoneSender, testCode: input.testCode });
   const completionCookie = { path: "/api/auth/grmn/phone/complete", maxAge: 600 };
   return betterAuth({
     appName: "Garmin KZ", baseURL: config.baseURL, basePath: "/api/auth", secret: config.secret,
@@ -59,7 +59,7 @@ export function buildAuth(input: { database: DatabaseHandle; config: AuthConfig;
         id: "grmn-phone-flow",
         endpoints: {
           requestPhoneProof: createAuthEndpoint("/grmn/phone/send", { method: "POST", body: z.object({ phoneNumber: phoneInput, purpose: z.enum(PHONE_PURPOSES).default("sign_in") }).strict() }, ctx => endpointResult(async () => ctx.json(await phones.request(ctx.body.phoneNumber, ctx.body.purpose)))),
-          verifyPhoneProof: createAuthEndpoint("/grmn/phone/verify", { method: "POST", body: z.object({ challengeId: z.uuid(), phoneNumber: phoneInput, code: z.string().regex(/^[0-9]{6}$/) }).strict() }, ctx => endpointResult(async () => {
+          verifyPhoneProof: createAuthEndpoint("/grmn/phone/verify", { method: "POST", body: z.object({ challengeId: z.uuid(), phoneNumber: phoneInput, code: z.string().regex(OTP_PATTERN) }).strict() }, ctx => endpointResult(async () => {
             const proof = await phones.consume(ctx.body.challengeId, ctx.body.phoneNumber, ctx.body.code);
             const found = await database.pool.query<{ id: string; status: string; staff: boolean; two_factor_enabled: boolean }>("SELECT id,status,two_factor_enabled,EXISTS(SELECT 1 FROM user_roles WHERE user_id=u.id) AS staff FROM users u WHERE phone_number=$1 AND phone_number_verified", [proof.phoneNumber]);
             const current = found.rows[0];
@@ -79,6 +79,12 @@ export function buildAuth(input: { database: DatabaseHandle; config: AuthConfig;
               await database.pool.query("DELETE FROM auth_sessions WHERE id=$1", [session.id]);
               throw new AuthFailure("UNAUTHENTICATED", 401, "Invalid or expired verification");
             }
+            await setSessionCookie(ctx, { user, session });
+            return ctx.json({ state: "authenticated" });
+          })),
+          signUpUnverified: createAuthEndpoint("/grmn/signup", { method: "POST", body: completeProfileInput }, ctx => endpointResult(async () => {
+            const userId = await phones.signUpUnverified(ctx.body), user = await ctx.context.internalAdapter.findUserById(userId), session = await ctx.context.internalAdapter.createSession(userId);
+            if (!user || !session) throw new AuthFailure("DEPENDENCY_UNAVAILABLE", 503, "Authentication is unavailable");
             await setSessionCookie(ctx, { user, session });
             return ctx.json({ state: "authenticated" });
           })),

@@ -24,6 +24,7 @@ import {
   formatKzt,
   announceSessionChange,
   type AccountFetcher,
+  type AuthMode,
   type AddressFields,
 } from "@/lib/account-client";
 
@@ -114,6 +115,10 @@ export function AccountDashboard() {
   const [needsCompletion, setNeedsCompletion] = useState(false);
   const [completion, setCompletion] = useState({ name: "", email: "" });
   const [signInError, setSignInError] = useState<string | null>(null);
+  // Owner 2026-11-26: Sign in | Sign up tabs; test mode (fixed code, direct signup) is reported by the server at runtime.
+  const [authTab, setAuthTab] = useState<"signIn" | "signUp">("signIn");
+  const [authMode, setAuthMode] = useState<AuthMode>({ testCode: false, signUp: false });
+  const [signUpForm, setSignUpForm] = useState({ name: "", phone: "", email: "" });
 
   // Profile
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -167,6 +172,7 @@ export function AccountDashboard() {
     setProfile(null); setAddresses([]); setOrders([]); setNextCursor(null); setIsStaff(false);
     setSelectedOrderId(null); setOrderDetail(null); setIsPhoneChangeOpen(false); setPhoneChallenges(null);
     setSignInChallenge(null); setSignInCode(""); setNeedsCompletion(false); setCompletion({ name: "", email: "" }); setSignInError(null);
+    setAuthTab("signIn"); setSignUpForm({ name: "", phone: "", email: "" });
     // Nothing typed by this person may survive for the next person on the device.
     setTab("Profile"); setBusy(null); setStatusMessage(null);
     setIsEditingProfile(false); setProfileForm(EMPTY_PROFILE_FORM); setProfileError(null);
@@ -183,7 +189,7 @@ export function AccountDashboard() {
   const load = useCallback(async () => {
     try {
       const session = await client.session();
-      if (!session.user) { signedOut(null); return; }
+      if (!session.user) { signedOut(null); client.authMode().then(setAuthMode, () => {}); return; }
       const [nextProfile, addressPage, orderPage] = await Promise.all([client.profile(), client.addresses(), client.orders()]);
       setIsStaff(Boolean(session.staff));
       setProfile(nextProfile); setAddresses(addressPage.items); setOrders(orderPage.items); setNextCursor(orderPage.nextCursor);
@@ -239,6 +245,21 @@ export function AccountDashboard() {
       announceSessionChange(); setNeedsCompletion(false); setSignInNotice(null); setPhase("loading"); await load();
     } catch (error) { setSignInError(errorMessage(error)); }
     finally { setBusy(null); }
+  };
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSignInError(null); setBusy("sign-in");
+    try {
+      await client.signUp({ name: signUpForm.name.trim(), email: signUpForm.email.trim(), phoneNumber: cleanPhone(signUpForm.phone) });
+      announceSessionChange(); setSignInNotice(null); setPhase("loading"); await load();
+    } catch (error) { setSignInError(errorMessage(error)); }
+    finally { setBusy(null); }
+  };
+
+  const chooseAuthTab = (next: "signIn" | "signUp") => {
+    if (next === authTab) return;
+    setAuthTab(next); setSignInError(null);
   };
 
   const handleSignOut = async () => {
@@ -451,15 +472,44 @@ export function AccountDashboard() {
   }
 
   if (phase === "signed_out") {
+    const authTabClass = (active: boolean) => `flex-1 border-b-2 pb-2.5 text-[15px] font-semibold transition-colors ${active ? "border-black text-black" : "border-transparent text-neutral-500 hover:text-black"}`;
+    const directSignUp = authTab === "signUp" && authMode.signUp;
     return (
       <div className="mx-auto max-w-[480px] px-4 py-16 font-sans">
         <div className="border border-neutral-200 bg-white p-6">
-          <div className="flex items-center gap-3 border-b border-neutral-100 pb-3">
+          <div role="tablist" aria-label={t("auth.tabsLabel")} className="flex gap-4 border-b border-neutral-100">
+            <button type="button" role="tab" id="auth-tab-sign-in" aria-selected={authTab === "signIn"} aria-controls="auth-panel" onClick={() => chooseAuthTab("signIn")} className={authTabClass(authTab === "signIn")}>{t("auth.signInTab")}</button>
+            <button type="button" role="tab" id="auth-tab-sign-up" aria-selected={authTab === "signUp"} aria-controls="auth-panel" onClick={() => chooseAuthTab("signUp")} className={authTabClass(authTab === "signUp")}>{t("auth.signUpTab")}</button>
+          </div>
+          <div id="auth-panel" role="tabpanel" aria-labelledby={authTab === "signIn" ? "auth-tab-sign-in" : "auth-tab-sign-up"}>
+          <div className="mt-5 flex items-center gap-3">
             <Phone className="h-5 w-5 text-garmin-blue" />
-            <h1 className="g-heading text-[20px] font-semibold text-black">{t("signIn.title")}</h1>
+            <h1 className="g-heading text-[20px] font-semibold text-black">{authTab === "signIn" ? t("signIn.title") : t("signUp.title")}</h1>
           </div>
           {signInNotice && <p role="status" className="mt-4 border border-emerald-200 bg-emerald-50 p-2.5 text-xs text-emerald-900">{signInNotice}</p>}
-          <p className="mt-4 text-[13px] text-neutral-600">{t("signIn.intro")}</p>
+          {authMode.testCode && authTab === "signIn" && (
+            <p data-test-mode className="mt-4 border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900">{authMode.code ? t("auth.testModeCode", { code: authMode.code }) : t("auth.testMode")}</p>
+          )}
+          {directSignUp ? (
+            <form name="sign-up" onSubmit={handleSignUp} className="mt-4 space-y-3">
+              <p className="text-[13px] text-neutral-600">{t("signUp.intro")}</p>
+              <div>
+                <label className={labelClass} htmlFor="signUpName">{t("signIn.fullName")}</label>
+                <input id="signUpName" name="signUpName" required autoComplete="name" value={signUpForm.name} onChange={e => setSignUpForm({ ...signUpForm, name: e.target.value })} className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="signUpPhone">{t("signIn.phone")}</label>
+                <input id="signUpPhone" name="signUpPhone" type="tel" required autoComplete="tel" placeholder="+77001234567" value={signUpForm.phone} onChange={e => setSignUpForm({ ...signUpForm, phone: e.target.value })} className={inputClass} />
+              </div>
+              <div>
+                <label className={labelClass} htmlFor="signUpEmail">{t("signIn.email")}</label>
+                <input id="signUpEmail" name="signUpEmail" type="email" required autoComplete="email" value={signUpForm.email} onChange={e => setSignUpForm({ ...signUpForm, email: e.target.value })} className={inputClass} />
+              </div>
+              <button type="submit" disabled={busy === "sign-in"} className={primaryButton}>{t("signIn.create")}</button>
+            </form>
+          ) : (
+            <>
+          <p className="mt-4 text-[13px] text-neutral-600">{authTab === "signIn" ? t("signIn.intro") : t("signUp.verifyIntro")}</p>
           <form name="sign-in" onSubmit={handleSendSignInCode} className="mt-4 space-y-3">
             <div>
               <label className={labelClass} htmlFor="signInPhone">{t("signIn.phone")}</label>
@@ -471,7 +521,7 @@ export function AccountDashboard() {
             <form name="sign-in-verify" onSubmit={handleVerifySignIn} className="mt-5 space-y-3 border-t border-neutral-100 pt-4">
               <div>
                 <label className={labelClass} htmlFor="signInCode">{t("code")}</label>
-                <input id="signInCode" name="signInCode" inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{6}" value={signInCode} onChange={e => setSignInCode(e.target.value)} className={inputClass} />
+                <input id="signInCode" name="signInCode" inputMode="numeric" autoComplete="one-time-code" required pattern="[0-9]{4,6}" value={signInCode} onChange={e => setSignInCode(e.target.value)} className={inputClass} />
               </div>
               <button type="submit" disabled={busy === "sign-in"} className={primaryButton}>{t("signIn.verify")}</button>
             </form>
@@ -490,7 +540,10 @@ export function AccountDashboard() {
               <button type="submit" disabled={busy === "sign-in"} className={primaryButton}>{t("signIn.create")}</button>
             </form>
           )}
+            </>
+          )}
           <div className="mt-4">{showError(signInError)}</div>
+          </div>
         </div>
       </div>
     );
@@ -705,11 +758,11 @@ export function AccountDashboard() {
                             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                               <div>
                                 <label className={labelClass} htmlFor="currentCode">{t("security.currentCode", { phone: profile.phone ?? "" })}</label>
-                                <input id="currentCode" name="currentCode" inputMode="numeric" required pattern="[0-9]{6}" value={phoneChange.currentCode} onChange={e => setPhoneChange({ ...phoneChange, currentCode: e.target.value })} className={inputClass} />
+                                <input id="currentCode" name="currentCode" inputMode="numeric" required pattern="[0-9]{4,6}" value={phoneChange.currentCode} onChange={e => setPhoneChange({ ...phoneChange, currentCode: e.target.value })} className={inputClass} />
                               </div>
                               <div>
                                 <label className={labelClass} htmlFor="newCode">{t("security.newCode")}</label>
-                                <input id="newCode" name="newCode" inputMode="numeric" required pattern="[0-9]{6}" value={phoneChange.newCode} onChange={e => setPhoneChange({ ...phoneChange, newCode: e.target.value })} className={inputClass} />
+                                <input id="newCode" name="newCode" inputMode="numeric" required pattern="[0-9]{4,6}" value={phoneChange.newCode} onChange={e => setPhoneChange({ ...phoneChange, newCode: e.target.value })} className={inputClass} />
                               </div>
                             </div>
                             <div className="flex justify-end"><button type="submit" disabled={busy === "phone"} className={primaryButton}>{t("security.confirmPhone")}</button></div>
@@ -803,7 +856,7 @@ export function AccountDashboard() {
                     {claimChallenge && (
                       <div className="flex-1">
                         <label className={labelClass} htmlFor="claimCode">{t("code")}</label>
-                        <input id="claimCode" name="claimCode" inputMode="numeric" required pattern="[0-9]{6}" value={claim.code} onChange={e => setClaim({ ...claim, code: e.target.value })} className={inputClass} />
+                        <input id="claimCode" name="claimCode" inputMode="numeric" required pattern="[0-9]{4,6}" value={claim.code} onChange={e => setClaim({ ...claim, code: e.target.value })} className={inputClass} />
                       </div>
                     )}
                   </div>

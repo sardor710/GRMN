@@ -45,6 +45,7 @@ services:
       AUTH_BASE_URL: https://${GRMN_DOMAIN:?set in the env file}
       NEXT_PUBLIC_SITE_URL: https://${GRMN_DOMAIN}
       AUTH_TRUSTED_IP_HEADER: x-grmn-client-ip
+      AUTH_TEST_OTP_CODE: ${AUTH_TEST_OTP_CODE:-}
       # Task 24: 0 = staff sign in with password only (owner decision); unset/1 = authenticator required.
       STAFF_MFA_REQUIRED: ${STAFF_MFA_REQUIRED:-1}
       # Owner 2026-11-19: Russian and Kazakh machine translation in the admin (OpenRouter).

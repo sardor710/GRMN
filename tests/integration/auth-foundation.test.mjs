@@ -307,3 +307,45 @@ test("authenticated MFA guessing is budgeted per account across instances", asyn
   for (let i=0;i<6;i++) results.push(await request("/two-factor/verify-totp", { code }, staffJar, i%2 ? second : foundation));
   assert.equal(results[5].response.status, 429);
 });
+
+// Owner 2026-11-26: AUTH_TEST_OTP_CODE=1234 (no SMS provider yet) and direct signup without phone proof.
+test("test-code mode: fixed code without a sender, direct signup, and both stay off without the flag", async () => {
+  const testing = createAuthFoundation({ database, config, testCode: "1234" });
+  assert.deepEqual((await request("/grmn/mode", undefined, new Map(), testing)).body, { testCode: true, signUp: true, code: "1234" });
+  assert.deepEqual((await request("/grmn/mode", undefined, new Map(), foundation)).body, { testCode: false, signUp: false });
+
+  // Sign up: account and session at once, no code.
+  const phone = "+77000000901", jar = new Map();
+  const signed = await request("/grmn/signup", { name: "Test signup", email: "signup@example.invalid", phoneNumber: phone }, jar, testing);
+  assert.equal(signed.response.status, 200); assert.equal(signed.body.state, "authenticated");
+  assert.equal((await request("/get-session", undefined, jar, testing)).body.user.name, "Test signup");
+  const audit = await database.pool.query("SELECT 1 FROM audit_events e JOIN users u ON u.id=e.target_id::uuid WHERE u.phone_number=$1 AND e.action='customer.signup_unverified'", [phone]);
+  assert.equal(audit.rowCount, 1);
+  assert.equal((await request("/grmn/signup", { name: "Again", email: "other@example.invalid", phoneNumber: phone }, new Map(), testing)).response.status, 409);
+  assert.equal((await request("/grmn/signup", { name: "Again", email: "signup@example.invalid", phoneNumber: "+77000000902" }, new Map(), testing)).response.status, 409);
+
+  // Sign in with 1234: nothing is sent, the fixed code works, a wrong code does not.
+  const before = deliveries.size, signInJar = new Map();
+  const sent = await request("/grmn/phone/send", { phoneNumber: phone }, signInJar, testing);
+  assert.equal(sent.response.status, 200); assert.equal(sent.body.testCode, true); assert.equal(deliveries.size, before);
+  assert.notEqual((await request("/grmn/phone/verify", { phoneNumber: phone, challengeId: sent.body.challengeId, code: "4321" }, signInJar, testing)).response.status, 200);
+  const verified = await request("/grmn/phone/verify", { phoneNumber: phone, challengeId: sent.body.challengeId, code: "1234" }, signInJar, testing);
+  assert.equal(verified.response.status, 200); assert.equal(verified.body.state, "authenticated");
+
+  // Staff numbers keep their separate sign-in flow even with the test code.
+  const staffPhone = "+77000000903";
+  await database.pool.query("UPDATE users SET phone_number=$1,phone_number_verified=true WHERE id=$2", [staffPhone, staffId]);
+  try {
+    const staffSent = await request("/grmn/phone/send", { phoneNumber: staffPhone }, new Map(), testing);
+    assert.equal((await request("/grmn/phone/verify", { phoneNumber: staffPhone, challengeId: staffSent.body.challengeId, code: "1234" }, new Map(), testing)).response.status, 403);
+    assert.equal((await request("/grmn/signup", { name: "Staff clone", email: "staffclone@example.invalid", phoneNumber: staffPhone }, new Map(), testing)).response.status, 409);
+  } finally { await database.pool.query("UPDATE users SET phone_number=NULL,phone_number_verified=false WHERE id=$1", [staffId]); }
+
+  // Without the flag: no signup, no fixed code, and no delivery means 503.
+  assert.equal((await request("/grmn/signup", { name: "Off", email: "off@example.invalid", phoneNumber: "+77000000904" }, new Map(), foundation)).response.status, 404);
+  const noSender = createAuthFoundation({ database, config });
+  assert.equal((await request("/grmn/phone/send", { phoneNumber: "+77000000905" }, new Map(), noSender)).response.status, 503);
+  const real = await request("/grmn/phone/send", { phoneNumber: "+77000000906" }, new Map(), foundation);
+  assert.equal(deliveries.get("+77000000906").length, 6);
+  assert.notEqual((await request("/grmn/phone/verify", { phoneNumber: "+77000000906", challengeId: real.body.challengeId, code: "1234" }, new Map(), foundation)).response.status, 200);
+});

@@ -9,6 +9,9 @@ export type PhonePurpose = typeof PHONE_PURPOSES[number];
 // The provider must use purpose-specific message text so a code is never read out for the wrong action.
 export type PhoneSender = (input: { phoneNumber: string; code: string; purpose: PhonePurpose }) => Promise<void>;
 export interface VerifiedPhoneProof { readonly phoneNumber: string; readonly challengeId: string }
+// Real delivered codes are 6 digits; the owner's test code (AUTH_TEST_OTP_CODE) may be 4-6. A short guess against a
+// real challenge simply fails the hash check and counts as a failed attempt.
+export const OTP_PATTERN = /^[0-9]{4,6}$/;
 export const canonicalPhone = (phone: string) => /^[+][1-9][0-9]{7,14}$/.test(phone);
 export const capabilityHash = (value: string) => createHash("sha256").update(value).digest("hex");
 export function authDigest(secret: string, value: string) { return createHmac("sha256", secret).update(value).digest("hex"); }
@@ -20,8 +23,9 @@ export async function consumeAuthBudget(database: Pick<DatabaseHandle, "pool">, 
   if (!result.rowCount) throw new AuthFailure("RATE_LIMITED", 429, "Too many authentication requests", seconds);
 }
 
-export function createPhoneService(input: { database: Pick<DatabaseHandle, "pool">; secret: string; send?: PhoneSender; ttlMs?: number }) {
-  const { database, secret, send } = input;
+export function createPhoneService(input: { database: Pick<DatabaseHandle, "pool">; secret: string; send?: PhoneSender; ttlMs?: number; testCode?: string }) {
+  const { database, secret, send, testCode } = input;
+  if (testCode !== undefined && !OTP_PATTERN.test(testCode)) throw new Error("Invalid test verification code");
   const ttlMs = input.ttlMs ?? 300000;
   if (!Number.isInteger(ttlMs) || ttlMs<100 || ttlMs>300000) throw new Error("Invalid phone challenge lifetime");
   const invalid = () => new AuthFailure("UNAUTHENTICATED", 401, "Invalid or expired verification");
@@ -30,9 +34,10 @@ export function createPhoneService(input: { database: Pick<DatabaseHandle, "pool
     async request(phoneNumber: string, purpose: PhonePurpose = "sign_in") {
       if (!PHONE_PURPOSES.includes(purpose)) throw new AuthFailure("INVALID_INPUT", 400, "Invalid verification purpose");
       if (!canonicalPhone(phoneNumber)) throw new AuthFailure("INVALID_INPUT", 400, "Invalid phone number");
-      if (!send) throw new AuthFailure("DEPENDENCY_UNAVAILABLE", 503, "Phone delivery is not configured");
-      await consumeAuthBudget(database, secret, "phone-send", phoneNumber, 5, 900);
-      const id = randomUUID(), code = randomInt(0, 1000000).toString().padStart(6, "0");
+      if (!send && !testCode) throw new AuthFailure("DEPENDENCY_UNAVAILABLE", 503, "Phone delivery is not configured");
+      // Test mode sends nothing, so the owner gets a looser budget while trying the flows.
+      await consumeAuthBudget(database, secret, "phone-send", phoneNumber, testCode ? 30 : 5, 900);
+      const id = randomUUID(), code = testCode ?? randomInt(0, 1000000).toString().padStart(6, "0");
       const client = await database.pool.connect();
       try {
         await client.query("BEGIN");
@@ -41,12 +46,13 @@ export function createPhoneService(input: { database: Pick<DatabaseHandle, "pool
         await client.query("INSERT INTO phone_challenges(id,phone_number,code_hash,expires_at,purpose) VALUES($1,$2,$3,clock_timestamp()+$4*interval '1 millisecond',$5)", [id, phoneNumber, authDigest(secret, `${id}:${phoneNumber}:${code}`), ttlMs, purpose]);
         await client.query("COMMIT");
       } catch (error) { await client.query("ROLLBACK"); throw error; } finally { client.release(); }
-      try { await send({ phoneNumber, code, purpose }); }
+      if (testCode) return { challengeId: id, testCode: true as const };
+      try { await send!({ phoneNumber, code, purpose }); }
       catch { await database.pool.query("UPDATE phone_challenges SET consumed_at=now() WHERE id=$1 AND consumed_at IS NULL", [id]); throw new AuthFailure("DEPENDENCY_UNAVAILABLE", 503, "Phone delivery is unavailable"); }
       return { challengeId: id };
     },
     async consume(challengeId: string, phoneNumber: string, code: string, purpose: PhonePurpose = "sign_in") {
-      if (!/^[a-f0-9-]{36}$/i.test(challengeId) || !canonicalPhone(phoneNumber) || !/^[0-9]{6}$/.test(code)) throw invalid();
+      if (!/^[a-f0-9-]{36}$/i.test(challengeId) || !canonicalPhone(phoneNumber) || !OTP_PATTERN.test(code)) throw invalid();
       await consumeAuthBudget(database, secret, "phone-verify", phoneNumber, 20, 300);
       const consumed = await database.pool.query<{ consumed_at: Date | null }>("UPDATE phone_challenges SET failed_attempts=failed_attempts+CASE WHEN code_hash=$3 THEN 0 ELSE 1 END,consumed_at=CASE WHEN code_hash=$3 THEN clock_timestamp() ELSE NULL END WHERE id=$1 AND phone_number=$2 AND purpose=$4 AND consumed_at IS NULL AND expires_at>clock_timestamp() AND failed_attempts<5 RETURNING consumed_at", [challengeId, phoneNumber, authDigest(secret, `${challengeId}:${phoneNumber}:${code}`), purpose]);
       if (!consumed.rows[0]?.consumed_at) throw invalid();
@@ -60,6 +66,29 @@ export function createPhoneService(input: { database: Pick<DatabaseHandle, "pool
       const token = randomBytes(32).toString("base64url");
       await database.pool.query("INSERT INTO customer_completion_sessions(id,phone_number,token_hash,phone_verified_at,expires_at) VALUES($1,$2,$3,now(),now()+interval '10 minutes')", [randomUUID(), proof.phoneNumber, capabilityHash(token)]);
       return token;
+    },
+    /** Owner 2026-11-26: direct signup without phone proof, only while a test code is configured. */
+    async signUpUnverified(details: { name: string; email: string; phoneNumber: string }) {
+      if (!testCode) throw new AuthFailure("FORBIDDEN", 403, "Sign up requires phone verification");
+      const parsed = completeProfileInput.safeParse(details);
+      if (!parsed.success) throw new AuthFailure("INVALID_INPUT", 400, "Invalid profile details");
+      details = parsed.data;
+      await consumeAuthBudget(database, secret, "phone-signup", details.phoneNumber, 5, 900);
+      const client = await database.pool.connect();
+      try {
+        await client.query("BEGIN");
+        const id = randomUUID();
+        // phone_number_verified=true so sign-in and profile editing work; the audit action marks the phone as unproven.
+        await client.query("INSERT INTO users(id,name,email,phone_number,phone_number_verified) VALUES($1,$2,$3,$4,true)", [id, details.name, details.email, details.phoneNumber]);
+        await client.query("INSERT INTO customer_profiles(id,user_id,name,email,entered_phone,normalized_phone,profile_state) VALUES($1,$2,$3,$4,$5,$5,'complete')", [randomUUID(), id, details.name, details.email, details.phoneNumber]);
+        await client.query("INSERT INTO audit_events(id,actor_user_id,action,target_type,target_id,dedupe_key) VALUES($1,$2,'customer.signup_unverified','user',$2,$3)", [randomUUID(), id, `signup-unverified:${id}`]);
+        await client.query("COMMIT");
+        return id;
+      } catch (error) {
+        await client.query("ROLLBACK");
+        if (error instanceof Error && "code" in error && error.code==="23505") throw new AuthFailure("VERSION_CONFLICT", 409, "This phone or email already has an account; sign in instead");
+        throw error;
+      } finally { client.release(); }
     },
     async complete(token: string, details: { name: string; email: string; phoneNumber: string }) {
       const parsed = completeProfileInput.safeParse(details);

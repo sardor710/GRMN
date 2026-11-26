@@ -398,3 +398,29 @@ test("M8: the profile saves an optional birthday and a validated email with feed
   await view.submit("profile");
   assert.equal(saved.birthDate, null, "clearing the date removes the birthday");
 });
+
+test("owner 2026-11-26: Sign in | Sign up tabs; test mode shows the code and signs up directly without SMS", async () => {
+  const routes = { "GET /api/auth/get-session": [200, { user: null, staff: false }], "GET /api/auth/grmn/mode": [200, { testCode: true, signUp: true, code: "1234" }] };
+  const view = await mount(routes);
+  assert.ok(view.button("Sign in") && view.button("Sign up"), "both tabs are shown");
+  assert.match(view.text(), /SMS codes are not sent yet\. Enter code 1234\./);
+  await view.click("Sign up");
+  assert.match(view.text(), /Create your account/);
+  view.input("signUpName", " New Customer ");
+  view.input("signUpPhone", "+7 700 000 0009");
+  view.input("signUpEmail", "new@example.invalid");
+  routes["POST /api/auth/grmn/signup"] = [200, { state: "authenticated" }];
+  Object.assign(routes, signedIn());
+  await view.submit("sign-up");
+  assert.deepEqual(view.calls.find(call => call.key === "POST /api/auth/grmn/signup").body, { name: "New Customer", email: "new@example.invalid", phoneNumber: "+77000000009" });
+  assert.match(view.text(), /Synthetic Owner/);
+});
+
+test("without test mode there is no code hint and Sign up goes through the phone code first", async () => {
+  const view = await mount({ "GET /api/auth/get-session": [200, { user: null, staff: false }], "GET /api/auth/grmn/mode": [200, { testCode: false, signUp: false }] });
+  assert.doesNotMatch(view.text(), /SMS codes are not sent yet/);
+  await view.click("Sign up");
+  assert.match(view.text(), /We send a one-time code, then ask for your name/);
+  assert.ok(nodes(view.tree).some(node => node.type === "form" && node.props.name === "sign-in"), "phone-first form");
+  assert.ok(!nodes(view.tree).some(node => node.type === "form" && node.props.name === "sign-up"), "no direct signup form");
+});

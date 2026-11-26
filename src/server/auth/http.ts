@@ -8,7 +8,7 @@ import type { DatabaseHandle } from "../db/client.ts";
 import { buildAuth } from "./factory.ts";
 import { AuthFailure } from "./config.ts";
 import type { AuthConfig } from "./config.ts";
-import { authDigest, consumeAuthBudget, PHONE_PURPOSES } from "./phone-service.ts";
+import { authDigest, consumeAuthBudget, OTP_PATTERN, PHONE_PURPOSES } from "./phone-service.ts";
 import type { PhoneSender } from "./phone-service.ts";
 import { getSessionIdentity, staffMfaRequired } from "./principal.ts";
 import { completeProfileInput, emailInput, phoneInput } from "./validation.ts";
@@ -22,8 +22,9 @@ const bodies = {
   "/two-factor/verify-totp": z.object({ code: z.string().regex(/^[0-9]{6}$/) }).strict(),
   "/two-factor/verify-backup-code": z.object({ code: z.string().min(6).max(64) }).strict(),
   "/grmn/phone/send": z.object({ phoneNumber: phoneInput, purpose: z.enum(PHONE_PURPOSES).optional() }).strict(),
-  "/grmn/phone/verify": z.object({ phoneNumber: phoneInput, challengeId: z.uuid(), code: z.string().regex(/^[0-9]{6}$/) }).strict(),
+  "/grmn/phone/verify": z.object({ phoneNumber: phoneInput, challengeId: z.uuid(), code: z.string().regex(OTP_PATTERN) }).strict(),
   "/grmn/phone/complete": completeProfileInput,
+  "/grmn/signup": completeProfileInput,
   // Staff credential change through the Better Auth credential service; every session is revoked.
   "/change-password": z.object({ currentPassword: z.string().min(1).max(128), newPassword: z.string().min(16).max(128), revokeOtherSessions: z.literal(true).default(true) }).strict(),
 };
@@ -72,7 +73,7 @@ export function authErrorResponse(error: unknown) {
   if (failure.retryAfter) response.headers.set("Retry-After", String(failure.retryAfter));
   return response;
 }
-export function createAuthFoundation(input: { database: DatabaseHandle; config: AuthConfig; phoneSender?: PhoneSender }) {
+export function createAuthFoundation(input: { database: DatabaseHandle; config: AuthConfig; phoneSender?: PhoneSender; testCode?: string }) {
   const auth = buildAuth(input), { database, config } = input;
   const runtime = { auth, database };
   return { ...runtime, async handleRequest(request: Request): Promise<Response> {
@@ -91,6 +92,12 @@ export function createAuthFoundation(input: { database: DatabaseHandle; config: 
         const identity = await getSessionIdentity(runtime, request.headers);
         return json({ user: identity ? { id: identity.id, name: identity.name } : null, staff: !!identity?.staff, mfaEnrolled: !!identity?.mfa_enrolled, mfaRequired: !!identity?.staff && !identity.mfa_at && staffMfaRequired(), mfaRestartRequired: !!identity?.staff && identity.mfa_enrolled && !identity.mfa_at && staffMfaRequired() });
       }
+      if (request.method==="GET" && path==="/grmn/mode") {
+        // Read at runtime (never baked into the client bundle): the account page shows Sign up and the test-code note.
+        // The test code is shown on the sign-in form while test mode is on (owner 2026-11-26: site not public yet).
+        return json(input.testCode !== undefined ? { testCode: true, signUp: true, code: input.testCode } : { testCode: false, signUp: false });
+      }
+      if (path==="/grmn/signup" && input.testCode===undefined) return json({ error: { code: "NOT_FOUND", message: "Auth operation is unavailable" } }, 404);
       if (request.method!=="POST" || !(path in bodies)) return json({ error: { code: "NOT_FOUND", message: "Auth operation is unavailable" } }, 404);
       if (request.headers.get("origin")!==config.baseURL) throw new AuthFailure("FORBIDDEN", 403, "Invalid auth origin");
       if (request.headers.get("content-type")?.split(";")[0].trim()!=="application/json") throw new AuthFailure("INVALID_INPUT", 400, "JSON input is required");
