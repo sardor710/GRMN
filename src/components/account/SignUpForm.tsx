@@ -69,9 +69,14 @@ export function SignUpForm() {
       announceSessionChange();
       router.push("/account");
     } catch (reason) {
-      setError(message(reason));
-      // A refused or expired code is spent: ask for a new one.
-      if (reason instanceof AccountRequestError && reason.status === 401) { setChallenge(null); setWait(0); set("code")(""); }
+      // Server texts are English; the known answers are shown in the page language.
+      if (reason instanceof AccountRequestError && reason.status === 409) setError(t("signUpPage.errors.taken"));
+      else if (reason instanceof AccountRequestError && reason.status === 401) {
+        // A wrong code can be typed again (5 tries); an expired or used-up code needs a new one.
+        setError(t("signUpPage.errors.badCode")); set("code")("");
+        if (wait <= 0) setChallenge(null);
+      } else if (reason instanceof AccountRequestError && reason.status === 429) setError(t("signUpPage.errors.rateLimited"));
+      else setError(message(reason));
     } finally { setBusy(null); }
   }
 

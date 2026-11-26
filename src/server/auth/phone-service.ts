@@ -75,6 +75,10 @@ export function createPhoneService(input: { database: Pick<DatabaseHandle, "pool
       const parsed = signUpInput.safeParse(input);
       if (!parsed.success) throw new AuthFailure("INVALID_INPUT", 400, "Invalid sign-up details");
       const details = parsed.data;
+      // Review 2026-11-26: only someone holding a live code for this phone learns whether the phone or email is taken.
+      const live = await database.pool.query("SELECT 1 FROM phone_challenges WHERE id=$1 AND phone_number=$2 AND purpose='sign_in' AND consumed_at IS NULL AND expires_at>clock_timestamp() AND failed_attempts<5", [details.challengeId, details.phoneNumber]);
+      if (!live.rowCount) throw invalid();
+      await consumeAuthBudget(database, secret, "phone-signup", details.phoneNumber, 10, 900);
       const taken = await database.pool.query("SELECT 1 FROM users WHERE phone_number=$1 OR lower(email)=$2 LIMIT 1", [details.phoneNumber, details.email]);
       if (taken.rowCount) throw new AuthFailure("VERSION_CONFLICT", 409, "This phone or email already has an account; sign in instead");
       await service.consume(details.challengeId, details.phoneNumber, details.code, "sign_in");

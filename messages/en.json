@@ -1082,7 +1082,10 @@
         "codeFirst": "Press “Send code” and enter the code from the SMS.",
         "code": "Enter the code from the SMS.",
         "email": "Enter a valid email.",
-        "birthDate": "Birthday must be 10 to 120 years ago."
+        "birthDate": "Birthday must be 10 to 120 years ago.",
+        "taken": "This phone or email already has an account. Sign in instead.",
+        "badCode": "The code is wrong or has expired. Check it, or ask for a new one.",
+        "rateLimited": "Too many attempts. Please wait a few minutes and try again."
       }
     },
     "genders": {
@@ -1174,7 +1177,8 @@
       "hours": "Opening hours: {hours}",
       "phone": "Phone: {phone}",
       "map": "Open in maps",
-      "note": "Pay now; we'll show “Ready for pickup” in your order when it's waiting for you. Bring your order number."
+      "note": "Pay now; we'll show “Ready for pickup” in your order when it's waiting for you. Bring your order number.",
+      "unavailable": "Store pickup is not available right now. Choose delivery to an address."
     }
   },
   "Locations": {

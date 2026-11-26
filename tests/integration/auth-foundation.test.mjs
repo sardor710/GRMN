@@ -365,3 +365,11 @@ test("test-code mode: fixed code without a sender; sign-up checks the code and s
   assert.equal(deliveries.get("+77000000906").length, 6);
   assert.notEqual((await request("/grmn/phone/verify", { phoneNumber: "+77000000906", challengeId: real.body.challengeId, code: "1234" }, new Map(), foundation)).response.status, 200);
 });
+
+// Review 2026-11-26: without a live code for that phone, sign-up does not say whether a phone or email is registered.
+test("sign-up needs a live code for the phone before it reveals that an account exists", async () => {
+  const testing = createAuthFoundation({ database, config, testCode: "1234" });
+  const taken = { name: "Probe", email: "signup@example.invalid", phoneNumber: "+77000000901", challengeId: "00000000-0000-4000-8000-0000000000ff", code: "0000" };
+  assert.equal((await request("/grmn/signup", taken, new Map(), testing)).response.status, 401);
+  assert.equal((await request("/grmn/signup", { ...taken, email: "nobody@example.invalid", phoneNumber: "+77000000955" }, new Map(), testing)).response.status, 401);
+});

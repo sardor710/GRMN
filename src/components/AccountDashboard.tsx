@@ -2,7 +2,7 @@
 
 // Session-owned customer account (Task 10C). Every record shown here comes from /api/account/*
 // for the signed-in session; nothing is seeded, selected by email or faked on failure.
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { OrderTracker } from "@/components/account/OrderTracker";
 import { Check, Plus, Trash2, Edit3, X, AlertCircle, Lock, KeyRound, ChevronRight, ChevronLeft, Phone, Loader2, Watch, ExternalLink } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -194,6 +194,8 @@ export function AccountDashboard() {
     setClaim({ orderId: "", receipt: "", code: "" }); setClaimChallenge(null); setClaimError(null);
     setPhoneChange({ newPhone: "", currentCode: "", newCode: "" }); setPhoneChangeError(null);
     setIsPasswordChangeOpen(false); setPasswordForm({ currentPassword: "", newPassword: "" }); setPasswordError(null);
+    // The next person on this device must not land on the previous person's order link.
+    if (typeof window !== "undefined" && window.location?.search) window.history?.replaceState(null, "", window.location.pathname);
     setSignInNotice(notice); setPhase("signed_out");
   }, []);
 
@@ -361,10 +363,13 @@ export function AccountDashboard() {
     finally { setBusy(null); }
   };
 
+  // Only the latest opened order may fill the page (a slower earlier response is dropped).
+  const openedOrder = useRef<string | null>(null);
   const loadOrder = useCallback(async (id: string) => {
+    openedOrder.current = id;
     setSelectedOrderId(id); setOrderDetail(null); setOrderDetailError(null);
-    try { setOrderDetail(await client.order(id)); }
-    catch (error) { setOrderDetailError(errorMessage(error)); }
+    try { const detail = await client.order(id); if (openedOrder.current === id) setOrderDetail(detail); }
+    catch (error) { if (openedOrder.current === id) setOrderDetailError(errorMessage(error)); }
   }, [client]);
   // 0033: an opened order has its own address (/account?order=<id>), so Back and refresh work.
   const handleOpenOrder = async (id: string) => {
@@ -374,7 +379,8 @@ export function AccountDashboard() {
     await loadOrder(id);
   };
   const closeOrder = () => {
-    if (typeof window !== "undefined" && window.location.search) window.history.pushState(null, "", window.location.pathname);
+    if (typeof window !== "undefined" && window.location?.search) window.history?.pushState(null, "", window.location.pathname);
+    openedOrder.current = null;
     setSelectedOrderId(null); setOrderDetail(null); setOrderDetailError(null);
   };
   useEffect(() => {

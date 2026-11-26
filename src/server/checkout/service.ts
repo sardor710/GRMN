@@ -7,6 +7,7 @@ import { AuthFailure } from "../auth/config.ts";
 import { MAX_HOLD_SECONDS, reserveStock, withInventoryTransaction } from "../inventory/reservations.ts";
 import { reserveCouponQuota } from "../pricing/coupons.ts";
 import { revalidateQuote, type DeliverySnapshot } from "../pricing/quote.ts";
+import { readStorePickup } from "../settings/service.ts";
 import { appendOutboxEvent } from "../operations/outbox.ts";
 import type { PaymentMethodCode } from "../../contracts/commerce.ts";
 import { enqueueOrderAlerts } from "../notifications/whatsapp.ts";
@@ -279,6 +280,8 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
 
     // 4. The immutable order snapshot.
     const delivery = quote.delivery_snapshot, orderId = randomUUID();
+    // 0033: pickup switched off after the quote was made: the order is refused, not placed with a free pickup.
+    if (delivery.pickup && !(await readStorePickup(client)).enabled) throw new AuthFailure("PICKUP_UNAVAILABLE", 409, "Store pickup is not available right now; choose delivery");
     const { coupon, ...policies } = quote.policy_versions;
     // Admin markdowns are already in the unit price; keep the pre-markdown price beside the snapshot.
     const markdownLines = quote.lines_snapshot.filter(line => line.baseUnitMinor !== line.unitMinor)

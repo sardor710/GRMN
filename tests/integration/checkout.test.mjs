@@ -333,3 +333,14 @@ test("pickup: quote has no shipping, the placed order stores method and store co
     await assert.rejects((await cartService()).quote(filled.headers,{cartVersion:filled.version,displayCurrency:"KZT",delivery:pickup}),e=>e.code==="PICKUP_UNAVAILABLE"&&e.status===409);
   } finally { await q("UPDATE store_settings SET pickup_location=jsonb_set(pickup_location,'{enabled}','true') WHERE id=1"); }
 });
+
+test("pickup switched off after the quote: placing that pickup order is refused and nothing is written",async()=>{
+  const api=await cartService(),buyer=await owner(),a=await product({price:10000});
+  const {quote}=await quoted(buyer.headers,[[a.variant,1]],{delivery:{kind:"pickup",contact:{recipientName:"Late Buyer",phone:"+77010000098"}}});
+  const before=await count("SELECT count(*)::int AS n FROM orders");
+  await q("UPDATE store_settings SET pickup_location=jsonb_set(pickup_location,'{enabled}','false') WHERE id=1");
+  try {
+    await assert.rejects(api.checkout(buyer.headers,key(),body(quote)),e=>e.code==="PICKUP_UNAVAILABLE"&&e.status===409);
+    assert.equal(await count("SELECT count(*)::int AS n FROM orders"),before);
+  } finally { await q("UPDATE store_settings SET pickup_location=jsonb_set(pickup_location,'{enabled}','true') WHERE id=1"); }
+});

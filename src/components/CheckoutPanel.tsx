@@ -150,7 +150,12 @@ export function CheckoutPanel({ cart, disabled, onPlaced, onCartStale }: { cart:
       }
       const coupon = form.coupon.trim();
       setQuote(await client.quote({ cartVersion: cart.version, displayCurrency: "KZT", delivery, ...(coupon ? { couponCode: coupon } : {}) }));
-    } catch (failure) { setQuote(null); setError(message(failure, t("failed"))); } finally { setBusy(false); }
+    } catch (failure) {
+      setQuote(null);
+      // Pickup was switched off meanwhile: drop the option and fall back to an address.
+      if (failure instanceof CartRequestError && failure.code === "PICKUP_UNAVAILABLE") { setStore(null); setChoice(addresses.length ? defaultDeliveryChoice(addresses) : NEW_ADDRESS); setError(t("pickup.unavailable")); }
+      else setError(message(failure, t("failed")));
+    } finally { setBusy(false); }
   }
 
   async function place() {
@@ -185,6 +190,7 @@ export function CheckoutPanel({ cart, disabled, onPlaced, onCartStale }: { cart:
       // never read "demo" (owner 2026-11-22), so it gets the same neutral line.
       if (failure instanceof CartRequestError && (failure.code === "PAYMENT_METHOD_UNAVAILABLE" || failure.code === "PAYMENT_UNAVAILABLE")) { forgetCheckoutKey(session); setQuote(null); setRetry(false); setError(t("methodChanged")); void onCartStale?.(); }
       else if (next === "retry") { setRetry(true); setError(t("retryNotice")); }
+      else if (failure instanceof CartRequestError && failure.code === "PICKUP_UNAVAILABLE") { forgetCheckoutKey(session); setQuote(null); setRetry(false); setStore(null); setChoice(addresses.length ? defaultDeliveryChoice(addresses) : NEW_ADDRESS); setError(t("pickup.unavailable")); }
       else if (next === "requote") { forgetCheckoutKey(session); setQuote(null); setRetry(false); setError(t("requote", { error: message(failure, t("failed")) })); }
       else { setRetry(false); setError(message(failure, t("failed"))); }
     } finally { setBusy(false); }
