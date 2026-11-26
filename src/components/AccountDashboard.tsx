@@ -509,7 +509,7 @@ export function AccountDashboard() {
             </form>
           ) : (
             <>
-          <p className="mt-4 text-[13px] text-neutral-600">{authTab === "signIn" ? t("signIn.intro") : t("signUp.verifyIntro")}</p>
+          {!(authMode.testCode && authTab === "signIn") && <p className="mt-4 text-[13px] text-neutral-600">{authTab === "signIn" ? t("signIn.intro") : t("signUp.verifyIntro")}</p>}
           <form name="sign-in" onSubmit={handleSendSignInCode} className="mt-4 space-y-3">
             <div>
               <label className={labelClass} htmlFor="signInPhone">{t("signIn.phone")}</label>

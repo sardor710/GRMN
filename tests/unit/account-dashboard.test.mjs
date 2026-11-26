@@ -404,6 +404,7 @@ test("owner 2026-11-26: Sign in | Sign up tabs; test mode shows the code and sig
   const view = await mount(routes);
   assert.ok(view.button("Sign in") && view.button("Sign up"), "both tabs are shown");
   assert.match(view.text(), /SMS codes are not sent yet\. Enter code 1234\./);
+  assert.doesNotMatch(view.text(), /We send a one-time code/, "no SMS promise while codes are not sent");
   await view.click("Sign up");
   assert.match(view.text(), /Create your account/);
   view.input("signUpName", " New Customer ");
