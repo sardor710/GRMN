@@ -418,3 +418,30 @@ test("a serial can be on one open return only, must belong to the item, and a re
   assert.equal((await q("SELECT return_item_id FROM order_unit_serials WHERE id=$1",[s.ids[a]])).rows[0].return_item_id,null);
   await api.createReturn(fulfiller,{orderId:s.order.orderId,idempotencyKey:key(),reason:"z",lines:[{orderItemId:s.item,quantity:1,serialIds:[s.ids[a]]}]});
 });
+
+// ---------------------------------------------------------------- T3.5 customer tracker data
+test("the customer sees Ordered → Packed → Shipped → Delivered with dates, and the serial of their unit",async()=>{
+  const w=await watch(),order=await paidOrder([[w.variant,1]]),item=order.item[w.variant],sn=uniq();
+  let detail=await account.getOwnOrder(order.buyer.headers,order.orderId);
+  assert.equal(detail.stage,"ordered");assert.equal(detail.stageDates.packed,null);assert.ok(detail.stageDates.ordered);
+  const created=await pack(order.orderId,[{orderItemId:item,quantity:1}],[{orderItemId:item,units:[sn]}],{carrier:"Staff car",trackingReference:"SECRET-TRK"});
+  detail=await account.getOwnOrder(order.buyer.headers,order.orderId);
+  assert.equal(detail.stage,"packed");assert.ok(detail.stageDates.packed);assert.equal(detail.stageDates.shipped,null);
+  assert.deepEqual(detail.items.find(row=>row.id===item).serials,[sn]);
+  assert.ok(detail.events.some(event=>event.type==="fulfillment.packed"&&event.label==="Packed"));
+  await act(created.shipment,"dispatch");await act(created.shipment,"deliver");
+  detail=await account.getOwnOrder(order.buyer.headers,order.orderId);
+  assert.equal(detail.stage,"delivered");assert.ok(detail.stageDates.shipped&&detail.stageDates.delivered);
+  assert.ok(!JSON.stringify(detail).includes("SECRET-TRK"),"carrier and tracking stay staff-only");
+  const page=await account.getOwnOrders(order.buyer.headers,{});
+  assert.equal(page.items.find(row=>row.id===order.orderId).stage,"delivered");
+});
+
+test("a cancelled order shows the tracker stopped; a cancelled pack leaves no Packed date",async()=>{
+  const b=await band(),order=await paidOrder([[b.variant,1]]);
+  await pack(order.orderId,[{orderItemId:order.item[b.variant],quantity:1}]);
+  await cancel(order.orderId);
+  const detail=await account.getOwnOrder(order.buyer.headers,order.orderId);
+  assert.equal(detail.stage,"cancelled");assert.equal(detail.stageDates.packed,null);
+  assert.deepEqual(detail.items[0].serials,[]);
+});

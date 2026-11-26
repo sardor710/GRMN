@@ -355,7 +355,10 @@ export interface OrderSummaryDTO {
   paymentMode: "demo" | "live" | "sandbox" | "legacy_unknown";
   total: Money;
   itemsCount: number;
+  /** Owner 2026-11-25: the customer's four-step tracker (Ordered → Packed → Shipped → Delivered), or stopped. */
+  stage: OrderStage;
 }
+export type OrderStage = "ordered" | "packed" | "shipped" | "delivered" | "cancelled";
 
 export interface OrderItemDTO {
   id: string;
@@ -368,6 +371,8 @@ export interface OrderItemDTO {
   discount: Money;
   tax: Money;
   total: Money;
+  /** 0030: serial numbers of this item's packed units (cancelled packs excluded), for warranty claims. */
+  serials: string[];
 }
 
 export interface OrderDetailDTO extends OrderSummaryDTO {
@@ -382,6 +387,8 @@ export interface OrderDetailDTO extends OrderSummaryDTO {
   shipping: Money | null;
   tax: Money | null;
   events: { id: string; type: string; occurredAt: string; label: string }[];
+  /** When each tracker step was reached; packed/shipped/delivered come from shipments that were not cancelled. */
+  stageDates: { ordered: string; packed: string | null; shipped: string | null; delivered: string | null };
   /** Dispatched and delivered shipments (Task 16A). Carrier, tracking and staff notes are never included (D04). */
   shipments: OrderShipmentDTO[];
   originalUsdEquivalent: UsdEquivalentDTO | null;
