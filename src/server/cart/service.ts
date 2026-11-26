@@ -14,6 +14,8 @@ import { captureSandboxOrder } from "../payments/service.ts";
 import type { PaymentProviders } from "../payments/provider.ts";
 import { checkKzAddress, DELIVERY_COUNTRY } from "../account/address-rules.ts";
 import { findKzCityAnywhere, resolveKzRegion } from "../../lib/kz-regions.ts";
+import { pickupSnapshotOf } from "../../lib/pickup.ts";
+import { readStorePickup } from "../settings/service.ts";
 
 // Server carts (Task 13A). A guest cart is opened only by a random capability held in an HttpOnly
 // cookie; only its HMAC digest is stored. A signed-in shopper always uses the account cart, and the
@@ -50,6 +52,8 @@ const quoteInput = z.strictObject({
   delivery: z.discriminatedUnion("kind", [
     z.strictObject({ kind: z.literal("inline"), address: inlineAddress }),
     z.strictObject({ kind: z.literal("saved"), addressId: z.string().regex(UUID), version: z.number().int().min(1).max(2147483647) }),
+    // 0033 (owner 2026-11-26): pick up at the store; only the contact is sent, the store comes from Settings.
+    z.strictObject({ kind: z.literal("pickup"), contact: z.strictObject({ recipientName: line(200), phone: z.string().regex(/^[+][1-9][0-9]{7,14}$/) }) }),
   ]),
   couponCode: z.string().trim().regex(/^[\p{L}\p{N}_-]{1,64}$/u).transform(code => code.toLowerCase()).optional(),
   paymentCurrency: z.string().max(16).optional(),
@@ -308,7 +312,13 @@ export function createCartService({ database, secret, identify, market = "defaul
       const command = parse(quoteInput, input), who = await actor(headers);
       let delivery: DeliverySnapshot;
       if (command.delivery.kind === "inline") delivery = { ...command.delivery.address, countryCode: DELIVERY_COUNTRY, ...(kz?.ok ? { region: kz.value.region } : {}) };
-      else {
+      else if (command.delivery.kind === "pickup") {
+        const store = await readStorePickup(database.pool);
+        if (!store.enabled) throw new AuthFailure("PICKUP_UNAVAILABLE", 409, "Store pickup is not available right now; choose delivery");
+        // The order address is the store (older images show it as the delivery address); pickup carries the full copy.
+        delivery = { recipientName: command.delivery.contact.recipientName, phone: command.delivery.contact.phone, countryCode: DELIVERY_COUNTRY, city: "Almaty", region: "almaty",
+          line1: `${store.name.ru}, ${store.address.ru}`.slice(0, 300), pickup: pickupSnapshotOf(store) };
+      } else {
         if (!who.userId) throw new AuthFailure("UNAUTHENTICATED", 401, "Sign in to use a saved address");
         const saved = (await database.pool.query<{ version: number; recipient_name: string; phone: string; country_code: string; city: string; line1: string; line2: string | null; region: string | null; postal_code: string | null }>(
           "SELECT version,recipient_name,phone,country_code,city,line1,line2,region,postal_code FROM customer_addresses WHERE id=$1 AND user_id=$2", [command.delivery.addressId, who.userId])).rows[0];

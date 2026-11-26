@@ -3,6 +3,7 @@ import { createHash } from "node:crypto";
 import type { PoolClient } from "pg";
 import type { PricedQuoteDTO, DeliveryAddress, DisplayCurrency, Money, QuoteLineDTO, UsdEquivalentDTO } from "../../contracts/commerce.ts";
 import { AuthFailure } from "../auth/config.ts";
+import type { PickupSnapshot } from "../../lib/pickup.ts";
 import { allocate, percentageHalfUp, percentageOf, usdMinorFromKzt } from "./money.ts";
 
 // Task 13B. Server quotes: every amount is recomputed here from the active KZT prices, admin
@@ -19,7 +20,8 @@ const fail = (code: string, status: number, message: string): never => { throw n
 const stale = (): never => fail("QUOTE_STALE", 409, "Prices or policies changed; request a new quote");
 const kzt = (amount: bigint): Money => ({ amountMinor: amount.toString(), currency: "KZT" });
 
-export interface DeliverySnapshot extends DeliveryAddress { addressId?: string; addressVersion?: number }
+/** 0033: `pickup` = the customer collects the order at this store (no shipping charge). */
+export interface DeliverySnapshot extends DeliveryAddress { addressId?: string; addressVersion?: number; pickup?: PickupSnapshot }
 export interface QuoteRequest { market: string; displayCurrency: DisplayCurrency; couponCode: string | null; delivery: DeliverySnapshot }
 export interface QuoteCart { cartId: string; cartVersion: number; userId: string | null; /** A checkout attempt whose own coupon hold must not count against it (revalidation on retry). */ checkoutAttemptId?: string }
 
@@ -148,7 +150,10 @@ export async function priceCart(db: Queryable, cart: QuoteCart, request: QuoteRe
   if (!taxConfig || !policy) fail("POLICY_UNAVAILABLE", 409, "Online quotes are not available yet");
   const tc = taxConfig as NonNullable<typeof taxConfig>, sp = policy as NonNullable<typeof policy>;
 
-  const band = (await db.query<{ id: string; key: string; zone_id: string; amount: string }>(
+  // 0033: a pickup order has no shipping charge and needs no delivery band; its policy snapshot is fixed so that
+  // placement revalidation (canonical policy comparison) reproduces it exactly.
+  const pickup = request.delivery.pickup !== undefined;
+  const band = pickup ? { id: "pickup", key: "pickup", zone_id: "pickup", amount: "0" } : (await db.query<{ id: string; key: string; zone_id: string; amount: string }>(
     `SELECT r.id,r.key,r.zone_id,r.amount_minor::text AS amount FROM shipping_rates r JOIN shipping_zones z ON z.id=r.zone_id
      WHERE r.policy_id=$1 AND z.active AND z.countries ? $2 AND r.currency='KZT' AND r.minimum_subtotal_minor<=$3::bigint
        AND (r.maximum_subtotal_minor IS NULL OR r.maximum_subtotal_minor>=$3::bigint) AND r.minimum_weight_grams=0
@@ -156,7 +161,7 @@ export async function priceCart(db: Queryable, cart: QuoteCart, request: QuoteRe
   if (!band) fail("SHIPPING_UNAVAILABLE", 409, "We do not deliver to this address yet");
   // A tax configuration scoped to one country prices only deliveries to that country.
   if (tc.country_code !== null && tc.country_code !== request.delivery.countryCode) fail("POLICY_UNAVAILABLE", 409, "Online quotes are not available yet for this delivery address");
-  const shipping = settings?.free_from != null && goods >= BigInt(settings.free_from) ? ZERO : BigInt((band as { amount: string }).amount), b = band as { id: string; key: string; zone_id: string; amount: string };
+  const shipping = pickup || (settings?.free_from != null && goods >= BigInt(settings.free_from)) ? ZERO : BigInt((band as { amount: string }).amount), b = band as { id: string; key: string; zone_id: string; amount: string };
 
   const weights = lines.map(net);
   let tax = ZERO, includedTax = ZERO;

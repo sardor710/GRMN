@@ -304,3 +304,32 @@ test("M8.5: other countries are refused with 400, typed regions are stored as co
   const placed=await api.checkout(buyer.headers,key(),body(saved));
   assert.deepEqual((await q("SELECT country_code,region,city FROM order_addresses WHERE order_id=$1",[placed.orderId])).rows[0],{country_code:"KZ",region:"astana",city:"Astana"});
 });
+
+// 0033 (owner 2026-11-26): pick up at the store. Paid at checkout like delivery, no shipping charge, the order keeps a
+// copy of the store; switched off in Settings, the server refuses it.
+test("pickup: quote has no shipping, the placed order stores method and store copy, disabled pickup is refused",async()=>{
+  const api=await cartService(),buyer=await owner(),a=await product({price:10000});
+  const pickup={kind:"pickup",contact:{recipientName:"Pickup Buyer",phone:"+77010000099"}};
+  const {quote}=await quoted(buyer.headers,[[a.variant,1]],{delivery:pickup});
+  assert.equal(quote.shipping.amountMinor,"0");
+  const delivered=await (await cartService()).quote(buyer.headers,{cartVersion:quote.cartVersion,displayCurrency:"KZT",delivery:KZ});
+  assert.notEqual(delivered.shipping.amountMinor,"0","the same cart delivered still pays shipping");
+  const fresh=await (await cartService()).quote(buyer.headers,{cartVersion:quote.cartVersion,displayCurrency:"KZT",delivery:pickup});
+  const result=await api.checkout(buyer.headers,key(),body(fresh));
+  const order=(await q("SELECT fulfillment_method,pickup_snapshot,shipping_minor::text AS shipping,contact_name,contact_phone FROM orders WHERE id=$1",[result.orderId])).rows[0];
+  assert.equal(order.fulfillment_method,"pickup");assert.equal(order.shipping,"0");
+  assert.deepEqual([order.contact_name,order.contact_phone],["Pickup Buyer","+77010000099"]);
+  assert.match(order.pickup_snapshot.address.en,/Panfilov/);assert.equal(order.pickup_snapshot.hours.en,"Daily 10:00–19:00");assert.ok(!("enabled" in order.pickup_snapshot));
+  assert.equal(await count("SELECT count(*)::int AS n FROM order_addresses WHERE order_id=$1 AND city='Almaty' AND line1 LIKE '%Панфилова%'",[result.orderId]),1);
+  assert.equal(await count("SELECT count(*)::int AS n FROM order_adjustments WHERE order_id=$1 AND kind='shipping'",[result.orderId]),0);
+  // A delivery order keeps the default method.
+  const other=await owner(),{quote:dq}=await quoted(other.headers,[[a.variant,1]]);
+  const placed=await api.checkout(other.headers,key(),body(dq));
+  assert.equal((await q("SELECT fulfillment_method,pickup_snapshot FROM orders WHERE id=$1",[placed.orderId])).rows[0].fulfillment_method,"delivery");
+  // Switched off: refused with PICKUP_UNAVAILABLE.
+  await q("UPDATE store_settings SET pickup_location=jsonb_set(pickup_location,'{enabled}','false') WHERE id=1");
+  try {
+    const third=await owner(),filled=await fill(third.headers,[[a.variant,1]]);
+    await assert.rejects((await cartService()).quote(filled.headers,{cartVersion:filled.version,displayCurrency:"KZT",delivery:pickup}),e=>e.code==="PICKUP_UNAVAILABLE"&&e.status===409);
+  } finally { await q("UPDATE store_settings SET pickup_location=jsonb_set(pickup_location,'{enabled}','true') WHERE id=1"); }
+});

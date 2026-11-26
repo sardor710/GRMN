@@ -160,7 +160,9 @@ export interface SavedAddressDTO extends DeliveryAddress {
 
 export type DeliveryAddressSelection =
   | { kind: "saved"; addressId: string; version: number }
-  | { kind: "inline"; address: DeliveryAddress };
+  | { kind: "inline"; address: DeliveryAddress }
+  /** 0033 (owner 2026-11-26): pick up at the store (Settings ▸ Store pickup); no shipping charge. */
+  | { kind: "pickup"; contact: { recipientName: string; phone: string } };
 
 export interface QuickCheckoutContact {
   name: string;

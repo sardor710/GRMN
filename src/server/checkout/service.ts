@@ -284,10 +284,11 @@ export async function placeOrder(pool: Pool, secret: string, actor: CheckoutActo
     const markdownLines = quote.lines_snapshot.filter(line => line.baseUnitMinor !== line.unitMinor)
       .map(line => ({ variantId: line.variantId, baseUnitMinor: line.baseUnitMinor, unitMinor: line.unitMinor, rules: line.markdownRules }));
     const orderNumber = (await client.query<{ order_number: string }>(
-      `INSERT INTO orders(id,checkout_attempt_id,user_id,contact_name,contact_phone,contact_email,currency,subtotal_minor,discount_minor,shipping_minor,tax_minor,shipping_tax_minor,total_minor,usd_snapshot,policy_versions,payment_mode,placed_at)
-       VALUES($1,$2,$3,$4,$5,$6,'KZT',$7,$8,$9,$10,0,$11,$12,$13,$14,clock_timestamp()) RETURNING order_number`,
+      `INSERT INTO orders(id,checkout_attempt_id,user_id,contact_name,contact_phone,contact_email,currency,subtotal_minor,discount_minor,shipping_minor,tax_minor,shipping_tax_minor,total_minor,usd_snapshot,policy_versions,payment_mode,placed_at,fulfillment_method,pickup_snapshot)
+       VALUES($1,$2,$3,$4,$5,$6,'KZT',$7,$8,$9,$10,0,$11,$12,$13,$14,clock_timestamp(),$15,$16) RETURNING order_number`,
       [orderId, attemptId, actor.userId, delivery.recipientName, delivery.phone, command.contactEmail ?? null, quote.subtotal_minor, quote.discount_minor, quote.shipping_minor, quote.tax_minor, quote.total_minor,
-        quote.usd_snapshot ? JSON.stringify(quote.usd_snapshot) : null, JSON.stringify({ ...policies, coupon, quoteId: command.quoteId, markdownLines }), paymentMode])).rows[0].order_number;
+        quote.usd_snapshot ? JSON.stringify(quote.usd_snapshot) : null, JSON.stringify({ ...policies, coupon, quoteId: command.quoteId, markdownLines }), paymentMode,
+        delivery.pickup ? "pickup" : "delivery", delivery.pickup ? JSON.stringify(delivery.pickup) : null])).rows[0].order_number;
 
     const variants = new Map((await client.query<{ id: string; sku: string | null; variant_name: string; public_key: string; name: string }>(
       "SELECT v.id,v.sku,v.name AS variant_name,p.public_key,p.name FROM product_variants v JOIN products p ON p.id=v.product_id WHERE v.id=ANY($1::uuid[])",
