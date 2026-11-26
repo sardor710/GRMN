@@ -36,8 +36,8 @@ export function formatKzt(minor: string | number | bigint): string {
 interface EventRow { id: string; order_id: string; type: string; payload: Record<string, unknown> }
 
 async function message(client: PoolClient, event: EventRow, baseURL: string | undefined): Promise<string> {
-  const order = (await client.query<{ order_number: string; contact_name: string; contact_phone: string | null; total_minor: string; shipping_minor: string | null; payment_mode: string }>(
-    "SELECT order_number,contact_name,contact_phone,total_minor::text,shipping_minor::text,payment_mode FROM orders WHERE id=$1", [event.order_id])).rows[0];
+  const order = (await client.query<{ order_number: string; contact_name: string; contact_phone: string | null; total_minor: string; shipping_minor: string | null; payment_mode: string; fulfillment_method: string | null }>(
+    "SELECT order_number,contact_name,contact_phone,total_minor::text,shipping_minor::text,payment_mode,fulfillment_method FROM orders WHERE id=$1", [event.order_id])).rows[0];
   if (!order) return `${titles[event.type]} (order ${event.order_id})`;
   // Task 3.2: a demo order behaves like a paid one, so every message about it says DEMO (no real money).
   const head = `${titles[event.type]} ${order.order_number}${order.payment_mode === "demo" ? " [DEMO]" : ""}`;
@@ -49,11 +49,13 @@ async function message(client: PoolClient, event: EventRow, baseURL: string | un
       "SELECT city,line1,line2 FROM order_addresses WHERE order_id=$1", [event.order_id])).rows[0];
     const lines = items.slice(0, 30).map(item => `• ${item.name} × ${item.quantity} — ${formatKzt(item.total_minor)}`);
     if (items.length > 30) lines.push(`• … and ${items.length - 30} more`);
-    const delivery = order.shipping_minor && order.shipping_minor !== "0" ? ` (delivery ${formatKzt(order.shipping_minor)})` : " (free delivery)";
+    // 0033 (owner 2026-11-26): a pickup order is collected at the store, never shipped.
+    const pickup = order.fulfillment_method === "pickup";
+    const delivery = pickup ? " (store pickup)" : order.shipping_minor && order.shipping_minor !== "0" ? ` (delivery ${formatKzt(order.shipping_minor)})` : " (free delivery)";
     return [head, ...lines, `Total: ${formatKzt(order.total_minor)}${delivery}`,
       `Payment: ${order.payment_mode === "manual" ? "manual, awaiting payment" : order.payment_mode}`,
       `Customer: ${order.contact_name}${order.contact_phone ? ", " + order.contact_phone : ""}`,
-      ...(address ? [`Delivery: ${[address.city, address.line1, address.line2].filter(Boolean).join(", ")}`] : [])].join("\n") + admin;
+      ...(pickup ? ["PICKUP AT STORE — do not ship; mark Ready for pickup, then Picked up"] : address ? [`Delivery: ${[address.city, address.line1, address.line2].filter(Boolean).join(", ")}`] : [])].join("\n") + admin;
   }
   if (event.type === "order.paid") return `${head} — ${formatKzt(order.total_minor)}${admin}`;
   if (event.type === "refund.succeeded" && typeof event.payload.amountMinor === "string") return `${head} — ${formatKzt(event.payload.amountMinor)}${admin}`;

@@ -39,9 +39,9 @@ async function product({price=10000,stock=10}={}){
   await q("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key,source_reference) VALUES($1,$2,$3,$4,0,'opening',$5,'synthetic:fixture')",[randomUUID(),variant,mainId,stock,"opening-"+variant]);
   return{id,variant};
 }
-async function quoted(headers,lines){
+async function quoted(headers,lines,delivery=KZ){
   let version=0;for(const [variantId,quantity] of lines)version=(await carts.addLine(headers,{variantId,quantity,expectedCartVersion:version})).cart.version;
-  return carts.quote(headers,{cartVersion:version,displayCurrency:"KZT",delivery:KZ});
+  return carts.quote(headers,{cartVersion:version,displayCurrency:"KZT",delivery});
 }
 const balance=async variant=>(await q("SELECT on_hand,reserved FROM inventory_balances WHERE variant_id=$1",[variant])).rows[0];
 const count=async(sql,args=[])=>(await q(sql,args)).rows[0].n;
@@ -589,4 +589,17 @@ test("staff demo orders at an address do not count toward that address's custome
     // Customer orders still count: the address is now at its limit for customers.
     await assert.rejects(at(await buyer()),error=>error.status===429&&error.code==="TOO_MANY_DEMO_ORDERS"&&/from this connection/.test(error.message));
   });
+});
+
+// 0033 (owner 2026-11-26): the staff alert for a pickup order says it is collected at the store, not shipped.
+test("the new-order alert marks a pickup order as store pickup instead of a delivery address",async()=>{
+  await setDemo(true);
+  const sent=[],sender={async send(text){sent.push(text);}};
+  await notifications.notifyOrderEvents(database.pool,sender,{settleMs:0});
+  const who=await buyer(),p=await product({stock:5}),quote=await quoted(who.headers,[[p.variant,1]],{kind:"pickup",contact:{recipientName:"Pickup Alert",phone:"+77010000055"}});
+  const placed=await place(who,quote,"demo");
+  for(let i=0;i<20&&!sent.some(line=>line.includes(placed.orderNumber));i++)await notifications.notifyOrderEvents(database.pool,sender,{settleMs:0});
+  const text=sent.find(line=>line.includes(placed.orderNumber)&&line.includes("Total:"));
+  assert.ok(text,"a new-order alert is sent: "+JSON.stringify(sent));
+  assert.match(text,/store pickup/);assert.match(text,/PICKUP AT STORE — do not ship/);assert.doesNotMatch(text,/Delivery: /);
 });
