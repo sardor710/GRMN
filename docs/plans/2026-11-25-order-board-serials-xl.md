@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 4 | 9/19 | 2026-11-26 | T4.1 admin client API + stage helpers |
+| Executing | 4 | 12/19 | 2026-11-26 | T5.1 customer OrderTracker |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -197,8 +197,8 @@ All in `tests/integration/order-board.test.mjs` (fixtures copied from `tests/int
   - verify for M3: `node --conditions=react-server --test tests/integration/order-board.test.mjs tests/integration/fulfillment.test.mjs tests/integration/aftersales.test.mjs tests/integration/account-services.test.mjs` PASS; `npm run typecheck` PASS. Commit per task (`feat(fulfillment): …`).
 
 ### M4 — Admin UI (wave 4, owner: frontend-developer; verifier: evidence-collector)
-- [ ] **T4.1 Client API + stage helpers** `src/app/admin/orders/_components/board/orders-api.ts` (typed fetch for list/detail/actions incl. `set_serials`, idempotency keys via `crypto.randomUUID()`), `board/stage.ts` (labels, column order). Unit test `tests/unit/orders-board-state.test.mjs` for `nextAction(stage, paid, fulfillable)` → `"confirm_payment" | "pack" | "ship" | "deliver" | null` and drag rule (only one step forward).
-- [ ] **T4.2 Screen** `OrdersBoardScreen.tsx` (replaces `FulfillmentScreen` in `src/app/admin/orders/page.tsx` postgres branch):
+- [x] **T4.1 Client API + stage helpers** ✅ `src/app/admin/orders/_components/board/orders-api.ts` (typed fetch for list/detail/actions incl. `set_serials`, idempotency keys via `crypto.randomUUID()`), `board/stage.ts` (labels, column order). Unit test `tests/unit/orders-board-state.test.mjs` for `nextAction(stage, paid, fulfillable)` → `"confirm_payment" | "pack" | "ship" | "deliver" | null` and drag rule (only one step forward).
+- [x] **T4.2 Screen** ✅ `OrdersBoardScreen.tsx` (replaces `FulfillmentScreen` in `src/app/admin/orders/page.tsx` postgres branch):
   - Toolbar: title "Orders", segmented **Board | List**, period select (All, Today, This week, Last 7 days, Last 30 days, This month, Custom… with two date inputs), search box ("Order no., customer or serial"), **Archive** toggle button (shows "Back to active" when on), payment-mode filter kept as "All / Real / Demo".
   - Board (`board/BoardColumn.tsx`, `board/OrderCard.tsx`): 4 columns with count badges; card as in requirement sketch — order no., date, customer, item names, total ₸, pill amber `◔ Awaiting payment` (`#92400E` on `#FEF3C7`), green `✓ Paid` (`#166534` on `#DCFCE7`) or red `! Payment failed / Refunded` (`#991B1B` on `#FEE2E2`), small grey "Demo" tag for demo/sandbox, "Exception" red tag; primary next-step button; HTML5 drag to the next column opens the same panel; mobile: columns stack, horizontal scroll.
   - List (`board/OrdersTable.tsx`): columns order no., date, customer, items, total, payment pill, stage chip, "Imported" tag for legacy; "Load more" with `nextCursor`.
@@ -206,7 +206,7 @@ All in `tests/integration/order-board.test.mjs` (fixtures copied from `tests/int
   - Pack panel (`board/PackPanel.tsx`): one row per unit for serial-required items (label "Serial number · unit 1 of 2", autofocus first empty, Enter moves to next — barcode scanners type + Enter), tick rows for others; Save disabled until all filled; server errors (SERIAL_IN_USE) shown on the offending field.
   - Ship panel (`board/ShipPanel.tsx`): carrier + tracking optional; Deliver: confirm dialog.
   - Remove `FulfillmentScreen.tsx` once the drawer covers it (grep for imports).
-- [ ] **T4.3 Serial settings UI:** category edit dialog (`CategoryDialogs.tsx`) gains select "Serial number at packing: Same as parent / Needs serial / No serial" sending `serialPolicy`; product editor `tabs/GeneralTab.tsx` gains "Serial number at packing: Automatic (currently: Needs serial — from category X) / Always / Never" using GET `/api/admin/orders?serialProduct=<id>` → `{ policy, decision }` and POST action `set_product_serial_policy` `{ productId, policy }` (permission `catalog:write`; handled in `src/server/fulfillment/http.ts` + service).
+- [x] **T4.3 Serial settings UI:** ✅ category edit dialog (`CategoryDialogs.tsx`) gains select "Serial number at packing: Same as parent / Needs serial / No serial" sending `serialPolicy`; product editor `tabs/GeneralTab.tsx` gains "Serial number at packing: Automatic (currently: Needs serial — from category X) / Always / Never" using GET `/api/admin/orders?serialProduct=<id>` → `{ policy, decision }` and POST action `set_product_serial_policy` `{ productId, policy }` (permission `catalog:write`; handled in `src/server/fulfillment/http.ts` + service).
   - verify M4: `npm run lint && npm run typecheck` PASS; `npm run test:unit` PASS; screenshots via `/home/nick/tools/browser/review.mjs` of board, list, archive, pack panel, drawer at 1440 and 390 widths saved under scratchpad; commit.
 
 ### M5 — Customer tracker (wave 4, owner: frontend-developer)
