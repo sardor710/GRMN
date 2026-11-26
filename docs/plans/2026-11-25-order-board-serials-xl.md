@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Done | 5 | 19/19 | 2026-11-26 | Owner reviews; deploy only on "deploy" |
+| Done – deployed | 5 | 19/19 | 2026-11-26 | Live as grmn:e9f85de; rollback switch-version.sh 0b82ec7 |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -255,3 +255,5 @@ Gaps: none against the requirement. The Turbopack (Docker) build was not run loc
 Done 2026-11-26 on `homepage-deploy` in /home/nick/worktrees/grmn-homepage-deploy (not deployed; live is still 0b82ec7). All 19 tasks [x] with evidence above; final review fixes in 97fd316.
 Next: owner looks at the screens (screenshots from CMS_SMOKE_ONLY=orders), then "deploy" → normal GRMN deploy steps (memory grmn-production) + migration 0030; rollback switch-version.sh 0b82ec7 (additive migration).
 Caveats: the Turbopack build refuses this worktree's node_modules symlink — build with `--webpack` locally; the Docker build from git archive is unaffected. Deferred minors listed in Result.
+
+Deployed 2026-11-26 on owner's "deploy": grmn:e9f85de / grmn-ops:e9f85de, migration 0030 applied; pre-deploy dump /home/nick/grmn-production/predeploy-order-board-0b82ec7.dump; env backup production.env.bak-0b82ec7-pre-order-board; live board query checked read-only (1 active, 2 archived, ~0.1 s).
