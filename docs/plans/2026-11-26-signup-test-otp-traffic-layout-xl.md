@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Done | – | 12/12 | 2026-11-26 | Owner looks at the screens; deploy on "deploy" (not done) |
+| Done – partial | – | 12/12 tasks; A7 open | 2026-11-26 | Owner reviews the look (A7), then deploys on "deploy" — sign-in on the live site is still 503 until then |
 
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
 
@@ -71,7 +71,7 @@ Waves: Wave 1: M1 ‖ M2 (disjoint scopes; M2 in a worktree). Wave 2: M3, then M
 
 ### M4 — QA and merge
 - [x] 4.1 Finish-gate review: PASS. Applied optional items 1–3 (chevron icon, Devices not stretched, "Arrivals on the store" / "Traffic by day"): 6eccc33. Re-shot final-1440.png, selectors intact, 0 page errors.
-- [x] 4.2 Full checks on 6eccc33-equivalent tree: tsc 0, eslint clean, unit 724/0, legacy 335/0, auth-foundation 20/20, account-claims 12/12, boundaries ok.
+- [x] 4.2 Final `npm test` on HEAD 84a85cb (exit 0): tsc 0; legacy 335/335; unit 724 pass / 0 fail (725 total, 1 not run); integration 674/674; boundaries ok. Earlier: tsc 0, eslint clean, unit 724/0, legacy 335/0, auth-foundation 20/20, account-claims 12/12, boundaries ok.
 
 ## 6. Verification
 - `npx tsc --noEmit` · `npx eslint <touched>` · `npm run test:unit` · `node --conditions=react-server --test tests/integration/auth-foundation.test.mjs tests/integration/account-claims.test.mjs` · `npm run check:boundaries`
@@ -99,6 +99,9 @@ Gaps: full `cms-smoke` not run (memory); selectors were checked via Playwright i
 Follow-ups:
 - At deploy, add `AUTH_TEST_OTP_CODE=1234` to production.env, then do the usual image rebuild, migrate (no new migrations), and proxy restart.
 - When SMS goes live, unset the flag and review accounts with audit `customer.signup_unverified`.
+- 84a85cb: the sign-in intro ("We send a one-time code…") is hidden while the no-SMS note shows.
+- Screenshots: docs/design-references/2026-11-26-signup-traffic/.
+- Proxies (deploy/nginx, edge garmin.conf) have no /api/auth path rules, so the new GET/POST paths pass through.
 - Optional review items 4–5: a bordered empty-range note; a 6–23h heatmap on phones.
 
 ## Handoff
