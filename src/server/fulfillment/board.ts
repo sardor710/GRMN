@@ -49,11 +49,11 @@ export function boardWhere(filter: BoardFilter, args: unknown[], withStage = tru
   let where = "";
   const add = (value: unknown) => { args.push(value); return `$${args.length}`; };
   if (filter.q) {
-    const text = filter.q.trim(), like = add(`%${likeEscape(text)}%`), serial = add(`${likeEscape(text.replace(/\s/g, "").toUpperCase())}%`);
+    const text = filter.q.trim(), like = add(`%${likeEscape(text)}%`), serial = add(likeEscape(text));
     const digits = text.replace(/\D/g, "");
     const phone = digits.length >= 4 ? ` OR regexp_replace(COALESCE(o.contact_phone,''),'\\D','','g') LIKE ${add(`%${digits}%`)}` : "";
     where += ` AND (o.order_number ILIKE ${like} OR o.contact_name ILIKE ${like}${phone}
-      OR EXISTS (SELECT 1 FROM order_unit_serials u WHERE u.order_id=o.id AND u.serial_key LIKE ${serial}))`;
+      OR EXISTS (SELECT 1 FROM order_unit_serials u WHERE u.order_id=o.id AND u.serial_key LIKE grmn_serial_key(${serial}) || '%'))`;
   } else {
     where += filter.view === "archive" ? ` AND ${ARCHIVED}` : ` AND NOT ${ARCHIVED}`;
   }

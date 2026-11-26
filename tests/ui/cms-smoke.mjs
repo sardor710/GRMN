@@ -803,6 +803,14 @@ async function ordersBoardScenario({database,runtime,secret,origin,send,evaluate
     await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Ship order\"]')"),"The ship panel did not appear after packing");
     await evaluate("(()=>{document.querySelector('button[aria-label=\"Close\"]').click();return true;})()");
     await until(()=>column("Packed",both.order_number),"The packed order did not move to Packed");
+    // Drag: the band-only order dragged from New onto Packed opens its pack panel (nothing changes until it is packed).
+    await evaluate(`(()=>{const li=${card(bandOnly.order_number)};const target=document.querySelector('[aria-label="Packed orders"]');const data=new DataTransfer();
+      li.dispatchEvent(new DragEvent('dragstart',{bubbles:true,dataTransfer:data}));return true;})()`);
+    await until(()=>evaluate(`(()=>{const target=document.querySelector('[aria-label="Packed orders"]');const data=new DataTransfer();
+      target.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:data}));return target.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}))===false;})()`),"Dropping on Packed was not accepted");
+    await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Pack order\"]')"),"Dropping on Packed did not open the pack panel");
+    assert.equal((await pool.query("SELECT fulfillment_status FROM orders WHERE id=$1",[bandOnly.id])).rows[0].fulfillment_status,"unfulfilled","a drop alone packs nothing");
+    await evaluate("(()=>{document.querySelector('button[aria-label=\"Close\"]').click();return true;})()");
     // Ship and deliver from the card.
     await evaluate(`(()=>{const li=${card(both.order_number)};[...li.querySelectorAll('button')].find(b=>b.textContent.trim()==='Ship').click();return true;})()`);
     await until(()=>typeInto('input[aria-label="Tracking reference"]',"KZ-TRACK-77"),"The ship panel had no tracking field");
@@ -821,8 +829,12 @@ async function ordersBoardScenario({database,runtime,secret,origin,send,evaluate
     await until(()=>press('button[aria-pressed]',"List"),"No List toggle");
     await until(()=>evaluate(`[${[both,bandOnly,watchOnly].map(o=>JSON.stringify(o.order_number)).join(",")}].every(n=>document.querySelector('section[aria-label="Order list"]')?.innerText.includes(n))`),"The list view did not show the three active orders");
     await shoot("orders-list.png");
+    // Time travel (test-only, past the immutability trigger): the delivered order was delivered yesterday in Almaty.
+    {const client=await pool.connect();try{await client.query("SET session_replication_role=replica");
+      await client.query("UPDATE shipments SET dispatched_at=dispatched_at-interval '1 day',delivered_at=(date_trunc('day',now() AT TIME ZONE 'Asia/Almaty') AT TIME ZONE 'Asia/Almaty')-interval '1 hour' WHERE order_id=$1 AND status='delivered'",[both.id]);
+    }finally{await client.query("SET session_replication_role=origin");client.release();}}
     await until(()=>press('button',"Archive"),"No Archive button");
-    await until(async()=>/order archive/i.test(await text()),"The archive did not open");
+    await until(async()=>/order archive/i.test(await text())&&(await text()).includes(both.order_number),"The archive did not list the order delivered yesterday").catch(dump("orders-archive-body.txt"));
     await shoot("orders-archive.png");
     await until(()=>press('button',"Back to active orders"),"No way back from the archive");
     // Mobile width: the board scrolls sideways, cards keep their pill and button.
@@ -830,6 +842,10 @@ async function ordersBoardScenario({database,runtime,secret,origin,send,evaluate
     await until(()=>press('button[aria-pressed]',"Board"),"No Board toggle");
     await until(()=>column("New",watchOnly.order_number),"The mobile board did not render");
     await shoot("orders-board-mobile.png");
+    await evaluate(`(()=>{const li=${card(watchOnly.order_number)};[...li.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pack').click();return true;})()`);
+    await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Pack order\"] input[data-serial-box]')"),"The mobile pack panel did not open");
+    await shoot("orders-pack-mobile.png");
+    await evaluate("(()=>{document.querySelector('button[aria-label=\"Close\"]').click();return true;})()");
     // The customer: every order carries the four-step tracker; the delivered one is fully cyan and shows its serial.
     // Pack the watch-only order too (through the board's API, as staff), so the list shows three different stages.
     await send("Emulation.setDeviceMetricsOverride",{width:1280,height:900,deviceScaleFactor:1,mobile:false});
@@ -846,6 +862,12 @@ async function ordersBoardScenario({database,runtime,secret,origin,send,evaluate
       await shoot(`orders-account-detail-${locale}.png`);
       await evaluate(`(()=>{document.querySelector('[role=dialog] button[aria-label]').click();return true;})()`);
     }
+    await send("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:2,mobile:true});
+    await navigate("/account");await until(async()=>(await text()).toLowerCase().includes("aigerim board"),"The mobile account page did not load");
+    await evaluate(`(()=>{const tab=[...document.querySelectorAll('button')].find(b=>/^orders/i.test(b.textContent.trim()));if(!tab)return false;tab.click();return true;})()`);
+    await until(()=>evaluate(`document.querySelectorAll('ol li[data-step]').length>=12`),"The mobile order list shows no trackers");
+    await evaluate(`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent.includes(${JSON.stringify(both.order_number)})).scrollIntoView({block:"center"});return true;})()`);
+    await shoot("orders-account-list-mobile.png");
     return{customerCookie,orders:{both,bandOnly,watchOnly},serial};
   }finally{
     await send("Emulation.clearDeviceMetricsOverride");

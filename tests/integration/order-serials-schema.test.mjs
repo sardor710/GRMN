@@ -63,3 +63,11 @@ test("serial key ignores case and spaces; untrimmed serials are refused", async 
     await assert.rejects(insert(1, "OTHER"), /order_unit_serials_unit_unique/);
   } finally { await client.query("SET session_replication_role=origin"); client.release(); }
 });
+
+test("one database function defines 'same serial', with no-break and zero-width spaces listed explicitly (locale-proof)", async () => {
+  // The production image (en_US.utf8) does not count U+00A0 / U+FEFF as \s; the key must not depend on the locale.
+  const key = (await q("SELECT grmn_serial_key($1) AS k", ["ab" + " " + "1" + "﻿" + "2​3 4 5\t6"])).rows[0].k;
+  assert.equal(key, "AB123456");
+  const generated = (await q("SELECT generation_expression FROM information_schema.columns WHERE table_name='order_unit_serials' AND column_name='serial_key'")).rows[0].generation_expression;
+  assert.match(generated, /grmn_serial_key/);
+});

@@ -219,7 +219,6 @@ async function priorAction(client: PoolClient, dedupeKey: string, hash: string):
 
 // ---------------------------------------------------------------- serials (0030, owner 2026-11-25)
 /** The serial key the database stores: upper case, no whitespace (same as order_unit_serials.serial_key). */
-export const serialKey = (serial: string) => serial.replace(/\s/g, "").toUpperCase();
 
 /** 409 SERIALS_REQUIRED unless every serial-required item has one serial per unit in `unitsByItem`. */
 async function requireSerials(client: PoolClient, lines: { orderItemId: string; quantity: number }[], unitsByItem: Map<string, string[]>): Promise<void> {
@@ -240,7 +239,8 @@ async function requireSerials(client: PoolClient, lines: { orderItemId: string; 
  * `ownShipmentItemIds` are lines whose serials are being replaced, so their current rows don't count.
  */
 async function claimSerials(client: PoolClient, serials: string[], ownShipmentItemIds: string[]): Promise<void> {
-  const keys = serials.map(serialKey);
+  // The database's grmn_serial_key is the only definition of "the same serial" (stored key, this check, search).
+  const keys = serials.length ? (await client.query<{ k: string | null }>("SELECT grmn_serial_key(raw) AS k FROM unnest($1::text[]) WITH ORDINALITY AS t(raw,ord) ORDER BY ord", [serials])).rows.map(row => row.k ?? "") : [];
   const seen = new Set<string>();
   for (const [index, k] of keys.entries()) {
     if (!k) invalid();

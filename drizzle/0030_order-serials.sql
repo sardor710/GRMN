@@ -4,6 +4,12 @@
 -- Idempotent on purpose: its journal "when" sits between 0029_traffic-analytics and beta5's 0029_product-code, and
 -- beta5 re-applies the same SQL later (no-op where it ran). The starting category settings are written only in the
 -- step that first adds categories.serial_policy, so a re-apply never overwrites what the owner chose since.
+-- One definition of "the same serial" (final review 2026-11-26): upper case, without any whitespace. No-break, narrow
+-- no-break, figure, zero-width and BOM spaces are listed explicitly because the production image's en_US.utf8 locale
+-- does not count them as \s (a serial pasted from a spreadsheet would otherwise slip past the one-active-order check).
+CREATE OR REPLACE FUNCTION "grmn_serial_key"(value text) RETURNS text LANGUAGE sql IMMUTABLE STRICT PARALLEL SAFE
+  AS $fn$ SELECT upper(regexp_replace(value, '[[:space:]' || chr(160) || chr(8199) || chr(8239) || chr(8203) || chr(8288) || chr(65279) || ']', '', 'g')) $fn$;
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "order_unit_serials" (
 	"id" uuid PRIMARY KEY NOT NULL,
 	"order_id" uuid NOT NULL,
@@ -11,7 +17,7 @@ CREATE TABLE IF NOT EXISTS "order_unit_serials" (
 	"shipment_item_id" uuid NOT NULL,
 	"unit_index" integer NOT NULL,
 	"serial" text NOT NULL,
-	"serial_key" text GENERATED ALWAYS AS (upper(regexp_replace(serial,'\s','','g'))) STORED,
+	"serial_key" text GENERATED ALWAYS AS (grmn_serial_key(serial)) STORED,
 	"return_item_id" uuid,
 	"created_by" uuid,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,

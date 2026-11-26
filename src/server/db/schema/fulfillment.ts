@@ -82,7 +82,8 @@ export const returnItems = pgTable("return_items", {
 export const orderUnitSerials = pgTable("order_unit_serials", {
   id: id(), orderId: uuid("order_id").notNull(), orderItemId: uuid("order_item_id").notNull(), shipmentItemId: uuid("shipment_item_id").notNull(),
   unitIndex: integer("unit_index").notNull(), serial: text("serial").notNull(),
-  serialKey: text("serial_key").generatedAlwaysAs(sql`upper(regexp_replace(serial,'\\s','','g'))`),
+  // grmn_serial_key (0030): upper case, no whitespace incl. no-break / zero-width spaces, whatever the locale.
+  serialKey: text("serial_key").generatedAlwaysAs(sql`grmn_serial_key(serial)`),
   returnItemId: uuid("return_item_id").references(() => returnItems.id, { onDelete: "restrict" }),
   createdBy: uuid("created_by").references(() => user.id, { onDelete: "restrict" }),
   createdAt: createdAt(), updatedAt: time("updated_at").notNull().defaultNow(),

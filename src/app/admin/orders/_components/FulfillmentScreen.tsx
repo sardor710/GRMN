@@ -295,7 +295,7 @@ export default function FulfillmentScreen() {
                   {cards.map(order => {
                     const step = nextAction(order);
                     return (
-                      <li key={order.id} draggable={!!step} onDragStart={event => { event.dataTransfer.effectAllowed = "move"; setDragging(order.id); }} onDragEnd={() => { setDragging(null); setDropTarget(null); }}
+                      <li key={order.id} draggable={!!step} onDragStart={event => { event.dataTransfer.effectAllowed = "move"; event.dataTransfer.setData("text/plain", order.orderNumber); setDragging(order.id); }} onDragEnd={() => { setDragging(null); setDropTarget(null); }}
                         className={`group border bg-white shadow-[0_1px_0_rgba(0,0,0,0.04)] transition hover:border-black hover:shadow-[0_4px_14px_rgba(0,0,0,0.08)] ${selected === order.id ? "border-black" : "border-[#e5e5e5]"} ${dragging === order.id ? "opacity-50" : ""} ${step ? "cursor-grab active:cursor-grabbing" : ""}`}>
                         <button type="button" onClick={() => selectOrder(order.id)} className="block w-full p-3 text-left">
                           <span className="flex items-center justify-between gap-2">

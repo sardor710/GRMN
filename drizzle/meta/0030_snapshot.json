@@ -8142,7 +8142,7 @@
           "primaryKey": false,
           "notNull": false,
           "generated": {
-            "as": "upper(regexp_replace(serial,'\\s','','g'))",
+            "as": "grmn_serial_key(serial)",
             "type": "stored"
           }
         },
