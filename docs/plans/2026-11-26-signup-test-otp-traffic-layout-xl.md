@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 1–2 | 5/12 | 2026-11-26 | M3 account UI (M2 agent running) |
+| Done | – | 12/12 | 2026-11-26 | Owner looks at the screens; deploy on "deploy" (not done) |
 
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
 
@@ -60,18 +60,18 @@ Waves: Wave 1: M1 ‖ M2 (disjoint scopes; M2 in a worktree). Wave 2: M3, then M
 - [x] 1.5 Integration tests for A1–A3. — evidence: `tests/unit/test-otp.test.mjs` 4/4; `auth-foundation.test.mjs` 20/20 pass incl. new test-code test
 
 ### M2 — Traffic layout A (wave 1, frontend-developer)
-- [ ] 2.1 Before screenshots (seeded local).
-- [ ] 2.2 Compact KPI strip, group headings, 2-column grid, shorter charts, top-10 products, one-line empty states.
-- [ ] 2.3 After screenshots at 1440 and 390, filled and empty; selectors intact; tsc and lint clean on the touched files.
+- [x] 2.1 Before screenshots — scratchpad/traffic/before-*.png
+- [x] 2.2 Compact KPI strip, group headings, 2-column grid, shorter charts, top-10 products, one-line empty states. — agent commit 029550b, merged d3e7c40; page 2429→1457px at 1440. Pairs go 2-column at xl (1280), not lg, because Devices overflowed at 1024. Tile reads "Pages / visitor" (pageViews÷visitors).
+- [x] 2.3 After screenshots at 1440 and 390, filled and empty; selectors intact; tsc and lint clean on the touched files. — lead re-ran on merge: tsc 0, eslint clean, unit 724/0, legacy 335/0, boundaries ok. Smoke selectors counted live by agent; full cms-smoke not run (memory).
 
 ### M3 — account UI (wave 2)
-- [ ] 3.1 Client: `signUp`, `mode`; code inputs `pattern="[0-9]{4,6}"`.
-- [ ] 3.2 Tabs, the Sign up form, and the test-mode note; en/ru/kk strings.
-- [ ] 3.3 Unit tests and a browser screenshot of both tabs.
+- [x] 3.1 Client: `signUp`, `authMode`; code inputs `pattern="[0-9]{4,6}"`. — commit db17886
+- [x] 3.2 Tabs, Sign up form, code note; en/ru/kk. The note avoids "test" wording because `customer-demo-wording.test.mjs` (owner rule 2026-11-22) forbids it: "SMS codes are not sent yet. Enter code 1234."
+- [x] 3.3 Unit tests done (account-dashboard +2; unit 724/0 after rewording; legacy 335/0; account-claims 12/12; tsc 0; eslint clean; boundaries ok). Browser (local stack, AUTH_TEST_OTP_CODE=1234, Playwright `tools/browser/account-flow.mjs`): sign up → account shown; sign out → phone + 1234 → signed in. Screenshots scratchpad/account/*. Label "6-digit code" → "Verification code" (6808b0d).
 
 ### M4 — QA and merge
-- [ ] 4.1 Finish-gate review of the Traffic screenshots, with at most one fix round.
-- [ ] 4.2 Full checks (§6), plan result and handoff.
+- [x] 4.1 Finish-gate review: PASS. Applied optional items 1–3 (chevron icon, Devices not stretched, "Arrivals on the store" / "Traffic by day"): 6eccc33. Re-shot final-1440.png, selectors intact, 0 page errors.
+- [x] 4.2 Full checks on 6eccc33-equivalent tree: tsc 0, eslint clean, unit 724/0, legacy 335/0, auth-foundation 20/20, account-claims 12/12, boundaries ok.
 
 ## 6. Verification
 - `npx tsc --noEmit` · `npx eslint <touched>` · `npm run test:unit` · `node --conditions=react-server --test tests/integration/auth-foundation.test.mjs tests/integration/account-claims.test.mjs` · `npm run check:boundaries`
@@ -87,7 +87,19 @@ All changes are additive on branch `signup-traffic-ui`. Unset `AUTH_TEST_OTP_COD
 - 2026-11-26: owner approved approach A and test code on prod ("A, go ahead").
 
 ## Result
-Delivered: · Checks run: · Gaps: · Follow-ups:
+Delivered (branch `signup-traffic-ui`: db17886, d3e7c40 merge of 029550b, 6808b0d, 6eccc33):
+- `AUTH_TEST_OTP_CODE` (4–6 digits; compose passthrough). With it set, every phone code is that value and nothing is sent. Also adds `POST /api/auth/grmn/signup` (direct signup with audit `customer.signup_unverified`) and `GET /api/auth/grmn/mode`.
+- Account page Sign in | Sign up tabs, shown in en/ru/kk. The note reads "SMS codes are not sent yet. Enter code 1234."
+- Compact grouped Traffic page (layout A).
+
+Checks run: listed in 4.2. Browser: signup → account; sign-out → phone + 1234 → account (local stack).
+
+Gaps: full `cms-smoke` not run (memory); selectors were checked via Playwright instead. `next build` not run on this branch. Not deployed.
+
+Follow-ups:
+- At deploy, add `AUTH_TEST_OTP_CODE=1234` to production.env, then do the usual image rebuild, migrate (no new migrations), and proxy restart.
+- When SMS goes live, unset the flag and review accounts with audit `customer.signup_unverified`.
+- Optional review items 4–5: a bordered empty-range note; a 6–23h heatmap on phones.
 
 ## Handoff
-Branch `signup-traffic-ui` off beta5 (e1892be). Wave 1 starting.
+Work is complete on branch `signup-traffic-ui` (6eccc33, based on beta5 e1892be), but it is not pushed or deployed. Deploy only on the owner's "deploy": first add `AUTH_TEST_OTP_CODE=1234` to /home/nick/grmn-production/production.env, then follow the deploy steps in the grmn-production memory. There are no DB migrations. The `customer-demo-wording` test forbids "test" in customer text.
