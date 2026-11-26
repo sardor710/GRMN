@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HourWeekdayGrid, VisitsChart, type Cell, type Day } from "./charts";
 import { Bar, LOADING, RangePicker, Section, count, getJSON, useRange, ZONE, type Loadable } from "./shared";
@@ -98,8 +99,8 @@ function SourcesTable({ platforms }: { platforms: Platform[] }) {
               <tr data-platform={p.platform} className="border-b border-garmin-rule">
                 <td className="py-1.5">
                   {expandable
-                    ? <button type="button" aria-expanded={pOpen} onClick={() => toggle(p.platform)} className="flex items-center gap-1.5 text-left font-bold hover:underline"><span aria-hidden className={cn("inline-block w-3 transition-transform", pOpen && "rotate-90")}>›</span>{p.platform}</button>
-                    : <span className="pl-[18px] font-bold">{p.platform}</span>}
+                    ? <button type="button" aria-expanded={pOpen} onClick={() => toggle(p.platform)} className="group flex items-center gap-1.5 text-left font-bold"><ChevronRight aria-hidden className={cn("h-3.5 w-3.5 shrink-0 transition-transform", pOpen && "rotate-90")} /><span className="group-hover:underline">{p.platform}</span></button>
+                    : <span className="pl-5 font-bold">{p.platform}</span>}
                 </td>
                 <td className={bar}><Bar value={p.clicks} max={max} label={`${p.platform}: ${pct(p.clicks, total)} of clicks`} /></td>
                 <td className="py-1.5 pl-2 text-right font-bold">{count(p.clicks)}</td><td className="py-1.5 pl-2 text-right">{pct(p.clicks, total)}</td><td className="py-1.5 pl-2 text-right">{count(p.visitors)}</td>
@@ -111,8 +112,8 @@ function SourcesTable({ platforms }: { platforms: Platform[] }) {
                     <tr data-medium={m.medium ?? ""} className="border-b border-garmin-rule bg-[#fafafa]">
                       <td className="py-1 pl-5">
                         {tagged
-                          ? <button type="button" aria-expanded={mOpen} onClick={() => toggle(key)} className="flex items-center gap-1.5 text-left hover:underline"><span aria-hidden className={cn("inline-block w-3 transition-transform", mOpen && "rotate-90")}>›</span>{mediumLabel(m.medium)}</button>
-                          : <span className="pl-[18px]">{mediumLabel(m.medium)}</span>}
+                          ? <button type="button" aria-expanded={mOpen} onClick={() => toggle(key)} className="group flex items-center gap-1.5 text-left"><ChevronRight aria-hidden className={cn("h-3.5 w-3.5 shrink-0 transition-transform", mOpen && "rotate-90")} /><span className="group-hover:underline">{mediumLabel(m.medium)}</span></button>
+                          : <span className="pl-5">{mediumLabel(m.medium)}</span>}
                       </td>
                       <td className={cn(bar, "py-1")}><Bar value={m.clicks} max={max} label={`${mediumLabel(m.medium)}: ${pct(m.clicks, p.clicks)} of ${p.platform}`} /></td>
                       <td className="py-1 pl-2 text-right">{count(m.clicks)}</td><td className="py-1 pl-2 text-right text-muted-foreground">{pct(m.clicks, p.clicks)}<span className="sr-only"> of {p.platform}</span></td><td />
@@ -215,7 +216,7 @@ export function TrafficScreen() {
       </div>
 
       <section aria-label="Totals" className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4">
-        <Tile title="Clicks" value={pick(data => count(data.clicks))} foot="Visits that landed here" />
+        <Tile title="Clicks" value={pick(data => count(data.clicks))} foot="Arrivals on the store" />
         <Tile title="Visitors" value={pick(data => count(data.visitors))} foot="Different browsers" />
         <Tile title="Page views" value={pick(data => count(data.pageViews))} foot="Every page opened" />
         <Tile title="Pages / visitor" value={pick(data => data.visitors > 0 ? (data.pageViews / data.visitors).toFixed(1) : "—")} foot="Average per visitor" />
@@ -223,7 +224,7 @@ export function TrafficScreen() {
       {nothing && <p data-empty className="text-sm text-muted-foreground">No visits in this range yet. Counting started the day tracking went live; try a longer range.</p>}
 
       <Group title="Where visitors come from">
-        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)]">
+        <div className="grid gap-3 xl:grid-cols-[minmax(0,1.65fr)_minmax(0,1fr)] xl:items-start">
           <Panel title="Sources" empty={isEmpty(sources, noSources)}
             hint={<>Open a source for its formats and campaigns. Tag links in <Link href="/admin/traffic/links" className="underline">Campaign links</Link>.</>}>
             <Section value={sources} empty={noSources} emptyText={NONE}>{data => <SourcesTable platforms={data.platforms} />}</Section>
@@ -243,7 +244,7 @@ export function TrafficScreen() {
 
       <Group title="When they visit">
         <div className="grid gap-3 lg:grid-cols-2">
-          <Panel title="Visits by day" hint="Clicks or page views per day" empty={isEmpty(timeline, noDays)}>
+          <Panel title="Traffic by day" hint="Clicks (arrivals) or page views per day" empty={isEmpty(timeline, noDays)}>
             <Section value={timeline} empty={noDays} emptyText={NONE}>{data => <VisitsChart days={data.days} />}</Section>
           </Panel>
           <Panel title="Busiest hours" label="Busiest hours and weekdays" hint="Page views by weekday and hour; darker is busier" empty={isEmpty(heatmap, noCells)}>
