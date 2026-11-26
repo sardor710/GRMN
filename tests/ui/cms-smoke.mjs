@@ -847,28 +847,98 @@ async function ordersBoardScenario({database,runtime,secret,origin,send,evaluate
     await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Pack order\"] input[data-serial-box]')"),"The mobile pack panel did not open");
     await shoot("orders-pack-mobile.png");
     await evaluate("(()=>{document.querySelector('button[aria-label=\"Close\"]').click();return true;})()");
-    // The customer: every order carries the four-step tracker; the delivered one is fully cyan and shows its serial.
-    // Pack the watch-only order too (through the board's API, as staff), so the list shows three different stages.
+    // 0033 (owner 2026-11-26): a pickup order on the board — Ready for pickup (serial) → Picked up.
+    const pickupSerial="UIPCK"+randomBytes(3).toString("hex").toUpperCase();
+    let pickupOrder;
+    {
+      let version=0;version=(await carts.addLine(customerHeaders,{variantId:watch,quantity:1,expectedCartVersion:version})).cart.version;
+      const quote=await carts.quote(customerHeaders,{cartVersion:version,displayCurrency:"KZT",delivery:{kind:"pickup",contact:{recipientName:"Aigerim Board",phone:"+77000000077"}}});
+      assert.equal(quote.shipping.amountMinor,"0","pickup has no shipping");
+      const result=await checkout.placeOrder(pool,secret,{userId:customerId,guestTokenHash:null},"ui-board-"+randomUUID(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"});
+      pickupOrder=(await pool.query("SELECT id,order_number FROM orders WHERE id=$1",[result.orderId])).rows[0];
+    }
+    await send("Emulation.setDeviceMetricsOverride",{width:1440,height:960,deviceScaleFactor:1,mobile:false});
+    await navigate("/admin/orders");
+    await until(()=>column("New",pickupOrder.order_number),"The pickup order is not under New").catch(dump("orders-pickup-board.txt"));
+    assert.ok(await evaluate(`/pickup/i.test(${card(pickupOrder.order_number)}.innerText)`),"the card is marked Pickup");
+    await evaluate(`(()=>{const li=${card(pickupOrder.order_number)};[...li.querySelectorAll('button')].find(b=>b.textContent.trim()==='Ready for pickup').click();return true;})()`);
+    await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Pack order\"] input[data-serial-box]')&&document.querySelector('section[aria-label=\"Pack order\"]').innerText.toLowerCase().includes('prepare for store pickup')"),"The pickup pack panel did not open").catch(dump("orders-pickup-pack.txt"));
+    await until(()=>typeInto('section[aria-label="Pack order"] input[data-serial-box]',pickupSerial),"Could not type the pickup serial");
+    await until(()=>press('section[aria-label="Pack order"] button',"Mark ready for pickup"),"Mark ready for pickup stayed disabled");
+    await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Hand over at the store\"]')"),"The hand-over panel did not appear").catch(dump("orders-pickup-ready.txt"));
+    assert.ok(!(await evaluate("!!document.querySelector('section[aria-label=\"Ship order\"]')")),"a pickup order is never shipped");
+    await shoot("orders-pickup-ready.png");
+    await evaluate("window.confirm=()=>true");
+    await until(()=>press('section[aria-label="Hand over at the store"] button',"Mark picked up"),"Mark picked up was not offered");
+    await until(async()=>(await pool.query("SELECT fulfillment_status FROM orders WHERE id=$1",[pickupOrder.id])).rows[0].fulfillment_status==="delivered","The pickup order was not picked up");
+    await evaluate("(()=>{document.querySelector('button[aria-label=\"Close\"]').click();return true;})()");
+    await until(()=>column("Delivered",pickupOrder.order_number),"The picked-up order is not under Delivered");
+    await shoot("orders-pickup-board.png");
+
+    // The customer: a formal order table, the order page with photos/links and the tracker, and My devices.
     await send("Emulation.setDeviceMetricsOverride",{width:1280,height:900,deviceScaleFactor:1,mobile:false});
     await signOut();await setCookie(customerCookie);
-    for(const [route,locale] of [["/account","en"],["/ru/account","ru"]]){
+    const row=id=>`document.querySelector('main a[href="?order=${id}"]')`;
+    for(const [route,locale] of [["/account","en"],["/ru/account","ru"],["/kz/account","kk"]]){
       await navigate(route);
       await until(async()=>(await text()).toLowerCase().includes("aigerim board"),"The account page did not load").catch(dump(`orders-account-${locale}.txt`));
-      await evaluate(`(()=>{const tab=[...document.querySelectorAll('button')].find(b=>/^(orders|заказы|тапсырыстар)/i.test(b.textContent.trim()));if(!tab)return false;tab.click();return true;})()`);
-      await until(()=>evaluate(`document.querySelectorAll('ol li[data-step]').length>=12`),"The order list shows no trackers").catch(dump(`orders-account-list-${locale}.txt`));
-      assert.ok(await evaluate(`[...document.querySelectorAll('button')].some(b=>b.textContent.includes(${JSON.stringify(both.order_number)})&&b.querySelectorAll('li[data-step][data-done="true"]').length===4)`),"the delivered order lights all four steps");
+      await evaluate(`(()=>{const tab=[...document.querySelectorAll('nav button')].find(b=>/^(orders|заказы|тапсырыстар)/i.test(b.textContent.trim()));if(!tab)return false;tab.click();return true;})()`);
+      await until(()=>evaluate(`!!${row(both.id)}&&!!${row(pickupOrder.id)}`),"The order table has no rows").catch(dump(`orders-account-list-${locale}.txt`));
+      assert.equal(await evaluate("document.querySelectorAll('main ol li[data-step]').length"),0,"the list has no inline trackers");
       await shoot(`orders-account-list-${locale}.png`);
-      await evaluate(`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent.includes(${JSON.stringify(both.order_number)})).click();return true;})()`);
-      await until(()=>evaluate(`!!document.querySelector('[role=dialog] ol li[data-step]')&&document.querySelector('[role=dialog]').innerText.includes(${JSON.stringify(serial)})`),"The order detail shows no tracker or serial").catch(dump(`orders-account-detail-${locale}.txt`));
+      await evaluate(`(()=>{${row(both.id)}.click();return true;})()`);
+      await until(()=>evaluate(`!!document.querySelector('[data-order-detail]')&&document.querySelector('[data-order-detail]').innerText.includes(${JSON.stringify(serial)})&&document.querySelectorAll('[data-order-detail] li[data-step][data-done="true"]').length===4`),"The order page shows no tracker or serial").catch(dump(`orders-account-detail-${locale}.txt`));
+      assert.ok(await evaluate("[...document.querySelectorAll('[data-order-detail] a')].some(a=>/\\/p\\/\\d+/.test(a.getAttribute('href')||''))"),"product names link to their product pages");
+      assert.ok((await evaluate("location.search")).includes(both.id),"the order has its own address");
       await shoot(`orders-account-detail-${locale}.png`);
-      await evaluate(`(()=>{document.querySelector('[role=dialog] button[aria-label]').click();return true;})()`);
     }
+    // Refresh keeps the order open; the pickup order shows the store and three steps.
+    await navigate(`/account?order=${pickupOrder.id}`);
+    await until(()=>evaluate(`!!document.querySelector('[data-order-detail]')&&document.querySelectorAll('[data-order-detail] li[data-step]').length===3&&document.querySelector('[data-order-detail]').innerText.includes('Panfilov')`),"The pickup order page did not open from its address").catch(dump("orders-account-pickup.txt"));
+    await shoot("orders-account-pickup-detail.png");
+    // My devices: the delivered watch and the picked-up watch, never the band.
+    await navigate("/account");
+    await until(async()=>(await text()).toLowerCase().includes("aigerim board"),"The account page did not load (devices)");
+    await evaluate(`(()=>{const tab=[...document.querySelectorAll('nav button')].find(b=>/my devices/i.test(b.textContent));tab.click();return true;})()`);
+    await until(()=>evaluate(`!!document.querySelector('[data-devices]')&&document.querySelector('[data-devices]').innerText.includes(${JSON.stringify(serial)})&&document.querySelector('[data-devices]').innerText.includes(${JSON.stringify(pickupSerial)})`),"My devices does not list both watches").catch(dump("orders-account-devices.txt"));
+    assert.ok(!(await evaluate("document.querySelector('[data-devices]').innerText.includes('QuickFit')")),"bands never appear");
+    assert.match(await evaluate("document.querySelector('[data-devices]').innerText"),/months left/);
+    await shoot("orders-account-devices.png");
     await send("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:2,mobile:true});
     await navigate("/account");await until(async()=>(await text()).toLowerCase().includes("aigerim board"),"The mobile account page did not load");
-    await evaluate(`(()=>{const tab=[...document.querySelectorAll('button')].find(b=>/^orders/i.test(b.textContent.trim()));if(!tab)return false;tab.click();return true;})()`);
-    await until(()=>evaluate(`document.querySelectorAll('ol li[data-step]').length>=12`),"The mobile order list shows no trackers");
-    await evaluate(`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent.includes(${JSON.stringify(both.order_number)})).scrollIntoView({block:"center"});return true;})()`);
+    await evaluate(`(()=>{const tab=[...document.querySelectorAll('nav button')].find(b=>/^orders/i.test(b.textContent.trim()));if(!tab)return false;tab.click();return true;})()`);
+    await until(()=>evaluate(`!!${row(both.id)}`),"The mobile order list has no rows");
     await shoot("orders-account-list-mobile.png");
+    await evaluate(`(()=>{${row(both.id)}.click();return true;})()`);
+    await until(()=>evaluate("!!document.querySelector('[data-order-detail]')"),"The mobile order page did not open");
+    await shoot("orders-account-detail-mobile.png");
+    await evaluate(`(()=>{const tab=[...document.querySelectorAll('nav button')].find(b=>/my devices/i.test(b.textContent));tab.click();return true;})()`);
+    await until(()=>evaluate("!!document.querySelector('[data-devices]')"),"Mobile My devices did not load");
+    await shoot("orders-account-devices-mobile.png");
+
+    // One-page sign-up (signed out): every field on one screen, the fixed code, a new account with gender + birthday.
+    await signOut();
+    for(const [width,height,mobile] of [[1440,960,false],[390,844,true]]){
+      await send("Emulation.setDeviceMetricsOverride",{width,height,deviceScaleFactor:mobile?2:1,mobile});
+      await navigate("/account/sign-up");
+      await until(()=>evaluate("['name','phone','code','email','birthDate'].every(n=>document.querySelector(`form[name=sign-up] [name=${n}]`))&&document.querySelectorAll('form[name=sign-up] input[type=radio]').length===3"),"The sign-up page does not show every field").catch(dump("signup-body.txt"));
+      await shoot(`signup-${width}.png`);
+    }
+    await send("Emulation.setDeviceMetricsOverride",{width:1440,height:960,deviceScaleFactor:1,mobile:false});
+    const newPhone="+7700"+String(Date.now()).slice(-7);
+    await typeInto("form[name=sign-up] [name=name]","Dana Signup");await typeInto("form[name=sign-up] [name=phone]",newPhone);await typeInto("form[name=sign-up] [name=email]",`dana-${Date.now()}@example.invalid`);
+    await until(()=>press("form[name=sign-up] button","Send code"),"Send code was not available");
+    await until(()=>evaluate("!document.querySelector('form[name=sign-up] [name=code]').disabled"),"The code box did not open");
+    await typeInto("form[name=sign-up] [name=code]","1234");
+    await evaluate("(()=>{document.querySelector('form[name=sign-up] input[type=radio][value=female]').click();return true;})()");
+    await typeInto("form[name=sign-up] [name=birthDate]","1991-03-08");
+    await shoot("signup-filled-1440.png");
+    await evaluate("document.querySelector('form[name=sign-up]').requestSubmit();true");
+    await until(async()=>(await text()).toLowerCase().includes("dana signup"),"Sign-up did not land on the account").catch(dump("signup-after.txt"));
+    const created=(await pool.query("SELECT p.gender,to_char(p.birth_date,'YYYY-MM-DD') AS birth FROM customer_profiles p JOIN users u ON u.id=p.user_id WHERE u.phone_number=$1",[newPhone])).rows[0];
+    assert.deepEqual(created,{gender:"female",birth:"1991-03-08"});
+    await shoot("signup-done-profile.png");
+    await signOut();
     return{customerCookie,orders:{both,bandOnly,watchOnly},serial};
   }finally{
     await send("Emulation.clearDeviceMetricsOverride");
@@ -1245,7 +1315,7 @@ try{
   for(let i=0;i<25;i++)await cms.save("products",headers,{name:`UI fixture ${i}`,sku:`UI-FIXTURE-${i}`,price:"123.45",status:"published",family:"Test",image:"/images/products/1228429.jpg",activities:[],level:"Entry",caseSize:"Medium"});
   await cms.saveHomepage(headers,{version:0,config:{heroBanners:[{id:"ui-hero",key:"ui",title:"UI HOMEPAGE FIXTURE",subtitle:"Disposable data",href:"/c/wearables-smartwatches",image:"/homepage/featured/holiday.jpg",active:true,order:0}],carousels:[],promoTiles:[],storyTiles:[],categoryTiles:[]}});
   fs.mkdirSync(receipt,{recursive:true});logFile=fs.openSync(path.join(receipt,"ui-next.log"),"w");
-  app=spawn(process.execPath,["node_modules/next/dist/bin/next","dev",...(process.env.CMS_TEST_BUNDLER==="webpack"?["--webpack"]:[]),"--hostname","localhost","--port",String(appPort)],{windowsHide:true,detached:process.platform!=="win32",stdio:["ignore",logFile,logFile],env:{...process.env,CMS_BACKEND:"postgres",AUTH_ENABLED:"1",AUTH_SECRET:secret,AUTH_BASE_URL:origin,DATABASE_URL:temporary.url,DATABASE_CONNECT_TIMEOUT_MS:process.env.DATABASE_CONNECT_TIMEOUT_MS??"10000",NODE_ENV:"development",NEXT_TELEMETRY_DISABLED:"1"}});
+  app=spawn(process.execPath,["node_modules/next/dist/bin/next","dev",...(process.env.CMS_TEST_BUNDLER==="webpack"?["--webpack"]:[]),"--hostname","localhost","--port",String(appPort)],{windowsHide:true,detached:process.platform!=="win32",stdio:["ignore",logFile,logFile],env:{...process.env,CMS_BACKEND:"postgres",AUTH_ENABLED:"1",AUTH_SECRET:secret,AUTH_BASE_URL:origin,DATABASE_URL:temporary.url,DATABASE_CONNECT_TIMEOUT_MS:process.env.DATABASE_CONNECT_TIMEOUT_MS??"10000",NODE_ENV:"development",NEXT_TELEMETRY_DISABLED:"1",AUTH_TEST_OTP_CODE:"1234"}});
   await until(async()=>{const response=await fetch(origin+"/api/admin/products");return response.status===401;},"Next did not start",120000);
   const chromePath=process.env.CMS_TEST_CHROME??"C:/Program Files/Google/Chrome/Application/chrome.exe";assert.ok(fs.existsSync(chromePath),"Set CMS_TEST_CHROME to a Chrome executable");
   profile=await mkdtemp(path.join(root,"cms-ui-chrome-"));
@@ -1261,7 +1331,8 @@ try{
   // 3-15 s and sometimes over 30 s, so navigation gets the same 120 s budget as the dev server start.
   const navigate=async route=>{await send("Page.navigate",{url:origin+route},120000);await until(()=>evaluate("document.readyState==='complete'"),"Navigation timed out");};
   const text=()=>evaluate("document.body.innerText");
-  const click=label=>evaluate(`(()=>{const button=[...document.querySelectorAll('button')].find(b=>b.textContent.trim().includes(${JSON.stringify(label)}));if(!button||button.disabled)throw Error('Missing button');button.click();return true;})()`);
+  // 0033: order rows are links now; a button with the label wins, else a link with it.
+  const click=label=>evaluate(`(()=>{const find=selector=>[...document.querySelectorAll(selector)].find(b=>b.textContent.trim().includes(${JSON.stringify(label)}));const button=find('button')??find('main a');if(!button||button.disabled)throw Error('Missing button');button.click();return true;})()`);
   const fill=(label,value)=>evaluate(`(()=>{const label=[...document.querySelectorAll('form label')].find(l=>l.textContent.includes(${JSON.stringify(label)}));const input=label?.parentElement.querySelector('input,textarea');if(!input)throw Error('Missing input');Object.getOwnPropertyDescriptor(input.tagName==='TEXTAREA'?HTMLTextAreaElement.prototype:HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
   await send("Network.enable");await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
   // The original browser smoke (Tasks 08-3.3) as one block, so CMS_SMOKE_ONLY=variant-content can skip it.
