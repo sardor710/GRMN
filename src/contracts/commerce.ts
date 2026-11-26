@@ -377,6 +377,8 @@ export interface OrderSummaryDTO {
   itemsCount: number;
   /** Owner 2026-11-25: the customer's four-step tracker (Ordered → Packed → Shipped → Delivered), or stopped. */
   stage: OrderStage;
+  /** 0033 (owner 2026-11-26): pickup orders show Ordered → Ready for pickup (packed) → Picked up (delivered). */
+  fulfillmentMethod: "delivery" | "pickup";
 }
 export type OrderStage = "ordered" | "packed" | "shipped" | "delivered" | "cancelled";
 
@@ -393,6 +395,41 @@ export interface OrderItemDTO {
   total: Money;
   /** 0030: serial numbers of this item's packed units (cancelled packs excluded), for warranty claims. */
   serials: string[];
+  /** 0033: the product page (/p/{productCode}[/{variantSku}]) while the product is sold; null = no link. */
+  productCode: string | null;
+  variantSku: string | null;
+  /** 0033: the variant's (else the product's) picture. */
+  image: string | null;
+}
+
+/** 0033 (owner 2026-11-26): a serialised device the customer received, for "My devices". */
+export interface DeviceDTO {
+  id: string;
+  serial: string;
+  productName: string;
+  variantName: string | null;
+  productCode: string | null;
+  sku: string | null;
+  image: string | null;
+  orderId: string;
+  orderNumber: string;
+  /** When the order was placed. */
+  purchasedAt: string;
+  /** When it was delivered or picked up: the warranty starts here. */
+  receivedAt: string;
+  fulfillmentMethod: "delivery" | "pickup";
+  warrantyMonths: number;
+  warrantyEndsAt: string;
+}
+
+/** 0033: the store copy kept on a pickup order (same shape as Settings ▸ Store pickup, without the switch). */
+export interface PickupSnapshotDTO {
+  name: { en: string; ru: string; kk: string };
+  address: { en: string; ru: string; kk: string };
+  hours: { en: string; ru: string; kk: string };
+  phone: string;
+  lat: number | null;
+  lng: number | null;
 }
 
 export interface OrderDetailDTO extends OrderSummaryDTO {
@@ -401,6 +438,8 @@ export interface OrderDetailDTO extends OrderSummaryDTO {
   deliveryAddress: { kind: "structured"; address: DeliveryAddress } | { kind: "legacy_unstructured"; raw: string } | null;
   dataQuality: "complete" | "legacy_incomplete";
   items: OrderItemDTO[];
+  /** 0033: the store a pickup order is collected from (null for delivery orders). */
+  pickup: PickupSnapshotDTO | null;
   // Null only for legacy_incomplete history: missing values are never invented.
   subtotal: Money | null;
   discount: Money | null;

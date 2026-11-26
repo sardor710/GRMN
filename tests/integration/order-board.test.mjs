@@ -495,3 +495,62 @@ test("pickup: Ready for pickup is the pack step with serials, Picked up hands it
   await rejectsWith(act(np.shipment,"pick_up"),409,"INVALID_TRANSITION");
   assert.equal((await find(normal.orderId)).fulfillmentMethod,"delivery");
 });
+
+// ---------------------------------------------------------------- 0033 My devices, order links (owner 2026-11-26)
+test("My devices lists each delivered serialised unit with warranty; bands and undelivered units never appear",async()=>{
+  const w=await watch(),b=await band(),[s1,s2]=[uniq(),uniq()];
+  const order=await paidOrder([[w.variant,2],[b.variant,1]]),wi=order.item[w.variant],bi=order.item[b.variant];
+  const created=await pack(order.orderId,[{orderItemId:wi,quantity:2},{orderItemId:bi,quantity:1}],[{orderItemId:wi,units:[s1,s2]}]);
+  assert.deepEqual((await account.getOwnDevices(order.buyer.headers)).items,[],"a packed unit is not yours yet");
+  await act(created.shipment,"dispatch");
+  assert.deepEqual((await account.getOwnDevices(order.buyer.headers)).items,[],"nor a shipped one");
+  await act(created.shipment,"deliver");
+  let devices=(await account.getOwnDevices(order.buyer.headers)).items;
+  assert.deepEqual(devices.map(d=>d.serial).sort(),[s1,s2].sort());
+  const first=devices[0],delivered=new Date(first.receivedAt);
+  assert.equal(first.warrantyMonths,12);assert.equal(first.fulfillmentMethod,"delivery");assert.ok(first.productName.startsWith("Synthetic fēnix"));
+  const end=new Date(first.warrantyEndsAt);assert.equal(end.getUTCFullYear()*12+end.getUTCMonth()-(delivered.getUTCFullYear()*12+delivered.getUTCMonth()),12);
+  assert.ok(first.productCode);assert.match(first.sku,/^AFTER-SKU-/);assert.equal(first.orderNumber,await numberOf(order.orderId));
+  // Category 24 months; the product's own 6 months wins over it.
+  const category=randomUUID();await q("INSERT INTO categories(id,key,name,warranty_months) VALUES($1,$2,'Warranty cat',24)",[category,"warranty-"+category]);
+  await q("INSERT INTO product_categories(product_id,category_id) VALUES($1,$2)",[w.id,category]);
+  assert.equal((await account.getOwnDevices(order.buyer.headers)).items[0].warrantyMonths,24);
+  await q("UPDATE products SET warranty_months=6 WHERE id=$1",[w.id]);
+  assert.equal((await account.getOwnDevices(order.buyer.headers)).items[0].warrantyMonths,6);
+  // Another customer sees none of them.
+  const stranger=await owner();assert.deepEqual((await account.getOwnDevices(stranger.headers)).items,[]);
+  // The order detail links each line to its product page while the product is sold.
+  let detail=await account.getOwnOrder(order.buyer.headers,order.orderId);
+  const line=detail.items.find(row=>row.id===wi);
+  assert.ok(line.productCode);assert.match(line.variantSku,/^AFTER-SKU-/);assert.equal(line.image,null);
+  assert.equal(detail.fulfillmentMethod,"delivery");assert.equal(detail.pickup,null);
+  await q("UPDATE products SET status='archived' WHERE id=$1",[b.id]);
+  detail=await account.getOwnOrder(order.buyer.headers,order.orderId);
+  assert.equal(detail.items.find(row=>row.id===bi).productCode,null,"an archived product is not linked");
+});
+
+test("a picked-up unit is in My devices from the pickup day; the pickup order shows the store",async()=>{
+  const w=await watch(),sn=uniq();
+  const order=await paidOrder([[w.variant,1]],{delivery:{kind:"pickup",contact:{recipientName:"Pickup Buyer",phone:"+77010000078"}}});
+  const created=await pack(order.orderId,[{orderItemId:order.item[w.variant],quantity:1}],[{orderItemId:order.item[w.variant],units:[sn]}]);
+  let detail=await account.getOwnOrder(order.buyer.headers,order.orderId);
+  assert.equal(detail.fulfillmentMethod,"pickup");assert.match(detail.pickup.address.en,/Panfilov/);assert.equal(detail.stage,"packed");
+  await act(created.shipment,"pick_up");
+  detail=await account.getOwnOrder(order.buyer.headers,order.orderId);
+  assert.equal(detail.stage,"delivered");assert.ok(detail.events.some(event=>event.type==="fulfillment.picked_up"));
+  const page=await account.getOwnOrders(order.buyer.headers,{});assert.equal(page.items.find(row=>row.id===order.orderId).fulfillmentMethod,"pickup");
+  const devices=(await account.getOwnDevices(order.buyer.headers)).items;
+  assert.deepEqual(devices.map(d=>[d.serial,d.fulfillmentMethod]),[[sn,"pickup"]]);
+});
+
+test("a returned unit leaves My devices once the return is received",async()=>{
+  const [a,b]=[uniq(),uniq()],s=await shippedWatches([a,b]);
+  const shipment=(await q("SELECT id FROM shipments WHERE order_id=$1",[s.order.orderId])).rows[0];
+  await act(shipment,"deliver");
+  assert.equal((await account.getOwnDevices(s.order.buyer.headers)).items.length,2);
+  const created=await api.createReturn(fulfiller,{orderId:s.order.orderId,idempotencyKey:key(),reason:"Faulty",lines:[{orderItemId:s.item,quantity:1,serialIds:[s.ids[b]]}]});
+  await returnStep(created.return.id,"authorize");
+  assert.equal((await account.getOwnDevices(s.order.buyer.headers)).items.length,2,"still with the customer until received");
+  await returnStep(created.return.id,"receive",{lines:[{returnItemId:created.return.items[0].id,receivedQuantity:1}]});
+  assert.deepEqual((await account.getOwnDevices(s.order.buyer.headers)).items.map(d=>d.serial),[a]);
+});

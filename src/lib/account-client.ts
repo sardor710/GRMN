@@ -1,6 +1,6 @@
 // Browser client for the session-owned account API (Task 10C). Identity always comes from the
 // session cookie; no call accepts an email, phone or user ID as a selector.
-import type { CustomerGender, CustomerProfileDTO, GeoPrecision, Money, OrderDetailDTO, OrderSummaryDTO, SavedAddressDTO, WishlistItemDTO } from "../contracts/commerce.ts";
+import type { CustomerGender, CustomerProfileDTO, DeviceDTO, GeoPrecision, Money, OrderDetailDTO, OrderSummaryDTO, SavedAddressDTO, WishlistItemDTO } from "../contracts/commerce.ts";
 import type { Page } from "../contracts/pagination.ts";
 import { formatKzt as formatKztAmount } from "./money.ts";
 import { kzRegionLabel } from "./kz-regions.ts";
@@ -85,6 +85,8 @@ export function createAccountClient(fetcher: AccountFetcher) {
     deleteAddress: (address: { id: string; version: number }) => call<{ id: string; deleted: true }>(`/api/account/addresses/${encodeURIComponent(address.id)}`, "DELETE", { expectedVersion: address.version }),
     orders: (cursor?: string) => call<Page<OrderSummaryDTO>>(`/api/account/orders?limit=${ORDER_PAGE_SIZE}${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`),
     order: (id: string) => call<OrderDetailDTO>(`/api/account/orders/${encodeURIComponent(id)}`),
+    /** 0033: My devices. */
+    devices: () => call<{ items: DeviceDTO[] }>("/api/account/devices"),
     authMode: () => call<AuthMode>("/api/auth/grmn/mode"),
     signUp: (command: { name: string; email: string; phoneNumber: string; challengeId: string; code: string; gender?: CustomerGender | null; birthDate?: string | null }) => call<{ state: "authenticated" }>("/api/auth/grmn/signup", "POST", command),
     sendCode: (phoneNumber: string, purpose: PhonePurpose) => call<{ challengeId: string; testCode?: true }>("/api/auth/grmn/phone/send", "POST", { phoneNumber, purpose }),

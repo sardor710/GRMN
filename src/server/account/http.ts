@@ -76,6 +76,11 @@ export function createAccountHandler(input: { service: AccountService; baseURL: 
         try { key = decodeURIComponent(id); } catch { bad(); }
         return request.method === "DELETE" ? adminJSON(await wishlist.remove(request.headers, key)) : method();
       }
+      // 0033 (owner 2026-11-26): My devices.
+      if (resource === "devices" && id === undefined) {
+        query(url, []);
+        return read ? adminJSON(await service.getOwnDevices(request.headers)) : method();
+      }
       if (resource === "orders") {
         if (!read) return method();
         if (id !== undefined) { query(url, []); return adminJSON(await service.getOwnOrder(request.headers, id)); }

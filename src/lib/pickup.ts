@@ -46,6 +46,13 @@ export function readPickupLocation(value: unknown): PickupLocation {
   return parsed.success ? parsed.data : PICKUP_SEED;
 }
 
+const snapshotSchema = z.object({ name: localized(120), address: localized(300), hours: localized(300), phone: z.string().max(32), lat: z.number().nullable(), lng: z.number().nullable() });
+/** An order's stored store copy, or null when it is missing or malformed. */
+export function readPickupSnapshot(value: unknown): PickupSnapshot | null {
+  const parsed = snapshotSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
+}
+
 export function pickupSnapshotOf(location: PickupLocation): PickupSnapshot {
   const { enabled: _enabled, ...snapshot } = location;
   return snapshot;

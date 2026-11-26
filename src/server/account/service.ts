@@ -6,9 +6,18 @@ import type { DatabaseHandle } from "../db/client.ts";
 import type { Permission, Principal } from "../context.ts";
 import { AuthFailure } from "../auth/config.ts";
 import { authDigest, capabilityHash, createPhoneService, OTP_PATTERN } from "../auth/phone-service.ts";
-import type { CustomerProfileDTO, DeliveryAddress, GeoPrecision, Money, OrderDetailDTO, OrderItemDTO, OrderStage, OrderSummaryDTO, SavedAddressDTO } from "../../contracts/commerce.ts";
+import type { CustomerProfileDTO, DeliveryAddress, DeviceDTO, GeoPrecision, Money, OrderDetailDTO, OrderItemDTO, OrderStage, OrderSummaryDTO, SavedAddressDTO } from "../../contracts/commerce.ts";
 import type { Page } from "../../contracts/pagination.ts";
 import { checkBirthDate, checkKzAddress } from "./address-rules.ts";
+import { publicImage } from "../catalog/service.ts";
+import { readPickupSnapshot } from "../../lib/pickup.ts";
+import { DEFAULT_WARRANTY_MONTHS, resolveWarrantyMonths, warrantyEnd } from "../fulfillment/warranty.ts";
+
+// 0033 (owner 2026-11-26): an order line's product page and picture. The product code is given only while the product
+// is published (an archived or deleted product gets no link); the picture is the variant's, else the product's.
+const ITEM_PRODUCT_COLUMNS = `CASE WHEN p.status='published' THEN p.product_code END AS product_code, CASE WHEN p.status='published' AND v.status='active' THEN v.sku END AS variant_sku,
+  COALESCE((SELECT COALESCE(m.source_path,m.storage_key) FROM product_media pm JOIN media_assets m ON m.id=pm.media_id WHERE pm.product_id=p.id AND (pm.variant_id=v.id OR pm.variant_id IS NULL) AND m.status='ready' AND m.visibility='public' AND m.kind='image' ORDER BY (pm.variant_id IS NOT NULL) DESC,pm.is_primary DESC,pm.position,pm.id LIMIT 1),p.legacy_content->>'image') AS image`;
+const ITEM_PRODUCT_JOINS = "LEFT JOIN products p ON p.id=oi.product_id LEFT JOIN product_variants v ON v.id=oi.variant_id";
 
 // Every operation derives the owner from the verified session principal. No input field,
 // typed email or phone can select another customer's profile, address book or orders.
@@ -251,11 +260,11 @@ export function createAccountService({ database, authorize, authorizeFresh, secr
         if (after.t === null) where = " AND o.placed_at IS NULL AND o.id<$3::uuid";
         else { args.push(after.t); where = " AND (o.placed_at<$4::timestamptz OR (o.placed_at=$4::timestamptz AND o.id<$3::uuid) OR o.placed_at IS NULL)"; }
       }
-      const rows = (await database.pool.query<{ id: string; order_number: string; placed_key: string | null; shown_at: Date; order_status: OrderSummaryDTO["status"]; payment_status: OrderSummaryDTO["paymentStatus"]; fulfillment_status: OrderSummaryDTO["fulfillmentStatus"]; payment_mode: OrderSummaryDTO["paymentMode"]; total_minor: string; items_count: number }>(
-        `SELECT o.id,o.order_number,to_char(o.placed_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS placed_key,COALESCE(o.placed_at,o.created_at) AS shown_at,o.order_status,o.payment_status,o.fulfillment_status,o.payment_mode,o.total_minor::text AS total_minor,(SELECT COALESCE(sum(quantity),0)::int FROM order_items WHERE order_id=o.id) AS items_count FROM orders o WHERE o.user_id=$1${where} ORDER BY o.placed_at DESC NULLS LAST,o.id DESC LIMIT $2`, args)).rows;
+      const rows = (await database.pool.query<{ id: string; order_number: string; placed_key: string | null; shown_at: Date; order_status: OrderSummaryDTO["status"]; payment_status: OrderSummaryDTO["paymentStatus"]; fulfillment_status: OrderSummaryDTO["fulfillmentStatus"]; payment_mode: OrderSummaryDTO["paymentMode"]; total_minor: string; items_count: number; fulfillment_method: OrderSummaryDTO["fulfillmentMethod"] }>(
+        `SELECT o.id,o.order_number,o.fulfillment_method,to_char(o.placed_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS placed_key,COALESCE(o.placed_at,o.created_at) AS shown_at,o.order_status,o.payment_status,o.fulfillment_status,o.payment_mode,o.total_minor::text AS total_minor,(SELECT COALESCE(sum(quantity),0)::int FROM order_items WHERE order_id=o.id) AS items_count FROM orders o WHERE o.user_id=$1${where} ORDER BY o.placed_at DESC NULLS LAST,o.id DESC LIMIT $2`, args)).rows;
       const items = rows.slice(0, limit), last = items.at(-1);
       return {
-        items: items.map(row => ({ id: row.id, orderNumber: row.order_number, createdAt: row.shown_at.toISOString(), status: row.order_status, paymentStatus: row.payment_status, fulfillmentStatus: row.fulfillment_status, stage: customerStage(row.order_status, row.fulfillment_status), paymentMode: row.payment_mode, total: money(row.total_minor), itemsCount: row.items_count })),
+        items: items.map(row => ({ id: row.id, orderNumber: row.order_number, createdAt: row.shown_at.toISOString(), status: row.order_status, paymentStatus: row.payment_status, fulfillmentStatus: row.fulfillment_status, stage: customerStage(row.order_status, row.fulfillment_status), fulfillmentMethod: row.fulfillment_method, paymentMode: row.payment_mode, total: money(row.total_minor), itemsCount: row.items_count })),
         nextCursor: rows.length > limit && last ? signCursor(principal.userId, last.placed_key, last.id) : null,
       };
     },
@@ -263,10 +272,11 @@ export function createAccountService({ database, authorize, authorizeFresh, secr
     async getOwnOrder(headers: Headers, orderId: unknown): Promise<OrderDetailDTO> {
       const principal = await authorize(headers);
       if (typeof orderId !== "string" || !UUID.test(orderId)) return notFound();
-      const order = (await database.pool.query<{ id: string; order_number: string; shown_at: Date; order_status: OrderSummaryDTO["status"]; payment_status: OrderSummaryDTO["paymentStatus"]; fulfillment_status: OrderSummaryDTO["fulfillmentStatus"]; payment_mode: OrderSummaryDTO["paymentMode"]; total_minor: string; subtotal_minor: string | null; discount_minor: string | null; shipping_minor: string | null; tax_minor: string | null; contact_name: string; contact_phone: string | null; contact_email: string | null; data_quality: OrderDetailDTO["dataQuality"]; version: number }>(
-        "SELECT id,order_number,COALESCE(placed_at,created_at) AS shown_at,order_status,payment_status,fulfillment_status,payment_mode,total_minor::text AS total_minor,subtotal_minor::text AS subtotal_minor,discount_minor::text AS discount_minor,shipping_minor::text AS shipping_minor,tax_minor::text AS tax_minor,contact_name,contact_phone,contact_email,data_quality,version FROM orders WHERE id=$1 AND user_id=$2", [orderId, principal.userId])).rows[0] ?? notFound();
+      const order = (await database.pool.query<{ id: string; order_number: string; shown_at: Date; order_status: OrderSummaryDTO["status"]; payment_status: OrderSummaryDTO["paymentStatus"]; fulfillment_status: OrderSummaryDTO["fulfillmentStatus"]; payment_mode: OrderSummaryDTO["paymentMode"]; total_minor: string; subtotal_minor: string | null; discount_minor: string | null; shipping_minor: string | null; tax_minor: string | null; contact_name: string; contact_phone: string | null; contact_email: string | null; data_quality: OrderDetailDTO["dataQuality"]; version: number; fulfillment_method: OrderSummaryDTO["fulfillmentMethod"]; pickup_snapshot: unknown }>(
+        "SELECT id,order_number,fulfillment_method,pickup_snapshot,COALESCE(placed_at,created_at) AS shown_at,order_status,payment_status,fulfillment_status,payment_mode,total_minor::text AS total_minor,subtotal_minor::text AS subtotal_minor,discount_minor::text AS discount_minor,shipping_minor::text AS shipping_minor,tax_minor::text AS tax_minor,contact_name,contact_phone,contact_email,data_quality,version FROM orders WHERE id=$1 AND user_id=$2", [orderId, principal.userId])).rows[0] ?? notFound();
       const [items, address, events, shipments] = await Promise.all([
-        database.pool.query<{ id: string; product_key: string | null; sku: string | null; name: string; options: Record<string, unknown>; quantity: number; unit_price_minor: string; discount_minor: string; tax_minor: string; total_minor: string }>("SELECT id,product_key,sku,name,options,quantity,unit_price_minor::text AS unit_price_minor,discount_minor::text AS discount_minor,tax_minor::text AS tax_minor,total_minor::text AS total_minor FROM order_items WHERE order_id=$1 ORDER BY id", [orderId]),
+        database.pool.query<{ id: string; product_key: string | null; sku: string | null; name: string; options: Record<string, unknown>; quantity: number; unit_price_minor: string; discount_minor: string; tax_minor: string; total_minor: string; product_code: string | null; variant_sku: string | null; image: string | null }>(`SELECT oi.id,oi.product_key,oi.sku,oi.name,oi.options,oi.quantity,oi.unit_price_minor::text AS unit_price_minor,oi.discount_minor::text AS discount_minor,oi.tax_minor::text AS tax_minor,oi.total_minor::text AS total_minor,
+          ${ITEM_PRODUCT_COLUMNS} FROM order_items oi ${ITEM_PRODUCT_JOINS} WHERE oi.order_id=$1 ORDER BY oi.id`, [orderId]),
         database.pool.query<{ kind: "structured" | "legacy_unstructured"; recipient_name: string | null; phone: string | null; country_code: string | null; city: string | null; line1: string | null; line2: string | null; region: string | null; postal_code: string | null; legacy_raw: string | null }>("SELECT kind,recipient_name,phone,country_code,city,line1,line2,region,postal_code,legacy_raw FROM order_addresses WHERE order_id=$1", [orderId]),
         database.pool.query<{ id: string; type: string; happened_at: Date }>("SELECT id,type,COALESCE(occurred_at,recorded_at) AS happened_at FROM order_events WHERE order_id=$1 AND visibility='customer' ORDER BY COALESCE(occurred_at,recorded_at),id", [orderId]),
         // Task 16A: only dispatched and delivered shipments, without carrier, tracking or staff notes (D04).
@@ -296,11 +306,13 @@ export function createAccountService({ database, authorize, authorizeFresh, secr
         options: Object.fromEntries(Object.entries(row.options ?? {}).filter((entry): entry is [string, string] => typeof entry[1] === "string")),
         quantity: row.quantity, unitPrice: money(row.unit_price_minor), discount: money(row.discount_minor), tax: money(row.tax_minor), total: money(row.total_minor),
         serials: serialsByItem.get(row.id) ?? [],
+        productCode: row.product_code, variantSku: row.product_code ? row.variant_sku : null, image: publicImage(row.image),
       }));
       return {
         id: order.id, orderNumber: order.order_number, createdAt: order.shown_at.toISOString(), status: order.order_status, paymentStatus: order.payment_status, fulfillmentStatus: order.fulfillment_status,
         paymentMode: order.payment_mode, total: money(order.total_minor), itemsCount: lines.reduce((sum, line) => sum + line.quantity, 0), version: order.version,
         contact: { name: order.contact_name, phone: order.contact_phone, email: order.contact_email }, deliveryAddress, dataQuality: order.data_quality, items: lines,
+        fulfillmentMethod: order.fulfillment_method, pickup: order.fulfillment_method === "pickup" ? readPickupSnapshot(order.pickup_snapshot) : null,
         subtotal: optionalMoney(order.subtotal_minor), discount: optionalMoney(order.discount_minor), shipping: optionalMoney(order.shipping_minor), tax: optionalMoney(order.tax_minor),
         events: events.rows.map(row => ({ id: row.id, type: row.type, occurredAt: row.happened_at.toISOString(), label: EVENT_LABELS[row.type] ?? row.type })),
         stage,
@@ -312,6 +324,33 @@ export function createAccountService({ database, authorize, authorizeFresh, secr
         },
         shipments: shipments.rows.map(row => ({ id: row.id, status: row.status, dispatchedAt: row.dispatched_at.toISOString(), deliveredAt: row.delivered_at?.toISOString() ?? null, items: row.items })),
         originalUsdEquivalent: null,
+      };
+    },
+
+    /**
+     * 0033 (owner 2026-11-26): My devices. One row per serialised unit the customer received (its shipment delivered or
+     * picked up) and did not return. Accessories never get serials, so they never appear.
+     */
+    async getOwnDevices(headers: Headers): Promise<{ items: DeviceDTO[] }> {
+      const principal = await authorize(headers);
+      const rows = (await database.pool.query<{ id: string; serial: string; name: string; options: Record<string, unknown>; order_id: string; order_number: string; purchased_at: Date; delivered_at: Date; product_id: string | null; product_code: string | null; variant_sku: string | null; image: string | null; fulfillment_method: "delivery" | "pickup" }>(
+        `SELECT u.id,u.serial,oi.name,oi.options,o.id AS order_id,o.order_number,COALESCE(o.placed_at,o.created_at) AS purchased_at,s.delivered_at,o.fulfillment_method,oi.product_id,${ITEM_PRODUCT_COLUMNS}
+         FROM order_unit_serials u JOIN shipment_items si ON si.id=u.shipment_item_id JOIN shipments s ON s.id=si.shipment_id AND s.status='delivered'
+         JOIN orders o ON o.id=u.order_id AND o.user_id=$1 JOIN order_items oi ON oi.id=u.order_item_id ${ITEM_PRODUCT_JOINS}
+         LEFT JOIN return_items ri ON ri.id=u.return_item_id LEFT JOIN returns r ON r.id=ri.return_id
+         WHERE COALESCE(r.status,'') NOT IN ('received','inspected','closed')
+         ORDER BY s.delivered_at DESC,o.order_number,u.unit_index,u.id LIMIT 200`, [principal.userId])).rows;
+      const months = await resolveWarrantyMonths(database.pool, rows.flatMap(row => row.product_id ? [row.product_id] : []));
+      return {
+        items: rows.map(row => {
+          const warrantyMonths = (row.product_id && months.get(row.product_id)) || DEFAULT_WARRANTY_MONTHS;
+          const variant = typeof row.options?.variant === "string" && row.options.variant !== "Base" ? row.options.variant : null;
+          return {
+            id: row.id, serial: row.serial, productName: row.name, variantName: variant, productCode: row.product_code, sku: row.product_code ? row.variant_sku : null, image: publicImage(row.image),
+            orderId: row.order_id, orderNumber: row.order_number, purchasedAt: row.purchased_at.toISOString(), receivedAt: row.delivered_at.toISOString(), fulfillmentMethod: row.fulfillment_method,
+            warrantyMonths, warrantyEndsAt: warrantyEnd(row.delivered_at, warrantyMonths).toISOString(),
+          };
+        }),
       };
     },
 
