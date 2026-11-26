@@ -38,8 +38,9 @@ export function Section<T>({ value, empty, emptyText, children }: { value: Loada
   return empty(value.data) ? <Muted>{emptyText}</Muted> : <>{children(value.data)}</>;
 }
 
-const PRESETS = [{ days: 1, label: "Today" }, { days: 7, label: "Last 7 days" }, { days: 30, label: "Last 30 days" }, { days: 90, label: "Last 90 days" }] as const;
+const PRESETS = [{ days: 1, label: "Today", short: "Today" }, { days: 7, label: "Last 7 days", short: "7 days" }, { days: 30, label: "Last 30 days", short: "30 days" }, { days: 90, label: "Last 90 days", short: "90 days" }] as const;
 const input = "h-10 border border-garmin-control bg-white px-3 text-sm font-normal tabular-nums text-black focus:border-black focus:outline-none";
+const compactInput = "h-8 border border-garmin-control bg-white px-2 text-sm font-normal tabular-nums text-black focus:border-black focus:outline-none";
 
 /** The date range (local days in Asia/Almaty), 30 days by default. */
 export function useRange() {
@@ -47,13 +48,25 @@ export function useRange() {
   const [to, setTo] = useState(() => localDate());
   return { from, to, setFrom, setTo };
 }
-export function RangePicker({ from, to, setFrom, setTo }: ReturnType<typeof useRange>) {
+/** `compact`: short preset labels and a slim From–To pair, for a header row (Admin ▸ Traffic). */
+export function RangePicker({ from, to, setFrom, setTo, compact = false }: ReturnType<typeof useRange> & { compact?: boolean }) {
+  const presets = PRESETS.map(({ days, label, short }) => {
+    const selected = from === localDate(-(days - 1)) && to === localDate();
+    return <button key={days} type="button" aria-pressed={selected} aria-label={compact ? label : undefined} onClick={() => { setFrom(localDate(-(days - 1))); setTo(localDate()); }} className={cn("g-btn g-btn--sm", selected ? "g-btn--black" : "g-btn--secondary")}>{compact ? short : label}</button>;
+  });
+  if (compact) return (
+    <div role="group" aria-label="Date range" className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm">
+      <div className="flex flex-wrap gap-1.5">{presets}</div>
+      <div className="flex items-center gap-1.5">
+        <input aria-label="From date" type="date" value={from} max={to} onChange={event => event.target.value && setFrom(event.target.value)} className={compactInput} />
+        <span aria-hidden className="text-muted-foreground">–</span>
+        <input aria-label="To date" type="date" value={to} min={from} onChange={event => event.target.value && setTo(event.target.value)} className={compactInput} />
+      </div>
+    </div>
+  );
   return (
     <div role="group" aria-label="Date range" className="flex flex-wrap items-end gap-2 text-sm">
-      {PRESETS.map(({ days, label }) => {
-        const selected = from === localDate(-(days - 1)) && to === localDate();
-        return <button key={days} type="button" aria-pressed={selected} onClick={() => { setFrom(localDate(-(days - 1))); setTo(localDate()); }} className={cn("g-btn g-btn--sm", selected ? "g-btn--black" : "g-btn--secondary")}>{label}</button>;
-      })}
+      {presets}
       <label className="ml-2 flex items-center gap-2 font-bold">From <input aria-label="From date" type="date" value={from} max={to} onChange={event => event.target.value && setFrom(event.target.value)} className={input} /></label>
       <label className="flex items-center gap-2 font-bold">To <input aria-label="To date" type="date" value={to} min={from} onChange={event => event.target.value && setTo(event.target.value)} className={input} /></label>
     </div>
