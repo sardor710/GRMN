@@ -570,24 +570,26 @@ async function demoOrderScenario({pool,origin,send,evaluate,navigate,text,click,
     await navigate("/account");await until(async()=>(await text()).toLowerCase().includes("ui account owner"),"Account page did not load");
     await click("Orders");
     await until(()=>evaluate(`[...document.querySelectorAll('button')].some(b=>b.textContent.toUpperCase().includes(${number})&&!!b.querySelector('[data-demo-dot]'))`),"The account history does not mark the demo order");
-    // Admin: the Demo filter lists the demo order with its badge and leaves out the live (manual) order.
+    // Admin (owner 2026-11-25 board): the Demo filter shows only demo orders, each card tagged Demo; the demo order is
+    // packed from its card (the fixture is an unfiled product, so it needs a serial), shipped and delivered.
     await signOut();await staffCookie();
     await navigate("/admin/orders");
-    await until(async()=>(await text()).toUpperCase().includes(liveOrderNumber.toUpperCase()),"The admin queue did not load");
+    await until(async()=>(await text()).toUpperCase().includes(liveOrderNumber.toUpperCase()),"The admin board did not load");
     await evaluate(`(()=>{const select=document.querySelector('select[aria-label="Payment mode filter"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,'demo');select.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
-    const queue=`[...document.querySelectorAll('section[aria-label="Order queue"] li button')]`;
-    await until(()=>evaluate(`${queue}.length>0&&${queue}.every(b=>!!b.querySelector('[data-demo-badge]'))&&!${queue}.some(b=>b.textContent.toUpperCase().includes(${live}))`),"The Demo filter did not list only demo orders").catch(async error=>{await writeFile(path.join(receipt,"demo-admin-body.txt"),await text());throw error;});
-    assert.ok(await evaluate(`${queue}.some(b=>b.textContent.toUpperCase().includes(${number}))`),"the demo order is listed under Demo");
-    await evaluate(`(()=>{${queue}.find(b=>b.textContent.toUpperCase().includes(${number})).click();return true;})()`);
+    const cards=`[...document.querySelectorAll('section[aria-label="Order board"] li[draggable], section[aria-label="Order board"] li.group')]`;
+    await until(()=>evaluate(`${cards}.length>0&&${cards}.every(li=>/demo/i.test(li.innerText))&&!${cards}.some(li=>li.innerText.toUpperCase().includes(${live}))`),"The Demo filter did not list only demo orders").catch(async error=>{await writeFile(path.join(receipt,"demo-admin-body.txt"),await text());throw error;});
+    assert.ok(await evaluate(`${cards}.some(li=>li.innerText.toUpperCase().includes(${number}))`),"the demo order is listed under Demo");
+    await evaluate(`(()=>{const li=${cards}.find(li=>li.innerText.toUpperCase().includes(${number}));[...li.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pack').click();return true;})()`);
     await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Order detail\"] [data-demo-badge]')"),"The order detail shows no DEMO label");
-    await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>/create shipment/i.test(b.textContent))"),"A captured demo order offered no shipment action");
+    await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Pack order\"] input[data-serial-box]')"),"A captured demo order offered no pack panel");
     await shoot("demo-orders.png");
-    // Dispatch and deliver it like a paid order.
-    await until(()=>evaluate(`(()=>{const input=document.querySelector('input[aria-label="Ship quantity for UI DEMO FIXTURE"]');if(!input)return false;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'1');input.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`),"No ship quantity input for the demo order");
-    await click("Create shipment");
-    await until(async()=>{try{await click("Dispatch");return true;}catch{return false;}},"The demo shipment offered no dispatch");
+    await evaluate(`(()=>{const input=document.querySelector('section[aria-label="Pack order"] input[data-serial-box]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,'UIDEMO${randomBytes(3).toString("hex").toUpperCase()}');input.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`);
+    await until(async()=>{try{await click("Mark as packed");return true;}catch{return false;}},"Mark as packed stayed disabled");
+    await until(async()=>{try{await click("Mark as shipped");return true;}catch{return false;}},"The packed demo order offered no shipping");
     await until(async()=>(await pool.query("SELECT count(*)::int AS n FROM shipments WHERE order_id=$1 AND status='dispatched'",[order[0].id])).rows[0].n===1,"The demo shipment was not dispatched");
-    await until(async()=>{try{await click("Mark delivered");return true;}catch{return false;}},"The dispatched demo shipment offered no delivery");
+    await evaluate("window.confirm=()=>true");
+    // The drawer's own button (the board card behind it carries the same label).
+    await until(()=>evaluate(`(()=>{const b=[...document.querySelectorAll('section[aria-label="Confirm delivery"] button')].find(b=>b.textContent.trim()==='Mark delivered'&&!b.disabled);if(!b)return false;b.click();return true;})()`),"The dispatched demo shipment offered no delivery");
     await until(async()=>(await pool.query("SELECT fulfillment_status FROM orders WHERE id=$1",[order[0].id])).rows[0].fulfillment_status==="delivered","The demo order was not delivered");
     assert.equal((await pool.query("SELECT payment_mode FROM orders WHERE id=$1",[order[0].id])).rows[0].payment_mode,"demo","still labelled demo after delivery");
   }finally{
@@ -724,6 +726,154 @@ async function variantDeleteScenario({cms,headers,send,evaluate,navigate,text,cl
   assert.deepEqual(after.variants.map(x=>x.sku).sort(),["UI-VD-47-black","UI-VD-51-black"],"the Gray SKU is deleted");
   assert.deepEqual(after.options.find(o=>o.name==="Color").values.map(x=>x.label),["Black"],"Gray left the colour choices");
   assert.ok(after.variants.some(x=>x.isDefault&&x.sku==="UI-VD-47-black"),"the default is unchanged");
+}
+
+// Owner 2026-11-25 (CMS_SMOKE_ONLY=orders, plan docs/plans/2026-11-25-order-board-serials-xl.md T6.1): Admin ▸ Orders
+// board. Three demo orders (watch + band, band, watch) placed through the real checkout service land in New with a
+// green Paid pill; the watch + band order is packed from its card (serial for the watch, a tick for the band),
+// shipped and delivered on the board; the serial is stored and searchable; List and Archive views render; the
+// customer's order shows the four-step tracker. Screenshots go to CMS_SMOKE_ORDERS_SHOTS (or the receipt).
+async function ordersBoardScenario({database,runtime,secret,origin,send,evaluate,navigate,text,staffCookieValue,receipt}){
+  const pool=database.pool;
+  const shots=path.resolve(process.env.CMS_SMOKE_ORDERS_SHOTS??receipt);fs.mkdirSync(shots,{recursive:true});
+  const shoot=async name=>{const image=await send("Page.captureScreenshot",{format:"png"});await saveShot(name,image.data,shots);};
+  const dump=name=>async error=>{await writeFile(path.join(receipt,name),await text());throw error;};
+  const setCookie=value=>send("Network.setCookie",{name:"grmn-auth.session_token",value,url:origin,httpOnly:true,sameSite:"Lax"});
+  const signOut=()=>send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
+  const press=(selector,label)=>evaluate(`(()=>{const b=[...document.querySelectorAll(${JSON.stringify(selector)})].find(b=>b.textContent.trim()===${JSON.stringify(label)}&&!b.disabled);if(!b)return false;b.click();return true;})()`);
+  const typeInto=(selector,value)=>evaluate(`(()=>{const input=document.querySelector(${JSON.stringify(selector)});if(!input)return false;Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)});input.dispatchEvent(new Event('input',{bubbles:true}));return true;})()`);
+  // Fixtures: a serial-required watch and a no-serial band, stock, tax/shipping when missing, demo checkout on.
+  await pool.query("INSERT INTO stock_locations(id,key,name) VALUES($1,'main','Main stock location') ON CONFLICT (key) DO NOTHING",[randomUUID()]);
+  const main=(await pool.query("SELECT id FROM stock_locations WHERE key='main'")).rows[0].id;
+  const fixture=async(key,name,policy,price)=>{
+    const product=randomUUID(),variant=randomUUID();
+    await pool.query("INSERT INTO products(id,public_key,name,status,serial_policy) VALUES($1,$2,$3,'published',$4)",[product,key,name,policy]);
+    await pool.query("INSERT INTO product_variants(id,product_id,sku,name,is_default,status) VALUES($1,$2,$3,'Base',true,'active')",[variant,product,key.toUpperCase()]);
+    await pool.query("INSERT INTO prices(id,variant_id,amount_minor) VALUES($1,$2,$3)",[randomUUID(),variant,price]);
+    await pool.query("INSERT INTO inventory_balances(variant_id,location_id) VALUES($1,$2)",[variant,main]);
+    await pool.query("INSERT INTO stock_movements(id,variant_id,location_id,delta_on_hand,delta_reserved,reason,dedupe_key,source_reference) VALUES($1,$2,$3,20,0,'opening',$4,'synthetic:ui-smoke')",[randomUUID(),variant,main,"opening-"+key]);
+    return variant;
+  };
+  const watch=await fixture("ui-board-fenix","UI Board fēnix 8","required",64990000),band=await fixture("ui-board-band","UI Board QuickFit 22 Band","none",2499000);
+  const previous=(await pool.query("SELECT active_tax_configuration_id AS tax,active_shipping_policy_id AS policy,payment_mode FROM store_settings WHERE id=1")).rows[0];
+  let tax=previous?.tax,policy=previous?.policy;
+  if(!tax){tax=randomUUID();await pool.query("INSERT INTO tax_configuration(id,version,mode,rate_bps,country_code) VALUES($1,9401,'exclusive',1200,'KZ')",[tax]);}
+  if(!policy){policy=randomUUID();const zone=randomUUID();
+    await pool.query("INSERT INTO shipping_policy_versions(id,version) VALUES($1,9401)",[policy]);
+    await pool.query("INSERT INTO shipping_zones(id,key,name,countries,active) VALUES($1,'ui-board-zone','UI board zone','[\"KZ\"]'::jsonb,true)",[zone]);
+    await pool.query("INSERT INTO shipping_rates(id,policy_id,zone_id,key,amount_minor) VALUES($1,$2,$3,'standard',1500)",[randomUUID(),policy,zone]);}
+  await pool.query("INSERT INTO store_settings(id,active_tax_configuration_id,active_shipping_policy_id,maintenance_mode,payment_mode) VALUES(1,$1,$2,false,'demo') ON CONFLICT (id) DO UPDATE SET active_tax_configuration_id=EXCLUDED.active_tax_configuration_id,active_shipping_policy_id=EXCLUDED.active_shipping_policy_id,payment_mode='demo',version=store_settings.version+1",[tax,policy]);
+  // Three demo orders through the real cart, quote and checkout services (no browser checkout needed here).
+  const {createCartService}=await import("../../src/server/cart/service.ts");
+  const checkout=await import("../../src/server/checkout/service.ts");
+  const {requirePrincipal}=await import("../../src/server/auth/principal.ts");
+  const carts=createCartService({database,secret,identify:async h=>{try{return await requirePrincipal(runtime,h);}catch(error){if(error.status===401)return null;throw error;}}});
+  const customerId=randomUUID();
+  await pool.query("INSERT INTO users(id,name,email,phone_number,phone_number_verified) VALUES($1,'Aigerim Board','ui-board@example.invalid','+77000000077',true)",[customerId]);
+  const customerSession=await(await runtime.auth.$context).internalAdapter.createSession(customerId);
+  const customerCookie=encodeURIComponent(customerSession.token+"."+createHmac("sha256",secret).update(customerSession.token).digest("base64"));
+  const customerHeaders=new Headers({cookie:"grmn-auth.session_token="+customerCookie});
+  const place=async lines=>{
+    let version=0;
+    for(const [variantId,quantity] of lines)version=(await carts.addLine(customerHeaders,{variantId,quantity,expectedCartVersion:version})).cart.version;
+    const quote=await carts.quote(customerHeaders,{cartVersion:version,displayCurrency:"KZT",delivery:{kind:"inline",address:{recipientName:"Aigerim Board",phone:"+77000000077",countryCode:"KZ",city:"Almaty",line1:"Abay 10"}}});
+    const result=await checkout.placeOrder(pool,secret,{userId:customerId,guestTokenHash:null},"ui-board-"+randomUUID(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"demo"});
+    return(await pool.query("SELECT id,order_number FROM orders WHERE id=$1",[result.orderId])).rows[0];
+  };
+  const both=await place([[watch,1],[band,1]]),bandOnly=await place([[band,2]]),watchOnly=await place([[watch,1]]);
+  const card=number=>`[...document.querySelectorAll('section[aria-label="Order board"] li')].find(li=>li.textContent.includes(${JSON.stringify(number)}))`;
+  const column=(name,number)=>evaluate(`!!document.querySelector('[aria-label="${name} orders"]')&&[...document.querySelectorAll('[aria-label="${name} orders"] li')].some(li=>li.textContent.includes(${JSON.stringify(number)}))`);
+  const serial="UIBRD"+randomBytes(3).toString("hex").toUpperCase();
+  await send("Emulation.setDeviceMetricsOverride",{width:1440,height:960,deviceScaleFactor:1,mobile:false});
+  try{
+    await signOut();await setCookie(staffCookieValue);
+    await navigate("/admin/orders");
+    await until(()=>column("New",both.order_number),"The board did not show the new order under New").catch(dump("orders-board-body.txt"));
+    for(const order of [bandOnly,watchOnly])assert.ok(await column("New",order.order_number),order.order_number+" is under New");
+    assert.ok(await evaluate(`!!${card(both.order_number)}.querySelector('[data-payment-pill="paid"]')`),"a paid order shows the green Paid pill");
+    await shoot("orders-board-new.png");
+    // Pack from the card: the panel asks for the watch serial and a tick for the band.
+    await evaluate(`(()=>{const li=${card(both.order_number)};[...li.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pack').click();return true;})()`);
+    await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Pack order\"] input[data-serial-box]')"),"The pack panel did not open").catch(dump("orders-pack-body.txt"));
+    assert.equal(await evaluate("document.querySelector('section[aria-label=\"Pack order\"] button.w-full').disabled"),true,"Mark as packed waits for the serial and the tick");
+    await shoot("orders-pack-panel.png");
+    await until(()=>typeInto('section[aria-label="Pack order"] input[data-serial-box]',serial),"Could not type the serial");
+    await evaluate("(()=>{document.querySelector('section[aria-label=\"Pack order\"] input[type=checkbox]').click();return true;})()");
+    await until(()=>press('section[aria-label="Pack order"] button',"Mark as packed"),"Mark as packed stayed disabled");
+    await until(async()=>(await pool.query("SELECT serial FROM order_unit_serials WHERE order_id=$1",[both.id])).rows[0]?.serial===serial,"The serial was not stored");
+    await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Ship order\"]')"),"The ship panel did not appear after packing");
+    await evaluate("(()=>{document.querySelector('button[aria-label=\"Close\"]').click();return true;})()");
+    await until(()=>column("Packed",both.order_number),"The packed order did not move to Packed");
+    // Drag: the band-only order dragged from New onto Packed opens its pack panel (nothing changes until it is packed).
+    await evaluate(`(()=>{const li=${card(bandOnly.order_number)};const target=document.querySelector('[aria-label="Packed orders"]');const data=new DataTransfer();
+      li.dispatchEvent(new DragEvent('dragstart',{bubbles:true,dataTransfer:data}));return true;})()`);
+    await until(()=>evaluate(`(()=>{const target=document.querySelector('[aria-label="Packed orders"]');const data=new DataTransfer();
+      target.dispatchEvent(new DragEvent('dragover',{bubbles:true,cancelable:true,dataTransfer:data}));return target.dispatchEvent(new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:data}))===false;})()`),"Dropping on Packed was not accepted");
+    await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Pack order\"]')"),"Dropping on Packed did not open the pack panel");
+    assert.equal((await pool.query("SELECT fulfillment_status FROM orders WHERE id=$1",[bandOnly.id])).rows[0].fulfillment_status,"unfulfilled","a drop alone packs nothing");
+    await evaluate("(()=>{document.querySelector('button[aria-label=\"Close\"]').click();return true;})()");
+    // Ship and deliver from the card.
+    await evaluate(`(()=>{const li=${card(both.order_number)};[...li.querySelectorAll('button')].find(b=>b.textContent.trim()==='Ship').click();return true;})()`);
+    await until(()=>typeInto('input[aria-label="Tracking reference"]',"KZ-TRACK-77"),"The ship panel had no tracking field");
+    await until(()=>press('section[aria-label="Ship order"] button',"Mark as shipped"),"Mark as shipped was not available");
+    await until(async()=>(await pool.query("SELECT fulfillment_status FROM orders WHERE id=$1",[both.id])).rows[0].fulfillment_status==="shipped","The order was not shipped");
+    await evaluate("window.confirm=()=>true");
+    await until(()=>press('section[aria-label="Confirm delivery"] button',"Mark delivered"),"Mark delivered was not offered");
+    await until(async()=>(await pool.query("SELECT fulfillment_status FROM orders WHERE id=$1",[both.id])).rows[0].fulfillment_status==="delivered","The order was not delivered");
+    await evaluate("(()=>{document.querySelector('button[aria-label=\"Close\"]').click();return true;})()");
+    await until(()=>column("Delivered",both.order_number),"The delivered order is not under Delivered");
+    await shoot("orders-board-flow.png");
+    // Search by serial, the list view and the archive.
+    await evaluate(`(()=>{const input=document.querySelector('input[aria-label="Search orders"]');Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(serial.toLowerCase())});input.dispatchEvent(new Event('input',{bubbles:true}));input.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));return true;})()`);
+    await until(()=>evaluate(`!!document.querySelector('section[aria-label="Order list"]')&&document.querySelector('section[aria-label="Order list"]').innerText.includes(${JSON.stringify(both.order_number)})&&!document.querySelector('section[aria-label="Order list"]').innerText.includes(${JSON.stringify(bandOnly.order_number)})`),"Search by serial did not find only that order").catch(dump("orders-search-body.txt"));
+    await evaluate("(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent.includes('Clear search')).click();return true;})()");
+    await until(()=>press('button[aria-pressed]',"List"),"No List toggle");
+    await until(()=>evaluate(`[${[both,bandOnly,watchOnly].map(o=>JSON.stringify(o.order_number)).join(",")}].every(n=>document.querySelector('section[aria-label="Order list"]')?.innerText.includes(n))`),"The list view did not show the three active orders");
+    await shoot("orders-list.png");
+    // Time travel (test-only, past the immutability trigger): the delivered order was delivered yesterday in Almaty.
+    {const client=await pool.connect();try{await client.query("SET session_replication_role=replica");
+      await client.query("UPDATE shipments SET dispatched_at=dispatched_at-interval '1 day',delivered_at=(date_trunc('day',now() AT TIME ZONE 'Asia/Almaty') AT TIME ZONE 'Asia/Almaty')-interval '1 hour' WHERE order_id=$1 AND status='delivered'",[both.id]);
+    }finally{await client.query("SET session_replication_role=origin");client.release();}}
+    await until(()=>press('button',"Archive"),"No Archive button");
+    await until(async()=>/order archive/i.test(await text())&&(await text()).includes(both.order_number),"The archive did not list the order delivered yesterday").catch(dump("orders-archive-body.txt"));
+    await shoot("orders-archive.png");
+    await until(()=>press('button',"Back to active orders"),"No way back from the archive");
+    // Mobile width: the board scrolls sideways, cards keep their pill and button.
+    await send("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:2,mobile:true});
+    await until(()=>press('button[aria-pressed]',"Board"),"No Board toggle");
+    await until(()=>column("New",watchOnly.order_number),"The mobile board did not render");
+    await shoot("orders-board-mobile.png");
+    await evaluate(`(()=>{const li=${card(watchOnly.order_number)};[...li.querySelectorAll('button')].find(b=>b.textContent.trim()==='Pack').click();return true;})()`);
+    await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Pack order\"] input[data-serial-box]')"),"The mobile pack panel did not open");
+    await shoot("orders-pack-mobile.png");
+    await evaluate("(()=>{document.querySelector('button[aria-label=\"Close\"]').click();return true;})()");
+    // The customer: every order carries the four-step tracker; the delivered one is fully cyan and shows its serial.
+    // Pack the watch-only order too (through the board's API, as staff), so the list shows three different stages.
+    await send("Emulation.setDeviceMetricsOverride",{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+    await signOut();await setCookie(customerCookie);
+    for(const [route,locale] of [["/account","en"],["/ru/account","ru"]]){
+      await navigate(route);
+      await until(async()=>(await text()).toLowerCase().includes("aigerim board"),"The account page did not load").catch(dump(`orders-account-${locale}.txt`));
+      await evaluate(`(()=>{const tab=[...document.querySelectorAll('button')].find(b=>/^(orders|заказы|тапсырыстар)/i.test(b.textContent.trim()));if(!tab)return false;tab.click();return true;})()`);
+      await until(()=>evaluate(`document.querySelectorAll('ol li[data-step]').length>=12`),"The order list shows no trackers").catch(dump(`orders-account-list-${locale}.txt`));
+      assert.ok(await evaluate(`[...document.querySelectorAll('button')].some(b=>b.textContent.includes(${JSON.stringify(both.order_number)})&&b.querySelectorAll('li[data-step][data-done="true"]').length===4)`),"the delivered order lights all four steps");
+      await shoot(`orders-account-list-${locale}.png`);
+      await evaluate(`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent.includes(${JSON.stringify(both.order_number)})).click();return true;})()`);
+      await until(()=>evaluate(`!!document.querySelector('[role=dialog] ol li[data-step]')&&document.querySelector('[role=dialog]').innerText.includes(${JSON.stringify(serial)})`),"The order detail shows no tracker or serial").catch(dump(`orders-account-detail-${locale}.txt`));
+      await shoot(`orders-account-detail-${locale}.png`);
+      await evaluate(`(()=>{document.querySelector('[role=dialog] button[aria-label]').click();return true;})()`);
+    }
+    await send("Emulation.setDeviceMetricsOverride",{width:390,height:844,deviceScaleFactor:2,mobile:true});
+    await navigate("/account");await until(async()=>(await text()).toLowerCase().includes("aigerim board"),"The mobile account page did not load");
+    await evaluate(`(()=>{const tab=[...document.querySelectorAll('button')].find(b=>/^orders/i.test(b.textContent.trim()));if(!tab)return false;tab.click();return true;})()`);
+    await until(()=>evaluate(`document.querySelectorAll('ol li[data-step]').length>=12`),"The mobile order list shows no trackers");
+    await evaluate(`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent.includes(${JSON.stringify(both.order_number)})).scrollIntoView({block:"center"});return true;})()`);
+    await shoot("orders-account-list-mobile.png");
+    return{customerCookie,orders:{both,bandOnly,watchOnly},serial};
+  }finally{
+    await send("Emulation.clearDeviceMetricsOverride");
+    await pool.query("UPDATE store_settings SET payment_mode=$1,version=version+1 WHERE id=1",[previous?.payment_mode??"live"]);
+  }
 }
 
 // Owner 2026-11-25 (CMS_SMOKE_ONLY=traffic): Admin ▸ Campaign links + Admin ▸ Traffic. A link built in admin is opened
@@ -1065,11 +1215,11 @@ async function adminShotsScenario({cms,headers,send,evaluate,navigate,text,click
       await navigate("/admin/orders");
       const hydrated=()=>evaluate("(()=>{const s=document.querySelector('select[aria-label=\"Payment mode filter\"]');return !!s&&Object.keys(s).some(k=>k.startsWith('__reactProps'));})()");
       if(!await until(hydrated,"not hydrated",30000).catch(()=>false)){console.log(`admin-shots: /admin/orders did not hydrate in 30 s at ${width} px; reloading once`);await send("Page.reload",{ignoreCache:true});await until(()=>evaluate("document.readyState==='complete'"),"Reload timed out");await until(hydrated,`The orders page did not hydrate at ${width} px, even after one reload`,30000).catch(async error=>{await writeFile(path.join(receipt,`admin-shots-orders-${width}.txt`),await text());throw error;});}
-      await until(()=>evaluate("document.querySelectorAll('section[aria-label=\"Order queue\"] li button').length>0"),"The order queue did not load").catch(async error=>{await writeFile(path.join(receipt,`admin-shots-orders-${width}.txt`),await text());throw error;});
+      await until(()=>evaluate("document.querySelectorAll('section[aria-label=\"Order board\"] li.group').length>0"),"The order board did not load").catch(async error=>{await writeFile(path.join(receipt,`admin-shots-orders-${width}.txt`),await text());throw error;});
       await evaluate(`(()=>{const select=document.querySelector('select[aria-label="Payment mode filter"]');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,'demo');select.dispatchEvent(new Event('change',{bubbles:true}));return true;})()`);
-      const queue="[...document.querySelectorAll('section[aria-label=\"Order queue\"] li button')]";
-      await until(()=>evaluate(`${queue}.length>0&&${queue}.every(b=>!!b.querySelector('[data-demo-badge]'))`),"The Demo filter did not list only demo orders").catch(async error=>{await writeFile(path.join(receipt,`admin-shots-orders-${width}.txt`),await text());throw error;});
-      await evaluate("document.querySelector('section[aria-label=\"Order queue\"] li button').click();true");
+      const queue="[...document.querySelectorAll('section[aria-label=\"Order board\"] li.group')]";
+      await until(()=>evaluate(`${queue}.length>0&&${queue}.every(li=>/demo/i.test(li.innerText))`),"The Demo filter did not list only demo orders").catch(async error=>{await writeFile(path.join(receipt,`admin-shots-orders-${width}.txt`),await text());throw error;});
+      await evaluate("document.querySelector('section[aria-label=\"Order board\"] li.group button').click();true");
       await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Order detail\"] [data-demo-badge]')"),"Order detail did not open");
       await shoot(`orders-demo-${width}.png`);
       await navigate("/admin/settings");await until(async()=>/demo checkout/i.test(await text()),"Settings did not load");
@@ -1299,10 +1449,11 @@ try{
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
     await navigate("/admin/orders");
     await until(async()=>(await text()).toUpperCase().includes(placedOrders[0].order_number.toUpperCase()),"The fulfillment queue did not list the placed order").catch(async error=>{await writeFile(path.join(receipt,"admin-orders-body.txt"),await text());throw error;});
-    await evaluate(`(()=>{const button=[...document.querySelectorAll('section[aria-label="Order queue"] button')].find(b=>b.textContent.toUpperCase().includes(${JSON.stringify(placedOrders[0].order_number.toUpperCase())}));button.click();return true;})()`);
-    await until(async()=>/not paid: only captured orders can ship/i.test(await text()),"The unpaid order did not show as not shippable");
+    await evaluate(`(()=>{const button=[...document.querySelectorAll('section[aria-label="Order board"] li.group button')].find(b=>b.textContent.toUpperCase().includes(${JSON.stringify(placedOrders[0].order_number.toUpperCase())}));button.click();return true;})()`);
+    await until(async()=>/not paid yet: the order can be packed once the payment arrives/i.test(await text()),"The unpaid order did not show as not packable");
+    assert.ok(await evaluate(`[...document.querySelectorAll('section[aria-label="Order board"] li.group')].some(li=>li.innerText.toUpperCase().includes(${JSON.stringify(placedOrders[0].order_number.toUpperCase())})&&!!li.querySelector('[data-payment-pill="awaiting"]'))`),"the unpaid card shows Awaiting payment");
     assert.ok(/order\.placed/i.test(await text()),"the timeline shows the recorded order.placed event");
-    assert.equal(await evaluate("[...document.querySelectorAll('button')].some(b=>/create shipment/i.test(b.textContent))"),false,"an unpaid order offers no shipment action");
+    assert.equal(await evaluate("!!document.querySelector('section[aria-label=\"Pack order\"]')"),false,"an unpaid order offers no pack panel");
     console.log("PASS Task16A fulfillment: PostgreSQL admin orders queue, real timeline, unpaid order refused for shipping");
 
     // O07 (Task 21C): staff confirm the manual payment from the admin order page; the purchase reaches
@@ -1320,7 +1471,7 @@ try{
     const captureFact=(await database.pool.query("SELECT provider,kind,external_id,amount_minor::text AS amount FROM payment_transactions WHERE order_id=$1",[placedOrders[0].id])).rows;
     assert.deepEqual(captureFact,[{provider:"manual",kind:"capture",external_id:paymentReference,amount:"841500"}]);
     assert.equal((await database.pool.query("SELECT count(*)::int AS n FROM audit_events WHERE action='payment.manually_confirmed' AND target_id=$1",[placedOrders[0].id])).rows[0].n,1);
-    await until(()=>evaluate("[...document.querySelectorAll('button')].some(b=>/create shipment/i.test(b.textContent))"),"A paid order offered no shipment action");
+    await until(()=>evaluate("!!document.querySelector('section[aria-label=\"Pack order\"]')"),"A paid order offered no pack panel");
     const customerStatus=await(await fetch(origin+"/api/cart/checkout/status",{method:"POST",headers:{cookie:"grmn-auth.session_token="+customerCookie,origin,"content-type":"application/json"},body:JSON.stringify({orderId:placedOrders[0].id})})).json();
     assert.equal(customerStatus.paymentStatus,"paid",JSON.stringify(customerStatus));assert.equal(customerStatus.paymentInstructions,null);
     console.log("PASS O07 manual payment: staff-edited instructions on the receipt, admin confirmation with method and reference, order paid through the capture path and shippable");
@@ -1328,12 +1479,18 @@ try{
     // Task 3.3: demo checkout end to end (an independent block).
     await demoOrderScenario({pool:database.pool,origin,send,evaluate,navigate,text,click,setInput,until,staffCookie,customerId,liveOrderNumber:placedOrders[0].order_number,receipt,
       customerCookie:()=>send("Network.setCookie",{name:"grmn-auth.session_token",value:customerCookie,url:origin,httpOnly:true,sameSite:"Lax"})});
-    console.log("PASS Task3.3 demo checkout: Pay with one neutral no-payment line and no demo wording, a setting change between review and pay refetches the method both ways, candy-blue dot on the receipt and in the account, admin Demo filter with badge, dispatched and delivered");
+    console.log("PASS Task3.3 demo checkout: Pay with one neutral no-payment line and no demo wording, a setting change between review and pay refetches the method both ways, candy-blue dot on the receipt and in the account, admin Demo filter with Demo tags, packed with a serial, shipped and delivered on the board");
   };
   const onlyAdminShots=process.env.CMS_SMOKE_ONLY==="admin-shots",onlyVariantContent=process.env.CMS_SMOKE_ONLY==="variant-content",onlyVariantSwitch=process.env.CMS_SMOKE_ONLY==="variant-switch",onlyDashboard=process.env.CMS_SMOKE_ONLY==="dashboard"||onlyAdminShots,onlyCompare=process.env.CMS_SMOKE_ONLY==="compare",onlyCategories=process.env.CMS_SMOKE_ONLY==="categories";
   const onlyHomepageArchive=process.env.CMS_SMOKE_ONLY==="homepage-archive";
   const onlyVariantDelete=process.env.CMS_SMOKE_ONLY==="variant-delete";
   const onlyTraffic=process.env.CMS_SMOKE_ONLY==="traffic";
+  const onlyOrders=process.env.CMS_SMOKE_ONLY==="orders";
+  if(onlyOrders){
+    await ordersBoardScenario({database,runtime,secret,origin,send,evaluate,navigate,text,staffCookieValue:cookie,receipt});
+    console.log("PASS orders: three demo orders under New with Paid pills; packed from the card with a watch serial and a band tick, shipped and delivered on the board; serial stored and found by search; List, Archive and mobile board render");
+    console.log("Browser smoke passed (CMS_SMOKE_ONLY=orders): only the orders block ran.");
+  }
   if(onlyTraffic){
     await trafficScenario({pool:database.pool,origin,send,evaluate,navigate,text,staffCookieValue:cookie,receipt});
     console.log("PASS traffic: campaign link built in admin, visitor click recorded under Instagram ▸ story ▸ smoke-test, product view with its id and a client-side navigation in the same visit, cookie notice once, staff browsing not counted; Traffic and Campaign links show it");
@@ -1351,9 +1508,9 @@ try{
     console.log("PASS categories: subcategory created with a Russian name shows in the /ru menu, hidden and gone from the menu, deleted with the bin; square status badge; no horizontal scroll at 390 px");
     console.log("Browser smoke passed (CMS_SMOKE_ONLY=categories): only the categories block ran.");
   }
-  if(!onlyCategories&&!onlyTraffic&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare)await fullSuite();
+  if(!onlyCategories&&!onlyTraffic&&!onlyOrders&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare)await fullSuite();
 
-  if(!onlyCategories&&!onlyTraffic&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
+  if(!onlyCategories&&!onlyTraffic&&!onlyOrders&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
   // Task 2.3: per-variant content in the product editor (independent blocks; staff session).
   await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
   await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
@@ -1368,36 +1525,36 @@ try{
   }
 
   // Task 2.4: the storefront variant switch (independent block: its own published product).
-  if(!onlyCategories&&!onlyTraffic&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyDashboard&&!onlyCompare){
+  if(!onlyCategories&&!onlyTraffic&&!onlyOrders&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyDashboard&&!onlyCompare){
     await variantSwitchScenario({cms,headers,origin,send,evaluate,navigate,text,receipt});
     console.log("PASS Task2.4 variant switch: 47 -> 51 mm swaps Specs, In the box and Overview with no document navigation, address moves to /p/{code}/{sku}, reload and server render show 51 mm, own canonical, unknown SKU 404");
   }
 
   // Task C-e: the compare flow (an independent block: its own published products; CMS_SMOKE_ONLY=compare runs only this).
-  if(!onlyCategories&&!onlyTraffic&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard){
+  if(!onlyCategories&&!onlyTraffic&&!onlyOrders&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard){
     await compareScenario({cms,headers,send,evaluate,navigate,text,receipt});
     console.log("PASS C-e compare: catalogue compare mode, 2 cards added (aria-pressed, 2 slots, Compare disabled at 1), kept on reload; comparison with grouped specs and an empty cell; 47 -> 51 mm changes specs, price and URL item with no document load; only differences with diff=1 across a reload; group collapse; compact bar on scroll; column removal; PDP adds the 51 mm SKU; /ru/compare Russian headings with no hydration warning; Z to A sort");
   }
 
   // Task 4.2: the PostgreSQL dashboard (an independent block; CMS_SMOKE_ONLY=dashboard runs only this).
-  if(!onlyCategories&&!onlyTraffic&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyCompare){await dashboardScenario({pool:database.pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue:cookie,receipt,alone:onlyDashboard});
+  if(!onlyCategories&&!onlyTraffic&&!onlyOrders&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyCompare){await dashboardScenario({pool:database.pool,runtime,secret,origin,send,evaluate,navigate,text,click,staffCookieValue:cookie,receipt,alone:onlyDashboard});
   console.log("PASS Task4.2 dashboard: one demo order via checkout; Demo revenue > 0 and Revenue only real money, the order in Recent orders linking to its detail, its product under Best-sellers > Demo only, empty range says so; screenshot saved");}
   // Owner 2026-11-22: Admin ▸ Categories (also CMS_SMOKE_ONLY=categories, above).
-  if(!onlyCategories&&!onlyTraffic&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
+  if(!onlyCategories&&!onlyTraffic&&!onlyOrders&&!onlyHomepageArchive&&!onlyVariantDelete&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare){
     await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
     await categoriesScenario({pool:database.pool,send,evaluate,navigate,text,click,receipt});
     console.log("PASS categories: subcategory created with a Russian name shows in the /ru menu, hidden and gone from the menu, deleted with the bin; square status badge; no horizontal scroll at 390 px");
   }
   // Owner 2026-11-23: homepage archive / delete / PC upload / merged card (also CMS_SMOKE_ONLY=homepage-archive).
-  if(!onlyTraffic&&(onlyHomepageArchive||(!onlyVariantDelete&&!onlyCategories&&!onlyTraffic&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare&&!onlyAdminShots))){
+  if(!onlyTraffic&&!onlyOrders&&(onlyHomepageArchive||(!onlyVariantDelete&&!onlyCategories&&!onlyTraffic&&!onlyOrders&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare&&!onlyAdminShots))){
     await send("Network.deleteCookies",{name:"grmn-auth.session_token",url:origin});
     await send("Network.setCookie",{name:"grmn-auth.session_token",value:cookie,url:origin,httpOnly:true,sameSite:"Lax"});
     await homepageArchiveScenario({cms,headers,origin,send,evaluate,navigate,text,click,receipt});
     console.log("PASS homepage-archive: banner and category tile archived, card deleted, banner image uploaded from the PC (non-image refused with an error), storefront hides archived entries and shows the merged card price and button, Restore brings the banner back; no horizontal scroll at 390 px");
   }
   // Owner 2026-11-25: traffic analytics (also CMS_SMOKE_ONLY=traffic, above).
-  if(!onlyTraffic&&!onlyVariantDelete&&!onlyCategories&&!onlyHomepageArchive&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare&&!onlyAdminShots){
+  if(!onlyTraffic&&!onlyOrders&&!onlyVariantDelete&&!onlyCategories&&!onlyHomepageArchive&&!onlyVariantContent&&!onlyVariantSwitch&&!onlyDashboard&&!onlyCompare&&!onlyAdminShots){
     await trafficScenario({pool:database.pool,origin,send,evaluate,navigate,text,staffCookieValue:cookie,receipt});
     console.log("PASS traffic: campaign link click attributed to Instagram ▸ story ▸ smoke-test, product view and client-side navigation in one visit, staff excluded");
   }
@@ -1406,7 +1563,7 @@ try{
   assert.equal(hash(),before,"Task08 must not write the JSON source");
   if(onlyHomepageArchive)console.log("Browser smoke passed (CMS_SMOKE_ONLY=homepage-archive): only the homepage archive block ran.");
   else if(onlyVariantDelete){}
-  else if(!onlyCategories&&!onlyTraffic)console.log(onlyCompare
+  else if(!onlyCategories&&!onlyTraffic&&!onlyOrders)console.log(onlyCompare
     ?"Browser smoke passed (CMS_SMOKE_ONLY=compare): only the C-e compare block ran; the rest of the suite was skipped."
     :onlyDashboard
     ?"Browser smoke passed (CMS_SMOKE_ONLY=dashboard): only the Task 4.2 dashboard block ran; the rest of the suite was skipped."

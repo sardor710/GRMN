@@ -3,6 +3,7 @@
 // Session-owned customer account (Task 10C). Every record shown here comes from /api/account/*
 // for the signed-in session; nothing is seeded, selected by email or faked on failure.
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { OrderTracker } from "@/components/account/OrderTracker";
 import { Check, Plus, Trash2, Edit3, X, AlertCircle, Lock, KeyRound, Package, ChevronRight, Phone, Loader2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { AccountIcon } from "@/components/icons";
@@ -47,10 +48,6 @@ const errorMessage = (error: unknown) => error instanceof Error && error.message
 const statusOf = (error: unknown) => error instanceof AccountRequestError ? error.status : -1;
 const cleanPhone = (value: string) => value.replace(/[\s()-]/g, "");
 const E164 = /^[+][1-9][0-9]{7,14}$/;
-const statusTone = (status: string) => status === "delivered" ? "bg-emerald-50 text-emerald-800 border-emerald-300"
-  : status === "shipped" ? "bg-sky-50 text-sky-800 border-sky-300"
-  : status === "processing" || status === "new" ? "bg-amber-50 text-amber-800 border-amber-300"
-  : "bg-neutral-100 text-neutral-800 border-neutral-300";
 // garmin.com form and button primitives (Forms.spec.md, Buttons.spec.md; Task 5a.2 .g-* classes).
 const inputClass = "g-input disabled:bg-muted";
 const labelClass = "g-label text-black";
@@ -93,6 +90,9 @@ export function AccountDashboard() {
   };
   /** Order/payment status values are API enums; known ones have a message, others show as sent. */
   const statusLabel = (value: string) => (t.has(`status.${value}`) ? t(`status.${value}`) : value);
+  // Owner 2026-11-25: the order tracker and translated order updates (event type a.b → key events.a_b).
+  const trackerLabels = { ordered: t("tracker.ordered"), packed: t("tracker.packed"), shipped: t("tracker.shipped"), delivered: t("tracker.delivered"), cancelled: t("tracker.cancelled"), cancelledNote: t("tracker.cancelledNote"), progress: t("tracker.progress") };
+  const eventLabel = (event: { type: string; label: string }) => { const key = `events.${event.type.replace(/\./g, "_")}`; return t.has(key) ? t(key) : event.label; };
   const client = useMemo(() => { const fetcher: AccountFetcher = (url, init) => fetch(url, init); return createAccountClient(fetcher); }, []);
 
   const [phase, setPhase] = useState<Phase>("loading");
@@ -734,7 +734,6 @@ export function AccountDashboard() {
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="bg-black px-2 py-0.5 text-xs font-bold text-white">{orders[0].orderNumber}</span>
                           {isNoPayment(orders[0].paymentMode) && <DemoDot label={t("demoBadge")} />}
-                          <span className={`border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusTone(orders[0].fulfillmentStatus)}`}>{statusLabel(orders[0].fulfillmentStatus)}</span>
                         </div>
                         <p className="mt-0.5 text-[12px] text-neutral-500">
                           {t("recent.placed", { date: formatDate(orders[0].createdAt) })} · {t("items", { count: orders[0].itemsCount })}{primaryAddress ? ` · ${t("recent.primaryAddress", { label: primaryAddress.label })}` : ""}
@@ -743,6 +742,7 @@ export function AccountDashboard() {
                     </div>
                     <span className="g-heading text-lg font-bold text-black">{formatKztLocal(orders[0].total)}</span>
                   </button>
+                  {orders[0].stage && <div className="mt-3 px-1"><OrderTracker compact stage={orders[0].stage} labels={trackerLabels} /></div>}
                 </Card>
               )}
             </>
@@ -764,11 +764,11 @@ export function AccountDashboard() {
                             <span className="font-mono text-xs text-neutral-500">{t("orders.placedOn", { date: formatDate(order.createdAt) })}</span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={`border px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider ${statusTone(order.fulfillmentStatus)}`}>{statusLabel(order.fulfillmentStatus)}</span>
                             <span className="border border-neutral-300 bg-neutral-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-neutral-700">{statusLabel(order.paymentStatus)}</span>
                             <ChevronRight className="h-4 w-4 text-garmin-blue" />
                           </div>
                         </div>
+                        {order.stage && <div className="pt-4 pb-1"><OrderTracker compact stage={order.stage} labels={trackerLabels} /></div>}
                         <div className="flex flex-col justify-between gap-2 pt-3 sm:flex-row sm:items-center">
                           <span className="text-[13px] text-neutral-600">{t("items", { count: order.itemsCount })}</span>
                           <span><span className="mr-2 text-xs text-garmin-text-muted">{t("orders.total")}</span><span className="g-heading text-lg font-bold text-black">{formatKztLocal(order.total)}</span></span>
@@ -864,10 +864,14 @@ export function AccountDashboard() {
               <div className="space-y-5 text-[13px] text-neutral-700">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="font-mono text-xs text-neutral-500">{t("orders.placedOn", { date: formatDate(orderDetail.createdAt) })}</span>
-                  <span className={`border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${statusTone(orderDetail.fulfillmentStatus)}`}>{statusLabel(orderDetail.fulfillmentStatus)}</span>
                   <span className="border border-neutral-300 bg-neutral-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-neutral-700">{statusLabel(orderDetail.paymentStatus)}</span>
                   {isNoPayment(orderDetail.paymentMode) && <DemoDot label={t("demoBadge")} />}
                 </div>
+                {orderDetail.stage && (
+                  <div className="border border-neutral-200 bg-neutral-50/60 px-3 py-4">
+                    <OrderTracker stage={orderDetail.stage} dates={orderDetail.stageDates} labels={trackerLabels} formatDate={formatDate} />
+                  </div>
+                )}
                 {isNoPayment(orderDetail.paymentMode) && <p className="text-xs text-neutral-500">{t("demoNote")}</p>}
                 {orderDetail.dataQuality !== "complete" && <p className="border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900">{t("order.legacy")}</p>}
                 <ul className="divide-y divide-neutral-100 border border-neutral-200">
@@ -875,6 +879,7 @@ export function AccountDashboard() {
                     <li key={item.id} className="flex items-center justify-between gap-3 p-3">
                       <div>
                         <p className="font-semibold text-black">{item.name}</p>
+                        {(item.serials?.length ?? 0) > 0 && <p className="font-mono text-[11px] text-black">{t("order.serial", { serials: item.serials.join(", ") })}</p>}
                         <p className="font-mono text-[11px] text-neutral-500">{t("order.lineDetail", { quantity: item.quantity, price: formatKztLocal(item.unitPrice) })}{Object.entries(item.options).map(([key, value]) => ` · ${key}: ${value}`).join("")}</p>
                       </div>
                       <span className="font-semibold text-black">{formatKztLocal(item.total)}</span>
@@ -898,7 +903,7 @@ export function AccountDashboard() {
                   <div>
                     <h4 className="text-[14px] font-bold text-black">{t("order.updates")}</h4>
                     <ol className="mt-1 space-y-1">
-                      {orderDetail.events.map(event => <li key={event.id} className="flex justify-between gap-3"><span>{event.label}</span><span className="font-mono text-[11px] text-neutral-500">{formatDate(event.occurredAt)}</span></li>)}
+                      {orderDetail.events.map(event => <li key={event.id} className="flex justify-between gap-3"><span>{eventLabel(event)}</span><span className="font-mono text-[11px] text-neutral-500">{formatDate(event.occurredAt)}</span></li>)}
                     </ol>
                   </div>
                 )}

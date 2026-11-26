@@ -956,7 +956,8 @@
       "shipments": "Жөнелтілімдер",
       "item": "тауар",
       "delivered": "{date} жеткізілді",
-      "shipped": "{date} жөнелтілді"
+      "shipped": "{date} жөнелтілді",
+      "serial": "Сериялық нөмір: {serials}"
     },
     "addressForm": {
       "editLabel": "Жеткізу мекенжайын өзгерту",
@@ -989,10 +990,34 @@
       "pending": "төлемді күтуде",
       "unpaid": "төленбеген",
       "refunded": "қаражат қайтарылды",
-      "failed": "төлем қатесі"
+      "failed": "төлем қатесі",
+      "partially_shipped": "Ішінара жіберілді",
+      "exception": "Тоқтатылды"
     },
     "demoBadge": "Төлемсіз",
-    "demoNote": "Бұл тапсырыс үшін төлем алынбайды."
+    "demoNote": "Бұл тапсырыс үшін төлем алынбайды.",
+    "tracker": {
+      "ordered": "Рәсімделді",
+      "packed": "Қапталды",
+      "shipped": "Жіберілді",
+      "delivered": "Жеткізілді",
+      "cancelled": "Бас тартылды",
+      "cancelledNote": "Бұл тапсырыстан бас тартылды.",
+      "progress": "Тапсырыс күйі"
+    },
+    "events": {
+      "order_placed": "Тапсырыс рәсімделді",
+      "order_confirmed": "Тапсырыс расталды",
+      "order_cancelled": "Тапсырыстан бас тартылды",
+      "payment_paid": "Төлем алынды",
+      "order_paid": "Төлем алынды",
+      "order_expired": "Тапсырыс мерзімі өтті",
+      "order_reinstated": "Тапсырыс қалпына келтірілді",
+      "refund_succeeded": "Ақша қайтарылды",
+      "fulfillment_packed": "Қапталды",
+      "fulfillment_shipped": "Жіберілді",
+      "fulfillment_delivered": "Жеткізілді"
+    }
   },
   "Checkout": {
     "fields": {

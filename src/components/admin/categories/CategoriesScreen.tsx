@@ -19,7 +19,7 @@ import { CategoryNameDialog, DeleteBlockedDialog, PlacementDialog, type NameValu
 
 type Tab = "menu" | "accessories" | "series";
 type Dialog =
-  | { type: "name"; title: string; initial?: { name: LocalName; navVisible: boolean }; showVisibility: boolean; fixedLink?: string | null; emptyHint?: string; note?: string; save: (values: NameValues) => Promise<void> }
+  | { type: "name"; title: string; initial?: { name: LocalName; navVisible: boolean; serialPolicy?: "required" | "none" | null }; showVisibility: boolean; fixedLink?: string | null; emptyHint?: string; note?: string; save: (values: NameValues) => Promise<void> }
   | { type: "blocked"; name: string; counts: CategoryUsage }
   | { type: "placements"; node: AdminNode }
   | { type: "heading"; title: string; initial?: { heading?: MenuText; column: number }; products?: boolean; save: (values: HeadingValues) => Promise<void> }
@@ -126,8 +126,9 @@ export function CategoriesScreen() {
   }, [tree, reload]);
 
   const rename = (node: AdminNode, showVisibility: boolean, fixedLink?: string | null) => setDialog({
-    type: "name", title: `Edit “${node.name.en}”`, initial: { name: node.name, navVisible: node.navVisible }, showVisibility, fixedLink,
-    save: (values) => act(epoch => categoryApi.update(epoch, node.key, { name: { en: values.en, ru: values.ru, kk: values.kk }, ...(showVisibility ? { navVisible: values.navVisible } : {}) }), { fromDialog: true }),
+    type: "name", title: `Edit “${node.name.en}”`, initial: { name: node.name, navVisible: node.navVisible, serialPolicy: node.serialPolicy }, showVisibility, fixedLink,
+    save: (values) => act(epoch => categoryApi.update(epoch, node.key, { name: { en: values.en, ru: values.ru, kk: values.kk }, ...(showVisibility ? { navVisible: values.navVisible } : {}),
+      ...(values.serialPolicy !== node.serialPolicy ? { serialPolicy: values.serialPolicy } : {}) }), { fromDialog: true }),
   });
   const create = (title: string, section: "menu" | "menu-child" | "accessory" | "accessory-type" | "series", parentKey?: string, showVisibility = false) => setDialog({
     type: "name", title, showVisibility,

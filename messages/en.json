@@ -956,7 +956,8 @@
       "shipments": "Shipments",
       "item": "item",
       "delivered": "Delivered {date}",
-      "shipped": "Shipped {date}"
+      "shipped": "Shipped {date}",
+      "serial": "Serial number: {serials}"
     },
     "addressForm": {
       "editLabel": "Edit shipping address",
@@ -989,10 +990,34 @@
       "pending": "pending",
       "unpaid": "unpaid",
       "refunded": "refunded",
-      "failed": "failed"
+      "failed": "failed",
+      "partially_shipped": "Partly shipped",
+      "exception": "On hold"
     },
     "demoBadge": "No payment taken",
-    "demoNote": "No payment is taken for this order."
+    "demoNote": "No payment is taken for this order.",
+    "tracker": {
+      "ordered": "Ordered",
+      "packed": "Packed",
+      "shipped": "Shipped",
+      "delivered": "Delivered",
+      "cancelled": "Cancelled",
+      "cancelledNote": "This order was cancelled.",
+      "progress": "Order progress"
+    },
+    "events": {
+      "order_placed": "Order placed",
+      "order_confirmed": "Order confirmed",
+      "order_cancelled": "Order cancelled",
+      "payment_paid": "Payment received",
+      "order_paid": "Payment received",
+      "order_expired": "Order expired",
+      "order_reinstated": "Order reinstated",
+      "refund_succeeded": "Refund issued",
+      "fulfillment_packed": "Packed",
+      "fulfillment_shipped": "Shipped",
+      "fulfillment_delivered": "Delivered"
+    }
   },
   "Checkout": {
     "fields": {

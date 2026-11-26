@@ -9,6 +9,8 @@ import type { Permission, Principal } from "../context.ts";
 import { AuthFailure } from "../auth/config.ts";
 import { withInventoryTransaction } from "../inventory/reservations.ts";
 import { readRefunds, readReturns } from "./aftersales.ts";
+import { resolveSerialRequirements, setProductSerialPolicy, type SerialDecision, type SerialPolicy } from "./serial-policy.ts";
+import { BOARD_COLUMNS, BOARD_PERIODS, BOARD_STAGES, boardWhere, STAGE, type BoardColumns, type BoardStage } from "./board.ts";
 
 // Task 16A. Permissioned, versioned manual fulfillment (D04: staff ship themselves).
 //
@@ -40,24 +42,55 @@ const money = (amountMinor: string): Money => ({ amountMinor, currency: "KZT" })
 const key = z.string().regex(/^[A-Za-z0-9_.:-]{8,128}$/);
 const short = z.string().trim().min(1).max(120);
 const note = z.string().trim().min(1).max(1000);
+const serialText = z.string().trim().min(1).max(64);
 const createInput = z.strictObject({
   orderId: z.string().regex(UUID), expectedOrderVersion: z.number().int().min(1), idempotencyKey: key,
   lines: z.array(z.strictObject({ orderItemId: z.string().regex(UUID), quantity: z.number().int().min(1).max(10000) })).min(1).max(100),
   carrier: short.optional(), trackingReference: short.optional(), internalNote: note.optional(),
-}).refine(value => new Set(value.lines.map(line => line.orderItemId.toLowerCase())).size === value.lines.length);
+  // 0030 (owner 2026-11-25): one serial per unit packed; required for every serial-required product in the lines.
+  serials: z.array(z.strictObject({ orderItemId: z.string().regex(UUID), units: z.array(serialText).max(10000) })).max(100).optional(),
+}).refine(value => new Set(value.lines.map(line => line.orderItemId.toLowerCase())).size === value.lines.length)
+  .refine(value => {
+    if (!value.serials) return true;
+    const quantities = new Map(value.lines.map(line => [line.orderItemId.toLowerCase(), line.quantity]));
+    const ids = value.serials.map(entry => entry.orderItemId.toLowerCase());
+    return new Set(ids).size === ids.length && value.serials.every(entry => (quantities.get(entry.orderItemId.toLowerCase()) ?? -1) >= entry.units.length);
+  });
 const updateInput = z.strictObject({
   shipmentId: z.string().regex(UUID), expectedVersion: z.number().int().min(1), idempotencyKey: key,
   action: z.enum(["dispatch", "deliver", "cancel", "annotate"]),
   carrier: short.optional(), trackingReference: short.optional(), internalNote: note.optional(),
 }).refine(value => value.action !== "annotate" || value.carrier !== undefined || value.trackingReference !== undefined || value.internalNote !== undefined);
+// 0030: replace one item's serials on a ready (packed) shipment; units.length = the item's quantity in it, or 0 when
+// the product needs no serial.
+const serialsInput = z.strictObject({
+  shipmentId: z.string().regex(UUID), expectedVersion: z.number().int().min(1), idempotencyKey: key,
+  action: z.literal("set_serials"), orderItemId: z.string().regex(UUID), units: z.array(serialText).max(10000),
+});
+// 0030: the product editor's "Serial number at packing" setting (null = automatic, from categories).
+const productSerialInput = z.strictObject({ productId: z.string().regex(UUID), policy: z.enum(["required", "none"]).nullable() });
+export interface ProductSerialDTO { productId: string; policy: SerialPolicy | null; decision: SerialDecision }
 const listInput = z.strictObject({
   fulfillmentStatus: z.enum(FULFILLMENT_STATUSES).optional(),
   // Task 3.3: "demo" lists only demo-checkout orders (to find and cancel stray ones), "live" only real ones.
   // "demo" lists both demo kinds (Task 3.2 demo checkout and D03a sandbox demo purchases); "sandbox" only the latter.
   paymentMode: z.enum(["demo", "live", "sandbox"]).optional(),
   cursor: z.string().regex(/^[A-Za-z0-9_-]{1,200}$/).optional(),
-  limit: z.coerce.number().int().min(1).max(100).optional(),
-});
+  limit: z.coerce.number().int().min(1).max(200).optional(),
+  // Owner 2026-11-25 board (board.ts).
+  view: z.enum(["active", "archive"]).optional(),
+  period: z.enum(BOARD_PERIODS).optional(),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  q: z.string().trim().min(1).max(80).optional(),
+  stage: z.enum(BOARD_STAGES).optional(),
+}).refine(value => value.period !== "custom" || (value.from !== undefined && value.to !== undefined && validRange(value.from, value.to)))
+  .refine(value => value.period === "custom" || (value.from === undefined && value.to === undefined));
+/** A real calendar range, from <= to, at most 366 days. */
+function validRange(from: string, to: string): boolean {
+  const a = Date.parse(from + "T00:00:00Z"), b = Date.parse(to + "T00:00:00Z");
+  return Number.isFinite(a) && Number.isFinite(b) && new Date(a).toISOString().startsWith(from) && new Date(b).toISOString().startsWith(to) && a <= b && b - a <= 366 * 86400000;
+}
 
 function parse<T>(schema: z.ZodType<T>, value: unknown): T {
   const result = schema.safeParse(value);
@@ -112,19 +145,24 @@ export async function lockOrder(client: PoolClient, orderId: string): Promise<Or
   return (await client.query<OrderRow>(`SELECT ${ORDER_COLUMNS} FROM orders o WHERE o.id=$1`, [orderId])).rows[0];
 }
 
-async function shipmentItems(client: PoolClient | Pool, shipmentIds: string[]): Promise<Map<string, { orderItemId: string; quantity: number }[]>> {
-  const map = new Map<string, { orderItemId: string; quantity: number }[]>();
+type ShipmentLine = ShipmentDTO["items"][number];
+async function shipmentItems(client: PoolClient | Pool, shipmentIds: string[], withSerials = false): Promise<Map<string, ShipmentLine[]>> {
+  const map = new Map<string, ShipmentLine[]>();
   if (!shipmentIds.length) return map;
-  const rows = (await client.query<{ shipment_id: string; order_item_id: string; quantity: string }>(
-    "SELECT shipment_id,order_item_id,sum(quantity)::text AS quantity FROM shipment_items WHERE shipment_id=ANY($1::uuid[]) GROUP BY shipment_id,order_item_id ORDER BY order_item_id", [shipmentIds])).rows;
+  const rows = (await client.query<{ shipment_id: string; order_item_id: string; quantity: string; serials: { id: string; serial: string; returned: boolean }[] }>(
+    `SELECT i.shipment_id,i.order_item_id,sum(i.quantity)::text AS quantity,
+       COALESCE((SELECT json_agg(json_build_object('id',u.id,'serial',u.serial,'returned',COALESCE(r.status IN ('received','inspected','closed'),false)) ORDER BY u.shipment_item_id,u.unit_index)
+         FROM order_unit_serials u JOIN shipment_items x ON x.id=u.shipment_item_id LEFT JOIN return_items ri ON ri.id=u.return_item_id LEFT JOIN returns r ON r.id=ri.return_id
+         WHERE x.shipment_id=i.shipment_id AND x.order_item_id=i.order_item_id),'[]'::json) AS serials
+     FROM shipment_items i WHERE i.shipment_id=ANY($1::uuid[]) GROUP BY i.shipment_id,i.order_item_id ORDER BY i.order_item_id`, [shipmentIds])).rows;
   for (const row of rows) {
     const list = map.get(row.shipment_id) ?? [];
-    list.push({ orderItemId: row.order_item_id, quantity: Number(row.quantity) });
+    list.push({ orderItemId: row.order_item_id, quantity: Number(row.quantity), ...(withSerials ? { serials: row.serials } : {}) });
     map.set(row.shipment_id, list);
   }
   return map;
 }
-function shipmentDTO(row: ShipmentRow, items: { orderItemId: string; quantity: number }[], staffDetail: boolean): ShipmentDTO {
+function shipmentDTO(row: ShipmentRow, items: ShipmentLine[], staffDetail: boolean): ShipmentDTO {
   return {
     id: row.id, status: row.status, version: row.version,
     carrier: staffDetail ? row.carrier : null, trackingReference: staffDetail ? row.tracking_reference : null, internalNotes: staffDetail ? row.internal_notes : null,
@@ -134,7 +172,7 @@ function shipmentDTO(row: ShipmentRow, items: { orderItemId: string; quantity: n
 }
 async function readShipment(client: PoolClient, shipmentId: string): Promise<ShipmentDTO> {
   const row = (await client.query<ShipmentRow>(`SELECT ${SHIPMENT_COLUMNS} FROM shipments WHERE id=$1`, [shipmentId])).rows[0] ?? notFound();
-  return shipmentDTO(row, (await shipmentItems(client, [shipmentId])).get(shipmentId) ?? [], true);
+  return shipmentDTO(row, (await shipmentItems(client, [shipmentId], true)).get(shipmentId) ?? [], true);
 }
 
 /** Derives the order's fulfillment status from its shipments; an exception is never overwritten. */
@@ -179,6 +217,57 @@ async function priorAction(client: PoolClient, dedupeKey: string, hash: string):
   return prior.payload.shipmentId!;
 }
 
+// ---------------------------------------------------------------- serials (0030, owner 2026-11-25)
+/** The serial key the database stores: upper case, no whitespace (same as order_unit_serials.serial_key). */
+
+/** 409 SERIALS_REQUIRED unless every serial-required item has one serial per unit in `unitsByItem`. */
+async function requireSerials(client: PoolClient, lines: { orderItemId: string; quantity: number }[], unitsByItem: Map<string, string[]>): Promise<void> {
+  const items = (await client.query<{ id: string; product_id: string | null; name: string }>("SELECT id,product_id,name FROM order_items WHERE id=ANY($1::uuid[])", [lines.map(line => line.orderItemId)])).rows;
+  const decisions = await resolveSerialRequirements(client, items.flatMap(item => item.product_id ? [item.product_id] : []));
+  const missing = lines.flatMap(line => {
+    const item = items.find(row => row.id === line.orderItemId);
+    // An item whose product is gone is treated as a device (the safe side).
+    const required = item?.product_id ? decisions.get(item.product_id)?.required ?? true : true;
+    return required && (unitsByItem.get(line.orderItemId)?.length ?? 0) !== line.quantity ? [item?.name ?? line.orderItemId] : [];
+  });
+  if (missing.length) fail("SERIALS_REQUIRED", 409, `Enter a serial number for every unit of: ${missing.join(", ")}`);
+}
+
+/**
+ * Locks the serial keys (sorted, so two packers never deadlock) and refuses a duplicate in the request or a serial
+ * still active on another unit. Active = its shipment is not cancelled and it is not on a return that was received.
+ * `ownShipmentItemIds` are lines whose serials are being replaced, so their current rows don't count.
+ */
+async function claimSerials(client: PoolClient, serials: string[], ownShipmentItemIds: string[]): Promise<void> {
+  // The database's grmn_serial_key is the only definition of "the same serial" (stored key, this check, search).
+  const keys = serials.length ? (await client.query<{ k: string | null }>("SELECT grmn_serial_key(raw) AS k FROM unnest($1::text[]) WITH ORDINALITY AS t(raw,ord) ORDER BY ord", [serials])).rows.map(row => row.k ?? "") : [];
+  const seen = new Set<string>();
+  for (const [index, k] of keys.entries()) {
+    if (!k) invalid();
+    if (seen.has(k)) fail("SERIAL_DUPLICATE", 409, `Serial ${serials[index]} is entered twice`);
+    seen.add(k);
+  }
+  for (const k of [...seen].sort()) await client.query("SELECT pg_advisory_xact_lock(hashtextextended('grmn:serial:' || $1, 0))", [k]);
+  if (!seen.size) return;
+  const taken = (await client.query<{ serial: string; order_number: string }>(`
+    SELECT u.serial, o.order_number FROM order_unit_serials u
+      JOIN shipment_items si ON si.id = u.shipment_item_id JOIN shipments s ON s.id = si.shipment_id JOIN orders o ON o.id = u.order_id
+      LEFT JOIN return_items ri ON ri.id = u.return_item_id LEFT JOIN returns r ON r.id = ri.return_id
+    WHERE u.serial_key = ANY($1::text[]) AND s.status <> 'cancelled' AND COALESCE(r.status, '') NOT IN ('received', 'inspected', 'closed')
+      AND NOT (u.shipment_item_id = ANY($2::uuid[]))
+    ORDER BY u.serial LIMIT 1`, [[...seen], ownShipmentItemIds])).rows[0];
+  if (taken) fail("SERIAL_IN_USE", 409, `Serial ${taken.serial} is already on order ${taken.order_number}`);
+}
+
+type SummaryRow = { id: string; order_number: string; shown_at: Date; order_status: OrderStatus; payment_status: PaymentStatus; fulfillment_status: FulfillmentStatus; payment_mode: AdminOrderSummaryDTO["paymentMode"]; data_quality: "complete" | "legacy_incomplete"; total_minor: string; items_count: number; contact_name: string } & BoardColumns;
+function summary(row: SummaryRow): AdminOrderSummaryDTO {
+  return {
+    id: row.id, orderNumber: row.order_number, placedAt: row.shown_at.toISOString(), status: row.order_status, paymentStatus: row.payment_status, fulfillmentStatus: row.fulfillment_status,
+    paymentMode: row.payment_mode, dataQuality: row.data_quality, total: money(row.total_minor), itemsCount: row.items_count, contactName: row.contact_name,
+    stage: row.stage, archived: row.archived, paymentPill: row.payment, legacy: row.legacy, itemNames: row.item_names, deliveredAt: row.delivered_at ? new Date(row.delivered_at).toISOString() : null,
+  };
+}
+
 const encodeCursor = (at: Date, id: string) => Buffer.from(`${at.toISOString()}|${id}`).toString("base64url");
 function decodeCursor(cursor: string): { at: Date; id: string } {
   const [at, id, extra] = Buffer.from(cursor, "base64url").toString("utf8").split("|");
@@ -201,29 +290,44 @@ export async function inTransaction<T>(pool: Pool, work: (client: PoolClient) =>
 interface Options { pool: Pool; authorize: (headers: Headers, permission: Permission) => Promise<Principal> }
 
 export function createFulfillmentService({ pool, authorize }: Options) {
-  return {
-    /** Staff order queue, newest first, optionally by fulfillment status and payment mode. Keyset-paged. */
-    async listOrders(headers: Headers, input: unknown): Promise<{ items: AdminOrderSummaryDTO[]; nextCursor: string | null }> {
+  const service = {
+    /**
+     * Staff order board and list, newest first: active or archived orders (a search covers both), by period, stage,
+     * fulfillment status and payment mode. Keyset-paged; `counts` per column for the active view without a search.
+     */
+    async listOrders(headers: Headers, input: unknown): Promise<{ items: AdminOrderSummaryDTO[]; nextCursor: string | null; counts: Record<BoardStage, number> | null }> {
       await authorize(headers, "orders:read");
       const query = parse(listInput, input ?? {});
-      const limit = query.limit ?? PAGE_LIMIT, args: unknown[] = [limit + 1];
-      let where = "";
-      if (query.fulfillmentStatus) { args.push(query.fulfillmentStatus); where += ` AND o.fulfillment_status=$${args.length}`; }
-      if (query.paymentMode) { args.push(query.paymentMode === "demo" ? ["demo", "sandbox"] : [query.paymentMode]); where += ` AND o.payment_mode=ANY($${args.length}::text[])`; }
+      const limit = query.limit ?? PAGE_LIMIT;
+      const filter = { view: query.view, period: query.period, from: query.from, to: query.to, q: query.q, stage: query.stage };
+      // Filters shared by the page and the column counts; built once per argument list so placeholders line up.
+      const shared = (args: unknown[], withStage: boolean) => {
+        let where = "";
+        if (query.fulfillmentStatus) { args.push(query.fulfillmentStatus); where += ` AND o.fulfillment_status=$${args.length}`; }
+        if (query.paymentMode) { args.push(query.paymentMode === "demo" ? ["demo", "sandbox"] : [query.paymentMode]); where += ` AND o.payment_mode=ANY($${args.length}::text[])`; }
+        return where + boardWhere(filter, args, withStage);
+      };
+      const args: unknown[] = [limit + 1];
+      let where = shared(args, true);
       if (query.cursor) {
         const cursor = decodeCursor(query.cursor);
         args.push(cursor.at, cursor.id);
         where += ` AND (COALESCE(o.placed_at,o.created_at),o.id)<($${args.length - 1},$${args.length})`;
       }
-      const rows = (await pool.query<{ id: string; order_number: string; shown_at: Date; order_status: OrderStatus; payment_status: PaymentStatus; fulfillment_status: FulfillmentStatus; payment_mode: AdminOrderSummaryDTO["paymentMode"]; data_quality: "complete" | "legacy_incomplete"; total_minor: string; items_count: number; contact_name: string }>(
+      const rows = (await pool.query<SummaryRow>(
         `SELECT o.id,o.order_number,COALESCE(o.placed_at,o.created_at) AS shown_at,o.order_status,o.payment_status,o.fulfillment_status,o.payment_mode,o.data_quality,o.total_minor::text AS total_minor,
-          (SELECT COALESCE(sum(quantity),0)::int FROM order_items WHERE order_id=o.id) AS items_count,o.contact_name
+          (SELECT COALESCE(sum(quantity),0)::int FROM order_items WHERE order_id=o.id) AS items_count,o.contact_name,${BOARD_COLUMNS}
          FROM orders o WHERE true${where} ORDER BY COALESCE(o.placed_at,o.created_at) DESC,o.id DESC LIMIT $1`, args)).rows;
+      let counts: Record<BoardStage, number> | null = null;
+      if (query.view !== "archive" && !query.q) {
+        const countArgs: unknown[] = [];
+        const countWhere = shared(countArgs, false);
+        const grouped = (await pool.query<{ stage: BoardStage; n: number }>(`SELECT ${STAGE} AS stage,count(*)::int AS n FROM orders o WHERE true${countWhere} GROUP BY 1`, countArgs)).rows;
+        counts = { new: 0, packed: 0, shipped: 0, delivered: 0 };
+        for (const row of grouped) counts[row.stage] = row.n;
+      }
       const page = rows.slice(0, limit), last = page[page.length - 1];
-      return {
-        items: page.map(row => ({ id: row.id, orderNumber: row.order_number, placedAt: row.shown_at.toISOString(), status: row.order_status, paymentStatus: row.payment_status, fulfillmentStatus: row.fulfillment_status, paymentMode: row.payment_mode, dataQuality: row.data_quality, total: money(row.total_minor), itemsCount: row.items_count, contactName: row.contact_name })),
-        nextCursor: rows.length > limit && last ? encodeCursor(last.shown_at, last.id) : null,
-      };
+      return { items: page.map(summary), nextCursor: rows.length > limit && last ? encodeCursor(last.shown_at, last.id) : null, counts };
     },
 
     /** One order with its items, shipments and the full recorded timeline. */
@@ -231,11 +335,11 @@ export function createFulfillmentService({ pool, authorize }: Options) {
       const principal = await authorize(headers, "orders:read");
       const staffDetail = principal.permissions.includes("orders:fulfill");
       if (typeof orderId !== "string" || !UUID.test(orderId)) return notFound();
-      const order = (await pool.query<OrderRow & { shown_at: Date; total_minor: string; contact_name: string; contact_phone: string | null; contact_email: string | null }>(
-        `SELECT ${ORDER_COLUMNS},COALESCE(o.placed_at,o.created_at) AS shown_at,o.total_minor::text AS total_minor,o.contact_name,o.contact_phone,o.contact_email FROM orders o WHERE o.id=$1`, [orderId])).rows[0] ?? notFound();
+      const order = (await pool.query<OrderRow & BoardColumns & { shown_at: Date; total_minor: string; contact_name: string; contact_phone: string | null; contact_email: string | null }>(
+        `SELECT ${ORDER_COLUMNS},COALESCE(o.placed_at,o.created_at) AS shown_at,o.total_minor::text AS total_minor,o.contact_name,o.contact_phone,o.contact_email,${BOARD_COLUMNS} FROM orders o WHERE o.id=$1`, [orderId])).rows[0] ?? notFound();
       const [items, address, shipments, events] = await Promise.all([
-        pool.query<{ id: string; name: string; sku: string | null; quantity: number; allocated: string; claimed: string; shipped: string; remaining: string }>(`
-          SELECT i.id,i.name,i.sku,i.quantity,
+        pool.query<{ id: string; product_id: string | null; name: string; sku: string | null; quantity: number; allocated: string; claimed: string; shipped: string; remaining: string }>(`
+          SELECT i.id,i.product_id,i.name,i.sku,i.quantity,
             COALESCE((SELECT sum(a.quantity-a.restored_quantity) FROM inventory_allocations a WHERE a.order_item_id=i.id),0)::text AS allocated,
             COALESCE((SELECT sum(si.quantity) FROM shipment_items si JOIN shipments s ON s.id=si.shipment_id WHERE si.order_item_id=i.id AND s.status<>'cancelled'),0)::text AS claimed,
             COALESCE((SELECT sum(si.quantity) FROM shipment_items si JOIN shipments s ON s.id=si.shipment_id WHERE si.order_item_id=i.id AND s.status IN ('dispatched','delivered')),0)::text AS shipped,
@@ -246,7 +350,9 @@ export function createFulfillmentService({ pool, authorize }: Options) {
         pool.query<{ id: string; type: string; visibility: "internal" | "customer"; source: string; actor_user_id: string | null; happened_at: Date; payload: Record<string, unknown> }>(
           "SELECT id,type,visibility,source,actor_user_id,COALESCE(occurred_at,recorded_at) AS happened_at,payload FROM order_events WHERE order_id=$1 ORDER BY COALESCE(occurred_at,recorded_at),recorded_at,id", [orderId]),
       ]);
-      const lines = await shipmentItems(pool, shipments.rows.map(row => row.id));
+      // Serials are shown to every order reader (support looks them up for warranty claims).
+      const lines = await shipmentItems(pool, shipments.rows.map(row => row.id), true);
+      const serialDecisions = await resolveSerialRequirements(pool, items.rows.flatMap(row => row.product_id ? [row.product_id] : []));
       const block = fulfillmentBlock(order);
       // O07: how the order is paid, whether a manual payment can be confirmed now, and the confirmation.
       const payment = (await pool.query<{ method: PaymentMethodCode | null; attempt_open: boolean; hold_running: boolean }>(
@@ -263,11 +369,14 @@ export function createFulfillmentService({ pool, authorize }: Options) {
         id: order.id, orderNumber: order.order_number, placedAt: order.shown_at.toISOString(), status: order.order_status, paymentStatus: order.payment_status,
         fulfillmentStatus: order.fulfillment_status, paymentMode: order.payment_mode, dataQuality: order.data_quality, total: money(order.total_minor),
         itemsCount: items.rows.reduce((sum, row) => sum + row.quantity, 0), contactName: order.contact_name,
+        stage: order.stage, archived: order.archived, paymentPill: order.payment, itemNames: order.item_names, deliveredAt: order.delivered_at ? new Date(order.delivered_at).toISOString() : null,
         version: order.version, legacy: isLegacy(order), fulfillable: { allowed: block === null, reason: block },
         contact: { name: order.contact_name, phone: order.contact_phone, email: order.contact_email }, deliveryAddress,
         items: items.rows.map(row => {
           const allocated = Number(row.allocated), claimed = Number(row.claimed);
-          return { id: row.id, name: row.name, sku: row.sku, quantity: row.quantity, allocated, claimed, shipped: Number(row.shipped), remaining: Math.max(allocated - claimed, 0) };
+          const decision = row.product_id ? serialDecisions.get(row.product_id) : undefined;
+          return { id: row.id, name: row.name, sku: row.sku, quantity: row.quantity, allocated, claimed, shipped: Number(row.shipped), remaining: Math.max(allocated - claimed, 0),
+            serialRequired: decision?.required ?? true, serialSource: decision?.source ?? "default" };
         }),
         shipments: shipments.rows.map(row => shipmentDTO(row, lines.get(row.id) ?? [], staffDetail)),
         timeline: events.rows.map(row => {
@@ -325,25 +434,42 @@ export function createFulfillmentService({ pool, authorize }: Options) {
           }
           if (wanted > 0) fail("OVER_SHIPMENT", 409, "The shipment exceeds the paid quantity not yet shipped");
         }
+        const unitsByItem = new Map((command.serials ?? []).map(entry => [entry.orderItemId.toLowerCase(), entry.units]));
+        await requireSerials(client, command.lines.map(line => ({ orderItemId: line.orderItemId.toLowerCase(), quantity: line.quantity })), unitsByItem);
+        await claimSerials(client, [...unitsByItem.values()].flat(), []);
         const shipmentId = randomUUID();
         await client.query("INSERT INTO shipments(id,order_id,carrier,tracking_reference,internal_notes) VALUES($1,$2,$3,$4,$5)",
           [shipmentId, order.id, command.carrier ?? null, command.trackingReference ?? null, command.internalNote ?? null]);
+        const nextUnit = new Map<string, number>();
         for (const line of plan) {
+          const shipmentItemId = randomUUID();
           await client.query("INSERT INTO shipment_items(id,shipment_id,order_id,order_item_id,allocation_id,quantity) VALUES($1,$2,$3,$4,$5,$6)",
-            [randomUUID(), shipmentId, order.id, line.orderItemId, line.allocationId, line.quantity]);
+            [shipmentItemId, shipmentId, order.id, line.orderItemId, line.allocationId, line.quantity]);
+          // Serials go one per unit, in the order given, across this item's shipment lines.
+          const units = unitsByItem.get(line.orderItemId) ?? [], from = nextUnit.get(line.orderItemId) ?? 0;
+          const mine = units.slice(from, from + line.quantity);
+          nextUnit.set(line.orderItemId, from + mine.length);
+          for (const [index, serial] of mine.entries()) {
+            await client.query("INSERT INTO order_unit_serials(id,order_id,order_item_id,shipment_item_id,unit_index,serial,created_by) VALUES($1,$2,$3,$4,$5,$6,$7)",
+              [randomUUID(), order.id, line.orderItemId, shipmentItemId, index + 1, serial, principal.userId]);
+          }
         }
         await client.query("UPDATE shipments SET status='ready',version=version+1 WHERE id=$1", [shipmentId]);
         const eventId = await orderEvent(client, { orderId: order.id, type: "shipment.created", actor: principal.userId, dedupeKey, visibility: "internal",
           payload: { shipmentId, requestHash: hash, lines: command.lines, ...(command.internalNote ? { internalNote: command.internalNote } : {}) } });
         await shipmentEvent(client, shipmentId, "created", principal.userId, `shipment-created:${shipmentId}`, command.internalNote);
-        await audit(client, principal.userId, "fulfillment.shipment_created", shipmentId, eventId, { orderId: order.id, lines: command.lines, carrier: command.carrier !== undefined, trackingReference: command.trackingReference !== undefined });
+        // 0030: customers see "Packed" in their order tracker.
+        await orderEvent(client, { orderId: order.id, type: "fulfillment.packed", actor: principal.userId, dedupeKey: `fulfillment.packed:${shipmentId}`, visibility: "customer",
+          payload: { shipmentId, items: command.lines.map(line => ({ orderItemId: line.orderItemId.toLowerCase(), quantity: line.quantity })) } });
+        await audit(client, principal.userId, "fulfillment.shipment_created", shipmentId, eventId, { orderId: order.id, lines: command.lines, carrier: command.carrier !== undefined, trackingReference: command.trackingReference !== undefined, serials: [...unitsByItem.values()].flat().length });
         const updated = await refreshOrder(client, order.id);
         return { shipment: await readShipment(client, shipmentId), order: updated, replayed: false };
       });
     },
 
-    /** dispatch (ready -> dispatched), deliver (dispatched -> delivered), cancel (ready -> cancelled) or annotate. */
+    /** dispatch (ready -> dispatched), deliver (dispatched -> delivered), cancel (ready -> cancelled), annotate, or set_serials. */
     async updateShipment(headers: Headers, input: unknown): Promise<ShipmentResultDTO> {
+      if ((input as { action?: unknown } | null)?.action === "set_serials") return service.setSerials(headers, input);
       const principal = await authorize(headers, "orders:fulfill");
       const command = parse(updateInput, input);
       const hash = requestHash(command), dedupeKey = `fulfillment:${principal.userId}:${command.idempotencyKey}`;
@@ -382,6 +508,72 @@ export function createFulfillmentService({ pool, authorize }: Options) {
         return { shipment: await readShipment(client, shipment.id), order: updated, replayed: false };
       });
     },
+
+    /** The product's own serial setting and what packing will do with it. */
+    async getProductSerial(headers: Headers, productId: unknown): Promise<ProductSerialDTO> {
+      await authorize(headers, "catalog:read");
+      if (typeof productId !== "string" || !UUID.test(productId)) return notFound();
+      const row = (await pool.query<{ serial_policy: SerialPolicy | null }>("SELECT serial_policy FROM products WHERE id=$1", [productId])).rows[0] ?? notFound();
+      const decision = (await resolveSerialRequirements(pool, [productId])).get(productId.toLowerCase()) ?? notFound();
+      return { productId: productId.toLowerCase(), policy: row.serial_policy, decision };
+    },
+
+    /** Sets the product's serial setting (catalog:write); audited, does not touch the editor's version. */
+    async setProductSerial(headers: Headers, input: unknown): Promise<ProductSerialDTO> {
+      const principal = await authorize(headers, "catalog:write");
+      const command = parse(productSerialInput, input);
+      await inTransaction(pool, async client => {
+        if (!await setProductSerialPolicy(client, command.productId, command.policy)) notFound();
+        await client.query("INSERT INTO audit_events(id,actor_user_id,action,target_type,target_id,dedupe_key,redacted_changes) VALUES($1,$2,'catalog.serial_policy','product',$3,$4,$5)",
+          [randomUUID(), principal.userId, command.productId.toLowerCase(), `catalog-serial:${randomUUID()}`, JSON.stringify({ policy: command.policy })]);
+      });
+      return service.getProductSerial(headers, command.productId);
+    },
+
+    /** Replaces one item's serials while its shipment is packed (ready); locked once dispatched. */
+    async setSerials(headers: Headers, input: unknown): Promise<ShipmentResultDTO> {
+      const principal = await authorize(headers, "orders:fulfill");
+      const command = parse(serialsInput, input);
+      const hash = requestHash(command), dedupeKey = `fulfillment:${principal.userId}:${command.idempotencyKey}`;
+      return inTransaction(pool, async client => {
+        const orderId = (await client.query<{ order_id: string }>("SELECT order_id FROM shipments WHERE id=$1", [command.shipmentId])).rows[0]?.order_id ?? notFound();
+        const order = await lockOrder(client, orderId);
+        const prior = await priorAction(client, dedupeKey, hash);
+        if (prior) {
+          if (prior !== command.shipmentId) fail("IDEMPOTENCY_CONFLICT", 409, "This idempotency key was used for a different action");
+          return { shipment: await readShipment(client, prior), order: { id: order.id, version: order.version, fulfillmentStatus: order.fulfillment_status }, replayed: true };
+        }
+        if (isLegacy(order)) refuse("LEGACY_ORDER");
+        const shipment = (await client.query<ShipmentRow>(`SELECT ${SHIPMENT_COLUMNS} FROM shipments WHERE id=$1 FOR UPDATE`, [command.shipmentId])).rows[0];
+        if (shipment.version !== command.expectedVersion) fail("VERSION_CONFLICT", 409, "The shipment changed; reload and try again");
+        if (shipment.status !== "ready") fail("INVALID_TRANSITION", 409, `Serials of a ${shipment.status} shipment cannot change`);
+        const itemId = command.orderItemId.toLowerCase();
+        const lines = (await client.query<{ id: string; quantity: number }>("SELECT id,quantity FROM shipment_items WHERE shipment_id=$1 AND order_item_id=$2 ORDER BY id FOR UPDATE", [shipment.id, itemId])).rows;
+        if (!lines.length) notFound();
+        const quantity = lines.reduce((sum, line) => sum + line.quantity, 0);
+        if (command.units.length > quantity) invalid();
+        if (command.units.length !== quantity) await requireSerials(client, [{ orderItemId: itemId, quantity }], new Map([[itemId, command.units]]));
+        await claimSerials(client, command.units, lines.map(line => line.id));
+        // Final review: keep what the serials were, so a warranty claim can see a correction and who made it.
+        const previous = (await client.query<{ serial: string }>("SELECT serial FROM order_unit_serials WHERE shipment_item_id=ANY($1::uuid[]) ORDER BY shipment_item_id,unit_index", [lines.map(line => line.id)])).rows.map(row => row.serial);
+        await client.query("DELETE FROM order_unit_serials WHERE shipment_item_id=ANY($1::uuid[])", [lines.map(line => line.id)]);
+        let next = 0;
+        for (const line of lines) {
+          for (const [index, serial] of command.units.slice(next, next + line.quantity).entries()) {
+            await client.query("INSERT INTO order_unit_serials(id,order_id,order_item_id,shipment_item_id,unit_index,serial,created_by) VALUES($1,$2,$3,$4,$5,$6,$7)",
+              [randomUUID(), order.id, itemId, line.id, index + 1, serial, principal.userId]);
+          }
+          next += line.quantity;
+        }
+        await client.query("UPDATE shipments SET version=version+1 WHERE id=$1", [shipment.id]);
+        const eventId = await orderEvent(client, { orderId: order.id, type: "shipment.serials_updated", actor: principal.userId, dedupeKey, visibility: "internal",
+          payload: { shipmentId: shipment.id, requestHash: hash, orderItemId: itemId, units: command.units.length, before: previous, after: command.units } });
+        await shipmentEvent(client, shipment.id, "serials_updated", principal.userId, `shipment-serials:${shipment.id}:${eventId}`, undefined);
+        await audit(client, principal.userId, "fulfillment.serials_updated", shipment.id, eventId, { orderId: order.id, orderItemId: itemId, units: command.units.length, before: previous, after: command.units });
+        return { shipment: await readShipment(client, shipment.id), order: { id: order.id, version: order.version, fulfillmentStatus: order.fulfillment_status }, replayed: false };
+      });
+    },
   };
+  return service;
 }
 export type FulfillmentService = ReturnType<typeof createFulfillmentService>;

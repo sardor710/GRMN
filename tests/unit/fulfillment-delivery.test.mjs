@@ -5,6 +5,7 @@ import test from "node:test";
 import { componentFixture, nodeText } from "../helpers/component-fixture.mjs";
 import * as accountClient from "../../src/lib/account-client.ts";
 import * as dashboard from "../../src/lib/admin/dashboard.ts";
+import * as boardStage from "../../src/app/admin/orders/_components/board/stage.ts";
 
 const DETAIL = {
   id: "o1", orderNumber: "GRM-9", status: "confirmed", paymentStatus: "paid", fulfillmentStatus: "unfulfilled", paymentMode: "sandbox", version: 1, legacy: false,
@@ -14,7 +15,7 @@ const DETAIL = {
 };
 
 test("admin fulfillment detail shows the delivery address with the region name instead of its code", () => {
-  const fixture = componentFixture(new URL("../../src/app/admin/orders/_components/FulfillmentScreen.tsx", import.meta.url), { modules: { "@/lib/account-client": accountClient, "@/lib/admin/dashboard": dashboard, "next/navigation": { useSearchParams: () => new URLSearchParams() } } });
+  const fixture = componentFixture(new URL("../../src/app/admin/orders/_components/FulfillmentScreen.tsx", import.meta.url), { modules: { "@/lib/account-client": accountClient, "@/lib/admin/dashboard": dashboard, "./board/stage": boardStage, "next/navigation": { useSearchParams: () => new URLSearchParams() } } });
   fixture.render();
   fixture.state[3] = "o1"; // slot 3 is the selected order id; slot 4 its loaded detail (shown only when the ids match)
   fixture.state[4] = DETAIL;

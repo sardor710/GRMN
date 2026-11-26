@@ -4,7 +4,7 @@
 // read with (If-Match); every write answers with the whole new tree.
 export type Locale = "en" | "ru" | "kk";
 export interface LocalName { en: string; ru: string | null; kk: string | null }
-export interface AdminNode { key: string; slug: string | null; kind: string; name: LocalName; parentKey: string | null; position: number; navVisible: boolean; productCount: number; childCount: number }
+export interface AdminNode { key: string; slug: string | null; kind: string; name: LocalName; parentKey: string | null; position: number; navVisible: boolean; serialPolicy: "required" | "none" | null; productCount: number; childCount: number }
 export interface AdminPlacement extends AdminNode { href: string | null; label: Partial<Record<Locale, string>> | null }
 export type LocalText = Record<Locale, string>;
 export type MenuText = Partial<Record<Locale, string>>;
@@ -45,7 +45,7 @@ export const categoryApi = {
   load: () => send(BASE, { method: "GET" }),
   create: (epoch: string, body: { section: "menu" | "menu-child" | "accessory" | "accessory-type" | "series"; parentKey?: string; name: { en: string; ru?: string; kk?: string }; navVisible?: boolean }) =>
     send(BASE, { method: "POST", body: JSON.stringify(body) }, epoch),
-  update: (epoch: string, key: string, body: { name?: { en?: string; ru?: string; kk?: string }; navVisible?: boolean }) =>
+  update: (epoch: string, key: string, body: { name?: { en?: string; ru?: string; kk?: string }; navVisible?: boolean; serialPolicy?: "required" | "none" | null }) =>
     send(BASE + keyQuery(key), { method: "PATCH", body: JSON.stringify(body) }, epoch),
   remove: (epoch: string, key: string) => send(BASE + keyQuery(key), { method: "DELETE" }, epoch),
   order: (epoch: string, parentKey: string | null, keys: string[]) => send(`${BASE}/order`, { method: "PUT", body: JSON.stringify({ parentKey, keys }) }, epoch),

@@ -6,7 +6,7 @@ import type { DatabaseHandle } from "../db/client.ts";
 import type { Permission, Principal } from "../context.ts";
 import { AuthFailure } from "../auth/config.ts";
 import { authDigest, capabilityHash, createPhoneService } from "../auth/phone-service.ts";
-import type { CustomerProfileDTO, DeliveryAddress, GeoPrecision, Money, OrderDetailDTO, OrderItemDTO, OrderSummaryDTO, SavedAddressDTO } from "../../contracts/commerce.ts";
+import type { CustomerProfileDTO, DeliveryAddress, GeoPrecision, Money, OrderDetailDTO, OrderItemDTO, OrderStage, OrderSummaryDTO, SavedAddressDTO } from "../../contracts/commerce.ts";
 import type { Page } from "../../contracts/pagination.ts";
 import { checkBirthDate, checkKzAddress } from "./address-rules.ts";
 
@@ -78,8 +78,17 @@ const money = (amountMinor: string): Money => ({ amountMinor, currency: "KZT" })
 const optionalMoney = (amountMinor: string | null) => amountMinor === null ? null : money(amountMinor);
 const EVENT_LABELS: Readonly<Record<string, string>> = {
   "order.placed": "Order placed", "order.confirmed": "Order confirmed", "order.cancelled": "Order cancelled",
-  "payment.paid": "Payment received", "order.paid": "Payment received", "order.expired": "Order expired", "order.reinstated": "Order reinstated", "refund.succeeded": "Refund issued", "fulfillment.shipped": "Shipped", "fulfillment.delivered": "Delivered",
+  "payment.paid": "Payment received", "order.paid": "Payment received", "order.expired": "Order expired", "order.reinstated": "Order reinstated", "refund.succeeded": "Refund issued", "fulfillment.packed": "Packed", "fulfillment.shipped": "Shipped", "fulfillment.delivered": "Delivered",
 };
+
+/** The customer's tracker step: a cancelled order stops; otherwise the shipment-derived fulfillment status. */
+export function customerStage(orderStatus: string, fulfillmentStatus: string): OrderStage {
+  if (orderStatus === "cancelled") return "cancelled";
+  if (fulfillmentStatus === "processing") return "packed";
+  if (fulfillmentStatus === "shipped" || fulfillmentStatus === "partially_shipped") return "shipped";
+  if (fulfillmentStatus === "delivered") return "delivered";
+  return "ordered";
+}
 
 function databaseFailure(error: unknown): unknown {
   if (error instanceof AuthFailure) return error;
@@ -243,7 +252,7 @@ export function createAccountService({ database, authorize, authorizeFresh, secr
         `SELECT o.id,o.order_number,to_char(o.placed_at AT TIME ZONE 'UTC','YYYY-MM-DD"T"HH24:MI:SS.US"Z"') AS placed_key,COALESCE(o.placed_at,o.created_at) AS shown_at,o.order_status,o.payment_status,o.fulfillment_status,o.payment_mode,o.total_minor::text AS total_minor,(SELECT COALESCE(sum(quantity),0)::int FROM order_items WHERE order_id=o.id) AS items_count FROM orders o WHERE o.user_id=$1${where} ORDER BY o.placed_at DESC NULLS LAST,o.id DESC LIMIT $2`, args)).rows;
       const items = rows.slice(0, limit), last = items.at(-1);
       return {
-        items: items.map(row => ({ id: row.id, orderNumber: row.order_number, createdAt: row.shown_at.toISOString(), status: row.order_status, paymentStatus: row.payment_status, fulfillmentStatus: row.fulfillment_status, paymentMode: row.payment_mode, total: money(row.total_minor), itemsCount: row.items_count })),
+        items: items.map(row => ({ id: row.id, orderNumber: row.order_number, createdAt: row.shown_at.toISOString(), status: row.order_status, paymentStatus: row.payment_status, fulfillmentStatus: row.fulfillment_status, stage: customerStage(row.order_status, row.fulfillment_status), paymentMode: row.payment_mode, total: money(row.total_minor), itemsCount: row.items_count })),
         nextCursor: rows.length > limit && last ? signCursor(principal.userId, last.placed_key, last.id) : null,
       };
     },
@@ -260,6 +269,16 @@ export function createAccountService({ database, authorize, authorizeFresh, secr
         // Task 16A: only dispatched and delivered shipments, without carrier, tracking or staff notes (D04).
         database.pool.query<{ id: string; status: "dispatched" | "delivered"; dispatched_at: Date; delivered_at: Date | null; items: { orderItemId: string; quantity: number }[] }>("SELECT s.id,s.status,s.dispatched_at,s.delivered_at,(SELECT COALESCE(json_agg(json_build_object('orderItemId',g.order_item_id,'quantity',g.quantity) ORDER BY g.order_item_id),'[]'::json) FROM (SELECT order_item_id,sum(quantity)::int AS quantity FROM shipment_items WHERE shipment_id=s.id GROUP BY order_item_id) g) AS items FROM shipments s WHERE s.order_id=$1 AND s.status IN ('dispatched','delivered') ORDER BY s.dispatched_at,s.id", [orderId]),
       ]);
+      const [serialRows, milestones] = await Promise.all([
+        database.pool.query<{ order_item_id: string; serials: string[] }>(`SELECT u.order_item_id,json_agg(u.serial ORDER BY u.shipment_item_id,u.unit_index) AS serials
+          FROM order_unit_serials u JOIN shipment_items i ON i.id=u.shipment_item_id JOIN shipments s ON s.id=i.shipment_id
+          WHERE u.order_id=$1 AND s.status<>'cancelled' GROUP BY u.order_item_id`, [orderId]),
+        database.pool.query<{ packed: Date | null; shipped: Date | null; delivered: Date | null }>(`SELECT min(created_at) FILTER (WHERE status<>'cancelled') AS packed,
+          min(dispatched_at) FILTER (WHERE status IN ('dispatched','delivered')) AS shipped, max(delivered_at) FILTER (WHERE status='delivered') AS delivered
+          FROM shipments WHERE order_id=$1`, [orderId]),
+      ]);
+      const serialsByItem = new Map(serialRows.rows.map(row => [row.order_item_id, row.serials]));
+      const stage = customerStage(order.order_status, order.fulfillment_status), dates = milestones.rows[0];
       const snapshot = address.rows[0];
       let deliveryAddress: OrderDetailDTO["deliveryAddress"] = null;
       if (snapshot?.kind === "legacy_unstructured" && snapshot.legacy_raw) deliveryAddress = { kind: "legacy_unstructured", raw: snapshot.legacy_raw };
@@ -273,6 +292,7 @@ export function createAccountService({ database, authorize, authorizeFresh, secr
         // Only flat customer-chosen option strings are shown; nested/provider data stays private.
         options: Object.fromEntries(Object.entries(row.options ?? {}).filter((entry): entry is [string, string] => typeof entry[1] === "string")),
         quantity: row.quantity, unitPrice: money(row.unit_price_minor), discount: money(row.discount_minor), tax: money(row.tax_minor), total: money(row.total_minor),
+        serials: serialsByItem.get(row.id) ?? [],
       }));
       return {
         id: order.id, orderNumber: order.order_number, createdAt: order.shown_at.toISOString(), status: order.order_status, paymentStatus: order.payment_status, fulfillmentStatus: order.fulfillment_status,
@@ -280,6 +300,13 @@ export function createAccountService({ database, authorize, authorizeFresh, secr
         contact: { name: order.contact_name, phone: order.contact_phone, email: order.contact_email }, deliveryAddress, dataQuality: order.data_quality, items: lines,
         subtotal: optionalMoney(order.subtotal_minor), discount: optionalMoney(order.discount_minor), shipping: optionalMoney(order.shipping_minor), tax: optionalMoney(order.tax_minor),
         events: events.rows.map(row => ({ id: row.id, type: row.type, occurredAt: row.happened_at.toISOString(), label: EVENT_LABELS[row.type] ?? row.type })),
+        stage,
+        stageDates: {
+          ordered: order.shown_at.toISOString(),
+          packed: stage === "cancelled" || !dates.packed ? null : dates.packed.toISOString(),
+          shipped: dates.shipped?.toISOString() ?? null,
+          delivered: stage === "delivered" && dates.delivered ? dates.delivered.toISOString() : null,
+        },
         shipments: shipments.rows.map(row => ({ id: row.id, status: row.status, dispatchedAt: row.dispatched_at.toISOString(), deliveredAt: row.delivered_at?.toISOString() ?? null, items: row.items })),
         originalUsdEquivalent: null,
       };

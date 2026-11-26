@@ -956,7 +956,8 @@
       "shipments": "Отправления",
       "item": "товар",
       "delivered": "Доставлено {date}",
-      "shipped": "Отправлено {date}"
+      "shipped": "Отправлено {date}",
+      "serial": "Серийный номер: {serials}"
     },
     "addressForm": {
       "editLabel": "Изменить адрес доставки",
@@ -989,10 +990,34 @@
       "pending": "ожидает оплаты",
       "unpaid": "не оплачен",
       "refunded": "возвращены средства",
-      "failed": "ошибка оплаты"
+      "failed": "ошибка оплаты",
+      "partially_shipped": "Отправлен частично",
+      "exception": "Приостановлен"
     },
     "demoBadge": "Без оплаты",
-    "demoNote": "Оплата за этот заказ не взимается."
+    "demoNote": "Оплата за этот заказ не взимается.",
+    "tracker": {
+      "ordered": "Оформлен",
+      "packed": "Упакован",
+      "shipped": "Отправлен",
+      "delivered": "Доставлен",
+      "cancelled": "Отменён",
+      "cancelledNote": "Этот заказ отменён.",
+      "progress": "Статус заказа"
+    },
+    "events": {
+      "order_placed": "Заказ оформлен",
+      "order_confirmed": "Заказ подтверждён",
+      "order_cancelled": "Заказ отменён",
+      "payment_paid": "Оплата получена",
+      "order_paid": "Оплата получена",
+      "order_expired": "Срок заказа истёк",
+      "order_reinstated": "Заказ восстановлен",
+      "refund_succeeded": "Деньги возвращены",
+      "fulfillment_packed": "Упакован",
+      "fulfillment_shipped": "Отправлен",
+      "fulfillment_delivered": "Доставлен"
+    }
   },
   "Checkout": {
     "fields": {

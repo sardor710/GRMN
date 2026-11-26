@@ -368,7 +368,10 @@ export interface OrderSummaryDTO {
   paymentMode: "demo" | "live" | "sandbox" | "legacy_unknown";
   total: Money;
   itemsCount: number;
+  /** Owner 2026-11-25: the customer's four-step tracker (Ordered → Packed → Shipped → Delivered), or stopped. */
+  stage: OrderStage;
 }
+export type OrderStage = "ordered" | "packed" | "shipped" | "delivered" | "cancelled";
 
 export interface OrderItemDTO {
   id: string;
@@ -381,6 +384,8 @@ export interface OrderItemDTO {
   discount: Money;
   tax: Money;
   total: Money;
+  /** 0030: serial numbers of this item's packed units (cancelled packs excluded), for warranty claims. */
+  serials: string[];
 }
 
 export interface OrderDetailDTO extends OrderSummaryDTO {
@@ -395,6 +400,8 @@ export interface OrderDetailDTO extends OrderSummaryDTO {
   shipping: Money | null;
   tax: Money | null;
   events: { id: string; type: string; occurredAt: string; label: string }[];
+  /** When each tracker step was reached; packed/shipped/delivered come from shipments that were not cancelled. */
+  stageDates: { ordered: string; packed: string | null; shipped: string | null; delivered: string | null };
   /** Dispatched and delivered shipments (Task 16A). Carrier, tracking and staff notes are never included (D04). */
   shipments: OrderShipmentDTO[];
   originalUsdEquivalent: UsdEquivalentDTO | null;
@@ -458,7 +465,8 @@ export interface ShipmentDTO {
   createdAt: string;
   dispatchedAt: string | null;
   deliveredAt: string | null;
-  items: { orderItemId: string; quantity: number }[];
+  /** 0030: serials per line (staff views; empty elsewhere). returned = on a return that was received. */
+  items: { orderItemId: string; quantity: number; serials?: { id: string; serial: string; returned: boolean }[] }[];
 }
 export interface AdminOrderSummaryDTO {
   id: string;
@@ -472,6 +480,13 @@ export interface AdminOrderSummaryDTO {
   total: Money;
   itemsCount: number;
   contactName: string;
+  /** Owner 2026-11-25 board: column, next-day archive, payment pill, imported flag, first item names, last delivery. */
+  stage: "new" | "packed" | "shipped" | "delivered";
+  archived: boolean;
+  paymentPill: "awaiting" | "paid" | "problem";
+  legacy: boolean;
+  itemNames: string[];
+  deliveredAt: string | null;
 }
 export interface TimelineEventDTO {
   id: string;
@@ -490,7 +505,9 @@ export interface AdminOrderDetailDTO extends AdminOrderSummaryDTO {
   fulfillable: { allowed: boolean; reason: FulfillmentBlock | null };
   contact: { name: string; phone: string | null; email: string | null };
   deliveryAddress: Record<string, string> | null;
-  items: { id: string; name: string; sku: string | null; quantity: number; allocated: number; claimed: number; shipped: number; remaining: number }[];
+  items: { id: string; name: string; sku: string | null; quantity: number; allocated: number; claimed: number; shipped: number; remaining: number;
+    /** 0030: whether packing asks for a serial per unit, and what decided it. */
+    serialRequired: boolean; serialSource: "product" | "category" | "legacy-category" | "default" }[];
   shipments: ShipmentDTO[];
   timeline: TimelineEventDTO[];
   /** Task 16B: refunds of this order (reserved, pending, unknown, succeeded, failed, cancelled). */
@@ -531,7 +548,9 @@ export interface ReturnDTO {
   createdAt: string;
   receivedAt: string | null;
   inspectedAt: string | null;
-  items: { id: string; orderItemId: string; shipmentItemId: string; quantity: number; receivedQuantity: number; acceptedQuantity: number; restockedQuantity: number; decision: "undecided" | "restock" | "quarantine" | "dispose" }[];
+  items: { id: string; orderItemId: string; shipmentItemId: string; quantity: number; receivedQuantity: number; acceptedQuantity: number; restockedQuantity: number; decision: "undecided" | "restock" | "quarantine" | "dispose";
+    /** 0030: serials of the units on this return line. */
+    serials: string[] }[];
 }
 export interface CancelResultDTO {
   order: { id: string; version: number; status: OrderStatus; paymentStatus: PaymentStatus; fulfillmentStatus: FulfillmentStatus };

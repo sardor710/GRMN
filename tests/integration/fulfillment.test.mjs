@@ -34,7 +34,7 @@ async function sessionCookie(id){const session=await(await runtime.auth.$context
 async function owner(){const id=randomUUID(),n=++serial;await q("INSERT INTO users(id,name,email,phone_number,phone_number_verified) VALUES($1,'Fulfillment owner',$2,$3,true)",[id,`fulfil-${n}@example.invalid`,"+7705000"+String(n).padStart(4,"0")]);return{id,headers:new Headers({cookie:await sessionCookie(id)})};}
 async function product({price=10000,stock=5}={}){
   const id=randomUUID(),variant=randomUUID(),n=++serial;
-  await q("INSERT INTO products(id,public_key,name,status) VALUES($1,$2,$3,'published')",[id,"fulfil-fixture-"+n,"Fulfil fixture "+n]);
+  await q("INSERT INTO products(id,public_key,name,status,serial_policy) VALUES($1,$2,$3,'published','none')",[id,"fulfil-fixture-"+n,"Fulfil fixture "+n]);
   await q("INSERT INTO product_variants(id,product_id,sku,name,is_default,status) VALUES($1,$2,$3,'Base',true,'active')",[variant,id,"FULFIL-SKU-"+n]);
   await q("INSERT INTO prices(id,variant_id,amount_minor) VALUES($1,$2,$3)",[randomUUID(),variant,price]);
   await q("INSERT INTO inventory_balances(variant_id,location_id) VALUES($1,$2)",[variant,mainId]);
