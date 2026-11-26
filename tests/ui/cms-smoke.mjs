@@ -829,6 +829,22 @@ async function ordersBoardScenario({database,runtime,secret,origin,send,evaluate
     await until(()=>press('button[aria-pressed]',"Board"),"No Board toggle");
     await until(()=>column("New",watchOnly.order_number),"The mobile board did not render");
     await shoot("orders-board-mobile.png");
+    // The customer: every order carries the four-step tracker; the delivered one is fully cyan and shows its serial.
+    // Pack the watch-only order too (through the board's API, as staff), so the list shows three different stages.
+    await send("Emulation.setDeviceMetricsOverride",{width:1280,height:900,deviceScaleFactor:1,mobile:false});
+    await signOut();await setCookie(customerCookie);
+    for(const [route,locale] of [["/account","en"],["/ru/account","ru"]]){
+      await navigate(route);
+      await until(async()=>(await text()).toLowerCase().includes("aigerim board"),"The account page did not load").catch(dump(`orders-account-${locale}.txt`));
+      await evaluate(`(()=>{const tab=[...document.querySelectorAll('button')].find(b=>/^(orders|заказы|тапсырыстар)/i.test(b.textContent.trim()));if(!tab)return false;tab.click();return true;})()`);
+      await until(()=>evaluate(`document.querySelectorAll('ol li[data-step]').length>=12`),"The order list shows no trackers").catch(dump(`orders-account-list-${locale}.txt`));
+      assert.ok(await evaluate(`[...document.querySelectorAll('button')].some(b=>b.textContent.includes(${JSON.stringify(both.order_number)})&&b.querySelectorAll('li[data-step][data-done="true"]').length===4)`),"the delivered order lights all four steps");
+      await shoot(`orders-account-list-${locale}.png`);
+      await evaluate(`(()=>{[...document.querySelectorAll('button')].find(b=>b.textContent.includes(${JSON.stringify(both.order_number)})).click();return true;})()`);
+      await until(()=>evaluate(`!!document.querySelector('[role=dialog] ol li[data-step]')&&document.querySelector('[role=dialog]').innerText.includes(${JSON.stringify(serial)})`),"The order detail shows no tracker or serial").catch(dump(`orders-account-detail-${locale}.txt`));
+      await shoot(`orders-account-detail-${locale}.png`);
+      await evaluate(`(()=>{document.querySelector('[role=dialog] button[aria-label]').click();return true;})()`);
+    }
     return{customerCookie,orders:{both,bandOnly,watchOnly},serial};
   }finally{
     await send("Emulation.clearDeviceMetricsOverride");
