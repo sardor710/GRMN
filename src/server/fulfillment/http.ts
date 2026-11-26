@@ -26,6 +26,8 @@ export function createFulfillmentHTTP(input: { service: FulfillmentService; afte
       const query = Object.fromEntries(params);
       if (request.method === "GET") {
         if (query.id !== undefined) return params.length === 1 ? adminJSON(await service.getOrder(request.headers, query.id)) : bad();
+        // 0030: the product editor's serial setting (catalog:read).
+        if (query.serialProduct !== undefined) return params.length === 1 ? adminJSON(await service.getProductSerial(request.headers, query.serialProduct)) : bad();
         return adminJSON(await service.listOrders(request.headers, query));
       }
       if (request.method !== "POST") throw new AuthFailure("METHOD_NOT_ALLOWED", 405, "Method not allowed");
@@ -35,6 +37,7 @@ export function createFulfillmentHTTP(input: { service: FulfillmentService; afte
       if (!body || typeof body !== "object" || Array.isArray(body)) return bad();
       const { action, ...rest } = body as Record<string, unknown>;
       if (action === "create_shipment") return adminJSON(await service.createShipment(request.headers, rest));
+      if (action === "set_product_serial_policy") return adminJSON(await service.setProductSerial(request.headers, rest));
       if (action === "dispatch" || action === "deliver" || action === "cancel" || action === "annotate" || action === "set_serials") return adminJSON(await service.updateShipment(request.headers, body));
       if (manualPayments) {
         if (action === "confirm_payment") return adminJSON(await manualPayments.confirm(request.headers, rest));

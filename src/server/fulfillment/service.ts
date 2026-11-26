@@ -9,7 +9,7 @@ import type { Permission, Principal } from "../context.ts";
 import { AuthFailure } from "../auth/config.ts";
 import { withInventoryTransaction } from "../inventory/reservations.ts";
 import { readRefunds, readReturns } from "./aftersales.ts";
-import { resolveSerialRequirements } from "./serial-policy.ts";
+import { resolveSerialRequirements, setProductSerialPolicy, type SerialDecision, type SerialPolicy } from "./serial-policy.ts";
 import { BOARD_COLUMNS, BOARD_PERIODS, BOARD_STAGES, boardWhere, STAGE, type BoardColumns, type BoardStage } from "./board.ts";
 
 // Task 16A. Permissioned, versioned manual fulfillment (D04: staff ship themselves).
@@ -67,6 +67,9 @@ const serialsInput = z.strictObject({
   shipmentId: z.string().regex(UUID), expectedVersion: z.number().int().min(1), idempotencyKey: key,
   action: z.literal("set_serials"), orderItemId: z.string().regex(UUID), units: z.array(serialText).max(10000),
 });
+// 0030: the product editor's "Serial number at packing" setting (null = automatic, from categories).
+const productSerialInput = z.strictObject({ productId: z.string().regex(UUID), policy: z.enum(["required", "none"]).nullable() });
+export interface ProductSerialDTO { productId: string; policy: SerialPolicy | null; decision: SerialDecision }
 const listInput = z.strictObject({
   fulfillmentStatus: z.enum(FULFILLMENT_STATUSES).optional(),
   // Task 3.3: "demo" lists only demo-checkout orders (to find and cancel stray ones), "live" only real ones.
@@ -504,6 +507,27 @@ export function createFulfillmentService({ pool, authorize }: Options) {
         const updated = command.action === "annotate" ? { id: order.id, version: order.version, fulfillmentStatus: order.fulfillment_status } : await refreshOrder(client, order.id);
         return { shipment: await readShipment(client, shipment.id), order: updated, replayed: false };
       });
+    },
+
+    /** The product's own serial setting and what packing will do with it. */
+    async getProductSerial(headers: Headers, productId: unknown): Promise<ProductSerialDTO> {
+      await authorize(headers, "catalog:read");
+      if (typeof productId !== "string" || !UUID.test(productId)) return notFound();
+      const row = (await pool.query<{ serial_policy: SerialPolicy | null }>("SELECT serial_policy FROM products WHERE id=$1", [productId])).rows[0] ?? notFound();
+      const decision = (await resolveSerialRequirements(pool, [productId])).get(productId.toLowerCase()) ?? notFound();
+      return { productId: productId.toLowerCase(), policy: row.serial_policy, decision };
+    },
+
+    /** Sets the product's serial setting (catalog:write); audited, does not touch the editor's version. */
+    async setProductSerial(headers: Headers, input: unknown): Promise<ProductSerialDTO> {
+      const principal = await authorize(headers, "catalog:write");
+      const command = parse(productSerialInput, input);
+      await inTransaction(pool, async client => {
+        if (!await setProductSerialPolicy(client, command.productId, command.policy)) notFound();
+        await client.query("INSERT INTO audit_events(id,actor_user_id,action,target_type,target_id,dedupe_key,redacted_changes) VALUES($1,$2,'catalog.serial_policy','product',$3,$4,$5)",
+          [randomUUID(), principal.userId, command.productId.toLowerCase(), `catalog-serial:${randomUUID()}`, JSON.stringify({ policy: command.policy })]);
+      });
+      return service.getProductSerial(headers, command.productId);
     },
 
     /** Replaces one item's serials while its shipment is packed (ready); locked once dispatched. */

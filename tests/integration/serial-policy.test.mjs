@@ -87,3 +87,16 @@ test("the report lists every product with its decision and flags guesses", async
   assert.equal(byName.get("HRM 600").guess, false);
   assert.equal(byName.get("HRM 600").needsSerial, true);
 });
+
+test("the product editor reads and changes the serial setting; only catalog editors may change it", async () => {
+  const { createFulfillmentService } = await import("../../src/server/fulfillment/service.ts");
+  const service = createFulfillmentService({ pool: f.database.pool, authorize: f.authorize });
+  const id = await product("Editor watch", { categories: ["sports-fitness/multisport-smartwatches"] });
+  assert.deepEqual(await service.getProductSerial(f.admin, id), { productId: id, policy: null, decision: { required: true, source: "default", detail: "sports-fitness/multisport-smartwatches" } });
+  const changed = await service.setProductSerial(f.catalogEditor.headers, { productId: id, policy: "none" });
+  assert.equal(changed.policy, "none");assert.equal(changed.decision.required, false);
+  assert.equal((await q("SELECT count(*)::int AS n FROM audit_events WHERE action='catalog.serial_policy' AND target_id=$1", [id])).rows[0].n, 1);
+  await assert.rejects(service.setProductSerial(f.reader.headers, { productId: id, policy: "required" }), error => error.status === 403);
+  await assert.rejects(service.setProductSerial(f.admin, { productId: id, policy: "maybe" }), error => error.status === 400);
+  await assert.rejects(service.setProductSerial(f.admin, { productId: randomUUID(), policy: null }), error => error.status === 404);
+});

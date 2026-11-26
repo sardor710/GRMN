@@ -45,7 +45,7 @@ export const categoryApi = {
   load: () => send(BASE, { method: "GET" }),
   create: (epoch: string, body: { section: "menu" | "menu-child" | "accessory" | "accessory-type" | "series"; parentKey?: string; name: { en: string; ru?: string; kk?: string }; navVisible?: boolean }) =>
     send(BASE, { method: "POST", body: JSON.stringify(body) }, epoch),
-  update: (epoch: string, key: string, body: { name?: { en?: string; ru?: string; kk?: string }; navVisible?: boolean }) =>
+  update: (epoch: string, key: string, body: { name?: { en?: string; ru?: string; kk?: string }; navVisible?: boolean; serialPolicy?: "required" | "none" | null }) =>
     send(BASE + keyQuery(key), { method: "PATCH", body: JSON.stringify(body) }, epoch),
   remove: (epoch: string, key: string) => send(BASE + keyQuery(key), { method: "DELETE" }, epoch),
   order: (epoch: string, parentKey: string | null, keys: string[]) => send(`${BASE}/order`, { method: "PUT", body: JSON.stringify({ parentKey, keys }) }, epoch),

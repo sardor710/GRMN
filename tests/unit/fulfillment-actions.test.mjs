@@ -6,6 +6,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as dashboard from "../../src/lib/admin/dashboard.ts";
+import * as boardStage from "../../src/app/admin/orders/_components/board/stage.ts";
 import { componentFixture, nodes, nodeText } from "../helpers/component-fixture.mjs";
 
 const FILE = "src/app/admin/orders/_components/FulfillmentScreen.tsx";
@@ -29,7 +30,7 @@ async function settle(fixture) { for (let i = 0; i < 20; i++) await fixture.flus
 test("a refused confirm-payment stays visible after the queue and detail reload", async () => {
   const calls = [];
   const fixture = componentFixture(FILE, {
-    modules: { "@/lib/admin/dashboard": dashboard, ...navigation() },
+    modules: { "@/lib/admin/dashboard": dashboard, "./board/stage": boardStage, ...navigation() },
     fetcher: async (url, options = {}) => {
       calls.push({ url, method: options.method ?? "GET" });
       if (options.method === "POST") return json({ error: { code: "PAYMENT_AMOUNT_MISMATCH", message: "The amount does not match the order total." } }, 409);
@@ -63,7 +64,8 @@ test("a refused confirm-payment stays visible after the queue and detail reload"
 test("a refused shipment action is shown, and a queue error is shown on its own", async () => {
   let listFails = false;
   const fixture = componentFixture(FILE, {
-    modules: { "@/lib/admin/dashboard": dashboard, ...navigation() },
+    confirm: () => true,
+    modules: { "@/lib/admin/dashboard": dashboard, "./board/stage": boardStage, ...navigation() },
     fetcher: async (url, options = {}) => {
       if (options.method === "POST") return json({ error: { code: "ORDER_NOT_PAID", message: "Not paid: only captured orders can ship." } }, 409);
       if (url.includes("?id=")) return json({ ...detail(A, "GRM-A"), shipments: [{ id: "s1", status: "ready", version: 1, items: [], dispatchedAt: null, deliveredAt: null, carrier: null, trackingReference: null, internalNotes: null }] });
@@ -74,7 +76,8 @@ test("a refused shipment action is shown, and a queue error is shown on its own"
   nodes(fixture.render()).find(node => node.type === "button" && nodeText(node).includes("GRM-A")).props.onClick();
   await runEffects(fixture, [3]);
   listFails = true;
-  nodes(fixture.render()).find(node => node.type === "button" && nodeText(node) === "Cancel shipment").props.onClick();
+  // Owner 2026-11-25: "Cancel shipment" is now "Unpack" behind a confirmation.
+  nodes(fixture.render()).find(node => node.type === "button" && nodeText(node) === "Unpack").props.onClick();
   await settle(fixture);
   assert.deepEqual(alerts(fixture.render()).sort(), ["Not paid: only captured orders can ship.", "Orders are unavailable"].sort());
 });
@@ -82,7 +85,7 @@ test("a refused shipment action is shown, and a queue error is shown on its own"
 test("clicking A then B never shows A's late detail while B is selected", async () => {
   const calls = [];
   const fixture = componentFixture(FILE, {
-    modules: { "@/lib/admin/dashboard": dashboard, ...navigation() },
+    modules: { "@/lib/admin/dashboard": dashboard, "./board/stage": boardStage, ...navigation() },
     fetcher: (url, options = {}) => {
       if (!url.includes("?id=")) return Promise.resolve(json({ items: [summary(A, "GRM-A"), summary(B, "GRM-B")] }));
       const pending = deferred(); calls.push({ url, signal: options.signal, ...pending }); return pending.promise;
@@ -106,7 +109,7 @@ test("clicking A then B never shows A's late detail while B is selected", async 
 
 test("a rejected detail fetch shows an error instead of an unhandled rejection", async () => {
   const fixture = componentFixture(FILE, {
-    modules: { "@/lib/admin/dashboard": dashboard, ...navigation() },
+    modules: { "@/lib/admin/dashboard": dashboard, "./board/stage": boardStage, ...navigation() },
     fetcher: url => url.includes("?id=") ? Promise.reject(new TypeError("Failed to fetch")) : Promise.resolve(json({ items: [summary(A, "GRM-A")] })),
   });
   await runEffects(fixture, [1]);
@@ -119,7 +122,7 @@ test("?order= follows the search params, not only the first render", async () =>
   let query = `order=${A}`;
   const requested = [];
   const fixture = componentFixture(FILE, {
-    modules: { "@/lib/admin/dashboard": dashboard, "next/navigation": { useSearchParams: () => new URLSearchParams(query) } },
+    modules: { "@/lib/admin/dashboard": dashboard, "./board/stage": boardStage, "next/navigation": { useSearchParams: () => new URLSearchParams(query) } },
     fetcher: async url => { if (url.includes("?id=")) { const id = url.split("?id=")[1]; requested.push(id); return json(detail(id, id === A ? "GRM-A" : "GRM-B")); } return json({ items: [] }); },
   });
   await runEffects(fixture, [0]); await runEffects(fixture, [3]);

@@ -6,6 +6,7 @@ import { Button, Select, StatusSelect } from "@/components/admin/ui";
 import { useTaxonomy } from "@/components/admin/catalog/useTaxonomy";
 import { cn } from "@/lib/utils";
 import { CategoryPicker } from "../CategoryPicker";
+import { SerialSettingField } from "../SerialSettingField";
 import { withSeries } from "../editor-state";
 import { Field, Section } from "../Field";
 import { formatKzt, inputClass } from "../shared";
@@ -63,6 +64,7 @@ export function GeneralTab({ editor, skuConflicts, onOpenTab }: { editor: Produc
             Featured product (homepage collections can pick it)
           </label>
         </div>
+        <div className="mt-4"><SerialSettingField productId={typeof base.id === "string" ? base.id : undefined} /></div>
       </Section>
 
       <Section id="general-price" title="Price and stock" description={hasVariants ? undefined : "Prices are in tenge (₸). Stock is the on-hand quantity at the main location; saving writes a stock movement."}>

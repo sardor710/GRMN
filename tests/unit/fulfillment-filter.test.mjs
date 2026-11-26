@@ -3,6 +3,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import * as dashboard from "../../src/lib/admin/dashboard.ts";
+import * as boardStage from "../../src/app/admin/orders/_components/board/stage.ts";
 import { componentFixture, nodes, nodeText } from "../helpers/component-fixture.mjs";
 
 const FILE = "src/app/admin/orders/_components/FulfillmentScreen.tsx";
@@ -13,7 +14,7 @@ const ok = items => ({ ok: true, status: 200, json: async () => ({ items }) });
 function screen() {
   const calls = [];
   const fixture = componentFixture(FILE, {
-    modules: { "@/lib/admin/dashboard": dashboard, "next/navigation": { useSearchParams: () => new URLSearchParams() } },
+    modules: { "@/lib/admin/dashboard": dashboard, "./board/stage": boardStage, "next/navigation": { useSearchParams: () => new URLSearchParams() } },
     fetcher: (url, options) => { const pending = deferred(); calls.push({ url, signal: options?.signal, ...pending }); return pending.promise; },
   });
   // Effects in order: 0 follows ?order= (useSearchParams), 1 loads the queue, 2 aborts the queue gate on unmount,

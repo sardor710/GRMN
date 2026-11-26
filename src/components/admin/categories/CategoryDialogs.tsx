@@ -8,7 +8,9 @@ import { translateName, type AdminMenuItem, type CategoryUsage, type LocalName }
 const input = "h-10 w-full border border-[#d9d9d9] bg-white px-3 text-[14px] text-black outline-none focus:border-black";
 const label = "block text-[12px] font-medium uppercase tracking-[0.04em] text-[#595959]";
 
-export interface NameValues { en: string; ru: string; kk: string; navVisible: boolean }
+export interface NameValues { en: string; ru: string; kk: string; navVisible: boolean; serialPolicy: SerialPolicy }
+/** 0030 (owner 2026-11-25): serial number at packing; null = same as the parent category. */
+export type SerialPolicy = "required" | "none" | null;
 
 /** Name in English, Russian and Kazakh (auto-translate fills the empty ones), plus "show in the menu". */
 export function CategoryNameDialog({ title, initial, showVisibility, fixedLink, emptyHint = "Uses the English name when empty", note, onSave, onClose }: {
@@ -17,17 +19,17 @@ export function CategoryNameDialog({ title, initial, showVisibility, fixedLink, 
   emptyHint?: string;
   /** A line under the fields (e.g. where a menu rename applies). */
   note?: string;
-  initial?: { name: LocalName; navVisible: boolean };
+  initial?: { name: LocalName; navVisible: boolean; serialPolicy?: SerialPolicy };
   showVisibility: boolean;
   /** A fixed menu link (e.g. Sports & Fitness opens Running), shown read-only. */
   fixedLink?: string | null;
   onSave: (values: NameValues) => Promise<void>;
   onClose: () => void;
 }) {
-  const [values, setValues] = useState<NameValues>({ en: initial?.name.en ?? "", ru: initial?.name.ru ?? "", kk: initial?.name.kk ?? "", navVisible: initial?.navVisible ?? true });
+  const [values, setValues] = useState<NameValues>({ en: initial?.name.en ?? "", ru: initial?.name.ru ?? "", kk: initial?.name.kk ?? "", navVisible: initial?.navVisible ?? true, serialPolicy: initial?.serialPolicy ?? null });
   const [busy, setBusy] = useState<"save" | "translate" | null>(null);
   const [message, setMessage] = useState("");
-  const set = (field: keyof NameValues) => (value: string | boolean) => setValues(current => ({ ...current, [field]: value }));
+  const set = (field: keyof NameValues) => (value: string | boolean | null) => setValues(current => ({ ...current, [field]: value }));
   const translate = async () => {
     setBusy("translate"); setMessage("");
     try {
@@ -55,6 +57,17 @@ export function CategoryNameDialog({ title, initial, showVisibility, fixedLink, 
           </label>
         )}
         {showVisibility && <p className="text-[12px] text-[#595959]">Hiding takes it out of every menu it is in. To remove it from one menu only, use “Show under…”.</p>}
+        {initial && (
+          <div>
+            <label className={label} htmlFor="category-serial">Serial number at packing</label>
+            <select id="category-serial" className={input} value={values.serialPolicy ?? "inherit"} onChange={(e) => set("serialPolicy")(e.target.value === "inherit" ? null : e.target.value)}>
+              <option value="inherit">Same as parent category</option>
+              <option value="required">Needs a serial (electronic devices)</option>
+              <option value="none">No serial (bands, cables, chargers, cases)</option>
+            </select>
+            <p className="mt-1 text-[12px] text-[#595959]">Products here ask for one serial per unit when packed. A product can override this on its General tab.</p>
+          </div>
+        )}
         {note && <p className="text-[12px] text-[#595959]">{note}</p>}
         {fixedLink && <p className="text-[13px] text-[#595959]">Menu link: <code className="bg-[#f2f2f2] px-1">{fixedLink}</code> (fixed)</p>}
         {message && <p role="status" className="text-[13px] text-[#595959]">{message}</p>}
