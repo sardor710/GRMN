@@ -240,9 +240,18 @@ test("settings are typed and versioned; invalid combinations are refused; the US
   assert.deepEqual((await settingsApi.get(settingsAdmin)).analytics,tagged.analytics);
   const {readAnalyticsConfig}=await import("../../src/server/settings/service.ts");
   assert.deepEqual(await readAnalyticsConfig(database.pool),tagged.analytics);
+  // 0033 (owner 2026-11-26): Store pickup, seeded with the Panfilova 154 showroom; replaced whole, validated, read publicly.
+  const {readStorePickup}=await import("../../src/server/settings/service.ts");
+  assert.equal(tagged.pickupLocation.enabled,true);assert.match(tagged.pickupLocation.address.en,/Panfilov/);assert.equal(tagged.pickupLocation.hours.en,"Daily 10:00–19:00");
+  const store={enabled:false,name:{en:"Garmin store",ru:"Магазин Garmin",kk:"Garmin дүкені"},address:{en:"1 Abay Ave, Almaty",ru:"пр. Абая, 1",kk:"Абай д-лы, 1"},hours:{en:"Mon–Sat 10–20",ru:"Пн–Сб 10–20",kk:"Дс–Сб 10–20"},phone:"+77001234567",lat:43.24,lng:76.95};
+  await rejectsWith(settingsApi.update(settingsAdmin,{expectedVersion:tagged.version,pickupLocation:{...store,lat:43.24,lng:null}}),400,"INVALID_INPUT");
+  await rejectsWith(settingsApi.update(settingsAdmin,{expectedVersion:tagged.version,pickupLocation:{...store,hours:{en:"",ru:"x",kk:"x"}}}),400,"INVALID_INPUT");
+  const picked=await settingsApi.update(settingsAdmin,{expectedVersion:tagged.version,pickupLocation:store});
+  assert.deepEqual(picked.pickupLocation,store);assert.deepEqual(await readStorePickup(database.pool),store);
+  assert.deepEqual(picked.analytics,tagged.analytics,"a pickup edit keeps the analytics config");
   assert.equal((await q("SELECT presentation_config->>'keep' AS keep FROM store_settings WHERE id=1")).rows[0].keep,"1");
   // A later rate is a new version; history is kept and audited.
-  const second=await settingsApi.setExchangeRate(settingsAdmin,{expectedVersion:tagged.version,kztPerUsd:"501.5"});
+  const second=await settingsApi.setExchangeRate(settingsAdmin,{expectedVersion:picked.version,kztPerUsd:"501.5"});
   assert.equal(second.exchangeRate.version,rated.exchangeRate.version+1);
   assert.ok((await q("SELECT count(*)::int AS n FROM audit_events WHERE action='settings.exchange_rate_set'")).rows[0].n>=2);
   await rejectsWith(settingsApi.get(support),403,"FORBIDDEN");

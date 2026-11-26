@@ -5,6 +5,7 @@ import { z } from "zod";
 import type { Permission, Principal } from "../context.ts";
 import { AuthFailure } from "../auth/config.ts";
 import { demoCheckoutForcedOff } from "../payments/demo-mode.ts";
+import { pickupLocationSchema, readPickupLocation, type PickupLocation } from "../../lib/pickup.ts";
 import { parseAnalyticsConfig, validateAnalyticsInput, type AnalyticsConfig } from "../../lib/analytics/config.ts";
 
 // Task 18B. Typed, versioned store settings and the KZT-per-USD rate editor (settings:write, which
@@ -38,6 +39,8 @@ const updateInput = z.strictObject({
   paymentMode: z.enum(["demo", "live"]).optional(),
   // Task 5.1: Settings -> Google & analytics. Replaces the whole stored analytics config (blank = unset);
   // formats are checked by validateAnalyticsInput, which names each invalid field.
+  // 0033 (owner 2026-11-26): Settings -> Store pickup. Replaces the whole stored store (one store).
+  pickupLocation: pickupLocationSchema.optional(),
   analytics: z.strictObject({ ga4Id: text(200).optional(), gtmId: text(200).optional(), googleVerification: text(200).optional(), yandexVerification: text(200).optional() }).optional(),
 }).refine(value => Object.keys(value).length > 1);
 const rateInput = z.strictObject({ expectedVersion: z.number().int().min(1), kztPerUsd: z.string().regex(/^\d{1,12}(\.\d{1,8})?$/).refine(value => Number(value) > 0) });
@@ -58,15 +61,17 @@ export interface SettingsDTO {
   demoCheckout: { enabled: boolean; forcedOff: boolean };
   /** Task 5.1: GA4 / GTM ids and Search Console / Yandex Webmaster tokens (presentation_config.analytics). */
   analytics: AnalyticsConfig;
+  /** 0033: the store customers can pick up from, and whether pickup is offered. */
+  pickupLocation: PickupLocation;
 }
 interface Row {
   version: number; store_name: string | null; contact_email: string | null; support_phone: string | null; usd_display_enabled: boolean; active_exchange_rate_id: string | null;
   active_tax_configuration_id: string | null; active_shipping_policy_id: string | null; free_shipping_threshold: string | null; maintenance_mode: boolean; payment_mode: "demo" | "live";
   seo_title: string | null; seo_description: string | null; rate_version: number | null; kzt_per_usd: string | null; rate_created_at: Date | null;
-  manual_payment_instructions: string | null; manual_payment_hold_hours: number; analytics: unknown;
+  manual_payment_instructions: string | null; manual_payment_hold_hours: number; analytics: unknown; pickup_location: unknown;
 }
 const SELECT = `SELECT s.version,s.store_name,s.contact_email,s.support_phone,s.usd_display_enabled,s.active_exchange_rate_id,s.active_tax_configuration_id,s.active_shipping_policy_id,
-  s.free_shipping_threshold_minor::text AS free_shipping_threshold,s.maintenance_mode,s.payment_mode,s.seo_title,s.seo_description,s.manual_payment_instructions,s.manual_payment_hold_hours,s.presentation_config->'analytics' AS analytics,r.version AS rate_version,r.kzt_per_usd::text AS kzt_per_usd,r.created_at AS rate_created_at
+  s.free_shipping_threshold_minor::text AS free_shipping_threshold,s.maintenance_mode,s.payment_mode,s.seo_title,s.seo_description,s.manual_payment_instructions,s.manual_payment_hold_hours,s.presentation_config->'analytics' AS analytics,s.pickup_location,r.version AS rate_version,r.kzt_per_usd::text AS kzt_per_usd,r.created_at AS rate_created_at
   FROM store_settings s LEFT JOIN exchange_rate_versions r ON r.id=s.active_exchange_rate_id WHERE s.id=1`;
 function dto(row: Row): SettingsDTO {
   return {
@@ -77,7 +82,14 @@ function dto(row: Row): SettingsDTO {
     manualPayment: { instructions: row.manual_payment_instructions, holdHours: row.manual_payment_hold_hours },
     demoCheckout: { enabled: row.payment_mode === "demo" && !demoCheckoutForcedOff(), forcedOff: demoCheckoutForcedOff() },
     analytics: parseAnalyticsConfig(row.analytics),
+    pickupLocation: readPickupLocation(row.pickup_location),
   };
+}
+
+/** 0033: the pickup store for checkout and order pages (no staff session needed). */
+export async function readStorePickup(db: Pick<Pool, "query">): Promise<PickupLocation> {
+  const row = (await db.query<{ pickup_location: unknown }>("SELECT pickup_location FROM store_settings WHERE id=1")).rows[0];
+  return readPickupLocation(row?.pickup_location);
 }
 
 /** Task 5.1: the storefront's analytics config (no staff session needed); invalid stored values are dropped. */
@@ -145,13 +157,15 @@ export function createSettingsService({ pool, authorize }: Options) {
         await client.query(
           `UPDATE store_settings SET version=version+1,store_name=$1,contact_email=$2,support_phone=$3,usd_display_enabled=$4,free_shipping_threshold_minor=$5,maintenance_mode=$6,
              seo_title=$7,seo_description=$8,active_tax_configuration_id=$9,active_shipping_policy_id=$10,manual_payment_instructions=$11,manual_payment_hold_hours=$12,payment_mode=$13,
-             presentation_config=CASE WHEN $14::jsonb IS NULL THEN presentation_config ELSE presentation_config || jsonb_build_object('analytics',$14::jsonb) END WHERE id=1`,
+             presentation_config=CASE WHEN $14::jsonb IS NULL THEN presentation_config ELSE presentation_config || jsonb_build_object('analytics',$14::jsonb) END,
+             pickup_location=COALESCE($15::jsonb,pickup_location) WHERE id=1`,
           [value(command.storeName, current.store_name), blank(command.contactEmail, current.contact_email), blank(command.supportPhone, current.support_phone), usd,
             command.freeShippingThresholdMinor === undefined ? current.free_shipping_threshold : command.freeShippingThresholdMinor, value(command.maintenanceMode, current.maintenance_mode),
             blank(command.seoTitle, current.seo_title), blank(command.seoDescription, current.seo_description),
             value(command.activeTaxConfigurationId, current.active_tax_configuration_id), value(command.activeShippingPolicyId, current.active_shipping_policy_id),
             blank(command.manualPaymentInstructions, current.manual_payment_instructions), value(command.manualPaymentHoldHours, current.manual_payment_hold_hours),
-            value(command.paymentMode, current.payment_mode), analytics === undefined ? null : JSON.stringify(analytics)]);
+            value(command.paymentMode, current.payment_mode), analytics === undefined ? null : JSON.stringify(analytics),
+            command.pickupLocation === undefined ? null : JSON.stringify(command.pickupLocation)]);
         await audit(client, principal.userId, "settings.updated", { fields: Object.keys(command).filter(name => name !== "expectedVersion"), beforeVersion: current.version,
           ...(command.paymentMode !== undefined && command.paymentMode !== current.payment_mode ? { paymentMode: { from: current.payment_mode, to: command.paymentMode } } : {}) });
         return dto((await client.query<Row>(SELECT)).rows[0]);

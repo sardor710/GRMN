@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/admin/ui";
+import type { PickupLocation } from "@/lib/pickup";
+import { StorePickupSection } from "./StorePickupSection";
 import { ANALYTICS_FIELDS, validateAnalyticsInput, type AnalyticsConfig, type AnalyticsErrors, type AnalyticsField } from "@/lib/analytics/config";
 
 // Task 18B: typed, versioned store settings and the audited KZT-per-USD rate editor (PostgreSQL mode).
@@ -18,6 +20,7 @@ interface Settings {
   manualPayment: { instructions: string | null; holdHours: number };
   demoCheckout: { enabled: boolean; forcedOff: boolean };
   analytics?: AnalyticsConfig;
+  pickupLocation?: PickupLocation;
 }
 const GOOGLE_FIELDS: Record<AnalyticsField, { label: string; placeholder: string; help: string }> = {
   ga4Id: { label: "GA4 measurement id", placeholder: "G-ABC123XYZ", help: "Google Analytics ▸ Admin ▸ Data streams ▸ your web stream. Loads gtag.js on the storefront unless a Tag Manager container is set." },
@@ -97,6 +100,7 @@ export default function StoreSettingsScreen() {
         <label className="g-checkbox-label"><input className="g-checkbox" type="checkbox" checked={form.maintenance} onChange={event => setForm(current => ({ ...current, maintenance: event.target.checked }))} /> Maintenance mode</label>
         <Button variant="primary" size="md" className="justify-self-start sm:col-span-2" type="button" disabled={busy} onClick={save}>Save settings</Button>
       </section>
+      {settings.pickupLocation && <StorePickupSection value={settings.pickupLocation} busy={busy} onSave={pickupLocation => void send("PUT", { expectedVersion: settings.version, pickupLocation }, "Store pickup saved", true)} />}
       <section className="space-y-3 border border-garmin-control p-4" aria-labelledby="settings-google-heading">
         <h2 id="settings-google-heading" className="font-sans mb-3 border-b border-garmin-rule pb-2.5 text-sm font-medium tracking-[0.64px] text-black">Google & analytics</h2>
         <p className="text-sm text-muted-foreground">The storefront loads only what is set here; admin pages never load tags. Leave a field empty to turn it off. Changes show on the next storefront page load.</p>

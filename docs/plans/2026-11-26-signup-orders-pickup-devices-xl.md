@@ -33,7 +33,7 @@ D2. **Gender in Profile**: shown in the profile details and editable there (opti
 D3. **Formal orders area** (Orders tab and the "recent order" block on Profile):
 - List as a clean table (desktop) / stacked rows (mobile): Order number · Date · Status (small dot + word) · Items · Total · chevron. No black badges, no boxed cards, thin rules, consistent type scale.
 - Status words follow the order's method: delivery = Ordered / Packed / Shipped / Delivered; pickup = Ordered / Ready for pickup / Picked up; Cancelled for both.
-- **Opened order**: a full detail view inside the Orders tab with its own link (`/account?order=<orderNumber>`, Back and refresh work), replacing the small popup. Header (number, date, status, payment state), tracker, then product rows with **product photo**, **product name linking to its product page** (`/p/{code}[/{sku}]`; plain text when the product no longer exists), options, quantity, serial(s), line price; totals; delivery address **or** pickup store card; order updates.
+- **Opened order**: a full detail view inside the Orders tab with its own link (`/account?order=<order id>`, Back and refresh work), replacing the small popup. Header (number, date, status, payment state), tracker, then product rows with **product photo**, **product name linking to its product page** (`/p/{code}[/{sku}]`; plain text when the product no longer exists), options, quantity, serial(s), line price; totals; delivery address **or** pickup store card; order updates.
 - The legacy "claim an order" form stays, visually aligned.
 
 D4. **Checkout delivery step**
@@ -139,6 +139,17 @@ Interfaces fixed here so every module agrees:
 - `DeviceDTO = { serial; productName; variantName|null; productCode|null; sku|null; image|null; orderNumber; purchasedAt; warrantyMonths; warrantyEndsAt }`; `GET /api/account/devices → { items: DeviceDTO[] }`.
 - Shipment action `pick_up` (ready → delivered, pickup orders only; sets dispatched_at=delivered_at=now; customer event `fulfillment.picked_up`). `ship`/`dispatch` refused for pickup orders.
 - Sign-up `POST /api/auth/grmn/signup` body `{ name, email, phoneNumber, challengeId, code, gender?, birthDate? }`; code always checked (purpose `sign_in`); `/grmn/mode.signUp` = code sending available.
+
+Advisor review 2026-11-26 (folded in):
+- `pick_up` = existing dispatch then deliver transitions back to back in one transaction (same constraints/stock/stageDates); board `canDrop`: pickup packed→delivered only, never packed→shipped.
+- Pickup pricing is decided inside `priceCart` from the snapshot's pickup flag with a deterministic `shippingPolicy` (`rateKey:"pickup"`) so placement revalidation matches; test quote → place.
+- Sign-up page shows the fixed-code note like sign-in; name/email validated client- and server-side before the code is consumed.
+- Order link uses the order id: `/account?order=<uuid>` (getOwnOrder is by id; list pages at 20).
+- Journal `when` > 0032's; rehearsal asserts columns exist.
+- Devices are per unit: that unit's shipment `delivered` + its `delivered_at`. Clear devices/order state in `signedOut()`.
+- Expected test updates: direct-signup tests/smoke, CheckoutPanel hook-order tests (append hooks last), i18n parity, wording.
+- Deploy: write-path checks on staging; prod checks read-only.
+- UI: design pass (`ui-designer`) on current orders screenshots before M7; build to its output.
 
 ### M1 — Schema (wave 1)
 - [ ] T1.1 Write `drizzle/0033_account-pickup-devices.sql` (idempotent `ADD COLUMN IF NOT EXISTS` + guarded constraints, seed pickup_location = Panfilova 154 / 10:00–19:00), journal entry after 0032, drizzle schema fields — verify: `npm run test:integration -- tests/integration/database.test.mjs` + new `tests/integration/schema-0033.test.mjs` (columns exist, re-run no-op, seed value)
