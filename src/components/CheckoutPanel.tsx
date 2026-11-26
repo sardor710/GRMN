@@ -15,12 +15,13 @@ import {
 } from "@/lib/checkout-client";
 import { CartRequestError } from "@/lib/cart-client";
 import {
-  CHECKOUT_COUNTRY, NEW_ADDRESS, checkoutProblems, checkoutRegionCode, defaultDeliveryChoice, deliveryPayload, isDeliverable, normalizePhone,
+  CHECKOUT_COUNTRY, NEW_ADDRESS, PICKUP, checkoutProblems, checkoutRegionCode, defaultDeliveryChoice, deliveryPayload, isDeliverable, normalizePhone,
   type DeliveryChoice,
 } from "@/lib/checkout-address";
 import { kzRegionLabel } from "@/lib/kz-regions";
 import { AddressForm, type AddressFormValue } from "@/components/address/AddressForm";
 import { DemoDot } from "@/components/DemoDot";
+import { pickupMapUrl, pickupText, type PickupLocation } from "@/lib/pickup";
 
 /** Task 5.2: a cart line as a GA4 item at the given KZT minor unit price (item_id = SKU, item_group_id = product code). */
 const gaLineItem = (line: CartLineDTO, unitMinor: string, quantity: number): GaItem =>
@@ -77,10 +78,14 @@ export function CheckoutPanel({ cart, disabled, onPlaced, onCartStale }: { cart:
   const [choice, setChoice] = useState<DeliveryChoice>(NEW_ADDRESS);
   const [address, setAddress] = useState<AddressFormValue>(EMPTY_ADDRESS);
   const [saveNew, setSaveNew] = useState(false);
+  // 0033 (owner 2026-11-26): the pickup store (Settings ▸ Store pickup); null until loaded or when switched off.
+  const [store, setStore] = useState<PickupLocation | null>(null);
   // A quote is for one cart revision; any cart change needs a new one.
   const current = quote && quote.cartVersion === cart.version ? quote : null;
   const addresses = who.status === "signed-in" ? who.addresses : [];
   const typing = choice === NEW_ADDRESS;
+  const pickingUp = choice === PICKUP && store !== null;
+  const offersPickup = store !== null;
   const locked = busy || disabled;
   // The server offers exactly one method (sandbox while demo purchases run, else demo or manual by the setting).
   const method = current?.paymentMethod ?? cart.paymentMethods[0] ?? "manual";
@@ -103,6 +108,15 @@ export function CheckoutPanel({ cart, disabled, onPlaced, onCartStale }: { cart:
     })();
     return () => { live = false; };
   }, [account]);
+
+  useEffect(() => {
+    let live = true;
+    void fetch("/api/store/pickup", { credentials: "same-origin" })
+      .then(response => response.ok ? response.json() as Promise<PickupLocation | { enabled: false }> : null)
+      .then(value => { if (live && value && value.enabled && "address" in value) setStore(value); })
+      .catch(() => { /* without the store, checkout offers delivery only */ });
+    return () => { live = false; };
+  }, []);
 
   const edit = (field: Field, value: string) => { setForm(previous => ({ ...previous, [field]: value })); setQuote(null); };
   const choose = (next: DeliveryChoice) => { setChoice(next); setQuote(null); setError(null); };
@@ -178,10 +192,10 @@ export function CheckoutPanel({ cart, disabled, onPlaced, onCartStale }: { cart:
 
   const contactFields = (
     <div className="space-y-3">
-      {typing && (
+      {(typing || pickingUp) && (
         <>
           <label className="g-label text-black">
-            {t("fields.recipientName")}
+            {pickingUp ? t("fields.pickupName") : t("fields.recipientName")}
             <input name="name" value={form.name} autoComplete="name" required maxLength={200} disabled={locked} onChange={event => edit("name", event.target.value)} className={input} />
           </label>
           <label className="g-label text-black">
@@ -211,7 +225,7 @@ export function CheckoutPanel({ cart, disabled, onPlaced, onCartStale }: { cart:
             <p className="text-[14px] leading-[21px] text-black" aria-live="polite">{t("loadingDelivery")}</p>
           ) : (
             <>
-              {addresses.length > 0 && (
+              {(addresses.length > 0 || offersPickup) && (
                 <div role="radiogroup" aria-label={t("deliveryAddress")} className="space-y-2">
                   {addresses.map(saved => {
                     const ships = isDeliverable(saved), selected = choice === saved.id;
@@ -226,9 +240,19 @@ export function CheckoutPanel({ cart, disabled, onPlaced, onCartStale }: { cart:
                       </label>
                     );
                   })}
+                  {store && (
+                    <label className={`flex cursor-pointer gap-3 border-2 p-3 text-[14px] leading-[21px] ${pickingUp ? "border-black" : "border-garmin-option"}`}>
+                      <input type="radio" name="delivery-address" value={PICKUP} checked={pickingUp} disabled={locked} onChange={() => choose(PICKUP)} className="mt-1 shrink-0 accent-black" />
+                      <span className="min-w-0 break-words">
+                        <span className="flex flex-wrap items-baseline justify-between gap-x-3"><span className="font-bold text-black">{t("pickup.title")}</span><span className="text-[13px] text-black">{t("pickup.free")}</span></span>
+                        <span className="block">{pickupText(store.name, locale)} · {pickupText(store.address, locale)}</span>
+                        <span className="block text-garmin-text-muted">{pickupText(store.hours, locale)}</span>
+                      </span>
+                    </label>
+                  )}
                   <label className={`flex cursor-pointer gap-3 border-2 p-3 text-[14px] leading-[21px] ${typing ? "border-black" : "border-garmin-option"}`}>
                     <input type="radio" name="delivery-address" value={NEW_ADDRESS} checked={typing} disabled={locked} onChange={() => choose(NEW_ADDRESS)} className="mt-1 shrink-0 accent-black" />
-                    <span className="font-bold text-black">{t("newAddress")}</span>
+                    <span className="font-bold text-black">{addresses.length > 0 ? t("newAddress") : t("deliverToAddress")}</span>
                   </label>
                 </div>
               )}
@@ -243,6 +267,16 @@ export function CheckoutPanel({ cart, disabled, onPlaced, onCartStale }: { cart:
                     </label>
                   )}
                 </>
+              )}
+              {pickingUp && store && (
+                <div className="border border-garmin-control bg-muted p-3 text-[14px] leading-[21px] text-black" data-pickup-store>
+                  <p className="font-bold">{pickupText(store.name, locale)}</p>
+                  <p>{pickupText(store.address, locale)}</p>
+                  <p>{t("pickup.hours", { hours: pickupText(store.hours, locale) })}</p>
+                  {store.phone && <p>{t("pickup.phone", { phone: store.phone })}</p>}
+                  <a href={pickupMapUrl(store)} target="_blank" rel="noreferrer" className="mt-1 inline-block text-garmin-blue underline">{t("pickup.map")}</a>
+                  <p className="mt-2 text-[13px] text-garmin-text-muted">{t("pickup.note")}</p>
+                </div>
               )}
               {!typing && contactFields}
             </>

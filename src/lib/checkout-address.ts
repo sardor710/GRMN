@@ -6,13 +6,15 @@ import { findKzCityAnywhere, resolveKzRegion } from "./kz-regions.ts";
 
 export const CHECKOUT_COUNTRY = "KZ";
 export const NEW_ADDRESS = "new";
+/** 0033 (owner 2026-11-26): pick up at the store (Settings ▸ Store pickup). */
+export const PICKUP = "pickup";
 export const E164_PHONE = /^[+][1-9][0-9]{7,14}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface CheckoutContact { name: string; phone: string; email: string }
 /** The typed address (an AddressForm value; extra fields are ignored). */
 export interface CheckoutAddressInput { region?: string; city: string; line1: string; line2?: string; postalCode?: string }
-/** A saved address id, or NEW_ADDRESS for the typed one. */
+/** A saved address id, NEW_ADDRESS for the typed one, or PICKUP. */
 export type DeliveryChoice = string;
 
 /** Phone as the server expects it: spaces, dashes, dots and brackets are dropped ("+7 701 123-45-67" → "+77011234567"). */
@@ -34,21 +36,25 @@ export function checkoutRegionCode(address: CheckoutAddressInput): string {
   return findKzCityAnywhere(address.city)?.region.code ?? "";
 }
 
-const chosenSaved = (choice: DeliveryChoice, addresses: readonly SavedAddressDTO[]) => choice === NEW_ADDRESS ? undefined : addresses.find(address => address.id === choice);
+const chosenSaved = (choice: DeliveryChoice, addresses: readonly SavedAddressDTO[]) => choice === NEW_ADDRESS || choice === PICKUP ? undefined : addresses.find(address => address.id === choice);
 
 /** Problems that keep the delivery step from being reviewed, in form order (empty when it is complete). */
 export function checkoutProblems(contact: CheckoutContact, choice: DeliveryChoice, addresses: readonly SavedAddressDTO[], address: CheckoutAddressInput): string[] {
   const problems: string[] = [];
   const email = contact.email.trim();
-  if (choice !== NEW_ADDRESS) {
-    const saved = chosenSaved(choice, addresses);
-    if (!saved) problems.push("Choose a delivery address");
-    else if (!isDeliverable(saved)) problems.push("This saved address is outside Kazakhstan. Edit it in your account to ship in Kazakhstan, or add a new address");
-  } else {
+  const contactProblems = () => {
     if (!contact.name.trim()) problems.push("Enter the recipient's full name");
     const phone = normalizePhone(contact.phone);
     if (!phone) problems.push("Enter a phone number");
     else if (!E164_PHONE.test(phone)) problems.push("Enter the phone in international format, e.g. +77011234567");
+  };
+  if (choice === PICKUP) contactProblems();
+  else if (choice !== NEW_ADDRESS) {
+    const saved = chosenSaved(choice, addresses);
+    if (!saved) problems.push("Choose a delivery address");
+    else if (!isDeliverable(saved)) problems.push("This saved address is outside Kazakhstan. Edit it in your account to ship in Kazakhstan, or add a new address");
+  } else {
+    contactProblems();
     if (!checkoutRegionCode(address)) problems.push(address.region?.trim() ? "Choose a region of Kazakhstan from the list" : "Choose a region");
     if (!address.city.trim()) problems.push("Enter the city or settlement");
     if (!address.line1.trim()) problems.push("Enter the street and house");
@@ -59,6 +65,7 @@ export function checkoutProblems(contact: CheckoutContact, choice: DeliveryChoic
 
 /** The delivery part of POST /api/cart/quote. Call only when checkoutProblems() is empty. */
 export function deliveryPayload(contact: CheckoutContact, choice: DeliveryChoice, addresses: readonly SavedAddressDTO[], address: CheckoutAddressInput): DeliveryAddressSelection {
+  if (choice === PICKUP) return { kind: "pickup", contact: { recipientName: contact.name.trim(), phone: normalizePhone(contact.phone) } };
   const saved = chosenSaved(choice, addresses);
   if (saved) return { kind: "saved", addressId: saved.id, version: saved.version };
   const line2 = address.line2?.trim() ?? "", postalCode = address.postalCode?.trim() ?? "", region = checkoutRegionCode(address);

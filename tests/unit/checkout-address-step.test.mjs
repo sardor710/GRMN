@@ -11,10 +11,11 @@ import * as accountClient from "../../src/lib/account-client.ts";
 import * as kzRegions from "../../src/lib/kz-regions.ts";
 import * as analyticsEvents from "../../src/lib/analytics/events.ts";
 import * as step from "../../src/lib/checkout-address.ts";
+import * as pickupLib from "../../src/lib/pickup.ts";
 import { createTranslator } from "use-intl/core";
 import * as i18nConfig from "../../src/i18n/config.js";
 
-const { NEW_ADDRESS, checkoutProblems, checkoutRegionCode, defaultDeliveryChoice, deliveryPayload, isDeliverable, normalizePhone } = step;
+const { NEW_ADDRESS, PICKUP, checkoutProblems, checkoutRegionCode, defaultDeliveryChoice, deliveryPayload, isDeliverable, normalizePhone } = step;
 // The panel reads its text through next-intl: render with the real English catalog (ru/kk are covered by the i18n tests).
 const enMessages = JSON.parse(fs.readFileSync(new URL("../../messages/en.json", import.meta.url), "utf8"));
 const i18nModules = {
@@ -74,7 +75,7 @@ test("payload: saved choices send id and version; new ones send a KZ inline addr
     { recipientName: "Synthetic Buyer", phone: "+77011234567", countryCode: "KZ", region: "astana", city: "Astana", line1: "Baitursynov Street, 104", line2: "Apt 4", postalCode: "010000" });
 });
 
-/** The real panel with stubbed hooks. Slots: 0 form, 1 quote, 2 busy, 3 error, 4 retry, 5 account, 6 choice, 7 address, 8 save-new. */
+/** The real panel with stubbed hooks. Slots: 0 form, 1 quote, 2 busy, 3 error, 4 retry, 5 account, 6 choice, 7 address, 8 save-new, 9 pickup store. */
 function load(seed = {}) {
   const state = [], quotes = [], requests = [];
   let index = 0;
@@ -94,7 +95,7 @@ function load(seed = {}) {
   const modules = {
     react: hooks, "react/jsx-runtime": { jsx: (type, props) => ({ type, props }), jsxs: (type, props) => ({ type, props }) }, "next/link": "a", ...i18nModules,
     "@/lib/account-client": accountClient, "@/lib/checkout-client": checkoutClient, "@/lib/checkout-address": step, "@/lib/kz-regions": kzRegions, "@/lib/analytics/events": analyticsEvents,
-    "@/components/address/AddressForm": { AddressForm },
+    "@/components/address/AddressForm": { AddressForm }, "@/lib/pickup": pickupLib,
   };
   const output = {};
   const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, jsx: ts.JsxEmit.ReactJSX, esModuleInterop: true, target: ts.ScriptTarget.ES2022 } }).outputText;
@@ -168,4 +169,36 @@ test("guest: AddressForm is shown directly, there is no save option, and missing
   panel.field("phone").props.onChange({ target: { value: "+77011234567" } });
   await panel.submit();
   assert.deepEqual(panel.quotes[0].delivery, { kind: "inline", address: { recipientName: "Synthetic Guest", phone: "+77011234567", countryCode: "KZ", region: "shymkent", city: "Shymkent", line1: "Tauke Khan 5" } });
+});
+
+// 0033 (owner 2026-11-26): pick up at the store.
+const STORE = { enabled: true, name: { en: "Garmin showroom", ru: "Шоурум Garmin", kk: "Garmin шоурумы" }, address: { en: "154 Panfilov St, Almaty", ru: "ул. Панфилова, 154", kk: "Панфилов к-сі, 154" }, hours: { en: "Daily 10:00–19:00", ru: "Ежедневно 10:00–19:00", kk: "Күн сайын 10:00–19:00" }, phone: "+77270000000", lat: null, lng: null };
+
+test("pickup: needs the collector's name and phone, and sends only the contact", () => {
+  assert.deepEqual(checkoutProblems({ name: "", phone: "", email: "" }, PICKUP, [HOME], { region: "", city: "", line1: "" }), ["Enter the recipient's full name", "Enter a phone number"]);
+  assert.deepEqual(checkoutProblems(CONTACT, PICKUP, [], { region: "", city: "", line1: "" }), []);
+  assert.deepEqual(deliveryPayload(CONTACT, PICKUP, [HOME], TYPED), { kind: "pickup", contact: { recipientName: "Synthetic Buyer", phone: "+77011234567" } });
+});
+
+test("signed in: saved addresses, then Pick up at store with hours, then Another address; pickup shows the store card and is quoted as pickup", async () => {
+  const panel = load({ 5: signedIn([HOME]), 6: HOME.id, 9: STORE });
+  const radios = () => nodes(panel.render()).filter(node => node.type === "input" && node.props.type === "radio");
+  assert.deepEqual(radios().map(radio => radio.props.value), [HOME.id, PICKUP, NEW_ADDRESS]);
+  const text = nodeText(panel.render());
+  assert.match(text, /Pick up at store/); assert.match(text, /Daily 10:00–19:00/); assert.match(text, /Another address/);
+  radios()[1].props.onChange();
+  const card = nodeText(panel.render());
+  assert.match(card, /Opening hours: Daily 10:00–19:00/); assert.match(card, /Open in maps/); assert.match(card, /\+77270000000/);
+  panel.field("name").props.onChange({ target: { value: "Synthetic Buyer" } });
+  panel.field("phone").props.onChange({ target: { value: "+7 701 123 45 67" } });
+  await panel.submit();
+  assert.deepEqual(panel.quotes.map(body => body.delivery), [{ kind: "pickup", contact: { recipientName: "Synthetic Buyer", phone: "+77011234567" } }]);
+});
+
+test("guest: Pick up at store and Deliver to an address; without the store there are no choices", () => {
+  const withStore = load({ 5: { status: "guest" }, 6: NEW_ADDRESS, 9: STORE });
+  assert.deepEqual(nodes(withStore.render()).filter(node => node.type === "input" && node.props.type === "radio").map(radio => radio.props.value), [PICKUP, NEW_ADDRESS]);
+  assert.match(nodeText(withStore.render()), /Deliver to an address/);
+  const without = load({ 5: { status: "guest" }, 6: NEW_ADDRESS });
+  assert.equal(nodes(without.render()).filter(node => node.type === "input" && node.props.type === "radio").length, 0);
 });

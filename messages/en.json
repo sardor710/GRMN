@@ -1039,7 +1039,8 @@
       "city": "City",
       "line1": "Address",
       "email": "Email (optional)",
-      "coupon": "Promo code (optional)"
+      "coupon": "Promo code (optional)",
+      "pickupName": "Name of the person collecting"
     },
     "failed": "Checkout failed",
     "retryNotice": "We could not confirm your order. Retry: the same request is sent again, so it cannot create a second order.",
@@ -1087,7 +1088,7 @@
     "primary": "Primary",
     "editToShip": "Edit in your account to ship in Kazakhstan.",
     "openAccount": "Open account",
-    "newAddress": "New address",
+    "newAddress": "Another address",
     "saveToAddresses": "Save to my addresses",
     "addressSaveFailed": "The address could not be saved: {error}",
     "sandboxNoticeTitle": "No payment is taken for this order.",
@@ -1097,7 +1098,16 @@
     "awaitingDemoPayment": "Awaiting payment",
     "paymentLine": "Payment: {state}",
     "sandboxReceipt": "No payment is taken for this order.",
-    "noPaymentLine": "No payment is taken for this order."
+    "noPaymentLine": "No payment is taken for this order.",
+    "deliverToAddress": "Deliver to an address",
+    "pickup": {
+      "title": "Pick up at store",
+      "free": "Free",
+      "hours": "Opening hours: {hours}",
+      "phone": "Phone: {phone}",
+      "map": "Open in maps",
+      "note": "Pay now; we'll show “Ready for pickup” in your order when it's waiting for you. Bring your order number."
+    }
   },
   "Locations": {
     "metaTitle": "Select a Location | Garmin Kazakhstan",

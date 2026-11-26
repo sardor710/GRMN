@@ -6,7 +6,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 1 | 0/30 | 2026-11-26 | M1 migration 0033 |
+| Executing | 4 | 8/22 | 2026-11-26 | M5 board pickup |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -152,20 +152,20 @@ Advisor review 2026-11-26 (folded in):
 - UI: design pass (`ui-designer`) on current orders screenshots before M7; build to its output.
 
 ### M1 — Schema (wave 1)
-- [ ] T1.1 Write `drizzle/0033_account-pickup-devices.sql` (idempotent `ADD COLUMN IF NOT EXISTS` + guarded constraints, seed pickup_location = Panfilova 154 / 10:00–19:00), journal entry after 0032, drizzle schema fields — verify: `npm run test:integration -- tests/integration/database.test.mjs` + new `tests/integration/schema-0033.test.mjs` (columns exist, re-run no-op, seed value)
+- [x] T1.1 (schema-0033.test 3/3; journal when 1795727864501 > 0032) Write `drizzle/0033_account-pickup-devices.sql` (idempotent `ADD COLUMN IF NOT EXISTS` + guarded constraints, seed pickup_location = Panfilova 154 / 10:00–19:00), journal entry after 0032, drizzle schema fields — verify: `npm run test:integration -- tests/integration/database.test.mjs` + new `tests/integration/schema-0033.test.mjs` (columns exist, re-run no-op, seed value)
 
 ### M2 — Sign-up + gender (server)
-- [ ] T2.1 `signUpInput` in validation.ts; `phones.signUp()` = consume(sign_in) + create user/profile with gender/birthDate, audit `customer.signup_verified`; remove `signUpUnverified`, remove testCode gate on `/grmn/signup`; mode.signUp = sender or testCode — verify: auth-integration tests (wrong code 401, right code session, duplicate 409, gender stored)
-- [ ] T2.2 Profile DTO/save carry `gender` — verify: account-services tests
+- [x] T2.1 (auth-foundation 20/20) `signUpInput` in validation.ts; `phones.signUp()` = consume(sign_in) + create user/profile with gender/birthDate, audit `customer.signup_verified`; remove `signUpUnverified`, remove testCode gate on `/grmn/signup`; mode.signUp = sender or testCode — verify: auth-integration tests (wrong code 401, right code session, duplicate 409, gender stored)
+- [x] T2.2 (account-kz-address 8/8 incl. gender) Profile DTO/save carry `gender` — verify: account-services tests
 
 ### M3 — Pickup settings
-- [ ] T3.1 `src/lib/pickup.ts` (type, schema, seed, `pickupHoursFor(locale)`); settings service read/write `pickupLocation` with version check — verify: reports-settings tests
-- [ ] T3.2 Admin ▸ Settings "Store pickup" block — verify: tsc + smoke settings
+- [x] T3.1 (reports-settings: settings test passes with pickup round-trip) `src/lib/pickup.ts` (type, schema, seed, `pickupHoursFor(locale)`); settings service read/write `pickupLocation` with version check — verify: reports-settings tests
+- [x] T3.2 (StorePickupSection; smoke pending in M8) Admin ▸ Settings "Store pickup" block — verify: tsc + smoke settings
 
 ### M4 — Checkout pickup
-- [ ] T4.1 Cart quote accepts `kind:"pickup"` (refused `PICKUP_UNAVAILABLE` when disabled), snapshot = store address + contact + pickup copy; pricing shipping 0 for pickup — verify: checkout tests (quote shipping 0, disabled refused)
-- [ ] T4.2 Order placement stores fulfillment_method/pickup_snapshot + order_addresses = store address — verify: checkout test reads orders row
-- [ ] T4.3 CheckoutPanel: saved addresses, Pick up at store (store card), Another address (empty form), guest choices — verify: component/ui test + smoke checkout
+- [x] T4.1 (checkout.test 13/13) Cart quote accepts `kind:"pickup"` (refused `PICKUP_UNAVAILABLE` when disabled), snapshot = store address + contact + pickup copy; pricing shipping 0 for pickup — verify: checkout tests (quote shipping 0, disabled refused)
+- [x] T4.2 (checkout.test pickup order row) Order placement stores fulfillment_method/pickup_snapshot + order_addresses = store address — verify: checkout test reads orders row
+- [x] T4.3 (checkout-address-step 11/11; /api/store/pickup) CheckoutPanel: saved addresses, Pick up at store (store card), Another address (empty form), guest choices — verify: component/ui test + smoke checkout
 
 ### M5 — Board pickup
 - [ ] T5.1 Server `pick_up` action + refusal of dispatch for pickup, admin DTO `fulfillmentMethod` — verify: fulfillment/order-board tests
