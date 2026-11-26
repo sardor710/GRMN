@@ -58,7 +58,7 @@ const createInput = z.strictObject({
   });
 const updateInput = z.strictObject({
   shipmentId: z.string().regex(UUID), expectedVersion: z.number().int().min(1), idempotencyKey: key,
-  action: z.enum(["dispatch", "deliver", "cancel", "annotate"]),
+  action: z.enum(["dispatch", "deliver", "cancel", "annotate", "pick_up"]),
   carrier: short.optional(), trackingReference: short.optional(), internalNote: note.optional(),
 }).refine(value => value.action !== "annotate" || value.carrier !== undefined || value.trackingReference !== undefined || value.internalNote !== undefined);
 // 0030: replace one item's serials on a ready (packed) shipment; units.length = the item's quantity in it, or 0 when
@@ -108,8 +108,9 @@ export const requestHash = (value: Record<string, unknown>) => {
 export interface OrderRow {
   id: string; order_number: string; checkout_attempt_id: string | null; order_status: OrderStatus; payment_status: PaymentStatus; fulfillment_status: FulfillmentStatus;
   payment_mode: AdminOrderSummaryDTO["paymentMode"]; data_quality: "complete" | "legacy_incomplete"; version: number; captured: boolean;
+  fulfillment_method: "delivery" | "pickup";
 }
-const ORDER_COLUMNS = "o.id,o.order_number,o.checkout_attempt_id,o.order_status,o.payment_status,o.fulfillment_status,o.payment_mode,o.data_quality,o.version," +
+const ORDER_COLUMNS = "o.id,o.order_number,o.checkout_attempt_id,o.order_status,o.payment_status,o.fulfillment_status,o.payment_mode,o.data_quality,o.version,o.fulfillment_method," +
   "EXISTS (SELECT 1 FROM payment_transactions t WHERE t.order_id=o.id AND t.kind='capture') AS captured";
 interface ShipmentRow {
   id: string; order_id: string; status: ShipmentStatus; version: number; carrier: string | null; tracking_reference: string | null; internal_notes: string | null;
@@ -264,7 +265,7 @@ function summary(row: SummaryRow): AdminOrderSummaryDTO {
   return {
     id: row.id, orderNumber: row.order_number, placedAt: row.shown_at.toISOString(), status: row.order_status, paymentStatus: row.payment_status, fulfillmentStatus: row.fulfillment_status,
     paymentMode: row.payment_mode, dataQuality: row.data_quality, total: money(row.total_minor), itemsCount: row.items_count, contactName: row.contact_name,
-    stage: row.stage, archived: row.archived, paymentPill: row.payment, legacy: row.legacy, itemNames: row.item_names, deliveredAt: row.delivered_at ? new Date(row.delivered_at).toISOString() : null,
+    stage: row.stage, fulfillmentMethod: row.fulfillment_method, archived: row.archived, paymentPill: row.payment, legacy: row.legacy, itemNames: row.item_names, deliveredAt: row.delivered_at ? new Date(row.delivered_at).toISOString() : null,
   };
 }
 
@@ -369,7 +370,7 @@ export function createFulfillmentService({ pool, authorize }: Options) {
         id: order.id, orderNumber: order.order_number, placedAt: order.shown_at.toISOString(), status: order.order_status, paymentStatus: order.payment_status,
         fulfillmentStatus: order.fulfillment_status, paymentMode: order.payment_mode, dataQuality: order.data_quality, total: money(order.total_minor),
         itemsCount: items.rows.reduce((sum, row) => sum + row.quantity, 0), contactName: order.contact_name,
-        stage: order.stage, archived: order.archived, paymentPill: order.payment, itemNames: order.item_names, deliveredAt: order.delivered_at ? new Date(order.delivered_at).toISOString() : null,
+        stage: order.stage, fulfillmentMethod: order.fulfillment_method, archived: order.archived, paymentPill: order.payment, itemNames: order.item_names, deliveredAt: order.delivered_at ? new Date(order.delivered_at).toISOString() : null,
         version: order.version, legacy: isLegacy(order), fulfillable: { allowed: block === null, reason: block },
         contact: { name: order.contact_name, phone: order.contact_phone, email: order.contact_email }, deliveryAddress,
         items: items.rows.map(row => {
@@ -467,7 +468,11 @@ export function createFulfillmentService({ pool, authorize }: Options) {
       });
     },
 
-    /** dispatch (ready -> dispatched), deliver (dispatched -> delivered), cancel (ready -> cancelled), annotate, or set_serials. */
+    /**
+     * dispatch (ready -> dispatched), deliver (dispatched -> delivered), cancel (ready -> cancelled), annotate, or set_serials.
+     * 0033 (owner 2026-11-26): pick_up hands a pickup order over at the store: ready -> dispatched -> delivered in one
+     * transaction (the same guarded transitions as a delivery), and a pickup order is never dispatched on its own.
+     */
     async updateShipment(headers: Headers, input: unknown): Promise<ShipmentResultDTO> {
       if ((input as { action?: unknown } | null)?.action === "set_serials") return service.setSerials(headers, input);
       const principal = await authorize(headers, "orders:fulfill");
@@ -484,23 +489,27 @@ export function createFulfillmentService({ pool, authorize }: Options) {
         if (isLegacy(order)) refuse("LEGACY_ORDER");
         const shipment = (await client.query<ShipmentRow>(`SELECT ${SHIPMENT_COLUMNS} FROM shipments WHERE id=$1 FOR UPDATE`, [command.shipmentId])).rows[0];
         if (shipment.version !== command.expectedVersion) fail("VERSION_CONFLICT", 409, "The shipment changed; reload and try again");
-        const from: Record<string, ShipmentStatus> = { dispatch: "ready", deliver: "dispatched", cancel: "ready" };
+        const pickUp = command.action === "pick_up";
+        if (pickUp && order.fulfillment_method !== "pickup") fail("INVALID_TRANSITION", 409, "Only a pickup order can be marked picked up");
+        if (order.fulfillment_method === "pickup" && (command.action === "dispatch" || command.action === "deliver")) fail("INVALID_TRANSITION", 409, "A pickup order is handed over with Picked up");
+        const from: Record<string, ShipmentStatus> = { dispatch: "ready", deliver: "dispatched", cancel: "ready", pick_up: "ready" };
         if (command.action !== "annotate" && shipment.status !== from[command.action]) fail("INVALID_TRANSITION", 409, `A ${shipment.status} shipment cannot ${command.action}`);
         if (command.action === "annotate" && (shipment.status === "cancelled")) fail("INVALID_TRANSITION", 409, "A cancelled shipment cannot change");
-        if (command.action === "dispatch") { const block = fulfillmentBlock(order); if (block) refuse(block); }
-        const to: Record<string, ShipmentStatus> = { dispatch: "dispatched", deliver: "delivered", cancel: "cancelled", annotate: shipment.status };
+        if (command.action === "dispatch" || pickUp) { const block = fulfillmentBlock(order); if (block) refuse(block); }
+        const to: Record<string, ShipmentStatus> = { dispatch: "dispatched", deliver: "delivered", cancel: "cancelled", annotate: shipment.status, pick_up: "delivered" };
+        if (pickUp) await client.query("UPDATE shipments SET status='dispatched',dispatched_at=clock_timestamp() WHERE id=$1", [shipment.id]);
         await client.query(`UPDATE shipments SET status=$2,version=version+1,
             carrier=COALESCE($3,carrier),tracking_reference=COALESCE($4,tracking_reference),internal_notes=COALESCE($5,internal_notes),
             dispatched_at=CASE WHEN $2='dispatched' THEN clock_timestamp() ELSE dispatched_at END,
             delivered_at=CASE WHEN $2='delivered' THEN clock_timestamp() ELSE delivered_at END
           WHERE id=$1`, [shipment.id, to[command.action], command.carrier ?? null, command.trackingReference ?? null, command.internalNote ?? null]);
-        const past = { dispatch: "dispatched", deliver: "delivered", cancel: "cancelled", annotate: "annotated" }[command.action];
+        const past = { dispatch: "dispatched", deliver: "delivered", cancel: "cancelled", annotate: "annotated", pick_up: "picked_up" }[command.action];
         const eventId = await orderEvent(client, { orderId: order.id, type: `shipment.${past}`, actor: principal.userId, dedupeKey, visibility: "internal",
           payload: { shipmentId: shipment.id, requestHash: hash, ...(command.internalNote ? { internalNote: command.internalNote } : {}) } });
         await shipmentEvent(client, shipment.id, past, principal.userId, `shipment-${past}:${shipment.id}:${command.action === "annotate" ? eventId : "once"}`, command.internalNote);
         const items = (await shipmentItems(client, [shipment.id])).get(shipment.id) ?? [];
-        if (command.action === "dispatch" || command.action === "deliver") {
-          const type = command.action === "dispatch" ? "fulfillment.shipped" : "fulfillment.delivered";
+        if (command.action === "dispatch" || command.action === "deliver" || pickUp) {
+          const type = command.action === "dispatch" ? "fulfillment.shipped" : pickUp ? "fulfillment.picked_up" : "fulfillment.delivered";
           await orderEvent(client, { orderId: order.id, type, actor: principal.userId, dedupeKey: `${type}:${shipment.id}`, visibility: "customer", payload: { shipmentId: shipment.id, items } });
         }
         await audit(client, principal.userId, `fulfillment.shipment_${past}`, shipment.id, eventId, { orderId: order.id, from: shipment.status, to: to[command.action], carrier: command.carrier !== undefined, trackingReference: command.trackingReference !== undefined, note: command.internalNote !== undefined });

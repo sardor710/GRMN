@@ -83,9 +83,9 @@ async function quoted(headers,lines,extra={}){
   return carts.quote(headers,{cartVersion:version,displayCurrency:"KZT",delivery:KZ,...extra});
 }
 /** A placed live order with a started session, not yet paid. */
-async function placedOrder(lines,{couponCode}={}){
+async function placedOrder(lines,{couponCode,delivery}={}){
   await load();
-  const buyer=await owner(),quote=await quoted(buyer.headers,lines,couponCode?{couponCode}:{});
+  const buyer=await owner(),quote=await quoted(buyer.headers,lines,{...(couponCode?{couponCode}:{}),...(delivery?{delivery}:{})});
   const result=await checkout.placeOrder(database.pool,secret,{userId:buyer.id,guestTokenHash:null},key(),{quoteId:quote.id,cartVersion:quote.cartVersion,paymentMethod:"kaspi"},{payments:providers});
   const attemptId=(await q("SELECT id FROM payment_attempts WHERE order_id=$1",[result.orderId])).rows[0].id;
   await payments.startPaymentSession(database.pool,providers,attemptId);
@@ -471,4 +471,27 @@ test("a return of serialized units is received in full or not at all, so no unit
   await returnStep(created.return.id, "authorize");
   await rejectsWith(returnStep(created.return.id, "receive", { lines: [{ returnItemId: created.return.items[0].id, receivedQuantity: 1 }] }), 409, "SERIALS_PARTIAL_RECEIVE");
   await returnStep(created.return.id, "receive", { lines: [{ returnItemId: created.return.items[0].id, receivedQuantity: 2 }] });
+});
+
+// ---------------------------------------------------------------- 0033 pickup (owner 2026-11-26)
+test("pickup: Ready for pickup is the pack step with serials, Picked up hands it over, and it is never shipped",async()=>{
+  const w=await watch(),sn=uniq();
+  const order=await paidOrder([[w.variant,1]],{delivery:{kind:"pickup",contact:{recipientName:"Pickup Buyer",phone:"+77010000077"}}});
+  assert.equal((await find(order.orderId)).fulfillmentMethod,"pickup");
+  await rejectsWith(pack(order.orderId,[{orderItemId:order.item[w.variant],quantity:1}]),409);
+  const packed=await pack(order.orderId,[{orderItemId:order.item[w.variant],quantity:1}],[{orderItemId:order.item[w.variant],units:[sn]}]);
+  assert.equal((await find(order.orderId)).stage,"packed");
+  await rejectsWith(act(packed.shipment,"dispatch"),409,"INVALID_TRANSITION");
+  const picked=await act(packed.shipment,"pick_up");
+  assert.equal(picked.shipment.status,"delivered");assert.ok(picked.shipment.dispatchedAt&&picked.shipment.deliveredAt);
+  assert.equal(picked.order.fulfillmentStatus,"delivered");
+  const row=await find(order.orderId);assert.equal(row.stage,"delivered");assert.equal(row.fulfillmentMethod,"pickup");
+  const events=(await q("SELECT type FROM order_events WHERE order_id=$1 AND visibility='customer' ORDER BY recorded_at,id",[order.orderId])).rows.map(r=>r.type);
+  assert.ok(events.includes("fulfillment.packed")&&events.includes("fulfillment.picked_up"));assert.ok(!events.includes("fulfillment.shipped"));
+  await rejectsWith(act(packed.shipment,"pick_up"),409);
+  // A delivery order cannot be "picked up".
+  const b=await band(),normal=await paidOrder([[b.variant,1]]);
+  const np=await pack(normal.orderId,[{orderItemId:normal.item[b.variant],quantity:1}]);
+  await rejectsWith(act(np.shipment,"pick_up"),409,"INVALID_TRANSITION");
+  assert.equal((await find(normal.orderId)).fulfillmentMethod,"delivery");
 });

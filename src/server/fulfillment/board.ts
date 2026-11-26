@@ -31,9 +31,9 @@ export const STAGE = `(CASE o.fulfillment_status WHEN 'processing' THEN 'packed'
 const PAYMENT = `(CASE WHEN ${CAPTURED} AND o.payment_status IN ('paid','partially_refunded') THEN 'paid' WHEN o.payment_status IN ('failed','refunded') THEN 'problem' ELSE 'awaiting' END)`;
 
 /** Extra columns every board row and the order detail carry. */
-export const BOARD_COLUMNS = `${STAGE} AS stage, ${ARCHIVED} AS archived, ${PAYMENT} AS payment, ${LEGACY} AS legacy, ${DELIVERED_AT} AS delivered_at,
+export const BOARD_COLUMNS = `${STAGE} AS stage, o.fulfillment_method AS fulfillment_method, ${ARCHIVED} AS archived, ${PAYMENT} AS payment, ${LEGACY} AS legacy, ${DELIVERED_AT} AS delivered_at,
   (SELECT COALESCE(json_agg(n.name),'[]'::json) FROM (SELECT name FROM order_items WHERE order_id=o.id ORDER BY id LIMIT 3) n) AS item_names`;
-export interface BoardColumns { stage: BoardStage; archived: boolean; payment: PaymentPill; legacy: boolean; delivered_at: Date | null; item_names: string[] }
+export interface BoardColumns { fulfillment_method: "delivery" | "pickup"; stage: BoardStage; archived: boolean; payment: PaymentPill; legacy: boolean; delivered_at: Date | null; item_names: string[] }
 
 export interface BoardFilter {
   view?: "active" | "archive"; period?: BoardPeriod; from?: string; to?: string; q?: string; stage?: BoardStage;

@@ -23,6 +23,7 @@ function focusNext(current: HTMLInputElement) {
 const mentions = (error: string | null, serial: string) => !!error && !!serial.trim() && error.toUpperCase().includes(serial.trim().replace(/\s/g, "").toUpperCase());
 
 export function PackPanel({ detail, busy, error, post }: { detail: AdminOrderDetailDTO; busy: boolean; error: string | null; post: Post }) {
+  const pickup = detail.fulfillmentMethod === "pickup";
   const items = detail.items.filter(item => item.remaining > 0);
   const [serials, setSerials] = useState<Record<string, string[]>>({});
   const [ticks, setTicks] = useState<Record<string, boolean>>({});
@@ -45,7 +46,7 @@ export function PackPanel({ detail, busy, error, post }: { detail: AdminOrderDet
   return (
     <section aria-label="Pack order" className="border border-black bg-white">
       <header className="flex items-center justify-between gap-3 border-b border-garmin-rule bg-[#f7f7f7] px-4 py-3">
-        <h3 className={sectionTitle}><PackageCheck className="h-4 w-4" aria-hidden />Pack this order</h3>
+        <h3 className={sectionTitle}><PackageCheck className="h-4 w-4" aria-hidden />{pickup ? "Prepare for store pickup" : "Pack this order"}</h3>
         <span className={`text-xs font-medium ${missing ? "text-[#92400e]" : "text-[#166534]"}`}>{missing ? `${missing} left to check` : "Everything checked"}</span>
       </header>
       <ul className="divide-y divide-garmin-rule">
@@ -84,7 +85,7 @@ export function PackPanel({ detail, busy, error, post }: { detail: AdminOrderDet
       <div className="space-y-3 border-t border-garmin-rule px-4 py-3">
         <input aria-label="Internal note" placeholder="Internal note (staff only, optional)" maxLength={1000} className={field} value={note} onChange={event => setNote(event.target.value)} />
         <Button variant="primary" size="md" type="button" className="w-full" disabled={busy || missing > 0} onClick={() => void submit()}>
-          <Check className="h-4 w-4" aria-hidden />Mark as packed
+          <Check className="h-4 w-4" aria-hidden />{pickup ? "Mark ready for pickup" : "Mark as packed"}
         </Button>
       </div>
     </section>
@@ -116,6 +117,19 @@ export function DeliverPanel({ shipment, busy, post }: { shipment: ShipmentDTO; 
       <Button variant="primary" size="md" type="button" disabled={busy}
         onClick={() => { if (confirm("Confirm the customer received this order?")) void post({ action: "deliver", shipmentId: shipment.id, expectedVersion: shipment.version }); }}>
         <Check className="h-4 w-4" aria-hidden />Mark delivered
+      </Button>
+    </section>
+  );
+}
+
+/** 0033 (owner 2026-11-26): a pickup order waiting at the store is handed over with one step (no courier). */
+export function PickUpPanel({ shipment, busy, post }: { shipment: ShipmentDTO; busy: boolean; post: Post }) {
+  return (
+    <section aria-label="Hand over at the store" className="flex flex-wrap items-center justify-between gap-3 border border-black bg-white px-4 py-3">
+      <p className="text-sm text-black">Ready for pickup since {new Date(shipment.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short" })}. Check the order number before handing it over.</p>
+      <Button variant="primary" size="md" type="button" disabled={busy}
+        onClick={() => { if (confirm("Confirm the customer collected this order?")) void post({ action: "pick_up", shipmentId: shipment.id, expectedVersion: shipment.version }); }}>
+        <Check className="h-4 w-4" aria-hidden />Mark picked up
       </Button>
     </section>
   );

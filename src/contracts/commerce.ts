@@ -489,6 +489,8 @@ export interface AdminOrderSummaryDTO {
   contactName: string;
   /** Owner 2026-11-25 board: column, next-day archive, payment pill, imported flag, first item names, last delivery. */
   stage: "new" | "packed" | "shipped" | "delivered";
+  /** 0033 (owner 2026-11-26): pickup orders go New → Ready for pickup (packed) → Picked up (delivered). */
+  fulfillmentMethod: "delivery" | "pickup";
   archived: boolean;
   paymentPill: "awaiting" | "paid" | "problem";
   legacy: boolean;

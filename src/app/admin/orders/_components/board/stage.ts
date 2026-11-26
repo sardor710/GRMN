@@ -3,7 +3,7 @@
 import type { AdminOrderSummaryDTO } from "../../../../../contracts/commerce.ts";
 
 export type BoardStage = AdminOrderSummaryDTO["stage"];
-export type NextAction = "pack" | "ship" | "deliver";
+export type NextAction = "pack" | "ship" | "deliver" | "pick_up";
 export type BoardPeriod = "all" | "today" | "week" | "7d" | "30d" | "month" | "custom";
 
 export const BOARD_COLUMNS: readonly { stage: BoardStage; label: string; hint: string }[] = [
@@ -21,21 +21,35 @@ export const PERIOD_OPTIONS: readonly { value: BoardPeriod; label: string }[] = 
 
 const ACTION_BY_STAGE: Partial<Record<BoardStage, NextAction>> = { new: "pack", packed: "ship", shipped: "deliver" };
 const NEXT_STAGE: Partial<Record<BoardStage, BoardStage>> = { new: "packed", packed: "shipped", shipped: "delivered" };
-export const ACTION_LABEL: Record<NextAction, string> = { pack: "Pack", ship: "Ship", deliver: "Mark delivered" };
+// 0033 (owner 2026-11-26): pickup orders go New → Ready for pickup (the Packed column) → Picked up (Delivered column).
+const PICKUP_ACTION: Partial<Record<BoardStage, NextAction>> = { new: "pack", packed: "pick_up" };
+const PICKUP_NEXT: Partial<Record<BoardStage, BoardStage>> = { new: "packed", packed: "delivered" };
+export const ACTION_LABEL: Record<NextAction, string> = { pack: "Pack", ship: "Ship", deliver: "Mark delivered", pick_up: "Mark picked up" };
 
-type CardOrder = Pick<AdminOrderSummaryDTO, "stage" | "paymentPill" | "archived" | "legacy" | "status" | "fulfillmentStatus">;
+type CardOrder = Pick<AdminOrderSummaryDTO, "stage" | "paymentPill" | "archived" | "legacy" | "status" | "fulfillmentStatus"> & Partial<Pick<AdminOrderSummaryDTO, "fulfillmentMethod">>;
+const isPickup = (order: CardOrder) => order.fulfillmentMethod === "pickup";
+
+/** The button text for a card's step (pickup orders say "Ready for pickup" instead of "Pack"). */
+export function actionLabel(order: CardOrder, step: NextAction): string {
+  return isPickup(order) && step === "pack" ? "Ready for pickup" : ACTION_LABEL[step];
+}
+/** What the customer-facing stage is called on a card: pickup orders use pickup words. */
+export function stageLabel(order: CardOrder): string {
+  if (isPickup(order)) return order.stage === "packed" ? "Ready for pickup" : order.stage === "delivered" ? "Picked up" : "New";
+  return BOARD_COLUMNS.find(column => column.stage === order.stage)?.label ?? order.stage;
+}
 
 /** The one step a card offers, or null (unpaid, archived, imported, exception, cancellation pending, part-shipped). */
 export function nextAction(order: CardOrder): NextAction | null {
   if (order.archived || order.legacy || order.status !== "confirmed" || order.fulfillmentStatus === "exception") return null;
   if (order.stage === "new" && order.paymentPill !== "paid") return null;
   if (order.fulfillmentStatus === "partially_shipped") return null;
-  return ACTION_BY_STAGE[order.stage] ?? null;
+  return (isPickup(order) ? PICKUP_ACTION : ACTION_BY_STAGE)[order.stage] ?? null;
 }
 
 /** Cards move one column forward, and only when that step is open. */
 export function canDrop(order: CardOrder, target: BoardStage): boolean {
-  return NEXT_STAGE[order.stage] === target && nextAction(order) !== null;
+  return (isPickup(order) ? PICKUP_NEXT : NEXT_STAGE)[order.stage] === target && nextAction(order) !== null;
 }
 
 export interface ListFilters { view: "active" | "archive"; period: BoardPeriod; from?: string; to?: string; q: string; mode: string }

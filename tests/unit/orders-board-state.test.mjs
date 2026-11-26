@@ -74,3 +74,20 @@ test("the board offers Load more when there are more orders than one page (final
   const tree = fixture.render();
   assert.ok(nodes(tree).some(node => node.type === "button" && nodeText(node).includes("Load more orders")), "the board can load the older orders");
 });
+
+// 0033 (owner 2026-11-26): pickup orders.
+test("pickup: New → Ready for pickup → Picked up; never Shipped", async () => {
+  const { actionLabel, stageLabel } = await import("../../src/app/admin/orders/_components/board/stage.ts");
+  const pickup = extra => order({ fulfillmentMethod: "pickup", ...extra });
+  assert.equal(nextAction(pickup()), "pack");
+  assert.equal(actionLabel(pickup(), "pack"), "Ready for pickup");
+  assert.equal(actionLabel(order(), "pack"), "Pack");
+  const ready = pickup({ stage: "packed", fulfillmentStatus: "processing" });
+  assert.equal(nextAction(ready), "pick_up");
+  assert.equal(actionLabel(ready, "pick_up"), "Mark picked up");
+  assert.equal(canDrop(ready, "delivered"), true);
+  assert.equal(canDrop(ready, "shipped"), false);
+  assert.equal(stageLabel(ready), "Ready for pickup");
+  assert.equal(stageLabel(pickup({ stage: "delivered", fulfillmentStatus: "delivered" })), "Picked up");
+  assert.equal(stageLabel(order({ stage: "packed" })), "Packed");
+});

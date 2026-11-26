@@ -9,8 +9,8 @@ import { DemoBadge } from "@/components/DemoBadge";
 import { Button } from "@/components/admin/ui";
 import { deliveryAddressLines } from "@/lib/account-client";
 import { Archive, CircleAlert, CircleCheck, Clock3, Columns3, List, Search, X } from "lucide-react";
-import { ACTION_LABEL, BOARD_COLUMNS, PERIOD_OPTIONS, canDrop, listQuery, nextAction, type BoardPeriod, type BoardStage, type NextAction } from "./board/stage";
-import { DeliverPanel, PackPanel, ReturnsPanel, SerialEditor, ShipPanel } from "./board/OrderPanels";
+import { BOARD_COLUMNS, PERIOD_OPTIONS, actionLabel, canDrop, listQuery, nextAction, stageLabel, type BoardPeriod, type BoardStage, type NextAction } from "./board/stage";
+import { DeliverPanel, PackPanel, PickUpPanel, ReturnsPanel, SerialEditor, ShipPanel } from "./board/OrderPanels";
 
 // Task 16A: PostgreSQL-mode staff fulfillment. Every action sends the version it was based on and
 // an idempotency key; the server decides eligibility (paid, not an exception, not legacy) and
@@ -230,7 +230,7 @@ export default function FulfillmentScreen() {
           <h1 className="g-heading g-h2 text-black">{view === "archive" ? "Order archive" : "Orders"}</h1>
           <p className="text-sm text-muted-foreground">{view === "archive"
             ? "Delivered orders from earlier days, cancelled, refunded, returned and imported orders."
-            : "New → Packed → Shipped → Delivered. Delivered orders move to the archive at midnight."}</p>
+            : "New → Packed → Shipped → Delivered (store pickup: New → Ready for pickup → Picked up). Finished orders move to the archive at midnight."}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {view === "active" && (
@@ -310,11 +310,12 @@ export default function FulfillmentScreen() {
                           <span className="flex flex-wrap items-center gap-1.5">
                             {order.stage === "new" && <PaymentPill pill={order.paymentPill} />}
                             {order.stage !== "new" && order.paymentPill !== "paid" && <PaymentPill pill={order.paymentPill} />}
+                            {order.fulfillmentMethod === "pickup" && <span className="rounded-full bg-black px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-white">{order.stage === "new" ? "Pickup" : stageLabel(order)}</span>}
                             {isDemoMode(order.paymentMode) && <span className="rounded-full border border-[#d9d9d9] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.06em] text-[#555]">Demo</span>}
                             {order.fulfillmentStatus === "exception" && <span className="rounded-full bg-[#fee2e2] px-2 py-0.5 text-[10px] font-semibold uppercase text-[#991b1b]">Exception</span>}
-                            {order.stage === "delivered" && order.deliveredAt && <span className="text-[11px] text-muted-foreground">Delivered {shortDate(order.deliveredAt)}</span>}
+                            {order.stage === "delivered" && order.deliveredAt && <span className="text-[11px] text-muted-foreground">{order.fulfillmentMethod === "pickup" ? "Picked up" : "Delivered"} {shortDate(order.deliveredAt)}</span>}
                           </span>
-                          {step && <Button variant="secondary" size="sm" type="button" onClick={() => selectOrder(order.id, step)}>{ACTION_LABEL[step]}</Button>}
+                          {step && <Button variant="secondary" size="sm" type="button" onClick={() => selectOrder(order.id, step)}>{actionLabel(order, step)}</Button>}
                         </div>
                       </li>
                     );
@@ -382,7 +383,8 @@ export default function FulfillmentScreen() {
                   {!detail.fulfillable.allowed && detail.fulfillable.reason && detail.stage === "new" && detail.status !== "cancelled" && <p className="border border-[#fde68a] bg-[#fffbeb] p-2.5 text-sm text-[#92400e]">{REASONS[detail.fulfillable.reason]}</p>}
 
                   {canPack && (focus === "pack" || !readyShipment) && <PackPanel key={`pack-${detail.id}-${detail.version}`} detail={detail} busy={busy} error={actionError} post={body => post(body)} />}
-                  {readyShipment && <ShipPanel key={`ship-${readyShipment.id}-${readyShipment.version}`} shipment={readyShipment} busy={busy || !detail.fulfillable.allowed} post={body => post(body)} />}
+                  {readyShipment && detail.fulfillmentMethod === "pickup" && <PickUpPanel shipment={readyShipment} busy={busy || !detail.fulfillable.allowed} post={body => post(body)} />}
+                  {readyShipment && detail.fulfillmentMethod !== "pickup" && <ShipPanel key={`ship-${readyShipment.id}-${readyShipment.version}`} shipment={readyShipment} busy={busy || !detail.fulfillable.allowed} post={body => post(body)} />}
                   {dispatchedShipment && <DeliverPanel shipment={dispatchedShipment} busy={busy} post={body => post(body)} />}
 
                   <div aria-label="Payment" className="border border-garmin-control p-3">
@@ -420,7 +422,7 @@ export default function FulfillmentScreen() {
                   </div>
                   {deliveryLines(detail.deliveryAddress).length > 0 && (
                     <div className="text-sm">
-                      <h3 className="text-xs font-bold uppercase text-muted-foreground">Deliver to</h3>
+                      <h3 className="text-xs font-bold uppercase text-muted-foreground">{detail.fulfillmentMethod === "pickup" ? "Store pickup — collected by" : "Deliver to"}</h3>
                       <div className="mt-1 leading-relaxed">{deliveryLines(detail.deliveryAddress).map((line, index) => <p key={index}>{line}</p>)}</div>
                       {detail.contact.email && <p className="text-muted-foreground">{detail.contact.email}</p>}
                     </div>
