@@ -4,7 +4,7 @@
 // for the signed-in session; nothing is seeded, selected by email or faked on failure.
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { OrderTracker } from "@/components/account/OrderTracker";
-import { Check, Plus, Trash2, Edit3, X, AlertCircle, Lock, KeyRound, Package, ChevronRight, Phone, Loader2 } from "lucide-react";
+import { Check, Plus, Trash2, Edit3, X, AlertCircle, Lock, KeyRound, ChevronRight, ChevronLeft, Phone, Loader2, Watch, ExternalLink } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { AccountIcon } from "@/components/icons";
 import { DemoDot } from "@/components/DemoDot";
@@ -13,7 +13,8 @@ import { productPath } from "@/lib/catalog/product-url";
 import { INTL_LOCALE } from "@/i18n/config";
 import { formatDate as formatLocaleDate } from "@/i18n/format";
 import { useAppLocale } from "@/i18n/useAppLocale";
-import type { CustomerProfileDTO, OrderDetailDTO, OrderSummaryDTO, SavedAddressDTO, WishlistItemDTO } from "@/contracts/commerce";
+import type { CustomerGender, CustomerProfileDTO, DeviceDTO, OrderDetailDTO, OrderStage, OrderSummaryDTO, SavedAddressDTO, WishlistItemDTO } from "@/contracts/commerce";
+import { pickupMapUrl, pickupText } from "@/lib/pickup";
 import { AddressForm } from "@/components/address/AddressForm";
 import { findKzCityAnywhere, kzRegionLabel } from "@/lib/kz-regions";
 import {
@@ -34,7 +35,13 @@ type Tab = (typeof TABS)[number];
 type Phase = "loading" | "signed_out" | "unavailable" | "error" | "ready";
 const MAX_ADDRESSES = 5;
 const EMPTY_ADDRESS: AddressFields = { label: "", recipientName: "", phone: "", countryCode: "KZ", city: "", line1: "", line2: "", region: "", postalCode: "", lat: null, lng: null, geoPrecision: null, isPrimary: false };
-const EMPTY_PROFILE_FORM = { name: "", email: "", birthDate: "" };
+const EMPTY_PROFILE_FORM = { name: "", email: "", birthDate: "", gender: "" as CustomerGender | "" };
+const GENDERS: readonly CustomerGender[] = ["male", "female", "unspecified"];
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// 0033 (owner 2026-11-26, design pass): one small dot per stage; candy blue stays reserved for "no payment taken".
+const STATUS_DOT: Record<OrderStage, string> = { ordered: "bg-garmin-checkbox", packed: "bg-garmin-badge-gold", shipped: "bg-garmin-blue", delivered: "bg-emerald-600", cancelled: "bg-garmin-badge-red" };
+const ORDER_COLUMNS = "grid grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)_minmax(0,1.4fr)_64px_minmax(0,1fr)_20px] items-center gap-4";
+const DAY = 86400000;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const todayISO = () => new Date().toISOString().slice(0, 10);
 const yearsAgoISO = (years: number) => { const date = new Date(); date.setUTCFullYear(date.getUTCFullYear() - years); return date.toISOString().slice(0, 10); };
@@ -148,6 +155,14 @@ export function AccountDashboard() {
     try { setWishlist((await client.removeFromWishlist(productKey)).items); } catch (error) { setWishlistError(errorMessage(error)); }
   };
 
+  // 0033 (owner 2026-11-26): My devices, loaded when the tab opens.
+  const [devices, setDevices] = useState<DeviceDTO[] | null>(null);
+  const [devicesError, setDevicesError] = useState<string | null>(null);
+  const loadDevices = async () => {
+    setDevicesError(null);
+    try { setDevices((await client.devices()).items); } catch (error) { setDevicesError(errorMessage(error)); }
+  };
+
   // Legacy order claim
   const [claim, setClaim] = useState({ orderId: "", receipt: "", code: "" });
   const [claimChallenge, setClaimChallenge] = useState<string | null>(null);
@@ -175,7 +190,7 @@ export function AccountDashboard() {
     setTab("Profile"); setBusy(null); setStatusMessage(null);
     setIsEditingProfile(false); setProfileForm(EMPTY_PROFILE_FORM); setProfileError(null);
     setIsAddressModalOpen(false); setEditingAddress(null); setAddressForm(EMPTY_ADDRESS); setAddressError(null);
-    setOrdersError(null); setOrderDetailError(null); setWishlist(null); setWishlistError(null);
+    setOrdersError(null); setOrderDetailError(null); setWishlist(null); setWishlistError(null); setDevices(null); setDevicesError(null);
     setClaim({ orderId: "", receipt: "", code: "" }); setClaimChallenge(null); setClaimError(null);
     setPhoneChange({ newPhone: "", currentCode: "", newCode: "" }); setPhoneChangeError(null);
     setIsPasswordChangeOpen(false); setPasswordForm({ currentPassword: "", newPassword: "" }); setPasswordError(null);
@@ -255,7 +270,7 @@ export function AccountDashboard() {
   // ---------------------------------------------------------------- profile
   const handleStartEditProfile = () => {
     if (!profile) return;
-    setProfileForm({ name: profile.name, email: profile.email ?? "", birthDate: profile.birthDate ?? "" });
+    setProfileForm({ name: profile.name, email: profile.email ?? "", birthDate: profile.birthDate ?? "", gender: profile.gender ?? "" });
     setProfileError(null); setIsEditingProfile(true);
   };
 
@@ -269,7 +284,7 @@ export function AccountDashboard() {
     if (birthDate && (birthDate > todayISO() || birthDate > yearsAgoISO(10) || birthDate < yearsAgoISO(120))) { setProfileError(t("notify.birthDateRange")); return; }
     setProfileError(null); setBusy("profile");
     try {
-      const saved = await client.saveProfile({ name: profileForm.name.trim(), email: profileForm.email.trim(), phone: profile.phone, birthDate: birthDate || null, expectedVersion: profile.version });
+      const saved = await client.saveProfile({ name: profileForm.name.trim(), email: profileForm.email.trim(), phone: profile.phone, birthDate: birthDate || null, gender: profileForm.gender || null, expectedVersion: profile.version });
       setProfile(saved); setIsEditingProfile(false);
       showNotification(saved.emailVerified ? t("notify.profileSaved") : t("notify.profileSavedUnverified"));
     } catch (error) {
@@ -346,11 +361,33 @@ export function AccountDashboard() {
     finally { setBusy(null); }
   };
 
-  const handleOpenOrder = async (id: string) => {
+  const loadOrder = useCallback(async (id: string) => {
     setSelectedOrderId(id); setOrderDetail(null); setOrderDetailError(null);
     try { setOrderDetail(await client.order(id)); }
     catch (error) { setOrderDetailError(errorMessage(error)); }
+  }, [client]);
+  // 0033: an opened order has its own address (/account?order=<id>), so Back and refresh work.
+  const handleOpenOrder = async (id: string) => {
+    setTab("Orders");
+    if (typeof window !== "undefined") window.history.pushState(null, "", `?order=${encodeURIComponent(id)}`);
+    if (typeof window !== "undefined") window.scrollTo?.({ top: 0 });
+    await loadOrder(id);
   };
+  const closeOrder = () => {
+    if (typeof window !== "undefined" && window.location.search) window.history.pushState(null, "", window.location.pathname);
+    setSelectedOrderId(null); setOrderDetail(null); setOrderDetailError(null);
+  };
+  useEffect(() => {
+    if (phase !== "ready" || typeof window === "undefined") return;
+    const sync = () => {
+      const id = new URLSearchParams(window.location.search).get("order");
+      if (id && UUID.test(id)) { setTab("Orders"); void loadOrder(id); }
+      else { setSelectedOrderId(null); setOrderDetail(null); setOrderDetailError(null); }
+    };
+    sync();
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, [phase, loadOrder]);
 
   const handleSendClaimCode = async () => {
     if (!profile?.phone) return;
@@ -513,8 +550,63 @@ export function AccountDashboard() {
 
   // phase === "ready"
   if (!profile) return null;
-  const primaryAddress = addresses.find(address => address.isPrimary) ?? addresses[0];
   const canEditProfile = Boolean(profile.phone && profile.phoneVerified);
+
+  // ---------------------------------------------------------------- orders and devices (0033 design pass)
+  const isPickup = (order: { fulfillmentMethod?: string }) => order.fulfillmentMethod === "pickup";
+  const stageWord = (stage: OrderStage, pickup: boolean) => pickup && stage === "packed" ? t("pickup.ready") : pickup && stage === "delivered" ? t("pickup.pickedUp") : t(`tracker.${stage}`);
+  const statusDot = (order: Pick<OrderSummaryDTO, "stage" | "paymentStatus"> & { fulfillmentMethod?: string }) => order.stage ? (
+    <span className="inline-flex items-center gap-2 text-black">
+      <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[order.stage]}`} />
+      <span className={order.stage === "cancelled" ? "text-garmin-text-muted" : ""}>{stageWord(order.stage, isPickup(order))}</span>
+    </span>
+  ) : <span className="text-black">{statusLabel(order.paymentStatus)}</span>;
+  const noPaymentDot = (mode: string) => isNoPayment(mode) ? <DemoDot label={t("demoBadge")} /> : null;
+  const productHref = (code: string | null, sku: string | null) => code ? productPath(code, sku) : null;
+  const thumb = (image: string | null, name: string) => image
+    // eslint-disable-next-line @next/next/no-img-element
+    ? <img src={image} alt={name} loading="lazy" className="h-16 w-16 shrink-0 bg-neutral-50 object-contain p-1 sm:h-20 sm:w-20" />
+    : <span aria-hidden className="grid h-16 w-16 shrink-0 place-items-center bg-neutral-50 sm:h-20 sm:w-20"><Watch className="h-6 w-6 text-neutral-300" /></span>;
+  const orderLink = (order: OrderSummaryDTO, children: React.ReactNode, className: string) => (
+    <a href={`?order=${order.id}`} aria-label={t("orders.open", { number: order.orderNumber })} className={className}
+      onClick={event => { if (event.metaKey || event.ctrlKey || event.shiftKey) return; event.preventDefault(); void handleOpenOrder(order.id); }}>{children}</a>
+  );
+  const orderRow = (order: OrderSummaryDTO) => (
+    <li key={order.id}>
+      {orderLink(order, (
+        <>
+          <span className={`hidden ${ORDER_COLUMNS} md:grid`}>
+            <span className="flex items-center gap-2 font-bold text-black group-hover:text-garmin-blue">{order.orderNumber}{noPaymentDot(order.paymentMode)}</span>
+            <span className="text-garmin-text-muted">{formatDate(order.createdAt)}</span>
+            {statusDot(order)}
+            <span className="text-right tabular-nums">{order.itemsCount}</span>
+            <span className="text-right font-bold tabular-nums text-black">{formatKztLocal(order.total)}</span>
+            <ChevronRight aria-hidden className="h-4 w-4 text-garmin-text-muted group-hover:text-black" />
+          </span>
+          <span className="grid grid-cols-[1fr_auto_16px] items-center gap-x-3 gap-y-1 md:hidden">
+            <span className="flex items-center gap-2 font-bold text-black">{order.orderNumber}{noPaymentDot(order.paymentMode)}</span>
+            <span className="text-right font-bold tabular-nums text-black">{formatKztLocal(order.total)}</span>
+            <ChevronRight aria-hidden className="h-4 w-4 text-garmin-text-muted" />
+            <span className="col-span-2 flex flex-wrap items-center gap-x-2 text-[13px] text-garmin-text-muted">{formatDate(order.createdAt)} · {t("items", { count: order.itemsCount })} · {statusDot(order)}</span>
+          </span>
+        </>
+      ), "group -mx-2 block px-2 py-4 text-[14px] transition-colors hover:bg-neutral-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-garmin-blue")}
+    </li>
+  );
+  const ordersHeader = (
+    <div className={`hidden ${ORDER_COLUMNS} border-b border-black px-0 pb-3 text-[12px] font-bold text-garmin-text-muted md:grid`}>
+      <span>{t("orders.columns.order")}</span><span>{t("orders.columns.date")}</span><span>{t("orders.columns.status")}</span>
+      <span className="text-right">{t("orders.columns.items")}</span><span className="text-right">{t("orders.columns.total")}</span><span />
+    </div>
+  );
+  const pickupTrackerLabels = { ...trackerLabels, packed: t("pickup.ready"), delivered: t("pickup.pickedUp") };
+  const eventText = (event: { type: string; label: string }, pickup: boolean) => pickup && event.type === "fulfillment.packed" ? t("pickup.ready") : eventLabel(event);
+  const money = (value: OrderDetailDTO["subtotal"]) => value ? formatKztLocal(value) : "—";
+  const warrantyInfo = (device: DeviceDTO) => {
+    const end = new Date(device.warrantyEndsAt).getTime(), start = new Date(device.receivedAt).getTime(), now = Date.now();
+    const left = end - now, total = Math.max(end - start, DAY);
+    return { ended: left <= 0, months: Math.floor(left / (30.4375 * DAY)), share: Math.min(1, Math.max(0, left / total)) };
+  };
 
   return (
     <div className="mx-auto max-w-[1200px] px-4 py-10 font-sans">
@@ -538,7 +630,7 @@ export function AccountDashboard() {
           <ul className="flex gap-2 overflow-x-auto lg:flex-col lg:gap-1 lg:pr-4">
             {TABS.map(id => (
               <li key={id}>
-                <button type="button" onClick={() => { setTab(id); if (id === "Wishlist") void loadWishlist(); }} aria-current={tab === id ? "page" : undefined}
+                <button type="button" onClick={() => { if (selectedOrderId) closeOrder(); setTab(id); if (id === "Wishlist") void loadWishlist(); if (id === "Devices") void loadDevices(); }} aria-current={tab === id ? "page" : undefined}
                   className={`w-full whitespace-nowrap px-4 py-2.5 text-left text-[14px] transition-colors ${tab === id ? "bg-black font-medium text-white" : "text-black hover:bg-muted hover:underline"}`}>
                   {t(`tabs.${id}`)}
                   {id === "Orders" && <span className="ml-2 bg-neutral-200 px-1.5 py-0.5 text-[11px] text-neutral-800">{orders.length}{nextCursor ? "+" : ""}</span>}
@@ -586,6 +678,10 @@ export function AccountDashboard() {
                       <dd className="mt-1 font-semibold text-black">{profile.birthDate ? formatBirthday(profile.birthDate, intlLocale) : <span className="font-normal text-neutral-500">{t("details.notProvided")}</span>}</dd>
                     </div>
                     <div className="border border-neutral-100 bg-neutral-50/50 p-3">
+                      <dt className="text-[14px] font-bold text-black">{t("details.gender")}</dt>
+                      <dd className="mt-1 font-semibold text-black">{profile.gender ? t(`genders.${profile.gender}`) : <span className="font-normal text-neutral-500">{t("details.notProvided")}</span>}</dd>
+                    </div>
+                    <div className="border border-neutral-100 bg-neutral-50/50 p-3">
                       <dt className="text-[14px] font-bold text-black">{t("details.profile")}</dt>
                       <dd className="mt-1 font-semibold text-black">{profile.profileState === "complete" ? t("details.complete") : t("details.incomplete")}</dd>
                     </div>
@@ -606,6 +702,13 @@ export function AccountDashboard() {
                         <label className={labelClass} htmlFor="profileBirthDate">{t("details.birthdayOptional")}</label>
                         <input id="profileBirthDate" name="birthDate" type="date" min={yearsAgoISO(120)} max={yearsAgoISO(10)} value={profileForm.birthDate} onChange={e => setProfileForm({ ...profileForm, birthDate: e.target.value })} className={inputClass} aria-describedby="profileBirthDateHint" />
                         <p id="profileBirthDateHint" className="mt-1 text-[11px] text-neutral-400">{t("details.birthdayHint")}</p>
+                      </div>
+                      <div>
+                        <label className={labelClass} htmlFor="profileGender">{t("details.genderOptional")}</label>
+                        <select id="profileGender" name="gender" value={profileForm.gender} onChange={e => setProfileForm({ ...profileForm, gender: e.target.value as CustomerGender | "" })} className="g-select">
+                          <option value="">{t("details.notProvided")}</option>
+                          {GENDERS.map(gender => <option key={gender} value={gender}>{t(`genders.${gender}`)}</option>)}
+                        </select>
                       </div>
                       <div>
                         <label className={labelClass} htmlFor="profilePhone">{t("details.phone")}</label>
@@ -740,61 +843,125 @@ export function AccountDashboard() {
 
               {orders.length > 0 && (
                 <Card title={t("recent.title")} action={
-                  <button type="button" onClick={() => setTab("Orders")} className={linkButton}><span>{t("recent.viewAll")}</span><ChevronRight className="h-3.5 w-3.5" /></button>
+                  <button type="button" onClick={() => { closeOrder(); setTab("Orders"); }} className={linkButton}><span>{t("recent.viewAll")}</span><ChevronRight className="h-3.5 w-3.5" /></button>
                 }>
-                  <button type="button" onClick={() => handleOpenOrder(orders[0].id)} className="group flex w-full flex-col justify-between gap-4 border border-neutral-200 bg-white p-4 text-left transition-all hover:border-black sm:flex-row sm:items-center">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-14 w-14 shrink-0 items-center justify-center border border-neutral-200 bg-neutral-50"><Package className="h-6 w-6 text-neutral-500" /></div>
-                      <div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="bg-black px-2 py-0.5 text-xs font-bold text-white">{orders[0].orderNumber}</span>
-                          {isNoPayment(orders[0].paymentMode) && <DemoDot label={t("demoBadge")} />}
-                        </div>
-                        <p className="mt-0.5 text-[12px] text-neutral-500">
-                          {t("recent.placed", { date: formatDate(orders[0].createdAt) })} · {t("items", { count: orders[0].itemsCount })}{primaryAddress ? ` · ${t("recent.primaryAddress", { label: primaryAddress.label })}` : ""}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="g-heading text-lg font-bold text-black">{formatKztLocal(orders[0].total)}</span>
-                  </button>
-                  {orders[0].stage && <div className="mt-3 px-1"><OrderTracker compact stage={orders[0].stage} labels={trackerLabels} /></div>}
+                  <ul className="divide-y divide-garmin-control">{orderRow(orders[0])}</ul>
                 </Card>
               )}
             </>
           )}
 
-          {tab === "Orders" && (
+          {tab === "Orders" && selectedOrderId && (
+            <Card title={orderDetail ? t("order.title", { number: orderDetail.orderNumber }) : t("order.details")} action={
+              <a href="?" onClick={event => { event.preventDefault(); closeOrder(); }} className={linkButton}><ChevronLeft className="h-3.5 w-3.5" /><span>{t("order.back")}</span></a>
+            }>
+              {!orderDetail && !orderDetailError && <p className="flex items-center gap-2 text-[14px] text-neutral-600"><Loader2 className="h-4 w-4 animate-spin" /> {t("order.loading")}</p>}
+              {showError(orderDetailError)}
+              {orderDetail && (() => {
+                const detail = orderDetail, pickup = isPickup(detail);
+                const addressLines = deliveryAddressLines(detail.deliveryAddress);
+                return (
+                  <div className="text-[14px] text-black" data-order-detail>
+                    <div className="flex flex-wrap items-start justify-between gap-4 border-b border-garmin-control pb-6">
+                      <div>
+                        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-garmin-text-muted">{t("order.placed", { date: formatDate(detail.createdAt) })} · {statusDot(detail)}</p>
+                        <p className="mt-1 flex items-center gap-2">
+                          {isNoPayment(detail.paymentMode)
+                            ? <><DemoDot label={t("demoBadge")} /><span className="text-garmin-text-muted">{t("demoNote")}</span></>
+                            : <span>{t("order.payment", { status: statusLabel(detail.paymentStatus) })}</span>}
+                        </p>
+                        <p className="mt-1 text-garmin-text-muted">{pickup ? t("pickup.method") : t("order.deliveryMethod")}</p>
+                      </div>
+                      <span className="g-heading text-[24px] font-bold tabular-nums">{formatKztLocal(detail.total)}</span>
+                    </div>
+                    {detail.stage && (
+                      <div className="border-b border-garmin-control py-8">
+                        <OrderTracker stage={detail.stage} pickup={pickup} dates={detail.stageDates} labels={pickup ? pickupTrackerLabels : trackerLabels} formatDate={formatDate} />
+                      </div>
+                    )}
+                    {detail.dataQuality !== "complete" && <p className="mt-6 border-l-2 border-garmin-badge-gold pl-3 text-[13px] text-garmin-text-muted">{t("order.legacy")}</p>}
+                    <div className="mt-8 grid gap-10 lg:grid-cols-[minmax(0,1fr)_280px]">
+                      <div>
+                        <h3 className="mb-2 text-[16px] font-bold">{t("order.itemsTitle")}</h3>
+                        <ul className="divide-y divide-garmin-control border-y border-garmin-control">
+                          {detail.items.map(item => {
+                            const href = productHref(item.productCode, item.variantSku);
+                            const options = Object.values(item.options).filter(value => value && value !== "Base");
+                            return (
+                              <li key={item.id} className="flex gap-4 py-5">
+                                {href ? <Link href={href} tabIndex={-1} aria-hidden>{thumb(item.image, item.name)}</Link> : thumb(item.image, item.name)}
+                                <div className="min-w-0 flex-1">
+                                  {href ? <Link href={href} className="font-bold text-black hover:text-garmin-blue hover:underline">{item.name}</Link> : <p className="font-bold">{item.name}</p>}
+                                  {options.length > 0 && <p className="text-garmin-text-muted">{options.join(" · ")}</p>}
+                                  <p className="mt-1 tabular-nums">{item.quantity} × {formatKztLocal(item.unitPrice)}</p>
+                                  {(item.serials?.length ?? 0) > 0 && <p className="mt-1 text-[13px]">{t("order.serialLabel")} <span className="font-mono">{item.serials.join(", ")}</span></p>}
+                                  <p className="mt-1 text-right font-bold tabular-nums sm:hidden">{formatKztLocal(item.total)}</p>
+                                </div>
+                                <span className="hidden shrink-0 text-right font-bold tabular-nums sm:block">{formatKztLocal(item.total)}</span>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                        <dl className="ml-auto mt-4 grid max-w-[320px] grid-cols-[1fr_auto] gap-y-2">
+                          <dt>{t("order.subtotal")}</dt><dd className="text-right tabular-nums">{money(detail.subtotal)}</dd>
+                          {detail.discount && detail.discount.amountMinor !== "0" && <><dt>{t("order.discount")}</dt><dd className="text-right tabular-nums">−{money(detail.discount)}</dd></>}
+                          <dt>{t("order.shipping")}</dt><dd className="text-right tabular-nums">{detail.shipping && detail.shipping.amountMinor === "0" ? t("order.free") : money(detail.shipping)}</dd>
+                          {(!detail.tax || detail.tax.amountMinor !== "0") && <><dt>{t("order.tax")}</dt><dd className="text-right tabular-nums">{money(detail.tax)}</dd></>}
+                          <dt className="mt-1 border-t border-black pt-3 text-[16px] font-bold">{t("order.total")}</dt><dd className="mt-1 border-t border-black pt-3 text-right text-[16px] font-bold tabular-nums">{formatKztLocal(detail.total)}</dd>
+                        </dl>
+                      </div>
+                      <aside className="space-y-8 border-t border-garmin-control pt-6 lg:border-t-0 lg:pt-0">
+                        {pickup && detail.pickup ? (
+                          <section>
+                            <h3 className="mb-2 text-[16px] font-bold">{t("pickup.title")}</h3>
+                            <p className="font-bold">{pickupText(detail.pickup.name, locale)}</p>
+                            <p className="leading-6">{pickupText(detail.pickup.address, locale)}</p>
+                            <p className="text-garmin-text-muted">{pickupText(detail.pickup.hours, locale)}</p>
+                            {detail.pickup.phone && <a href={`tel:${detail.pickup.phone.replace(/[^+0-9]/g, "")}`} className="text-garmin-blue hover:underline">{detail.pickup.phone}</a>}
+                            <a href={pickupMapUrl(detail.pickup)} target="_blank" rel="noreferrer" className="mt-2 flex items-center gap-1 text-garmin-blue hover:underline">{t("pickup.map")}<ExternalLink aria-hidden className="h-3.5 w-3.5" /></a>
+                            <p className="mt-3 text-garmin-text-muted">{t("pickup.collector", { name: detail.contact.name })}</p>
+                          </section>
+                        ) : (
+                          <section>
+                            <h3 className="mb-2 text-[16px] font-bold">{t("order.deliveryAddress")}</h3>
+                            {addressLines.length ? <div className="leading-6">{addressLines.map((line, index) => <p key={index}>{line}</p>)}</div> : <p className="text-garmin-text-muted">{t("order.noAddress")}</p>}
+                          </section>
+                        )}
+                        {detail.events.length > 0 && (
+                          <section>
+                            <h3 className="mb-2 text-[16px] font-bold">{t("order.updates")}</h3>
+                            <ol className="space-y-3">
+                              {[...detail.events].reverse().map(event => (
+                                <li key={event.id} className="grid grid-cols-[auto_1fr] gap-x-3"><span className="w-[92px] text-[13px] tabular-nums text-garmin-text-muted">{formatDate(event.occurredAt)}</span><span>{eventText(event, pickup)}</span></li>
+                              ))}
+                            </ol>
+                          </section>
+                        )}
+                      </aside>
+                    </div>
+                  </div>
+                );
+              })()}
+            </Card>
+          )}
+
+          {tab === "Orders" && !selectedOrderId && (
             <>
               <Card title={t("orders.title", { count: `${orders.length}${nextCursor ? "+" : ""}` })}>
                 {orders.length === 0 ? (
-                  <p className="text-[14px] text-neutral-500">{t("orders.empty")}</p>
+                  <div className="py-6 text-[14px]">
+                    <p className="text-garmin-text-muted">{t("orders.empty")}</p>
+                    <Link href="/c/wearables-smartwatches" className={`${linkButton} mt-2`}>{t("orders.shop")}</Link>
+                  </div>
                 ) : (
-                  <div className="space-y-4">
-                    {orders.map(order => (
-                      <button key={order.id} type="button" onClick={() => handleOpenOrder(order.id)} className="group block w-full border border-neutral-200 bg-white p-4 text-left transition-all hover:border-black">
-                        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-neutral-100 pb-3">
-                          <div className="flex items-center gap-2.5">
-                            <span className="bg-black px-2.5 py-1 text-xs font-bold tracking-wider text-white">{order.orderNumber}</span>
-                            {isNoPayment(order.paymentMode) && <DemoDot label={t("demoBadge")} />}
-                            <span className="font-mono text-xs text-neutral-500">{t("orders.placedOn", { date: formatDate(order.createdAt) })}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="border border-neutral-300 bg-neutral-50 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-neutral-700">{statusLabel(order.paymentStatus)}</span>
-                            <ChevronRight className="h-4 w-4 text-garmin-blue" />
-                          </div>
-                        </div>
-                        {order.stage && <div className="pt-4 pb-1"><OrderTracker compact stage={order.stage} labels={trackerLabels} /></div>}
-                        <div className="flex flex-col justify-between gap-2 pt-3 sm:flex-row sm:items-center">
-                          <span className="text-[13px] text-neutral-600">{t("items", { count: order.itemsCount })}</span>
-                          <span><span className="mr-2 text-xs text-garmin-text-muted">{t("orders.total")}</span><span className="g-heading text-lg font-bold text-black">{formatKztLocal(order.total)}</span></span>
-                        </div>
-                      </button>
-                    ))}
+                  <div>
+                    {ordersHeader}
+                    <ul className="divide-y divide-garmin-control">{orders.map(orderRow)}</ul>
                   </div>
                 )}
                 {showError(ordersError)}
                 {nextCursor && (
-                  <div className="mt-4 flex justify-center">
+                  <div className="mt-6 flex justify-center">
                     <button type="button" onClick={handleLoadMoreOrders} disabled={busy === "orders"} className={secondaryButton}>{t("orders.loadMore")}</button>
                   </div>
                 )}
@@ -854,7 +1021,38 @@ export function AccountDashboard() {
 
           {tab === "Devices" && (
             <Card title={t("devices.title")}>
-              <p className="text-[14px] text-neutral-500">{t("devices.unavailable")}</p>
+              {showError(devicesError)}
+              {devices === null && !devicesError && <p className="flex items-center gap-2 text-[14px] text-neutral-600"><Loader2 className="h-4 w-4 animate-spin" /> {t("devices.loading")}</p>}
+              {devices !== null && devices.length === 0 && (
+                <div className="py-6 text-[14px]"><p className="text-black">{t("devices.empty")}</p><p className="mt-1 text-garmin-text-muted">{t("devices.emptyHint")}</p></div>
+              )}
+              {devices !== null && devices.length > 0 && (
+                <ul className="divide-y divide-garmin-control border-y border-garmin-control" data-devices>
+                  {devices.map(device => {
+                    const href = productHref(device.productCode, device.sku), warranty = warrantyInfo(device);
+                    return (
+                      <li key={device.id} className="grid grid-cols-[64px_1fr] items-start gap-4 py-5 text-[14px] sm:grid-cols-[80px_1fr] md:grid-cols-[80px_1fr_220px] md:gap-6">
+                        {thumb(device.image, device.productName)}
+                        <div className="min-w-0 space-y-1">
+                          <p>{href ? <Link href={href} className="font-bold text-black hover:text-garmin-blue hover:underline">{device.productName}</Link> : <span className="font-bold">{device.productName}</span>}{device.variantName && <span className="text-garmin-text-muted"> · {device.variantName}</span>}</p>
+                          <p>{t("order.serialLabel")} <span className="font-mono">{device.serial}</span></p>
+                          <p className="text-garmin-text-muted">{t("devices.purchased", { date: formatDate(device.purchasedAt) })} · {t("devices.order")}{" "}
+                            <a href={`?order=${device.orderId}`} onClick={event => { event.preventDefault(); void handleOpenOrder(device.orderId); }} className="text-garmin-blue hover:underline">{device.orderNumber}</a>
+                          </p>
+                        </div>
+                        <div className="col-span-2 md:col-span-1">
+                          <p className="text-[12px] font-bold text-garmin-text-muted">{t("devices.warranty", { months: device.warrantyMonths })}</p>
+                          {warranty.ended
+                            ? <p className="font-bold text-garmin-text-muted">{t("devices.ended")}</p>
+                            : <p className="font-bold">{warranty.months >= 1 ? t("devices.monthsLeft", { count: warranty.months }) : t("devices.underMonth")}</p>}
+                          <div className="mt-2 h-1 w-full bg-neutral-200" role="presentation"><div className={`h-1 ${warranty.ended ? "" : "bg-garmin-blue"}`} style={{ width: `${Math.round(warranty.share * 100)}%` }} /></div>
+                          <p className="mt-1 text-[13px] text-garmin-text-muted">{warranty.ended ? t("devices.endedOn", { date: formatDate(device.warrantyEndsAt) }) : t("devices.until", { date: formatDate(device.warrantyEndsAt) })}</p>
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </Card>
           )}
 
@@ -865,81 +1063,6 @@ export function AccountDashboard() {
           )}
         </div>
       </div>
-
-      {selectedOrderId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={() => setSelectedOrderId(null)}>
-          <div role="dialog" aria-modal="true" aria-label={t("order.details")} className="max-h-[90vh] w-full max-w-2xl overflow-y-auto border border-neutral-300 bg-white p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between border-b border-neutral-200 pb-3">
-              <h3 className="g-heading g-h4 m-0 text-black">{orderDetail ? orderDetail.orderNumber : t("order.details")}</h3>
-              <button type="button" onClick={() => setSelectedOrderId(null)} className="text-garmin-text-muted hover:text-black" aria-label={t("order.close")}><X className="h-5 w-5" /></button>
-            </div>
-            {!orderDetail && !orderDetailError && <p className="mt-4 flex items-center gap-2 text-[13px] text-neutral-600"><Loader2 className="h-4 w-4 animate-spin" /> {t("order.loading")}</p>}
-            <div className="mt-4">{showError(orderDetailError)}</div>
-            {orderDetail && (
-              <div className="space-y-5 text-[13px] text-neutral-700">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-xs text-neutral-500">{t("orders.placedOn", { date: formatDate(orderDetail.createdAt) })}</span>
-                  <span className="border border-neutral-300 bg-neutral-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-neutral-700">{statusLabel(orderDetail.paymentStatus)}</span>
-                  {isNoPayment(orderDetail.paymentMode) && <DemoDot label={t("demoBadge")} />}
-                </div>
-                {orderDetail.stage && (
-                  <div className="border border-neutral-200 bg-neutral-50/60 px-3 py-4">
-                    <OrderTracker stage={orderDetail.stage} dates={orderDetail.stageDates} labels={trackerLabels} formatDate={formatDate} />
-                  </div>
-                )}
-                {isNoPayment(orderDetail.paymentMode) && <p className="text-xs text-neutral-500">{t("demoNote")}</p>}
-                {orderDetail.dataQuality !== "complete" && <p className="border border-amber-200 bg-amber-50 p-2.5 text-xs text-amber-900">{t("order.legacy")}</p>}
-                <ul className="divide-y divide-neutral-100 border border-neutral-200">
-                  {orderDetail.items.map(item => (
-                    <li key={item.id} className="flex items-center justify-between gap-3 p-3">
-                      <div>
-                        <p className="font-semibold text-black">{item.name}</p>
-                        {(item.serials?.length ?? 0) > 0 && <p className="font-mono text-[11px] text-black">{t("order.serial", { serials: item.serials.join(", ") })}</p>}
-                        <p className="font-mono text-[11px] text-neutral-500">{t("order.lineDetail", { quantity: item.quantity, price: formatKztLocal(item.unitPrice) })}{Object.entries(item.options).map(([key, value]) => ` · ${key}: ${value}`).join("")}</p>
-                      </div>
-                      <span className="font-semibold text-black">{formatKztLocal(item.total)}</span>
-                    </li>
-                  ))}
-                </ul>
-                <dl className="grid grid-cols-2 gap-x-4 gap-y-1">
-                  <div className="contents"><dt>{t("order.subtotal")}</dt><dd className="text-right">{formatKztLocal(orderDetail.subtotal)}</dd></div>
-                  <div className="contents"><dt>{t("order.discount")}</dt><dd className="text-right">{formatKztLocal(orderDetail.discount)}</dd></div>
-                  <div className="contents"><dt>{t("order.shipping")}</dt><dd className="text-right">{formatKztLocal(orderDetail.shipping)}</dd></div>
-                  <div className="contents"><dt>{t("order.tax")}</dt><dd className="text-right">{formatKztLocal(orderDetail.tax)}</dd></div>
-                  <div className="contents font-semibold text-black"><dt>{t("order.total")}</dt><dd className="text-right">{formatKztLocal(orderDetail.total)}</dd></div>
-                </dl>
-                <div>
-                  <h4 className="text-[14px] font-bold text-black">{t("order.deliveryAddress")}</h4>
-                  {deliveryAddressLines(orderDetail.deliveryAddress).length ? (
-                    <div className="mt-1 leading-relaxed">{deliveryAddressLines(orderDetail.deliveryAddress).map((line, index) => <p key={index}>{line}</p>)}</div>
-                  ) : <p className="mt-1 text-neutral-500">{t("order.noAddress")}</p>}
-                </div>
-                {orderDetail.events.length > 0 && (
-                  <div>
-                    <h4 className="text-[14px] font-bold text-black">{t("order.updates")}</h4>
-                    <ol className="mt-1 space-y-1">
-                      {orderDetail.events.map(event => <li key={event.id} className="flex justify-between gap-3"><span>{eventLabel(event)}</span><span className="font-mono text-[11px] text-neutral-500">{formatDate(event.occurredAt)}</span></li>)}
-                    </ol>
-                  </div>
-                )}
-                {(orderDetail.shipments?.length ?? 0) > 0 && (
-                  <div>
-                    <h4 className="text-[14px] font-bold text-black">{t("order.shipments")}</h4>
-                    <ul className="mt-1 space-y-1">
-                      {orderDetail.shipments.map(shipment => (
-                        <li key={shipment.id} className="flex justify-between gap-3">
-                          <span>{shipment.items.map(line => `${line.quantity}× ${orderDetail.items.find(item => item.id === line.orderItemId)?.name ?? t("order.item")}`).join(", ")}</span>
-                          <span className="font-mono text-[11px] text-neutral-500">{shipment.status === "delivered" ? t("order.delivered", { date: formatDate(shipment.deliveredAt ?? shipment.dispatchedAt) }) : t("order.shipped", { date: formatDate(shipment.dispatchedAt) })}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {isAddressModalOpen && (
         // Above the sticky site header (z-index 1000): the taller map modal must not slide under it.

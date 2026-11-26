@@ -2,7 +2,9 @@
 // Ordered → Packed → Shipped → Delivered with icons. Every reached step lights up in Garmin cyan (#6DCFF6) and the
 // line along the way already travelled is cyan; the way ahead is grey. A cancelled order shows the tracker stopped
 // (nothing lit) with a short note. Labels and dates come from the caller (EN/RU/KK through next-intl).
-import { House, PackageCheck, ReceiptText, Truck } from "lucide-react";
+// 0033 (owner 2026-11-26): a pickup order has three steps — Ordered → Ready for pickup → Picked up (no Shipped);
+// the caller passes the pickup words as the packed/delivered labels.
+import { House, PackageCheck, ReceiptText, Store, Truck } from "lucide-react";
 import type { OrderStage } from "@/contracts/commerce";
 
 export interface TrackerLabels { ordered: string; packed: string; shipped: string; delivered: string; cancelled: string; cancelledNote: string; progress: string }
@@ -12,19 +14,22 @@ type Step = "ordered" | "packed" | "shipped" | "delivered";
 const STEPS: readonly { key: Step; Icon: typeof Truck }[] = [
   { key: "ordered", Icon: ReceiptText }, { key: "packed", Icon: PackageCheck }, { key: "shipped", Icon: Truck }, { key: "delivered", Icon: House },
 ];
-const REACHED: Record<OrderStage, number> = { ordered: 0, packed: 1, shipped: 2, delivered: 3, cancelled: -1 };
+const PICKUP_STEPS: readonly { key: Step; Icon: typeof Truck }[] = [
+  { key: "ordered", Icon: ReceiptText }, { key: "packed", Icon: Store }, { key: "delivered", Icon: PackageCheck },
+];
 
-export function OrderTracker({ stage, dates, compact = false, labels, formatDate }: {
-  stage: OrderStage; dates?: StageDates; compact?: boolean; labels: TrackerLabels; formatDate?: (iso: string) => string;
+export function OrderTracker({ stage, dates, compact = false, labels, formatDate, pickup = false }: {
+  stage: OrderStage; dates?: StageDates; compact?: boolean; labels: TrackerLabels; formatDate?: (iso: string) => string; pickup?: boolean;
 }) {
-  const reached = REACHED[stage] ?? 0;
+  const steps = pickup ? PICKUP_STEPS : STEPS;
+  const reached = stage === "cancelled" ? -1 : Math.max(0, steps.findIndex(step => step.key === stage));
   const circle = compact ? "h-7 w-7" : "h-11 w-11";
   const icon = compact ? "h-3.5 w-3.5" : "h-5 w-5";
   const lineTop = compact ? "top-[13px]" : "top-[21px]";
   return (
     <div className={compact ? "w-full" : "w-full py-1"}>
       <ol aria-label={labels.progress} className="flex w-full items-start">
-        {STEPS.map(({ key, Icon }, index) => {
+        {steps.map(({ key, Icon }, index) => {
           const done = index <= reached, current = index === reached;
           const date = dates?.[key];
           return (
@@ -38,7 +43,7 @@ export function OrderTracker({ stage, dates, compact = false, labels, formatDate
                 : "border-2 border-[#d9d9d9] bg-white text-[#a3a3a3]"}`}>
                 <Icon className={icon} aria-hidden />
               </span>
-              <span className={`mt-1.5 leading-tight ${compact ? "text-[10px]" : "text-[12px]"} ${done ? "font-bold text-black" : "font-medium text-[#8a8a8a]"} ${current ? "uppercase tracking-[0.04em]" : ""}`}>{labels[key]}</span>
+              <span className={`mt-1.5 leading-tight ${compact ? "text-[10px]" : "text-[12px]"} ${done ? "font-bold text-black" : "font-medium text-[#8a8a8a]"}`}>{labels[key]}</span>
               {!compact && date && done && formatDate && <span className="mt-0.5 font-mono text-[10px] text-neutral-500">{formatDate(date)}</span>}
             </li>
           );

@@ -837,7 +837,7 @@
       "Profile": "Profile",
       "Orders": "Orders",
       "Wishlist": "Wishlist",
-      "Devices": "Devices",
+      "Devices": "My devices",
       "Subscriptions": "Subscriptions"
     },
     "signOut": "Sign Out",
@@ -856,7 +856,9 @@
       "verifyToEdit": "Verify a phone number to edit your details.",
       "birthday": "Birthday",
       "birthdayOptional": "Birthday (optional)",
-      "birthdayHint": "Leave empty if you prefer not to say. Clear the field to remove it."
+      "birthdayHint": "Leave empty if you prefer not to say. Clear the field to remove it.",
+      "gender": "Gender",
+      "genderOptional": "Gender (optional)"
     },
     "form": {
       "fullName": "Full Name *",
@@ -902,18 +904,27 @@
       "confirmPhone": "Confirm new number"
     },
     "recent": {
-      "title": "Recent Order",
-      "viewAll": "View All Orders",
+      "title": "Recent order",
+      "viewAll": "View all orders",
       "placed": "Placed {date}",
       "primaryAddress": "Primary address: {label}"
     },
     "items": "{count, plural, one {# item} other {# items}}",
     "orders": {
-      "title": "Order History ({count})",
-      "empty": "No orders yet. Orders you place while signed in appear here.",
+      "title": "Orders ({count})",
+      "empty": "You haven't placed any orders yet. Orders you place while signed in appear here.",
       "placedOn": "Placed on {date}",
       "total": "Order Total",
-      "loadMore": "Load more orders"
+      "loadMore": "Load more orders",
+      "shop": "Shop watches",
+      "open": "Open order {number}",
+      "columns": {
+        "order": "Order",
+        "date": "Date",
+        "status": "Status",
+        "items": "Items",
+        "total": "Total"
+      }
     },
     "claim": {
       "title": "Claim a Previous Order",
@@ -934,8 +945,19 @@
       "remove": "Remove {name} from wishlist"
     },
     "devices": {
-      "title": "Registered Devices",
-      "unavailable": "Device registration is not available yet."
+      "title": "My devices",
+      "unavailable": "Device registration is not available yet.",
+      "loading": "Loading your devices…",
+      "empty": "No devices yet.",
+      "emptyHint": "Watches and devices you buy here appear once your order is delivered or picked up, with their serial number and warranty.",
+      "purchased": "Purchased {date}",
+      "order": "Order",
+      "warranty": "Warranty · {months} months",
+      "monthsLeft": "{count, plural, one {# month left} other {# months left}}",
+      "underMonth": "Less than a month left",
+      "until": "until {date}",
+      "ended": "Warranty ended",
+      "endedOn": "ended {date}"
     },
     "subscriptions": {
       "title": "Subscriptions & Plans",
@@ -949,7 +971,7 @@
       "lineDetail": "Qty {quantity} · {price} each",
       "subtotal": "Subtotal",
       "discount": "Discount",
-      "shipping": "Shipping",
+      "shipping": "Delivery",
       "tax": "Tax",
       "total": "Total",
       "deliveryAddress": "Delivery address",
@@ -959,7 +981,15 @@
       "item": "item",
       "delivered": "Delivered {date}",
       "shipped": "Shipped {date}",
-      "serial": "Serial number: {serials}"
+      "serial": "Serial number: {serials}",
+      "title": "Order {number}",
+      "back": "All orders",
+      "placed": "Placed {date}",
+      "payment": "Payment: {status}",
+      "deliveryMethod": "Delivery to your address",
+      "itemsTitle": "Items",
+      "serialLabel": "Serial number",
+      "free": "Free"
     },
     "addressForm": {
       "editLabel": "Edit shipping address",
@@ -1018,7 +1048,8 @@
       "refund_succeeded": "Refund issued",
       "fulfillment_packed": "Packed",
       "fulfillment_shipped": "Shipped",
-      "fulfillment_delivered": "Delivered"
+      "fulfillment_delivered": "Delivered",
+      "fulfillment_picked_up": "Picked up"
     },
     "auth": {
       "tabsLabel": "Sign in or create an account",
@@ -1058,6 +1089,14 @@
       "male": "Male",
       "female": "Female",
       "unspecified": "Prefer not to say"
+    },
+    "pickup": {
+      "title": "Pick up at",
+      "method": "Pick up at store",
+      "ready": "Ready for pickup",
+      "pickedUp": "Picked up",
+      "map": "Open in maps",
+      "collector": "Collected by {name}. Bring your order number."
     }
   },
   "Checkout": {

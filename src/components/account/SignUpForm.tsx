@@ -9,29 +9,14 @@ import { useTranslations } from "next-intl";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { CustomerGender } from "@/contracts/commerce";
+import { signUpProblems, type SignUpField as Field, type SignUpValues } from "@/lib/signup-rules";
 import { AccountRequestError, announceSessionChange, createAccountClient, type AuthMode } from "@/lib/account-client";
 
 const E164 = /^[+][1-9][0-9]{7,14}$/;
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RESEND_SECONDS = 60;
 const cleanPhone = (value: string) => value.replace(/[\s().-]/g, "");
 const yearsAgoISO = (years: number) => { const date = new Date(); date.setUTCFullYear(date.getUTCFullYear() - years); return date.toISOString().slice(0, 10); };
 const GENDERS: readonly CustomerGender[] = ["male", "female", "unspecified"];
-
-type Field = "name" | "phone" | "code" | "email" | "birthDate";
-export interface SignUpValues { name: string; phone: string; code: string; email: string; gender: CustomerGender | ""; birthDate: string }
-
-/** Field problems in form order (message keys under AccountPortal.signUpPage.errors). Pure, shared with the tests. */
-export function signUpProblems(values: SignUpValues, codeSent: boolean): Partial<Record<Field, string>> {
-  const problems: Partial<Record<Field, string>> = {};
-  if (!values.name.trim()) problems.name = "name";
-  if (!E164.test(cleanPhone(values.phone))) problems.phone = "phone";
-  if (!codeSent) problems.code = "codeFirst";
-  else if (!/^[0-9]{4,6}$/.test(values.code.trim())) problems.code = "code";
-  if (!EMAIL.test(values.email.trim())) problems.email = "email";
-  if (values.birthDate && (values.birthDate > yearsAgoISO(10) || values.birthDate < yearsAgoISO(120))) problems.birthDate = "birthDate";
-  return problems;
-}
 
 export function SignUpForm() {
   const t = useTranslations("AccountPortal");

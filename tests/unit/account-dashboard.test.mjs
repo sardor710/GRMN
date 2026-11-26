@@ -52,6 +52,8 @@ async function mount(routes) {
     text: () => nodeText(tree),
     rerender() { tree = fixture.render(); return tree; },
     button(label) { return nodes(tree).find(node => node.type === "button" && nodeText(node).includes(label)); },
+    link(label) { return nodes(tree).find(node => (node.type === "a" || node.props?.href !== undefined) && nodeText(node).includes(label)); },
+    async follow(label) { const link = view.link(label); assert.ok(link, `missing link ${label}`); await link.props.onClick?.({ preventDefault() {}, stopPropagation() {} }); await settle(); view.rerender(); },
     async click(label) { const button = view.button(label); assert.ok(button, `missing button ${label}`); assert.ok(!button.props.disabled, `${label} is disabled`); await button.props.onClick?.({ preventDefault() {}, stopPropagation() {} }); await settle(); view.rerender(); },
     input(name, value) {
       const node = nodes(tree).find(item => item.props?.name === name);
@@ -110,7 +112,7 @@ test("renders the real profile and addresses with an empty order history", async
   assert.match(text, /Synthetic Home/);
   assert.match(text, /Synthetic street 1/);
   await view.click("Orders");
-  assert.match(view.text(), /No orders yet/);
+  assert.match(view.text(), /haven't placed any orders yet/);
 });
 
 test("profile and address writes go to the API with versions and reload the server state", async () => {
@@ -121,7 +123,7 @@ test("profile and address writes go to the API with versions and reload the serv
   await view.click("Edit Details");
   view.input("name", "Renamed Owner");
   await view.submit("profile");
-  assert.deepEqual(view.calls.find(call => call.key === "PUT /api/account/profile").body, { name: "Renamed Owner", email: "owner@example.invalid", phone: "+77000000001", birthDate: null, expectedVersion: 2 });
+  assert.deepEqual(view.calls.find(call => call.key === "PUT /api/account/profile").body, { name: "Renamed Owner", email: "owner@example.invalid", phone: "+77000000001", birthDate: null, gender: null, expectedVersion: 2 });
   assert.match(view.text(), /Renamed Owner/);
   await view.click("Add Address");
   for (const [name, value] of [["label", "Office"], ["recipientName", "Synthetic Owner"], ["phone", "+77000000001"], ["region", "astana"], ["city", "Astana"], ["line1", "Office street 2"]]) view.input(name, value);
@@ -155,9 +157,24 @@ test("the wishlist tab lists the session's saved products, marks archived ones a
   assert.doesNotMatch(view.text(), /Retired watch/);
 });
 
-test("the account tabs that are not built yet say so and show no records", async () => {
+test("the subscriptions tab is not built yet and says so", async () => {
   const view = await mount(signedIn());
-  for (const tab of ["Devices", "Subscriptions"]) { await view.click(tab); assert.match(view.text(), /not available yet/i); }
+  await view.click("Subscriptions"); assert.match(view.text(), /not available yet/i);
+});
+
+// 0033 (owner 2026-11-26): My devices — serial, model link, purchase date, order link, warranty left.
+test("My devices lists the session's devices with serial, warranty left and an order link; empty state explains when they appear", async () => {
+  const soon = new Date(Date.now() + 200 * 86400000).toISOString(), past = new Date(Date.now() - 10 * 86400000).toISOString();
+  const device = (extra) => ({ id: "d1", serial: "3K8001234", productName: "Synthetic fēnix 8", variantName: "47 mm", productCode: "90000001", sku: "SYN-47", image: null, orderId: ORDER.id, orderNumber: "GRM-SYN-1", purchasedAt: "2026-01-02T10:00:00.000Z", receivedAt: "2026-01-04T10:00:00.000Z", fulfillmentMethod: "delivery", warrantyMonths: 12, warrantyEndsAt: soon, ...extra });
+  const view = await mount(signedIn({ "GET /api/account/devices": [200, { items: [device({}), device({ id: "d2", serial: "OLD999", warrantyEndsAt: past })] }] }));
+  await view.click("My devices");
+  const text = view.text();
+  assert.match(text, /My devices/); assert.match(text, /3K8001234/); assert.match(text, /Synthetic fēnix 8/); assert.match(text, /47 mm/);
+  assert.match(text, /6 months left/); assert.match(text, /Warranty ended/); assert.match(text, /GRM-SYN-1/);
+  assert.ok(nodes(view.tree).some(node => node.props?.href === "/p/90000001/SYN-47"), "the model links to its product page");
+  const empty = await mount(signedIn({ "GET /api/account/devices": [200, { items: [] }] }));
+  await empty.click("My devices");
+  assert.match(empty.text(), /No devices yet/); assert.match(empty.text(), /delivered or picked up/);
 });
 
 test("order detail shows exact KZT and marks missing legacy money and addresses", async () => {
@@ -165,7 +182,7 @@ test("order detail shows exact KZT and marks missing legacy money and addresses"
   await view.click("Orders");
   assert.match(view.text(), /GRM-SYN-1/);
   assert.match(view.text(), /KZT\s?123\.45/);
-  await view.click("GRM-SYN-1");
+  await view.follow("GRM-SYN-1");
   const text = view.text();
   assert.match(text, /Legacy item/);
   assert.match(text, /Legacy typed street/);
@@ -391,7 +408,7 @@ test("M8: the profile saves an optional birthday and a validated email with feed
   assert.match(view.text(), /Birthday must be a past date/); assert.equal(saved, null);
   view.input("birthDate", "1990-05-17");
   await view.submit("profile");
-  assert.deepEqual(saved, { name: "Synthetic Owner", email: "new@example.invalid", phone: "+77000000001", birthDate: "1990-05-17", expectedVersion: 2 });
+  assert.deepEqual(saved, { name: "Synthetic Owner", email: "new@example.invalid", phone: "+77000000001", birthDate: "1990-05-17", gender: null, expectedVersion: 2 });
   assert.match(view.text(), /May 17, 1990/); assert.match(view.text(), /Personal details updated/);
   await view.click("Edit Details");
   view.input("birthDate", "");
@@ -399,29 +416,17 @@ test("M8: the profile saves an optional birthday and a validated email with feed
   assert.equal(saved.birthDate, null, "clearing the date removes the birthday");
 });
 
-test("owner 2026-11-26: Sign in | Sign up tabs; test mode shows the code and signs up directly without SMS", async () => {
-  const routes = { "GET /api/auth/get-session": [200, { user: null, staff: false }], "GET /api/auth/grmn/mode": [200, { testCode: true, signUp: true, code: "1234" }] };
-  const view = await mount(routes);
-  assert.ok(view.button("Sign in") && view.button("Sign up"), "both tabs are shown");
+test("owner 2026-11-26: Sign in | Sign up — the Sign up tab opens the one-page sign-up; the fixed code is shown on sign-in", async () => {
+  const view = await mount({ "GET /api/auth/get-session": [200, { user: null, staff: false }], "GET /api/auth/grmn/mode": [200, { testCode: true, signUp: true, code: "1234" }] });
+  assert.match(view.text(), /Sign in with your phone/);
+  assert.ok(nodes(view.tree).some(node => node.props?.href === "/account/sign-up" && nodeText(node).includes("Sign up")), "Sign up links to the sign-up page");
   assert.match(view.text(), /SMS codes are not sent yet\. Enter code 1234\./);
   assert.doesNotMatch(view.text(), /We send a one-time code/, "no SMS promise while codes are not sent");
-  await view.click("Sign up");
-  assert.match(view.text(), /Create your account/);
-  view.input("signUpName", " New Customer ");
-  view.input("signUpPhone", "+7 700 000 0009");
-  view.input("signUpEmail", "new@example.invalid");
-  routes["POST /api/auth/grmn/signup"] = [200, { state: "authenticated" }];
-  Object.assign(routes, signedIn());
-  await view.submit("sign-up");
-  assert.deepEqual(view.calls.find(call => call.key === "POST /api/auth/grmn/signup").body, { name: "New Customer", email: "new@example.invalid", phoneNumber: "+77000000009" });
-  assert.match(view.text(), /Synthetic Owner/);
+  assert.ok(!nodes(view.tree).some(node => node.type === "form" && node.props.name === "sign-up"), "no short sign-up form here any more");
 });
 
-test("without test mode there is no code hint and Sign up goes through the phone code first", async () => {
-  const view = await mount({ "GET /api/auth/get-session": [200, { user: null, staff: false }], "GET /api/auth/grmn/mode": [200, { testCode: false, signUp: false }] });
+test("without the fixed code there is no code hint", async () => {
+  const view = await mount({ "GET /api/auth/get-session": [200, { user: null, staff: false }], "GET /api/auth/grmn/mode": [200, { testCode: false, signUp: true }] });
   assert.doesNotMatch(view.text(), /SMS codes are not sent yet/);
-  await view.click("Sign up");
-  assert.match(view.text(), /We send a one-time code, then ask for your name/);
-  assert.ok(nodes(view.tree).some(node => node.type === "form" && node.props.name === "sign-in"), "phone-first form");
-  assert.ok(!nodes(view.tree).some(node => node.type === "form" && node.props.name === "sign-up"), "no direct signup form");
+  assert.match(view.text(), /We send a one-time code/);
 });
