@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 5 | 15/19 | 2026-11-26 | T6.1–T6.2 full checks |
+| Done | 5 | 19/19 | 2026-11-26 | Owner reviews; deploy only on "deploy" |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -217,10 +217,10 @@ All in `tests/integration/order-board.test.mjs` (fixtures copied from `tests/int
   - verify M5: `npm run test:unit` PASS; screenshots of account orders list + detail at each stage (EN, RU) at 1440/390; commit.
 
 ### M6 — Verify + review (wave 5)
-- [ ] **T6.1** Smoke: update `demoOrderScenario` in `tests/ui/cms-smoke.mjs` to drive the new board (pack with a serial, ship, deliver) and add `CMS_SMOKE_ONLY=orders` block; run with `CMS_TEST_CHROME=… CMS_TEST_CHROME_NO_SANDBOX=1 CMS_TEST_BUNDLER=webpack CMS_SMOKE_ONLY=orders npm run test:cms-ui` PASS.
-- [ ] **T6.2** Full: `npm run test:unit`, `npm run test:integration`, `npm run check` — record counts.
-- [ ] **T6.3** Review: `code-reviewer` agent on the branch diff vs 0b82ec7; fix confirmed issues (one targeted repair each).
-- [ ] **T6.4** Re-run the serial report on the staging prod copy with the final code; give owner the summary (needs serial / no serial / guesses). Fill Result + Handoff; update memory.
+- [x] **T6.1** ✅ CMS_SMOKE_ONLY=orders PASS (board/pack/ship/deliver, serial search, list, archive, mobile, customer tracker EN/RU); demo + manual-payment blocks moved to the board — Smoke: update `demoOrderScenario` in `tests/ui/cms-smoke.mjs` to drive the new board (pack with a serial, ship, deliver) and add `CMS_SMOKE_ONLY=orders` block; run with `CMS_TEST_CHROME=… CMS_TEST_CHROME_NO_SANDBOX=1 CMS_TEST_BUNDLER=webpack CMS_SMOKE_ONLY=orders npm run test:cms-ui` PASS.
+- [x] **T6.2** ✅ unit 647 pass / 0 fail; integration 666/666; webpack production build compiled (turbopack refuses the worktree's node_modules symlink — environment, not code); full browser smoke PASS (all blocks) — Full: `npm run test:unit`, `npm run test:integration`, `npm run check` — record counts.
+- [x] **T6.3** ✅ code-reviewer (fable): 0 critical, 5 important — all fixed RED→GREEN in 97fd316; minors deferred (see Result) — Review: `code-reviewer` agent on the branch diff vs 0b82ec7; fix confirmed issues (one targeted repair each).
+- [x] **T6.4** ✅ today's backup restored in a throwaway container, migrated to 0030: 24 products, 20 need a serial, 4 bands not, 0 guesses; Almaty = UTC+5 in the DB image; CSV /home/nick/grmn-production/serial-policy-report-2026-11-26.csv — Re-run the serial report on the staging prod copy with the final code; give owner the summary (needs serial / no serial / guesses). Fill Result + Handoff; update memory.
 
 ## 6. Verification
 - `npm run typecheck`, `npm run lint`, `npm run test:unit`, `npm run test:integration`, `npm run check`
@@ -240,7 +240,18 @@ Migration 0030 is additive (new table + nullable columns + policy values). Code 
 - 2026-11-25: plan approved by owner ("yes"); executing inline (native).
 
 ## Result
-Delivered: · Checks run: · Gaps: · Follow-ups:
+Delivered (branch `homepage-deploy`, 0b82ec7 → HEAD, not deployed, not pushed):
+- Admin ▸ Orders: Board (New · Packed · Shipped · Delivered, counts, drag one column forward, Pack / Ship / Mark delivered on each card, Awaiting payment → ✓ Paid pill, Demo tag, Load more) and List; Archive (delivered orders leave at 00:00 Almaty the next day; cancelled, refunded, returned, imported); periods Today / This week / Last 7 / Last 30 / This month / Custom; search by order number, customer, phone or serial (covers the archive).
+- Order side panel: Pack asks one serial per unit of every device (scanner-friendly, Enter jumps to the next box) and a tick for the rest; Ship with optional carrier/tracking; Mark delivered; Unpack; serial corrections while packed (before/after kept); returns pick the serial coming back; existing payment confirm, cancel, payouts, timeline kept.
+- Serial rule: product setting → categories (any "needs serial" wins; an unset ordinary category = device; "no serial" exempts) → old-site category → needs serial. Names are never used. Editable in Admin ▸ Categories and on the product's General tab. Migration 0030 (idempotent, seeds bands/cables/chargers/apps/subscriptions/accessory sections = no serial, HRM/sensors = needs serial).
+- One active order per serial (locked per serial), freed by Unpack or a return received in full.
+- Customer profile: four-step tracker (Ordered → Packed → Shipped → Delivered) in Garmin cyan #6DCFF6 on every order, dates and serial numbers in order details, translated updates, EN/RU/KK; cancelled orders show the tracker stopped.
+Checks run: see T6.1–T6.4.
+Rulings (cost if wrong in the ledger): multi-category rule tightened after the real-data check (MARQ was filed under Apps/Cables); name-based exemption removed; split-allocation serial path untested (one stock location per reservation today); FulfillmentScreen rebuilt in place to keep its tests; return UI covers create/approve/receive/reject (inspect/restock stay API); "Cancel shipment" → "Unpack"; customer fulfillment badge replaced by the tracker; serials visible to every orders:read user; paymentPill naming; NBSP serial check needed no change (regression test kept); smoke fixture renamed (UI DEMO FIXTURE tripped the no-demo check).
+Deferred minors: "+N more" counts units not lines; board RETURNED subquery uses an unindexed shipment_items.order_id; serial search also finds unpacked history; phone-digit search matches order-number digits; customer timeline keeps "Packed" after Unpack; tracker can show Shipped after a delivered order is fully refunded with restock; customers still see a returned unit's serial; partially-serialized items can't return their unserialized units (API-only); archived ancestor categories still pass down their setting; exception orders sit in New with a tag.
+Gaps: none against the requirement. Follow-ups: deploy on owner's word (pre-deploy dump + env backup, build grmn:<commit> with the 2well origin + Yandex key, migrate 0030, up -d, restart proxy); merge into beta5 with 0030 re-applied as the next free number (0032).
 
 ## Handoff
-Requirement approved 2026-11-25; XL plan written (sections 4–7), awaiting owner approval. Work happens in /home/nick/worktrees/grmn-homepage-deploy on branch homepage-deploy (live 0b82ec7). Start at M1/T1.1.
+Done 2026-11-26 on `homepage-deploy` in /home/nick/worktrees/grmn-homepage-deploy (not deployed; live is still 0b82ec7). All 19 tasks [x] with evidence above; final review fixes in 97fd316.
+Next: owner looks at the screens (screenshots from CMS_SMOKE_ONLY=orders), then "deploy" → normal GRMN deploy steps (memory grmn-production) + migration 0030; rollback switch-version.sh 0b82ec7 (additive migration).
+Caveats: the Turbopack build refuses this worktree's node_modules symlink — build with `--webpack` locally; the Docker build from git archive is unaffected. Deferred minors listed in Result.
