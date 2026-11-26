@@ -5,7 +5,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 3 | 4/19 | 2026-11-25 | T3.1 pack with serials |
+| Executing | 4 | 9/19 | 2026-11-26 | T4.1 admin client API + stage helpers |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -165,17 +165,17 @@ Waves (at most 2 parallel units, disjoint write scopes; parallel agents use thei
 ### M3 — Fulfillment backend (wave 3, owner: TDD; verifier: backend-architect read-only)
 All in `tests/integration/order-board.test.mjs` (fixtures copied from `tests/integration/fulfillment.test.mjs`: sandbox-paid orders, demo order, legacy order, `fulfiller`/`support` roles).
 - **Existing suites must keep their meaning, not have the default softened:** fixture `product()` helpers in `tests/integration/{fulfillment,aftersales,payments-fulfillment-promotions,account-services}.test.mjs` gain an option `serialPolicy` defaulting to `'none'` (explicit "no serial" — they test shipping, not serials); the smoke fixture product likewise, except the M6 orders block which uses a serial-required product. Customer-timeline assertions that list event types add `fulfillment.packed` where a shipment is created.
-- [ ] **T3.1 Pack with serials** (`createShipment`, `src/server/fulfillment/service.ts`):
+- [x] **T3.1 Pack with serials** ✅ (`createShipment`, `src/server/fulfillment/service.ts`):
   - `createInput` gains `serials: z.array(z.strictObject({ orderItemId: uuid, units: z.array(z.string().trim().min(1).max(64)).max(10000) })).max(100).optional()`.
   - Resolve requirements for the lines' products (`resolveSerialRequirements`); every required line needs `units.length === quantity`, else `409 SERIALS_REQUIRED` (message names the items). Units for non-required items allowed (≤ quantity). Units for an orderItemId not in `lines` → 400.
   - Insert serial rows after shipment_items, distributing units in order across the plan rows for that item (`unit_index` 1..n per shipment_item).
   - Customer event `fulfillment.packed` (visibility customer, dedupe `fulfillment.packed:<shipmentId>`, payload `{shipmentId, items}`).
   - Tests: watch+band order → pack without watch serial → SERIALS_REQUIRED; with serial → 201-equivalent, band needs none; qty 2 over two allocations → serial rows on both shipment_items (Review focus 4); `fulfillment.packed` customer event exists once on replay.
-- [ ] **T3.2 Serial uniqueness + edit:**
+- [x] **T3.2 Serial uniqueness + edit:** ✅
   - `async function claimSerials(client, keys: string[], ownShipmentItemIds: string[]): Promise<void>` — sorted keys, `SELECT pg_advisory_xact_lock(hashtextextended('serial:'||$1,0))` each; in-request duplicates → `409 SERIAL_DUPLICATE`; active-elsewhere → `409 SERIAL_IN_USE` ("Serial X is already on order GRM-…"). Active = shipment status ≠ cancelled AND (no return link OR linked return status NOT IN received/inspected/closed).
   - New update action `set_serials`: `{ shipmentId, expectedVersion, idempotencyKey, orderItemId, units: string[] }`; only `ready` shipments (`INVALID_TRANSITION` otherwise); `units.length` must equal the item's quantity in that shipment, or 0 when not required; replaces that item's rows; bumps shipment version; internal event `shipment.serials_updated`; audit `fulfillment.serials_updated`. Wire in `http.ts` next to dispatch/deliver.
   - Tests: same serial on second order → SERIAL_IN_USE; `"abc 123"` vs `"ABC123"` collide (focus 2); two concurrent packs same serial → one fails (focus 1, `Promise.allSettled`); after shipment cancel → serial reusable; edit while ready OK, after dispatch → INVALID_TRANSITION; pre-release shipment with no serials dispatches, then `set_serials` on a ready one works (focus 5).
-- [ ] **T3.3 Board listing** — new `src/server/fulfillment/board.ts`:
+- [x] **T3.3 Board listing** ✅ — new `src/server/fulfillment/board.ts`:
   - `export type BoardStage = "new" | "packed" | "shipped" | "delivered";`
   - `export type Period = "all" | "today" | "week" | "7d" | "30d" | "month" | "custom";`
   - `listInput` gains `view: z.enum(["active","archive"]).optional()` (default active), `period`, `from`/`to` (`YYYY-MM-DD`, required for custom, max range 366 days), `q` (trim, 1–80), `stage` (BoardStage); `limit` max 200.
@@ -185,11 +185,11 @@ All in `tests/integration/order-board.test.mjs` (fixtures copied from `tests/int
   - `q`: order_number ILIKE, contact_name ILIKE, contact_phone digits contain, or `EXISTS order_unit_serials serial_key LIKE upper(no-space q)||'%'`.
   - `AdminOrderSummaryDTO` (`src/contracts/commerce.ts:448`) gains `stage: BoardStage`, `archived: boolean`, `payment: "awaiting" | "paid" | "problem"` (paid = captured AND paid/partially_refunded; problem = failed/refunded/partially-refunded-after-cancel; else awaiting), `legacy: boolean`, `itemNames: string[]` (≤3), `deliveredAt: string | null`. Response gains `counts: Record<BoardStage, number>` (same filters, active view only; `null` in archive view).
   - Tests: placement of unpaid, paid, packed, dispatched, delivered-today, delivered-yesterday, cancelled, **cancelled-after-pack (ready shipment auto-cancelled by `cancelOrder` → serial free again)**, **fully refunded**, **fully returned (received)**, failed-payment (pill `problem`), legacy, demo orders (focus: demo on board, legacy not); boundary — set `delivered_at` to today0 − 1 s and today0 + 0 s via SQL relative to `now()` in Almaty (focus 3); periods today/week/30d/custom; `q` by serial finds an archived order.
-- [ ] **T3.4 Detail DTO + returns serials:**
+- [x] **T3.4 Detail DTO + returns serials:** ✅
   - `AdminOrderDetailDTO.items[]` gains `serialRequired: boolean`, `serialSource: SerialDecision["source"]`; `ShipmentDTO.items[]` gains `serials: { id: string; serial: string; returned: boolean }[]` (staff detail only; empty for customers).
   - `returnInput` lines gain `serialIds: z.array(uuid).max(10000).optional()`; `return_items` are per shipment item, so **the ticked serials decide which shipment items take the return quantity** (group serialIds by their shipment_item; one return_item per group; without serials the current allocation order stays); when the item's shipment items have serials, `serialIds.length` must equal `quantity` (409 `SERIALS_REQUIRED`); ids must belong to that order item, not cancelled shipment, not already on an open return; sets `return_item_id`. `update_return` reject/cancel clears `return_item_id` for that return's serials.
   - Tests: return 1 of 2 picks serial B → after `receive`, B can be packed on a new order, A cannot; rejected return frees link.
-- [ ] **T3.5 Customer data** (`src/server/account/service.ts`):
+- [x] **T3.5 Customer data** ✅ (`src/server/account/service.ts`):
   - `EVENT_LABELS["fulfillment.packed"] = "Packed"`.
   - `OrderSummaryDTO` and `OrderDetailDTO` gain `stage: "ordered" | "packed" | "shipped" | "delivered" | "cancelled"` (cancelled when order_status cancelled; else from fulfillment_status as in T3.3 with new→ordered).
   - `OrderDetailDTO` gains `stageDates: { ordered: string; packed: string | null; shipped: string | null; delivered: string | null }` (ordered = placed_at; packed/shipped/delivered = earliest `created_at`/`dispatched_at`/`delivered_at` among **non-cancelled** shipments, so a cancelled pack leaves no date), `OrderItemDTO.serials: string[]` (non-cancelled shipments).
