@@ -6,7 +6,7 @@
 ## Progress
 | Status | Wave | Done | Last updated | Next action |
 |---|---|---|---|---|
-| Executing | 7 | 19/22 | 2026-11-26 | M8 verify: integration, build, smoke, screenshots, review, staging, deploy |
+| Done | – | 22/22 | 2026-11-26 | Ask owner whether to push branch account-pickup-devices |
 
 Status values: `Draft – requirement` → `Draft – plan` → `Executing` → `Done` | `Done – partial` | `Blocked`
 Markers: `[ ]` pending · `[~]` in progress · `[x]` done (+evidence) · `[!]` blocked (+reason) · `[-]` dropped
@@ -185,10 +185,10 @@ Advisor review 2026-11-26 (folded in):
 - [x] T7.6 (test:legacy 337/337 incl. i18n parity + wording) Messages EN/RU/KK, wording rules — verify: i18n + wording tests
 
 ### M8 — Verify + ship
-- [ ] T8.1 tsc, unit, integration, webpack build, full cms-ui smoke
-- [ ] T8.2 Screenshots + UI finish-gate review; code review; fix
-- [ ] T8.3 Staging rehearsal: prod copy → migrate 0033 → new image works, old image 1d5e957 works on migrated DB
-- [ ] T8.4 Deploy (owner authorised 2026-11-26): dump, env backup, build, migrate, up, live checks; memory + plan update; ask owner about pushing
+- [x] T8.1 (tsc 0; unit 732/0 + new tests; legacy 337/0; integration 684/684 pre-review-fix, affected suites re-run green after; next build --webpack OK; full cms-ui smoke passed) tsc, unit, integration, webpack build, full cms-ui smoke
+- [x] T8.2 (smoke screenshots EN/RU/KZ 1440/390; code-reviewer agent: 1 blocker (pick_up not routed over HTTP) + 6 smaller, all fixed with tests) Screenshots + UI finish-gate review; code review; fix
+- [x] T8.3 (staging = prod dump 2026-11-26: migrate 35→36, re-run no-op; signup, pickup quote 0 ₸, pickup order placed; old image 1d5e957 serves storefront/account/order/cart on the migrated DB) Staging rehearsal: prod copy → migrate 0033 → new image works, old image 1d5e957 works on migrated DB
+- [x] T8.4 (live grmn:ef5c461; 36 migrations; read-only live checks + live browser checkout shows pickup; push awaits owner) Deploy (owner authorised 2026-11-26): dump, env backup, build, migrate, up, live checks; memory + plan update; ask owner about pushing
 
 ## 6. Verification
 - `npx tsc --noEmit -p .` (after `npx next typegen`)
@@ -208,7 +208,16 @@ Migration 0033 is additive (new nullable/defaulted columns), so `switch-version.
 - 2026-11-26: requirement approved; owner waived the plan stop ("do it by your choice … finish, deploy, ask for pushing").
 
 ## Result
-Delivered: · Checks run: · Gaps: · Follow-ups:
+Delivered (live 2026-11-26, grmn:ef5c461 / grmn-ops:ef5c461, branch account-pickup-devices, not pushed):
+- One-page sign-up /account/sign-up (name, phone + Send code, SMS code, email, gender, birthday); code always checked; old code-free shortcut closed. Gender in Profile.
+- Orders: formal table, order page inside the tab (?order=<id>) with photos, product links, serials, totals, address or pickup store, updates; pickup tracker (3 steps).
+- Checkout: saved addresses, Pick up at store (store card, 0 ₸, paid at checkout), Another address; guests get pickup/address.
+- Admin ▸ Settings ▸ Store pickup (seed Panfilova 154, daily 10:00–19:00); board: Ready for pickup (serials) → Mark picked up.
+- My devices (serialised, delivered/picked-up, not returned) with warranty left; warranty months per category/product (default 12).
+Checks run: see T8.1–T8.4.
+Rollback: `switch-version.sh 1d5e957` (0033 additive; verified on staging). Pre-deploy dump /home/nick/grmn-production/predeploy-pickup-devices-1d5e957.dump; env backup production.env.bak-1d5e957-pre-pickup. On the old image, pickup orders look like delivery orders to the store address (staff could "Ship" them).
+Gaps: board pick_up click not exercised on staging (staging needs staff MFA); covered by integration + local browser smoke. Store map pin not set (link searches the address); set lat/lng in Admin if wanted. Customer notifications out of scope (owner: later).
+Follow-ups: while AUTH_TEST_OTP_CODE=1234 is set, anyone can sign in as any customer by phone (pre-existing; remove once SMS is connected). Merge into beta5 before the next beta5 deploy (beta5 is behind live).
 
 ## Handoff
-Branch `account-pickup-devices` in worktree /home/nick/worktrees/grmn-account-pickup-devices (node_modules symlinked to /home/nick/GRMN). Next: per Progress block.
+Branch `account-pickup-devices` (worktree /home/nick/worktrees/grmn-account-pickup-devices, node_modules symlinked) is LIVE as ef5c461 but not pushed and not merged into beta5. Next: push on owner OK. Staging (grmn-staging) holds a 2026-11-26 prod copy migrated to 36 on ef5c461, stopped. Smoke for this work: CMS_SMOKE_ONLY=orders (needs CMS_TEST_BUNDLER=webpack).
